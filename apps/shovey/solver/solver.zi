@@ -90,7 +90,7 @@ SolverLimits :: struct {
 }
 
 SolverDefaultLimits :: () -> SolverLimits {
-    return SolverLimits.{.bfs = 3000, .greedy = 24000, .chain_goal = 3000, .chain = 30000, .macro = 16000}
+    return SolverLimits.{.bfs = 3000, .greedy = 32000, .chain_goal = 8000, .chain = 120000, .macro = 24000}
 }
 
 solver_island: bool;
@@ -157,6 +157,10 @@ solver_ordered: bool;
 // The chain's search collects ways: states with fewer goals left than goal.
 solver_collect: bool;
 solver_goal: s32;
+solver_chain_target: s32;
+solver_greedy_alt: bool;
+solver_greedy_full: bool;
+solver_greedy_alt_ok: bool;
 
 // Shovey's region: every walker reachable by free walks from a node.
 solver_region_queue: [SOLVER_WALKERS]s32;
@@ -420,7 +424,12 @@ SolverHeapPop :: () -> s32 {
 
 // Lower is better: the estimate, weighted against the macro depth.
 SolverPriority :: (depth: s32) -> u64 {
-    priority := cast(u64)SolverEstimate() * 5 + cast(u64)depth
+    weight := ifx solver_greedy_alt then 3 else 5
+    estimate := SolverEstimate()
+    if solver_search == SOLVER_CHAIN && !solver_island && solver_chain_target >= 0 {
+        estimate += SolveClassicPlateEstimate(solver_chain_target)
+    }
+    priority := cast(u64)estimate * cast(u64)weight + cast(u64)depth
     if priority > 4294967295 { priority = 4294967295 }
     return priority << 32
 }
@@ -622,6 +631,12 @@ SolverNextSearch :: () {
         solver_status = SOLVER_UNKNOWN
         return
     }
+    if solver_search == SOLVER_GREEDY && solver_greedy_alt_ok && !solver_greedy_alt && solver_greedy_full {
+        solver_greedy_alt = true
+        solver_started = false
+        return
+    }
+    if solver_search == SOLVER_GREEDY { solver_greedy_alt = false }
     solver_search += 1
     solver_started = false
     route := SolverStoryRoute()
@@ -734,7 +749,10 @@ SolverMacroStep :: () -> bool {
             length := SolverKeyNow()
             if length < 0 { solver_status = SOLVER_INVALID; return true }
             added := SolverAdd(length, SolverWalker(), solver_node, solver_edge_action[index], solver_edge_walker[index])
-            if added == -2 { return true }
+            if added == -2 {
+                if solver_search == SOLVER_GREEDY && (solver_count >= solver_cap || solver_arena_used >= SOLVER_ARENA) { solver_greedy_full = true }
+                return true
+            }
             if added >= 0 && solver_ordered {
                 SolverHeapPush(SolverPriority(solver_node_depth[added]) | cast(u64)added)
             }
@@ -823,6 +841,11 @@ SolverChainStep :: () {
                 SolverReset()
                 solver_goal = SolverRemaining()
                 if solver_goal < 0 { solver_goal = 0 }
+                solver_chain_target = -1
+                if !solver_island {
+                    solver_chain_target = SolveClassicHardestPlate()
+                    if solver_chain_target < 0 { solver_chain_target = SolveClassicNearestPlate() }
+                }
                 SolverMacroBegin(solver_limits.chain_goal, true, true)
                 solver_chain_begun[level] = true
             }
@@ -901,6 +924,10 @@ SolverStart :: (island: bool, board: string, limits: SolverLimits = SolverDefaul
     solver_limits = limits
     solver_search = SOLVER_GREEDY
     solver_started = false
+    solver_chain_target = -1
+    solver_greedy_alt = false
+    solver_greedy_full = false
+    solver_greedy_alt_ok = !solver_island
     solver_seen = 0
     solver_board = board
     solver_found_by = SOLVER_GREEDY
@@ -909,6 +936,11 @@ SolverStart :: (island: bool, board: string, limits: SolverLimits = SolverDefaul
     solver_facings = ifx island then 1 else 4
     loaded := ifx island then SolveIslandLoad(board) else SolveClassicLoad(board)
     if !loaded { solver_status = SOLVER_INVALID; return false }
+    if solver_greedy_alt_ok {
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if solve_classic_initial.ground[at] == 13 || solve_classic_initial.ground[at] == 14 { solver_greedy_alt_ok = false; break }
+        }
+    }
     SolverReset()
     solver_root_walker = SolverWalker()
     solver_status = SOLVER_RUNNING

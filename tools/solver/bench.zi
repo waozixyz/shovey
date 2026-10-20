@@ -101,6 +101,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
         if status == SOLVER_WON { won += 1 }
         SayNumber(number); Say(" "); Say(names[status])
         if status == SOLVER_WON { Say(" by "); Say(searches[SolverSearchWon()]); Say(" moves "); SayNumber(cast(s64)SolverRoute().count) }
+        Say(" search "); SayNumber(cast(s64)solver_search)
         Say(" states "); SayNumber(SolverStates())
                     Say(" route "); SayNumber(cast(s64)SolverStoryRoute().count)
                     Say(" verify "); SayNumber(cast(s64)solver_verify_at)
