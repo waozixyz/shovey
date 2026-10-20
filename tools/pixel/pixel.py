@@ -556,6 +556,8 @@ def build():
     art['method'] = ('Pixel sprites drawn by tools/pixel/pixel.py or generated for Shovey by an image model '
                      'and fitted to a 32 by 32 grid; the card is composed from them. No outside image is used.')
     art_path.write_text(json.dumps(art, indent=2) + '\n')
+    from share_player import share_player
+    share_player()
     print(f'wrote {len(manifest) - 1} sprites and the card')
 
 

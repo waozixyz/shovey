@@ -1406,7 +1406,7 @@ EditorFrame :: (language: string) {
     width := cast(float32)editor_frame.width
     top := cast(float32)editor_frame.top
     bottom := cast(float32)(editor_frame.height - editor_frame.bottom)
-    ShoveyDress(editor_frame.session, width, top, cast(float32)editor_frame.height)
+    ShoveyDress(editor_frame.session, width, top, bottom)
     if editor_key == 256 && editor_page != EDITOR_HOME && !editor_name.focused &&
     !editor_share_title.focused && !editor_share_query.focused { unused EditorBack() }
     if editor_page == EDITOR_HOME { EditorHome(width, top, bottom) }

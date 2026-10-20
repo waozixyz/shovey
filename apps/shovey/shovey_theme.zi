@@ -19,9 +19,9 @@ ShoveyPalette :: () -> WidgetPalette {
         .success = cast(u32)0x34b930ff, .material = true}
 }
 
-// Asks for Shovey's palette and lays the slate under the whole screen.
-ShoveyDress :: (session: Session, width: float32, top: float32, height: float32) {
+// Lays the slate inside the game's content, above the host's navigation.
+ShoveyDress :: (session: Session, width: float32, top: float32, bottom: float32) {
     unused WidgetPaletteUse(session, ShoveyPalette())
-    Box(session, BoxProps.{.key = cast(u64)19990, .bounds = Rectangle.{0.0, top, width, height - top},
+    Box(session, BoxProps.{.key = cast(u64)19990, .bounds = Rectangle.{0.0, top, width, bottom - top},
             .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
 }

@@ -47,6 +47,11 @@ board, solve and check it:
     python3 tools/levels/levels.py previews
     make test
 
+To check the bottom navigation while Classic and Island's editor play run
+inside Inner Breeze, build Arcade's collection from these sources, then run
+`make inbe-ui-test INBE_BINARY=/path/to/inbe INBE_SOURCE=/path/to/inbe/source
+ARCADE_BUNDLE=/path/to/arcade.zib`. It uses a private display and disposable profiles.
+
 When the solver cannot finish a board, play it and keep your winning route:
 
     make play
@@ -101,7 +106,9 @@ and player facings turn with the board.
     python3 tools/pixel/pixel.py build
 
 Island's pictures and card are rendered from the Three.js models in
-`tools/art/`:
+`tools/art/`. The player is copied from Classic's exact sprites after either
+art build, including the Island editor marker. The Island card uses the same
+player bitmap, and landscape facings turn it with the board:
 
     cd tools/art && npm ci && node render.mjs
 

@@ -4,6 +4,9 @@
 import * as THREE from 'three';
 import { islandSprites } from './island.js';
 import { cards } from './cards.js';
+import { playerTexturesReady } from './shovey.js';
+
+await playerTexturesReady;
 
 const OUTPUT = 128;
 const SCALE = 4;

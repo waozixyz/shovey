@@ -1,0 +1,137 @@
+"""Keep Inbe's bottom dock visible and usable while every Shovey edition runs."""
+import argparse
+import contextlib
+import json
+import os
+from pathlib import Path
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import time
+
+from PIL import Image, ImageChops
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--binary', type=Path, required=True)
+    parser.add_argument('--inbe-source', type=Path, required=True)
+    parser.add_argument('--bundle', type=Path, required=True,
+                        help='Arcade collection built with these Shovey sources')
+    args = parser.parse_args()
+    assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
+    assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
+    root = Path(__file__).resolve().parents[1]
+    output = root / 'build/inbe-navigation-ui-test'
+    output.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(args.inbe_source / 'tests'))
+    from ui_driver import UiDriver
+    driver = UiDriver(output / 'driver')
+
+    @contextlib.contextmanager
+    def application(profile, name, bundle):
+        log_path = output / (name + '.log')
+        with log_path.open('w') as log:
+            child = subprocess.Popen([str(args.binary.resolve())], cwd=args.inbe_source,
+                                     env=os.environ | driver.environment() | {
+                                         'APP_DATA_ROOT': str(profile),
+                                         'INBE_NODE_APP_FILE': str(bundle)},
+                                     stdout=log, stderr=subprocess.STDOUT)
+            driver.attach(child, log_path)
+            try:
+                driver.tree()
+                window = subprocess.check_output(
+                    ['xdotool', 'search', '--onlyvisible', '--pid', str(child.pid)],
+                    text=True, timeout=10).splitlines()[0]
+                subprocess.run(['xdotool', 'windowsize', window, '390', '844'], check=True)
+                driver.wait_idle(frames=3)
+                yield child, window
+            finally:
+                if child.poll() is None:
+                    child.terminate()
+                try:
+                    child.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    child.wait(timeout=5)
+
+    def capture(child, window, name):
+        assert int(subprocess.check_output(['xdotool', 'getwindowpid', window])) == child.pid
+        path = output / (name + '.png')
+        subprocess.run(['import', '-window', window, str(path)], check=True, timeout=10)
+        with Image.open(path) as image:
+            return image.convert('RGB')
+
+    for edition, title in (('classic', 'Shovey Classic'), ('editor', 'Shovey Editor')):
+        bundle = args.bundle.resolve()
+        assert bundle.is_file(), bundle
+        with tempfile.TemporaryDirectory(prefix=edition + '-', dir=output) as directory:
+            profile = Path(directory)
+            with application(profile, edition + '-bootstrap', bundle):
+                assert (profile / 'inbe.db').is_file()
+            with sqlite3.connect(profile / 'inbe.db') as db:
+                user = db.execute("SELECT id FROM users WHERE kind='local' LIMIT 1").fetchone()[0]
+                settings = dict(language='en', language_system=0, language_setup_done=1,
+                                apps_setup_done=1, tutorial_seen=1, habits_guide_seen=1,
+                                launcher_guide_seen=1, lumi_guides_seen=127,
+                                app_used_practices=1, package_updates_allowed=0,
+                                apps_last_update_check=1900000000,
+                                node_apps_checked_at=int(time.time()), navigation_placement=2,
+                                node_apps_offers='arcade|Arcade\n', node_app_slot_0='arcade',
+                                app_used_arcade=1)
+                for key, value in settings.items():
+                    db.execute('INSERT INTO settings(user_id,key,value,updated_at) VALUES(?,?,?,1) '
+                               'ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value',
+                               (user, key, str(value)))
+            with application(profile, edition, bundle) as (child, window):
+                driver.wait(label='Apps', role='button')
+                driver.wait_idle(frames=12)
+                before_nodes = driver.tree()
+                before = capture(child, window, edition + '-before')
+                before_apps = driver.find(label='Apps', role='button', visible=True)[0]
+                origin = before_nodes[0]
+                before_box = (round(before_apps['x'] - origin['x']),
+                              round(before_apps['y'] - origin['y']),
+                              round(before_apps['x'] - origin['x'] + before_apps['width']),
+                              round(before_apps['y'] - origin['y'] + before_apps['height']))
+                driver.press(label='Apps', role='button')
+                driver.press(label='Arcade', role='button')
+                driver.wait_gone(label='Find an app', role='text_field', timeout=30)
+                driver.press(label='Shovey', role='button')
+                driver.press(label=title, role='button')
+                if edition == 'classic':
+                    driver.wait(label='Restart', role='button')
+                    driver.key('left')
+                else:
+                    driver.press(label='Island', role='button')
+                    driver.press(label='New level', role='button')
+                    driver.press(label='Play', role='button')
+                    driver.wait(label='Restart', role='button')
+                    driver.key('right')
+                driver.wait_idle(frames=12)
+                apps = driver.find(label='Apps', role='button', visible=True)
+                assert apps, f'{edition}: host navigation is missing'
+                dock = apps[0]
+                after = capture(child, window, edition + '-playing')
+                # The dock is drawn before the game. Its pixels must remain
+                # visible, even when a game's backdrop is opaque.
+                origin = driver.tree()[0]
+                box = (round(dock['x'] - origin['x']), round(dock['y'] - origin['y']),
+                       round(dock['x'] - origin['x'] + dock['width']),
+                       round(dock['y'] - origin['y'] + dock['height']))
+                (output / (edition + '-dock.json')).write_text(json.dumps({
+                    'before_apps': before_apps, 'before_origin': before_nodes[0],
+                    'apps': dock, 'origin': origin, 'before_box': before_box, 'box': box}, indent=2))
+                assert 0 <= box[0] < box[2] <= after.width and 0 <= box[1] < box[3] <= after.height, box
+                assert len(after.crop(box).getcolors(100000) or []) > 10, 'Apps dock pixels are blank'
+                difference = ImageChops.difference(before.crop(before_box), after.crop(box))
+                assert difference.getbbox() is None, f'{edition}: game painted over the host dock'
+                driver.press(label='Apps', role='button')
+                driver.wait(label='Find an app', role='text_field')
+                assert driver.find(label='Arcade', role='button'), f'{edition}: dock did not open Apps'
+    print('Inbe: Classic and Island editor play preserve bottom-dock pixels and its Apps action')
+
+
+if __name__ == '__main__':
+    main()

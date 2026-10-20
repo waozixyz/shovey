@@ -11,10 +11,11 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png' };
 
 function option(name) {
     const at = process.argv.indexOf(name);
@@ -24,8 +25,9 @@ function option(name) {
 function serve() {
     const server = createServer(async (request, response) => {
         const relative = decodeURIComponent(new URL(request.url, 'http://localhost').pathname).replace(/^\/+/, '');
-        const file = path.resolve(HERE, relative);
-        if (!file.startsWith(HERE + path.sep)) { response.writeHead(403).end(); return; }
+        const player = /^classic-player\/player-(up|right|down|left)\.png$/.test(relative);
+        const file = player ? path.join(ROOT, 'assets/shovey/sprites', path.basename(relative)) : path.resolve(HERE, relative);
+        if (!player && !file.startsWith(HERE + path.sep)) { response.writeHead(403).end(); return; }
         try {
             const body = await readFile(file);
             response.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' }).end(body);
@@ -66,7 +68,7 @@ async function main() {
                 sha256: createHash('sha256').update(bytes).digest('hex') });
             written += 1;
         }
-        if (!only) {
+        {
             // One manifest per asset folder, e.g. assets/shovey/art.json.
             const folders = new Map();
             for (const item of manifest) {
@@ -86,6 +88,7 @@ async function main() {
                 await writeFile(target, JSON.stringify(art, null, 2) + '\n');
             }
         }
+        execFileSync('python3', [path.join(ROOT, 'tools/pixel/share_player.py'), '--output-root', out], { stdio: 'inherit' });
         console.log(`wrote ${written} sprites`);
     } finally {
         await browser.close();

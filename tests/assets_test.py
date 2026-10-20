@@ -24,6 +24,14 @@ expected += [f'assets/shovey-island-landscape/player/{facing}.png' for facing in
 for path in expected:
     with Image.open(ROOT / path) as image:
         assert image.size == (128, 128) and image.mode == 'RGBA', path
+for index, facing in enumerate(('up', 'right', 'down', 'left'), 1):
+    classic_player = ROOT / f'assets/shovey/sprites/player-{facing}.png'
+    island_player = ROOT / f'assets/shovey-island/player/{index}.png'
+    assert classic_player.read_bytes() == island_player.read_bytes(), \
+        f'Island must use Classic\'s exact player facing {facing}'
+assert (ROOT / 'assets/shovey-island/tiles/56.png').read_bytes() == \
+    (ROOT / 'assets/shovey/sprites/player-up.png').read_bytes(), \
+    'Island\'s editor marker must use the same player'
 for path in ('assets/shovey/preview.png', 'assets/shovey-island/preview.png', 'assets/shovey-editor/preview.png'):
     with Image.open(ROOT / path) as image:
         assert image.size == (480, 288), path

@@ -7,6 +7,16 @@ APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 
 .PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-itch
 
+.PHONY: inbe-ui-test
+inbe-ui-test:
+	@test -n "$(INBE_BINARY)" || { echo 'Set INBE_BINARY to the intended Inbe host'; exit 2; }
+	@test -n "$(INBE_SOURCE)" || { echo 'Set INBE_SOURCE to the Inbe source'; exit 2; }
+	@test -n "$(ARCADE_BUNDLE)" || { echo 'Set ARCADE_BUNDLE to the Arcade collection'; exit 2; }
+	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS \
+		-u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy APP_NO_TRAY=1 \
+		timeout 240s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
+		python3 tests/inbe_navigation_ui_test.py --binary '$(INBE_BINARY)' --inbe-source '$(INBE_SOURCE)' --bundle '$(ARCADE_BUNDLE)'
+
 all: bundles
 
 # The JSON level files are the source; the game reads the generated code.

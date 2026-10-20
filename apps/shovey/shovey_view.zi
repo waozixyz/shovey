@@ -213,7 +213,7 @@ ShoveyFrame :: () {
     width := cast(float32)frame.width
     top := cast(float32)frame.top
     bottom := cast(float32)(frame.height - frame.bottom)
-    ShoveyDress(frame.session, width, top, cast(float32)frame.height)
+    ShoveyDress(frame.session, width, top, bottom)
     if selector_open {
         Caption(20103, Rectangle.{16.0, top + 12.0, width - 152.0, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {

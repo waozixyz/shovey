@@ -1,6 +1,24 @@
-// Shovey: a round jade pebble with a two-leaf sprout, big eyes and light
-// orange cheeks. Both editions use the same character.
+// The old model remains for the unused 3D Classic scene. Island and its
+// card use the same preserved bitmap player as the playable Classic game.
 import { THREE, C, mat, sphere, cylinder, group, at, turned, scaled } from './kit.js';
+
+const playerTextures = new Map();
+export const playerTexturesReady = Promise.all(['up', 'right', 'down', 'left'].map(async direction => {
+    const texture = await new THREE.TextureLoader().loadAsync(`/classic-player/player-${direction}.png`);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.magFilter = texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    playerTextures.set(direction, texture);
+}));
+
+export function classicPlayer(direction = 'up') {
+    const picture = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9),
+        new THREE.MeshBasicMaterial({ map: playerTextures.get(direction), transparent: true,
+            alphaTest: 0.01, side: THREE.DoubleSide, toneMapped: false }));
+    picture.rotation.x = -Math.PI / 2;
+    picture.position.y = 0.12;
+    return picture;
+}
 
 const LOOK = {
     up: { yaw: 0, eyeY: 0.12, pupil: [0, 0.035], lean: -0.18 },
