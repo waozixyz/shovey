@@ -21,7 +21,7 @@ bundles: levels
 web: bundles
 	rm -rf build/web
 	mkdir -p build/web
-	$(MAKE) -C '$(KRYON)' zib-canvas \
+	$(MAKE) -C '$(KRYON)' zib-canvas ZIRAN_ROOT='$(TOOLCHAIN)' \
 		ZIB_CANVAS_BUNDLE='$(abspath build/games/shovey.zib)' \
 		ZIB_CANVAS_PROGRAM='$(abspath build/web/runtime.html)'
 	cp apps/shovey/web/index.html build/web/index.html
