@@ -84,9 +84,13 @@ Caption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16, center: b
             .vertical_align = TextAlign.TextAlignCenter})
 }
 
-Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, detail: string = "") -> bool {
+// A button; with an icon it shows only the icon and keeps label for
+// screen readers and tooltips.
+Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, detail: string = "",
+    icon: string = "") -> bool {
     return Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id,
             .bounds = bounds, .label = label, .detail = detail, .disabled = disabled,
+            .icon_shape = icon, .icon_only = icon != "",
             .fit_content = true, .tone = ButtonTone.ButtonToneNeutral,
             .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
@@ -279,11 +283,18 @@ ShoveyFrame :: () {
     key := AppKeyHost()
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
-    // A compact bar: the board takes the rest of the screen.
-    if Control(20002, Rectangle.{8.0, top + 6.0, 88.0, 40.0}, AppLocaleHost("shovey_levels")) { selector_open = true }
-    Caption(20001, Rectangle.{104.0, top + 6.0, width - 312.0, 40.0}, HeaderText(), 18, true)
-    if Control(20016, Rectangle.{width - 200.0, top + 6.0, 96.0, 40.0}, AppLocaleHost("shovey_restart")) { ChangeLevel(game.level) }
-    if Control(20017, Rectangle.{width - 100.0, top + 6.0, 92.0, 40.0}, AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help")) {
+    // A compact bar of three icons, so the level's name keeps the width it
+    // needs on a phone: the board takes the rest of the screen.
+    if Control(20002, Rectangle.{8.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+        selector_open = true
+    }
+    Caption(20001, Rectangle.{60.0, top + 4.0, width - 172.0, 44.0}, HeaderText(), 18, true)
+    if Control(20016, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
+        ChangeLevel(game.level)
+    }
+    if Control(20017, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
+            AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
+            ifx help_open then ICON_CLOSE else ICON_HELP) {
         help_open = !help_open
     }
     if help_open {
@@ -334,7 +345,6 @@ ShoveyFrame :: () {
     area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
     SpriteNames()
     grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:])
-    board := grid.board
     // No move or piece counters: the line speaks only when there is news.
     status := ""
     status_icon := ""
@@ -362,8 +372,10 @@ ShoveyFrame :: () {
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     disabled := game.won || game.lost || game.level == ShoveyLevelCount()
-    // Touch: swipe on the board to step, or tap a cell to step towards it.
-    gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = board,
+    // Touch: swipe anywhere under the bar to step, or tap a cell to step
+    // towards it. The stick and Fire come after, so they stay on top.
+    play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
+    gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
             .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .disabled = disabled})
     joystick_allowed := ControlsJoystickAllowed()
     if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { joystick_hidden = true }

@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.1] - 2026-10-20
+
+- Swipe anywhere on the game screen to move, not only on the board.
+- The top bar shows Levels, Restart and Help as icons, so the level's name fits.
+
 ## [0.6.0] - 2026-10-19
 
 - Shovey is the game's new name everywhere, with a new public hero image and screenshots.

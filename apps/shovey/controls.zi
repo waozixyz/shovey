@@ -1,6 +1,12 @@
 host_api :: #system_library "host_api";
 AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
 
+// The game bar's icons, shared by every edition.
+ICON_LEVELS :: "S1.6rr:M5 5H10V10H5ZM14 5H19V10H14ZM5 14H10V19H5ZM14 14H19V19H14Z"
+ICON_RESTART :: "S1.6rr:M5 9C6.5 5.5 9 4 12 4C16.5 4 20 7.5 20 12C20 16.5 16.5 20 12 20C8.5 20 5.8 17.8 4.6 15M5 4V9H10"
+ICON_HELP :: "S1.6rr:M12 21C7 21 3 17 3 12C3 7 7 3 12 3C17 3 21 7 21 12C21 17 17 21 12 21ZM9.5 9.5C9.5 8.1 10.6 7 12 7C13.4 7 14.5 8.1 14.5 9.4C14.5 11.4 12 11.6 12 13.5M12 16.5V17"
+ICON_CLOSE :: "S2rr:M6 6L18 18M18 6L6 18"
+
 CONTROLS_AUTO :: 0;
 CONTROLS_ON :: 1;
 CONTROLS_OFF :: 2;
