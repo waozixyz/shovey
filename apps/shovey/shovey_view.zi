@@ -380,16 +380,16 @@ ShoveyFrame :: () {
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     disabled := game.won || game.lost || game.level == ShoveyLevelCount()
     // Touch: swipe anywhere under the bar to step, or tap a cell to step
-    // towards it. The stick and Fire come after, so they stay on top.
+    // towards it; hold either to keep walking. The stick and Fire come after, so they stay on top.
     play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
     gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
-            .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .disabled = disabled})
+            .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
     joystick_allowed := ControlsJoystickAllowed()
     if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { joystick_hidden = true }
     if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { joystick_hidden = false }
     if gesture.down && joystick_allowed { joystick_hidden = false }
     step := BoardEngineDirection(gesture.swiped, landscape)
-    if gesture.tapped {
+    if gesture.tapped || gesture.held {
         cell := TileMapCellAt(grid, gesture.x, gesture.y)
         cell = BoardLogicalIndex(cell, landscape)
         if cell >= 0 {

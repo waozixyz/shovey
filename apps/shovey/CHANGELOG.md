@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [0.6.4] - 2026-10-20
+
+- Hold a press or touch on the board to keep walking.
+
 ## [0.6.3] - 2026-10-20
 
 - Keep Inner Breeze's bottom navigation visible while playing.

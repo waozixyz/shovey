@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [0.2.3] - 2026-10-20
+
+- Hold a press or touch on the board to keep walking while testing a level.
+
 ## [0.2.2] - 2026-10-20
 
 - Island uses the same original player as Classic while editing and testing.

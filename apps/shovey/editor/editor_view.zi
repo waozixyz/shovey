@@ -1015,16 +1015,17 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
         grid = ShoveyBoard(editor_frame.session, *editor_play.classic, area, cast(u64)200000, editor_frame.now, editor_classic_names[:])
     }
     disabled := won || lost
-    // Swipe on the board to step, or tap a cell to step towards it.
+    // Swipe on the board to step, or tap a cell to step towards it; hold
+    // either to keep walking.
     gesture := SwipeArea(editor_frame.session, SwipeAreaProps.{.key = cast(u64)405, .id = 405, .bounds = grid.board,
-            .label = EditorText("editor_controls"), .now = editor_frame.now, .min_distance = grid.cell * 0.6, .disabled = disabled})
+            .label = EditorText("editor_controls"), .now = editor_frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
     joystick_allowed := ControlsJoystickAllowed()
     if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { editor_joystick_hidden = true }
     if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { editor_joystick_hidden = false }
     if gesture.down && joystick_allowed { editor_joystick_hidden = false }
     step := BoardEngineDirection(gesture.swiped, landscape)
     player := ifx editor_island then editor_play.isle.player else editor_play.classic.player
-    if gesture.tapped {
+    if gesture.tapped || gesture.held {
         cell := TileMapCellAt(grid, gesture.x, gesture.y)
         cell = BoardLogicalIndex(cell, landscape)
         if cell >= 0 {
