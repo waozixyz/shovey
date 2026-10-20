@@ -34,6 +34,7 @@
 #import "std/text_buffer"
 #import "std/json_scan"
 #import "apps/node_types"
+#import, file "../orientation.zi";
 #import, file "../engine.zi";
 #import, file "../shovey_board.zi";
 #import, file "../island/island_engine.zi";
@@ -252,29 +253,47 @@ EditorPictures :: () {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "assets/shovey-editor/classic/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
         sprite_files[kind] = BuilderFinish(bytes)
+        turned_tile: Vec(u8)
+        BuilderPrint(*turned_tile, "assets/shovey-editor/classic/sprites-landscape/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
+        landscape_sprite_files[kind] = BuilderFinish(turned_tile)
     }
     facings: [4]string = .["left", "up", "right", "down"]
     for direction: cast(s32)0..3 {
         player: Vec(u8)
         BuilderPrint(*player, "assets/shovey-editor/classic/sprites/player-%.png", facings[direction])
         sprite_files[SPRITE_PLAYER + direction] = BuilderFinish(player)
+        turned_player: Vec(u8)
+        BuilderPrint(*turned_player, "assets/shovey-editor/classic/sprites-landscape/player-%.png", facings[direction])
+        landscape_sprite_files[SPRITE_PLAYER + direction] = BuilderFinish(turned_player)
         charged: Vec(u8)
         BuilderPrint(*charged, "assets/shovey-editor/classic/sprites/charged-%.png", facings[direction])
         sprite_files[SPRITE_CHARGED + direction] = BuilderFinish(charged)
+        turned_charge: Vec(u8)
+        BuilderPrint(*turned_charge, "assets/shovey-editor/classic/sprites-landscape/charged-%.png", facings[direction])
+        landscape_sprite_files[SPRITE_CHARGED + direction] = BuilderFinish(turned_charge)
     }
     sprite_files[SPRITE_DOOR_OPEN] = "assets/shovey-editor/classic/sprites/door-open.png"
+    landscape_sprite_files[SPRITE_DOOR_OPEN] = "assets/shovey-editor/classic/sprites-landscape/door-open.png"
     for number: cast(s32)0..7 {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "assets/shovey-editor/classic/sprites/sensor-%.png", FormatInteger(cast(s64)(number + 1), digits[:]))
         sprite_files[SPRITE_SENSOR + number] = BuilderFinish(bytes)
+        turned_sensor: Vec(u8)
+        BuilderPrint(*turned_sensor, "assets/shovey-editor/classic/sprites-landscape/sensor-%.png", FormatInteger(cast(s64)(number + 1), digits[:]))
+        landscape_sprite_files[SPRITE_SENSOR + number] = BuilderFinish(turned_sensor)
     }
     sprite_files[SPRITE_SHOT] = "assets/shovey-editor/classic/sprites/projectile.png"
+    landscape_sprite_files[SPRITE_SHOT] = "assets/shovey-editor/classic/sprites-landscape/projectile.png"
     sprites_ready = true
     for number: cast(s32)0..ISLAND_PICTURES - 1 {
         bytes: Vec(u8)
         if number < ISLAND_TILES { BuilderPrint(*bytes, "assets/shovey-editor/island/tiles/%.png", number) }
         else { BuilderPrint(*bytes, "assets/shovey-editor/island/player/%.png", number - ISLAND_TILES + 1) }
         island_picture_files[number] = BuilderFinish(bytes)
+        turned: Vec(u8)
+        if number < ISLAND_TILES { BuilderPrint(*turned, "assets/shovey-editor/island/tiles-landscape/%.png", number) }
+        else { BuilderPrint(*turned, "assets/shovey-editor/island/player-landscape/%.png", number - ISLAND_TILES + 1) }
+        island_landscape_files[number] = BuilderFinish(turned)
     }
     island_pictures_ready = true
 }
@@ -773,17 +792,16 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
         status := ifx editor_notice_until > editor_frame.now then editor_notice else EditorCheckText()
         EditorCaption(304, Rectangle.{16.0, top + 50.0, width - 32.0, 24.0}, status, 14, true)
     }
-    // The palette beside the board when there is room, under it otherwise.
+    // The palette sits under the board, so the board itself keeps the
+    // screen's orientation instead of collapsing back into a narrow column.
     area := Rectangle.{8.0, top + 78.0, width - 16.0, bottom - top - 86.0}
-    side := area.width >= area.height * 1.25 && area.width >= 520.0
     board_area: Rectangle
     palette: Rectangle
-    if side {
-        palette_width := area.width * 0.3
-        if palette_width < 168.0 { palette_width = 168.0 }
-        if palette_width > 320.0 { palette_width = 320.0 }
-        board_area = Rectangle.{area.x, area.y, area.width - palette_width - 8.0, area.height}
-        palette = Rectangle.{area.x + area.width - palette_width, area.y, palette_width, area.height}
+    if BoardLandscape(area.width, area.height) {
+        board_height := area.width * 3.0 / 5.0
+        if board_height > area.height * 0.68 { board_height = area.height * 0.68 }
+        board_area = Rectangle.{area.x, area.y, area.width, board_height}
+        palette = Rectangle.{area.x, area.y + board_height + 8.0, area.width, area.height - board_height - 8.0}
     } else {
         board_height := area.width * 5.0 / 3.0
         if board_height > area.height * 0.62 { board_height = area.height * 0.62 }
@@ -791,11 +809,13 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
         palette = Rectangle.{area.x, area.y + board_height + 8.0, area.width, area.height - board_height - 8.0}
     }
     grid := EditorBoard(*editor_level.board, board_area, cast(u64)200000)
+    landscape := BoardLandscape(board_area.width, board_area.height)
     // Tap or drag to paint, one stroke while the press lasts.
     press := Press(editor_frame.session, PressProps.{.key = cast(u64)305, .id = 305, .bounds = grid.board,
             .label = EditorText("editor_board"), .now = editor_frame.now, .capture = true, .hold_seconds = 3600.0})
     if press.down {
         cell := TileMapCellAt(grid, press.x, press.y)
+        cell = BoardLogicalIndex(cell, landscape)
         if !editor_stroke {
             editor_stroke = true
             editor_stroke_cell = -1
@@ -949,12 +969,13 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
         editor_play_tick = editor_frame.now
     }
     keyed: s32 = -1
+    landscape := BoardLandscape(width, bottom - top)
     key := editor_key
     if key == 263 || key == 65 { keyed = 0 }
     if key == 265 || key == 87 { keyed = 1 }
     if key == 262 || key == 68 { keyed = 2 }
     if key == 264 || key == 83 { keyed = 3 }
-    if keyed >= 0 { editor_joystick_hidden = true; EditorAct(keyed) }
+    if keyed >= 0 { editor_joystick_hidden = true; EditorAct(BoardEngineDirection(keyed, landscape)) }
     if key == 32 && !editor_island { EditorAct(-1) }
     if !editor_island && editor_frame.now - editor_play_tick >= 1.0 {
         unused EditPlayTick(*editor_play)
@@ -1001,10 +1022,11 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { editor_joystick_hidden = true }
     if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { editor_joystick_hidden = false }
     if gesture.down && joystick_allowed { editor_joystick_hidden = false }
-    step := gesture.swiped
+    step := BoardEngineDirection(gesture.swiped, landscape)
     player := ifx editor_island then editor_play.isle.player else editor_play.classic.player
     if gesture.tapped {
         cell := TileMapCellAt(grid, gesture.x, gesture.y)
+        cell = BoardLogicalIndex(cell, landscape)
         if cell >= 0 {
             step = TouchDirection(cast(float32)(cell % EDIT_WIDTH - player % EDIT_WIDTH),
                 cast(float32)(cell / EDIT_WIDTH - player / EDIT_WIDTH), 1.0)
@@ -1018,7 +1040,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
         stick := Joystick(editor_frame.session, JoystickProps.{.key = cast(u64)406, .id = 406,
                 .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size}, .repeat_seconds = 0.16,
                 .label = EditorText("editor_controls"), .now = editor_frame.now})
-        if stick.step { step = stick.direction }
+        if stick.step { step = BoardEngineDirection(stick.direction, landscape) }
         if !editor_island && (editor_play.classic.powers & SHOVEY_AMMO) != 0 {
             if EditorControl(407, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, EditorText("editor_throw")) { EditorAct(-1) }
         }

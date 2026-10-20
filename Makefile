@@ -5,7 +5,7 @@ TOOLCHAIN = $(shell $(ZIRAN) pkg path ziran $(LOCK_FLAGS))
 KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 
-.PHONY: all levels bundles previews art solver bench test play import-tool editor-card web web-itch
+.PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-itch
 
 all: bundles
 
@@ -15,7 +15,10 @@ levels: apps/shovey/levels.zi apps/shovey/island_levels.zi
 apps/shovey/levels.zi apps/shovey/island_levels.zi: levels/classic.json levels/island.json tools/levels/levels.py
 	python3 tools/levels/levels.py generate
 
-bundles: levels
+landscape:
+	python3 tools/levels/landscape.py --check
+
+bundles: levels landscape
 	python3 scripts/build-bundles.py --toolchain '$(TOOLCHAIN)' --kryon '$(KRYON)' --apps '$(APPS)'
 
 web: bundles
@@ -56,6 +59,7 @@ bench: levels build/ziran/libziran.a
 
 test: solver
 	python3 tools/levels/levels.py generate --check
+	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
 	python3 tests/assets_test.py
 	sh tests/engine_test.sh '$(TOOLCHAIN)'

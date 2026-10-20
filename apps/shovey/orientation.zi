@@ -1,0 +1,34 @@
+// One logical 12 by 20 board, presented portrait or rotated for landscape.
+// The engines never change orientation; only these mappings do.
+BOARD_WIDTH :: 12
+BOARD_HEIGHT :: 20
+BOARD_CELLS :: 240
+
+BoardLandscape :: (width: float32, height: float32) -> bool {
+    return width > height
+}
+
+// A logical cell's place in the drawn grid. Landscape is the inverse of the
+// clockwise rotation used to make the portrait story files.
+BoardDisplayIndex :: (at: s32, landscape: bool) -> s32 {
+    if at < 0 || at >= BOARD_CELLS { return -1 }
+    if !landscape { return at }
+    x := at % BOARD_WIDTH
+    y := at / BOARD_WIDTH
+    return (BOARD_WIDTH - 1 - x) * BOARD_HEIGHT + y
+}
+
+BoardLogicalIndex :: (at: s32, landscape: bool) -> s32 {
+    if at < 0 || at >= BOARD_CELLS { return -1 }
+    if !landscape { return at }
+    x := at % BOARD_HEIGHT
+    y := at / BOARD_HEIGHT
+    return (BOARD_WIDTH - 1 - y) + x * BOARD_WIDTH
+}
+
+// Direction is left, up, right, down. In landscape, the visible direction
+// is one quarter turn ahead of the engine's portrait direction.
+BoardEngineDirection :: (visible: s32, landscape: bool) -> s32 {
+    if visible < 0 || visible > 3 { return -1 }
+    return ifx landscape then (visible + 1) % 4 else visible
+}

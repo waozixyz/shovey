@@ -24,6 +24,7 @@
 #import "apps/node_types"
 #import "tile_map"
 #import "widget_palette"
+#import, file "orientation.zi";
 #import, file "engine.zi";
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
@@ -330,13 +331,14 @@ ShoveyFrame :: () {
     }
     before_direction := game.direction
     changed := false
+    landscape := BoardLandscape(width, bottom - top)
     keyed: s32 = -1
     if key == 263 || key == 65 { keyed = 0 }
     if key == 265 || key == 87 { keyed = 1 }
     if key == 262 || key == 68 { keyed = 2 }
     if key == 264 || key == 83 { keyed = 3 }
     // A keyboard player does not need the on-screen stick until they touch.
-    if keyed >= 0 { joystick_hidden = true; changed = ShoveyAct(keyed) }
+    if keyed >= 0 { joystick_hidden = true; changed = ShoveyAct(BoardEngineDirection(keyed, landscape)) }
     if key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
     if frame.now - last_tick >= 1.0 {
@@ -384,9 +386,10 @@ ShoveyFrame :: () {
     if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { joystick_hidden = true }
     if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { joystick_hidden = false }
     if gesture.down && joystick_allowed { joystick_hidden = false }
-    step := gesture.swiped
+    step := BoardEngineDirection(gesture.swiped, landscape)
     if gesture.tapped {
         cell := TileMapCellAt(grid, gesture.x, gesture.y)
+        cell = BoardLogicalIndex(cell, landscape)
         if cell >= 0 {
             step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
                 cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
@@ -400,7 +403,7 @@ ShoveyFrame :: () {
         stick := Joystick(frame.session, JoystickProps.{.key = cast(u64)20020, .id = 20020,
                 .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size}, .repeat_seconds = 0.16,
                 .label = AppLocaleHost("shovey_controls"), .now = frame.now})
-        if stick.step { step = stick.direction }
+        if stick.step { step = BoardEngineDirection(stick.direction, landscape) }
         if (game.powers & SHOVEY_AMMO) != 0 {
             if Control(20018, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, AppLocaleHost("shovey_fire"), disabled) {
                 changed = ShoveyAct(-1) || changed

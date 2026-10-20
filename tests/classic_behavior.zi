@@ -1,4 +1,5 @@
 #import, file "../apps/shovey/engine.zi";
+#import, file "../apps/shovey/orientation.zi";
 #import, file "../apps/shovey/progress.zi";
 
 // Opening the game lands on the newest unlocked puzzle; an unfinished
@@ -59,6 +60,25 @@ BoardChecks :: () -> s32 {
     }
     // The finale is a picture: Shovey cannot move there.
     if !ShoveyLoad(*game, ShoveyLevelCount()) || ShoveyMove(*game, 0) || ShoveyMove(*game, 2) { return 32 }
+    return 0
+}
+
+// Landscape is only a presentation: every logical cell has exactly one
+// drawn place, and every drawn place maps back to the same logical cell.
+OrientationChecks :: () -> s32 {
+    seen: [BOARD_CELLS]bool
+    for at: cast(s32)0..BOARD_CELLS - 1 {
+        display := BoardDisplayIndex(at, true)
+        if display < 0 || seen[display] || BoardLogicalIndex(display, true) != at { return 70 }
+        seen[display] = true
+        if BoardDisplayIndex(at, false) != at || BoardLogicalIndex(at, false) != at { return 71 }
+    }
+    if BoardDisplayIndex(11, true) != 0 || BoardLogicalIndex(0, true) != 11 { return 72 }
+    if BoardDisplayIndex(228, true) != 239 || BoardLogicalIndex(239, true) != 228 { return 73 }
+    for direction: cast(s32)0..3 {
+        if BoardEngineDirection(direction, true) != (direction + 1) % 4 { return 74 }
+        if BoardEngineDirection(direction, false) != direction { return 75 }
+    }
     return 0
 }
 
@@ -136,5 +156,7 @@ Check :: () -> s32 {
     if result != 0 { return result }
     result = TickChecks()
     if result != 0 { return result }
-    return BoardChecks()
+    result = BoardChecks()
+    if result != 0 { return result }
+    return OrientationChecks()
 }

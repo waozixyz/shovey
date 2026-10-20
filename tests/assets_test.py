@@ -16,8 +16,11 @@ classic = [f'tile-{kind}' for kind in range(41)]
 classic += [f'{kind}-{facing}' for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
 classic += ['shadow', 'door-open', 'projectile'] + [f'sensor-{frame}' for frame in range(1, 9)]
 expected = [f'assets/shovey/sprites/{name}.png' for name in classic]
+expected += [f'assets/shovey-landscape/sprites/{name}.png' for name in classic]
 expected += [f'assets/shovey-island/tiles/{kind}.png' for kind in range(125) if kind not in (50, 79)]
+expected += [f'assets/shovey-island-landscape/tiles/{kind}.png' for kind in range(125) if kind not in (50, 79)]
 expected += [f'assets/shovey-island/player/{facing}.png' for facing in range(1, 5)]
+expected += [f'assets/shovey-island-landscape/player/{facing}.png' for facing in range(1, 5)]
 for path in expected:
     with Image.open(ROOT / path) as image:
         assert image.size == (128, 128) and image.mode == 'RGBA', path
@@ -32,7 +35,8 @@ for path in (ROOT / 'assets/shovey-island/levels').glob('*.png'):
         assert image.size == (192, 320), path
 
 listed = set()
-for folder in ('assets/shovey', 'assets/shovey-island', 'assets/shovey-editor'):
+for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-island',
+               'assets/shovey-island-landscape', 'assets/shovey-editor'):
     art = json.loads((ROOT / folder / 'art.json').read_text())
     for item in art['files']:
         data = (ROOT / folder / item['path']).read_bytes()

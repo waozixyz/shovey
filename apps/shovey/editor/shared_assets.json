@@ -2,11 +2,14 @@
   "about": "A bundle may hold only its own assets/<name>/ folder. The editor draws both editions' boards and plays their sounds, so builders copy these into its folder: each 'from' (a file or folder of this package) to assets/shovey-editor/<to>.",
   "copies": [
     {"from": "assets/shovey/sprites", "to": "classic/sprites"},
+    {"from": "assets/shovey-landscape", "to": "classic/sprites-landscape"},
     {"from": "assets/shovey/sounds", "to": "classic/sounds"},
     {"from": "assets/shovey/levels", "to": "classic/levels"},
     {"from": "assets/shovey/preview.png", "to": "classic/preview.png"},
     {"from": "assets/shovey-island/tiles", "to": "island/tiles"},
     {"from": "assets/shovey-island/player", "to": "island/player"},
+    {"from": "assets/shovey-island-landscape/tiles", "to": "island/tiles-landscape"},
+    {"from": "assets/shovey-island-landscape/player", "to": "island/player-landscape"},
     {"from": "assets/shovey-island/sounds", "to": "island/sounds"},
     {"from": "assets/shovey-island/levels", "to": "island/levels"},
     {"from": "assets/shovey-island/preview.png", "to": "island/preview.png"}
