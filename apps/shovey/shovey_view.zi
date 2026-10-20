@@ -23,10 +23,12 @@
 #import "byte_text_linux"
 #import "apps/node_types"
 #import "tile_map"
+#import "widget_palette"
 #import, file "engine.zi";
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
 #import, file "controls.zi";
+#import, file "shovey_theme.zi";
 host_api :: #system_library "host_api";
 ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
 AppLocaleHost :: (key: string) -> string #foreign host_api;
@@ -208,6 +210,7 @@ ShoveyFrame :: () {
     width := cast(float32)frame.width
     top := cast(float32)frame.top
     bottom := cast(float32)(frame.height - frame.bottom)
+    ShoveyDress(frame.session, width, top, cast(float32)frame.height)
     if selector_open {
         Caption(20103, Rectangle.{16.0, top + 12.0, width - 152.0, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {

@@ -1,0 +1,27 @@
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/box_props"
+#import "kryon/box_widget"
+#import "kryon/widget_palette"
+
+// Every Shovey screen wears the courtyard's own colours, in whatever app it
+// runs: a slate backdrop, raised stone controls and Shovey's green for what
+// is chosen. The host draws the widgets, so each frame asks it for this
+// palette first; the host goes back to its own style when the frame ends.
+SHOVEY_SLATE :: 0x2a2e2dff;
+
+ShoveyPalette :: () -> WidgetPalette {
+    return WidgetPalette.{.background = cast(u32)SHOVEY_SLATE, .base = cast(u32)0x3b403fff,
+        .text = cast(u32)0xe8eceaff, .selected = cast(u32)0x34b930ff,
+        .selected_text = cast(u32)0x00210cff, .border = cast(u32)0x5d6261ff,
+        .danger = cast(u32)0xe60000ff, .warning = cast(u32)0xffca0cff,
+        .success = cast(u32)0x34b930ff, .material = true}
+}
+
+// Asks for Shovey's palette and lays the slate under the whole screen.
+ShoveyDress :: (session: Session, width: float32, top: float32, height: float32) {
+    unused WidgetPaletteUse(session, ShoveyPalette())
+    Box(session, BoxProps.{.key = cast(u64)19990, .bounds = Rectangle.{0.0, top, width, height - top},
+            .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
+}
