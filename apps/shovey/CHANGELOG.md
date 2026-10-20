@@ -4,6 +4,7 @@
 
 - Shovey is the game's new name everywhere, with a new public hero image and screenshots.
 - The checker proves story levels with replayed routes, including level 154's ten-crate puzzle.
+- Play the same Shovey bundle in the browser and on itch.io.
 - The board tiles touch without seams inside Arcade and the desktop app.
 - A new story puzzle joins the courtyard, and the later levels keep their places.
 
