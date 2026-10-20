@@ -35,22 +35,22 @@ Count :: (board: *EditBoard, kind: u8) -> s32 {
 // him, and Classic's wall ring stays.
 PaintChecks :: () -> s32 {
     board := EditNewBoard(false)
-    if EditShovey(*board) != 104 || Count(*board, 10) != 1 || Count(*board, 7) != 1 { return 10 }
-    if !EditPaint(*board, 10, 30) || EditShovey(*board) != 30 || Count(*board, 10) != 1 || board.ground[104] != 0 { return 11 }
+    if EditShovey(*board) != 54 || Count(*board, 10) != 1 || Count(*board, 7) != 1 { return 10 }
+    if !EditPaint(*board, 10, 30) || EditShovey(*board) != 30 || Count(*board, 10) != 1 || board.ground[54] != 0 { return 11 }
     if EditPaint(*board, 0, 30) || EditPaint(*board, 9, 30) || EditShovey(*board) != 30 { return 12 }
     if EditPaint(*board, 9, 0) || EditPaint(*board, 0, 239) || board.ground[0] != 12 { return 13 }
     if !EditPaint(*board, 9, 50) || board.ground[50] != 9 || EditPaint(*board, 9, 50) { return 14 }
     if EditPaint(*board, 22, 51) || EditPaint(*board, 41, 51) || EditPick(*board, 50) != 9 { return 15 }
     isle := EditNewBoard(true)
     shovey := EditShovey(*isle)
-    if shovey != 127 || Count(*isle, 56) != 1 || Count(*isle, 75) != 1 { return 16 }
+    if shovey != 89 || Count(*isle, 56) != 1 || Count(*isle, 75) != 1 { return 16 }
     // Shovey stays on land, objects never cover him, and water washes objects away.
     if EditPaint(*isle, 0, shovey) || EditPaint(*isle, 57, shovey) || EditPaint(*isle, EDIT_CLEAR, shovey) { return 17 }
     if EditPaint(*isle, 56, 0) || EditShovey(*isle) != shovey { return 18 }
     if !EditPaint(*isle, 57, 128) || isle.objects[128] != 57 || !EditPaint(*isle, EDIT_CLEAR, 128) || isle.objects[128] != 0 { return 19 }
     if !EditPaint(*isle, 57, 128) || !EditPaint(*isle, 0, 128) || isle.objects[128] != 0 || isle.ground[128] != 0 { return 20 }
-    if !EditPaint(*isle, 56, 106) || Count(*isle, 56) != 1 || EditShovey(*isle) != 106 { return 21 }
-    if EditPick(*isle, 106) != 56 || EditPick(*isle, 65) != 1 || EditPick(*isle, 0) != 0 { return 22 }
+    if !EditPaint(*isle, 56, 102) || Count(*isle, 56) != 1 || EditShovey(*isle) != 102 { return 21 }
+    if EditPick(*isle, 102) != 56 || EditPick(*isle, 65) != 1 || EditPick(*isle, 0) != 0 { return 22 }
     return 0
 }
 
@@ -59,20 +59,20 @@ PaintChecks :: () -> s32 {
 CoastChecks :: () -> s32 {
     isle := EditNewBoard(true)
     // The new island's corners and sides.
-    if isle.ground[65] != 2 || isle.ground[74] != 3 || isle.ground[174] != 4 || isle.ground[165] != 5 { return 30 }
-    if isle.ground[66] != 8 || isle.ground[85] != 12 || isle.ground[94] != 9 || isle.ground[166] != 11 { return 31 }
+    if isle.ground[63] != 2 || isle.ground[68] != 3 || isle.ground[176] != 4 || isle.ground[171] != 5 { return 30 }
+    if isle.ground[66] != 8 || isle.ground[87] != 12 || isle.ground[174] != 11 || isle.ground[152] != 9 { return 31 }
     // A meadow in the middle gets banks; filling the gap back makes plain sand.
-    unused EditPaint(*isle, 13, 109)
-    if isle.ground[109] != 18 { return 32 }
+    unused EditPaint(*isle, 13, 112)
+    if isle.ground[112] != 18 { return 32 }
     // Two meadow cells side by side make a narrow strip with banks above and below.
-    unused EditPaint(*isle, 13, 110)
-    if isle.ground[109] != 18 || isle.ground[110] != 18 { return 33 }
-    unused EditPaint(*isle, 1, 109)
-    unused EditPaint(*isle, 1, 110)
-    if isle.ground[109] != 1 || isle.ground[110] != 1 { return 34 }
+    unused EditPaint(*isle, 13, 113)
+    if isle.ground[112] != 18 || isle.ground[113] != 18 { return 33 }
+    unused EditPaint(*isle, 1, 112)
+    unused EditPaint(*isle, 1, 113)
+    if isle.ground[112] != 1 || isle.ground[113] != 1 { return 34 }
     // Water bites a bay into the shore; the neighbours follow.
-    unused EditPaint(*isle, 0, 70)
-    if isle.ground[70] != 0 || isle.ground[90] != 8 || isle.ground[69] != 3 || isle.ground[71] != 2 { return 35 }
+    unused EditPaint(*isle, 0, 66)
+    if isle.ground[66] != 0 || isle.ground[78] != 8 || isle.ground[65] != 3 || isle.ground[67] != 2 { return 35 }
     total: s32 = 0
     differ: s32 = 0
     for number: cast(s32)1..IslandLevelCount() {
@@ -150,26 +150,27 @@ RecordChecks :: () -> s32 {
 PlayChecks :: () -> s32 {
     board := EditNewBoard(false)
     if !EditPlayStart(*play, *board) { return 70 }
-    if !EditPlayAct(*play, 2) || !EditPlayAct(*play, 2) || play.route_length != 2 { return 71 }
-    if !EditPlayUndo(*play) || play.route_length != 1 || play.classic.player != 105 { return 72 }
-    for step: cast(s32)0..9 { unused EditPlayAct(*play, 2) }
-    if !EditPlayProven(*play) || EditField(play.route[:], play.route_length) != "22222222222" { return 73 }
+    if !EditPlayAct(*play, 3) || !EditPlayAct(*play, 3) || play.route_length != 2 { return 71 }
+    if !EditPlayUndo(*play) || play.route_length != 1 || play.classic.player != 66 { return 72 }
+    for step: cast(s32)0..9 { unused EditPlayAct(*play, 3) }
+    if !EditPlayProven(*play) || EditField(play.route[:], play.route_length) != "33333333333" { return 73 }
     at: s32 = 0
-    if EditReplay(*play, *board, "22222222222", *at, 100) != 1 { return 74 }
+    if EditReplay(*play, *board, "33333333333", *at, 100) != 1 { return 74 }
     at = 0
-    if EditReplay(*play, *board, "2222222222", *at, 100) != 0 { return 75 }
+    if EditReplay(*play, *board, "3333333333", *at, 100) != 0 { return 75 }
     at = 0
-    if EditReplay(*play, *board, "222222222x2", *at, 100) != 0 { return 76 }
+    if EditReplay(*play, *board, "333333333x", *at, 100) != 0 { return 76 }
     // A long replay waits for the next call.
     at = 0
-    if EditReplay(*play, *board, "22222222222", *at, 4) != -1 || at != 4 { return 77 }
-    if EditReplay(*play, *board, "22222222222", *at, 100) != 1 { return 78 }
+    if EditReplay(*play, *board, "33333333333", *at, 3) != -1 || at != 3 { return 77 }
+    if EditReplay(*play, *board, "33333333333", *at, 100) != 1 { return 78 }
     isle := EditNewBoard(true)
     if !EditPlayStart(*play, *isle) || EditPlayAct(*play, -1) { return 79 }
-    // Into the hut from below: right five times, then up twice.
-    for step: cast(s32)0..4 { unused EditPlayAct(*play, 2) }
-    unused EditPlayAct(*play, 1)
-    if EditPlayWon(*play) || !EditPlayAct(*play, 1) || !EditPlayProven(*play) || EditField(play.route[:], play.route_length) != "2222211" { return 80 }
+    // Into the hut from above: down five times, then right twice.
+    for step: cast(s32)0..4 { unused EditPlayAct(*play, 3) }
+    unused EditPlayAct(*play, 2)
+    if EditPlayWon(*play) || !EditPlayAct(*play, 2) { return 80 }
+    if !EditPlayProven(*play) || EditField(play.route[:], play.route_length) != "3333322" { return 80 }
     return 0
 }
 
@@ -188,10 +189,10 @@ SolverChecks :: () -> s32 {
     at: s32 = 0
     if EditReplay(*play, *board, SolverRoute(), *at, 100000) != 1 { return 91 }
     // Walled in: every reachable state is seen and none wins.
-    unused EditPaint(*board, 12, 103)
-    unused EditPaint(*board, 12, 105)
-    unused EditPaint(*board, 12, 84)
-    unused EditPaint(*board, 12, 124)
+    unused EditPaint(*board, 12, 53)
+    unused EditPaint(*board, 12, 55)
+    unused EditPaint(*board, 12, 42)
+    unused EditPaint(*board, 12, 66)
     if Solve(false, EditBoardHex(*board), 2000000) != SOLVER_NEVER || SolverRoute() != "" { return 92 }
     checks: [4]s32 = .[2, 12, 1, 40]
     for index: cast(s32)0..3 {
@@ -213,12 +214,12 @@ ExportChecks :: () -> s32 {
     summary := EditSummary.{.id = 3, .from = 12}
     EditSetName(*summary, "My \"best\" level")
     level.board = EditNewBoard(false)
-    unused EditSetRoute(*level, "22222222222")
+    unused EditSetRoute(*level, "33333333333")
     EditExportBegin(*writer)
     EditExportLevel(*writer, *summary, *level, true, "")
     summary.from = 0
     level.board = EditNewBoard(true)
-    unused EditSetRoute(*level, "2222211")
+    unused EditSetRoute(*level, "3333322")
     EditExportLevel(*writer, *summary, *level, false, "")
     EditExportEnd(*writer)
     text := TextView(text_bytes[0:writer.length])
@@ -228,7 +229,7 @@ ExportChecks :: () -> s32 {
     second := ElementAt(text, list, 1)
     number := ReadNumber(text, FieldAt(text, first, "number"))
     if !number.valid || number.value != 12.0 || FieldAt(text, second, "number") >= 0 { return 111 }
-    if ArrayCount(text, FieldAt(text, first, "cells")) != 12 || ArrayCount(text, FieldAt(text, second, "objects")) != 12 { return 112 }
+    if ArrayCount(text, FieldAt(text, first, "cells")) != 20 || ArrayCount(text, FieldAt(text, second, "objects")) != 20 { return 112 }
     name: [64]u8
     if SharingText(text, first, "name", name[:]) != 15 || TextView(name[0:15]) != "My \"best\" level" { return 113 }
     return 0
@@ -240,7 +241,7 @@ ShareChecks :: () -> s32 {
         writer := EditWriter.{.bytes = text_bytes[:]}
         SharingDocumentBegin(*writer, island, "Weekend «puzzles»")
         level.board = EditNewBoard(island)
-        unused EditSetRoute(*level, ifx island then "2222211" else "22222222222")
+        unused EditSetRoute(*level, ifx island then "3333322" else "33333333333")
         SharingDocumentLevel(*writer, "First", *level, true)
         unused EditSetRoute(*level, "2")
         SharingDocumentLevel(*writer, "Unproven", *level, false)

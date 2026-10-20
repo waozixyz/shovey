@@ -6,7 +6,7 @@
 //
 // A collection, UTF-8 JSON:
 //   {"format":"shovey-levels-1","edition":"classic","title":"...",
-//    "levels":[{"name":"...","cells":[12 rows of 40 hex digits],"route":"..."}]}
+//    "levels":[{"name":"...","cells":[20 rows of 24 hex digits],"route":"..."}]}
 // Island levels have "terrain" and "objects" in place of "cells". Every level
 // carries a route that wins it; a level whose route does not replay to a win
 // is refused. The author comes from the host's account, never from the game.
@@ -281,7 +281,7 @@ SharingDocumentRead :: (text: string, at: s32, document: *SharingDocument) -> bo
     return document.count >= 0 && document.count <= SHARING_LEVELS
 }
 
-// One layer's rows (12 strings of 40 hex digits) into hex, from the array at `at`.
+// One layer's rows (20 strings of 24 hex digits) into hex, from the array at `at`.
 SharingRows :: (text: string, at: s32, hex: []u8, offset: s32) -> bool {
     if at < 0 { return false }
     rows: [EDIT_HEIGHT + 1]s32

@@ -11,10 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 SOLVER = ROOT / 'build/solver'
 
 
+WIDTH, HEIGHT, CELLS = 12, 20, 240
+
+
 def cells(rows):
-    assert len(rows) == 12 and all(len(row) == 40 for row in rows)
+    assert len(rows) == HEIGHT and all(len(row) == WIDTH * 2 for row in rows)
     text = ''.join(rows)
-    return [int(text[at:at + 2], 16) for at in range(0, 480, 2)]
+    return [int(text[at:at + 2], 16) for at in range(0, CELLS * 2, 2)]
 
 
 def verify(edition, level, board, route):
@@ -34,7 +37,7 @@ for level in classic:
     assert board.count(10) == 1, f'Classic {level["number"]}: one Shovey'
     assert board.count(7) >= 1, f'Classic {level["number"]}: a home'
     assert all(kind <= 40 and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
-    assert all(board[at] == 12 for at in range(240) if at < 20 or at >= 220 or at % 20 in (0, 19)), \
+    assert all(board[at] == 12 for at in range(CELLS) if at < WIDTH or at >= CELLS - WIDTH or at % WIDTH in (0, WIDTH - 1)), \
         f'Classic {level["number"]}: walled border'
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
     # The last Classic level is the finale picture, with nothing to solve.

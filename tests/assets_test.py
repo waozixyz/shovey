@@ -24,6 +24,12 @@ for path in expected:
 for path in ('assets/shovey/preview.png', 'assets/shovey-island/preview.png', 'assets/shovey-editor/preview.png'):
     with Image.open(ROOT / path) as image:
         assert image.size == (480, 288), path
+for path in (ROOT / 'assets/shovey/levels').glob('*.png'):
+    with Image.open(path) as image:
+        assert image.size == (192, 320), path
+for path in (ROOT / 'assets/shovey-island/levels').glob('*.png'):
+    with Image.open(path) as image:
+        assert image.size == (192, 320), path
 
 listed = set()
 for folder in ('assets/shovey', 'assets/shovey-island', 'assets/shovey-editor'):

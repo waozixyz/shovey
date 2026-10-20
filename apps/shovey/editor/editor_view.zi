@@ -679,7 +679,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     gap: float32 = 8.0
     cell_width := (width - 32.0 - gap * cast(float32)(columns - 1)) / cast(float32)columns
     custom_height: float32 = 64.0
-    story_height := cell_width * 0.6 + 40.0
+    story_height := cell_width * 5.0 / 3.0 + 40.0
     customs := catalog.count + 1
     custom_rows := (customs + columns - 1) / columns
     story_rows := (EditStoryCount(editor_island) + columns - 1) / columns
@@ -731,8 +731,8 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
             if Button(editor_frame.session, ButtonProps.{.key = key, .id = 260000 + number * 4, .bounds = cell,
                     .label = label, .detail = detail, .invisible = true}) != 0 { open_story = number }
             EditorImage(key + 1, EditorStoryPicture(editor_island, number),
-                Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.width * 0.6 - 8.0}, label)
-            EditorCaption(key + 2, Rectangle.{cell.x + 6.0, cell.y + cell.width * 0.6, cell.width - 12.0, 32.0},
+                Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.width * 5.0 / 3.0 - 8.0}, label)
+            EditorCaption(key + 2, Rectangle.{cell.x + 6.0, cell.y + cell.width * 5.0 / 3.0, cell.width - 12.0, 32.0},
                 ifx editor_island then EditorSay(3, "editor_story_named", cast(s64)number, detail) else label, 14)
         }
         unused End(editor_frame.session)
@@ -785,7 +785,7 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
         board_area = Rectangle.{area.x, area.y, area.width - palette_width - 8.0, area.height}
         palette = Rectangle.{area.x + area.width - palette_width, area.y, palette_width, area.height}
     } else {
-        board_height := area.width * 0.6
+        board_height := area.width * 5.0 / 3.0
         if board_height > area.height * 0.62 { board_height = area.height * 0.62 }
         board_area = Rectangle.{area.x, area.y, area.width, board_height}
         palette = Rectangle.{area.x, area.y + board_height + 8.0, area.width, area.height - board_height - 8.0}

@@ -70,10 +70,10 @@ ImportReadLevel :: (text: string, at: s32, island: bool, index: s32) -> bool {
     if island {
         if !SharingRows(text, FieldAt(text, at, "terrain"), import_hex[:], 0) ||
         !SharingRows(text, FieldAt(text, at, "objects"), import_hex[:], EDIT_CELLS * 2) {
-            return ImportFail("its terrain and objects are not 12 rows of 40 hex digits", index)
+            return ImportFail("its terrain and objects are not 20 rows of 24 hex digits", index)
         }
     } else if !SharingRows(text, FieldAt(text, at, "cells"), import_hex[:], 0) {
-        return ImportFail("its cells are not 12 rows of 40 hex digits", index)
+        return ImportFail("its cells are not 20 rows of 24 hex digits", index)
     }
     layers: s32 = ifx island then 2 else 1
     // Rows are stored in lower case, as the level files keep them.
@@ -203,7 +203,7 @@ StoredRead :: (file: *StoredFile, island: bool, text: string) -> bool {
         }
         for layer: cast(s32)0..(ifx island then 1 else 0) {
             rows: [EDIT_HEIGHT + 1]s32
-            if ArrayPositions(text, FieldAt(text, at, names[layer]), rows[:]) != EDIT_HEIGHT { return ImportFail("a board is not 12 rows") }
+            if ArrayPositions(text, FieldAt(text, at, names[layer]), rows[:]) != EDIT_HEIGHT { return ImportFail("a board is not 20 rows") }
             for row: cast(s32)0..EDIT_HEIGHT - 1 {
                 level.layers[layer][row] = ReadString(text, rows[row])
                 if !level.layers[layer][row].valid { return ImportFail("a board row is not text") }
@@ -250,7 +250,7 @@ ImportPutSpan :: (writer: *EditWriter, text: string, span: JsonSpan) {
 StoredWrite :: (writer: *EditWriter, file: *StoredFile, text: string) {
     EditPut(writer, "{\n \"edition\": ")
     EditPut(writer, ifx file.island then "\"island\"" else "\"classic\"")
-    EditPut(writer, ",\n \"width\": 20,\n \"height\": 12,\n \"levels\": [")
+    EditPut(writer, ",\n \"width\": 12,\n \"height\": 20,\n \"levels\": [")
     layer_names: [2]string = .[ifx file.island then "terrain" else "cells", "objects"]
     for index: cast(s32)0..file.count - 1 {
         level := *file.levels[index]

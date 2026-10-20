@@ -1,9 +1,9 @@
-// Shovey Classic: a bounded 20 by 12 board, independent of graphics and storage.
+// Shovey Classic: a bounded 12 by 20 board, independent of graphics and storage.
 #import "text_buffer"
 #import, file "levels.zi";
 
-SHOVEY_WIDTH :: 20
-SHOVEY_HEIGHT :: 12
+SHOVEY_WIDTH :: 12
+SHOVEY_HEIGHT :: 20
 SHOVEY_CELLS :: 240
 SHOVEY_TRAIL :: 1
 SHOVEY_REVERSE :: 2
@@ -333,14 +333,14 @@ ShoveyTick :: (game: *ShoveyGame) -> bool {
     for block: cast(s32)0..SHOVEY_CELLS - 1 {
         if !occupied[block] { continue }
         direction := game.light_from[block]
-        if direction == 4 { direction = 1 }
+        if direction == 4 { direction = 2 }
         to := ShoveyNeighbor(block, direction)
         if to < 0 || occupied[to] || reserved[to] || game.objects[to] != 0 ||
         (game.ground[to] != 30 && game.ground[to] != 31) { to = -1 }
         if to < 0 {
-            order: [4]s32 = .[2, 0, 1, 3]
-            if direction == 0 || direction == 2 {
-                order[0] = 1; order[1] = 3; order[2] = 2; order[3] = 0
+            order: [4]s32 = .[3, 1, 2, 0]
+            if direction == 1 || direction == 3 {
+                order[0] = 2; order[1] = 0; order[2] = 3; order[3] = 1
             }
             for terrain: cast(s32)30..31 {
                 for next: order {

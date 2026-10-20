@@ -73,7 +73,7 @@ Check :: () -> s32 {
     third := Name(island, 3, story_name[:])
     // Two Classic levels (one replaces story level 2) and two islands (one
     // replaces island 3, one is new and takes a name no island has).
-    routes: [2]string = .["22222222222", "2222211"]
+    routes: [2]string = .["33333333333", "3333322"]
     classic_out := EditWriter.{.bytes = classic_bytes[:]}
     island_out := EditWriter.{.bytes = island_bytes[:]}
     if !ImportEdits(Export(routes[:]), classic, island, false, *classic_out, *island_out) { return 20 }
@@ -82,7 +82,7 @@ Check :: () -> s32 {
     fresh := EditNewBoard(false)
     if Count(merged_classic) != classics + 1 || Row(merged_classic, 2, "cells", 5) != EditBoardRow(*fresh, 0, 5) { return 21 }
     // The new level comes before the finale, which stays last without a solution.
-    if Row(merged_classic, classics, "cells", 1) != "0c0000000000000000000900000000000000000c" ||
+    if Row(merged_classic, classics, "cells", 1) != EditBoardRow(*fresh, 0, 1) ||
     FieldAt(merged_classic, Level(merged_classic, classics + 1), "solution") >= 0 ||
     Row(merged_classic, classics + 1, "cells", 3) != Row(classic, classics, "cells", 3) { return 22 }
     names: [128]u8
@@ -100,7 +100,7 @@ Check :: () -> s32 {
     if !ImportEdits(Export(routes[:]), classic, island, true, *classic_out, *island_out) ||
     Count(TextView(classic_bytes[0:classic_out.length])) != classics + 2 || Count(TextView(island_bytes[0:island_out.length])) != islands + 2 { return 29 }
     // A route that does not win, or a text that is no export, imports nothing.
-    losing: [2]string = .["2222222222", "2222211"]
+    losing: [2]string = .["3333333333", "3333322"]
     if ImportEdits(Export(losing[:]), classic, island, false, *classic_out, *island_out) ||
     ImportError() != "level 1: its route does not win" { return 30 }
     if ImportEdits("{\"format\":\"other\",\"levels\":[]}", classic, island, false, *classic_out, *island_out) { return 31 }
@@ -108,7 +108,7 @@ Check :: () -> s32 {
     writer := EditWriter.{.bytes = export_bytes[:]}
     SharingDocumentBegin(*writer, true, "Shared")
     level.board = EditNewBoard(true)
-    unused EditSetRoute(*level, "2222211")
+    unused EditSetRoute(*level, "3333322")
     SharingDocumentLevel(*writer, "Lagoon of Tests", *level, true)
     SharingDocumentEnd(*writer)
     classic_out = EditWriter.{.bytes = classic_bytes[:]}

@@ -66,16 +66,16 @@ BoardChecks :: () -> s32 {
 // one another are still occupied for that tick and cannot collide.
 TickChecks :: () -> s32 {
     game := Floor()
-    for at: cast(s32)22..26 { game.ground[at] = 30 }
-    game.ground[23] = 29; game.ground[25] = 29; game.light_from[23] = 2; game.light_from[25] = 2
-    if !ShoveyTick(*game) || game.ground[23] != 31 || game.ground[24] != 29 ||
-    game.ground[25] != 31 || game.ground[26] != 29 { return 60 }
+    for at: cast(s32)26..30 { game.ground[at] = 30 }
+    game.ground[27] = 29; game.ground[29] = 29; game.light_from[27] = 2; game.light_from[29] = 2
+    if !ShoveyTick(*game) || game.ground[27] != 31 || game.ground[28] != 29 ||
+    game.ground[29] != 31 || game.ground[30] != 29 { return 60 }
 
     game = Floor()
-    for at: cast(s32)22..24 { game.ground[at] = 30 }
-    game.ground[23] = 29; game.ground[24] = 29; game.light_from[23] = 2; game.light_from[24] = 2
-    if !ShoveyTick(*game) || game.ground[23] != 29 || game.ground[24] != 31 { return 61 }
-    if !ShoveyTick(*game) || game.ground[22] != 29 || game.ground[23] != 31 || game.ground[24] != 31 { return 62 }
+    for at: cast(s32)26..28 { game.ground[at] = 30 }
+    game.ground[27] = 29; game.ground[28] = 29; game.light_from[27] = 2; game.light_from[28] = 2
+    if !ShoveyTick(*game) || game.ground[27] != 29 || game.ground[28] != 31 { return 61 }
+    if !ShoveyTick(*game) || game.ground[26] != 29 || game.ground[27] != 31 || game.ground[28] != 31 { return 62 }
     return 0
 }
 
@@ -90,7 +90,7 @@ Heard :: (game: *ShoveyGame, direction: s32) -> s32 {
 
 // A plain floor with Shovey in the second row, second column, facing right.
 Floor :: () -> ShoveyGame {
-    return ShoveyGame.{.level = 1, .player = 21, .direction = 2}
+    return ShoveyGame.{.level = 1, .player = 13, .direction = 2}
 }
 
 // A plain step is quiet; pushes, pits, goals, pickups, doors, portals,
@@ -98,30 +98,30 @@ Floor :: () -> ShoveyGame {
 EventChecks :: () -> s32 {
     game := Floor()
     if Heard(*game, 2) != SHOVEY_EVENT_NONE { return 40 }
-    game = Floor(); game.objects[22] = 9
+    game = Floor(); game.objects[14] = 9
     if Heard(*game, 2) != SHOVEY_EVENT_PUSH { return 41 }
-    game = Floor(); game.objects[22] = 1; game.ground[23] = 4
+    game = Floor(); game.objects[14] = 1; game.ground[15] = 4
     if Heard(*game, 2) != SHOVEY_EVENT_PIT { return 42 }
-    game = Floor(); game.objects[22] = 9; game.ground[23] = 18
+    game = Floor(); game.objects[14] = 9; game.ground[15] = 18
     if Heard(*game, 2) != SHOVEY_EVENT_GOAL { return 43 }
-    game = Floor(); game.ground[22] = 33
+    game = Floor(); game.ground[14] = 33
     if Heard(*game, 2) != SHOVEY_EVENT_PICKUP { return 44 }
-    game = Floor(); game.ground[22] = 21; game.ground[60] = 21
+    game = Floor(); game.ground[14] = 21; game.ground[50] = 21
     if Heard(*game, 2) != SHOVEY_EVENT_PICKUP { return 45 }
-    game = Floor(); game.keys = 1; game.ground[22] = 34
+    game = Floor(); game.keys = 1; game.ground[14] = 34
     if Heard(*game, 2) != SHOVEY_EVENT_DOOR { return 46 }
-    game = Floor(); game.objects[22] = 9; game.ground[23] = 13; game.ground[60] = 14
+    game = Floor(); game.objects[14] = 9; game.ground[15] = 13; game.ground[50] = 14
     if Heard(*game, 2) != SHOVEY_EVENT_DOOR { return 47 }
-    game = Floor(); game.ground[22] = 8; game.ground[100] = 8
+    game = Floor(); game.ground[14] = 8; game.ground[74] = 8
     if Heard(*game, 2) != SHOVEY_EVENT_TELEPORT { return 48 }
     game = Floor(); game.powers = SHOVEY_AMMO
     if Heard(*game, -1) != SHOVEY_EVENT_SHOT { return 49 }
-    game = Floor(); game.ground[22] = 7
+    game = Floor(); game.ground[14] = 7
     if Heard(*game, 2) != SHOVEY_EVENT_WON { return 50 }
-    game = Floor(); game.powers = SHOVEY_CHARGED; game.ground[22] = 27
+    game = Floor(); game.powers = SHOVEY_CHARGED; game.ground[14] = 27
     if Heard(*game, 2) != SHOVEY_EVENT_LOST { return 51 }
     // A wall is no move at all.
-    game = Floor(); game.ground[22] = 12
+    game = Floor(); game.ground[14] = 12
     if Heard(*game, 2) != -1 { return 52 }
     return 0
 }

@@ -11,8 +11,8 @@
 #import, file "coast.zi";
 
 EDIT_CELLS :: 240
-EDIT_WIDTH :: 20
-EDIT_HEIGHT :: 12
+EDIT_WIDTH :: 12
+EDIT_HEIGHT :: 20
 // Pieces with no kind of their own: Island's eraser for objects.
 EDIT_CLEAR :: 255
 CLASSIC_SHOVEY :: 10
@@ -68,7 +68,7 @@ EditBoardHex :: (board: *EditBoard) -> string {
     return TextView(edit_hex[0:EDIT_CELLS * 2 * layers])
 }
 
-// One row of a layer (0 ground or terrain, 1 objects) as 40 hex digits.
+// One row of a layer (0 ground or terrain, 1 objects) as 24 hex digits.
 EditBoardRow :: (board: *EditBoard, layer: s32, row: s32) -> string {
     hex := EditBoardHex(board)
     start := (layer * EDIT_CELLS + row * EDIT_WIDTH) * 2
@@ -92,16 +92,16 @@ EditNewBoard :: (island: bool) -> EditBoard {
             x := at % EDIT_WIDTH; y := at / EDIT_WIDTH
             board.ground[at] = cast(u8)(ifx x == 0 || y == 0 || x == EDIT_WIDTH - 1 || y == EDIT_HEIGHT - 1 then CLASSIC_WALL else 0)
         }
-        board.ground[5 * EDIT_WIDTH + 4] = cast(u8)CLASSIC_SHOVEY
-        board.ground[5 * EDIT_WIDTH + 15] = 7
+        board.ground[4 * EDIT_WIDTH + 6] = cast(u8)CLASSIC_SHOVEY
+        board.ground[15 * EDIT_WIDTH + 6] = 7
         return board
     }
-    for y: cast(s32)3..8 {
-        for x: cast(s32)5..14 { board.ground[y * EDIT_WIDTH + x] = 1 }
+    for y: cast(s32)5..14 {
+        for x: cast(s32)3..8 { board.ground[y * EDIT_WIDTH + x] = 1 }
     }
     CoastAll(board.ground[:])
-    board.objects[6 * EDIT_WIDTH + 7] = cast(u8)ISLAND_SHOVEY
-    board.objects[4 * EDIT_WIDTH + 12] = cast(u8)ISLAND_HOME
+    board.objects[7 * EDIT_WIDTH + 5] = cast(u8)ISLAND_SHOVEY
+    board.objects[12 * EDIT_WIDTH + 7] = cast(u8)ISLAND_HOME
     return board
 }
 
@@ -636,7 +636,7 @@ EditLevelRead :: (level: *EditLevel, island: bool, text: string) -> bool {
 //
 //   {"format": "shovey-edits-1", "levels": [
 //    {"edition": "classic", "number": 12, "name": "...", "route": "...",
-//     "cells": [...12 rows of 40 hex digits...]},
+//     "cells": [...20 rows of 24 hex digits...]},
 //    {"edition": "island", "name": "...", "route": "...",
 //     "terrain": [...], "objects": [...]}]}
 //
