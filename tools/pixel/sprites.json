@@ -26,7 +26,7 @@
     "sensor-closed": "a small square grey stone block with a glowing red lamp on top, seen from slightly above, filling about 75 percent of the canvas.",
     "trail": "a lilac painted ring mark on the ground with a short lilac line through it, seen from directly above, filling about 70 percent of the canvas.",
     "projectile": "a small dark iron ball flying to the right with a short pale motion trail, filling about 50 percent of the canvas.",
-    "player": "Shovey, a round bright green ball creature with a glossy highlight. Seen from directly above, as in a top-down game: we look down on the top of its round body, and it faces the top of the canvas. Its two big round eyes sit at the top front edge of its body and look up toward the top of the canvas, so we see them from above; no mouth or face looking at the viewer. Filling about 85 percent of the canvas."
+    "player": "Shovey, a softly squared mint-jade creature seen directly from above facing up, two cream-white eyes at the top/front edge, tiny side flippers and feet, pale upper-left highlight and a thin dark teal exterior outline. A plain continuous light mint body with no interior circle, ring, hole or dark patch."
   },
   "edited": {},
   "sizes": {
@@ -57,5 +57,5 @@
     "projectile": 18,
     "player": 28
   },
-  "note": "Raw pictures may come from any image model; Google Flow is preferred (free). Save each as backup/pixel-raw/NAME-N.png or .jpg and run `pixel.py fit NAME`. The player (made in Google Flow) faces up, seen from above, and is turned for the other directions like the original."
+  "note": "The current player was edited with the built-in image generator. Its transparent source and prompts are in tools/pixel/source. The build fits it to 28 pixels and rotates it for four directions; charged states add a yellow halo. Other raw pictures can be fitted with pixel.py fit."
 }

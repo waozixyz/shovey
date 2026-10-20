@@ -30,15 +30,17 @@
 #import, file "progress.zi";
 #import, file "controls.zi";
 #import, file "shovey_theme.zi";
-host_api :: #system_library "host_api";
-ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
-AppLocaleHost :: (key: string) -> string #foreign host_api;
-AppRecordHost :: (name: string) -> string #foreign host_api;
-SaveAppRecordHost :: (name: string, text: string) -> bool #foreign host_api;
-// Arcade's supervised drawing frame supplies keys only to the open game.
-AppKeyHost :: () -> s32 #foreign host_api;
-// One of the game's own packed sounds; a host without audio answers false.
-AppSoundHost :: (path: string) -> bool #foreign host_api;
+#if #defined(SHOVEY_WEB) {
+    #import, file "web/host.zi";
+} else {
+    host_api :: #system_library "host_api";
+    ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
+    AppLocaleHost :: (key: string) -> string #foreign host_api;
+    AppRecordHost :: (name: string) -> string #foreign host_api;
+    SaveAppRecordHost :: (name: string, text: string) -> bool #foreign host_api;
+    AppKeyHost :: () -> s32 #foreign host_api;
+    AppSoundHost :: (path: string) -> bool #foreign host_api;
+}
 
 frame: AppUiFrame;
 game: ShoveyGame;
@@ -297,8 +299,8 @@ ShoveyFrame :: () {
         ChangeLevel(game.level)
     }
     if Control(20017, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
-            AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
-            ifx help_open then ICON_CLOSE else ICON_HELP) {
+        AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
+        ifx help_open then ICON_CLOSE else ICON_HELP) {
         help_open = !help_open
     }
     if help_open {

@@ -32,9 +32,15 @@ SpritePathIn :: (files: []string, index: s32, folder: string, name: string) {
     files[index] = BuilderFinish(bytes)
 }
 
+#if #defined(KRYON_HOSTED_UI) {
+    SPRITE_LANDSCAPE_FOLDER :: "shovey/landscape"
+} else {
+    SPRITE_LANDSCAPE_FOLDER :: "shovey-landscape"
+}
+
 SpritePath :: (index: s32, name: string) {
     SpritePathIn(sprite_files[:], index, "shovey", name)
-    SpritePathIn(landscape_sprite_files[:], index, "shovey-landscape", name)
+    SpritePathIn(landscape_sprite_files[:], index, SPRITE_LANDSCAPE_FOLDER, name)
 }
 
 SpritesPrepare :: () {
@@ -128,8 +134,8 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     if cell > 0.0 {
         cell = cast(float32)(cast(s32)cell)
         bounds = Rectangle.{bounds.x + (bounds.width - cell * cast(float32)columns) / 2.0,
-                bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0,
-                cell * cast(float32)columns, cell * cast(float32)rows}
+            bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0,
+            cell * cast(float32)columns, cell * cast(float32)rows}
     }
     // The stone grey behind the cells hides the seams between scaled tiles,
     // whatever the host paints around the game.

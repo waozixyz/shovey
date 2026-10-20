@@ -5,22 +5,22 @@
     {
       "path": "sprites/charged-down.png",
       "depicts": "landscape presentation of charged Shovey looking down",
-      "sha256": "b47414c57721820608a99cc920bd9fcb37605efc6906581ccbb03d2b4596f99a"
+      "sha256": "847a15e03ce05e862d95f0fb2d0906884884264f77ca6144063dbb39463cf345"
     },
     {
       "path": "sprites/charged-left.png",
       "depicts": "landscape presentation of charged Shovey looking left",
-      "sha256": "5604b245e0a0cc795eb581acc336469619fcc166c88e4615b35d70a84f4f6498"
+      "sha256": "5719527fa6d4d7bee8d5756793334a14e0f17af168421d2d255013996d3aeac9"
     },
     {
       "path": "sprites/charged-right.png",
       "depicts": "landscape presentation of charged Shovey looking right",
-      "sha256": "118b4788b4ce1d4f9c81d69b058215faafeb1694c56dda2548db93e1f194d814"
+      "sha256": "f202ce4275eb641156844eca1031f13d15fddbd8b1cd78de61e1017172f9c9d3"
     },
     {
       "path": "sprites/charged-up.png",
       "depicts": "landscape presentation of charged Shovey looking up",
-      "sha256": "9e2169891ed6367cb31db980442167cf10070148a0651dc0b7719220a7cc63b1"
+      "sha256": "788485ec6cdfb8f3f2c37cf68920e3a103a96ba8b11d466bb71c494f7603eb77"
     },
     {
       "path": "sprites/door-open.png",
@@ -30,22 +30,22 @@
     {
       "path": "sprites/player-down.png",
       "depicts": "landscape presentation of Shovey looking down",
-      "sha256": "ab8e75adcefc775481535836570925f99d801edb1bbd27abbe913c40ee71c38c"
+      "sha256": "8aae96b30cbbaf5fa3503edfee9b3997fa212e69d6bd9b6248047cef9ba13106"
     },
     {
       "path": "sprites/player-left.png",
       "depicts": "landscape presentation of Shovey looking left",
-      "sha256": "fc916527eba02869fd37c993096e8a03e21941d044012861d49eb2f50d051369"
+      "sha256": "8bda61efcf05403f72ff74b82fdd82a24100f52e362e1fb92623a8ccf9f731bf"
     },
     {
       "path": "sprites/player-right.png",
       "depicts": "landscape presentation of Shovey looking right",
-      "sha256": "5f875fabff87d044da9e3cced08be42f1620b54d2cdc43dcd17139654a83e38a"
+      "sha256": "f54c116f1a8fd22ea607108b90509dd152ef26fbb9be7bcc69b8a5e4603c9189"
     },
     {
       "path": "sprites/player-up.png",
       "depicts": "landscape presentation of Shovey looking up",
-      "sha256": "4bb9caef6eb5adf960c271a9cbbc159fa9c51bfcec4f603480b3d6b721b331f0"
+      "sha256": "38a116b14c1f84723e234d211ecded48294b8974a0b15fd0fda7524d173910d6"
     },
     {
       "path": "sprites/projectile.png",
@@ -95,7 +95,7 @@
     {
       "path": "sprites/shadow.png",
       "depicts": "landscape presentation of mirror Shovey (pink)",
-      "sha256": "65df2d400a18ef487df7e271f4d1b847febb078ae65ec41330813f1465c5272b"
+      "sha256": "74eaef243851bfaff01f5fc0a058ee3bc1d0a17746ca9eea3b58d51e6a886ff0"
     },
     {
       "path": "sprites/tile-0.png",
@@ -275,7 +275,7 @@
     {
       "path": "sprites/tile-40.png",
       "depicts": "landscape presentation of mirror Shovey (pink)",
-      "sha256": "65df2d400a18ef487df7e271f4d1b847febb078ae65ec41330813f1465c5272b"
+      "sha256": "74eaef243851bfaff01f5fc0a058ee3bc1d0a17746ca9eea3b58d51e6a886ff0"
     },
     {
       "path": "sprites/tile-5.png",

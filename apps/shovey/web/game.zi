@@ -1,0 +1,16 @@
+// A game, ready to play, on the shared standalone browser host.
+#import "kryon/app_context"
+#import "kryon/app_protocol"
+#import, file "../shovey_view.zi";
+
+#program_export
+Main :: () -> s64 {
+    mode := AppMode()
+    if mode == APP_IDENTIFY {
+        AppIdentity("shovey")
+        AppDescribe("Shovey", "S1.7rr:M4 4H20V20H4ZM9 9H15V15H9Z")
+        return APP_PROTOCOL
+    }
+    if mode == APP_FRAME { ShoveyFrame() }
+    return 0
+}

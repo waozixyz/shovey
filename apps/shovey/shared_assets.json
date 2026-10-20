@@ -1,0 +1,5 @@
+{
+  "copies": [
+    {"from": "assets/shovey-landscape", "to": "landscape"}
+  ]
+}

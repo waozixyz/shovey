@@ -24,8 +24,15 @@ bundles: levels landscape
 web: bundles
 	rm -rf build/web
 	mkdir -p build/web
+	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
+		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
+		--module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--module-path build/game-generated/shovey --define KRYON_HOSTED_UI --define SHOVEY_WEB \
+		--asset-dir assets=build/game-assets/shovey/assets --entry game:Main \
+		-o build/web/shovey.zib apps/shovey/web/game.zi
 	$(MAKE) -C '$(KRYON)' zib-canvas ZIRAN_ROOT='$(TOOLCHAIN)' \
-		ZIB_CANVAS_BUNDLE='$(abspath build/games/shovey.zib)' \
+		ZIB_CANVAS_DIR='$(abspath build/web-runtime)' \
+		ZIB_CANVAS_BUNDLE='$(abspath build/web/shovey.zib)' \
 		ZIB_CANVAS_PROGRAM='$(abspath build/web/runtime.html)'
 	cp apps/shovey/web/index.html build/web/index.html
 	cp build/web/runtime.js build/web/index.js

@@ -1,5 +1,17 @@
-host_api :: #system_library "host_api";
-AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+#if #defined(SHOVEY_WEB) {
+    WebApp :: #import "kryon/app_context";
+    AppServiceHost :: (name: string, request: string) -> string {
+        if name != "arcade.controls" { return "" }
+        if request == "get" { return WebApp.DocumentRead("controls") }
+        if request == "set-auto" || request == "set-on" || request == "set-off" {
+            return ifx WebApp.DocumentWrite("controls", request[4:]) then "saved" else ""
+        }
+        return ""
+    }
+} else {
+    host_api :: #system_library "host_api";
+    AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+}
 
 // The game bar's icons, shared by every edition.
 ICON_LEVELS :: "S1.6rr:M5 5H10V10H5ZM14 5H19V10H14ZM5 14H10V19H5ZM14 14H19V19H14Z"

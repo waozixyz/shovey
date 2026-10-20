@@ -1,0 +1,19 @@
+// The browser entry supplies scoped documents and frame observations to
+// the same game view Arcade uses.
+#import "apps/node_types"
+WebApp :: #import "kryon/app_context";
+#import "translations"
+
+ReadAppUiHost :: () -> AppUiFrame {
+    area := WebApp.AppBounds()
+    return AppUiFrame.{.session = WebApp.AppSession(),
+        .width = cast(s32)(area.x + area.width), .height = cast(s32)(area.y + area.height),
+        .top = cast(s32)area.y, .scale = WebApp.AppScale(), .font = WebApp.AppFont(),
+        .now = WebApp.AppNow()}
+}
+AppLocaleHost :: (key: string) -> string { return GameLocaleText("en", key) }
+AppRecordHost :: (name: string) -> string { return WebApp.DocumentRead(name) }
+SaveAppRecordHost :: (name: string, text: string) -> bool { return WebApp.DocumentWrite(name, text) }
+AppKeyHost :: () -> s32 { return WebApp.AppKey() }
+// The standalone app host currently has no packed sound effect service.
+AppSoundHost :: (path: string) -> bool { unused path; return false }
