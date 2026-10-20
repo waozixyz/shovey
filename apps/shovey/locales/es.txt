@@ -49,6 +49,18 @@ No se pudo guardar. Haz otro movimiento para reintentar.
 [shovey_controls]
 Flechas / WASD · R reiniciar · H ayuda · Espacio lanzar
 ---
+[shovey_controls_setting]
+Control táctil
+---
+[shovey_controls_auto]
+Automático
+---
+[shovey_controls_stick]
+Joystick
+---
+[shovey_controls_swipe]
+Solo gestos
+---
 [shovey_shadow_pending]
 Falta verificar las reglas de la sombra en este nivel.
 ---

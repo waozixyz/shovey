@@ -5,7 +5,7 @@ TOOLCHAIN = $(shell $(ZIRAN) pkg path ziran $(LOCK_FLAGS))
 KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 
-.PHONY: all levels bundles previews art solver bench test play import-tool editor-card
+.PHONY: all levels bundles previews art solver bench test play import-tool editor-card web web-itch
 
 all: bundles
 
@@ -17,6 +17,19 @@ apps/shovey/levels.zi apps/shovey/island_levels.zi: levels/classic.json levels/i
 
 bundles: levels
 	python3 scripts/build-bundles.py --toolchain '$(TOOLCHAIN)' --kryon '$(KRYON)' --apps '$(APPS)'
+
+web: bundles
+	rm -rf build/web
+	mkdir -p build/web
+	$(MAKE) -C '$(KRYON)' zib-canvas \
+		ZIB_CANVAS_BUNDLE='$(abspath build/games/shovey.zib)' \
+		ZIB_CANVAS_PROGRAM='$(abspath build/web/runtime.html)'
+	cp apps/shovey/web/index.html build/web/index.html
+	cp build/web/runtime.js build/web/index.js
+	cp build/web/runtime.wasm build/web/index.wasm
+	rm -f build/web/runtime.html build/web/runtime.js build/web/runtime.wasm
+
+web-itch: web
 
 previews:
 	python3 tools/levels/levels.py previews

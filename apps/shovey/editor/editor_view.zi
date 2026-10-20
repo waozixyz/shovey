@@ -38,6 +38,7 @@
 #import, file "../island/island_engine.zi";
 #import, file "../island/island_board.zi";
 #import, file "../levels.zi";
+#import, file "../controls.zi";
 #import, file "../island_levels.zi";
 #import, file "../solver/solver.zi";
 #import, file "coast.zi";
@@ -828,7 +829,7 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
     if custom {
         name_width := bounds.width - 104.0
         if EditorFieldDraw(*editor_name, cast(u64)314, Rectangle.{bounds.x, bounds.y + 48.0, name_width, 40.0},
-                EditorText("editor_name"), EditorText("editor_name_hint"), EDIT_NAME) || !editor_name.focused {
+            EditorText("editor_name"), EditorText("editor_name_hint"), EDIT_NAME) || !editor_name.focused {
             summary := EditorSummary()
             name := EditField(editor_name.bytes[:], editor_name.length)
             if summary != null && EditField(summary.name[:], summary.name_length) != name {
@@ -994,7 +995,10 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     // Swipe on the board to step, or tap a cell to step towards it.
     gesture := SwipeArea(editor_frame.session, SwipeAreaProps.{.key = cast(u64)405, .id = 405, .bounds = grid.board,
             .label = EditorText("editor_controls"), .now = editor_frame.now, .min_distance = grid.cell * 0.6, .disabled = disabled})
-    if gesture.down { editor_joystick_hidden = false }
+    joystick_allowed := ControlsJoystickAllowed()
+    if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { editor_joystick_hidden = true }
+    if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { editor_joystick_hidden = false }
+    if gesture.down && joystick_allowed { editor_joystick_hidden = false }
     step := gesture.swiped
     player := ifx editor_island then editor_play.isle.player else editor_play.classic.player
     if gesture.tapped {
@@ -1010,7 +1014,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
         if size < 104.0 { size = 104.0 }
         if size > 180.0 { size = 180.0 }
         stick := Joystick(editor_frame.session, JoystickProps.{.key = cast(u64)406, .id = 406,
-                .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size},
+                .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size}, .repeat_seconds = 0.16,
                 .label = EditorText("editor_controls"), .now = editor_frame.now})
         if stick.step { step = stick.direction }
         if !editor_island && (editor_play.classic.powers & SHOVEY_AMMO) != 0 {
@@ -1184,7 +1188,7 @@ EditorVerifyStep :: () {
     while editor_verify_index < editor_document.count {
         if editor_verify_at == 0 {
             if !SharingDocumentLevelRead(text, *editor_document, editor_verify_index, editor_download_name[:],
-                    *editor_download_name_length, *editor_download) {
+                *editor_download_name_length, *editor_download) {
                 editor_verify_refused += 1
                 editor_verify_index += 1
                 continue
@@ -1265,14 +1269,14 @@ EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
     third := (width - 32.0 - 16.0) / 3.0
     for choice: cast(s32)0..2 {
         if EditorControl(604 + choice, Rectangle.{16.0 + cast(float32)choice * (third + 8.0), y, third, 40.0},
-                EditorText(names[choice]), busy, editor_share_visibility == choice) { editor_share_visibility = choice }
+            EditorText(names[choice]), busy, editor_share_visibility == choice) { editor_share_visibility = choice }
     }
     y += 48.0
     edition := EditorEdition()
     published := editor_publication_length[edition] > 0
     half := ifx published then (width - 40.0) / 2.0 else width - 32.0
     if EditorControl(610, Rectangle.{16.0, y, half, 44.0}, EditorText(ifx published then "editor_publish_again" else "editor_publish_now"),
-            !editor_sharing || busy) { EditorPublish() }
+        !editor_sharing || busy) { EditorPublish() }
     if published && EditorControl(611, Rectangle.{24.0 + half, y, half, 44.0}, EditorText("editor_unpublish"), !editor_sharing || busy) {
         request := EditWriter.{.bytes = editor_request_bytes[:]}
         SharingUnpublishRequest(*request, EditField(editor_publication[edition][:], editor_publication_length[edition]))

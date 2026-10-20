@@ -49,6 +49,18 @@
 [shovey_controls]
 方向键 / WASD · R 重开 · H 帮助 · 空格 投掷
 ---
+[shovey_controls_setting]
+触控操作
+---
+[shovey_controls_auto]
+自动
+---
+[shovey_controls_stick]
+摇杆
+---
+[shovey_controls_swipe]
+仅滑动
+---
 [shovey_shadow_pending]
 此关的影子规则仍需核实。
 ---

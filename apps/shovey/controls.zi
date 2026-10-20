@@ -1,0 +1,34 @@
+host_api :: #system_library "host_api";
+AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+
+CONTROLS_AUTO :: 0;
+CONTROLS_ON :: 1;
+CONTROLS_OFF :: 2;
+controls_setting: s32 = -1;
+controls_touch: bool;
+
+ControlsSetting :: () -> s32 {
+    if controls_setting < 0 {
+        value := AppServiceHost("arcade.controls", "get")
+        controls_setting = CONTROLS_AUTO
+        if value == "on" { controls_setting = CONTROLS_ON }
+        if value == "off" { controls_setting = CONTROLS_OFF }
+        controls_touch = AppServiceHost("arcade.controls", "mode") == "touch"
+    }
+    return controls_setting
+}
+
+ControlsSet :: (value: s32) {
+    request := "set-auto"
+    if value == CONTROLS_ON { request = "set-on" }
+    if value == CONTROLS_OFF { request = "set-off" }
+    unused AppServiceHost("arcade.controls", request)
+    controls_setting = value
+}
+
+ControlsJoystickAllowed :: () -> bool {
+    setting := ControlsSetting()
+    if setting == CONTROLS_OFF { return false }
+    if setting == CONTROLS_ON { return true }
+    return controls_touch
+}

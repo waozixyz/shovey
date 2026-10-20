@@ -29,6 +29,10 @@ first move.
 Shovey runs inside [Arcade](https://github.com/waozixyz/arcade), alone as the
 Shovey desktop app, and inside other hosts of the shared Apps interface.
 
+Build the browser edition with `make web`; `make web-itch` is the same upload
+directory for itch.io. Both build `build/web/` from the same portable Shovey
+bundle used by desktop hosts.
+
 ## Levels
 
 `levels/classic.json` and `levels/island.json` hold every board. Each one

@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / 'tools/pixel'
@@ -284,9 +284,8 @@ def moss(image, seed, amount):
 
 
 def mossy_wall():
-    """The gate a button opens: a stone block overgrown with moss."""
-    # Green-grey stone, so it stands apart from plain walls at any size.
-    return moss(wall((160, 182, 150, 255)), 31, 12)
+    """The gate a button opens: the wall image with moss on top."""
+    return moss(wall(), 31, 5)
 
 
 def mossy_floor():
@@ -436,6 +435,11 @@ def sprites():
     up = native('player')
     players = {'up': up, 'right': up.rotate(-90), 'down': up.rotate(180), 'left': up.rotate(90)}
     mirror = recolour(players['down'], green, 330)
+    shot = Image.new('RGBA', (SIZE, SIZE))
+    shot_draw = ImageDraw.Draw(shot)
+    shot_draw.ellipse((6, 6, 25, 25), fill=(74, 85, 83, 255), outline=(35, 43, 42, 255))
+    shot_draw.ellipse((10, 9, 17, 16), fill=(117, 130, 127, 255))
+    shot_draw.point((12, 11), fill=(190, 201, 198, 255))
     out = {
         'tile-0': ('floor: a pale grey paving stone', floor()),
         'tile-1': ('red ball (pushable)', native('ball-red')),
@@ -463,7 +467,7 @@ def sprites():
         'tile-23': ('closed sensor: a raised block with a red light', over_floor(native('sensor-closed'))),
         'tile-24': ('active sensor', ring((120, 186, 214, 255), 12, (240, 248, 250, 255), -90)),
         'tile-25': ('reverse controls: a token with two opposite arrows', native('reverse')),
-        'tile-26': ('ammunition: a pile of iron shot', native('ammo')),
+        'tile-26': ('ammunition: one iron shot', shot),
         'tile-27': ('charge: a token with a lightning bolt', native('charge')),
         'tile-28': ('target: a red and white target board (pushable)', native('target')),
         'tile-29': ('moving block: a stone puck with a blue light', over_floor(native('puck'))),

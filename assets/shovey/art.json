@@ -80,7 +80,7 @@
     {
       "path": "sprites/tile-14.png",
       "depicts": "closed gate: a stone block overgrown with moss",
-      "sha256": "c76a9e5c887f8fad22839abb460dbdab01cd18d27cd8f654e616ad8ad4f2e2af"
+      "sha256": "cf816daf054638e7bd6f1d42c6edc1aef23666607ce7ed352ee4152f0b005320"
     },
     {
       "path": "sprites/tile-15.png",
@@ -140,7 +140,7 @@
     {
       "path": "sprites/tile-26.png",
       "depicts": "ammunition: one iron shot",
-      "sha256": "688af54d0d8815772919bbce33c0e46a296022882a1093e40aa4a3bcd24df0f3"
+      "sha256": "15d70a2567172363dbe18b17d9ae3b9bc9f74e4f59ec5b41b7356ff5375d137b"
     },
     {
       "path": "sprites/tile-27.png",

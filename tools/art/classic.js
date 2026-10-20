@@ -345,20 +345,18 @@ function cottage() {
 
 function gate(open) {
     return () => {
-        const frame = mat('#6f7f7b');
-        const wood = mat(C.bark, { rough: 0.85 });
-        const parts = [
-            at(box(0.12, 0.5, 0.2, 0.03, frame), -0.42, 0.25, 0),
-            at(box(0.12, 0.5, 0.2, 0.03, frame), 0.42, 0.25, 0),
-        ];
+        const stone = mat('#c0c5c3', { rough: 0.85 });
+        const moss = mat('#6f9a72', { rough: 1 });
+        const parts = [];
         if (open) {
-            parts.push(at(box(0.72, 0.03, 0.2, 0.01, mat('#2c3a37')), 0, 0.015, 0));
+            parts.push(at(box(0.95, 0.035, 0.95, 0.012, stone), 0, 0.018, 0));
         } else {
-            for (let i = 0; i < 5; i += 1) {
-                parts.push(at(box(0.1, 0.46, 0.08, 0.03, wood), -0.28 + i * 0.14, 0.23, 0));
-            }
-            parts.push(at(box(0.78, 0.07, 0.1, 0.02, frame), 0, 0.36, 0.02));
-            parts.push(at(box(0.78, 0.07, 0.1, 0.02, frame), 0, 0.12, 0.02));
+            parts.push(at(box(0.97, 0.36, 0.97, 0.12, stone), 0, 0.18, 0));
+        }
+        for (const [x, z, size] of [[-0.24, -0.14, 0.11], [0.18, -0.22, 0.09], [0.28, 0.18, 0.07]]) {
+            const tuft = at(scaled(sphere(size, moss), 1.5, 0.25, 1.2), x, open ? 0.04 : 0.37, z);
+            tuft.castShadow = false;
+            parts.push(tuft);
         }
         return group(parts);
     };

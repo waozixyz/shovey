@@ -49,6 +49,18 @@ Gagal menyimpan. Coba langkah lain untuk mengulang.
 [shovey_controls]
 Panah / WASD · R ulangi · H bantuan · Spasi lempar
 ---
+[shovey_controls_setting]
+Kontrol sentuh
+---
+[shovey_controls_auto]
+Otomatis
+---
+[shovey_controls_stick]
+Joystick
+---
+[shovey_controls_swipe]
+Hanya usap
+---
 [shovey_shadow_pending]
 Aturan bayangan di level ini masih perlu diverifikasi.
 ---
