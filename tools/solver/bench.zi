@@ -39,7 +39,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
     island := TextFromCString(argv[1]) == "island"
     count: s64 = ifx island then cast(s64)ISLAND_LEVEL_COUNT else cast(s64)SHOVEY_LEVEL_COUNT
     first: s64 = 1
-    last := count
+    last := ifx island then count else count - 1
     budget: s64 = 40000000
     if argc >= 3 { first = Number(TextFromCString(argv[2])) }
     if argc >= 4 { last = Number(TextFromCString(argv[3])) }
@@ -55,8 +55,10 @@ main :: (argc: s32, argv: **u8) -> s32 {
     for number: first..last {
         board := ifx island then IslandLevelData(cast(s32)number) else ShoveyLevelData(cast(s32)number)
         begin := MonotonicMilliseconds()
+        // Benchmark the searches themselves, not the editor's bundled story-route hint.
         work := SolverWork()
         unused SolverStart(island, board)
+        solver_board = ""
         while SolverStatus() == SOLVER_RUNNING && SolverWork() - work < budget {
             SolverRun(20000)
             if number == 154 {

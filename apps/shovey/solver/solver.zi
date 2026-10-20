@@ -420,7 +420,7 @@ SolverHeapPop :: () -> s32 {
 
 // Lower is better: the estimate, weighted against the macro depth.
 SolverPriority :: (depth: s32) -> u64 {
-    priority := cast(u64)SolverEstimate() * 4 + cast(u64)depth
+    priority := cast(u64)SolverEstimate() * 5 + cast(u64)depth
     if priority > 4294967295 { priority = 4294967295 }
     return priority << 32
 }
