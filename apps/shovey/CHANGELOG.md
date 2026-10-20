@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [0.6.3] - 2026-10-20
+
+- Keep Inner Breeze's bottom navigation visible while playing.
+
 ## [0.6.2] - 2026-10-20
 
 - Every screen keeps Shovey's own slate, stone and green look, whatever app it runs in.

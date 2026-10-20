@@ -1,5 +1,10 @@
 # Shovey Editor changelog
 
+## [0.2.2] - 2026-10-20
+
+- Island uses the same original player as Classic while editing and testing.
+- Keep Inner Breeze's bottom navigation visible while testing a level.
+
 ## [0.2.1] - 2026-10-20
 
 - Every screen keeps Shovey's own slate, stone and green look, whatever app it runs in.
