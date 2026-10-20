@@ -1,0 +1,15 @@
+[package]
+name = "Shovey"
+module_roots = ["apps"]
+
+[toolchain]
+git = "https://github.com/ziranlang/ziran.git"
+ref = "12a15598d08b35f395fce3936a9ad9dd867673dd"
+
+[dependencies.kryon]
+git = "https://github.com/kryonlabs/kryon.git"
+ref = "master"
+
+[dependencies.apps]
+git = "https://github.com/waozixyz/apps.git"
+ref = "master"

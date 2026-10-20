@@ -1,0 +1,120 @@
+// The import tool: level files written back byte for byte, proven levels
+// merged in place or after the story, and anything unproven refused.
+#import "std/file"
+#import "std/json_scan"
+#import "std/text_buffer"
+#import, file "../apps/shovey/editor/edit.zi";
+#import, file "../apps/shovey/editor/sharing.zi";
+#import, file "../tools/levels/edits.zi";
+
+export_bytes: [200000]u8;
+classic_bytes: [IMPORT_FILE]u8;
+island_bytes: [IMPORT_FILE]u8;
+level: EditLevel;
+
+Count :: (text: string) -> s32 { return ArrayCount(text, FieldAt(text, 0, "levels")) }
+
+Level :: (text: string, number: s32) -> s32 { return ElementAt(text, FieldAt(text, 0, "levels"), number - 1) }
+
+Row :: (text: string, number: s32, field: string, row: s32) -> string {
+    span := ReadString(text, ElementAt(text, FieldAt(text, Level(text, number), field), row))
+    return ifx span.valid then text[span.start:span.end] else ""
+}
+
+Name :: (text: string, number: s32, out: []u8) -> string {
+    length := SharingText(text, Level(text, number), "name", out)
+    return ifx length < 0 then "" else TextView(out[0:length])
+}
+
+RoundTrip :: (classic: string, island: string) -> s32 {
+    for edition: cast(s32)0..1 {
+        text := ifx edition == 1 then island else classic
+        if !StoredRead(*stored[edition], edition == 1, text) { return 10 }
+        writer := EditWriter.{.bytes = classic_bytes[:]}
+        StoredWrite(*writer, *stored[edition], text)
+        if writer.full || TextView(classic_bytes[0:writer.length]) != text { return 11 }
+    }
+    return 0
+}
+
+// An export as the editor writes it, with a route for each board.
+Export :: (routes: []string) -> string {
+    writer := EditWriter.{.bytes = export_bytes[:]}
+    EditExportBegin(*writer)
+    summary := EditSummary.{.id = 1, .from = 2}
+    EditSetName(*summary, "Copy")
+    level.board = EditNewBoard(false)
+    unused EditSetRoute(*level, routes[0])
+    EditExportLevel(*writer, *summary, *level, true, "")
+    summary.from = 0
+    EditSetName(*summary, "Made fresh")
+    unused EditPaint(*level.board, 9, 30)
+    EditExportLevel(*writer, *summary, *level, false, "")
+    level.board = EditNewBoard(true)
+    unused EditSetRoute(*level, routes[1])
+    EditSetName(*summary, "First Landing")
+    EditExportLevel(*writer, *summary, *level, false, "")
+    summary.from = 3
+    EditExportLevel(*writer, *summary, *level, false, "")
+    EditExportEnd(*writer)
+    return TextView(export_bytes[0:writer.length])
+}
+
+#program_export
+Check :: () -> s32 {
+    classic, classic_found := ReadEntireFile("levels/classic.json")
+    island, island_found := ReadEntireFile("levels/island.json")
+    if !classic_found || !island_found { return 1 }
+    result := RoundTrip(classic, island)
+    if result != 0 { return result }
+    classics := Count(classic)
+    islands := Count(island)
+    story_name: [128]u8
+    third := Name(island, 3, story_name[:])
+    // Two Classic levels (one replaces story level 2) and two islands (one
+    // replaces island 3, one is new and takes a name no island has).
+    routes: [2]string = .["22222222222", "2222211"]
+    classic_out := EditWriter.{.bytes = classic_bytes[:]}
+    island_out := EditWriter.{.bytes = island_bytes[:]}
+    if !ImportEdits(Export(routes[:]), classic, island, false, *classic_out, *island_out) { return 20 }
+    merged_classic := TextView(classic_bytes[0:classic_out.length])
+    merged_island := TextView(island_bytes[0:island_out.length])
+    fresh := EditNewBoard(false)
+    if Count(merged_classic) != classics + 1 || Row(merged_classic, 2, "cells", 5) != EditBoardRow(*fresh, 0, 5) { return 21 }
+    // The new level comes before the finale, which stays last without a solution.
+    if Row(merged_classic, classics, "cells", 1) != "0c0000000000000000000900000000000000000c" ||
+    FieldAt(merged_classic, Level(merged_classic, classics + 1), "solution") >= 0 ||
+    Row(merged_classic, classics + 1, "cells", 3) != Row(classic, classics, "cells", 3) { return 22 }
+    names: [128]u8
+    if Count(merged_island) != islands + 1 || Name(merged_island, 3, names[:]) != third { return 23 }
+    if Name(merged_island, islands + 1, names[:]) == "First Landing" || Name(merged_island, islands + 1, names[:]) == "" { return 24 }
+    if Row(merged_island, 1, "terrain", 0) != Row(island, 1, "terrain", 0) { return 25 }
+    // Written to copies, the files read back as they were merged.
+    if !CreateDirectory("build/import-test") && !DirectoryExists("build/import-test") { return 26 }
+    if !WriteEntireFile("build/import-test/classic.json", merged_classic) { return 27 }
+    again, found := ReadEntireFile("build/import-test/classic.json")
+    if !found || again != merged_classic || !StoredRead(*stored[0], false, again) || stored[0].count != classics + 1 { return 28 }
+    // --append adds the copy after the story too.
+    classic_out = EditWriter.{.bytes = classic_bytes[:]}
+    island_out = EditWriter.{.bytes = island_bytes[:]}
+    if !ImportEdits(Export(routes[:]), classic, island, true, *classic_out, *island_out) ||
+    Count(TextView(classic_bytes[0:classic_out.length])) != classics + 2 || Count(TextView(island_bytes[0:island_out.length])) != islands + 2 { return 29 }
+    // A route that does not win, or a text that is no export, imports nothing.
+    losing: [2]string = .["2222222222", "2222211"]
+    if ImportEdits(Export(losing[:]), classic, island, false, *classic_out, *island_out) ||
+    ImportError() != "level 1: its route does not win" { return 30 }
+    if ImportEdits("{\"format\":\"other\",\"levels\":[]}", classic, island, false, *classic_out, *island_out) { return 31 }
+    // A shared collection is added after the story.
+    writer := EditWriter.{.bytes = export_bytes[:]}
+    SharingDocumentBegin(*writer, true, "Shared")
+    level.board = EditNewBoard(true)
+    unused EditSetRoute(*level, "2222211")
+    SharingDocumentLevel(*writer, "Lagoon of Tests", *level, true)
+    SharingDocumentEnd(*writer)
+    classic_out = EditWriter.{.bytes = classic_bytes[:]}
+    island_out = EditWriter.{.bytes = island_bytes[:]}
+    if !ImportEdits(TextView(export_bytes[0:writer.length]), classic, island, false, *classic_out, *island_out) { return 32 }
+    merged_island = TextView(island_bytes[0:island_out.length])
+    if TextView(classic_bytes[0:classic_out.length]) != classic || Name(merged_island, islands + 1, names[:]) != "Lagoon of Tests" { return 33 }
+    return 0
+}

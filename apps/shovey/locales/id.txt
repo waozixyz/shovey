@@ -1,0 +1,150 @@
+[shovey_level]
+Level
+---
+[shovey_ready]
+Semua siap. Pulanglah!
+---
+[shovey_won]
+Teka-teki selesai!
+---
+[shovey_finale]
+Kamu menyelesaikan semua teka-teki. Terima kasih sudah bermain!
+---
+[shovey_lost]
+Terlalu banyak muatan! Ulangi level ini.
+---
+[shovey_restart]
+Ulangi
+---
+[shovey_help]
+Bantuan
+---
+[shovey_close_help]
+Tutup bantuan
+---
+[shovey_previous]
+Level sebelumnya
+---
+[shovey_next]
+Level berikutnya
+---
+[shovey_fire]
+Lempar
+---
+[shovey_up]
+Atas
+---
+[shovey_down]
+Bawah
+---
+[shovey_left]
+Kiri
+---
+[shovey_right]
+Kanan
+---
+[shovey_save_failed]
+Gagal menyimpan. Coba langkah lain untuk mengulang.
+---
+[shovey_controls]
+Panah / WASD · R ulangi · H bantuan · Spasi lempar
+---
+[shovey_shadow_pending]
+Aturan bayangan di level ini masih perlu diverifikasi.
+---
+[shovey_ball]
+Bola
+---
+[shovey_ball_goal]
+Lubang dengan warna sama
+---
+[shovey_home]
+Rumah
+---
+[shovey_portal]
+Teleportasi
+---
+[shovey_crate]
+Peti
+---
+[shovey_trail]
+Penanda jejak
+---
+[shovey_wall]
+Dinding
+---
+[shovey_plate]
+Pelat tekanan
+---
+[shovey_door]
+Pintu tekanan
+---
+[shovey_paint]
+Cat bola
+---
+[shovey_crate_goal]
+Sasaran peti
+---
+[shovey_star]
+Balok bintang
+---
+[shovey_sensor]
+Sensor penutup
+---
+[shovey_apple]
+Apel
+---
+[shovey_reverse]
+Kontrol terbalik
+---
+[shovey_ammo]
+Proyektil
+---
+[shovey_charge]
+Pengisi muatan
+---
+[shovey_target]
+Sasaran proyektil
+---
+[shovey_light]
+Rangkaian cahaya
+---
+[shovey_key]
+Kunci
+---
+[shovey_lock]
+Gembok
+---
+[shovey_slide]
+Daya meluncur
+---
+[shovey_color_block]
+Balok pengubah warna
+---
+[shovey_color_goal]
+Sasaran balok merah
+---
+[shovey_shadow]
+Shovey bayangan
+---
+[shovey_floor]
+Lantai
+---
+[shovey_instructions]
+Gunakan tombol panah atau WASD. Dorong satu benda sekaligus; benda tidak bisa ditarik. Masukkan bola ke lubang dengan warna sama dan peti ke kotak bertanda. Cat mengubah warna bola. Kumpulkan apel dan pertemukan balok bintang. Selesaikan tugas sebelum pulang. Peti menahan pintu tekanan agar terbuka. Kunci membuka gembok. Spasi melempar proyektil yang diambil ke arah hadap Shovey. Beberapa benda membalik kontrol, meninggalkan jejak, atau membuat Shovey meluncur sampai terhalang. Shovey bermuatan dapat menyalakan rangkaian cahaya; jangan isi muatan dua kali. Balok berubah merah → biru → kuning setiap didorong; sasarannya membutuhkan merah. R mengulang, H membuka panduan ini.
+---
+[shovey_continue]
+Lanjutkan
+---
+[shovey_levels]
+Level
+---
+[shovey_locked]
+Terkunci
+---
+[shovey_completed]
+Selesai
+---
+[shovey_available]
+Tersedia
+---

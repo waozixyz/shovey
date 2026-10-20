@@ -1,0 +1,633 @@
+[editor_choose]
+Pilih edisi yang levelnya ingin kamu lihat, buat, atau ubah.
+---
+[editor_classic]
+Classic
+---
+[editor_island]
+Island
+---
+[editor_custom_count]
+Levelmu: {n}
+---
+[editor_explore]
+Jelajahi
+---
+[editor_export]
+Ekspor
+---
+[editor_back]
+Kembali
+---
+[editor_publish]
+Terbitkan
+---
+[editor_your_levels]
+Levelmu
+---
+[editor_new_level]
+Level baru
+---
+[editor_not_proven]
+Belum terbukti
+---
+[editor_proven]
+Terbukti bisa dimenangkan
+---
+[editor_completed]
+Dimenangkan olehmu
+---
+[editor_by_author]
+Oleh @{s}
+---
+[editor_story_levels]
+Level cerita
+---
+[editor_story_named]
+{n} · {s}
+---
+[editor_story_level]
+Level cerita {n}
+---
+[editor_story_note]
+Level cerita {n}. Menggambar di sini membuat salinanmu sendiri; level cerita tetap seperti semula.
+---
+[editor_custom_level]
+Level {n}
+---
+[editor_copy_of]
+Salinan level cerita {n}
+---
+[editor_levels]
+Level
+---
+[editor_undo]
+Urungkan
+---
+[editor_play]
+Main
+---
+[editor_board]
+Papan: ketuk atau seret untuk menggambar
+---
+[editor_pick]
+Ambil
+---
+[editor_pick_hint]
+Ketuk papan untuk mengambil kepingnya.
+---
+[editor_name]
+Nama
+---
+[editor_name_hint]
+Beri nama level ini
+---
+[editor_delete]
+Hapus
+---
+[editor_delete_confirm]
+Hapus sekarang
+---
+[editor_delete_again]
+Ketuk “Hapus sekarang” untuk menghapus level ini selamanya.
+---
+[editor_copied]
+Disimpan sebagai level barumu sendiri.
+---
+[editor_full]
+Tidak ada ruang untuk level lagi.
+---
+[editor_unreadable]
+Level ini tidak bisa dibaca.
+---
+[editor_check_waiting]
+Pemeriksaan segera dimulai…
+---
+[editor_checking]
+Memeriksa apakah bisa dimenangkan… {n} posisi
+---
+[editor_never]
+Tidak bisa dimenangkan: semua posisi yang terjangkau sudah dicoba.
+---
+[editor_unknown]
+Belum terbukti. Menangkan di Main untuk membuktikannya.
+---
+[editor_proven_solver]
+Terbukti bisa dimenangkan: pemecah memenangkannya.
+---
+[editor_proven_played]
+Terbukti bisa dimenangkan: kamu memenangkannya.
+---
+[editor_proven_download]
+Terbukti bisa dimenangkan: rutenya menang di sini.
+---
+[editor_edit]
+Ubah
+---
+[editor_testing]
+Uji coba
+---
+[editor_restart]
+Ulangi
+---
+[editor_throw]
+Lempar
+---
+[editor_controls]
+Tombol panah atau WASD, usap, ketuk, atau stik; Spasi melempar di Classic
+---
+[editor_won]
+Menang!
+---
+[editor_won_proof]
+Menang! Rutemu membuktikan level ini.
+---
+[editor_lost]
+Muatan terlalu banyak! Ulangi atau urungkan.
+---
+[editor_ready_classic]
+Semua siap. Pulanglah!
+---
+[editor_ready_island]
+Semua tujuan tercapai. Masuk ke pondok dari bawah.
+---
+[editor_copy]
+Salin
+---
+[editor_copied_text]
+Disalin.
+---
+[editor_export_note]
+{n} level terbukti sebagai teks untuk pengembang Shovey. Salin lalu kirimkan.
+---
+[editor_export_none]
+Belum ada level yang terbukti. Sebuah level dihitung begitu pemecah atau kamu memenangkannya.
+---
+[editor_export_full]
+Terlalu banyak level untuk satu ekspor.
+---
+[editor_classic_levels]
+Level Classic-ku
+---
+[editor_island_levels]
+Level Island-ku
+---
+[editor_publish_note]
+Bagikan level-levelmu yang terbukti sebagai satu koleksi.
+---
+[editor_collection_title]
+Judul koleksi
+---
+[editor_public]
+Publik
+---
+[editor_friends]
+Teman
+---
+[editor_private]
+Pribadi
+---
+[editor_publish_now]
+Terbitkan
+---
+[editor_publish_again]
+Terbitkan lagi
+---
+[editor_unpublish]
+Batalkan terbitan
+---
+[editor_publish_levels]
+Level dalam koleksi ini
+---
+[editor_publish_none]
+Pilih setidaknya satu level yang terbukti.
+---
+[editor_title_needed]
+Beri judul pada koleksi.
+---
+[editor_published]
+Diterbitkan.
+---
+[editor_unpublished]
+Tidak diterbitkan lagi.
+---
+[editor_explore_note]
+Temukan koleksi level lewat alias atau ID publik pembuatnya, atau cari tanpa mengetik apa pun untuk melihat yang terbaru.
+---
+[editor_search_label]
+Alias atau ID publik
+---
+[editor_search_hint]
+alias atau ID
+---
+[editor_search]
+Cari
+---
+[editor_found]
+Pilih koleksi untuk menambahkan levelnya ke levelmu.
+---
+[editor_found_none]
+Tidak ada koleksi yang ditemukan.
+---
+[editor_result_detail]
+{n} level · {s}
+---
+[editor_verifying]
+Memeriksa rute… {n} level ditambahkan
+---
+[editor_downloaded]
+{n} level ditambahkan ke levelmu. {s}
+---
+[editor_refused]
+{n} ditolak: rutenya tidak menang.
+---
+[editor_share_waiting]
+Menunggu jawaban…
+---
+[editor_share_unavailable]
+Berbagi koleksi level tidak tersedia di sini.
+---
+[editor_share_rejected]
+Permintaan ditolak.
+---
+[editor_share_failed]
+Terjadi kesalahan. Coba lagi.
+---
+[editor_share_invalid]
+Koleksi ini tidak bisa dibaca.
+---
+[editor_signed_out]
+Masuk untuk berbagi koleksi level.
+---
+[editor_offline]
+Kamu sedang offline. Coba lagi nanti.
+---
+[editor_not_found]
+Koleksi itu sudah tidak ada.
+---
+[editor_forbidden]
+Koleksi itu tidak dibagikan denganmu.
+---
+[editor_too_large]
+Koleksi ini terlalu besar untuk dibagikan.
+---
+[editor_invalid]
+Koleksi tidak diterima.
+---
+[editor_busy]
+Layanan sedang sibuk. Coba lagi sebentar lagi.
+---
+[editor_save_failed]
+Gagal menyimpan. Perubahanmu berikutnya akan mencoba lagi.
+---
+[editor_shovey]
+Shovey
+---
+[editor_floor]
+Lantai
+---
+[editor_wall]
+Dinding
+---
+[editor_home]
+Rumah
+---
+[editor_crate]
+Peti
+---
+[editor_crate_goal]
+Tujuan peti
+---
+[editor_red_ball]
+Bola merah
+---
+[editor_blue_ball]
+Bola biru
+---
+[editor_green_ball]
+Bola hijau
+---
+[editor_red_pit]
+Lubang merah
+---
+[editor_blue_pit]
+Lubang biru
+---
+[editor_green_pit]
+Lubang hijau
+---
+[editor_red_paint]
+Cat merah
+---
+[editor_blue_paint]
+Cat biru
+---
+[editor_green_paint]
+Cat hijau
+---
+[editor_star_block]
+Balok bintang
+---
+[editor_apple]
+Apel
+---
+[editor_plate]
+Pelat tekan
+---
+[editor_gate]
+Gerbang
+---
+[editor_key]
+Kunci
+---
+[editor_lock]
+Gembok
+---
+[editor_teleporter]
+Teleporter
+---
+[editor_trail]
+Penanda jejak
+---
+[editor_reverse]
+Kontrol terbalik
+---
+[editor_ammo]
+Amunisi
+---
+[editor_target]
+Sasaran
+---
+[editor_charge]
+Pengisi daya
+---
+[editor_moving_block]
+Balok berjalan
+---
+[editor_fresh_path]
+Jalur balok
+---
+[editor_used_path]
+Jalur balok yang sudah dilewati
+---
+[editor_sensor]
+Sensor
+---
+[editor_closed_sensor]
+Sensor tertutup
+---
+[editor_slide]
+Kekuatan meluncur
+---
+[editor_red_block]
+Balok warna merah
+---
+[editor_blue_block]
+Balok warna biru
+---
+[editor_yellow_block]
+Balok warna kuning
+---
+[editor_block_goal]
+Tujuan balok warna
+---
+[editor_mirror_shovey]
+Shovey cermin
+---
+[editor_hut]
+Pondok
+---
+[editor_water]
+Air
+---
+[editor_sand]
+Pasir
+---
+[editor_meadow]
+Padang rumput
+---
+[editor_clear]
+Singkirkan benda
+---
+[editor_pebbles]
+Kerikil
+---
+[editor_jade_bed]
+Petak bunga giok
+---
+[editor_red_bed]
+Petak bunga merah
+---
+[editor_barrel_spot]
+Tempat tong
+---
+[editor_red_spot]
+Tempat patung merah
+---
+[editor_blue_spot]
+Tempat patung biru
+---
+[editor_green_spot]
+Tempat patung hijau
+---
+[editor_sunken_crate]
+Peti tenggelam
+---
+[editor_spike_plate]
+Pelat duri
+---
+[editor_well]
+Sumur
+---
+[editor_farm]
+Ladang
+---
+[editor_planted]
+Ladang bertanam
+---
+[editor_blast_spot]
+Titik ledakan
+---
+[editor_item_teleporter]
+Teleporter benda
+---
+[editor_raft]
+Rakit
+---
+[editor_ice]
+Es tipis
+---
+[editor_watch_plate]
+Pelat pengintai
+---
+[editor_hidden_path]
+Jalan tersembunyi
+---
+[editor_channel]
+Saluran kelapa
+---
+[editor_channel_end]
+Ujung saluran
+---
+[editor_yellow_ring]
+Lingkaran bunga kuning
+---
+[editor_red_ring]
+Lingkaran bunga merah
+---
+[editor_barrel]
+Tong
+---
+[editor_red_statue]
+Patung merah
+---
+[editor_blue_statue]
+Patung biru
+---
+[editor_green_statue]
+Patung hijau
+---
+[editor_palm]
+Pohon palem
+---
+[editor_coconut_palm]
+Pohon kelapa
+---
+[editor_boulder]
+Batu besar
+---
+[editor_snail]
+Siput
+---
+[editor_buoy]
+Pelampung
+---
+[editor_sea_star]
+Bintang laut
+---
+[editor_baby_crab]
+Bayi kepiting
+---
+[editor_mother_crab]
+Induk kepiting
+---
+[editor_happy_crab]
+Induk kepiting yang senang
+---
+[editor_chest]
+Peti harta
+---
+[editor_seed]
+Benih
+---
+[editor_bottle]
+Botol
+---
+[editor_coconut]
+Kelapa
+---
+[editor_coconut_hole]
+Lubang kelapa
+---
+[editor_bomb]
+Bom
+---
+[editor_spring]
+Bunga pegas
+---
+[editor_slingshot]
+Ketapel
+---
+[editor_leaf_up]
+Daun ke atas
+---
+[editor_leaf_right]
+Daun ke kanan
+---
+[editor_leaf_down]
+Daun ke bawah
+---
+[editor_leaf_left]
+Daun ke kiri
+---
+[editor_turner_up]
+Pemutar daun, atas
+---
+[editor_turner_right]
+Pemutar daun, kanan
+---
+[editor_turner_down]
+Pemutar daun, bawah
+---
+[editor_turner_left]
+Pemutar daun, kiri
+---
+[editor_pearl]
+Mutiara
+---
+[editor_lantern]
+Lentera batu
+---
+[editor_clam]
+Kerang mutiara
+---
+[editor_coin]
+Koin
+---
+[editor_pirate]
+Bajak laut
+---
+[editor_stall]
+Lapak bajak laut
+---
+[editor_spikes]
+Duri
+---
+[editor_red_shell]
+Kerang merah yang cemberut
+---
+[editor_blue_shell]
+Kerang biru yang mengantuk
+---
+[editor_yellow_shell]
+Kerang kuning yang ceria
+---
+[editor_stone_1]
+Batu bernomor 1
+---
+[editor_stone_2]
+Batu bernomor 2
+---
+[editor_stone_3]
+Batu bernomor 3
+---
+[editor_stone_4]
+Batu bernomor 4
+---
+[editor_stone_5]
+Batu bernomor 5
+---
+[editor_yellow_flower]
+Bunga kuning
+---
+[editor_red_flower]
+Bunga merah
+---
+[editor_octopus]
+Gurita
+---
+[editor_string_post]
+Tiang tali
+---
+[editor_shell_turning]
+Kerang berganti warna
+---
+[editor_yellow_turning]
+Kerang menjadi kuning
+---
+[editor_ground]
+Medan
+---
+[editor_object]
+Benda
+---

@@ -1,0 +1,113 @@
+// Runs the Ziran solver (apps/shovey/solver) natively over story levels and
+// prints, for each, what it found, the states it saw, its work and the time.
+//
+//   build/solver/shovey-bench classic|island [FIRST [LAST [BUDGET]]]
+//
+// BUDGET is the solver's work units per level (default 40000000).
+#import "c_string"
+#import "byte_text_linux"
+#import "number_text"
+#import "timer_linux"
+#import, file "../../apps/shovey/solver/solver.zi";
+#import, file "../../apps/shovey/levels.zi";
+#import, file "../../apps/shovey/island_levels.zi";
+
+libc :: #system_library "libc";
+WriteOut :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
+
+Say :: (text: string) {
+    bytes: [512]u8
+    if CopyCString(text, bytes[:]) { unused WriteOut(1, *bytes[0], cast(usize)text.count) }
+}
+
+SayNumber :: (value: s64) {
+    digits: [24]u8
+    Say(FormatInteger(value, digits[:]))
+}
+
+Number :: (text: string) -> s64 {
+    number: s64 = 0
+    for at: cast(s64)0..text.count - 1 {
+        if text[at] >= cast(u8)48 && text[at] <= cast(u8)57 { number = number * 10 + cast(s64)(text[at] - cast(u8)48) }
+    }
+    return number
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    if argc < 2 { Say("usage: shovey-bench classic|island [FIRST [LAST [BUDGET]]]\n"); return 2 }
+    island := TextFromCString(argv[1]) == "island"
+    count: s64 = ifx island then cast(s64)ISLAND_LEVEL_COUNT else cast(s64)SHOVEY_LEVEL_COUNT
+    first: s64 = 1
+    last := count
+    budget: s64 = 40000000
+    if argc >= 3 { first = Number(TextFromCString(argv[2])) }
+    if argc >= 4 { last = Number(TextFromCString(argv[3])) }
+    if argc >= 5 { budget = Number(TextFromCString(argv[4])) }
+    if last > count { last = count }
+    names: [6]string = .["idle", "running", "won", "never", "unknown", "invalid"]
+    searches: [5]string = .["greedy", "chain", "bfs", "macro", "verify"]
+    won: s64 = 0
+    total: s64 = 0
+    last_depth: s32 = -1
+    last_ways: s32 = -1
+    started := MonotonicMilliseconds()
+    for number: first..last {
+        board := ifx island then IslandLevelData(cast(s32)number) else ShoveyLevelData(cast(s32)number)
+        begin := MonotonicMilliseconds()
+        work := SolverWork()
+        unused SolverStart(island, board)
+        while SolverStatus() == SOLVER_RUNNING && SolverWork() - work < budget {
+            SolverRun(20000)
+            if number == 154 {
+                if solver_chain_depth != last_depth && solver_chain_depth > 0 {
+                    last_depth = solver_chain_depth
+                    at := solver_chain_root_key[last_depth - 1]
+                    Say("root depth "); SayNumber(cast(s64)last_depth); Say(" key")
+                    for index: cast(s32)0..solver_chain_root_length[last_depth - 1] - 1 {
+                        Say(" "); SayNumber(cast(s64)solver_chain_arena[at + index])
+                    }
+                    Say("\n")
+                }
+                if solver_search == SOLVER_CHAIN && solver_chain_depth == 1 && solver_chain_ways[0] != last_ways {
+                    last_ways = solver_chain_ways[0]
+                    for way: cast(s32)0..solver_chain_ways[0] - 1 {
+                        at := solver_way_key[way]
+                        Say("way "); SayNumber(cast(s64)way); Say(" walker "); SayNumber(cast(s64)solver_way_walker[way])
+                        Say(" key")
+                        for index: cast(s32)0..solver_way_length[way] - 1 {
+                            Say(" "); SayNumber(cast(s64)solver_chain_arena[at + index])
+                        }
+                        Say("\n")
+                    }
+                }
+                Say("debug status "); SayNumber(cast(s64)SolverStatus())
+                Say(" search "); SayNumber(cast(s64)solver_search)
+                Say(" depth "); SayNumber(cast(s64)solver_chain_depth)
+                    Say(" used "); SayNumber(cast(s64)solver_chain_used)
+                Say(" count "); SayNumber(cast(s64)solver_count)
+                Say(" states "); SayNumber(SolverStates())
+                    Say(" route "); SayNumber(cast(s64)SolverStoryRoute().count)
+                    Say(" verify "); SayNumber(cast(s64)solver_verify_at)
+                    Say(" routelen "); SayNumber(cast(s64)solver_route_length)
+                Say(" work "); SayNumber(SolverWork() - work)
+                Say("\n")
+            }
+        }
+        status := SolverStatus()
+        total += 1
+        if status == SOLVER_WON { won += 1 }
+        SayNumber(number); Say(" "); Say(names[status])
+        if status == SOLVER_WON { Say(" by "); Say(searches[SolverSearchWon()]); Say(" moves "); SayNumber(cast(s64)SolverRoute().count) }
+        Say(" states "); SayNumber(SolverStates())
+                    Say(" route "); SayNumber(cast(s64)SolverStoryRoute().count)
+                    Say(" verify "); SayNumber(cast(s64)solver_verify_at)
+                    Say(" routelen "); SayNumber(cast(s64)solver_route_length)
+        Say(" work "); SayNumber(SolverWork() - work)
+        Say(" ms "); SayNumber(MonotonicMilliseconds() - begin)
+        Say("\n")
+    }
+    Say("won "); SayNumber(won); Say(" of "); SayNumber(total)
+    Say(" in "); SayNumber(MonotonicMilliseconds() - started); Say(" ms\n")
+    return 0
+}

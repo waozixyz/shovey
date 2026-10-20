@@ -1,0 +1,633 @@
+[editor_choose]
+Vyber edici, jejíž úrovně chceš prohlížet, tvořit nebo upravovat.
+---
+[editor_classic]
+Classic
+---
+[editor_island]
+Island
+---
+[editor_custom_count]
+Tvoje úrovně: {n}
+---
+[editor_explore]
+Objevovat
+---
+[editor_export]
+Exportovat
+---
+[editor_back]
+Zpět
+---
+[editor_publish]
+Zveřejnit
+---
+[editor_your_levels]
+Tvoje úrovně
+---
+[editor_new_level]
+Nová úroveň
+---
+[editor_not_proven]
+Zatím neprokázáno
+---
+[editor_proven]
+Prokazatelně řešitelná
+---
+[editor_completed]
+Vyřešeno tebou
+---
+[editor_by_author]
+Od @{s}
+---
+[editor_story_levels]
+Úrovně příběhu
+---
+[editor_story_named]
+{n} · {s}
+---
+[editor_story_level]
+Úroveň příběhu {n}
+---
+[editor_story_note]
+Úroveň příběhu {n}. Když do ní kreslíš, vznikne tvoje vlastní kopie; úroveň příběhu zůstane, jak je.
+---
+[editor_custom_level]
+Úroveň {n}
+---
+[editor_copy_of]
+Kopie úrovně příběhu {n}
+---
+[editor_levels]
+Úrovně
+---
+[editor_undo]
+Zpět o krok
+---
+[editor_play]
+Hrát
+---
+[editor_board]
+Herní plocha: klepni nebo táhni a kresli
+---
+[editor_pick]
+Vzít
+---
+[editor_pick_hint]
+Klepni na herní plochu a vezmi její díl.
+---
+[editor_name]
+Název
+---
+[editor_name_hint]
+Pojmenuj tuto úroveň
+---
+[editor_delete]
+Smazat
+---
+[editor_delete_confirm]
+Smazat hned
+---
+[editor_delete_again]
+Klepni na „Smazat hned“ a úroveň bude nadobro odstraněna.
+---
+[editor_copied]
+Uloženo jako tvoje nová úroveň.
+---
+[editor_full]
+Na další úrovně už není místo.
+---
+[editor_unreadable]
+Tuto úroveň se nepodařilo načíst.
+---
+[editor_check_waiting]
+Kontrola brzy začne…
+---
+[editor_checking]
+Zkouším, zda jde vyřešit… pozic: {n}
+---
+[editor_never]
+Nelze vyřešit: vyzkoušeny byly všechny dosažitelné pozice.
+---
+[editor_unknown]
+Zatím neprokázáno. Vyřeš ji v režimu Hrát a prokážeš to.
+---
+[editor_proven_solver]
+Prokazatelně řešitelná: vyřešil ji řešič.
+---
+[editor_proven_played]
+Prokazatelně řešitelná: vyřešena tebou.
+---
+[editor_proven_download]
+Prokazatelně řešitelná: její cesta ji tu vyřešila.
+---
+[editor_edit]
+Upravit
+---
+[editor_testing]
+Zkouška
+---
+[editor_restart]
+Znovu
+---
+[editor_throw]
+Hodit
+---
+[editor_controls]
+Šipky nebo WASD, tah, klepnutí nebo páčka; mezerník v Classic hází
+---
+[editor_won]
+Vyřešeno!
+---
+[editor_won_proof]
+Vyřešeno! Tvoje cesta tuto úroveň prokazuje.
+---
+[editor_lost]
+Příliš velký náboj! Začni znovu nebo vrať tah.
+---
+[editor_ready_classic]
+Vše je hotovo. Jdi domů!
+---
+[editor_ready_island]
+Všechny cíle splněny. Vejdi do chýše zespodu.
+---
+[editor_copy]
+Kopírovat
+---
+[editor_copied_text]
+Zkopírováno.
+---
+[editor_export_note]
+Prokázaných úrovní: {n}, jako text pro vývojáře hry Shovey. Zkopíruj ho a pošli.
+---
+[editor_export_none]
+Zatím žádné prokázané úrovně. Úroveň se počítá, jakmile ji vyřeší řešič nebo ty.
+---
+[editor_export_full]
+Na jeden export je to příliš mnoho úrovní.
+---
+[editor_classic_levels]
+Moje úrovně Classic
+---
+[editor_island_levels]
+Moje úrovně Island
+---
+[editor_publish_note]
+Sdílej své prokázané úrovně jako jednu sbírku.
+---
+[editor_collection_title]
+Název sbírky
+---
+[editor_public]
+Veřejná
+---
+[editor_friends]
+Přátelé
+---
+[editor_private]
+Soukromá
+---
+[editor_publish_now]
+Zveřejnit
+---
+[editor_publish_again]
+Zveřejnit znovu
+---
+[editor_unpublish]
+Stáhnout
+---
+[editor_publish_levels]
+Úrovně v této sbírce
+---
+[editor_publish_none]
+Vyber alespoň jednu prokázanou úroveň.
+---
+[editor_title_needed]
+Dej sbírce název.
+---
+[editor_published]
+Zveřejněno.
+---
+[editor_unpublished]
+Už není zveřejněno.
+---
+[editor_explore_note]
+Najdi sbírky úrovní podle přezdívky nebo veřejného ID autora, nebo hledej bez textu a uvidíš ty nejnovější.
+---
+[editor_search_label]
+Přezdívka nebo veřejné ID
+---
+[editor_search_hint]
+přezdívka nebo ID
+---
+[editor_search]
+Hledat
+---
+[editor_found]
+Vyber sbírku a přidej její úrovně ke svým.
+---
+[editor_found_none]
+Žádné sbírky nenalezeny.
+---
+[editor_result_detail]
+Úrovní: {n} · {s}
+---
+[editor_verifying]
+Kontroluji cesty… přidáno úrovní: {n}
+---
+[editor_downloaded]
+Ke tvým přidáno úrovní: {n}. {s}
+---
+[editor_refused]
+Odmítnuto: {n}, jejich cesty nevedou k výhře.
+---
+[editor_share_waiting]
+Čekám na odpověď…
+---
+[editor_share_unavailable]
+Sdílení sbírek úrovní tu není k dispozici.
+---
+[editor_share_rejected]
+Požadavek byl odmítnut.
+---
+[editor_share_failed]
+Něco se pokazilo. Zkus to znovu.
+---
+[editor_share_invalid]
+Tuto sbírku se nepodařilo načíst.
+---
+[editor_signed_out]
+Pro sdílení sbírek úrovní se přihlas.
+---
+[editor_offline]
+Jsi offline. Zkus to později.
+---
+[editor_not_found]
+Tato sbírka už neexistuje.
+---
+[editor_forbidden]
+Tato sbírka s tebou není sdílená.
+---
+[editor_too_large]
+Sbírka je na sdílení příliš velká.
+---
+[editor_invalid]
+Sbírka nebyla přijata.
+---
+[editor_busy]
+Služba je zaneprázdněná. Zkus to za chvíli.
+---
+[editor_save_failed]
+Uložení se nezdařilo. Další změna to zkusí znovu.
+---
+[editor_shovey]
+Shovey
+---
+[editor_floor]
+Podlaha
+---
+[editor_wall]
+Zeď
+---
+[editor_home]
+Domov
+---
+[editor_crate]
+Bedna
+---
+[editor_crate_goal]
+Cíl pro bednu
+---
+[editor_red_ball]
+Červená koule
+---
+[editor_blue_ball]
+Modrá koule
+---
+[editor_green_ball]
+Zelená koule
+---
+[editor_red_pit]
+Červená jamka
+---
+[editor_blue_pit]
+Modrá jamka
+---
+[editor_green_pit]
+Zelená jamka
+---
+[editor_red_paint]
+Červená barva
+---
+[editor_blue_paint]
+Modrá barva
+---
+[editor_green_paint]
+Zelená barva
+---
+[editor_star_block]
+Hvězdný blok
+---
+[editor_apple]
+Jablko
+---
+[editor_plate]
+Nášlapná deska
+---
+[editor_gate]
+Brána
+---
+[editor_key]
+Klíč
+---
+[editor_lock]
+Zámek
+---
+[editor_teleporter]
+Teleport
+---
+[editor_trail]
+Stopa
+---
+[editor_reverse]
+Obrácené ovládání
+---
+[editor_ammo]
+Střelivo
+---
+[editor_target]
+Terč
+---
+[editor_charge]
+Nabíječka
+---
+[editor_moving_block]
+Putující blok
+---
+[editor_fresh_path]
+Cesta bloku
+---
+[editor_used_path]
+Prošlá cesta bloku
+---
+[editor_sensor]
+Senzor
+---
+[editor_closed_sensor]
+Zavřený senzor
+---
+[editor_slide]
+Klouzání
+---
+[editor_red_block]
+Červený barevný blok
+---
+[editor_blue_block]
+Modrý barevný blok
+---
+[editor_yellow_block]
+Žlutý barevný blok
+---
+[editor_block_goal]
+Cíl pro barevný blok
+---
+[editor_mirror_shovey]
+Zrcadlový Shovey
+---
+[editor_hut]
+Chýše
+---
+[editor_water]
+Voda
+---
+[editor_sand]
+Písek
+---
+[editor_meadow]
+Louka
+---
+[editor_clear]
+Odebrat předmět
+---
+[editor_pebbles]
+Oblázky
+---
+[editor_jade_bed]
+Záhon nefritových květin
+---
+[editor_red_bed]
+Záhon červených květin
+---
+[editor_barrel_spot]
+Místo pro sud
+---
+[editor_red_spot]
+Místo pro červenou sochu
+---
+[editor_blue_spot]
+Místo pro modrou sochu
+---
+[editor_green_spot]
+Místo pro zelenou sochu
+---
+[editor_sunken_crate]
+Potopená bedna
+---
+[editor_spike_plate]
+Deska s bodci
+---
+[editor_well]
+Studna
+---
+[editor_farm]
+Pole
+---
+[editor_planted]
+Oseté pole
+---
+[editor_blast_spot]
+Místo výbuchu
+---
+[editor_item_teleporter]
+Teleport pro předměty
+---
+[editor_raft]
+Vor
+---
+[editor_ice]
+Tenký led
+---
+[editor_watch_plate]
+Strážní deska
+---
+[editor_hidden_path]
+Skrytá cesta
+---
+[editor_channel]
+Žlab na kokosy
+---
+[editor_channel_end]
+Konec žlabu
+---
+[editor_yellow_ring]
+Kruh žlutých květin
+---
+[editor_red_ring]
+Kruh červených květin
+---
+[editor_barrel]
+Sud
+---
+[editor_red_statue]
+Červená socha
+---
+[editor_blue_statue]
+Modrá socha
+---
+[editor_green_statue]
+Zelená socha
+---
+[editor_palm]
+Palma
+---
+[editor_coconut_palm]
+Kokosová palma
+---
+[editor_boulder]
+Balvan
+---
+[editor_snail]
+Šnek
+---
+[editor_buoy]
+Bóje
+---
+[editor_sea_star]
+Hvězdice
+---
+[editor_baby_crab]
+Krabík
+---
+[editor_mother_crab]
+Krabí maminka
+---
+[editor_happy_crab]
+Šťastná krabí maminka
+---
+[editor_chest]
+Truhla s pokladem
+---
+[editor_seed]
+Semínko
+---
+[editor_bottle]
+Láhev
+---
+[editor_coconut]
+Kokos
+---
+[editor_coconut_hole]
+Jamka na kokos
+---
+[editor_bomb]
+Bomba
+---
+[editor_spring]
+Pružinová květina
+---
+[editor_slingshot]
+Prak
+---
+[editor_leaf_up]
+List nahoru
+---
+[editor_leaf_right]
+List doprava
+---
+[editor_leaf_down]
+List dolů
+---
+[editor_leaf_left]
+List doleva
+---
+[editor_turner_up]
+Otáčeč listů, nahoru
+---
+[editor_turner_right]
+Otáčeč listů, doprava
+---
+[editor_turner_down]
+Otáčeč listů, dolů
+---
+[editor_turner_left]
+Otáčeč listů, doleva
+---
+[editor_pearl]
+Perla
+---
+[editor_lantern]
+Kamenná lucerna
+---
+[editor_clam]
+Škeble
+---
+[editor_coin]
+Mince
+---
+[editor_pirate]
+Pirát
+---
+[editor_stall]
+Pirátský stánek
+---
+[editor_spikes]
+Bodce
+---
+[editor_red_shell]
+Mrzutá červená mušle
+---
+[editor_blue_shell]
+Ospalá modrá mušle
+---
+[editor_yellow_shell]
+Veselá žlutá mušle
+---
+[editor_stone_1]
+Číslovaný kámen 1
+---
+[editor_stone_2]
+Číslovaný kámen 2
+---
+[editor_stone_3]
+Číslovaný kámen 3
+---
+[editor_stone_4]
+Číslovaný kámen 4
+---
+[editor_stone_5]
+Číslovaný kámen 5
+---
+[editor_yellow_flower]
+Žlutá květina
+---
+[editor_red_flower]
+Červená květina
+---
+[editor_octopus]
+Chobotnice
+---
+[editor_string_post]
+Kolík na provázek
+---
+[editor_shell_turning]
+Mušle mění barvu
+---
+[editor_yellow_turning]
+Mušle žloutne
+---
+[editor_ground]
+Terén
+---
+[editor_object]
+Předmět
+---

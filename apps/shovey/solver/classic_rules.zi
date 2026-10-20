@@ -1,0 +1,806 @@
+// Classic's side of the Ziran solver (solver.zi). Every rule runs in the
+// shipped engine; this module only loads a board, describes a ShoveyGame as
+// a key for the searches and gives them a goal estimate. It is the Ziran
+// counterpart of tools/solver/classic_api.zi, without the C boundary.
+//
+// A key lists the behavior-relevant fields that differ from a reference
+// game, three bytes each: the field's number (high, low byte) and its value.
+//   0..239    ground; a moving-block cell (29) is 128 + its light_from, the
+//             only light_from value ShoveyTick ever reads
+//   240..479  objects
+//   482       powers
+//   483       keys
+//   484       1 when won, 2 when lost
+// Shovey's cell and, while ammunition is held, its facing make the walker,
+// which the searches keep beside the key. Level, move and teleport counters
+// are constant or cosmetic and stay out.
+#import, file "../engine.zi";
+
+// The loaded board, the game keys are differences from, the decoded state
+// actions start from and the game an action changed.
+solve_classic_initial: ShoveyGame;
+solve_classic_root: ShoveyGame;
+solve_classic_base: ShoveyGame;
+solve_classic_game: ShoveyGame;
+// Mirror shadows in the base, the root and the loaded board: one moves with
+// every step, so no step is plain.
+solve_classic_shadows: s32;
+solve_classic_root_shadows: s32;
+solve_classic_initial_shadows: s32;
+// Work done, in units of about a hundred engine statements.
+solve_classic_work: s64;
+
+// Loads a board of 480 hex digits. False when the engine rejects it.
+SolveClassicLoad :: (data: string) -> bool {
+    if !ShoveyLoadData(*solve_classic_initial, 0, data) { return false }
+    solve_classic_initial_shadows = SolveClassicShadows(*solve_classic_initial)
+    SolveClassicSetRoot(*solve_classic_initial)
+    SolveClassicPrepare()
+    return true
+}
+
+SolveClassicShadows :: (game: *ShoveyGame) -> s32 {
+    count: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.objects[at] == 40 { count += 1 }
+    }
+    return count
+}
+
+// Keys from now on are differences from game; the base becomes game.
+SolveClassicSetRoot :: (game: *ShoveyGame) {
+    solve_classic_root = game.*
+    solve_classic_base = game.*
+    solve_classic_game = game.*
+    solve_classic_root_shadows = SolveClassicShadows(game)
+    solve_classic_shadows = solve_classic_root_shadows
+}
+
+SolveClassicEntry :: (out: []u8, length: s32, field: s32, value: s32) -> s32 {
+    if length < 0 || value < 0 || value > 255 || length + 3 > cast(s32)out.count { return -1 }
+    out[length] = cast(u8)(field >> 8)
+    out[length + 1] = cast(u8)(field & 255)
+    out[length + 2] = cast(u8)value
+    return length + 3
+}
+
+// Writes the key of game against reference into out. Returns its length,
+// or -1 when a value does not fit its byte or out is too small.
+SolveClassicKey :: (game: *ShoveyGame, reference: *ShoveyGame, out: []u8) -> s32 {
+    length: s32 = 0
+    // Ground, objects and every moving block's direction each have a field.
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.ground[at] != reference.ground[at] {
+            length = SolveClassicEntry(out, length, at, game.ground[at])
+        }
+        if game.objects[at] != reference.objects[at] {
+            length = SolveClassicEntry(out, length, SHOVEY_CELLS + at, game.objects[at])
+        }
+        if game.light_from[at] != reference.light_from[at] {
+            length = SolveClassicEntry(out, length, SHOVEY_CELLS * 2 + at, game.light_from[at])
+        }
+    }
+    if game.powers != reference.powers { length = SolveClassicEntry(out, length, 722, game.powers) }
+    if game.keys != reference.keys { length = SolveClassicEntry(out, length, 723, game.keys) }
+    flags := SolveClassicFlags(game)
+    if flags != SolveClassicFlags(reference) { length = SolveClassicEntry(out, length, 724, flags) }
+    solve_classic_work += 5
+    return length
+}
+
+SolveClassicFlags :: (game: *ShoveyGame) -> s32 {
+    return (ifx game.won then 1 else 0) + (ifx game.lost then 2 else 0)
+}
+
+// Makes the base the state of key against reference, which holds
+// reference_shadows mirror shadows, with walker.
+SolveClassicDecode :: (key: string, reference: *ShoveyGame, reference_shadows: s32, walker: s32) {
+    solve_classic_base = reference.*
+    game := *solve_classic_base
+    shadows := reference_shadows
+    at: s64 = 0
+    while at + 2 < key.count {
+        field := cast(s32)key[at] * 256 + cast(s32)key[at + 1]
+        value := cast(s32)key[at + 2]
+        at += 3
+        if field < SHOVEY_CELLS {
+            game.ground[field] = value
+        } else if field < SHOVEY_CELLS * 2 {
+            cell := field - SHOVEY_CELLS
+            if game.objects[cell] == 40 { shadows -= 1 }
+            if value == 40 { shadows += 1 }
+            game.objects[cell] = value
+        } else if field < SHOVEY_CELLS * 3 {
+            game.light_from[field - SHOVEY_CELLS * 2] = value
+        } else if field == 722 { game.powers = value }
+        else if field == 723 { game.keys = value }
+        else if field == 724 { game.won = (value & 1) != 0; game.lost = (value & 2) != 0 }
+    }
+    solve_classic_shadows = shadows
+    SolveClassicSetWalker(walker)
+    solve_classic_game = solve_classic_base
+    solve_classic_work += cast(s64)(3 + key.count / 12)
+}
+
+// Restores the current game to the base.
+SolveClassicReset :: () { solve_classic_game = solve_classic_base }
+
+// Actions: 0..3 move left, up, right, down; 4 throws; 5 advances the moving
+// block one timer tick. True when the engine accepted it. A rejected action
+// changes nothing but the facing: ShoveyMove sets the direction before its
+// checks, and every other rejection returns before any write.
+SolveClassicAct :: (action: s32) -> bool {
+    game := *solve_classic_game
+    from := game.player
+    accepted := false
+    if action >= 0 && action <= 3 { accepted = ShoveyMove(game, action) }
+    else if action == 4 { accepted = ShoveyFire(game) }
+    else if action == 5 { accepted = ShoveyTick(game) }
+    // A refusal costs little; a step scans the board a few times, and a
+    // slide repeats that for every cell.
+    if !accepted { solve_classic_work += 1; return false }
+    dx := from % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH
+    dy := from / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH
+    solve_classic_work += cast(s64)(6 + 6 * ((ifx dx < 0 then -dx else dx) + (ifx dy < 0 then -dy else dy)))
+    return true
+}
+
+// The walker of the current game: cell * 4 + facing while armed.
+SolveClassicWalker :: () -> s32 {
+    game := *solve_classic_game
+    facing: s32 = ifx (game.powers & SHOVEY_AMMO) != 0 then game.direction else 0
+    return game.player * 4 + facing
+}
+
+SolveClassicSetWalker :: (walker: s32) {
+    solve_classic_base.player = walker / 4
+    solve_classic_base.direction = walker % 4
+}
+
+// The walker a move reaches when it only moves Shovey onto plain, empty
+// floor: ShoveyStep then changes nothing but Shovey's cell and facing. Powers
+// that react to steps and a mirror shadow rule this out. -1 when the engine
+// has to take the step.
+SolveClassicPlainStep :: (direction: s32) -> s32 {
+    game := *solve_classic_base
+    if solve_classic_shadows > 0 || (game.powers & (SHOVEY_TRAIL | SHOVEY_REVERSE | SHOVEY_SLIDE)) != 0 { return -1 }
+    to := ShoveyNeighbor(game.player, direction)
+    if to < 0 || game.ground[to] != 0 || game.objects[to] != 0 { return -1 }
+    return to * 4 + (ifx (game.powers & SHOVEY_AMMO) != 0 then direction else 0)
+}
+
+// ShoveyTick never reads Shovey's cell or facing.
+SolveClassicWalkerFree :: (action: s32) -> bool { return action == 5 }
+
+// What the loaded board says for good. Plates (ground 18) are listed with
+// the fewest pushes that bring a crate onto each from every cell, once with
+// doors open and once with them shut; a crate is live where it can still
+// reach some plate. A ball is live where it can still reach a hole of its
+// colour or a painter. Doors (14) are shut while no switch (13) holds an
+// object; switch_pushes counts pushes onto a switch with doors shut, and
+// area numbers the parts of the board Shovey can walk between then.
+SOLVE_CLASSIC_PLATES :: 32
+solve_classic_plate_at: [SOLVE_CLASSIC_PLATES]s32;
+solve_classic_plate_table: [SOLVE_CLASSIC_PLATES]s32;
+solve_classic_plate_total: s32;
+solve_classic_plate_open: [SOLVE_CLASSIC_PLATES * SHOVEY_CELLS]s32;
+solve_classic_plate_shut: [SOLVE_CLASSIC_PLATES * SHOVEY_CELLS]s32;
+solve_classic_crate_live: [SHOVEY_CELLS]bool;
+solve_classic_ball_live: [3 * SHOVEY_CELLS]bool;
+solve_classic_ball_open: [3 * SHOVEY_CELLS]s32;
+solve_classic_switch_pushes: [SHOVEY_CELLS]s32;
+solve_classic_area: [SHOVEY_CELLS]s32;
+solve_classic_doors: bool;
+// Set by the estimate when a goal lies behind a shut door.
+solve_classic_door_needed: bool;
+
+// Ground that keeps a piece (Shovey is 10) out for good: walls, closed
+// sensors, home, portals, trails, charges, other colours' holes and rests.
+// Doors only while shut. Apples, paint, pickups and locks can go away.
+SolveClassicLasting :: (ground: s32, piece: s32, shut: bool) -> bool {
+    if ground == 12 || ground == 23 { return true }
+    if ground == 14 { return shut }
+    if piece == 10 { return false }
+    if ground == 7 || ground == 8 || ground == 11 || ground == 27 { return true }
+    if ground >= 4 && ground <= 6 { return piece != ground - 3 }
+    if ground == 39 { return piece < 36 || piece > 38 }
+    return false
+}
+
+// Fills out with the fewest pushes that bring piece from each cell onto one
+// of sources, on the loaded board's lasting walls. A piece reaches a place
+// by pushes exactly when pulling it back from that place can bring it here;
+// a pull needs the cell behind the piece open to Shovey.
+SolveClassicPulls :: (piece: s32, sources: []s32, shut: bool, out: []s32) {
+    game := *solve_classic_initial
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { out[at] = SOLVE_CLASSIC_FAR }
+    count: s32 = 0
+    for cell: sources {
+        if out[cell] == 0 { continue }
+        out[cell] = 0
+        solve_classic_queue[count] = cell
+        count += 1
+    }
+    head: s32 = 0
+    while head < count {
+        at := solve_classic_queue[head]
+        head += 1
+        for side: cast(s32)0..3 {
+            from := ShoveyNeighbor(at, side)
+            behind := ShoveyNeighbor(from, side)
+            if from < 0 || behind < 0 || out[from] != SOLVE_CLASSIC_FAR { continue }
+            if SolveClassicLasting(game.ground[from], piece, shut) || SolveClassicLasting(game.ground[behind], 10, shut) { continue }
+            out[from] = out[at] + 1
+            solve_classic_queue[count] = from
+            count += 1
+        }
+    }
+    solve_classic_work += cast(s64)(count / 4 + 2)
+}
+
+SolveClassicPrepare :: () {
+    game := *solve_classic_initial
+    sources: [SHOVEY_CELLS]s32
+    pushes: [SHOVEY_CELLS]s32
+    solve_classic_plate_total = 0
+    switches: s32 = 0
+    doors := false
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        solve_classic_crate_live[at] = false
+        if game.ground[at] == 18 {
+            if solve_classic_plate_total < SOLVE_CLASSIC_PLATES { solve_classic_plate_at[solve_classic_plate_total] = at }
+            solve_classic_plate_total += 1
+        }
+        if game.ground[at] == 13 { sources[switches] = at; switches += 1 }
+        if game.ground[at] == 14 { doors = true }
+    }
+    solve_classic_doors = doors && switches > 0
+    SolveClassicPulls(9, sources[0:switches], true, solve_classic_switch_pushes[:])
+    tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
+    for index: cast(s32)0..tracked - 1 {
+        sources[0] = solve_classic_plate_at[index]
+        base := index * SHOVEY_CELLS
+        SolveClassicPulls(9, sources[0:1], false, pushes[:])
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            solve_classic_plate_open[base + at] = pushes[at]
+            if pushes[at] < SOLVE_CLASSIC_FAR { solve_classic_crate_live[at] = true }
+        }
+        SolveClassicPulls(9, sources[0:1], true, pushes[:])
+        for at: cast(s32)0..SHOVEY_CELLS - 1 { solve_classic_plate_shut[base + at] = pushes[at] }
+    }
+    if solve_classic_plate_total > tracked {
+        // Plates past the tracked ones: liveness only, from all of them.
+        count: s32 = 0
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.ground[at] == 18 { sources[count] = at; count += 1 }
+        }
+        SolveClassicPulls(9, sources[0:count], false, pushes[:])
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if pushes[at] < SOLVE_CLASSIC_FAR { solve_classic_crate_live[at] = true }
+        }
+    }
+    for color: cast(s32)0..2 {
+        count: s32 = 0
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            ground := game.ground[at]
+            if ground == color + 4 || (ground >= 15 && ground <= 17) { sources[count] = at; count += 1 }
+        }
+        SolveClassicPulls(color + 1, sources[0:count], false, pushes[:])
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            solve_classic_ball_open[color * SHOVEY_CELLS + at] = pushes[at]
+            solve_classic_ball_live[color * SHOVEY_CELLS + at] = pushes[at] < SOLVE_CLASSIC_FAR
+        }
+    }
+    // Shovey's areas with doors shut, objects ignored.
+    areas: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { solve_classic_area[at] = -1 }
+    for start: cast(s32)0..SHOVEY_CELLS - 1 {
+        if solve_classic_area[start] >= 0 || SolveClassicLasting(game.ground[start], 10, true) { continue }
+        solve_classic_area[start] = areas
+        solve_classic_queue[0] = start
+        count: s32 = 1
+        head: s32 = 0
+        while head < count {
+            at := solve_classic_queue[head]
+            head += 1
+            for side: cast(s32)0..3 {
+                next := ShoveyNeighbor(at, side)
+                if next < 0 || solve_classic_area[next] >= 0 || SolveClassicLasting(game.ground[next], 10, true) { continue }
+                solve_classic_area[next] = areas
+                solve_classic_queue[count] = next
+                count += 1
+            }
+        }
+        areas += 1
+    }
+    solve_classic_work += 40
+}
+
+// A ball against two crossing walls can never move again and never sinks, so
+// ShoveyRemaining can never reach 0; nor can a ball where no push brings it
+// to a hole of its colour or a painter. Every plate needs a crate: when the
+// crates that can still reach one, or already stand on one, are fewer than
+// the plates, the board is lost. A crate frozen in place off a plate can
+// reach none.
+SolveClassicDead :: () -> bool {
+    game := *solve_classic_game
+    solve_classic_work += 5
+    usable: s32 = 0
+    loose: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        object := game.objects[at]
+        if object >= 1 && object <= 3 {
+            if !solve_classic_ball_live[(object - 1) * SHOVEY_CELLS + at] { return true }
+            blocked: [4]bool
+            for side: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, side)
+                blocked[side] = neighbor < 0 || game.ground[neighbor] == 12
+            }
+            if (blocked[0] || blocked[2]) && (blocked[1] || blocked[3]) { return true }
+        } else if object == 9 {
+            if game.ground[at] == 18 { usable += 1 }
+            else if solve_classic_crate_live[at] { usable += 1; loose += 1 }
+        }
+    }
+    if solve_classic_plate_total == 0 { return false }
+    spare := usable - solve_classic_plate_total
+    if spare < 0 { return true }
+    // Freezing is worth checking only while few crates are to spare.
+    if spare > 2 || loose == 0 { return false }
+    frozen: s32 = 0
+    held: [SHOVEY_CELLS]bool
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.objects[at] != 9 || game.ground[at] == 18 || !solve_classic_crate_live[at] { continue }
+        if SolveClassicFrozen(at, 0, held[:], true) && SolveClassicFrozen(at, 1, held[:], true) {
+            frozen += 1
+            if frozen > spare { return true }
+        }
+    }
+    return false
+}
+
+// Whether a piece at `at` can never move along an axis (0 across, 1 along):
+// no push either way is possible. `held` marks pieces assumed fixed, so a
+// ring of pieces ends the recursion; `goal` asks pushes to lead somewhere a
+// crate can still reach a goal from.
+SolveClassicFrozen :: (at: s32, axis: s32, held: []bool, goal: bool = false) -> bool {
+    solve_classic_work += 1
+    piece := solve_classic_game.objects[at]
+    first := ShoveyNeighbor(at, ifx axis == 0 then 0 else 1)
+    second := ShoveyNeighbor(at, ifx axis == 0 then 2 else 3)
+    held[at] = true
+    stuck := !SolveClassicCanPush(first, second, axis, held, goal, piece) &&
+    !SolveClassicCanPush(second, first, axis, held, goal, piece)
+    held[at] = false
+    return stuck
+}
+
+// A push of piece with Shovey standing on `from` moving it onto `to`. Shovey
+// cannot stand on lasting walls or fixed pieces; the piece never enters its
+// lasting walls; a piece already there must be able to move out of the way
+// across this axis.
+SolveClassicCanPush :: (from: s32, to: s32, axis: s32, held: []bool, goal: bool, piece: s32) -> bool {
+    game := *solve_classic_game
+    if from < 0 || to < 0 || held[from] || held[to] { return false }
+    if SolveClassicLasting(game.ground[from], 10, false) || SolveClassicLasting(game.ground[to], piece, false) { return false }
+    if goal && !solve_classic_crate_live[to] { return false }
+    if ShoveyMovable(game.objects[to]) && SolveClassicFrozen(to, 1 - axis, held) { return false }
+    return true
+}
+
+SolveClassicDistance :: (from: s32, to: s32) -> s32 {
+    dx := from % SHOVEY_WIDTH - to % SHOVEY_WIDTH; dy := from / SHOVEY_WIDTH - to / SHOVEY_WIDTH
+    return (ifx dx < 0 then -dx else dx) + (ifx dy < 0 then -dy else dy)
+}
+
+// Distance to the nearest listed cell other than from, or 0 for none.
+SolveClassicNearest :: (from: s32, cells: []s32) -> s32 {
+    best: s32 = -1
+    for cell: cells {
+        if cell == from { continue }
+        distance := SolveClassicDistance(from, cell)
+        if best < 0 || distance < best { best = distance }
+    }
+    return ifx best < 0 then 0 else best
+}
+
+SOLVE_CLASSIC_FAR :: 1000
+// Finishing a goal must outweigh the longest walk home (at most 28 cells).
+SOLVE_CLASSIC_GOAL :: 32
+
+// Scratch lists for the estimate, kept between calls.
+solve_classic_queue: [SHOVEY_CELLS]s32;
+solve_classic_queued: [SHOVEY_CELLS]bool;
+solve_classic_distance: [SHOVEY_CELLS]s32;
+solve_classic_sources: [SHOVEY_CELLS]s32;
+solve_classic_starts: [SHOVEY_CELLS]s32;
+solve_classic_balls: [SHOVEY_CELLS]s32;
+solve_classic_holes: [3][SHOVEY_CELLS]s32;
+solve_classic_painters: [SHOVEY_CELLS]s32;
+solve_classic_crates: [SHOVEY_CELLS]s32;
+solve_classic_plates: [SHOVEY_CELLS]s32;
+solve_classic_rings: [SHOVEY_CELLS]s32;
+solve_classic_rests: [SHOVEY_CELLS]s32;
+solve_classic_stars: [SHOVEY_CELLS]s32;
+solve_classic_goals: [SHOVEY_CELLS]s32;
+solve_classic_homes: [SHOVEY_CELLS]s32;
+solve_classic_crate_used: [SHOVEY_CELLS]bool;
+solve_classic_plate_used: [SOLVE_CLASSIC_PLATES]bool;
+solve_classic_door_pieces: [SHOVEY_CELLS]s32;
+
+// Each cell's neighbour by direction, or -1 at the edge, as ShoveyNeighbor.
+solve_classic_neighbors: [SHOVEY_CELLS * 4]s32;
+solve_classic_neighbors_ready: bool;
+
+SolveClassicNeighbors :: () {
+    for at: cast(s32)0..SHOVEY_CELLS * 4 - 1 { solve_classic_neighbors[at] = ShoveyNeighbor(at / 4, at % 4) }
+    solve_classic_neighbors_ready = true
+}
+
+// ShoveyFloorAllows, answering plain floor and walls without the call.
+SolveClassicAllows :: (game: *ShoveyGame, at: s32, object: s32) -> bool {
+    ground := game.ground[at]
+    if ground == 0 { return true }
+    if ground == 12 { return false }
+    return ShoveyFloorAllows(game, at, object)
+}
+
+// Fills solve_classic_distance with the cost of pushing a piece (object
+// kind) from each cell into the nearest source cell, each source starting
+// at its own cost. A push needs the piece's floor where it stands and
+// Shovey's floor behind it; any other object on either cell must move first
+// and costs 3 more.
+SolveClassicPushField :: (game: *ShoveyGame, piece: s32, source_count: s32) {
+    if !solve_classic_neighbors_ready { SolveClassicNeighbors() }
+    distance := solve_classic_distance[:]
+    head: s32 = 0; count: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { distance[at] = SOLVE_CLASSIC_FAR; solve_classic_queued[at] = false }
+    for index: cast(s32)0..source_count - 1 {
+        at := solve_classic_sources[index]
+        if solve_classic_starts[index] < distance[at] { distance[at] = solve_classic_starts[index] }
+        if !solve_classic_queued[at] {
+            solve_classic_queued[at] = true
+            solve_classic_queue[(head + count) % SHOVEY_CELLS] = at
+            count += 1
+        }
+    }
+    visits: s64 = 0
+    while count > 0 {
+        cell := solve_classic_queue[head]
+        head = (head + 1) % SHOVEY_CELLS; count -= 1
+        solve_classic_queued[cell] = false
+        visits += 1
+        for direction: cast(s32)0..3 {
+            // The piece came from `from`, pushed toward cell by Shovey behind it.
+            from := solve_classic_neighbors[cell * 4 + direction]
+            if from < 0 { continue }
+            behind := solve_classic_neighbors[from * 4 + direction]
+            if behind < 0 || !SolveClassicAllows(game, from, piece) || !SolveClassicAllows(game, behind, 10) { continue }
+            cost := distance[cell] + 1
+            if game.objects[from] != 0 && game.objects[from] != piece { cost += 3 }
+            if game.objects[behind] != 0 { cost += 3 }
+            if cost < distance[from] {
+                distance[from] = cost
+                if !solve_classic_queued[from] {
+                    solve_classic_queued[from] = true
+                    solve_classic_queue[(head + count) % SHOVEY_CELLS] = from
+                    count += 1
+                }
+            }
+        }
+    }
+    solve_classic_work += 5 + visits / 2
+}
+
+// Search guidance only, never a rule: each unfinished goal of
+// ShoveyRemaining costs SOLVE_CLASSIC_GOAL plus how far its piece is from the
+// place that finishes it, then Shovey's distance to the nearest open goal, or
+// to a house when none is left. Balls use push distances to a hole of their
+// colour, or through a painter to a hole of the painter's colour; other
+// pieces use Manhattan distance.
+SolveClassicEstimate :: () -> s32 {
+    game := *solve_classic_game
+    ball_count: s32 = 0
+    hole_count: [3]s32
+    painter_count: s32 = 0
+    crate_count: s32 = 0
+    plate_count: s32 = 0
+    ring_count: s32 = 0
+    rest_count: s32 = 0
+    star_count: s32 = 0
+    goal_count: s32 = 0
+    home_count: s32 = 0
+    plate_seen: s32 = 0
+    colors: [3]bool
+    estimate: s32 = 0
+    doors_shut := solve_classic_doors
+    solve_classic_door_needed = false
+    door_pieces: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { solve_classic_crate_used[at] = false }
+    for at: cast(s32)0..SOLVE_CLASSIC_PLATES - 1 { solve_classic_plate_used[at] = false }
+    pairing: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        ground := game.ground[at]; object := game.objects[at]
+        if ground == 0 && object == 0 { continue }
+        if object >= 1 && object <= 3 {
+            solve_classic_balls[ball_count] = at * 4 + object; ball_count += 1
+            colors[object - 1] = true
+        }
+        if ground >= 4 && ground <= 6 {
+            solve_classic_holes[ground - 4][hole_count[ground - 4]] = at; hole_count[ground - 4] += 1
+        }
+        if ground >= 15 && ground <= 17 { solve_classic_painters[painter_count] = at; painter_count += 1 }
+        if object == 9 && ground != 18 { solve_classic_crates[crate_count] = at; crate_count += 1 }
+        if ground == 18 {
+            if plate_seen < SOLVE_CLASSIC_PLATES && object != 9 {
+                solve_classic_plates[plate_count] = at
+                solve_classic_plate_table[plate_count] = plate_seen
+                plate_count += 1
+            }
+            plate_seen += 1
+        }
+        if object >= 36 && object <= 38 && ground != 39 { solve_classic_rings[ring_count] = at; ring_count += 1 }
+        if ground == 39 && object != 36 { solve_classic_rests[rest_count] = at; rest_count += 1 }
+        if object == 19 { solve_classic_stars[star_count] = at; star_count += 1 }
+        if ground == 7 { solve_classic_homes[home_count] = at; home_count += 1 }
+        if ground == 21 || object == 28 || object == 40 {
+            estimate += SOLVE_CLASSIC_GOAL
+            solve_classic_goals[goal_count] = at; goal_count += 1
+        }
+        if object == 40 { estimate += SolveClassicDistance(at, game.player) }
+        if ground == 29 || ground == 30 { estimate += 1 }
+    }
+    if doors_shut {
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.ground[at] == 13 && game.objects[at] != 0 { doors_shut = false }
+        }
+    }
+    if ball_count > 0 && plate_count > 0 { estimate += plate_count * 16 }
+    solve_classic_work += 10
+    for color: cast(s32)0..2 {
+        if !colors[color] { continue }
+        source_count: s32 = 0
+        for index: cast(s32)0..hole_count[color] - 1 {
+            solve_classic_sources[source_count] = solve_classic_holes[color][index]
+            solve_classic_starts[source_count] = 0
+            source_count += 1
+        }
+        for index: cast(s32)0..painter_count - 1 {
+            at := solve_classic_painters[index]; painted := game.ground[at] - 15
+            solve_classic_sources[source_count] = at
+            solve_classic_starts[source_count] = 1 + SolveClassicNearest(at, solve_classic_holes[painted][0:hole_count[painted]])
+            source_count += 1
+        }
+        SolveClassicPushField(game, color + 1, source_count)
+        for index: cast(s32)0..ball_count - 1 {
+            if solve_classic_balls[index] % 4 != color + 1 { continue }
+            at := solve_classic_balls[index] / 4
+            far := solve_classic_distance[at]
+            if far >= SOLVE_CLASSIC_FAR && solve_classic_doors {
+                far = solve_classic_ball_open[color * SHOVEY_CELLS + at]
+                if doors_shut {
+                    solve_classic_door_needed = true
+                    solve_classic_door_pieces[door_pieces] = at
+                    door_pieces += 1
+                }
+            }
+            estimate += SOLVE_CLASSIC_GOAL + (ifx far >= SOLVE_CLASSIC_FAR then 100 else far)
+            solve_classic_goals[goal_count] = at; goal_count += 1
+        }
+    }
+    paired: s32 = 0
+    while paired < plate_count && paired < crate_count {
+        best_plate: s32 = -1
+        best_plate_table: s32 = -1
+        best_crate: s32 = -1
+        best_pushes: s32 = SOLVE_CLASSIC_FAR + 1
+        for plate_index: cast(s32)0..plate_count - 1 {
+            if solve_classic_plate_used[plate_index] { continue }
+            plate_table := solve_classic_plate_table[plate_index]
+            for crate_index: cast(s32)0..crate_count - 1 {
+                crate := solve_classic_crates[crate_index]
+                if solve_classic_crate_used[crate] { continue }
+                shut := solve_classic_plate_shut[plate_table * SHOVEY_CELLS + crate]
+                pushes := solve_classic_plate_open[plate_table * SHOVEY_CELLS + crate]
+                if shut < pushes { pushes = shut }
+                if pushes < best_pushes {
+                    best_pushes = pushes
+                    best_plate = plate_index
+                    best_plate_table = plate_table
+                    best_crate = crate
+                }
+            }
+        }
+        if best_plate < 0 { break }
+        plate := solve_classic_plates[best_plate]
+        solve_classic_plate_used[best_plate] = true
+        solve_classic_crate_used[best_crate] = true
+        if best_pushes < SOLVE_CLASSIC_FAR && solve_classic_plate_shut[best_plate_table * SHOVEY_CELLS + best_crate] >= SOLVE_CLASSIC_FAR && doors_shut {
+            solve_classic_door_needed = true
+            solve_classic_door_pieces[door_pieces] = best_crate
+            door_pieces += 1
+        }
+        estimate += SOLVE_CLASSIC_GOAL + (ifx best_pushes >= SOLVE_CLASSIC_FAR then 100 else best_pushes)
+        solve_classic_goals[goal_count] = plate; goal_count += 1
+        paired += 1
+        pairing += plate_count
+    }
+    for plate_index: cast(s32)0..plate_count - 1 {
+        if solve_classic_plate_used[plate_index] { continue }
+        estimate += SOLVE_CLASSIC_GOAL + SolveClassicNearest(solve_classic_plates[plate_index], solve_classic_crates[0:crate_count])
+        solve_classic_goals[goal_count] = solve_classic_plates[plate_index]; goal_count += 1
+        pairing += crate_count
+    }
+    for index: cast(s32)0..rest_count - 1 {
+        estimate += SOLVE_CLASSIC_GOAL + SolveClassicNearest(solve_classic_rests[index], solve_classic_rings[0:ring_count])
+        solve_classic_goals[goal_count] = solve_classic_rests[index]; goal_count += 1
+    }
+    for index: cast(s32)0..star_count - 1 {
+        nearest := SolveClassicNearest(solve_classic_stars[index], solve_classic_stars[0:star_count])
+        estimate += SOLVE_CLASSIC_GOAL + (ifx nearest > 1 then nearest - 1 else 0)
+        solve_classic_goals[goal_count] = solve_classic_stars[index]; goal_count += 1
+    }
+    if doors_shut {
+        for index: cast(s32)0..goal_count - 1 {
+            goal := solve_classic_goals[index]
+            if solve_classic_area[goal] == solve_classic_area[game.player] { continue }
+            solve_classic_door_needed = true
+            best: s32 = -1
+            best_distance: s32 = SOLVE_CLASSIC_FAR
+            for crate_index: cast(s32)0..crate_count - 1 {
+                distance := SolveClassicDistance(goal, solve_classic_crates[crate_index])
+                if distance < best_distance { best_distance = distance; best = solve_classic_crates[crate_index] }
+            }
+            for ball_index: cast(s32)0..ball_count - 1 {
+                at := solve_classic_balls[ball_index] / 4
+                distance := SolveClassicDistance(goal, at)
+                if distance < best_distance { best_distance = distance; best = at }
+            }
+            if best >= 0 {
+                solve_classic_door_pieces[door_pieces] = best
+                door_pieces += 1
+            }
+        }
+    }
+    if solve_classic_door_needed {
+        switch_pushes: s32 = SOLVE_CLASSIC_FAR
+        for index: cast(s32)0..door_pieces - 1 {
+            pushes := solve_classic_switch_pushes[solve_classic_door_pieces[index]]
+            if pushes < switch_pushes { switch_pushes = pushes }
+        }
+        estimate += SOLVE_CLASSIC_GOAL * 8 + (ifx switch_pushes >= SOLVE_CLASSIC_FAR then 100 else switch_pushes)
+    }
+    if goal_count > 0 { estimate += SolveClassicNearest(game.player, solve_classic_goals[0:goal_count]) }
+    else { estimate += SolveClassicNearest(game.player, solve_classic_homes[0:home_count]) }
+    solve_classic_work += cast(s64)(goal_count / 8 + pairing / 4)
+    return estimate
+}
+
+// Guidance for the chain's door prerequisite: bring the nearest crate to any
+// switch. The player distance breaks ties between equally close crates.
+SolveClassicSwitchEstimate :: () -> s32 {
+    game := *solve_classic_game
+    source_count: s32 = 0
+    crate_count: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.ground[at] == 13 {
+            solve_classic_sources[source_count] = at
+            solve_classic_starts[source_count] = 0
+            source_count += 1
+        }
+        if game.objects[at] == 9 && game.ground[at] != 13 { solve_classic_crates[crate_count] = at; crate_count += 1 }
+    }
+    if source_count == 0 || crate_count == 0 { return SOLVE_CLASSIC_FAR }
+    SolveClassicPushField(game, 9, source_count)
+    best: s32 = SOLVE_CLASSIC_FAR
+    for index: cast(s32)0..crate_count - 1 {
+        crate := solve_classic_crates[index]
+        pushes := solve_classic_distance[crate]
+        if pushes >= SOLVE_CLASSIC_FAR { continue }
+        value := pushes * 4 + SolveClassicDistance(game.player, crate)
+        if value < best { best = value }
+    }
+    solve_classic_work += 8
+    return ifx best >= SOLVE_CLASSIC_FAR then SOLVE_CLASSIC_FAR else best
+}
+
+// The next plate the chain commits to: the unfinished one whose nearest crate
+// starts farthest away, so easy plates cannot consume crates needed by hard ones.
+SolveClassicHardestPlate :: () -> s32 {
+    game := *solve_classic_game
+    best_plate: s32 = -1
+    best_distance: s32 = -1
+    tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
+    for index: cast(s32)0..tracked - 1 {
+        plate := solve_classic_plate_at[index]
+        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        nearest: s32 = SOLVE_CLASSIC_FAR
+        for crate: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.objects[crate] != 9 { continue }
+            pushes := solve_classic_plate_open[index * SHOVEY_CELLS + crate]
+            shut := solve_classic_plate_shut[index * SHOVEY_CELLS + crate]
+            if shut < pushes { pushes = shut }
+            if pushes < nearest { nearest = pushes }
+        }
+        if nearest > best_distance { best_distance = nearest; best_plate = plate }
+    }
+    solve_classic_work += cast(s64)(tracked * 3)
+    return best_plate
+}
+
+// The chain's plate target: the central plate whose crates have the lowest
+// total push cost. Plates with an unusually close crate are left for the end,
+// where they cannot consume a crate needed by a harder placement.
+SolveClassicNearestPlate :: () -> s32 {
+    game := *solve_classic_game
+    best_plate: s32 = -1
+    best_distance: s32 = SOLVE_CLASSIC_FAR
+    tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
+    for index: cast(s32)0..tracked - 1 {
+        plate := solve_classic_plate_at[index]
+        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        distance := SolveClassicDistance(plate, game.player)
+        if distance < best_distance || (distance == best_distance && plate > best_plate) {
+            best_distance = distance
+            best_plate = plate
+        }
+    }
+    solve_classic_work += cast(s64)tracked
+    return best_plate
+}
+
+SolveClassicLowestPlate :: () -> s32 {
+    game := *solve_classic_game
+    best_plate: s32 = -1
+    tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
+    for index: cast(s32)0..tracked - 1 {
+        plate := solve_classic_plate_at[index]
+        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        if plate > best_plate { best_plate = plate }
+    }
+    solve_classic_work += cast(s64)tracked
+    return best_plate
+}
+
+SolveClassicCenterPlate :: () -> s32 {
+    game := *solve_classic_game
+    best_plate: s32 = -1
+    best_cost: s32 = SOLVE_CLASSIC_FAR * SHOVEY_CELLS
+    tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
+    for index: cast(s32)0..tracked - 1 {
+        plate := solve_classic_plate_at[index]
+        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        total: s32 = 0
+        nearest: s32 = SOLVE_CLASSIC_FAR
+        for crate: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.objects[crate] != 9 || game.ground[crate] == 13 { continue }
+            pushes := solve_classic_plate_open[index * SHOVEY_CELLS + crate]
+            if pushes >= SOLVE_CLASSIC_FAR { continue }
+            total += pushes
+            if pushes < nearest { nearest = pushes }
+        }
+        if nearest < 4 { continue }
+        if total < best_cost { best_cost = total; best_plate = plate }
+    }
+    solve_classic_work += cast(s64)(tracked * 3)
+    return best_plate
+}
+
+// Guidance while the chain commits to one plate.
+SolveClassicPlateEstimate :: (plate: s32) -> s32 {
+    game := *solve_classic_game
+    if plate < 0 || plate >= SHOVEY_CELLS { return SOLVE_CLASSIC_FAR }
+    solve_classic_sources[0] = plate
+    solve_classic_starts[0] = 0
+    SolveClassicPushField(game, 9, 1)
+    best: s32 = SOLVE_CLASSIC_FAR
+    for crate: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.objects[crate] != 9 { continue }
+        pushes := solve_classic_distance[crate]
+        if pushes >= SOLVE_CLASSIC_FAR { continue }
+        value := pushes * 4 + SolveClassicDistance(game.player, crate)
+        if value < best { best = value }
+    }
+    solve_classic_work += 6
+    return ifx best >= SOLVE_CLASSIC_FAR then SOLVE_CLASSIC_FAR else best
+}

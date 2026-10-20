@@ -1,0 +1,633 @@
+[editor_choose]
+단계를 보거나 만들거나 고칠 에디션을 고르세요.
+---
+[editor_classic]
+Classic
+---
+[editor_island]
+Island
+---
+[editor_custom_count]
+내 단계: {n}
+---
+[editor_explore]
+둘러보기
+---
+[editor_export]
+내보내기
+---
+[editor_back]
+뒤로
+---
+[editor_publish]
+게시
+---
+[editor_your_levels]
+내 단계
+---
+[editor_new_level]
+새 단계
+---
+[editor_not_proven]
+아직 증명되지 않음
+---
+[editor_proven]
+깰 수 있음이 증명됨
+---
+[editor_completed]
+직접 깸
+---
+[editor_by_author]
+만든 사람: @{s}
+---
+[editor_story_levels]
+스토리 단계
+---
+[editor_story_named]
+{n} · {s}
+---
+[editor_story_level]
+스토리 단계 {n}
+---
+[editor_story_note]
+스토리 단계 {n}입니다. 그 위에 그리면 내 복사본이 만들어지고, 스토리 단계는 그대로 남습니다.
+---
+[editor_custom_level]
+단계 {n}
+---
+[editor_copy_of]
+스토리 단계 {n}의 복사본
+---
+[editor_levels]
+단계 목록
+---
+[editor_undo]
+되돌리기
+---
+[editor_play]
+플레이
+---
+[editor_board]
+판: 탭하거나 끌어서 그리기
+---
+[editor_pick]
+집기
+---
+[editor_pick_hint]
+판을 탭하면 그 칸의 조각을 집습니다.
+---
+[editor_name]
+이름
+---
+[editor_name_hint]
+이 단계의 이름을 지어 주세요
+---
+[editor_delete]
+삭제
+---
+[editor_delete_confirm]
+지금 삭제
+---
+[editor_delete_again]
+이 단계를 완전히 지우려면 "지금 삭제"를 탭하세요.
+---
+[editor_copied]
+내 새 단계로 저장했습니다.
+---
+[editor_full]
+더 이상 단계를 추가할 공간이 없습니다.
+---
+[editor_unreadable]
+이 단계를 읽을 수 없습니다.
+---
+[editor_check_waiting]
+곧 확인을 시작합니다…
+---
+[editor_checking]
+깰 수 있는지 확인하는 중… 국면 {n}개
+---
+[editor_never]
+깰 수 없습니다: 도달할 수 있는 모든 국면을 시도했습니다.
+---
+[editor_unknown]
+아직 증명되지 않았습니다. 플레이에서 깨면 증명됩니다.
+---
+[editor_proven_solver]
+깰 수 있음이 증명됨: 풀이기가 깼습니다.
+---
+[editor_proven_played]
+깰 수 있음이 증명됨: 직접 깼습니다.
+---
+[editor_proven_download]
+깰 수 있음이 증명됨: 함께 온 경로로 여기서 깼습니다.
+---
+[editor_edit]
+편집
+---
+[editor_testing]
+시험 중
+---
+[editor_restart]
+다시 시작
+---
+[editor_throw]
+던지기
+---
+[editor_controls]
+화살표 키나 WASD, 스와이프, 탭 또는 스틱. Classic에서는 스페이스로 던집니다
+---
+[editor_won]
+성공!
+---
+[editor_won_proof]
+성공! 내 경로가 이 단계를 증명합니다.
+---
+[editor_lost]
+충전이 너무 많습니다! 다시 시작하거나 되돌리세요.
+---
+[editor_ready_classic]
+준비 끝. 집으로 가세요!
+---
+[editor_ready_island]
+목표를 모두 이뤘습니다. 오두막에 아래쪽에서 들어가세요.
+---
+[editor_copy]
+복사
+---
+[editor_copied_text]
+복사했습니다.
+---
+[editor_export_note]
+증명된 단계 {n}개를 Shovey 개발자에게 보낼 텍스트로 만들었습니다. 복사해서 보내 주세요.
+---
+[editor_export_none]
+아직 증명된 단계가 없습니다. 풀이기나 내가 깨면 단계로 인정됩니다.
+---
+[editor_export_full]
+한 번에 내보내기에는 단계가 너무 많습니다.
+---
+[editor_classic_levels]
+내 Classic 단계
+---
+[editor_island_levels]
+내 Island 단계
+---
+[editor_publish_note]
+증명된 단계를 하나의 모음으로 공유합니다.
+---
+[editor_collection_title]
+모음 제목
+---
+[editor_public]
+전체 공개
+---
+[editor_friends]
+친구 공개
+---
+[editor_private]
+비공개
+---
+[editor_publish_now]
+게시하기
+---
+[editor_publish_again]
+다시 게시하기
+---
+[editor_unpublish]
+게시 취소
+---
+[editor_publish_levels]
+이 모음에 들어갈 단계
+---
+[editor_publish_none]
+증명된 단계를 하나 이상 고르세요.
+---
+[editor_title_needed]
+모음에 제목을 붙여 주세요.
+---
+[editor_published]
+게시했습니다.
+---
+[editor_unpublished]
+게시를 취소했습니다.
+---
+[editor_explore_note]
+만든 사람의 별명이나 공개 ID로 단계 모음을 찾으세요. 아무것도 입력하지 않고 찾으면 최근 모음이 나옵니다.
+---
+[editor_search_label]
+별명 또는 공개 ID
+---
+[editor_search_hint]
+별명 또는 ID
+---
+[editor_search]
+찾기
+---
+[editor_found]
+모음을 고르면 그 단계들이 내 단계에 추가됩니다.
+---
+[editor_found_none]
+찾은 모음이 없습니다.
+---
+[editor_result_detail]
+단계 {n}개 · {s}
+---
+[editor_verifying]
+경로 확인 중… 단계 {n}개 추가됨
+---
+[editor_downloaded]
+내 단계에 {n}개를 추가했습니다. {s}
+---
+[editor_refused]
+{n}개는 경로로 깰 수 없어 받지 않았습니다.
+---
+[editor_share_waiting]
+응답을 기다리는 중…
+---
+[editor_share_unavailable]
+여기서는 단계 모음을 공유할 수 없습니다.
+---
+[editor_share_rejected]
+요청이 거절되었습니다.
+---
+[editor_share_failed]
+문제가 생겼습니다. 다시 시도하세요.
+---
+[editor_share_invalid]
+이 모음을 읽을 수 없습니다.
+---
+[editor_signed_out]
+단계 모음을 공유하려면 로그인하세요.
+---
+[editor_offline]
+오프라인 상태입니다. 나중에 다시 시도하세요.
+---
+[editor_not_found]
+그 모음은 더 이상 없습니다.
+---
+[editor_forbidden]
+그 모음은 나와 공유되지 않았습니다.
+---
+[editor_too_large]
+모음이 너무 커서 공유할 수 없습니다.
+---
+[editor_invalid]
+모음이 받아들여지지 않았습니다.
+---
+[editor_busy]
+서비스가 바쁩니다. 잠시 후에 다시 시도하세요.
+---
+[editor_save_failed]
+저장하지 못했습니다. 다음 변경 때 다시 시도합니다.
+---
+[editor_shovey]
+Shovey
+---
+[editor_floor]
+바닥
+---
+[editor_wall]
+벽
+---
+[editor_home]
+집
+---
+[editor_crate]
+상자
+---
+[editor_crate_goal]
+상자 목표 지점
+---
+[editor_red_ball]
+빨간 공
+---
+[editor_blue_ball]
+파란 공
+---
+[editor_green_ball]
+초록 공
+---
+[editor_red_pit]
+빨간 구멍
+---
+[editor_blue_pit]
+파란 구멍
+---
+[editor_green_pit]
+초록 구멍
+---
+[editor_red_paint]
+빨간 물감
+---
+[editor_blue_paint]
+파란 물감
+---
+[editor_green_paint]
+초록 물감
+---
+[editor_star_block]
+별 블록
+---
+[editor_apple]
+사과
+---
+[editor_plate]
+압력판
+---
+[editor_gate]
+문
+---
+[editor_key]
+열쇠
+---
+[editor_lock]
+자물쇠
+---
+[editor_teleporter]
+순간이동기
+---
+[editor_trail]
+발자국 표시
+---
+[editor_reverse]
+조작 반전
+---
+[editor_ammo]
+탄알
+---
+[editor_target]
+과녁
+---
+[editor_charge]
+충전기
+---
+[editor_moving_block]
+움직이는 블록
+---
+[editor_fresh_path]
+블록 길
+---
+[editor_used_path]
+지나간 블록 길
+---
+[editor_sensor]
+센서
+---
+[editor_closed_sensor]
+닫힌 센서
+---
+[editor_slide]
+미끄러지기 능력
+---
+[editor_red_block]
+빨간 색 블록
+---
+[editor_blue_block]
+파란 색 블록
+---
+[editor_yellow_block]
+노란 색 블록
+---
+[editor_block_goal]
+색 블록 목표 지점
+---
+[editor_mirror_shovey]
+거울 Shovey
+---
+[editor_hut]
+오두막
+---
+[editor_water]
+물
+---
+[editor_sand]
+모래
+---
+[editor_meadow]
+풀밭
+---
+[editor_clear]
+물건 치우기
+---
+[editor_pebbles]
+조약돌
+---
+[editor_jade_bed]
+비취색 꽃밭
+---
+[editor_red_bed]
+빨간 꽃밭
+---
+[editor_barrel_spot]
+통 자리
+---
+[editor_red_spot]
+빨간 조각상 자리
+---
+[editor_blue_spot]
+파란 조각상 자리
+---
+[editor_green_spot]
+초록 조각상 자리
+---
+[editor_sunken_crate]
+가라앉은 상자
+---
+[editor_spike_plate]
+가시 판
+---
+[editor_well]
+우물
+---
+[editor_farm]
+밭
+---
+[editor_planted]
+씨 뿌린 밭
+---
+[editor_blast_spot]
+폭발 지점
+---
+[editor_item_teleporter]
+물건 순간이동기
+---
+[editor_raft]
+뗏목
+---
+[editor_ice]
+얇은 얼음
+---
+[editor_watch_plate]
+감시 판
+---
+[editor_hidden_path]
+숨은 길
+---
+[editor_channel]
+코코넛 도랑
+---
+[editor_channel_end]
+도랑 끝
+---
+[editor_yellow_ring]
+노란 꽃 고리
+---
+[editor_red_ring]
+빨간 꽃 고리
+---
+[editor_barrel]
+통
+---
+[editor_red_statue]
+빨간 조각상
+---
+[editor_blue_statue]
+파란 조각상
+---
+[editor_green_statue]
+초록 조각상
+---
+[editor_palm]
+야자나무
+---
+[editor_coconut_palm]
+코코넛 야자
+---
+[editor_boulder]
+바위
+---
+[editor_snail]
+달팽이
+---
+[editor_buoy]
+부표
+---
+[editor_sea_star]
+불가사리
+---
+[editor_baby_crab]
+아기 게
+---
+[editor_mother_crab]
+엄마 게
+---
+[editor_happy_crab]
+기뻐하는 엄마 게
+---
+[editor_chest]
+보물 상자
+---
+[editor_seed]
+씨앗
+---
+[editor_bottle]
+병
+---
+[editor_coconut]
+코코넛
+---
+[editor_coconut_hole]
+코코넛 구멍
+---
+[editor_bomb]
+폭탄
+---
+[editor_spring]
+용수철 꽃
+---
+[editor_slingshot]
+새총
+---
+[editor_leaf_up]
+위쪽 잎
+---
+[editor_leaf_right]
+오른쪽 잎
+---
+[editor_leaf_down]
+아래쪽 잎
+---
+[editor_leaf_left]
+왼쪽 잎
+---
+[editor_turner_up]
+잎 돌리개, 위
+---
+[editor_turner_right]
+잎 돌리개, 오른쪽
+---
+[editor_turner_down]
+잎 돌리개, 아래
+---
+[editor_turner_left]
+잎 돌리개, 왼쪽
+---
+[editor_pearl]
+진주
+---
+[editor_lantern]
+석등
+---
+[editor_clam]
+조개
+---
+[editor_coin]
+동전
+---
+[editor_pirate]
+해적
+---
+[editor_stall]
+해적 가판대
+---
+[editor_spikes]
+가시
+---
+[editor_red_shell]
+심술난 빨간 조개껍데기
+---
+[editor_blue_shell]
+졸린 파란 조개껍데기
+---
+[editor_yellow_shell]
+신난 노란 조개껍데기
+---
+[editor_stone_1]
+숫자 돌 1
+---
+[editor_stone_2]
+숫자 돌 2
+---
+[editor_stone_3]
+숫자 돌 3
+---
+[editor_stone_4]
+숫자 돌 4
+---
+[editor_stone_5]
+숫자 돌 5
+---
+[editor_yellow_flower]
+노란 꽃
+---
+[editor_red_flower]
+빨간 꽃
+---
+[editor_octopus]
+문어
+---
+[editor_string_post]
+실 말뚝
+---
+[editor_shell_turning]
+색이 바뀌는 조개껍데기
+---
+[editor_yellow_turning]
+노랗게 바뀌는 조개껍데기
+---
+[editor_ground]
+지형
+---
+[editor_object]
+물건
+---

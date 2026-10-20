@@ -1,0 +1,633 @@
+[editor_choose]
+Wähle die Ausgabe, deren Level du ansehen, bauen oder bearbeiten möchtest.
+---
+[editor_classic]
+Classic
+---
+[editor_island]
+Island
+---
+[editor_custom_count]
+Deine Level: {n}
+---
+[editor_explore]
+Entdecken
+---
+[editor_export]
+Exportieren
+---
+[editor_back]
+Zurück
+---
+[editor_publish]
+Veröffentlichen
+---
+[editor_your_levels]
+Deine Level
+---
+[editor_new_level]
+Neues Level
+---
+[editor_not_proven]
+Noch nicht bewiesen
+---
+[editor_proven]
+Nachweislich lösbar
+---
+[editor_completed]
+Von dir gelöst
+---
+[editor_by_author]
+Von @{s}
+---
+[editor_story_levels]
+Story-Level
+---
+[editor_story_named]
+{n} · {s}
+---
+[editor_story_level]
+Story-Level {n}
+---
+[editor_story_note]
+Story-Level {n}. Wenn du darauf malst, entsteht deine eigene Kopie; das Story-Level bleibt, wie es ist.
+---
+[editor_custom_level]
+Level {n}
+---
+[editor_copy_of]
+Kopie von Story-Level {n}
+---
+[editor_levels]
+Level
+---
+[editor_undo]
+Rückgängig
+---
+[editor_play]
+Spielen
+---
+[editor_board]
+Spielfeld: Tippen oder Ziehen zum Malen
+---
+[editor_pick]
+Aufnehmen
+---
+[editor_pick_hint]
+Tippe aufs Spielfeld, um sein Teil aufzunehmen.
+---
+[editor_name]
+Name
+---
+[editor_name_hint]
+Benenne dieses Level
+---
+[editor_delete]
+Löschen
+---
+[editor_delete_confirm]
+Jetzt löschen
+---
+[editor_delete_again]
+Tippe auf „Jetzt löschen“, um dieses Level endgültig zu entfernen.
+---
+[editor_copied]
+Als neues eigenes Level gespeichert.
+---
+[editor_full]
+Es ist kein Platz für weitere Level.
+---
+[editor_unreadable]
+Dieses Level konnte nicht gelesen werden.
+---
+[editor_check_waiting]
+Prüfung beginnt gleich …
+---
+[editor_checking]
+Prüfe, ob es lösbar ist … {n} Stellungen
+---
+[editor_never]
+Nicht lösbar: Jede erreichbare Stellung wurde ausprobiert.
+---
+[editor_unknown]
+Noch nicht bewiesen. Löse es unter „Spielen“, um es zu beweisen.
+---
+[editor_proven_solver]
+Nachweislich lösbar: Der Löser hat es geschafft.
+---
+[editor_proven_played]
+Nachweislich lösbar: Du hast es geschafft.
+---
+[editor_proven_download]
+Nachweislich lösbar: Sein Lösungsweg hat hier gewonnen.
+---
+[editor_edit]
+Bearbeiten
+---
+[editor_testing]
+Testen
+---
+[editor_restart]
+Neu starten
+---
+[editor_throw]
+Werfen
+---
+[editor_controls]
+Pfeiltasten oder WASD, wischen, tippen oder der Stick; Leertaste wirft in Classic
+---
+[editor_won]
+Geschafft!
+---
+[editor_won_proof]
+Geschafft! Dein Weg beweist dieses Level.
+---
+[editor_lost]
+Zu viel Ladung! Neu starten oder rückgängig machen.
+---
+[editor_ready_classic]
+Alles erledigt. Geh nach Hause!
+---
+[editor_ready_island]
+Alle Aufgaben erfüllt. Geh von unten in die Hütte.
+---
+[editor_copy]
+Kopieren
+---
+[editor_copied_text]
+Kopiert.
+---
+[editor_export_note]
+{n} bewiesene Level als Text für den Entwickler von Shovey. Kopiere ihn und schick ihn ab.
+---
+[editor_export_none]
+Noch keine bewiesenen Level. Ein Level zählt, sobald der Löser oder du es gelöst habt.
+---
+[editor_export_full]
+Zu viele Level für einen Export.
+---
+[editor_classic_levels]
+Meine Classic-Level
+---
+[editor_island_levels]
+Meine Island-Level
+---
+[editor_publish_note]
+Teile deine bewiesenen Level als eine Sammlung.
+---
+[editor_collection_title]
+Titel der Sammlung
+---
+[editor_public]
+Öffentlich
+---
+[editor_friends]
+Freunde
+---
+[editor_private]
+Privat
+---
+[editor_publish_now]
+Veröffentlichen
+---
+[editor_publish_again]
+Erneut veröffentlichen
+---
+[editor_unpublish]
+Zurückziehen
+---
+[editor_publish_levels]
+Level in dieser Sammlung
+---
+[editor_publish_none]
+Wähle mindestens ein bewiesenes Level.
+---
+[editor_title_needed]
+Gib der Sammlung einen Titel.
+---
+[editor_published]
+Veröffentlicht.
+---
+[editor_unpublished]
+Nicht mehr veröffentlicht.
+---
+[editor_explore_note]
+Finde Level-Sammlungen über den Alias oder die öffentliche ID eines Autors, oder suche ohne Eingabe nach den neuesten.
+---
+[editor_search_label]
+Alias oder öffentliche ID
+---
+[editor_search_hint]
+Alias oder ID
+---
+[editor_search]
+Suchen
+---
+[editor_found]
+Wähle eine Sammlung, um ihre Level zu deinen hinzuzufügen.
+---
+[editor_found_none]
+Keine Sammlungen gefunden.
+---
+[editor_result_detail]
+{n} Level · {s}
+---
+[editor_verifying]
+Prüfe Lösungswege … {n} Level hinzugefügt
+---
+[editor_downloaded]
+{n} Level zu deinen hinzugefügt. {s}
+---
+[editor_refused]
+{n} abgelehnt: Ihre Lösungswege gewinnen nicht.
+---
+[editor_share_waiting]
+Warte auf die Antwort …
+---
+[editor_share_unavailable]
+Level-Sammlungen können hier nicht geteilt werden.
+---
+[editor_share_rejected]
+Die Anfrage wurde abgelehnt.
+---
+[editor_share_failed]
+Etwas ist schiefgegangen. Versuch es noch einmal.
+---
+[editor_share_invalid]
+Diese Sammlung konnte nicht gelesen werden.
+---
+[editor_signed_out]
+Melde dich an, um Level-Sammlungen zu teilen.
+---
+[editor_offline]
+Du bist offline. Versuch es später noch einmal.
+---
+[editor_not_found]
+Diese Sammlung gibt es nicht mehr.
+---
+[editor_forbidden]
+Diese Sammlung ist nicht mit dir geteilt.
+---
+[editor_too_large]
+Die Sammlung ist zu groß zum Teilen.
+---
+[editor_invalid]
+Die Sammlung wurde nicht angenommen.
+---
+[editor_busy]
+Der Dienst ist ausgelastet. Versuch es gleich noch einmal.
+---
+[editor_save_failed]
+Speichern fehlgeschlagen. Deine nächste Änderung versucht es erneut.
+---
+[editor_shovey]
+Shovey
+---
+[editor_floor]
+Boden
+---
+[editor_wall]
+Mauer
+---
+[editor_home]
+Haus
+---
+[editor_crate]
+Kiste
+---
+[editor_crate_goal]
+Kistenziel
+---
+[editor_red_ball]
+Rote Kugel
+---
+[editor_blue_ball]
+Blaue Kugel
+---
+[editor_green_ball]
+Grüne Kugel
+---
+[editor_red_pit]
+Rotes Loch
+---
+[editor_blue_pit]
+Blaues Loch
+---
+[editor_green_pit]
+Grünes Loch
+---
+[editor_red_paint]
+Rote Farbe
+---
+[editor_blue_paint]
+Blaue Farbe
+---
+[editor_green_paint]
+Grüne Farbe
+---
+[editor_star_block]
+Sternstein
+---
+[editor_apple]
+Apfel
+---
+[editor_plate]
+Druckplatte
+---
+[editor_gate]
+Tor
+---
+[editor_key]
+Schlüssel
+---
+[editor_lock]
+Schloss
+---
+[editor_teleporter]
+Teleporter
+---
+[editor_trail]
+Spurfeld
+---
+[editor_reverse]
+Umgekehrte Steuerung
+---
+[editor_ammo]
+Munition
+---
+[editor_target]
+Zielscheibe
+---
+[editor_charge]
+Ladefeld
+---
+[editor_moving_block]
+Wandernder Stein
+---
+[editor_fresh_path]
+Steinpfad
+---
+[editor_used_path]
+Benutzter Steinpfad
+---
+[editor_sensor]
+Sensor
+---
+[editor_closed_sensor]
+Geschlossener Sensor
+---
+[editor_slide]
+Gleitkraft
+---
+[editor_red_block]
+Roter Farbstein
+---
+[editor_blue_block]
+Blauer Farbstein
+---
+[editor_yellow_block]
+Gelber Farbstein
+---
+[editor_block_goal]
+Farbstein-Ziel
+---
+[editor_mirror_shovey]
+Spiegel-Shovey
+---
+[editor_hut]
+Hütte
+---
+[editor_water]
+Wasser
+---
+[editor_sand]
+Sand
+---
+[editor_meadow]
+Wiese
+---
+[editor_clear]
+Objekt entfernen
+---
+[editor_pebbles]
+Kiesel
+---
+[editor_jade_bed]
+Jadegrünes Blumenbeet
+---
+[editor_red_bed]
+Rotes Blumenbeet
+---
+[editor_barrel_spot]
+Fassplatz
+---
+[editor_red_spot]
+Platz für rote Statue
+---
+[editor_blue_spot]
+Platz für blaue Statue
+---
+[editor_green_spot]
+Platz für grüne Statue
+---
+[editor_sunken_crate]
+Versenkte Kiste
+---
+[editor_spike_plate]
+Stachelplatte
+---
+[editor_well]
+Brunnen
+---
+[editor_farm]
+Acker
+---
+[editor_planted]
+Bepflanzter Acker
+---
+[editor_blast_spot]
+Sprengstelle
+---
+[editor_item_teleporter]
+Gegenstand-Teleporter
+---
+[editor_raft]
+Floß
+---
+[editor_ice]
+Dünnes Eis
+---
+[editor_watch_plate]
+Wächterplatte
+---
+[editor_hidden_path]
+Verborgener Weg
+---
+[editor_channel]
+Kokosrinne
+---
+[editor_channel_end]
+Rinnenende
+---
+[editor_yellow_ring]
+Gelber Blumenring
+---
+[editor_red_ring]
+Roter Blumenring
+---
+[editor_barrel]
+Fass
+---
+[editor_red_statue]
+Rote Statue
+---
+[editor_blue_statue]
+Blaue Statue
+---
+[editor_green_statue]
+Grüne Statue
+---
+[editor_palm]
+Palme
+---
+[editor_coconut_palm]
+Kokospalme
+---
+[editor_boulder]
+Felsbrocken
+---
+[editor_snail]
+Schnecke
+---
+[editor_buoy]
+Boje
+---
+[editor_sea_star]
+Seestern
+---
+[editor_baby_crab]
+Krabbenbaby
+---
+[editor_mother_crab]
+Krabbenmutter
+---
+[editor_happy_crab]
+Glückliche Krabbenmutter
+---
+[editor_chest]
+Schatztruhe
+---
+[editor_seed]
+Samen
+---
+[editor_bottle]
+Flasche
+---
+[editor_coconut]
+Kokosnuss
+---
+[editor_coconut_hole]
+Kokosloch
+---
+[editor_bomb]
+Bombe
+---
+[editor_spring]
+Sprungblume
+---
+[editor_slingshot]
+Schleuder
+---
+[editor_leaf_up]
+Blatt nach oben
+---
+[editor_leaf_right]
+Blatt nach rechts
+---
+[editor_leaf_down]
+Blatt nach unten
+---
+[editor_leaf_left]
+Blatt nach links
+---
+[editor_turner_up]
+Blattdreher, oben
+---
+[editor_turner_right]
+Blattdreher, rechts
+---
+[editor_turner_down]
+Blattdreher, unten
+---
+[editor_turner_left]
+Blattdreher, links
+---
+[editor_pearl]
+Perle
+---
+[editor_lantern]
+Steinlaterne
+---
+[editor_clam]
+Perlmuschel
+---
+[editor_coin]
+Münze
+---
+[editor_pirate]
+Pirat
+---
+[editor_stall]
+Piratenstand
+---
+[editor_spikes]
+Stacheln
+---
+[editor_red_shell]
+Mürrische rote Muschel
+---
+[editor_blue_shell]
+Schläfrige blaue Muschel
+---
+[editor_yellow_shell]
+Fröhliche gelbe Muschel
+---
+[editor_stone_1]
+Zahlenstein 1
+---
+[editor_stone_2]
+Zahlenstein 2
+---
+[editor_stone_3]
+Zahlenstein 3
+---
+[editor_stone_4]
+Zahlenstein 4
+---
+[editor_stone_5]
+Zahlenstein 5
+---
+[editor_yellow_flower]
+Gelbe Blume
+---
+[editor_red_flower]
+Rote Blume
+---
+[editor_octopus]
+Krake
+---
+[editor_string_post]
+Schnurpfosten
+---
+[editor_shell_turning]
+Muschel wechselt die Farbe
+---
+[editor_yellow_turning]
+Muschel wird gelb
+---
+[editor_ground]
+Gelände
+---
+[editor_object]
+Objekt
+---

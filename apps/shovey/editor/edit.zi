@@ -1,0 +1,804 @@
+// The level editor's rules, apart from drawing: boards and painting, the
+// pieces each edition offers, stroke-wise undo, the records custom levels
+// are kept in, the export for the developer, and testing a board with the
+// real engines while recording the winning route.
+#import "std/number_text"
+#import "std/text_buffer"
+#import, file "../engine.zi";
+#import, file "../island/island_engine.zi";
+#import, file "../levels.zi";
+#import, file "../island_levels.zi";
+#import, file "coast.zi";
+
+EDIT_CELLS :: 240
+EDIT_WIDTH :: 20
+EDIT_HEIGHT :: 12
+// Pieces with no kind of their own: Island's eraser for objects.
+EDIT_CLEAR :: 255
+CLASSIC_SHOVEY :: 10
+CLASSIC_WALL :: 12
+ISLAND_SHOVEY :: 56
+ISLAND_HOME :: 75
+
+// A board as the level files keep it. Classic uses ground alone, one kind per
+// cell with Shovey as kind 10; Island has terrain in ground and objects, Shovey
+// as object 56.
+EditBoard :: struct {
+    island: bool
+    ground: [EDIT_CELLS]u8
+    objects: [EDIT_CELLS]u8
+}
+
+// ---------------------------------------------------------------------------
+// Hex boards
+
+EditHexValue :: (byte: u8) -> s32 {
+    if byte >= #char "0" && byte <= #char "9" { return cast(s32)(byte - #char "0") }
+    if byte >= #char "a" && byte <= #char "f" { return cast(s32)(byte - #char "a") + 10 }
+    if byte >= #char "A" && byte <= #char "F" { return cast(s32)(byte - #char "A") + 10 }
+    return -1
+}
+
+// Reads 480 (Classic) or 960 (Island) hex digits. False when malformed.
+EditBoardRead :: (board: *EditBoard, island: bool, hex: string) -> bool {
+    layers: s32 = ifx island then 2 else 1
+    if hex.count != cast(s64)(EDIT_CELLS * 2 * layers) { return false }
+    read := EditBoard.{.island = island}
+    for at: cast(s32)0..EDIT_CELLS * layers - 1 {
+        high := EditHexValue(hex[at * 2]); low := EditHexValue(hex[at * 2 + 1])
+        if high < 0 || low < 0 { return false }
+        value := cast(u8)(high * 16 + low)
+        if at < EDIT_CELLS { read.ground[at] = value } else { read.objects[at - EDIT_CELLS] = value }
+    }
+    board.* = read
+    return true
+}
+
+edit_hex: [EDIT_CELLS * 4]u8;
+
+// The board as hex digits, borrowed until the next call.
+EditBoardHex :: (board: *EditBoard) -> string {
+    alphabet := "0123456789abcdef"
+    layers: s32 = ifx board.island then 2 else 1
+    for at: cast(s32)0..EDIT_CELLS * layers - 1 {
+        value := cast(s32)(ifx at < EDIT_CELLS then board.ground[at] else board.objects[at - EDIT_CELLS])
+        edit_hex[at * 2] = alphabet[value >> 4]
+        edit_hex[at * 2 + 1] = alphabet[value & 15]
+    }
+    return TextView(edit_hex[0:EDIT_CELLS * 2 * layers])
+}
+
+// One row of a layer (0 ground or terrain, 1 objects) as 40 hex digits.
+EditBoardRow :: (board: *EditBoard, layer: s32, row: s32) -> string {
+    hex := EditBoardHex(board)
+    start := (layer * EDIT_CELLS + row * EDIT_WIDTH) * 2
+    return hex[start:start + EDIT_WIDTH * 2]
+}
+
+EditStoryCount :: (island: bool) -> s32 { return ifx island then IslandLevelCount() else ShoveyLevelCount() }
+
+// A shipped (story) level's board. False for a number with none.
+EditStoryBoard :: (board: *EditBoard, island: bool, number: s32) -> bool {
+    if number < 1 || number > EditStoryCount(island) { return false }
+    return EditBoardRead(board, island, ifx island then IslandLevelData(number) else ShoveyLevelData(number))
+}
+
+// A fresh level: Classic's walled courtyard, or a small sandy island, each
+// with Shovey and a home.
+EditNewBoard :: (island: bool) -> EditBoard {
+    board := EditBoard.{.island = island}
+    if !island {
+        for at: cast(s32)0..EDIT_CELLS - 1 {
+            x := at % EDIT_WIDTH; y := at / EDIT_WIDTH
+            board.ground[at] = cast(u8)(ifx x == 0 || y == 0 || x == EDIT_WIDTH - 1 || y == EDIT_HEIGHT - 1 then CLASSIC_WALL else 0)
+        }
+        board.ground[5 * EDIT_WIDTH + 4] = cast(u8)CLASSIC_SHOVEY
+        board.ground[5 * EDIT_WIDTH + 15] = 7
+        return board
+    }
+    for y: cast(s32)3..8 {
+        for x: cast(s32)5..14 { board.ground[y * EDIT_WIDTH + x] = 1 }
+    }
+    CoastAll(board.ground[:])
+    board.objects[6 * EDIT_WIDTH + 7] = cast(u8)ISLAND_SHOVEY
+    board.objects[4 * EDIT_WIDTH + 12] = cast(u8)ISLAND_HOME
+    return board
+}
+
+// Shovey's cell, or -1.
+EditShovey :: (board: *EditBoard) -> s32 {
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if board.island && board.objects[at] == cast(u8)ISLAND_SHOVEY { return at }
+        if !board.island && board.ground[at] == cast(u8)CLASSIC_SHOVEY { return at }
+    }
+    return -1
+}
+
+EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
+    if a.island != b.island { return false }
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if a.ground[at] != b.ground[at] || a.objects[at] != b.objects[at] { return false }
+    }
+    return true
+}
+
+// ---------------------------------------------------------------------------
+// Pieces
+
+EDIT_CLASSIC_PIECES :: 38
+EDIT_ISLAND_PIECES :: 82
+edit_classic_kinds: [EDIT_CLASSIC_PIECES]s32;
+edit_classic_names: [EDIT_CLASSIC_PIECES]string;
+edit_island_kinds: [EDIT_ISLAND_PIECES]s32;
+edit_island_names: [EDIT_ISLAND_PIECES]string;
+edit_pieces_ready: bool;
+
+EditPiecesPrepare :: () {
+    // Classic's pieces, in palette order.
+    classic_kinds: [EDIT_CLASSIC_PIECES]s32 = .[
+    10, 0, 12, 7, 9, 18, 1, 2, 3, 4, 5, 6,
+    15, 16, 17, 19, 21, 13, 14, 33, 34, 8, 11, 25,
+    26, 28, 27, 29, 30, 31, 20, 23, 35, 36, 37, 38,
+    39, 40]
+    classic_names: [EDIT_CLASSIC_PIECES]string = .[
+    "editor_shovey", "editor_floor", "editor_wall", "editor_home",
+    "editor_crate", "editor_crate_goal", "editor_red_ball", "editor_blue_ball",
+    "editor_green_ball", "editor_red_pit", "editor_blue_pit", "editor_green_pit",
+    "editor_red_paint", "editor_blue_paint", "editor_green_paint", "editor_star_block",
+    "editor_apple", "editor_plate", "editor_gate", "editor_key",
+    "editor_lock", "editor_teleporter", "editor_trail", "editor_reverse",
+    "editor_ammo", "editor_target", "editor_charge", "editor_moving_block",
+    "editor_fresh_path", "editor_used_path", "editor_sensor", "editor_closed_sensor",
+    "editor_slide", "editor_red_block", "editor_blue_block", "editor_yellow_block",
+    "editor_block_goal", "editor_mirror_shovey"]
+    // Island's terrain (kinds below 50), then objects. Sand and meadow take
+    // their coast tiles by themselves; EDIT_CLEAR erases an object.
+    island_kinds: [EDIT_ISLAND_PIECES]s32 = .[
+    56, 75, 0, 1, 13, EDIT_CLEAR, 46, 10, 35, 25, 26, 27,
+    28, 29, 30, 31, 32, 33, 36, 37, 39, 38, 40, 41,
+    43, 44, 45, 47, 48, 57, 116, 61, 62, 63, 51, 55,
+    54, 53, 91, 65, 66, 73, 60, 58, 64, 67, 70, 71,
+    72, 76, 80, 83, 85, 86, 87, 88, 117, 118, 119, 120,
+    81, 52, 94, 82, 90, 92, 89, 97, 98, 99, 101, 102,
+    103, 104, 105, 111, 112, 114, 122, 100, 113, 74]
+    island_names: [EDIT_ISLAND_PIECES]string = .[
+    "editor_shovey", "editor_hut", "editor_water", "editor_sand",
+    "editor_meadow", "editor_clear", "editor_pebbles", "editor_jade_bed",
+    "editor_red_bed", "editor_barrel_spot", "editor_red_spot", "editor_blue_spot",
+    "editor_green_spot", "editor_sunken_crate", "editor_spike_plate", "editor_well",
+    "editor_farm", "editor_planted", "editor_blast_spot", "editor_teleporter",
+    "editor_item_teleporter", "editor_raft", "editor_ice", "editor_watch_plate",
+    "editor_hidden_path", "editor_channel", "editor_channel_end", "editor_yellow_ring",
+    "editor_red_ring", "editor_crate", "editor_barrel", "editor_red_statue",
+    "editor_blue_statue", "editor_green_statue", "editor_palm", "editor_coconut_palm",
+    "editor_boulder", "editor_snail", "editor_buoy", "editor_sea_star",
+    "editor_baby_crab", "editor_mother_crab", "editor_key", "editor_chest",
+    "editor_seed", "editor_bottle", "editor_coconut", "editor_coconut_hole",
+    "editor_bomb", "editor_spring", "editor_ammo", "editor_slingshot",
+    "editor_leaf_up", "editor_leaf_right", "editor_leaf_down", "editor_leaf_left",
+    "editor_turner_up", "editor_turner_right", "editor_turner_down", "editor_turner_left",
+    "editor_pearl", "editor_lantern", "editor_clam", "editor_coin",
+    "editor_pirate", "editor_stall", "editor_spikes", "editor_red_shell",
+    "editor_blue_shell", "editor_yellow_shell", "editor_stone_1", "editor_stone_2",
+    "editor_stone_3", "editor_stone_4", "editor_stone_5", "editor_yellow_flower",
+    "editor_red_flower", "editor_octopus", "editor_string_post", "editor_shell_turning",
+    "editor_yellow_turning", "editor_happy_crab"]
+    for at: cast(s32)0..EDIT_CLASSIC_PIECES - 1 { edit_classic_kinds[at] = classic_kinds[at]; edit_classic_names[at] = classic_names[at] }
+    for at: cast(s32)0..EDIT_ISLAND_PIECES - 1 { edit_island_kinds[at] = island_kinds[at]; edit_island_names[at] = island_names[at] }
+    edit_pieces_ready = true
+}
+
+EditPieceCount :: (island: bool) -> s32 { return ifx island then EDIT_ISLAND_PIECES else EDIT_CLASSIC_PIECES }
+
+// The kind of palette piece `index`.
+EditPieceKind :: (island: bool, index: s32) -> s32 {
+    if !edit_pieces_ready { EditPiecesPrepare() }
+    return ifx island then edit_island_kinds[index] else edit_classic_kinds[index]
+}
+
+// The translated name's key of palette piece `index`.
+EditPieceKey :: (island: bool, index: s32) -> string {
+    if !edit_pieces_ready { EditPiecesPrepare() }
+    return ifx island then edit_island_names[index] else edit_classic_names[index]
+}
+
+// A piece's name key, also for kinds the palette leaves out.
+EditPieceName :: (island: bool, kind: s32) -> string {
+    for index: cast(s32)0..EditPieceCount(island) - 1 {
+        if EditPieceKind(island, index) == kind { return EditPieceKey(island, index) }
+    }
+    if island && CoastSand(kind) { return "editor_sand" }
+    if island && CoastMeadow(kind) { return "editor_meadow" }
+    return ifx island && kind < 50 then "editor_ground" else "editor_object"
+}
+
+// ---------------------------------------------------------------------------
+// Painting
+
+// Classic's outer ring stays wall, as on every shipped board.
+EditBorder :: (at: s32) -> bool {
+    x := at % EDIT_WIDTH; y := at / EDIT_WIDTH
+    return x == 0 || y == 0 || x == EDIT_WIDTH - 1 || y == EDIT_HEIGHT - 1
+}
+
+// Paints piece kind on cell at. Exactly one Shovey: painting Shovey moves it,
+// and nothing paints over it. Island's sand and meadow choose their shores;
+// water and the eraser clear objects. Returns whether the board changed.
+EditPaint :: (board: *EditBoard, kind: s32, at: s32) -> bool {
+    if at < 0 || at >= EDIT_CELLS { return false }
+    shovey := EditShovey(board)
+    if !board.island {
+        if kind < 0 || kind > 40 || kind == 22 || kind == 24 || kind == 32 { return false }
+        if EditBorder(at) || at == shovey || board.ground[at] == cast(u8)kind { return false }
+        if kind == CLASSIC_SHOVEY && shovey >= 0 { board.ground[shovey] = 0 }
+        board.ground[at] = cast(u8)kind
+        return true
+    }
+    if kind == EDIT_CLEAR {
+        if at == shovey || board.objects[at] == 0 { return false }
+        board.objects[at] = 0
+        return true
+    }
+    if kind < 50 {
+        if kind < 0 || kind > 48 || kind == 24 || kind == 34 || kind == 42 { return false }
+        // Shovey starts on land.
+        if at == shovey && CoastWater(kind) { return false }
+        before := board.*
+        board.ground[at] = cast(u8)kind
+        if kind == 0 && at != shovey { board.objects[at] = 0 }
+        CoastAround(board.ground[:], at)
+        return !EditSame(*before, board)
+    }
+    if kind > 124 || kind == 78 || kind == 79 || kind == 123 || kind == 124 || at == shovey || board.objects[at] == cast(u8)kind { return false }
+    if kind == ISLAND_SHOVEY {
+        if CoastWater(cast(s32)board.ground[at]) { return false }
+        if shovey >= 0 { board.objects[shovey] = 0 }
+    }
+    board.objects[at] = cast(u8)kind
+    return true
+}
+
+// The piece under at, as the palette names it: Island's object, or its
+// terrain with any shore as plain sand or meadow.
+EditPick :: (board: *EditBoard, at: s32) -> s32 {
+    if at < 0 || at >= EDIT_CELLS { return -1 }
+    if !board.island { return cast(s32)board.ground[at] }
+    if board.objects[at] != 0 { return cast(s32)board.objects[at] }
+    terrain := cast(s32)board.ground[at]
+    if CoastSand(terrain) { return 1 }
+    if CoastMeadow(terrain) { return 13 }
+    return terrain
+}
+
+// ---------------------------------------------------------------------------
+// Undo, one stroke at a time
+
+EDIT_UNDO :: 64
+
+EditHistory :: struct {
+    boards: [EDIT_UNDO]EditBoard
+    count: s32
+    // The next slot of the ring.
+    next: s32
+}
+
+// Remembers the board as it was before a stroke.
+EditRemember :: (history: *EditHistory, board: *EditBoard) {
+    history.boards[history.next] = board.*
+    history.next = (history.next + 1) % EDIT_UNDO
+    if history.count < EDIT_UNDO { history.count += 1 }
+}
+
+// Puts the board back as it was before the last stroke. False with none.
+EditUndo :: (history: *EditHistory, board: *EditBoard) -> bool {
+    if history.count == 0 { return false }
+    history.next = (history.next + EDIT_UNDO - 1) % EDIT_UNDO
+    history.count -= 1
+    board.* = history.boards[history.next]
+    return true
+}
+
+// ---------------------------------------------------------------------------
+// Writing text: into a buffer the caller owns, which then holds
+// TextView(buffer[0:writer.length]).
+
+EditWriter :: struct {
+    bytes: []u8
+    length: s32
+    full: bool
+}
+
+EditPut :: (writer: *EditWriter, text: string) {
+    if writer.full || cast(s64)writer.length + text.count > writer.bytes.count { writer.full = true; return }
+    for at: cast(s64)0..text.count - 1 { writer.bytes[cast(s64)writer.length + at] = text[at] }
+    writer.length += cast(s32)text.count
+}
+
+EditPutByte :: (writer: *EditWriter, byte: u8) {
+    if writer.full || cast(s64)writer.length >= writer.bytes.count { writer.full = true; return }
+    writer.bytes[writer.length] = byte
+    writer.length += 1
+}
+
+EditPutNumber :: (writer: *EditWriter, value: s64) {
+    digits: [24]u8
+    EditPut(writer, FormatInteger(value, digits[:]))
+}
+
+// A JSON string: quotes, backslashes and control bytes escaped; other UTF-8
+// passes through.
+EditPutJson :: (writer: *EditWriter, text: string) {
+    alphabet := "0123456789abcdef"
+    EditPutByte(writer, #char "\"")
+    for byte: text {
+        if byte == #char "\"" || byte == #char "\\" { EditPutByte(writer, #char "\\"); EditPutByte(writer, byte) }
+        else if byte == cast(u8)10 { EditPut(writer, "\\n") }
+        else if byte < cast(u8)32 {
+            EditPut(writer, "\\u00")
+            EditPutByte(writer, alphabet[cast(s32)(byte >> 4)])
+            EditPutByte(writer, alphabet[cast(s32)(byte & 15)])
+        } else { EditPutByte(writer, byte) }
+    }
+    EditPutByte(writer, #char "\"")
+}
+
+// A board's layers as JSON arrays of row strings, the level files' layout:
+// "cells" for Classic, "terrain" and "objects" for Island.
+EditPutRows :: (writer: *EditWriter, board: *EditBoard, indent: string) {
+    layers: s32 = ifx board.island then 2 else 1
+    names: [2]string = .[ifx board.island then "terrain" else "cells", "objects"]
+    for layer: cast(s32)0..layers - 1 {
+        if layer > 0 { EditPut(writer, ",") }
+        EditPut(writer, "\n")
+        EditPut(writer, indent)
+        EditPutJson(writer, names[layer])
+        EditPut(writer, ": [")
+        for row: cast(s32)0..EDIT_HEIGHT - 1 {
+            EditPut(writer, ifx row == 0 then "\n" else ",\n")
+            EditPut(writer, indent)
+            EditPut(writer, " ")
+            EditPutJson(writer, EditBoardRow(board, layer, row))
+        }
+        EditPut(writer, "]")
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Custom levels and their records
+//
+// Each edition keeps an index record, "classic-levels" or "island-levels":
+//
+//   I1
+//   next 8
+//   level 3 12 s 1 - My crates
+//
+// one line per custom level: its id, the story level it was copied from (0
+// for none), how it was proven (- not yet, s solver, p played, d a
+// downloaded route that replayed to a win), 1 once won in play, the author's
+// alias for downloaded levels (- for none), and its name. Each level keeps
+// its board and winning route in "classic-3" (or "island-3"):
+//
+//   E1
+//   board <hex>
+//   route <letters>
+//
+// A route always belongs to the board beside it; changing the board drops it.
+
+EDIT_LEVELS :: 400
+EDIT_NAME :: 64
+EDIT_ALIAS :: 40
+EDIT_ROUTE :: 32768
+EDIT_PROOF_NONE :: 0
+EDIT_PROOF_SOLVER :: 1
+EDIT_PROOF_PLAYED :: 2
+EDIT_PROOF_DOWNLOAD :: 3
+
+EditSummary :: struct {
+    id: s32
+    from: s32
+    proof: s32
+    completed: bool
+    name: [EDIT_NAME]u8
+    name_length: s32
+    author: [EDIT_ALIAS]u8
+    author_length: s32
+}
+
+EditCatalog :: struct {
+    island: bool
+    next: s32
+    count: s32
+    levels: [EDIT_LEVELS]EditSummary
+}
+
+
+
+// The text in a fixed field of length bytes.
+EditField :: (bytes: []u8, length: s32) -> string { return TextView(bytes[0:length]) }
+
+// Copies text into a fixed field as one line, cut at a whole character.
+EditSetField :: (field: []u8, text: string) -> s32 {
+    length: s64 = 0
+    while length < text.count && length < field.count && text[length] != cast(u8)10 && text[length] != cast(u8)13 {
+        field[length] = text[length]
+        length += 1
+    }
+    // Never cut inside a character: back up while the cut falls on one's
+    // continuation bytes.
+    while length > 0 && length < text.count && (text[length] & cast(u8)192) == cast(u8)128 { length -= 1 }
+    return cast(s32)length
+}
+
+EditSetName :: (summary: *EditSummary, name: string) {
+    summary.name_length = EditSetField(summary.name[:], name)
+}
+
+EditSetAuthor :: (summary: *EditSummary, author: string) {
+    summary.author_length = EditSetField(summary.author[:], author)
+}
+
+EditRecordPrefix :: (island: bool) -> string { return ifx island then "island" else "classic" }
+
+edit_record_name: [64]u8;
+
+// The record of a custom level, borrowed until the next call.
+EditLevelRecord :: (island: bool, id: s32) -> string {
+    writer := EditWriter.{.bytes = edit_record_name[:]}
+    EditPut(*writer, EditRecordPrefix(island))
+    EditPut(*writer, "-")
+    EditPutNumber(*writer, cast(s64)id)
+    return TextView(edit_record_name[0:writer.length])
+}
+
+EditIndexRecord :: (island: bool) -> string { return ifx island then "island-levels" else "classic-levels" }
+
+EditFind :: (catalog: *EditCatalog, id: s32) -> s32 {
+    for at: cast(s32)0..catalog.count - 1 {
+        if catalog.levels[at].id == id { return at }
+    }
+    return -1
+}
+
+// Adds a custom level to the catalog. Returns its place, or -1 when full.
+EditAdd :: (catalog: *EditCatalog, from: s32, name: string) -> s32 {
+    if catalog.count >= EDIT_LEVELS { return -1 }
+    if catalog.next < 1 { catalog.next = 1 }
+    at := catalog.count
+    catalog.levels[at] = EditSummary.{.id = catalog.next, .from = from}
+    EditSetName(*catalog.levels[at], name)
+    catalog.next += 1
+    catalog.count += 1
+    return at
+}
+
+EditRemove :: (catalog: *EditCatalog, at: s32) {
+    if at < 0 || at >= catalog.count { return }
+    for index: cast(s32)at..catalog.count - 2 { catalog.levels[index] = catalog.levels[index + 1] }
+    catalog.count -= 1
+}
+
+EDIT_INDEX_BYTES :: 65000
+edit_index_bytes: [EDIT_INDEX_BYTES]u8;
+
+EditProofLetter :: (proof: s32) -> string {
+    if proof == EDIT_PROOF_SOLVER { return "s" }
+    if proof == EDIT_PROOF_PLAYED { return "p" }
+    if proof == EDIT_PROOF_DOWNLOAD { return "d" }
+    return "-"
+}
+
+// The index record's text, borrowed until the next call. Empty when it
+// would not fit a record.
+EditIndexText :: (catalog: *EditCatalog) -> string {
+    writer := EditWriter.{.bytes = edit_index_bytes[:]}
+    EditPut(*writer, "I1\nnext ")
+    EditPutNumber(*writer, cast(s64)catalog.next)
+    EditPut(*writer, "\n")
+    for at: cast(s32)0..catalog.count - 1 {
+        level := *catalog.levels[at]
+        EditPut(*writer, "level ")
+        EditPutNumber(*writer, cast(s64)level.id)
+        EditPut(*writer, " ")
+        EditPutNumber(*writer, cast(s64)level.from)
+        EditPut(*writer, " ")
+        EditPut(*writer, EditProofLetter(level.proof))
+        EditPut(*writer, ifx level.completed then " 1 " else " 0 ")
+        EditPut(*writer, ifx level.author_length > 0 then EditField(level.author[:], level.author_length) else "-")
+        EditPut(*writer, " ")
+        EditPut(*writer, EditField(level.name[:], level.name_length))
+        EditPut(*writer, "\n")
+    }
+    if writer.full { return "" }
+    return TextView(edit_index_bytes[0:writer.length])
+}
+
+// The text of line number `index` (from 0), or "" past the end.
+EditLine :: (text: string, from: s64) -> string {
+    end := from
+    while end < text.count && text[end] != cast(u8)10 { end += 1 }
+    return text[from:end]
+}
+
+// The next word of a line from at, with *at moved past it and its space.
+EditWord :: (line: string, at: *s64) -> string {
+    start := at.*
+    while at.* < line.count && line[at.*] != #char " " { at.* += 1 }
+    word := line[start:at.*]
+    if at.* < line.count { at.* += 1 }
+    return word
+}
+
+EditNumber :: (word: string) -> s32 {
+    if word.count == 0 || word.count > 9 { return -1 }
+    value: s32 = 0
+    for byte: word {
+        if byte < #char "0" || byte > #char "9" { return -1 }
+        value = value * 10 + cast(s32)(byte - #char "0")
+    }
+    return value
+}
+
+// Reads an index record. An empty record is an empty catalog; anything
+// malformed is refused and leaves the catalog as it was.
+EditIndexRead :: (catalog: *EditCatalog, island: bool, text: string) -> bool {
+    read := EditCatalog.{.island = island, .next = 1}
+    if text.count == 0 { catalog.* = read; return true }
+    at: s64 = 0
+    first := true
+    while at < text.count {
+        line := EditLine(text, at)
+        at += line.count + 1
+        if first {
+            if line != "I1" { return false }
+            first = false
+            continue
+        }
+        cursor: s64 = 0
+        word := EditWord(line, *cursor)
+        if word == "next" {
+            read.next = EditNumber(EditWord(line, *cursor))
+            if read.next < 1 { return false }
+        } else if word == "level" {
+            if read.count >= EDIT_LEVELS { return false }
+            level: EditSummary
+            level.id = EditNumber(EditWord(line, *cursor))
+            level.from = EditNumber(EditWord(line, *cursor))
+            proof := EditWord(line, *cursor)
+            done := EditWord(line, *cursor)
+            author := EditWord(line, *cursor)
+            if level.id < 1 || level.from < 0 || (done != "0" && done != "1") || author.count == 0 { return false }
+            if proof == "s" { level.proof = EDIT_PROOF_SOLVER }
+            else if proof == "p" { level.proof = EDIT_PROOF_PLAYED }
+            else if proof == "d" { level.proof = EDIT_PROOF_DOWNLOAD }
+            else if proof != "-" { return false }
+            level.completed = done == "1"
+            if author != "-" { EditSetAuthor(*level, author) }
+            EditSetName(*level, line[cursor:])
+            read.levels[read.count] = level
+            read.count += 1
+        } else if line.count > 0 { return false }
+    }
+    if read.count > 0 && read.next <= read.levels[read.count - 1].id { return false }
+    catalog.* = read
+    return true
+}
+
+// A custom level's board and winning route.
+EditLevel :: struct {
+    board: EditBoard
+    route: [EDIT_ROUTE]u8
+    route_length: s32
+}
+
+
+EditSetRoute :: (level: *EditLevel, route: string) -> bool {
+    if route.count > cast(s64)EDIT_ROUTE { return false }
+    for at: cast(s64)0..route.count - 1 { level.route[at] = route[at] }
+    level.route_length = cast(s32)route.count
+    return true
+}
+
+edit_level_bytes: [EDIT_ROUTE + 1100]u8;
+
+// A level record's text, borrowed until the next call.
+EditLevelText :: (level: *EditLevel) -> string {
+    writer := EditWriter.{.bytes = edit_level_bytes[:]}
+    EditPut(*writer, "E1\nboard ")
+    EditPut(*writer, EditBoardHex(*level.board))
+    EditPut(*writer, "\nroute ")
+    EditPut(*writer, EditField(level.route[:], level.route_length))
+    EditPut(*writer, "\n")
+    return TextView(edit_level_bytes[0:writer.length])
+}
+
+// Reads a level record of an edition. False when malformed.
+EditLevelRead :: (level: *EditLevel, island: bool, text: string) -> bool {
+    if EditLine(text, 0) != "E1" { return false }
+    at: s64 = 3
+    board_found := false
+    route := ""
+    while at < text.count {
+        line := EditLine(text, at)
+        at += line.count + 1
+        cursor: s64 = 0
+        word := EditWord(line, *cursor)
+        if word == "board" {
+            if !EditBoardRead(*level.board, island, line[cursor:]) { return false }
+            board_found = true
+        } else if word == "route" { route = line[cursor:] }
+        else if line.count > 0 { return false }
+    }
+    return board_found && EditShovey(*level.board) >= 0 && EditSetRoute(level, route)
+}
+
+// ---------------------------------------------------------------------------
+// Export for the developer
+//
+//   {"format": "shovey-edits-1", "levels": [
+//    {"edition": "classic", "number": 12, "name": "...", "route": "...",
+//     "cells": [...12 rows of 40 hex digits...]},
+//    {"edition": "island", "name": "...", "route": "...",
+//     "terrain": [...], "objects": [...]}]}
+//
+// "number" names the story level a copy came from; new levels have none.
+// tools/levels/import_edits.zi reads it.
+
+EditExportBegin :: (writer: *EditWriter) {
+    EditPut(writer, "{\"format\": \"shovey-edits-1\", \"levels\": [")
+}
+
+// Adds one proven level; first is true for the first of the export.
+EditExportLevel :: (writer: *EditWriter, summary: *EditSummary, level: *EditLevel, first: bool, fallback: string) {
+    EditPut(writer, ifx first then "\n {" else ",\n {")
+    EditPut(writer, "\"edition\": ")
+    EditPutJson(writer, EditRecordPrefix(level.board.island))
+    if summary.from > 0 {
+        EditPut(writer, ", \"number\": ")
+        EditPutNumber(writer, cast(s64)summary.from)
+    }
+    EditPut(writer, ", \"name\": ")
+    EditPutJson(writer, ifx summary.name_length > 0 then EditField(summary.name[:], summary.name_length) else fallback)
+    EditPut(writer, ", \"route\": ")
+    EditPutJson(writer, EditField(level.route[:], level.route_length))
+    EditPut(writer, ",")
+    EditPutRows(writer, *level.board, "  ")
+    EditPut(writer, "}")
+}
+
+EditExportEnd :: (writer: *EditWriter) { EditPut(writer, "]}\n") }
+
+// ---------------------------------------------------------------------------
+// Playing a board in the editor
+
+EDIT_PLAY_UNDO :: 120
+
+EditPlay :: struct {
+    island: bool
+    classic: ShoveyGame
+    isle: IslandGame
+    start: EditBoard
+    route: [EDIT_ROUTE]u8
+    route_length: s32
+    // Before each of the last moves: the game and how long the route was.
+    classic_undo: [EDIT_PLAY_UNDO]ShoveyGame
+    isle_undo: [EDIT_PLAY_UNDO]IslandGame
+    route_undo: [EDIT_PLAY_UNDO]s32
+    undo_count: s32
+    undo_next: s32
+    // The route ran out of room; this game proves nothing.
+    overflow: bool
+}
+
+// Starts playing board from its beginning. False when the engine refuses it.
+EditPlayStart :: (play: *EditPlay, board: *EditBoard) -> bool {
+    play.island = board.island
+    play.start = board.*
+    play.route_length = 0
+    play.undo_count = 0
+    play.undo_next = 0
+    play.overflow = false
+    hex := EditBoardHex(board)
+    if board.island { return IslandLoadData(*play.isle, 0, hex) }
+    return ShoveyLoadData(*play.classic, 0, hex)
+}
+
+EditPlayRestart :: (play: *EditPlay) -> bool {
+    start := play.start
+    return EditPlayStart(play, *start)
+}
+
+EditPlayWon :: (play: *EditPlay) -> bool { return ifx play.island then play.isle.won else play.classic.won }
+
+EditPlayLost :: (play: *EditPlay) -> bool { return !play.island && play.classic.lost }
+
+EditPlayRecord :: (play: *EditPlay, letter: u8) {
+    if play.route_length >= EDIT_ROUTE { play.overflow = true; return }
+    play.route[play.route_length] = letter
+    play.route_length += 1
+}
+
+EditPlayRemember :: (play: *EditPlay) {
+    if play.island { play.isle_undo[play.undo_next] = play.isle }
+    else { play.classic_undo[play.undo_next] = play.classic }
+    play.route_undo[play.undo_next] = play.route_length
+    play.undo_next = (play.undo_next + 1) % EDIT_PLAY_UNDO
+    if play.undo_count < EDIT_PLAY_UNDO { play.undo_count += 1 }
+}
+
+// Moves (direction 0..3) or, in Classic, throws (direction -1), and records
+// it in the route. A refused Classic move that turns an armed Shovey is kept
+// too: the facing decides where the next throw flies.
+EditPlayAct :: (play: *EditPlay, direction: s32) -> bool {
+    if EditPlayWon(play) || EditPlayLost(play) { return false }
+    if play.island {
+        before := play.isle
+        if direction < 0 || !IslandMove(*play.isle, direction) { return false }
+        play.isle_undo[play.undo_next] = before
+        play.route_undo[play.undo_next] = play.route_length
+        play.undo_next = (play.undo_next + 1) % EDIT_PLAY_UNDO
+        if play.undo_count < EDIT_PLAY_UNDO { play.undo_count += 1 }
+        EditPlayRecord(play, #char "0" + cast(u8)direction)
+        return true
+    }
+    before := play.classic
+    changed := false
+    if direction < 0 { changed = ShoveyFire(*play.classic) } else { changed = ShoveyMove(*play.classic, direction) }
+    turned := direction >= 0 && (before.powers & SHOVEY_AMMO) != 0 && before.direction != play.classic.direction
+    if !changed && !turned { return false }
+    play.classic_undo[play.undo_next] = before
+    play.route_undo[play.undo_next] = play.route_length
+    play.undo_next = (play.undo_next + 1) % EDIT_PLAY_UNDO
+    if play.undo_count < EDIT_PLAY_UNDO { play.undo_count += 1 }
+    EditPlayRecord(play, ifx direction < 0 then #char "f" else #char "0" + cast(u8)direction)
+    return changed
+}
+
+// One timer tick of Classic's moving block, recorded when it did something.
+EditPlayTick :: (play: *EditPlay) -> bool {
+    if play.island || !ShoveyTick(*play.classic) { return false }
+    EditPlayRecord(play, #char "t")
+    return true
+}
+
+// Takes back the last move, and the ticks after it. False with none left.
+EditPlayUndo :: (play: *EditPlay) -> bool {
+    if play.undo_count == 0 { return false }
+    play.undo_next = (play.undo_next + EDIT_PLAY_UNDO - 1) % EDIT_PLAY_UNDO
+    play.undo_count -= 1
+    if play.island { play.isle = play.isle_undo[play.undo_next] }
+    else { play.classic = play.classic_undo[play.undo_next] }
+    play.route_length = play.route_undo[play.undo_next]
+    return true
+}
+
+// Whether the game is won with its whole route recorded: then
+// EditField(play.route[:], play.route_length) proves the board.
+EditPlayProven :: (play: *EditPlay) -> bool {
+    return EditPlayWon(play) && !EditPlayLost(play) && !play.overflow
+}
+
+// ---------------------------------------------------------------------------
+// Checking a route
+
+// Replays route on board through the engine, at most `steps` letters per
+// call. Returns 1 when it wins, 0 when it fails, -1 when it needs another
+// call; *at keeps the place. The game holds the position between calls.
+EditReplay :: (play: *EditPlay, board: *EditBoard, route: string, at: *s32, steps: s32) -> s32 {
+    if at.* == 0 && !EditPlayStart(play, board) { return 0 }
+    done: s32 = 0
+    while cast(s64)at.* < route.count {
+        if done >= steps { return -1 }
+        letter := route[at.*]
+        at.* += 1
+        done += 1
+        if EditPlayWon(play) || EditPlayLost(play) { return 0 }
+        if play.island {
+            if letter < #char "0" || letter > #char "3" { return 0 }
+            unused IslandMove(*play.isle, cast(s32)(letter - #char "0"))
+        } else if letter >= #char "0" && letter <= #char "3" { unused ShoveyMove(*play.classic, cast(s32)(letter - #char "0")) }
+        else if letter == #char "f" { unused ShoveyFire(*play.classic) }
+        else if letter == #char "t" { unused ShoveyTick(*play.classic) }
+        else { return 0 }
+    }
+    return ifx EditPlayWon(play) && !EditPlayLost(play) then 1 else 0
+}

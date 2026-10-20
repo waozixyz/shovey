@@ -1,0 +1,385 @@
+#import "session"
+#import "geometry"
+#import "drawing_props"
+#import "text_props"
+#import "text_align"
+#import "text_widget"
+#import "button_props"
+#import "image_widget"
+#import "image_props"
+#import "button_widget"
+#import "control_props"
+#import "box_props"
+#import "box_widget"
+#import "press_props"
+#import "press_widget"
+#import "scroll_props"
+#import "scroll_widget"
+#import "joystick"
+#import "tree"
+#import "number_text"
+#import "text_buffer"
+#import "c_string"
+#import "byte_text_linux"
+#import "apps/node_types"
+#import "tile_map"
+#import, file "engine.zi";
+#import, file "shovey_board.zi";
+#import, file "progress.zi";
+host_api :: #system_library "host_api";
+ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
+AppLocaleHost :: (key: string) -> string #foreign host_api;
+AppRecordHost :: (name: string) -> string #foreign host_api;
+SaveAppRecordHost :: (name: string, text: string) -> bool #foreign host_api;
+// Arcade's supervised drawing frame supplies keys only to the open game.
+AppKeyHost :: () -> s32 #foreign host_api;
+// One of the game's own packed sounds; a host without audio answers false.
+AppSoundHost :: (path: string) -> bool #foreign host_api;
+
+frame: AppUiFrame;
+game: ShoveyGame;
+progress: ShoveyProgress;
+selector_open: bool;
+levels_scroll: s32;
+loaded: bool;
+help_open: bool;
+save_failed: bool;
+help_scroll: s32;
+// Touch-first: hidden until the board is touched, then hidden again for keyboard.
+joystick_hidden: bool = true;
+last_tick: float64;
+header_bytes: [256]u8;
+level_preview_paths: [175][64]u8;
+sprite_names: [SPRITE_COUNT]string;
+
+
+AppendText :: (bytes: []u8, length: *s32, text: string) {
+    if length.* + text.count > bytes.count { return }
+    for index: cast(s64)0..text.count - 1 {
+        bytes[length.*] = text[index]
+        length.* += 1
+    }
+}
+
+HeaderText :: () -> string {
+    length: s32 = 0
+    digits: [24]u8
+    AppendText(header_bytes[:], *length, AppLocaleHost("shovey_level"))
+    AppendText(header_bytes[:], *length, " ")
+    AppendText(header_bytes[:], *length, FormatInteger(cast(s64)game.level, digits[:]))
+    AppendText(header_bytes[:], *length, " / ")
+    AppendText(header_bytes[:], *length, FormatInteger(cast(s64)ShoveyLevelCount(), digits[:]))
+    return TextView(header_bytes[:length])
+}
+
+Fill :: (key: u64, bounds: Rectangle, color: Color, radius: float32 = 0.0) {
+    Box(frame.session, BoxProps.{.key = key, .bounds = bounds, .fill = color, .radius = radius})
+}
+
+Caption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16, center: bool = false) {
+    Text(frame.session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = font,
+            .wrap = TextWrap.TextWrapAuto,
+            .align = ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
+            .vertical_align = TextAlign.TextAlignCenter})
+}
+
+Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, detail: string = "") -> bool {
+    return Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id,
+            .bounds = bounds, .label = label, .detail = detail, .disabled = disabled,
+            .fit_content = true, .tone = ButtonTone.ButtonToneNeutral,
+            .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
+}
+
+TileName :: (kind: s32) -> string {
+    if kind >= 1 && kind <= 3 { return AppLocaleHost("shovey_ball") }
+    if kind >= 4 && kind <= 6 { return AppLocaleHost("shovey_ball_goal") }
+    if kind == 7 { return AppLocaleHost("shovey_home") }
+    if kind == 8 { return AppLocaleHost("shovey_portal") }
+    if kind == 9 { return AppLocaleHost("shovey_crate") }
+    if kind == 10 { return "Shovey" }
+    if kind == 11 { return AppLocaleHost("shovey_trail") }
+    if kind == 12 { return AppLocaleHost("shovey_wall") }
+    if kind == 13 { return AppLocaleHost("shovey_plate") }
+    if kind == 14 { return AppLocaleHost("shovey_door") }
+    if kind >= 15 && kind <= 17 { return AppLocaleHost("shovey_paint") }
+    if kind == 18 { return AppLocaleHost("shovey_crate_goal") }
+    if kind == 19 { return AppLocaleHost("shovey_star") }
+    if kind == 20 || kind == 23 || kind == 41 || kind == 42 { return AppLocaleHost("shovey_sensor") }
+    if kind == 21 { return AppLocaleHost("shovey_apple") }
+    if kind == 25 { return AppLocaleHost("shovey_reverse") }
+    if kind == 26 { return AppLocaleHost("shovey_ammo") }
+    if kind == 27 { return AppLocaleHost("shovey_charge") }
+    if kind == 28 { return AppLocaleHost("shovey_target") }
+    if kind == 29 || kind == 30 || kind == 31 || kind == 43 { return AppLocaleHost("shovey_light") }
+    if kind == 33 { return AppLocaleHost("shovey_key") }
+    if kind == 34 { return AppLocaleHost("shovey_lock") }
+    if kind == 35 { return AppLocaleHost("shovey_slide") }
+    if kind >= 36 && kind <= 38 { return AppLocaleHost("shovey_color_block") }
+    if kind == 39 { return AppLocaleHost("shovey_color_goal") }
+    if kind == 40 { return AppLocaleHost("shovey_shadow") }
+    return AppLocaleHost("shovey_floor")
+}
+
+// Each sprite number's description, for the board's pictures.
+SpriteNames :: () {
+    for kind: cast(s32)0..40 { sprite_names[kind] = TileName(kind) }
+    for index: cast(s32)SPRITE_PLAYER..SPRITE_DOOR_OPEN - 1 { sprite_names[index] = "Shovey" }
+    sprite_names[SPRITE_DOOR_OPEN] = TileName(14)
+    for index: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { sprite_names[index] = TileName(22) }
+    sprite_names[SPRITE_SHOT] = AppLocaleHost("shovey_ammo")
+}
+
+// One board kind for the help list, standing on floor when it is a piece.
+Tile :: (key: u64, kind: s32, bounds: Rectangle) {
+    floor := FloorSprite(kind)
+    if floor >= 0 { Sprite(key, floor, bounds, AppLocaleHost("shovey_floor")) }
+    sprite := ifx kind == 10 then PlayerSprite(*game) else KindSprite(*game, kind, -1, frame.now)
+    if sprite >= 0 { Sprite(key + 2, sprite, bounds, TileName(kind)) }
+}
+
+Sprite :: (key: u64, index: s32, bounds: Rectangle, label: string) {
+    Image(frame.session, ImageProps.{.key = key, .asset_path = SpriteFile(index),
+            .alt_text = label, .bounds = bounds, .fit = ImageFit.ImageFitContain, .smooth = true})
+}
+
+Remember :: () {
+    ShoveyRecordWin(*progress, *game)
+    saved := ShoveyCampaignSave(*progress, *game)
+    save_failed = !SaveAppRecordHost("campaign", saved)
+
+}
+
+ChangeLevel :: (level: s32) {
+    if ShoveySelectLevel(*progress, *game, level) {
+        last_tick = frame.now
+        selector_open = false
+        help_open = false
+        Remember()
+    }
+}
+
+// Moves (or throws, for direction -1) and plays what the move did.
+ShoveyAct :: (direction: s32) -> bool {
+    before := game
+    changed := false
+    if direction < 0 { changed = ShoveyFire(*game) } else { changed = ShoveyMove(*game, direction) }
+    event := SHOVEY_EVENT_NONE
+    if changed { event = ShoveyEvent(*before, *game) }
+    if event != SHOVEY_EVENT_NONE {
+        sounds: [10]string = .["", "assets/shovey/sounds/push.wav", "assets/shovey/sounds/pit.wav",
+        "assets/shovey/sounds/goal.wav", "assets/shovey/sounds/pickup.wav", "assets/shovey/sounds/door.wav",
+        "assets/shovey/sounds/teleport.wav", "assets/shovey/sounds/shot.wav", "assets/shovey/sounds/won.wav",
+        "assets/shovey/sounds/lost.wav"]
+        unused AppSoundHost(sounds[event])
+    }
+    return changed
+}
+
+ContinueGame :: () {
+    unused ShoveyContinue(*progress, *game)
+    selector_open = false
+    help_open = false
+    last_tick = frame.now
+    Remember()
+}
+
+ShoveyFrame :: () {
+    frame = ReadAppUiHost()
+    if !loaded {
+        if !ShoveyCampaignRestore(*progress, *game, AppRecordHost("campaign")) {
+            if ShoveyRestore(*game, AppRecordHost("position")) {
+                progress = ShoveyMigrateProgress(*game)
+                // That record predates the shipped boards: restart its level.
+                unused ShoveyLoad(*game, game.level)
+            } else {
+                unused ShoveyLoad(*game, 1)
+                progress = ShoveyProgressNew()
+            }
+        }
+        if ShoveyOpenLatest(*progress, *game) { Remember() }
+        last_tick = frame.now
+        loaded = true
+    }
+    width := cast(float32)frame.width
+    top := cast(float32)frame.top
+    bottom := cast(float32)(frame.height - frame.bottom)
+    if selector_open {
+        Caption(20103, Rectangle.{16.0, top + 12.0, width - 152.0, 44.0}, AppLocaleHost("shovey_levels"), 24)
+        if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
+            ContinueGame()
+        }
+        columns := cast(s32)((width - 24.0) / 156.0)
+        if columns < 2 { columns = 2 }
+        rows := (ShoveyLevelCount() + columns - 1) / columns
+        row_height: s32 = 142
+        scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
+                .bounds = Rectangle.{16.0, top + 72.0, width - 32.0, bottom - top - 88.0},
+                .content_height = rows * row_height, .scroll_offset = levels_scroll})
+        levels_scroll = scroll.scroll_offset
+        if scroll.opened {
+            cell := (scroll.content.width - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
+            for number: cast(s32)1..ShoveyLevelCount() {
+                at := number - 1
+                bounds := Rectangle.{scroll.content.x + cast(float32)(at % columns) * (cell + 8.0),
+                    scroll.content.y + cast(float32)(at / columns) * cast(float32)row_height, cell, 134.0}
+                unlocked := ShoveyLevelUnlocked(*progress, number)
+                completed := progress.completed[at]
+                digits: [24]u8
+                label := FormatInteger(cast(s64)number, digits[:])
+                // Status stays accessible in the semantic label, while the
+                // visual card uses a lock/check icon and an unlocked board.
+                status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
+                if Button(frame.session, ButtonProps.{.key = cast(u64)(33000 + number), .id = 33000 + number,
+                        .bounds = bounds, .label = label, .disabled = !unlocked,
+                        .selected = completed, .fit_content = true,
+                        .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
+                        .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+                    ChangeLevel(number)
+                }
+                if unlocked {
+                    if level_preview_paths[at][0] == 0 {
+                        length: s32 = 0
+                        AppendText(level_preview_paths[at][:], *length, "assets/shovey/levels/")
+                        AppendText(level_preview_paths[at][:], *length, label)
+                        AppendText(level_preview_paths[at][:], *length, ".png")
+                    }
+                    // Cover the centered visual label only inside the picture
+                    // area, then repeat the number in the card's footer.
+                    Image(frame.session, ImageProps.{.key = cast(u64)(35000 + number),
+                            .asset_path = TextUntilNul(level_preview_paths[at][:]),
+                            .alt_text = label, .bounds = Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, 88.0},
+                            .fit = ImageFit.ImageFitContain, .smooth = true})
+                }
+                {
+                    Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + 98.0, bounds.width - 48.0, 28.0}, label, 18)
+                }
+                icon := ""
+                if !unlocked {
+                    icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17"
+                } else if completed {
+                    icon = "S2rr:M5 12L10 17L19 7"
+                }
+                if icon != "" {
+                    // A disabled icon button is a canonical widget, with a
+                    // translated accessibility label and no extra action.
+                    unused Button(frame.session, ButtonProps.{.key = cast(u64)(37000 + number),
+                            .bounds = ifx unlocked then Rectangle.{bounds.x + bounds.width - 32.0, bounds.y + 98.0, 28.0, 28.0} else
+                            Rectangle.{bounds.x + bounds.width / 2.0 - 22.0, bounds.y + 34.0, 44.0, 44.0},
+                            .label = status, .icon_only = true, .icon_shape = icon, .disabled = true,
+                            .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
+                            .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
+                }
+            }
+            End(frame.session)
+        }
+        return
+    }
+    if game.won && game.level < ShoveyLevelCount() { ContinueGame() }
+    key := AppKeyHost()
+    if key == 72 { help_open = !help_open }
+    if key == 256 { help_open = false }
+    // A compact bar: the board takes the rest of the screen.
+    if Control(20002, Rectangle.{8.0, top + 6.0, 88.0, 40.0}, AppLocaleHost("shovey_levels")) { selector_open = true }
+    Caption(20001, Rectangle.{104.0, top + 6.0, width - 312.0, 40.0}, HeaderText(), 18, true)
+    if Control(20016, Rectangle.{width - 200.0, top + 6.0, 96.0, 40.0}, AppLocaleHost("shovey_restart")) { ChangeLevel(game.level) }
+    if Control(20017, Rectangle.{width - 100.0, top + 6.0, 92.0, 40.0}, AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help")) {
+        help_open = !help_open
+    }
+    if help_open {
+        scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
+                .bounds = Rectangle.{16.0, top + 56.0, width - 32.0, bottom - top - 64.0},
+                .content_height = 2280, .scroll_offset = help_scroll})
+        help_scroll = scroll.scroll_offset
+        if scroll.opened {
+            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, 300.0}, AppLocaleHost("shovey_instructions"))
+            kinds: [27]s32 = .[10, 1, 4, 7, 8, 9, 11, 12, 13, 14, 15, 18, 19, 20, 21, 25, 26, 27, 28, 29, 33, 34, 35, 36, 39, 40, 0]
+            for index: cast(s32)0..26 {
+                y := scroll.content.y + 320.0 + cast(float32)index * 68.0
+                Tile(cast(u64)(40000 + index * 16), kinds[index], Rectangle.{scroll.content.x, y, 40.0, 40.0})
+                Caption(cast(u64)(41000 + index), Rectangle.{scroll.content.x + 52.0, y, scroll.content.width - 68.0, 44.0}, TileName(kinds[index]))
+            }
+            End(frame.session)
+        }
+        return
+    }
+    before_direction := game.direction
+    changed := false
+    keyed: s32 = -1
+    if key == 263 || key == 65 { keyed = 0 }
+    if key == 265 || key == 87 { keyed = 1 }
+    if key == 262 || key == 68 { keyed = 2 }
+    if key == 264 || key == 83 { keyed = 3 }
+    // A keyboard player does not need the on-screen stick until they touch.
+    if keyed >= 0 { joystick_hidden = true; changed = ShoveyAct(keyed) }
+    if key == 32 { changed = ShoveyAct(-1) }
+    if key == 82 { ChangeLevel(game.level) }
+    if frame.now - last_tick >= 1.0 {
+        changed = ShoveyTick(*game) || changed
+        last_tick = frame.now
+    }
+    // The board fills the space under the bar, in portrait or landscape.
+    status_y := top + 52.0
+    area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
+    SpriteNames()
+    grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:])
+    board := grid.board
+    // No move or piece counters: the line speaks only when there is news.
+    status := ""
+    status_icon := ""
+    if ShoveyRemaining(*game) == 0 {
+        status = AppLocaleHost("shovey_ready")
+        status_icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10"
+    }
+    if game.lost {
+        status = AppLocaleHost("shovey_lost")
+        status_icon = "S2rr:M6 6L18 18M18 6L6 18"
+    }
+    if game.won {
+        status = AppLocaleHost("shovey_won")
+        status_icon = "S2rr:M5 12L10 17L19 7"
+    }
+    if game.level == ShoveyLevelCount() {
+        status = AppLocaleHost("shovey_finale")
+        status_icon = "S2rr:M12 4L14 10H20L15 14L17 20L12 16L7 20L9 14L4 10H10Z"
+    }
+    if status_icon != "" {
+        unused Button(frame.session, ButtonProps.{.key = cast(u64)20021, .id = 20021,
+                .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
+                .label = status, .icon_shape = status_icon, .icon_only = true,
+                .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
+    }
+    if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
+    disabled := game.won || game.lost || game.level == ShoveyLevelCount()
+    // Touch: swipe on the board to step, or tap a cell to step towards it.
+    gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = board,
+            .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .disabled = disabled})
+    if gesture.down { joystick_hidden = false }
+    step := gesture.swiped
+    if gesture.tapped {
+        cell := TileMapCellAt(grid, gesture.x, gesture.y)
+        if cell >= 0 {
+            step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
+                cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
+        }
+    }
+    if !joystick_hidden && !disabled {
+        size := ifx width < bottom - top then width else bottom - top
+        size *= 0.3
+        if size < 104.0 { size = 104.0 }
+        if size > 180.0 { size = 180.0 }
+        stick := Joystick(frame.session, JoystickProps.{.key = cast(u64)20020, .id = 20020,
+                .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size},
+                .label = AppLocaleHost("shovey_controls"), .now = frame.now})
+        if stick.step { step = stick.direction }
+        if (game.powers & SHOVEY_AMMO) != 0 {
+            if Control(20018, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, AppLocaleHost("shovey_fire"), disabled) {
+                changed = ShoveyAct(-1) || changed
+            }
+        }
+    }
+    if step >= 0 { changed = ShoveyAct(step) || changed }
+    if changed || before_direction != game.direction {
+        if game.won && game.level < ShoveyLevelCount() { ContinueGame() }
+        else { Remember() }
+    }
+}

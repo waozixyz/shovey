@@ -1,0 +1,6 @@
+/build/
+/backup/
+/ziran.local.toml
+node_modules/
+__pycache__/
+*.pyc

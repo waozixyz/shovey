@@ -1,0 +1,374 @@
+// Brings levels made in the Shovey Editor into the level files. It reads an
+// editor export ("shovey-edits-1") or a shared collection ("shovey-levels-1"),
+// replays every level's route through the real engines, and merges the
+// levels into levels/classic.json and levels/island.json in their exact
+// layout: the layout Python's json.dumps(indent=1, ensure_ascii=False)
+// writes. tools/levels/import_edits.zi is the command around it.
+//
+// A level that names a story "number" replaces that level; any other is
+// added after the story, before Classic's finale. Every level must be proven
+// by its route, or nothing is merged.
+#import "std/json_scan"
+#import "std/text_buffer"
+#import, file "../../apps/shovey/engine.zi";
+#import, file "../../apps/shovey/island/island_engine.zi";
+#import, file "../../apps/shovey/editor/edit.zi";
+#import, file "../../apps/shovey/editor/sharing.zi";
+
+// Saves keep 175 places per edition.
+IMPORT_PLACES :: 175
+IMPORT_ROUTE :: 32768
+IMPORT_FILE :: 1048576
+
+ImportLevel :: struct {
+    island: bool
+    // The story level this one replaces, or 0 to add it.
+    number: s32
+    name: [EDIT_NAME * 2]u8
+    name_length: s32
+    level: EditLevel
+}
+
+import_levels: [IMPORT_PLACES * 2]ImportLevel;
+import_count: s32;
+import_error: [256]u8;
+import_error_length: s32;
+import_play: EditPlay;
+import_hex: [EDIT_CELLS * 4]u8;
+
+ImportFail :: (message: string, index: s32 = -1) -> bool {
+    writer := EditWriter.{.bytes = import_error[:]}
+    if index >= 0 {
+        EditPut(*writer, "level ")
+        EditPutNumber(*writer, cast(s64)(index + 1))
+        EditPut(*writer, ": ")
+    }
+    EditPut(*writer, message)
+    import_error_length = writer.length
+    return false
+}
+
+ImportError :: () -> string { return TextView(import_error[0:import_error_length]) }
+
+// Reads one level object at `at` of an export or collection into slot index.
+ImportReadLevel :: (text: string, at: s32, island: bool, index: s32) -> bool {
+    level := *import_levels[index]
+    level.island = island
+    level.number = 0
+    number := FieldAt(text, at, "number")
+    if number >= 0 {
+        value := ReadNumber(text, number)
+        if !value.valid || value.value < 1.0 || value.value > cast(float64)IMPORT_PLACES ||
+        cast(float64)cast(s32)value.value != value.value { return ImportFail("its number is not a story level", index) }
+        level.number = cast(s32)value.value
+    }
+    level.name_length = 0
+    if FieldAt(text, at, "name") >= 0 {
+        level.name_length = SharingText(text, at, "name", level.name[:])
+        if level.name_length < 0 { return ImportFail("its name is not text", index) }
+    }
+    if island {
+        if !SharingRows(text, FieldAt(text, at, "terrain"), import_hex[:], 0) ||
+        !SharingRows(text, FieldAt(text, at, "objects"), import_hex[:], EDIT_CELLS * 2) {
+            return ImportFail("its terrain and objects are not 12 rows of 40 hex digits", index)
+        }
+    } else if !SharingRows(text, FieldAt(text, at, "cells"), import_hex[:], 0) {
+        return ImportFail("its cells are not 12 rows of 40 hex digits", index)
+    }
+    layers: s32 = ifx island then 2 else 1
+    // Rows are stored in lower case, as the level files keep them.
+    for cell: cast(s32)0..EDIT_CELLS * 2 * layers - 1 {
+        if import_hex[cell] >= #char "A" && import_hex[cell] <= #char "F" { import_hex[cell] += 32 }
+    }
+    if !EditBoardRead(*level.level.board, island, TextView(import_hex[0:EDIT_CELLS * 2 * layers])) {
+        return ImportFail("its board cannot be read", index)
+    }
+    route_at := FieldAt(text, at, "route")
+    span := ReadString(text, route_at)
+    if route_at < 0 || !span.valid || span.end <= span.start || span.end - span.start > IMPORT_ROUTE {
+        return ImportFail("it has no route", index)
+    }
+    return EditSetRoute(*level.level, text[span.start:span.end]) || ImportFail("its route is too long", index)
+}
+
+// Reads every level of an export or a collection. False, with ImportError,
+// when the text is neither or a level is malformed.
+ImportRead :: (text: string) -> bool {
+    import_count = 0
+    format: [24]u8
+    length := SharingText(text, 0, "format", format[:])
+    kind := TextView(format[0:ifx length < 0 then 0 else length])
+    if kind != "shovey-edits-1" && kind != SHARING_FORMAT { return ImportFail("not a Shovey Editor export or level collection") }
+    collection := kind == SHARING_FORMAT
+    island := false
+    if collection {
+        edition: [16]u8
+        edition_length := SharingText(text, 0, "edition", edition[:])
+        name := TextView(edition[0:ifx edition_length < 0 then 0 else edition_length])
+        if name != "classic" && name != "island" { return ImportFail("the collection names no edition") }
+        island = name == "island"
+    }
+    list := FieldAt(text, 0, "levels")
+    positions: [IMPORT_PLACES * 2 + 1]s32
+    count := ArrayPositions(text, list, positions[:])
+    if list < 0 || count < 0 { return ImportFail("its levels are not a list") }
+    if count == 0 { return ImportFail("it holds no levels") }
+    if count > IMPORT_PLACES * 2 { return ImportFail("it holds more levels than the saves have places") }
+    for index: cast(s32)0..count - 1 {
+        at := positions[index]
+        level_island := island
+        if !collection {
+            edition: [16]u8
+            edition_length := SharingText(text, at, "edition", edition[:])
+            name := TextView(edition[0:ifx edition_length < 0 then 0 else edition_length])
+            if name != "classic" && name != "island" { return ImportFail("it names no edition", index) }
+            level_island = name == "island"
+        }
+        if !ImportReadLevel(text, at, level_island, index) { return false }
+        import_count += 1
+    }
+    return true
+}
+
+// Every level must be proven: the shipped tests' rules for its board, and
+// its route replayed through the engine to a win.
+ImportCheck :: () -> bool {
+    for index: cast(s32)0..import_count - 1 {
+        level := *import_levels[index]
+        board := *level.level.board
+        pushies: s32 = 0
+        homes: s32 = 0
+        for at: cast(s32)0..EDIT_CELLS - 1 {
+            kind := cast(s32)(ifx board.island then board.objects[at] else board.ground[at])
+            if kind == (ifx board.island then ISLAND_SHOVEY else CLASSIC_SHOVEY) { pushies += 1 }
+            if kind == (ifx board.island then ISLAND_HOME else 7) { homes += 1 }
+            if !board.island && EditBorder(at) && kind != CLASSIC_WALL { return ImportFail("Classic boards keep their wall ring", index) }
+            if !board.island && (kind > 40 || kind == 22 || kind == 24 || kind == 32) { return ImportFail("it holds a piece no board starts with", index) }
+            if board.island && (board.ground[at] > cast(u8)48 || board.objects[at] > cast(u8)124 ||
+                board.objects[at] == cast(u8)50 || board.objects[at] == cast(u8)79) { return ImportFail("it holds a piece no island starts with", index) }
+        }
+        if pushies != 1 { return ImportFail("it needs exactly one Shovey", index) }
+        if homes == 0 { return ImportFail("it has no home", index) }
+        at: s32 = 0
+        route := EditField(level.level.route[:], level.level.route_length)
+        if EditReplay(*import_play, board, route, *at, IMPORT_ROUTE + 1) != 1 { return ImportFail("its route does not win", index) }
+    }
+    return true
+}
+
+// ---------------------------------------------------------------------------
+// The level files
+
+// One level of a level file: its parts as text spans of that file, or an
+// imported level (fresh >= 0).
+StoredLevel :: struct {
+    fresh: s32
+    name: JsonSpan
+    layers: [2][EDIT_HEIGHT]JsonSpan
+    solution: JsonSpan
+    has_solution: bool
+}
+
+StoredFile :: struct {
+    island: bool
+    count: s32
+    levels: [IMPORT_PLACES]StoredLevel
+}
+
+stored: [2]StoredFile;
+import_out: [IMPORT_FILE]u8;
+
+// Reads a level file's levels as spans of text. False when its layout is
+// not the one this tool writes back.
+StoredRead :: (file: *StoredFile, island: bool, text: string) -> bool {
+    file.island = island
+    file.count = 0
+    edition: [16]u8
+    length := SharingText(text, 0, "edition", edition[:])
+    if length < 0 || TextView(edition[0:length]) != (ifx island then "island" else "classic") { return ImportFail("a level file names another edition") }
+    list := FieldAt(text, 0, "levels")
+    positions: [IMPORT_PLACES + 1]s32
+    count := ArrayPositions(text, list, positions[:])
+    if list < 0 || count < 1 || count > IMPORT_PLACES { return ImportFail("a level file's levels are not a list") }
+    names: [2]string = .[ifx island then "terrain" else "cells", "objects"]
+    for index: cast(s32)0..count - 1 {
+        at := positions[index]
+        level := *file.levels[index]
+        level.fresh = -1
+        number := ReadNumber(text, FieldAt(text, at, "number"))
+        if !number.valid || number.value != cast(float64)(index + 1) { return ImportFail("a level file's numbers have gaps") }
+        if island {
+            level.name = ReadString(text, FieldAt(text, at, "name"))
+            if !level.name.valid { return ImportFail("an island has no name") }
+        }
+        for layer: cast(s32)0..(ifx island then 1 else 0) {
+            rows: [EDIT_HEIGHT + 1]s32
+            if ArrayPositions(text, FieldAt(text, at, names[layer]), rows[:]) != EDIT_HEIGHT { return ImportFail("a board is not 12 rows") }
+            for row: cast(s32)0..EDIT_HEIGHT - 1 {
+                level.layers[layer][row] = ReadString(text, rows[row])
+                if !level.layers[layer][row].valid { return ImportFail("a board row is not text") }
+            }
+        }
+        solution := FieldAt(text, at, "solution")
+        level.has_solution = solution >= 0
+        if level.has_solution {
+            level.solution = ReadString(text, solution)
+            if !level.solution.valid { return ImportFail("a solution is not text") }
+        }
+    }
+    file.count = count
+    return true
+}
+
+// A string exactly as Python's json.dumps(ensure_ascii=False) writes it.
+ImportPutJson :: (writer: *EditWriter, text: string) {
+    alphabet := "0123456789abcdef"
+    EditPutByte(writer, #char "\"")
+    for byte: text {
+        if byte == #char "\"" || byte == #char "\\" { EditPutByte(writer, #char "\\"); EditPutByte(writer, byte) }
+        else if byte == cast(u8)8 { EditPut(writer, "\\b") }
+        else if byte == cast(u8)12 { EditPut(writer, "\\f") }
+        else if byte == cast(u8)10 { EditPut(writer, "\\n") }
+        else if byte == cast(u8)13 { EditPut(writer, "\\r") }
+        else if byte == cast(u8)9 { EditPut(writer, "\\t") }
+        else if byte < cast(u8)32 {
+            EditPut(writer, "\\u00")
+            EditPutByte(writer, alphabet[cast(s32)(byte >> 4)])
+            EditPutByte(writer, alphabet[cast(s32)(byte & 15)])
+        } else { EditPutByte(writer, byte) }
+    }
+    EditPutByte(writer, #char "\"")
+}
+
+// A span of the original text, quotes and escapes included.
+ImportPutSpan :: (writer: *EditWriter, text: string, span: JsonSpan) {
+    EditPut(writer, text[span.start - 1:span.end + 1])
+}
+
+// Writes a level file back in json.dumps(indent=1, ensure_ascii=False)
+// layout, with a final newline.
+StoredWrite :: (writer: *EditWriter, file: *StoredFile, text: string) {
+    EditPut(writer, "{\n \"edition\": ")
+    EditPut(writer, ifx file.island then "\"island\"" else "\"classic\"")
+    EditPut(writer, ",\n \"width\": 20,\n \"height\": 12,\n \"levels\": [")
+    layer_names: [2]string = .[ifx file.island then "terrain" else "cells", "objects"]
+    for index: cast(s32)0..file.count - 1 {
+        level := *file.levels[index]
+        EditPut(writer, ifx index == 0 then "\n  {\n   \"number\": " else ",\n  {\n   \"number\": ")
+        EditPutNumber(writer, cast(s64)(index + 1))
+        fresh := ifx level.fresh >= 0 then *import_levels[level.fresh] else null
+        if file.island {
+            EditPut(writer, ",\n   \"name\": ")
+            if fresh != null { ImportPutJson(writer, EditField(fresh.name[:], fresh.name_length)) }
+            else { ImportPutSpan(writer, text, level.name) }
+        }
+        for layer: cast(s32)0..(ifx file.island then 1 else 0) {
+            EditPut(writer, ",\n   ")
+            ImportPutJson(writer, layer_names[layer])
+            EditPut(writer, ": [")
+            for row: cast(s32)0..EDIT_HEIGHT - 1 {
+                EditPut(writer, ifx row == 0 then "\n    " else ",\n    ")
+                if fresh != null { ImportPutJson(writer, EditBoardRow(*fresh.level.board, layer, row)) }
+                else { ImportPutSpan(writer, text, level.layers[layer][row]) }
+            }
+            EditPut(writer, "\n   ]")
+        }
+        if fresh != null {
+            EditPut(writer, ",\n   \"solution\": ")
+            ImportPutJson(writer, EditField(fresh.level.route[:], fresh.level.route_length))
+        } else if level.has_solution {
+            EditPut(writer, ",\n   \"solution\": ")
+            ImportPutSpan(writer, text, level.solution)
+        }
+        EditPut(writer, "\n  }")
+    }
+    EditPut(writer, "\n ]\n}\n")
+}
+
+// The decoded name of a stored island, compared with fresh names.
+ImportStoredName :: (text: string, file: *StoredFile, index: s32, out: []u8) -> s32 {
+    level := *file.levels[index]
+    if level.fresh >= 0 {
+        fresh := *import_levels[level.fresh]
+        for at: cast(s32)0..fresh.name_length - 1 { out[at] = fresh.name[at] }
+        return fresh.name_length
+    }
+    decoded := ReadStringValue(text, level.name.start - 1, cast(s32)out.count)
+    if !decoded.valid { return 0 }
+    bytes := decoded.value
+    length := EditSetField(out, TextView(VecSlice(bytes, 0, bytes.count)))
+    VecFree(bytes)
+    return length
+}
+
+// Gives fresh islands names no other island has: their own, or "Island N".
+ImportNames :: (file: *StoredFile, text: string) {
+    for index: cast(s32)0..file.count - 1 {
+        level := *file.levels[index]
+        if level.fresh < 0 { continue }
+        fresh := *import_levels[level.fresh]
+        attempt: s32 = 0
+        while true {
+            mine: [EDIT_NAME * 2]u8
+            mine_length := ImportStoredName(text, file, index, mine[:])
+            taken := mine_length == 0
+            for other: cast(s32)0..file.count - 1 {
+                if other == index || taken { continue }
+                theirs: [EDIT_NAME * 2]u8
+                theirs_length := ImportStoredName(text, file, other, theirs[:])
+                taken = TextView(theirs[0:theirs_length]) == TextView(mine[0:mine_length])
+            }
+            if !taken { break }
+            attempt += 1
+            writer := EditWriter.{.bytes = fresh.name[:]}
+            EditPut(*writer, "Island ")
+            EditPutNumber(*writer, cast(s64)(index + 1))
+            if attempt > 1 {
+                EditPut(*writer, " ")
+                EditPutNumber(*writer, cast(s64)attempt)
+            }
+            fresh.name_length = writer.length
+        }
+    }
+}
+
+// Merges the imported levels of one edition into its file. False, with
+// ImportError, when a number is not a story level or the places run out.
+ImportMerge :: (file: *StoredFile, text: string, append: bool) -> bool {
+    // Classic's last board is the finale picture, which has no solution.
+    finale := !file.island && file.count > 0 && !file.levels[file.count - 1].has_solution
+    for index: cast(s32)0..import_count - 1 {
+        incoming := *import_levels[index]
+        if incoming.island != file.island { continue }
+        if incoming.number > 0 && !append {
+            if incoming.number > file.count || (finale && incoming.number == file.count) {
+                return ImportFail("its number is not a story level", index)
+            }
+            if file.island { incoming.name_length = ImportStoredName(text, file, incoming.number - 1, incoming.name[:]) }
+            file.levels[incoming.number - 1].fresh = index
+            continue
+        }
+        if file.count >= IMPORT_PLACES { return ImportFail("the saves have no more places", index) }
+        at := ifx finale then file.count - 1 else file.count
+        moved := file.count
+        while moved > at { file.levels[moved] = file.levels[moved - 1]; moved -= 1 }
+        file.levels[at] = StoredLevel.{.fresh = index}
+        file.count += 1
+    }
+    if file.island { ImportNames(file, text) }
+    return true
+}
+
+// Reads, checks and merges an export into the two level files' texts.
+// Returns the new texts through classic_out and island_out, borrowed from
+// the writers' buffers; false, with ImportError, when anything is refused.
+ImportEdits :: (export: string, classic_text: string, island_text: string, append: bool,
+    classic_out: *EditWriter, island_out: *EditWriter) -> bool {
+    if !ImportRead(export) || !ImportCheck() { return false }
+    if !StoredRead(*stored[0], false, classic_text) || !StoredRead(*stored[1], true, island_text) { return false }
+    if !ImportMerge(*stored[0], classic_text, append) || !ImportMerge(*stored[1], island_text, append) { return false }
+    StoredWrite(classic_out, *stored[0], classic_text)
+    StoredWrite(island_out, *stored[1], island_text)
+    if classic_out.full || island_out.full { return ImportFail("a level file grew too large") }
+    return true
+}

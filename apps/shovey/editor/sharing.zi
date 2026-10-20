@@ -1,0 +1,329 @@
+// Level collections shared through the host: the document a collection is,
+// and the requests and replies of the host's "publications" service. Only
+// text is built and read here; the editor's view sends it with
+// AppServiceHost("publications", request) where AppSupportsHost says the
+// host offers the service, and shows sharing as unavailable elsewhere.
+//
+// A collection, UTF-8 JSON:
+//   {"format":"shovey-levels-1","edition":"classic","title":"...",
+//    "levels":[{"name":"...","cells":[12 rows of 40 hex digits],"route":"..."}]}
+// Island levels have "terrain" and "objects" in place of "cells". Every level
+// carries a route that wins it; a level whose route does not replay to a win
+// is refused. The author comes from the host's account, never from the game.
+//
+// Requests start an operation and get {"status":"pending","request":N} or
+// {"status":"rejected","error":"..."}; {"operation":"status","request":N}
+// then answers pending, failed with an error, or done with its payload:
+//   publish    "publication": META
+//   unpublish  nothing more
+//   find       "publications": [META...], newest first
+//   fetch      "publication": META, "document": {the collection}
+// META: {"id","author":{"alias","public_id"},"format","title","levels",
+// "visibility","updated_at","mine"}.
+#import "std/json_scan"
+#import "std/text_buffer"
+#import, file "edit.zi";
+
+SHARING_SERVICE :: "publications"
+SHARING_FORMAT :: "shovey-levels-1"
+// The service takes documents up to 240 KiB.
+SHARING_DOCUMENT_MAX :: 245760
+SHARING_TITLE_MAX :: 80
+SHARING_LEVELS :: 200
+SHARING_RESULTS :: 50
+
+SHARING_PUBLIC :: 0
+SHARING_FRIENDS :: 1
+SHARING_PRIVATE :: 2
+
+// What a reply says.
+SHARING_MALFORMED :: 0
+SHARING_PENDING :: 1
+SHARING_DONE :: 2
+SHARING_FAILED :: 3
+SHARING_REJECTED :: 4
+SHARING_UNAVAILABLE :: 5
+
+SharingVisibilityName :: (visibility: s32) -> string {
+    if visibility == SHARING_FRIENDS { return "friends" }
+    if visibility == SHARING_PRIVATE { return "private" }
+    return "public"
+}
+
+// ---------------------------------------------------------------------------
+// Writing a collection
+
+SharingDocumentBegin :: (writer: *EditWriter, island: bool, title: string) {
+    EditPut(writer, "{\"format\": \"shovey-levels-1\", \"edition\": ")
+    EditPutJson(writer, ifx island then "island" else "classic")
+    EditPut(writer, ", \"title\": ")
+    EditPutJson(writer, title)
+    EditPut(writer, ", \"levels\": [")
+}
+
+// Adds one level with its winning route; first is true for the first one.
+SharingDocumentLevel :: (writer: *EditWriter, name: string, level: *EditLevel, first: bool) {
+    EditPut(writer, ifx first then "\n {\"name\": " else ",\n {\"name\": ")
+    EditPutJson(writer, name)
+    EditPut(writer, ", \"route\": ")
+    EditPutJson(writer, EditField(level.route[:], level.route_length))
+    EditPut(writer, ",")
+    EditPutRows(writer, *level.board, "  ")
+    EditPut(writer, "}")
+}
+
+SharingDocumentEnd :: (writer: *EditWriter) { EditPut(writer, "]}") }
+
+// ---------------------------------------------------------------------------
+// Requests
+
+// Publishes document, a collection's JSON object, embedded as an object. An
+// id replaces that earlier publication; "" publishes a new one.
+SharingPublishRequest :: (writer: *EditWriter, title: string, visibility: s32, document: string, id: string) {
+    EditPut(writer, "{\"operation\":\"publish\",\"format\":\"shovey-levels-1\",\"title\":")
+    EditPutJson(writer, title)
+    EditPut(writer, ",\"visibility\":")
+    EditPutJson(writer, SharingVisibilityName(visibility))
+    if id.count > 0 {
+        EditPut(writer, ",\"id\":")
+        EditPutJson(writer, id)
+    }
+    EditPut(writer, ",\"document\":")
+    EditPut(writer, document)
+    EditPut(writer, "}")
+}
+
+SharingUnpublishRequest :: (writer: *EditWriter, id: string) {
+    EditPut(writer, "{\"operation\":\"unpublish\",\"id\":")
+    EditPutJson(writer, id)
+    EditPut(writer, "}")
+}
+
+// Finds collections by an author's alias ("@name" or "name") or 64-hex
+// public id; "" lists recent public ones.
+SharingFindRequest :: (writer: *EditWriter, query: string) {
+    EditPut(writer, "{\"operation\":\"find\",\"format\":\"shovey-levels-1\",\"query\":")
+    EditPutJson(writer, SharingTrim(query))
+    EditPut(writer, "}")
+}
+
+SharingFetchRequest :: (writer: *EditWriter, id: string) {
+    EditPut(writer, "{\"operation\":\"fetch\",\"id\":")
+    EditPutJson(writer, id)
+    EditPut(writer, "}")
+}
+
+SharingStatusRequest :: (writer: *EditWriter, request: s32) {
+    EditPut(writer, "{\"operation\":\"status\",\"request\":")
+    EditPutNumber(writer, cast(s64)request)
+    EditPut(writer, "}")
+}
+
+SharingTrim :: (text: string) -> string {
+    start: s64 = 0
+    end := text.count
+    while start < end && (text[start] == #char " " || text[start] == cast(u8)9) { start += 1 }
+    while end > start && (text[end - 1] == #char " " || text[end - 1] == cast(u8)9) { end -= 1 }
+    return text[start:end]
+}
+
+// ---------------------------------------------------------------------------
+// Replies
+
+SharingReply :: struct {
+    status: s32
+    request: s32
+    error: [48]u8
+    error_length: s32
+}
+
+
+// Reads a JSON string field of the object at `at` into field, cut to fit.
+// Returns its length, or -1 when it is missing or not a string.
+SharingText :: (text: string, at: s32, name: string, field: []u8) -> s32 {
+    value := FieldAt(text, at, name)
+    if value < 0 { return -1 }
+    decoded := ReadStringValue(text, value, cast(s32)field.count * 4 + 16)
+    if !decoded.valid { return -1 }
+    bytes := decoded.value
+    length := EditSetField(field, TextView(VecSlice(bytes, 0, bytes.count)))
+    VecFree(bytes)
+    return length
+}
+
+SharingNumber :: (text: string, at: s32, name: string) -> float64 {
+    value := FieldAt(text, at, name)
+    if value < 0 { return -1.0 }
+    number := ReadNumber(text, value)
+    return ifx number.valid then number.value else -1.0
+}
+
+// Reads a reply's status, its request number while pending and its error.
+SharingReplyRead :: (text: string) -> SharingReply {
+    reply: SharingReply
+    status: [16]u8
+    length := SharingText(text, 0, "status", status[:])
+    if length < 0 { return reply }
+    word := TextView(status[0:length])
+    if word == "pending" { reply.status = SHARING_PENDING }
+    else if word == "done" { reply.status = SHARING_DONE }
+    else if word == "failed" { reply.status = SHARING_FAILED }
+    else if word == "rejected" { reply.status = SHARING_REJECTED }
+    else if word == "unavailable" { reply.status = SHARING_UNAVAILABLE }
+    else { return reply }
+    request := SharingNumber(text, 0, "request")
+    reply.request = ifx request >= 0.0 && request < 2147483647.0 then cast(s32)request else -1
+    reply.error_length = SharingText(text, 0, "error", reply.error[:])
+    if reply.error_length < 0 { reply.error_length = 0 }
+    return reply
+}
+
+// A publication, as the service describes it.
+SharingMeta :: struct {
+    id: [96]u8
+    id_length: s32
+    alias: [EDIT_ALIAS]u8
+    alias_length: s32
+    public_id: [72]u8
+    public_id_length: s32
+    title: [EDIT_NAME * 2]u8
+    title_length: s32
+    levels: s32
+    visibility: s32
+    updated_at: s64
+    mine: bool
+}
+
+
+// Reads the META object at `at`. False when it is not one of Shovey's.
+SharingMetaRead :: (text: string, at: s32, meta: *SharingMeta) -> bool {
+    read: SharingMeta
+    read.id_length = SharingText(text, at, "id", read.id[:])
+    read.title_length = SharingText(text, at, "title", read.title[:])
+    format: [24]u8
+    format_length := SharingText(text, at, "format", format[:])
+    if read.id_length <= 0 || read.title_length < 0 || TextView(format[0:ifx format_length < 0 then 0 else format_length]) != SHARING_FORMAT {
+        return false
+    }
+    author := FieldAt(text, at, "author")
+    if author >= 0 {
+        read.alias_length = SharingText(text, author, "alias", read.alias[:])
+        read.public_id_length = SharingText(text, author, "public_id", read.public_id[:])
+    }
+    if read.alias_length < 0 { read.alias_length = 0 }
+    if read.public_id_length < 0 { read.public_id_length = 0 }
+    levels := SharingNumber(text, at, "levels")
+    read.levels = ifx levels >= 0.0 && levels < 100000.0 then cast(s32)levels else 0
+    updated := SharingNumber(text, at, "updated_at")
+    read.updated_at = ifx updated >= 0.0 then cast(s64)updated else 0
+    visibility: [16]u8
+    visibility_length := SharingText(text, at, "visibility", visibility[:])
+    seen := TextView(visibility[0:ifx visibility_length < 0 then 0 else visibility_length])
+    read.visibility = ifx seen == "friends" then SHARING_FRIENDS else ifx seen == "private" then SHARING_PRIVATE else SHARING_PUBLIC
+    mine := FieldAt(text, at, "mine")
+    read.mine = mine >= 0 && MatchLiteral(text, mine, "true")
+    meta.* = read
+    return true
+}
+
+// Reads a done find reply's publications into metas. Returns how many, or
+// -1 when the reply is malformed. Publications of other formats are left out.
+SharingFindRead :: (text: string, metas: []SharingMeta) -> s32 {
+    list := FieldAt(text, 0, "publications")
+    if list < 0 { return -1 }
+    positions: [SHARING_RESULTS]s32
+    count := ArrayPositions(text, list, positions[:])
+    if count < 0 { return -1 }
+    found: s32 = 0
+    for index: cast(s32)0..count - 1 {
+        if index >= SHARING_RESULTS || cast(s64)found >= metas.count { break }
+        if SharingMetaRead(text, positions[index], *metas[found]) { found += 1 }
+    }
+    return found
+}
+
+// Reads a done publish or fetch reply's publication. False when missing.
+SharingPublicationRead :: (text: string, meta: *SharingMeta) -> bool {
+    at := FieldAt(text, 0, "publication")
+    return at >= 0 && SharingMetaRead(text, at, meta)
+}
+
+// ---------------------------------------------------------------------------
+// Reading a collection
+
+SharingDocument :: struct {
+    island: bool
+    title: [EDIT_NAME * 2]u8
+    title_length: s32
+    count: s32
+    // Where each level's object starts in the text.
+    positions: [SHARING_LEVELS]s32
+}
+
+// Reads a collection's head at `at`: format, edition, title and where its
+// levels are. False when it is not a Shovey collection or too large.
+SharingDocumentRead :: (text: string, at: s32, document: *SharingDocument) -> bool {
+    if text.count > cast(s64)SHARING_DOCUMENT_MAX * 2 { return false }
+    format: [24]u8
+    format_length := SharingText(text, at, "format", format[:])
+    if format_length < 0 || TextView(format[0:format_length]) != SHARING_FORMAT { return false }
+    edition: [16]u8
+    edition_length := SharingText(text, at, "edition", edition[:])
+    if edition_length < 0 { return false }
+    name := TextView(edition[0:edition_length])
+    if name != "classic" && name != "island" { return false }
+    document.island = name == "island"
+    document.title_length = SharingText(text, at, "title", document.title[:])
+    if document.title_length < 0 { return false }
+    list := FieldAt(text, at, "levels")
+    if list < 0 { return false }
+    document.count = ArrayPositions(text, list, document.positions[:])
+    return document.count >= 0 && document.count <= SHARING_LEVELS
+}
+
+// One layer's rows (12 strings of 40 hex digits) into hex, from the array at `at`.
+SharingRows :: (text: string, at: s32, hex: []u8, offset: s32) -> bool {
+    if at < 0 { return false }
+    rows: [EDIT_HEIGHT + 1]s32
+    if ArrayPositions(text, at, rows[:]) != EDIT_HEIGHT { return false }
+    for row: cast(s32)0..EDIT_HEIGHT - 1 {
+        span := ReadString(text, rows[row])
+        if !span.valid || span.end - span.start != EDIT_WIDTH * 2 { return false }
+        for index: cast(s32)0..EDIT_WIDTH * 2 - 1 {
+            byte := text[span.start + index]
+            if EditHexValue(byte) < 0 { return false }
+            hex[offset + row * EDIT_WIDTH * 2 + index] = byte
+        }
+    }
+    return true
+}
+
+sharing_hex: [EDIT_CELLS * 4]u8;
+
+// Reads level `index` of a collection: its name into name (returning its
+// length through name_length), its board and its route. False when the
+// level is malformed: a board the engine cannot load, a route with letters
+// its edition has not. Whether the route wins is for EditReplay to say.
+SharingDocumentLevelRead :: (text: string, document: *SharingDocument, index: s32, name: []u8,
+    name_length: *s32, level: *EditLevel) -> bool {
+    if index < 0 || index >= document.count || index >= SHARING_LEVELS { return false }
+    at := document.positions[index]
+    name_length.* = SharingText(text, at, "name", name)
+    if name_length.* < 0 { return false }
+    if document.island {
+        if !SharingRows(text, FieldAt(text, at, "terrain"), sharing_hex[:], 0) ||
+        !SharingRows(text, FieldAt(text, at, "objects"), sharing_hex[:], EDIT_CELLS * 2) { return false }
+    } else if !SharingRows(text, FieldAt(text, at, "cells"), sharing_hex[:], 0) { return false }
+    layers: s32 = ifx document.island then 2 else 1
+    if !EditBoardRead(*level.board, document.island, TextView(sharing_hex[0:EDIT_CELLS * 2 * layers])) { return false }
+    if EditShovey(*level.board) < 0 { return false }
+    route_at := FieldAt(text, at, "route")
+    span := ReadString(text, route_at)
+    if route_at < 0 || !span.valid || span.end <= span.start || span.end - span.start > EDIT_ROUTE { return false }
+    route := text[span.start:span.end]
+    for letter: route {
+        move := letter >= #char "0" && letter <= #char "3"
+        if !move && (document.island || (letter != #char "f" && letter != #char "t")) { return false }
+    }
+    return EditSetRoute(level, route)
+}

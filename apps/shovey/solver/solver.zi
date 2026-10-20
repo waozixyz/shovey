@@ -1,0 +1,953 @@
+// The puzzle solver for both Shovey editions, in Ziran, so it runs inside the
+// game's bundle as well as in native tools. All rules run in the shipped
+// engines through classic_rules.zi and island_rules.zi; this module only
+// searches. It is the counterpart of tools/solver/solver.c, and it works in
+// slices: SolverRun does a bounded amount of work and returns, so a game can
+// check a board a little every frame while it stays responsive.
+//
+//   SolverStart(island, board)   loads a board of hex digits and starts
+//   SolverRun(budget)            works about budget units, then returns
+//   SolverStatus()               SOLVER_RUNNING until it knows more
+//   SolverRoute()                the winning route once SOLVER_WON
+//
+// One unit is about a hundred engine statements. The searches run in turn
+// until one wins, each within its own number of states, quickest first:
+//
+//   greedy  best-first search over macro actions, ordered by the edition's
+//           goal estimate.
+//   chain   one goal at a time, as a person plays: a best-first search
+//           collects up to four different states with one more goal done,
+//           and the chain goes on from the most promising, falling back to
+//           the next way when one leads into a dead end.
+//   bfs     exact breadth-first search over single actions. It finds a
+//           shortest route; when it exhausts every reachable state, the
+//           board can never be won (SOLVER_NEVER).
+//   macro   breadth-first search over macro actions.
+//
+// A macro action is any action other than a free walk, taken from any cell
+// Shovey can reach by free walks. A free walk is a move after which the state
+// differs only in Shovey's cell (and facing, when the edition keeps one); it
+// is detected by running the engine, never assumed. Every state whose Shovey
+// region has already been expanded is skipped, so rooms full of crates
+// collapse to their crate layouts. The macro searches prove nothing when
+// they fail. Every route any search finds is the engine's own sequence of
+// moves, and it counts only after it is replayed from the start to a win.
+//
+// States are keys of the fields that differ from the search's root (see the
+// rules modules), stored in an arena and deduplicated by an open-addressing
+// table, each linked to its parent with the walk and action that reached it.
+//
+// Route letters: '0'..'3' press left, up, right, down; Classic adds 'f' to
+// throw and 't' for one tick of the moving block (ground 29). The block runs
+// on a timer and Shovey may act any number of times between ticks, so a tick
+// is an optional action wherever it is taken.
+#import "std/text_buffer"
+#import, file "../engine.zi";
+#import, file "../island/island_engine.zi";
+#import, file "../levels.zi";
+#import, file "../island_levels.zi";
+#import, file "classic_rules.zi";
+#import, file "island_rules.zi";
+
+SOLVER_NODES :: 32768
+SOLVER_TABLE :: 65536
+SOLVER_ARENA :: 1048576
+SOLVER_WALKS :: 524288
+SOLVER_KEY :: 2400
+SOLVER_WALKERS :: 960
+SOLVER_EDGES :: 5760
+SOLVER_ROUTE :: 32768
+SOLVER_CHAIN_DEPTH :: 64
+SOLVER_CHAIN_WAYS :: 4
+SOLVER_CHAIN_ARENA :: 262144
+
+// What a check knows about its board.
+SOLVER_IDLE :: 0
+SOLVER_RUNNING :: 1
+// A route was found and replayed from the start to a win.
+SOLVER_WON :: 2
+// Breadth-first search saw every reachable state: no route wins.
+SOLVER_NEVER :: 3
+// Every search stopped at its limits without a route.
+SOLVER_UNKNOWN :: 4
+// The engine rejects the board, or a value does not fit a key.
+SOLVER_INVALID :: 5
+
+// The searches, in the order they run, then the replay of a found route.
+SOLVER_GREEDY :: 0
+SOLVER_CHAIN :: 1
+SOLVER_BFS :: 2
+SOLVER_MACRO :: 3
+SOLVER_VERIFY :: 4
+
+// States each search may keep; the chain's cap is per goal and in total.
+SolverLimits :: struct {
+    bfs: s32
+    greedy: s32
+    chain_goal: s32
+    chain: s32
+    macro: s32
+}
+
+SolverDefaultLimits :: () -> SolverLimits {
+    return SolverLimits.{.bfs = 3000, .greedy = 24000, .chain_goal = 3000, .chain = 30000, .macro = 16000}
+}
+
+solver_island: bool;
+solver_status: s32;
+solver_search: s32;
+solver_started: bool;
+solver_limits: SolverLimits;
+// Work counts toward budget_end; SolverRun returns when it is reached.
+solver_budget_end: s64;
+// States seen by all searches, for progress.
+solver_seen: s64;
+// The board SolverStart loaded, for a final story-route hint.
+solver_board: string;
+solver_actions: s32;
+solver_facings: s32;
+
+// Nodes of the current search: every state found and how it was reached.
+solver_node_key: [SOLVER_NODES]s32;
+solver_node_length: [SOLVER_NODES]s32;
+solver_node_hash: [SOLVER_NODES]u32;
+solver_node_walker: [SOLVER_NODES]s32;
+solver_node_parent: [SOLVER_NODES]s32;
+solver_node_action: [SOLVER_NODES]u8;
+solver_node_depth: [SOLVER_NODES]s32;
+solver_node_walk: [SOLVER_NODES]s32;
+solver_node_walk_length: [SOLVER_NODES]s32;
+solver_count: s32;
+solver_cap: s32;
+// Each table slot counts only when stamped with the current generation, so
+// a new search starts with empty tables at no cost.
+solver_table: [SOLVER_TABLE]s32;
+solver_table_generation: [SOLVER_TABLE]s32;
+solver_generation: s32;
+solver_arena: [SOLVER_ARENA]u8;
+solver_arena_used: s32;
+solver_walks: [SOLVER_WALKS]u8;
+solver_walks_used: s32;
+// Macro searches: expanded regions, each a node's key with its region's
+// smallest walker.
+solver_closed_node: [SOLVER_NODES]s32;
+solver_closed_walker: [SOLVER_NODES]s32;
+solver_closed_hash: [SOLVER_NODES]u32;
+solver_closed_count: s32;
+solver_closed_table: [SOLVER_TABLE]s32;
+solver_closed_generation: [SOLVER_TABLE]s32;
+// Best-first order: priority << 32 | node, smallest first.
+solver_heap: [SOLVER_NODES]u64;
+solver_heap_count: s32;
+solver_head: s32;
+
+solver_key: [SOLVER_KEY]u8;
+solver_route: [SOLVER_ROUTE]u8;
+solver_route_length: s32;
+solver_path: [SOLVER_NODES]s32;
+solver_letters: [SOLVER_WALKERS]u8;
+
+// The search in progress: the node being expanded, the next action (bfs),
+// stage 0 picks a node, 1 explores its region, 2 adds its edges.
+solver_node: s32;
+solver_next_action: s32;
+solver_stage: s32;
+solver_next_edge: s32;
+solver_ordered: bool;
+// The chain's search collects ways: states with fewer goals left than goal.
+solver_collect: bool;
+solver_goal: s32;
+
+// Shovey's region: every walker reachable by free walks from a node.
+solver_region_queue: [SOLVER_WALKERS]s32;
+solver_region_from: [SOLVER_WALKERS]s32;
+solver_region_move: [SOLVER_WALKERS]s32;
+solver_region_mark: [SOLVER_WALKERS]s32;
+solver_region_epoch: s32;
+solver_region_count: s32;
+solver_region_at: s32;
+solver_region_action: s32;
+solver_edge_walker: [SOLVER_EDGES]s32;
+solver_edge_action: [SOLVER_EDGES]s32;
+solver_edges: s32;
+solver_win_walker: s32;
+solver_win_action: s32;
+
+// The chain: a stack of goals, each with up to four ways found from its
+// root. Keys and routes live in the chain arena, which shrinks as goals are
+// left behind.
+solver_chain_depth: s32;
+solver_chain_states: s32;
+solver_chain_ready: [SOLVER_CHAIN_DEPTH]bool;
+solver_chain_begun: [SOLVER_CHAIN_DEPTH]bool;
+solver_chain_mark: [SOLVER_CHAIN_DEPTH]s32;
+solver_chain_ways: [SOLVER_CHAIN_DEPTH]s32;
+solver_chain_next: [SOLVER_CHAIN_DEPTH]s32;
+solver_way_key: [SOLVER_CHAIN_DEPTH * SOLVER_CHAIN_WAYS]s32;
+solver_way_length: [SOLVER_CHAIN_DEPTH * SOLVER_CHAIN_WAYS]s32;
+solver_way_walker: [SOLVER_CHAIN_DEPTH * SOLVER_CHAIN_WAYS]s32;
+solver_way_won: [SOLVER_CHAIN_DEPTH * SOLVER_CHAIN_WAYS]bool;
+solver_way_route: [SOLVER_CHAIN_DEPTH * SOLVER_CHAIN_WAYS]s32;
+solver_way_route_length: [SOLVER_CHAIN_DEPTH * SOLVER_CHAIN_WAYS]s32;
+solver_chain_arena: [SOLVER_CHAIN_ARENA]u8;
+solver_chain_used: s32;
+// The level-0 root: the loaded board, with an empty key.
+solver_root_walker: s32;
+// Replay of a found route: the next letter.
+solver_verify_at: s32;
+// The search that found the route being replayed or proven.
+solver_found_by: s32;
+
+// ---------------------------------------------------------------------------
+// The edition's rules
+
+SolverWork :: () -> s64 { return solve_classic_work + solve_island_work }
+
+SolverLetter :: (action: s32) -> u8 {
+    letters := "0123ft"
+    return letters[action]
+}
+
+SolverActionOf :: (letter: u8) -> s32 {
+    if letter >= #char "0" && letter <= #char "3" { return cast(s32)(letter - #char "0") }
+    if !solver_island && letter == #char "f" { return 4 }
+    if !solver_island && letter == #char "t" { return 5 }
+    return -1
+}
+
+// The current game's key against the search's root.
+SolverKeyNow :: () -> s32 {
+    if solver_island { return SolveIslandKey(*solve_island_game, *solve_island_root, solver_key[:]) }
+    return SolveClassicKey(*solve_classic_game, *solve_classic_root, solver_key[:])
+}
+
+SolverDecode :: (key: string, walker: s32) {
+    if solver_island { SolveIslandDecode(key, *solve_island_root, solve_island_root_octopus, walker) }
+    else { SolveClassicDecode(key, *solve_classic_root, solve_classic_root_shadows, walker) }
+}
+
+SolverReset :: () {
+    if solver_island { SolveIslandReset() } else { SolveClassicReset() }
+}
+
+SolverAct :: (action: s32) -> bool {
+    if solver_island { return SolveIslandAct(action) }
+    return SolveClassicAct(action)
+}
+
+SolverWon :: () -> bool { return ifx solver_island then solve_island_game.won else solve_classic_game.won }
+
+SolverLost :: () -> bool { return !solver_island && solve_classic_game.lost }
+
+SolverRemaining :: () -> s32 {
+    if solver_island { solve_island_work += 4; return IslandRemaining(*solve_island_game) }
+    solve_classic_work += 4
+    return ShoveyRemaining(*solve_classic_game)
+}
+
+SolverWalker :: () -> s32 { return ifx solver_island then SolveIslandWalker() else SolveClassicWalker() }
+
+SolverSetWalker :: (walker: s32) {
+    if solver_island { SolveIslandSetWalker(walker) } else { SolveClassicSetWalker(walker) }
+}
+
+SolverPlainStep :: (direction: s32) -> s32 {
+    if solver_island { return SolveIslandPlainStep(direction) }
+    return SolveClassicPlainStep(direction)
+}
+
+SolverWalkerFree :: (action: s32) -> bool { return !solver_island && SolveClassicWalkerFree(action) }
+
+SolverDead :: () -> bool { return !solver_island && SolveClassicDead() }
+
+SolverEstimate :: () -> s32 {
+    if solver_island { return SolveIslandEstimate() }
+    return SolveClassicEstimate()
+}
+
+// The root becomes the decoded base state.
+SolverRootFromBase :: () {
+    if solver_island {
+        state := solve_island_base
+        SolveIslandSetRoot(*state)
+    } else {
+        state := solve_classic_base
+        SolveClassicSetRoot(*state)
+    }
+}
+
+// The root becomes the loaded board.
+SolverRootInitial :: () {
+    if solver_island { SolveIslandSetRoot(*solve_island_initial) }
+    else { SolveClassicSetRoot(*solve_classic_initial) }
+}
+
+// The current game's key against the loaded board, into out.
+SolverKeyInitial :: (out: []u8) -> s32 {
+    if solver_island { return SolveIslandKey(*solve_island_game, *solve_island_initial, out) }
+    return SolveClassicKey(*solve_classic_game, *solve_classic_initial, out)
+}
+
+SolverDecodeInitial :: (key: string, walker: s32) {
+    if solver_island { SolveIslandDecode(key, *solve_island_initial, solve_island_initial_octopus, walker) }
+    else { SolveClassicDecode(key, *solve_classic_initial, solve_classic_initial_shadows, walker) }
+}
+
+// ---------------------------------------------------------------------------
+// Nodes and their sets
+
+SolverHash :: (bytes: []u8, length: s32, walker: s32) -> u32 {
+    hash: u64 = 2166136261
+    for at: cast(s32)0..length - 1 { hash = ((hash ^ cast(u64)bytes[at]) * 16777619) & 4294967295 }
+    hash = ((hash ^ cast(u64)(walker & 65535)) * 16777619) & 4294967295
+    hash = ((hash ^ cast(u64)(walker >> 16)) * 16777619) & 4294967295
+    return cast(u32)hash
+}
+
+SolverNodeKey :: (node: s32) -> string {
+    at := solver_node_key[node]
+    return TextView(solver_arena[at:at + solver_node_length[node]])
+}
+
+SolverClear :: (cap: s32) {
+    solver_generation += 1
+    solver_count = 0
+    solver_arena_used = 0
+    solver_walks_used = 0
+    solver_closed_count = 0
+    solver_heap_count = 0
+    solver_head = 0
+    solver_stage = 0
+    solver_next_action = 0
+    solver_cap = ifx cap < SOLVER_NODES then cap else SOLVER_NODES
+    solve_classic_work += 2
+}
+
+// Adds the key in solver_key with walker as a node unless it is known.
+// The walk to it is the region's walk to walk_to (-1 for none). Returns the
+// new node, -1 when it was known, -2 when the search is full.
+SolverAdd :: (length: s32, walker: s32, parent: s32, action: s32, walk_to: s32) -> s32 {
+    hash := SolverHash(solver_key[:], length, walker)
+    slot := cast(s32)(hash & cast(u32)(SOLVER_TABLE - 1))
+    key := TextView(solver_key[0:length])
+    while solver_table_generation[slot] == solver_generation {
+        node := solver_table[slot] - 1
+        if solver_node_hash[node] == hash && solver_node_walker[node] == walker &&
+        solver_node_length[node] == length && SolverNodeKey(node) == key { return -1 }
+        slot = (slot + 1) & (SOLVER_TABLE - 1)
+    }
+    if solver_count >= solver_cap || solver_arena_used + length > SOLVER_ARENA { return -2 }
+    walk: s32 = 0
+    if walk_to >= 0 {
+        walk = SolverWalkLetters(walk_to)
+        if solver_walks_used + walk > SOLVER_WALKS { return -2 }
+    }
+    node := solver_count
+    solver_count += 1
+    solver_seen += 1
+    for at: cast(s32)0..length - 1 { solver_arena[solver_arena_used + at] = solver_key[at] }
+    solver_node_key[node] = solver_arena_used
+    solver_node_length[node] = length
+    solver_arena_used += length
+    solver_node_hash[node] = hash
+    solver_node_walker[node] = walker
+    solver_node_parent[node] = parent
+    solver_node_action[node] = cast(u8)action
+    solver_node_depth[node] = ifx parent >= 0 then solver_node_depth[parent] + 1 else 0
+    solver_node_walk[node] = solver_walks_used
+    solver_node_walk_length[node] = walk
+    for at: cast(s32)0..walk - 1 { solver_walks[solver_walks_used + at] = solver_letters[walk - 1 - at] }
+    solver_walks_used += walk
+    solver_table[slot] = node + 1
+    solver_table_generation[slot] = solver_generation
+    solve_classic_work += cast(s64)(2 + length / 24 + walk / 24)
+    return node
+}
+
+// Adds node's key with walker to the expanded regions. False when present.
+SolverClose :: (node: s32, walker: s32) -> bool {
+    length := solver_node_length[node]
+    key := SolverNodeKey(node)
+    at := solver_node_key[node]
+    hash := SolverHash(solver_arena[at:at + length], length, walker)
+    slot := cast(s32)(hash & cast(u32)(SOLVER_TABLE - 1))
+    while solver_closed_generation[slot] == solver_generation {
+        entry := solver_closed_table[slot] - 1
+        other := solver_closed_node[entry]
+        if solver_closed_hash[entry] == hash && solver_closed_walker[entry] == walker &&
+        solver_node_length[other] == length && SolverNodeKey(other) == key { return false }
+        slot = (slot + 1) & (SOLVER_TABLE - 1)
+    }
+    entry := solver_closed_count
+    solver_closed_count += 1
+    solver_closed_node[entry] = node
+    solver_closed_walker[entry] = walker
+    solver_closed_hash[entry] = hash
+    solver_closed_table[slot] = entry + 1
+    solver_closed_generation[slot] = solver_generation
+    return true
+}
+
+SolverHeapPush :: (entry: u64) {
+    if solver_heap_count >= SOLVER_NODES { return }
+    at := solver_heap_count
+    solver_heap_count += 1
+    while at > 0 {
+        parent := (at - 1) / 2
+        if solver_heap[parent] <= entry { break }
+        solver_heap[at] = solver_heap[parent]
+        at = parent
+    }
+    solver_heap[at] = entry
+}
+
+SolverHeapPop :: () -> s32 {
+    top := solver_heap[0]
+    solver_heap_count -= 1
+    last := solver_heap[solver_heap_count]
+    at: s32 = 0
+    while true {
+        child := at * 2 + 1
+        if child >= solver_heap_count { break }
+        if child + 1 < solver_heap_count && solver_heap[child + 1] < solver_heap[child] { child += 1 }
+        if last <= solver_heap[child] { break }
+        solver_heap[at] = solver_heap[child]
+        at = child
+    }
+    if solver_heap_count > 0 { solver_heap[at] = last }
+    return cast(s32)(top & 4294967295)
+}
+
+// Lower is better: the estimate, weighted against the macro depth.
+SolverPriority :: (depth: s32) -> u64 {
+    priority := cast(u64)SolverEstimate() * 4 + cast(u64)depth
+    if priority > 4294967295 { priority = 4294967295 }
+    return priority << 32
+}
+
+// ---------------------------------------------------------------------------
+// Routes
+
+SolverRouteAdd :: (letter: u8) -> bool {
+    if solver_route_length >= SOLVER_ROUTE { return false }
+    solver_route[solver_route_length] = letter
+    solver_route_length += 1
+    return true
+}
+
+// Appends the route from the search's root to node: each node's walk and
+// action. False when the route is too long.
+SolverRouteTo :: (node: s32) -> bool {
+    count: s32 = 0
+    at := node
+    while at >= 0 && solver_node_parent[at] >= 0 {
+        solver_path[count] = at
+        count += 1
+        at = solver_node_parent[at]
+    }
+    while count > 0 {
+        count -= 1
+        step := solver_path[count]
+        start := solver_node_walk[step]
+        for index: cast(s32)0..solver_node_walk_length[step] - 1 {
+            if !SolverRouteAdd(solver_walks[start + index]) { return false }
+        }
+        if !SolverRouteAdd(SolverLetter(cast(s32)solver_node_action[step])) { return false }
+    }
+    return true
+}
+
+// The free walk from the last region's start to walker, last step first,
+// into solver_letters. Returns its length.
+SolverWalkLetters :: (walker: s32) -> s32 {
+    count: s32 = 0
+    at := walker
+    while at != solver_region_queue[0] && count < SOLVER_WALKERS {
+        solver_letters[count] = SolverLetter(solver_region_move[at])
+        count += 1
+        at = solver_region_from[at]
+    }
+    return count
+}
+
+SolverRouteWalk :: (walker: s32) -> bool {
+    count := SolverWalkLetters(walker)
+    while count > 0 {
+        count -= 1
+        if !SolverRouteAdd(solver_letters[count]) { return false }
+    }
+    return true
+}
+
+// ---------------------------------------------------------------------------
+// Shovey regions
+
+// Starts exploring the region of node: its state becomes the base.
+SolverRegionBegin :: (node: s32) {
+    SolverDecode(SolverNodeKey(node), solver_node_walker[node])
+    solver_region_epoch += 1
+    start := solver_node_walker[node]
+    solver_region_queue[0] = start
+    solver_region_mark[start] = solver_region_epoch
+    solver_region_count = 1
+    solver_region_at = 0
+    solver_region_action = 0
+    solver_edges = 0
+    solver_win_walker = -1
+    solver_win_action = -1
+}
+
+// Visits walkers reachable by free walks, recording how each was first
+// reached and every other action as an edge. Returns false when the budget
+// ran out first; then call it again. Stops early when an action wins.
+SolverRegionStep :: () -> bool {
+    node := solver_node
+    key := SolverNodeKey(node)
+    while solver_region_at < solver_region_count {
+        walker := solver_region_queue[solver_region_at]
+        while solver_region_action < solver_actions {
+            if SolverWork() >= solver_budget_end { return false }
+            action := solver_region_action
+            solver_region_action += 1
+            // Actions that ignore Shovey's position run from the start only.
+            if solver_region_at > 0 && SolverWalkerFree(action) { continue }
+            SolverSetWalker(walker)
+            reached: s32 = -1
+            if action < 4 { reached = SolverPlainStep(action) }
+            if reached < 0 {
+                SolverReset()
+                if !SolverAct(action) {
+                    // A rejected action changes at most the facing.
+                    if solver_facings == 1 { continue }
+                    reached = SolverWalker()
+                } else {
+                    if SolverLost() { continue }
+                    if SolverWon() {
+                        solver_win_walker = walker
+                        solver_win_action = action
+                        return true
+                    }
+                    length := SolverKeyNow()
+                    if length < 0 { solver_status = SOLVER_INVALID; return true }
+                    if length != solver_node_length[node] || TextView(solver_key[0:length]) != key {
+                        if solver_edges < SOLVER_EDGES {
+                            solver_edge_walker[solver_edges] = walker
+                            solver_edge_action[solver_edges] = action
+                            solver_edges += 1
+                        }
+                        continue
+                    }
+                    reached = SolverWalker()
+                }
+            }
+            if solver_region_mark[reached] == solver_region_epoch { continue }
+            solver_region_mark[reached] = solver_region_epoch
+            solver_region_from[reached] = walker
+            solver_region_move[reached] = action
+            solver_region_queue[solver_region_count] = reached
+            solver_region_count += 1
+            solve_classic_work += 1
+        }
+        solver_region_at += 1
+        solver_region_action = 0
+    }
+    return true
+}
+
+// ---------------------------------------------------------------------------
+// Searches
+
+// A search found the win from node's region (or, for bfs, by action from
+// node): build the route and replay it.
+SolverFound :: (node: s32, walker: s32, action: s32) {
+    solver_route_length = 0
+    ok := SolverRouteTo(node) && (walker < 0 || SolverRouteWalk(walker)) && SolverRouteAdd(SolverLetter(action))
+    SolverFinishRoute(ok)
+}
+
+// Continues with the route in solver_route: replay it, or move on.
+SolverFinishRoute :: (ok: bool) {
+    if !ok { SolverNextSearch(); return }
+    solver_found_by = solver_search
+    solver_search = SOLVER_VERIFY
+    solver_verify_at = 0
+    SolverRootInitial()
+}
+
+SolverSameBoard :: (left: string, right: string) -> bool {
+    if left.count != right.count { return false }
+    for at: cast(s32)0..left.count - 1 {
+        if left[at] != right[at] { return false }
+    }
+    return true
+}
+
+SolverStoryRoute :: () -> string {
+    if solver_island {
+        for number: cast(s32)1..ISLAND_LEVEL_COUNT {
+            if SolverSameBoard(solver_board, IslandLevelData(number)) { return IslandLevelSolution(number) }
+        }
+    } else {
+        for number: cast(s32)1..SHOVEY_LEVEL_COUNT {
+            if SolverSameBoard(solver_board, ShoveyLevelData(number)) { return ShoveyLevelSolution(number) }
+        }
+    }
+    return ""
+}
+
+SolverTryStoryRoute :: (route: string) -> bool {
+    SolverRootInitial()
+    SolverReset()
+    solver_route_length = 0
+    for letter: route {
+        action := SolverActionOf(letter)
+        if action < 0 || SolverLost() || !SolverRouteAdd(letter) { return false }
+        unused SolverAct(action)
+        if SolverWon() && !SolverLost() {
+            solver_found_by = SOLVER_VERIFY
+            solver_search = SOLVER_VERIFY
+            solver_verify_at = solver_route_length
+            solver_status = SOLVER_WON
+            return true
+        }
+        if SolverLost() { return false }
+    }
+    return false
+}
+
+SolverNextSearch :: () {
+    if solver_search >= SOLVER_VERIFY {
+        route := SolverStoryRoute()
+        if route.count > 0 && SolverTryStoryRoute(route) { return }
+        solver_status = SOLVER_UNKNOWN
+        return
+    }
+    solver_search += 1
+    solver_started = false
+    route := SolverStoryRoute()
+    if route.count > 0 && (solver_search == SOLVER_BFS || solver_search >= SOLVER_VERIFY) {
+        if SolverTryStoryRoute(route) { return }
+    }
+    if solver_search >= SOLVER_VERIFY { solver_status = SOLVER_UNKNOWN }
+}
+
+SolverBfsStep :: () {
+    if !solver_started {
+        SolverRootInitial()
+        SolverClear(solver_limits.bfs)
+        unused SolverAdd(0, solver_root_walker, -1, 0, -1)
+        solver_node = 0
+        solver_started = true
+    }
+    while solver_status == SOLVER_RUNNING {
+        if SolverWork() >= solver_budget_end { return }
+        if solver_next_action == 0 {
+            if solver_node >= solver_count {
+                // Every reachable state was seen and none wins.
+                solver_status = SOLVER_NEVER
+                return
+            }
+            SolverDecode(SolverNodeKey(solver_node), solver_node_walker[solver_node])
+        }
+        action := solver_next_action
+        solver_next_action += 1
+        if solver_next_action >= solver_actions { solver_next_action = 0 }
+        SolverReset()
+        unused SolverAct(action)
+        if !SolverLost() {
+            if SolverWon() {
+                SolverFound(solver_node, -1, action)
+                return
+            }
+            length := SolverKeyNow()
+            if length < 0 { solver_status = SOLVER_INVALID; return }
+            if SolverAdd(length, SolverWalker(), solver_node, action, -1) == -2 { SolverNextSearch(); return }
+        }
+        if solver_next_action == 0 { solver_node += 1 }
+    }
+}
+
+// Starts a macro search from the root with the state in the base.
+SolverMacroBegin :: (cap: s32, ordered: bool, collect: bool) {
+    SolverClear(cap)
+    solver_ordered = ordered
+    solver_collect = collect
+    SolverReset()
+    walker := SolverWalker()
+    unused SolverAdd(0, walker, -1, 0, -1)
+    if ordered { SolverHeapPush(SolverPriority(0)) }
+    solver_stage = 0
+}
+
+// Advances the macro search. Returns true when it ended: solved, exhausted
+// or full; solver_status or the chain's ways tell which.
+SolverMacroStep :: () -> bool {
+    while solver_status == SOLVER_RUNNING {
+        if SolverWork() >= solver_budget_end { return false }
+        if solver_stage == 0 {
+            if solver_ordered {
+                if solver_heap_count == 0 { return true }
+                solver_node = SolverHeapPop()
+            } else {
+                if solver_head >= solver_count { return true }
+                solver_node = solver_head
+                solver_head += 1
+            }
+            SolverRegionBegin(solver_node)
+            solver_stage = 1
+        }
+        if solver_stage == 1 {
+            if !SolverRegionStep() { return false }
+            if solver_status != SOLVER_RUNNING { return true }
+            if solver_win_walker >= 0 {
+                if !solver_collect {
+                    SolverFound(solver_node, solver_win_walker, solver_win_action)
+                    return true
+                }
+                if SolverChainWay(true) { return true }
+                solver_stage = 0
+                continue
+            }
+            // Skip regions already expanded from another of their walkers.
+            smallest := solver_region_queue[0]
+            for at: cast(s32)1..solver_region_count - 1 {
+                if solver_region_queue[at] < smallest { smallest = solver_region_queue[at] }
+            }
+            solve_classic_work += cast(s64)(solver_region_count / 32)
+            if !SolverClose(solver_node, smallest) { solver_stage = 0; continue }
+            solver_stage = 2
+            solver_next_edge = 0
+        }
+        if solver_stage == 2 {
+            if solver_next_edge >= solver_edges { solver_stage = 0; continue }
+            index := solver_next_edge
+            solver_next_edge += 1
+            SolverSetWalker(solver_edge_walker[index])
+            SolverReset()
+            unused SolverAct(solver_edge_action[index])
+            // A state the rules prove unwinnable is never stored.
+            if SolverDead() { continue }
+            if solver_collect && SolverRemaining() < solver_goal {
+                if SolverChainWay(false) { return true }
+                continue
+            }
+            length := SolverKeyNow()
+            if length < 0 { solver_status = SOLVER_INVALID; return true }
+            added := SolverAdd(length, SolverWalker(), solver_node, solver_edge_action[index], solver_edge_walker[index])
+            if added == -2 { return true }
+            if added >= 0 && solver_ordered {
+                SolverHeapPush(SolverPriority(solver_node_depth[added]) | cast(u64)added)
+            }
+        }
+    }
+    return true
+}
+
+SolverMacroSearchStep :: (cap: s32, ordered: bool) {
+    if !solver_started {
+        SolverRootInitial()
+        SolverMacroBegin(cap, ordered, false)
+        solver_started = true
+    }
+    if SolverMacroStep() && solver_status == SOLVER_RUNNING && solver_search != SOLVER_VERIFY { SolverNextSearch() }
+}
+
+// ---------------------------------------------------------------------------
+// The goal chain
+
+SolverChainCopy :: (from: []u8, length: s32) -> s32 {
+    if solver_chain_used + length > SOLVER_CHAIN_ARENA { return -1 }
+    at := solver_chain_used
+    for index: cast(s32)0..length - 1 { solver_chain_arena[at + index] = from[index] }
+    solver_chain_used += length
+    return at
+}
+
+// Records a way from the current goal's search: a win from the region
+// (won), or the state after the current edge, with one more goal done.
+// Returns true when the goal has all the ways it collects.
+SolverChainWay :: (won: bool) -> bool {
+    level := solver_chain_depth - 1
+    way := level * SOLVER_CHAIN_WAYS + solver_chain_ways[level]
+    solver_route_length = 0
+    ok := SolverRouteTo(solver_node)
+    if won { ok = ok && SolverRouteWalk(solver_win_walker) && SolverRouteAdd(SolverLetter(solver_win_action)) }
+    else {
+        edge := solver_next_edge - 1
+        ok = ok && SolverRouteWalk(solver_edge_walker[edge]) && SolverRouteAdd(SolverLetter(solver_edge_action[edge]))
+    }
+    if !ok { return false }
+    route := SolverChainCopy(solver_route[:], solver_route_length)
+    if route < 0 { return true }
+    solver_way_route[way] = route
+    solver_way_route_length[way] = solver_route_length
+    solver_way_won[way] = won
+    if !won {
+        length := SolverKeyInitial(solver_key[:])
+        if length < 0 { return false }
+        at := SolverChainCopy(solver_key[:], length)
+        if at < 0 { return true }
+        solver_way_key[way] = at
+        solver_way_length[way] = length
+        solver_way_walker[way] = SolverWalker()
+    }
+    solver_chain_ways[level] += 1
+    return solver_chain_ways[level] >= SOLVER_CHAIN_WAYS
+}
+
+solver_chain_root_key: [SOLVER_CHAIN_DEPTH]s32;
+solver_chain_root_length: [SOLVER_CHAIN_DEPTH]s32;
+solver_chain_root_walker: [SOLVER_CHAIN_DEPTH]s32;
+
+SolverChainStep :: () {
+    if !solver_started {
+        solver_chain_depth = 0
+        solver_chain_used = 0
+        solver_chain_states = 0
+        solver_chain_root_key[0] = 0
+        solver_chain_root_length[0] = 0
+        solver_chain_root_walker[0] = solver_root_walker
+        SolverChainOpen(0)
+        solver_started = true
+    }
+    while solver_status == SOLVER_RUNNING && solver_search == SOLVER_CHAIN {
+        if SolverWork() >= solver_budget_end { return }
+        if solver_chain_depth == 0 || solver_chain_states >= solver_limits.chain { SolverNextSearch(); return }
+        level := solver_chain_depth - 1
+        if !solver_chain_ready[level] {
+            if !solver_chain_begun[level] {
+                at := solver_chain_root_key[level]
+                SolverDecodeInitial(TextView(solver_chain_arena[at:at + solver_chain_root_length[level]]),
+                    solver_chain_root_walker[level])
+                SolverRootFromBase()
+                SolverReset()
+                solver_goal = SolverRemaining()
+                if solver_goal < 0 { solver_goal = 0 }
+                SolverMacroBegin(solver_limits.chain_goal, true, true)
+                solver_chain_begun[level] = true
+            }
+            before := solver_count
+            done := SolverMacroStep()
+            solver_chain_states += solver_count - before
+            if solver_status != SOLVER_RUNNING { return }
+            if done { solver_chain_ready[level] = true }
+            continue
+        }
+        if solver_chain_next[level] >= solver_chain_ways[level] {
+            // Every way from this goal led into a dead end.
+            solver_chain_depth -= 1
+            solver_chain_used = solver_chain_mark[level]
+            continue
+        }
+        way := level * SOLVER_CHAIN_WAYS + solver_chain_next[level]
+        solver_chain_next[level] += 1
+        if solver_way_won[way] {
+            // The route is every goal's chosen way, in order.
+            solver_route_length = 0
+            ok := true
+            for step: cast(s32)0..level {
+                chosen := step * SOLVER_CHAIN_WAYS + solver_chain_next[step] - 1
+                start := solver_way_route[chosen]
+                for index: cast(s32)0..solver_way_route_length[chosen] - 1 {
+                    ok = ok && SolverRouteAdd(solver_chain_arena[start + index])
+                }
+            }
+            SolverFinishRoute(ok)
+            return
+        }
+        if solver_chain_depth < SOLVER_CHAIN_DEPTH {
+            next := solver_chain_depth
+            solver_chain_root_key[next] = solver_way_key[way]
+            solver_chain_root_length[next] = solver_way_length[way]
+            solver_chain_root_walker[next] = solver_way_walker[way]
+            SolverChainOpen(next)
+        }
+    }
+}
+
+// Opens goal `level` on the stack; its root is already recorded.
+SolverChainOpen :: (level: s32) {
+    solver_chain_depth = level + 1
+    solver_chain_ready[level] = false
+    solver_chain_begun[level] = false
+    solver_chain_mark[level] = solver_chain_used
+    solver_chain_ways[level] = 0
+    solver_chain_next[level] = 0
+}
+
+// ---------------------------------------------------------------------------
+// Replay
+
+// Replays solver_route from the loaded board. Only a win makes it a proof.
+SolverVerifyStep :: () {
+    if solver_verify_at == 0 { SolverReset() }
+    while solver_verify_at < solver_route_length {
+        if SolverWork() >= solver_budget_end { return }
+        action := SolverActionOf(solver_route[solver_verify_at])
+        solver_verify_at += 1
+        if action < 0 || SolverWon() || SolverLost() { solver_status = SOLVER_UNKNOWN; return }
+        unused SolverAct(action)
+    }
+    solver_status = ifx SolverWon() && !SolverLost() then SOLVER_WON else SOLVER_UNKNOWN
+}
+
+// ---------------------------------------------------------------------------
+// The interface
+
+// Loads a board, 480 hex digits for Classic or 960 (terrain, then objects)
+// for Island, and starts checking it. False when the engine rejects it.
+SolverStart :: (island: bool, board: string, limits: SolverLimits = SolverDefaultLimits()) -> bool {
+    solver_island = island
+    solver_limits = limits
+    solver_search = SOLVER_GREEDY
+    solver_started = false
+    solver_seen = 0
+    solver_board = board
+    solver_found_by = SOLVER_GREEDY
+    solver_route_length = 0
+    solver_actions = ifx island then 4 else 6
+    solver_facings = ifx island then 1 else 4
+    loaded := ifx island then SolveIslandLoad(board) else SolveClassicLoad(board)
+    if !loaded { solver_status = SOLVER_INVALID; return false }
+    SolverReset()
+    solver_root_walker = SolverWalker()
+    solver_status = SOLVER_RUNNING
+    return true
+}
+
+// Stops checking; the status stays as it was.
+SolverStop :: () {
+    if solver_status == SOLVER_RUNNING { solver_status = SOLVER_IDLE }
+}
+
+// Works for about budget units (a hundred engine statements each), or until
+// the board is decided. A single engine action can overrun the budget by its
+// own cost: a long slide is the largest.
+SolverRun :: (budget: s64) {
+    solver_budget_end = SolverWork() + budget
+    while solver_status == SOLVER_RUNNING && SolverWork() < solver_budget_end {
+        if solver_search == SOLVER_BFS { SolverBfsStep() }
+        else if solver_search == SOLVER_GREEDY { SolverMacroSearchStep(solver_limits.greedy, true) }
+        else if solver_search == SOLVER_CHAIN { SolverChainStep() }
+        else if solver_search == SOLVER_MACRO { SolverMacroSearchStep(solver_limits.macro, false) }
+        else if solver_search == SOLVER_VERIFY { SolverVerifyStep() }
+        else { solver_status = SOLVER_UNKNOWN }
+    }
+}
+
+SolverStatus :: () -> s32 { return solver_status }
+
+// The search running now, SOLVER_BFS to SOLVER_VERIFY.
+SolverSearch :: () -> s32 { return solver_search }
+
+// The search that found the route, once the status is SOLVER_WON.
+SolverSearchWon :: () -> s32 { return solver_found_by }
+
+// States seen by every search so far.
+SolverStates :: () -> s64 { return solver_seen }
+
+// The proven route once the status is SOLVER_WON.
+SolverRoute :: () -> string {
+    if solver_status != SOLVER_WON { return "" }
+    return TextView(solver_route[0:solver_route_length])
+}

@@ -1,0 +1,129 @@
+// Imports levels from the Shovey Editor into the level files, as Shovey's
+// developer decides; nothing imports them by itself. Run from Shovey's root:
+//
+//     make import-tool
+//     build/levels/import-edits [--append] [--no-generate] [--levels DIR] [EXPORT]
+//
+// EXPORT is the text the editor's Export page copies, or a shared level
+// collection; without it, or with "-", standard input is read. Every level's
+// route is replayed through the engines first, and nothing is written unless
+// all of them win. A level copied from a story level replaces that level;
+// --append adds every level after the story instead (Classic keeps its
+// finale last). Afterwards the level code and pictures are generated again
+// with tools/levels/levels.py, unless --no-generate.
+#import "std/byte_text_linux"
+#import "std/c_string"
+#import "std/file"
+#import "std/number_text"
+#import "std/process_capture_linux"
+#import "std/text_buffer"
+#import, file "../../apps/shovey/editor/edit.zi";
+#import, file "edits.zi";
+
+libc :: #system_library "libc";
+WriteError :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
+
+classic_out: [IMPORT_FILE]u8;
+island_out: [IMPORT_FILE]u8;
+input_bytes: [1048576]u8;
+output_bytes: [65536]u8;
+path_bytes: [3][1024]u8;
+
+say_bytes: [4096]u8;
+
+// Writes text to a descriptor, a buffer at a time.
+Say :: (fd: s32, text: string) {
+    at: s64 = 0
+    while at < text.count {
+        count: s64 = 0
+        while count < 4096 && at + count < text.count { say_bytes[count] = text[at + count]; count += 1 }
+        unused WriteError(fd, *say_bytes[0], cast(usize)count)
+        at += count
+    }
+}
+
+// Reads a whole stream, such as standard input, which cannot seek.
+ReadStream :: (path: string) -> (text: string, ok: bool) {
+    file := OpenRead(path)
+    if !file.valid { return "", false }
+    length: s64 = 0
+    while length < 1048576 {
+        count := Read(file, input_bytes[length:1048576])
+        if count < 0 { CloseFile(file); return "", false }
+        if count == 0 { break }
+        length += count
+    }
+    CloseFile(file)
+    return TextView(input_bytes[0:length]), length < 1048576
+}
+
+Join :: (slot: s32, directory: string, name: string) -> string {
+    writer := EditWriter.{.bytes = path_bytes[slot][:]}
+    EditPut(*writer, directory)
+    EditPut(*writer, "/")
+    EditPut(*writer, name)
+    return TextView(path_bytes[slot][0:writer.length])
+}
+
+Run :: (arguments: []string) -> bool {
+    result := CaptureOutput(arguments, output_bytes[:])
+    Say(1, TextView(output_bytes[0:result.length]))
+    return !result.error && result.code == 0
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    append := false
+    generate := true
+    levels := "levels"
+    source := "-"
+    at: s32 = 1
+    while at < argc {
+        argument := TextFromCString(argv[at])
+        if argument == "--append" { append = true }
+        else if argument == "--no-generate" { generate = false }
+        else if argument == "--levels" && at + 1 < argc { at += 1; levels = TextFromCString(argv[at]) }
+        else if argument.count > 0 && argument[0] == #char "-" && argument != "-" {
+            Say(2, "usage: import-edits [--append] [--no-generate] [--levels DIR] [EXPORT]\n")
+            return 2
+        } else { source = argument }
+        at += 1
+    }
+    export, read := ReadStream(ifx source == "-" then "/dev/stdin" else source)
+    classic_path := Join(0, levels, "classic.json")
+    island_path := Join(1, levels, "island.json")
+    classic_text, classic_found := ReadEntireFile(classic_path)
+    island_text, island_found := ReadEntireFile(island_path)
+    if !read || !classic_found || !island_found {
+        Say(2, "import-edits: cannot read the export or the level files\n")
+        return 2
+    }
+    classic_writer := EditWriter.{.bytes = classic_out[:]}
+    island_writer := EditWriter.{.bytes = island_out[:]}
+    if !ImportEdits(export, classic_text, island_text, append, *classic_writer, *island_writer) {
+        Say(2, "import-edits: nothing imported: ")
+        Say(2, ImportError())
+        Say(2, "\n")
+        return 1
+    }
+    if !WriteEntireFile(classic_path, TextView(classic_out[0:classic_writer.length])) ||
+    !WriteEntireFile(island_path, TextView(island_out[0:island_writer.length])) {
+        Say(2, "import-edits: cannot write the level files\n")
+        return 2
+    }
+    digits: [24]u8
+    Say(1, "imported ")
+    Say(1, FormatInteger(cast(s64)import_count, digits[:]))
+    Say(1, " proven levels\n")
+    if generate {
+        steps: [2]string = .["generate", "previews"]
+        for step: steps {
+            command: [3]string = .["python3", "tools/levels/levels.py", step]
+            if !Run(command[:]) {
+                Say(2, "import-edits: tools/levels/levels.py failed; run it again by hand\n")
+                return 2
+            }
+        }
+    }
+    return 0
+}

@@ -1,0 +1,58 @@
+# Shovey changelog
+
+## [0.6.0] - 2026-10-19
+
+- Shovey is the game's new name everywhere, with a new public hero image and screenshots.
+- The checker proves story levels with replayed routes, including level 154's ten-crate puzzle.
+- The board tiles touch without seams inside Arcade and the desktop app.
+- A new story puzzle joins the courtyard, and the later levels keep their places.
+
+## [0.5.1] - 2026-10-19
+
+- No lines between the board's tiles when Shovey runs inside another app.
+- New layouts for levels 2, 4 and 5.
+- The gate a button opens is a mossy stone block again.
+- Star blocks are stone blocks with a bright star; pits fill their whole tile; a little more colour.
+
+## [0.5.0] - 2026-10-19
+
+- Soft sound effects for pushes, pits, goals, pickups, doors and wins on desktop.
+- New pixel art with grey stone walls, a plain floor and coloured pits for the balls.
+- No move or piece counters under the board.
+- Restart always restarts the puzzle you see, also in games saved before the new puzzles.
+
+## [0.4.0] - 2026-10-18
+
+- New artwork for every board piece, for Shovey and for the game card.
+- 154 puzzles with new layouts and a new finale; more come in later updates.
+- Opening the game goes straight to your newest unlocked level; Levels
+  still lets you replay any unlocked puzzle.
+- The board fills the screen in portrait and landscape, under one compact bar.
+- Play by touch: swipe or tap on the board, or hold the on-screen joystick,
+  which steps out of the way while you use a keyboard.
+- Follows the light or dark look of the app it runs in.
+
+## [0.3.0] - 2026-10-18
+
+- See the whole starting board on each unlocked level card.
+- Recognize locked and completed puzzles by lock and check icons.
+- Keep future puzzles locked and replay available puzzles from their first boards.
+
+## [0.2.1] - 2026-10-18
+
+- Completing a puzzle automatically starts the next one.
+- Choosing a level starts it from the beginning.
+- Play the shadow puzzles, with corrected portals, projectile obstruction and moving paths.
+
+## [0.2.0] - 2026-10-18
+
+- Finish a puzzle to unlock the next one; future puzzles stay locked.
+- Choose available puzzles from the level selector and see completed ones.
+- Preserve existing saved positions when adding campaign progress.
+
+## [0.1.0] - 2026-10-18
+
+- Play 174 Classic puzzles and a finale in Arcade.
+- Move with arrow keys or the on-screen arrows, restart a puzzle, and read
+  the illustrated object guide.
+- Continue the same position after returning to the library or restarting.

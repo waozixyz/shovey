@@ -1,0 +1,138 @@
+// Classic's board as a Kryon TileMap: floor under pieces, the ground, the
+// pieces and Shovey are four layers of the sprites in assets/shovey/sprites.
+// The game view and the level tools draw the board with it.
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/image_props"
+#import "kryon/image_widget"
+#import "kryon/tile_map"
+#import "std/number_text"
+#import "std/c_string"
+#import "std/text_buffer"
+#import, file "engine.zi";
+
+// Sprites by number: tile-0 to tile-40 by board kind, then Shovey's facings,
+// the open gate, the sensor animation and a shot.
+SPRITE_PLAYER :: 41
+SPRITE_CHARGED :: 45
+SPRITE_DOOR_OPEN :: 49
+SPRITE_SENSOR :: 50
+SPRITE_SHOT :: 58
+SPRITE_COUNT :: 59
+sprite_files: [SPRITE_COUNT]string;
+sprites_ready: bool;
+board_layers: [SHOVEY_CELLS * 4]s32;
+
+SpritePath :: (index: s32, name: string) {
+    bytes: Vec(u8)
+    BuilderPrint(*bytes, "assets/shovey/sprites/%.png", name)
+    sprite_files[index] = BuilderFinish(bytes)
+}
+
+SpritesPrepare :: () {
+    digits: [24]u8
+    for kind: cast(s32)0..40 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(kind, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
+    // Engine directions are left, up, right, down.
+    facings: [4]string = .["left", "up", "right", "down"]
+    for direction: cast(s32)0..3 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "player-%", facings[direction])
+        SpritePath(SPRITE_PLAYER + direction, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+        charged: Vec(u8)
+        BuilderPrint(*charged, "charged-%", facings[direction])
+        SpritePath(SPRITE_CHARGED + direction, TextView(VecSlice(charged, 0, charged.count)))
+        VecFree(charged)
+    }
+    SpritePath(SPRITE_DOOR_OPEN, "door-open")
+    for frame_number: cast(s32)0..7 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "sensor-%", FormatInteger(cast(s64)(frame_number + 1), digits[:]))
+        SpritePath(SPRITE_SENSOR + frame_number, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
+    SpritePath(SPRITE_SHOT, "projectile")
+    sprites_ready = true
+}
+
+// The picture file of one sprite number.
+SpriteFile :: (index: s32) -> string {
+    if !sprites_ready { SpritesPrepare() }
+    return sprite_files[index]
+}
+
+// Pieces that stand on the floor rather than being a whole floor tile.
+OnFloor :: (kind: s32) -> bool {
+    return (kind >= 1 && kind <= 3) || kind == 9 || (kind >= 15 && kind <= 17) || kind == 19 ||
+    kind == 21 || (kind >= 25 && kind <= 29) || kind == 32 || (kind >= 33 && kind <= 38) || kind == 40
+}
+
+// The floor drawn under a piece: the moving block's path, plain floor, or
+// none (-1) for whole tiles.
+FloorSprite :: (kind: s32) -> s32 {
+    if !OnFloor(kind) { return -1 }
+    return ifx kind == 29 || kind == 32 then 31 else 0
+}
+
+// The sprite of one board kind at a cell, or -1. An open gate shows open;
+// active sensors turn, one frame every 100 milliseconds.
+KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64) -> s32 {
+    sprite := kind
+    if kind == 14 && position >= 0 && ShoveyDoorOpen(game, position) { sprite = SPRITE_DOOR_OPEN }
+    if kind == 22 || kind == 24 || kind == 41 || kind == 42 { sprite = SPRITE_SENSOR + cast(s32)(now * 10.0) % 8 }
+    if kind == 43 { sprite = 31 }
+    if sprite < 0 || sprite >= SPRITE_COUNT { return -1 }
+    return sprite
+}
+
+// Shovey facing its direction, charged or not.
+PlayerSprite :: (game: *ShoveyGame) -> s32 {
+    facing := ifx game.direction >= 0 && game.direction <= 3 then game.direction else 1
+    return (ifx (game.powers & SHOVEY_CHARGED) != 0 then SPRITE_CHARGED else SPRITE_PLAYER) + facing
+}
+
+// Draws the board fitted in bounds. `names` describes each sprite number.
+// Uses keys from `key` to key + 4 * SHOVEY_CELLS + 1.
+ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string) -> TileMapResult {
+    if !sprites_ready { SpritesPrepare() }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        ground := game.ground[at]
+        object := game.objects[at]
+        board_layers[at] = FloorSprite(ground)
+        board_layers[SHOVEY_CELLS + at] = KindSprite(game, ground, at, now)
+        board_layers[SHOVEY_CELLS * 2 + at] = ifx object == 0 then -1 else KindSprite(game, object, at, now)
+        board_layers[SHOVEY_CELLS * 3 + at] = ifx at == game.player then PlayerSprite(game) else -1
+    }
+    // Fractional cell sizes round neighbouring sprites to different pixel
+    // rows and look separated. Fit to one integer cell before drawing.
+    cell := bounds.width / cast(float32)SHOVEY_WIDTH
+    height_cell := bounds.height / cast(float32)SHOVEY_HEIGHT
+    if height_cell < cell { cell = height_cell }
+    if cell > 0.0 {
+        cell = cast(float32)(cast(s32)cell)
+        bounds = Rectangle.{bounds.x + (bounds.width - cell * cast(float32)SHOVEY_WIDTH) / 2.0,
+                bounds.y + (bounds.height - cell * cast(float32)SHOVEY_HEIGHT) / 2.0,
+                cell * cast(float32)SHOVEY_WIDTH, cell * cast(float32)SHOVEY_HEIGHT}
+    }
+    // The stone grey behind the cells hides the seams between scaled tiles,
+    // whatever the host paints around the game.
+    grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = SHOVEY_WIDTH, .rows = SHOVEY_HEIGHT,
+            .tiles = sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
+            .fill = Color.{170, 174, 173, 255}, .label = "Shovey"})
+    // A held shot shows as a small ball at Shovey's corner.
+    if (game.powers & SHOVEY_AMMO) != 0 && game.player >= 0 && game.player < SHOVEY_CELLS {
+        cell := TileMapCell(grid, game.player)
+        s := cell.width
+        Image(session, ImageProps.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = sprite_files[SPRITE_SHOT],
+                .alt_text = ifx cast(s64)SPRITE_SHOT < names.count then names[SPRITE_SHOT] else "",
+                .bounds = Rectangle.{cell.x + s * 0.58, cell.y + s * 0.58, s * 0.4, s * 0.4},
+                .fit = ImageFit.ImageFitContain, .smooth = true})
+    }
+    return grid
+}

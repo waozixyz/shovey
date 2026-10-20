@@ -1,0 +1,633 @@
+[editor_choose]
+Выбери выпуск, уровни которого хочешь посмотреть, создать или изменить.
+---
+[editor_classic]
+Classic
+---
+[editor_island]
+Island
+---
+[editor_custom_count]
+Твои уровни: {n}
+---
+[editor_explore]
+Обзор
+---
+[editor_export]
+Экспорт
+---
+[editor_back]
+Назад
+---
+[editor_publish]
+Опубликовать
+---
+[editor_your_levels]
+Твои уровни
+---
+[editor_new_level]
+Новый уровень
+---
+[editor_not_proven]
+Ещё не доказан
+---
+[editor_proven]
+Проходимость доказана
+---
+[editor_completed]
+Пройден тобой
+---
+[editor_by_author]
+Автор: @{s}
+---
+[editor_story_levels]
+Уровни сюжета
+---
+[editor_story_named]
+{n} · {s}
+---
+[editor_story_level]
+Уровень сюжета {n}
+---
+[editor_story_note]
+Уровень сюжета {n}. Если рисовать на нём, появится твоя собственная копия; сам уровень сюжета не изменится.
+---
+[editor_custom_level]
+Уровень {n}
+---
+[editor_copy_of]
+Копия уровня сюжета {n}
+---
+[editor_levels]
+Уровни
+---
+[editor_undo]
+Отменить
+---
+[editor_play]
+Играть
+---
+[editor_board]
+Поле: нажми или проведи, чтобы рисовать
+---
+[editor_pick]
+Взять
+---
+[editor_pick_hint]
+Нажми на поле, чтобы взять его деталь.
+---
+[editor_name]
+Название
+---
+[editor_name_hint]
+Назови этот уровень
+---
+[editor_delete]
+Удалить
+---
+[editor_delete_confirm]
+Удалить сейчас
+---
+[editor_delete_again]
+Нажми «Удалить сейчас», чтобы удалить этот уровень навсегда.
+---
+[editor_copied]
+Сохранено как твой новый уровень.
+---
+[editor_full]
+Для новых уровней больше нет места.
+---
+[editor_unreadable]
+Не удалось прочитать этот уровень.
+---
+[editor_check_waiting]
+Проверка скоро начнётся…
+---
+[editor_checking]
+Проверяю, можно ли пройти… позиций: {n}
+---
+[editor_never]
+Пройти нельзя: испробованы все достижимые позиции.
+---
+[editor_unknown]
+Ещё не доказан. Пройди его в режиме «Играть», чтобы доказать.
+---
+[editor_proven_solver]
+Проходимость доказана: решатель его прошёл.
+---
+[editor_proven_played]
+Проходимость доказана: ты его прошёл.
+---
+[editor_proven_download]
+Проходимость доказана: его маршрут прошёл его здесь.
+---
+[editor_edit]
+Изменить
+---
+[editor_testing]
+Проверка
+---
+[editor_restart]
+Заново
+---
+[editor_throw]
+Бросить
+---
+[editor_controls]
+Стрелки или WASD, свайп, нажатие или джойстик; пробел бросает в Classic
+---
+[editor_won]
+Пройдено!
+---
+[editor_won_proof]
+Пройдено! Твой маршрут доказывает этот уровень.
+---
+[editor_lost]
+Слишком большой заряд! Начни заново или отмени ход.
+---
+[editor_ready_classic]
+Всё готово. Иди домой!
+---
+[editor_ready_island]
+Все цели выполнены. Войди в хижину снизу.
+---
+[editor_copy]
+Копировать
+---
+[editor_copied_text]
+Скопировано.
+---
+[editor_export_note]
+Доказанных уровней: {n}, в виде текста для разработчика Shovey. Скопируй и отправь его.
+---
+[editor_export_none]
+Доказанных уровней пока нет. Уровень засчитывается, когда его прошёл решатель или ты.
+---
+[editor_export_full]
+Слишком много уровней для одного экспорта.
+---
+[editor_classic_levels]
+Мои уровни Classic
+---
+[editor_island_levels]
+Мои уровни Island
+---
+[editor_publish_note]
+Поделись своими доказанными уровнями одной коллекцией.
+---
+[editor_collection_title]
+Название коллекции
+---
+[editor_public]
+Для всех
+---
+[editor_friends]
+Для друзей
+---
+[editor_private]
+Личная
+---
+[editor_publish_now]
+Опубликовать
+---
+[editor_publish_again]
+Опубликовать снова
+---
+[editor_unpublish]
+Снять с публикации
+---
+[editor_publish_levels]
+Уровни в этой коллекции
+---
+[editor_publish_none]
+Выбери хотя бы один доказанный уровень.
+---
+[editor_title_needed]
+Дай коллекции название.
+---
+[editor_published]
+Опубликовано.
+---
+[editor_unpublished]
+Больше не опубликовано.
+---
+[editor_explore_note]
+Ищи коллекции уровней по псевдониму или публичному ID автора, а поиск без текста покажет самые новые.
+---
+[editor_search_label]
+Псевдоним или публичный ID
+---
+[editor_search_hint]
+псевдоним или ID
+---
+[editor_search]
+Найти
+---
+[editor_found]
+Выбери коллекцию, чтобы добавить её уровни к своим.
+---
+[editor_found_none]
+Коллекции не найдены.
+---
+[editor_result_detail]
+Уровней: {n} · {s}
+---
+[editor_verifying]
+Проверяю маршруты… добавлено уровней: {n}
+---
+[editor_downloaded]
+К твоим добавлено уровней: {n}. {s}
+---
+[editor_refused]
+Отклонено: {n}, их маршруты не приводят к победе.
+---
+[editor_share_waiting]
+Жду ответа…
+---
+[editor_share_unavailable]
+Здесь нельзя делиться коллекциями уровней.
+---
+[editor_share_rejected]
+Запрос отклонён.
+---
+[editor_share_failed]
+Что-то пошло не так. Попробуй ещё раз.
+---
+[editor_share_invalid]
+Не удалось прочитать эту коллекцию.
+---
+[editor_signed_out]
+Войди в аккаунт, чтобы делиться коллекциями уровней.
+---
+[editor_offline]
+Нет сети. Попробуй позже.
+---
+[editor_not_found]
+Этой коллекции больше нет.
+---
+[editor_forbidden]
+Эта коллекция тебе недоступна.
+---
+[editor_too_large]
+Коллекция слишком велика, чтобы ею поделиться.
+---
+[editor_invalid]
+Коллекция не принята.
+---
+[editor_busy]
+Сервис занят. Попробуй ещё раз чуть позже.
+---
+[editor_save_failed]
+Не удалось сохранить. Следующее изменение попробует снова.
+---
+[editor_shovey]
+Пуши
+---
+[editor_floor]
+Пол
+---
+[editor_wall]
+Стена
+---
+[editor_home]
+Дом
+---
+[editor_crate]
+Ящик
+---
+[editor_crate_goal]
+Место для ящика
+---
+[editor_red_ball]
+Красный шар
+---
+[editor_blue_ball]
+Синий шар
+---
+[editor_green_ball]
+Зелёный шар
+---
+[editor_red_pit]
+Красная лунка
+---
+[editor_blue_pit]
+Синяя лунка
+---
+[editor_green_pit]
+Зелёная лунка
+---
+[editor_red_paint]
+Красная краска
+---
+[editor_blue_paint]
+Синяя краска
+---
+[editor_green_paint]
+Зелёная краска
+---
+[editor_star_block]
+Звёздный блок
+---
+[editor_apple]
+Яблоко
+---
+[editor_plate]
+Нажимная плита
+---
+[editor_gate]
+Ворота
+---
+[editor_key]
+Ключ
+---
+[editor_lock]
+Замок
+---
+[editor_teleporter]
+Телепорт
+---
+[editor_trail]
+След
+---
+[editor_reverse]
+Обратное управление
+---
+[editor_ammo]
+Снаряды
+---
+[editor_target]
+Мишень
+---
+[editor_charge]
+Зарядное поле
+---
+[editor_moving_block]
+Движущийся блок
+---
+[editor_fresh_path]
+Путь блока
+---
+[editor_used_path]
+Пройденный путь блока
+---
+[editor_sensor]
+Датчик
+---
+[editor_closed_sensor]
+Закрытый датчик
+---
+[editor_slide]
+Скольжение
+---
+[editor_red_block]
+Красный цветной блок
+---
+[editor_blue_block]
+Синий цветной блок
+---
+[editor_yellow_block]
+Жёлтый цветной блок
+---
+[editor_block_goal]
+Место для цветного блока
+---
+[editor_mirror_shovey]
+Зеркальный Пуши
+---
+[editor_hut]
+Хижина
+---
+[editor_water]
+Вода
+---
+[editor_sand]
+Песок
+---
+[editor_meadow]
+Луг
+---
+[editor_clear]
+Убрать предмет
+---
+[editor_pebbles]
+Галька
+---
+[editor_jade_bed]
+Клумба с нефритовыми цветами
+---
+[editor_red_bed]
+Клумба с красными цветами
+---
+[editor_barrel_spot]
+Место для бочки
+---
+[editor_red_spot]
+Место для красной статуи
+---
+[editor_blue_spot]
+Место для синей статуи
+---
+[editor_green_spot]
+Место для зелёной статуи
+---
+[editor_sunken_crate]
+Затонувший ящик
+---
+[editor_spike_plate]
+Плита с шипами
+---
+[editor_well]
+Колодец
+---
+[editor_farm]
+Грядка
+---
+[editor_planted]
+Засеянная грядка
+---
+[editor_blast_spot]
+Место взрыва
+---
+[editor_item_teleporter]
+Телепорт для предметов
+---
+[editor_raft]
+Плот
+---
+[editor_ice]
+Тонкий лёд
+---
+[editor_watch_plate]
+Плита-страж
+---
+[editor_hidden_path]
+Скрытая тропа
+---
+[editor_channel]
+Желоб для кокосов
+---
+[editor_channel_end]
+Конец желоба
+---
+[editor_yellow_ring]
+Кольцо жёлтых цветов
+---
+[editor_red_ring]
+Кольцо красных цветов
+---
+[editor_barrel]
+Бочка
+---
+[editor_red_statue]
+Красная статуя
+---
+[editor_blue_statue]
+Синяя статуя
+---
+[editor_green_statue]
+Зелёная статуя
+---
+[editor_palm]
+Пальма
+---
+[editor_coconut_palm]
+Кокосовая пальма
+---
+[editor_boulder]
+Валун
+---
+[editor_snail]
+Улитка
+---
+[editor_buoy]
+Буй
+---
+[editor_sea_star]
+Морская звезда
+---
+[editor_baby_crab]
+Крабик
+---
+[editor_mother_crab]
+Мама-краб
+---
+[editor_happy_crab]
+Довольная мама-краб
+---
+[editor_chest]
+Сундук с сокровищами
+---
+[editor_seed]
+Семя
+---
+[editor_bottle]
+Бутылка
+---
+[editor_coconut]
+Кокос
+---
+[editor_coconut_hole]
+Яма для кокоса
+---
+[editor_bomb]
+Бомба
+---
+[editor_spring]
+Цветок-пружина
+---
+[editor_slingshot]
+Рогатка
+---
+[editor_leaf_up]
+Лист вверх
+---
+[editor_leaf_right]
+Лист вправо
+---
+[editor_leaf_down]
+Лист вниз
+---
+[editor_leaf_left]
+Лист влево
+---
+[editor_turner_up]
+Поворот листьев, вверх
+---
+[editor_turner_right]
+Поворот листьев, вправо
+---
+[editor_turner_down]
+Поворот листьев, вниз
+---
+[editor_turner_left]
+Поворот листьев, влево
+---
+[editor_pearl]
+Жемчужина
+---
+[editor_lantern]
+Каменный фонарь
+---
+[editor_clam]
+Моллюск
+---
+[editor_coin]
+Монета
+---
+[editor_pirate]
+Пират
+---
+[editor_stall]
+Лавка пирата
+---
+[editor_spikes]
+Шипы
+---
+[editor_red_shell]
+Сердитая красная ракушка
+---
+[editor_blue_shell]
+Сонная синяя ракушка
+---
+[editor_yellow_shell]
+Весёлая жёлтая ракушка
+---
+[editor_stone_1]
+Камень с числом 1
+---
+[editor_stone_2]
+Камень с числом 2
+---
+[editor_stone_3]
+Камень с числом 3
+---
+[editor_stone_4]
+Камень с числом 4
+---
+[editor_stone_5]
+Камень с числом 5
+---
+[editor_yellow_flower]
+Жёлтый цветок
+---
+[editor_red_flower]
+Красный цветок
+---
+[editor_octopus]
+Осьминог
+---
+[editor_string_post]
+Столбик для нити
+---
+[editor_shell_turning]
+Ракушка меняет цвет
+---
+[editor_yellow_turning]
+Ракушка желтеет
+---
+[editor_ground]
+Местность
+---
+[editor_object]
+Предмет
+---

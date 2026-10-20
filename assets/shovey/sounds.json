@@ -1,0 +1,78 @@
+{
+  "generator": "OpenRouter audio/speech (https://openrouter.ai/api/v1/audio/speech)",
+  "method": "Each sound was generated for Shovey from its prompt, the best of several candidates kept, then converted with ffmpeg to mono 16-bit PCM WAV at 22050 Hz: trimmed to the sound, faded in and out and peak-normalized to -3 dBFS.",
+  "files": [
+    {
+      "file": "sounds/push.wav",
+      "what": "Shovey pushes a ball, crate, star or colour block",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "Foley recording: a small wooden crate nudged one step across smooth stone paving, a soft short muted scuff, warm and quiet, 0.3 seconds.",
+      "duration": 0.405,
+      "sha256": "764676921f2f11807c7600fd4bf22bed908723c2bda5224cb9a39fa16291e461"
+    },
+    {
+      "file": "sounds/pit.wav",
+      "what": "a ball drops into its matching pit",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "A small wooden ball dropping into a shallow stone hole, a soft hollow plonk, warm and muted, 0.4 seconds.",
+      "duration": 0.306,
+      "sha256": "d01ca7ba53b78d18662048c5aa98e443c7562af942eee8138c405b9636265a9c"
+    },
+    {
+      "file": "sounds/goal.wav",
+      "what": "a crate or colour block reaches its goal, two stars meet, or a target or the shadow is cleared",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "Foley recording: a small brass bell struck once softly, a warm tone with a natural gentle decay, 0.6 seconds.",
+      "duration": 0.475,
+      "sha256": "c30f40dbe9122851b7aaa43ac863f79f178d61fa38f6094442224998067f11c9"
+    },
+    {
+      "file": "sounds/pickup.wav",
+      "what": "Shovey picks up an apple, a key or a power",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "Foley recording: a small smooth pebble tapped once on a wooden bowl, a soft light knock with a gentle ring, 0.25 seconds.",
+      "duration": 0.305,
+      "sha256": "3d80a91d674cdfec6fdcbcc51abb807e60cc623dab06bfc6e375149f6249d954"
+    },
+    {
+      "file": "sounds/door.wav",
+      "what": "a lock or a door opens",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "A small heavy stone slab sliding open with a soft low muted rumble, calm, 0.5 seconds.",
+      "duration": 0.6,
+      "sha256": "993caff3286391856f08a5488fa44755c431cc3ac92a0fc84a9ed6757b4114dd"
+    },
+    {
+      "file": "sounds/teleport.wav",
+      "what": "Shovey steps through a portal",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "A soft breathy whoosh like a gentle gust of wind through a stone archway, with a faint soft chime, calm, 0.5 seconds.",
+      "duration": 0.289,
+      "sha256": "8babe7c3a125889eb6c1a5acc297bf5b6e28abc9050ed9a70d200c9d6fca14b8"
+    },
+    {
+      "file": "sounds/shot.wav",
+      "what": "Shovey throws a stone",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "A soft quick whoosh of a small pebble tossed through the air, muted and light, 0.3 seconds.",
+      "duration": 0.38,
+      "sha256": "9cc7dc6cd6eb56bed52fe56e54de053fdd15c1c7e6f5b68379c0e5619408361e"
+    },
+    {
+      "file": "sounds/won.wav",
+      "what": "the puzzle is solved",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "A short peaceful rising arpeggio of three notes on a soft felt piano, warm and quiet, 1.3 seconds.",
+      "duration": 1.069,
+      "sha256": "92b834e3e2e5fc8eecc733782a30007a75755a26c429f1c69395763604611ee5"
+    },
+    {
+      "file": "sounds/lost.wav",
+      "what": "the puzzle is lost",
+      "model": "bytedance-seed/seed-audio-1-0",
+      "prompt": "Two soft wooden marimba notes falling in pitch, the second lower than the first, low and gentle, 0.8 seconds.",
+      "duration": 0.58,
+      "sha256": "1a32c25819e968f0adfe0c59d447697ce31599b113c162d8e38b7fce2eae28cf"
+    }
+  ]
+}

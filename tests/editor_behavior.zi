@@ -1,0 +1,316 @@
+// The editor's rules apart from drawing: painting, one Shovey, Island's
+// coast, undo, the records custom levels live in, proof by play and by the
+// Ziran solver, the export, and shared collections.
+#import "std/json_scan"
+#import "std/text_buffer"
+#import, file "../apps/shovey/engine.zi";
+#import, file "../apps/shovey/island/island_engine.zi";
+#import, file "../apps/shovey/levels.zi";
+#import, file "../apps/shovey/island_levels.zi";
+#import, file "../apps/shovey/editor/coast.zi";
+#import, file "../apps/shovey/editor/edit.zi";
+#import, file "../apps/shovey/editor/sharing.zi";
+#import, file "../apps/shovey/solver/solver.zi";
+
+play: EditPlay;
+level: EditLevel;
+other: EditLevel;
+catalog: EditCatalog;
+restored: EditCatalog;
+history: EditHistory;
+text_bytes: [300000]u8;
+request_bytes: [300000]u8;
+document: SharingDocument;
+metas: [4]SharingMeta;
+
+Count :: (board: *EditBoard, kind: u8) -> s32 {
+    count: s32 = 0
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if (ifx board.island then board.objects[at] else board.ground[at]) == kind { count += 1 }
+    }
+    return count
+}
+
+// Shovey is always exactly one; painting him moves him, nothing paints over
+// him, and Classic's wall ring stays.
+PaintChecks :: () -> s32 {
+    board := EditNewBoard(false)
+    if EditShovey(*board) != 104 || Count(*board, 10) != 1 || Count(*board, 7) != 1 { return 10 }
+    if !EditPaint(*board, 10, 30) || EditShovey(*board) != 30 || Count(*board, 10) != 1 || board.ground[104] != 0 { return 11 }
+    if EditPaint(*board, 0, 30) || EditPaint(*board, 9, 30) || EditShovey(*board) != 30 { return 12 }
+    if EditPaint(*board, 9, 0) || EditPaint(*board, 0, 239) || board.ground[0] != 12 { return 13 }
+    if !EditPaint(*board, 9, 50) || board.ground[50] != 9 || EditPaint(*board, 9, 50) { return 14 }
+    if EditPaint(*board, 22, 51) || EditPaint(*board, 41, 51) || EditPick(*board, 50) != 9 { return 15 }
+    isle := EditNewBoard(true)
+    shovey := EditShovey(*isle)
+    if shovey != 127 || Count(*isle, 56) != 1 || Count(*isle, 75) != 1 { return 16 }
+    // Shovey stays on land, objects never cover him, and water washes objects away.
+    if EditPaint(*isle, 0, shovey) || EditPaint(*isle, 57, shovey) || EditPaint(*isle, EDIT_CLEAR, shovey) { return 17 }
+    if EditPaint(*isle, 56, 0) || EditShovey(*isle) != shovey { return 18 }
+    if !EditPaint(*isle, 57, 128) || isle.objects[128] != 57 || !EditPaint(*isle, EDIT_CLEAR, 128) || isle.objects[128] != 0 { return 19 }
+    if !EditPaint(*isle, 57, 128) || !EditPaint(*isle, 0, 128) || isle.objects[128] != 0 || isle.ground[128] != 0 { return 20 }
+    if !EditPaint(*isle, 56, 106) || Count(*isle, 56) != 1 || EditShovey(*isle) != 106 { return 21 }
+    if EditPick(*isle, 106) != 56 || EditPick(*isle, 65) != 1 || EditPick(*isle, 0) != 0 { return 22 }
+    return 0
+}
+
+// Painting sand, meadow or water chooses every shore and bank by itself, and
+// the coast rule redraws the shipped islands from plain sand and meadow.
+CoastChecks :: () -> s32 {
+    isle := EditNewBoard(true)
+    // The new island's corners and sides.
+    if isle.ground[65] != 2 || isle.ground[74] != 3 || isle.ground[174] != 4 || isle.ground[165] != 5 { return 30 }
+    if isle.ground[66] != 8 || isle.ground[85] != 12 || isle.ground[94] != 9 || isle.ground[166] != 11 { return 31 }
+    // A meadow in the middle gets banks; filling the gap back makes plain sand.
+    unused EditPaint(*isle, 13, 109)
+    if isle.ground[109] != 18 { return 32 }
+    // Two meadow cells side by side make a narrow strip with banks above and below.
+    unused EditPaint(*isle, 13, 110)
+    if isle.ground[109] != 18 || isle.ground[110] != 18 { return 33 }
+    unused EditPaint(*isle, 1, 109)
+    unused EditPaint(*isle, 1, 110)
+    if isle.ground[109] != 1 || isle.ground[110] != 1 { return 34 }
+    // Water bites a bay into the shore; the neighbours follow.
+    unused EditPaint(*isle, 0, 70)
+    if isle.ground[70] != 0 || isle.ground[90] != 8 || isle.ground[69] != 3 || isle.ground[71] != 2 { return 35 }
+    total: s32 = 0
+    differ: s32 = 0
+    for number: cast(s32)1..IslandLevelCount() {
+        shipped: EditBoard
+        if !EditStoryBoard(*shipped, true, number) { return 36 }
+        plain := shipped
+        for at: cast(s32)0..EDIT_CELLS - 1 {
+            kind := cast(s32)plain.ground[at]
+            if CoastSand(kind) { plain.ground[at] = 1 }
+            if CoastMeadow(kind) { plain.ground[at] = 13 }
+        }
+        CoastAll(plain.ground[:])
+        for at: cast(s32)0..EDIT_CELLS - 1 {
+            kind := cast(s32)shipped.ground[at]
+            if !CoastSand(kind) && !CoastMeadow(kind) { continue }
+            total += 1
+            if plain.ground[at] != shipped.ground[at] { differ += 1 }
+        }
+    }
+    // Hand-placed tiles differ in at most one cell in five hundred.
+    if total < 1000 || differ * 500 > total { return 37 }
+    return 0
+}
+
+UndoChecks :: () -> s32 {
+    board := EditNewBoard(false)
+    first := board
+    EditRemember(*history, *board)
+    unused EditPaint(*board, 9, 50)
+    unused EditPaint(*board, 9, 51)
+    EditRemember(*history, *board)
+    unused EditPaint(*board, 12, 52)
+    if !EditUndo(*history, *board) || board.ground[52] != 0 || board.ground[51] != 9 { return 40 }
+    if !EditUndo(*history, *board) || !EditSame(*board, *first) || EditUndo(*history, *board) { return 41 }
+    return 0
+}
+
+RecordChecks :: () -> s32 {
+    catalog = EditCatalog.{.island = true, .next = 1}
+    a := EditAdd(*catalog, 12, "Crates in a row")
+    b := EditAdd(*catalog, 0, "Ünïcødé — 島")
+    if a != 0 || b != 1 || catalog.levels[1].id != 2 || catalog.next != 3 { return 50 }
+    catalog.levels[0].proof = EDIT_PROOF_SOLVER
+    catalog.levels[1].proof = EDIT_PROOF_DOWNLOAD
+    catalog.levels[1].completed = true
+    EditSetAuthor(*catalog.levels[1], "ada_1")
+    text := EditIndexText(*catalog)
+    if text == "" || !EditIndexRead(*restored, true, text) || restored.count != 2 || restored.next != 3 { return 51 }
+    if EditField(restored.levels[0].name[:], restored.levels[0].name_length) != "Crates in a row" || restored.levels[0].from != 12 ||
+    restored.levels[0].proof != EDIT_PROOF_SOLVER || restored.levels[0].completed { return 52 }
+    if EditField(restored.levels[1].name[:], restored.levels[1].name_length) != "Ünïcødé — 島" || EditField(restored.levels[1].author[:], restored.levels[1].author_length) != "ada_1" ||
+    restored.levels[1].proof != EDIT_PROOF_DOWNLOAD || !restored.levels[1].completed { return 53 }
+    // A malformed index leaves the catalog as it was.
+    if EditIndexRead(*restored, true, "I1\nlevel x") || restored.count != 2 { return 54 }
+    if !EditIndexRead(*restored, false, "") || restored.count != 0 { return 55 }
+    EditRemove(*catalog, 0)
+    if catalog.count != 1 || catalog.levels[0].id != 2 { return 56 }
+    // Names stay one line and never end inside a character.
+    EditSetName(*catalog.levels[0], "two\nlines")
+    if EditField(catalog.levels[0].name[:], catalog.levels[0].name_length) != "two" { return 57 }
+    long := "ééééééééééééééééééééééééééééééééééé"
+    EditSetName(*catalog.levels[0], long)
+    if catalog.levels[0].name_length != 64 { return 58 }
+    if EditLevelRecord(true, 7) != "island-7" || EditLevelRecord(false, 12) != "classic-12" { return 59 }
+    level.board = EditNewBoard(true)
+    unused EditSetRoute(*level, "0123")
+    if !EditLevelRead(*other, true, EditLevelText(*level)) || !EditSame(*other.board, *level.board) ||
+    EditField(other.route[:], other.route_length) != "0123" { return 60 }
+    if EditLevelRead(*other, false, EditLevelText(*level)) || EditLevelRead(*other, true, "E1\nroute 0") { return 61 }
+    return 0
+}
+
+// A win in play records the route that proves the board; undo takes moves
+// back out of it, and the route replays to the same win.
+PlayChecks :: () -> s32 {
+    board := EditNewBoard(false)
+    if !EditPlayStart(*play, *board) { return 70 }
+    if !EditPlayAct(*play, 2) || !EditPlayAct(*play, 2) || play.route_length != 2 { return 71 }
+    if !EditPlayUndo(*play) || play.route_length != 1 || play.classic.player != 105 { return 72 }
+    for step: cast(s32)0..9 { unused EditPlayAct(*play, 2) }
+    if !EditPlayProven(*play) || EditField(play.route[:], play.route_length) != "22222222222" { return 73 }
+    at: s32 = 0
+    if EditReplay(*play, *board, "22222222222", *at, 100) != 1 { return 74 }
+    at = 0
+    if EditReplay(*play, *board, "2222222222", *at, 100) != 0 { return 75 }
+    at = 0
+    if EditReplay(*play, *board, "222222222x2", *at, 100) != 0 { return 76 }
+    // A long replay waits for the next call.
+    at = 0
+    if EditReplay(*play, *board, "22222222222", *at, 4) != -1 || at != 4 { return 77 }
+    if EditReplay(*play, *board, "22222222222", *at, 100) != 1 { return 78 }
+    isle := EditNewBoard(true)
+    if !EditPlayStart(*play, *isle) || EditPlayAct(*play, -1) { return 79 }
+    // Into the hut from below: right five times, then up twice.
+    for step: cast(s32)0..4 { unused EditPlayAct(*play, 2) }
+    unused EditPlayAct(*play, 1)
+    if EditPlayWon(*play) || !EditPlayAct(*play, 1) || !EditPlayProven(*play) || EditField(play.route[:], play.route_length) != "2222211" { return 80 }
+    return 0
+}
+
+Solve :: (island: bool, board: string, budget: s64) -> s32 {
+    if !SolverStart(island, board) { return SOLVER_INVALID }
+    spent: s64 = 0
+    while SolverStatus() == SOLVER_RUNNING && spent < budget { SolverRun(5000); spent += 5000 }
+    return SolverStatus()
+}
+
+// The solver's routes are the engine's own moves, replayed to a win before
+// they count; a board without a way home can never be won.
+SolverChecks :: () -> s32 {
+    board := EditNewBoard(false)
+    if Solve(false, EditBoardHex(*board), 2000000) != SOLVER_WON { return 90 }
+    at: s32 = 0
+    if EditReplay(*play, *board, SolverRoute(), *at, 100000) != 1 { return 91 }
+    // Walled in: every reachable state is seen and none wins.
+    unused EditPaint(*board, 12, 103)
+    unused EditPaint(*board, 12, 105)
+    unused EditPaint(*board, 12, 84)
+    unused EditPaint(*board, 12, 124)
+    if Solve(false, EditBoardHex(*board), 2000000) != SOLVER_NEVER || SolverRoute() != "" { return 92 }
+    checks: [4]s32 = .[2, 12, 1, 40]
+    for index: cast(s32)0..3 {
+        island := index >= 2
+        story: EditBoard
+        if !EditStoryBoard(*story, island, checks[index]) { return 93 }
+        if Solve(island, EditBoardHex(*story), 4000000) != SOLVER_WON { return 94 + index }
+        at = 0
+        if EditReplay(*play, *story, SolverRoute(), *at, 100000) != 1 { return 98 }
+    }
+    isle := EditNewBoard(true)
+    if Solve(true, EditBoardHex(*isle), 2000000) != SOLVER_WON { return 99 }
+    if SolverStart(false, "0c0c") || SolverStatus() != SOLVER_INVALID { return 100 }
+    return 0
+}
+
+ExportChecks :: () -> s32 {
+    writer := EditWriter.{.bytes = text_bytes[:]}
+    summary := EditSummary.{.id = 3, .from = 12}
+    EditSetName(*summary, "My \"best\" level")
+    level.board = EditNewBoard(false)
+    unused EditSetRoute(*level, "22222222222")
+    EditExportBegin(*writer)
+    EditExportLevel(*writer, *summary, *level, true, "")
+    summary.from = 0
+    level.board = EditNewBoard(true)
+    unused EditSetRoute(*level, "2222211")
+    EditExportLevel(*writer, *summary, *level, false, "")
+    EditExportEnd(*writer)
+    text := TextView(text_bytes[0:writer.length])
+    list := FieldAt(text, 0, "levels")
+    if writer.full || ArrayCount(text, list) != 2 { return 110 }
+    first := ElementAt(text, list, 0)
+    second := ElementAt(text, list, 1)
+    number := ReadNumber(text, FieldAt(text, first, "number"))
+    if !number.valid || number.value != 12.0 || FieldAt(text, second, "number") >= 0 { return 111 }
+    if ArrayCount(text, FieldAt(text, first, "cells")) != 12 || ArrayCount(text, FieldAt(text, second, "objects")) != 12 { return 112 }
+    name: [64]u8
+    if SharingText(text, first, "name", name[:]) != 15 || TextView(name[0:15]) != "My \"best\" level" { return 113 }
+    return 0
+}
+
+ShareChecks :: () -> s32 {
+    for edition: cast(s32)0..1 {
+        island := edition == 1
+        writer := EditWriter.{.bytes = text_bytes[:]}
+        SharingDocumentBegin(*writer, island, "Weekend «puzzles»")
+        level.board = EditNewBoard(island)
+        unused EditSetRoute(*level, ifx island then "2222211" else "22222222222")
+        SharingDocumentLevel(*writer, "First", *level, true)
+        unused EditSetRoute(*level, "2")
+        SharingDocumentLevel(*writer, "Unproven", *level, false)
+        SharingDocumentEnd(*writer)
+        text := TextView(text_bytes[0:writer.length])
+        if writer.full || !SharingDocumentRead(text, 0, *document) || document.island != island || document.count != 2 { return 120 }
+        if TextView(document.title[0:document.title_length]) != "Weekend «puzzles»" { return 121 }
+        name: [EDIT_NAME]u8
+        name_length: s32
+        if !SharingDocumentLevelRead(text, *document, 0, name[:], *name_length, *other) ||
+        TextView(name[0:name_length]) != "First" || !EditSame(*other.board, *level.board) { return 122 }
+        // The first route wins; the second does not, and is refused.
+        at: s32 = 0
+        if EditReplay(*play, *other.board, EditField(other.route[:], other.route_length), *at, 100000) != 1 { return 123 }
+        if !SharingDocumentLevelRead(text, *document, 1, name[:], *name_length, *other) { return 124 }
+        at = 0
+        if EditReplay(*play, *other.board, EditField(other.route[:], other.route_length), *at, 100000) != 0 { return 125 }
+        if SharingDocumentLevelRead(text, *document, 2, name[:], *name_length, *other) { return 126 }
+        // Publishing embeds the collection as an object.
+        request := EditWriter.{.bytes = request_bytes[:]}
+        SharingPublishRequest(*request, "Weekend", SHARING_FRIENDS, text, "")
+        sent := TextView(request_bytes[0:request.length])
+        embedded := FieldAt(sent, 0, "document")
+        if embedded < 0 || !SharingDocumentRead(sent, embedded, *document) || FieldAt(sent, 0, "id") >= 0 { return 127 }
+        visibility: [16]u8
+        if SharingText(sent, 0, "visibility", visibility[:]) != 7 || TextView(visibility[0:7]) != "friends" { return 128 }
+    }
+    // A collection of another format, edition or shape is refused.
+    if SharingDocumentRead("{\"format\":\"other\",\"edition\":\"classic\",\"title\":\"x\",\"levels\":[]}", 0, *document) { return 129 }
+    if SharingDocumentRead("{\"format\":\"shovey-levels-1\",\"edition\":\"space\",\"title\":\"x\",\"levels\":[]}", 0, *document) { return 130 }
+    if !SharingDocumentRead("{\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"x\",\"levels\":[{\"name\":\"a\",\"cells\":[\"00\"],\"route\":\"2\"}]}", 0, *document) { return 131 }
+    name: [EDIT_NAME]u8
+    name_length: s32
+    if SharingDocumentLevelRead("{\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"x\",\"levels\":[{\"name\":\"a\",\"cells\":[\"00\"],\"route\":\"2\"}]}", *document, 0, name[:], *name_length, *other) { return 132 }
+    // Requests and replies.
+    writer := EditWriter.{.bytes = request_bytes[:]}
+    SharingFindRequest(*writer, "  @ada  ")
+    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"find\",\"format\":\"shovey-levels-1\",\"query\":\"@ada\"}" { return 133 }
+    writer = EditWriter.{.bytes = request_bytes[:]}
+    SharingStatusRequest(*writer, 42)
+    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"status\",\"request\":42}" { return 134 }
+    writer = EditWriter.{.bytes = request_bytes[:]}
+    SharingFetchRequest(*writer, "p-1")
+    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"fetch\",\"id\":\"p-1\"}" { return 135 }
+    writer = EditWriter.{.bytes = request_bytes[:]}
+    SharingUnpublishRequest(*writer, "p-1")
+    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"unpublish\",\"id\":\"p-1\"}" { return 136 }
+    reply := SharingReplyRead("{\"status\":\"pending\",\"request\":7}")
+    if reply.status != SHARING_PENDING || reply.request != 7 { return 137 }
+    reply = SharingReplyRead("{\"status\":\"failed\",\"error\":\"signed-out\"}")
+    if reply.status != SHARING_FAILED || EditField(reply.error[:], reply.error_length) != "signed-out" { return 138 }
+    if SharingReplyRead("{\"status\":\"unavailable\"}").status != SHARING_UNAVAILABLE { return 139 }
+    if SharingReplyRead("{\"status\":\"rejected\",\"error\":\"too big\"}").status != SHARING_REJECTED { return 140 }
+    if SharingReplyRead("not json").status != SHARING_MALFORMED || SharingReplyRead("{\"status\":\"maybe\"}").status != SHARING_MALFORMED { return 141 }
+    found := "{\"status\":\"done\",\"publications\":[{\"id\":\"p-1\",\"author\":{\"alias\":\"ada\",\"public_id\":\"ab12\"},\"format\":\"shovey-levels-1\",\"title\":\"Crates\",\"levels\":3,\"visibility\":\"friends\",\"updated_at\":1760000000,\"mine\":true},{\"id\":\"p-2\",\"author\":{\"alias\":\"bo\",\"public_id\":\"cd\"},\"format\":\"chess-1\",\"title\":\"x\",\"levels\":1,\"visibility\":\"public\",\"updated_at\":1,\"mine\":false}]}"
+    if SharingReplyRead(found).status != SHARING_DONE || SharingFindRead(found, metas[:]) != 1 { return 142 }
+    if EditField(metas[0].id[:], metas[0].id_length) != "p-1" || EditField(metas[0].alias[:], metas[0].alias_length) != "ada" || EditField(metas[0].title[:], metas[0].title_length) != "Crates" ||
+    metas[0].levels != 3 || metas[0].visibility != SHARING_FRIENDS || !metas[0].mine || metas[0].updated_at != 1760000000 { return 143 }
+    if SharingFindRead("{\"status\":\"done\"}", metas[:]) != -1 { return 144 }
+    if !SharingPublicationRead("{\"status\":\"done\",\"publication\":{\"id\":\"p-9\",\"author\":{\"alias\":\"ada\",\"public_id\":\"ab\"},\"format\":\"shovey-levels-1\",\"title\":\"T\",\"levels\":1,\"visibility\":\"private\",\"updated_at\":5,\"mine\":true}}", *metas[1]) ||
+    EditField(metas[1].id[:], metas[1].id_length) != "p-9" || metas[1].visibility != SHARING_PRIVATE { return 145 }
+    return 0
+}
+
+#program_export
+Check :: () -> s32 {
+    checks: [8]s32 = .[PaintChecks(), CoastChecks(), UndoChecks(), RecordChecks(), PlayChecks(), ExportChecks(),
+    ShareChecks(), SolverChecks()]
+    for result: checks {
+        if result != 0 { return result }
+    }
+    return 0
+}

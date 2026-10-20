@@ -1,0 +1,633 @@
+[editor_choose]
+Choose the edition whose levels you want to view, make or edit.
+---
+[editor_classic]
+Classic
+---
+[editor_island]
+Island
+---
+[editor_custom_count]
+Your levels: {n}
+---
+[editor_explore]
+Explore
+---
+[editor_export]
+Export
+---
+[editor_back]
+Back
+---
+[editor_publish]
+Publish
+---
+[editor_your_levels]
+Your levels
+---
+[editor_new_level]
+New level
+---
+[editor_not_proven]
+Not proven yet
+---
+[editor_proven]
+Proven winnable
+---
+[editor_completed]
+Won by you
+---
+[editor_by_author]
+By @{s}
+---
+[editor_story_levels]
+Story levels
+---
+[editor_story_named]
+{n} · {s}
+---
+[editor_story_level]
+Story level {n}
+---
+[editor_story_note]
+Story level {n}. Painting on it makes your own copy; the story level stays as it is.
+---
+[editor_custom_level]
+Level {n}
+---
+[editor_copy_of]
+Copy of story level {n}
+---
+[editor_levels]
+Levels
+---
+[editor_undo]
+Undo
+---
+[editor_play]
+Play
+---
+[editor_board]
+Board: tap or drag to paint
+---
+[editor_pick]
+Pick
+---
+[editor_pick_hint]
+Tap the board to pick up its piece.
+---
+[editor_name]
+Name
+---
+[editor_name_hint]
+Name this level
+---
+[editor_delete]
+Delete
+---
+[editor_delete_confirm]
+Delete now
+---
+[editor_delete_again]
+Tap Delete now to remove this level for good.
+---
+[editor_copied]
+Saved as a new level of your own.
+---
+[editor_full]
+There is no room for more levels.
+---
+[editor_unreadable]
+This level could not be read.
+---
+[editor_check_waiting]
+Checking soon…
+---
+[editor_checking]
+Checking whether it can be won… {n} positions
+---
+[editor_never]
+Cannot be won: every reachable position was tried.
+---
+[editor_unknown]
+Not proven yet. Win it in Play to prove it.
+---
+[editor_proven_solver]
+Proven winnable: the solver won it.
+---
+[editor_proven_played]
+Proven winnable: you won it.
+---
+[editor_proven_download]
+Proven winnable: its route won it here.
+---
+[editor_edit]
+Edit
+---
+[editor_testing]
+Testing
+---
+[editor_restart]
+Restart
+---
+[editor_throw]
+Throw
+---
+[editor_controls]
+Arrow keys or WASD, swipe, tap or the stick; Space throws in Classic
+---
+[editor_won]
+Won!
+---
+[editor_won_proof]
+Won! Your route proves this level.
+---
+[editor_lost]
+Too much charge! Restart or undo.
+---
+[editor_ready_classic]
+Everything is ready. Go home!
+---
+[editor_ready_island]
+All goals met. Enter the hut from below.
+---
+[editor_copy]
+Copy
+---
+[editor_copied_text]
+Copied.
+---
+[editor_export_note]
+{n} proven levels as text for Shovey's developer. Copy it and send it.
+---
+[editor_export_none]
+No proven levels yet. A level counts once the solver or you have won it.
+---
+[editor_export_full]
+Too many levels for one export.
+---
+[editor_classic_levels]
+My Classic levels
+---
+[editor_island_levels]
+My Island levels
+---
+[editor_publish_note]
+Share your proven levels as one collection.
+---
+[editor_collection_title]
+Collection title
+---
+[editor_public]
+Public
+---
+[editor_friends]
+Friends
+---
+[editor_private]
+Private
+---
+[editor_publish_now]
+Publish
+---
+[editor_publish_again]
+Publish again
+---
+[editor_unpublish]
+Unpublish
+---
+[editor_publish_levels]
+Levels in this collection
+---
+[editor_publish_none]
+Choose at least one proven level.
+---
+[editor_title_needed]
+Give the collection a title.
+---
+[editor_published]
+Published.
+---
+[editor_unpublished]
+No longer published.
+---
+[editor_explore_note]
+Find level collections by an author's alias or public ID, or search with nothing typed to see recent ones.
+---
+[editor_search_label]
+Alias or public ID
+---
+[editor_search_hint]
+alias or ID
+---
+[editor_search]
+Search
+---
+[editor_found]
+Choose a collection to add its levels to your own.
+---
+[editor_found_none]
+No collections found.
+---
+[editor_result_detail]
+{n} levels · {s}
+---
+[editor_verifying]
+Checking routes… {n} levels added
+---
+[editor_downloaded]
+Added {n} levels to your own. {s}
+---
+[editor_refused]
+{n} refused: their routes do not win.
+---
+[editor_share_waiting]
+Waiting for the answer…
+---
+[editor_share_unavailable]
+Sharing level collections is not available here.
+---
+[editor_share_rejected]
+The request was refused.
+---
+[editor_share_failed]
+Something went wrong. Try again.
+---
+[editor_share_invalid]
+This collection could not be read.
+---
+[editor_signed_out]
+Sign in to share level collections.
+---
+[editor_offline]
+You are offline. Try again later.
+---
+[editor_not_found]
+That collection no longer exists.
+---
+[editor_forbidden]
+That collection is not shared with you.
+---
+[editor_too_large]
+The collection is too large to share.
+---
+[editor_invalid]
+The collection was not accepted.
+---
+[editor_busy]
+The service is busy. Try again in a moment.
+---
+[editor_save_failed]
+Could not save. Your next change tries again.
+---
+[editor_shovey]
+Shovey
+---
+[editor_floor]
+Floor
+---
+[editor_wall]
+Wall
+---
+[editor_home]
+Home
+---
+[editor_crate]
+Crate
+---
+[editor_crate_goal]
+Crate goal
+---
+[editor_red_ball]
+Red ball
+---
+[editor_blue_ball]
+Blue ball
+---
+[editor_green_ball]
+Green ball
+---
+[editor_red_pit]
+Red pit
+---
+[editor_blue_pit]
+Blue pit
+---
+[editor_green_pit]
+Green pit
+---
+[editor_red_paint]
+Red paint
+---
+[editor_blue_paint]
+Blue paint
+---
+[editor_green_paint]
+Green paint
+---
+[editor_star_block]
+Star block
+---
+[editor_apple]
+Apple
+---
+[editor_plate]
+Pressure plate
+---
+[editor_gate]
+Gate
+---
+[editor_key]
+Key
+---
+[editor_lock]
+Lock
+---
+[editor_teleporter]
+Teleporter
+---
+[editor_trail]
+Trail marker
+---
+[editor_reverse]
+Reverse controls
+---
+[editor_ammo]
+Ammunition
+---
+[editor_target]
+Target
+---
+[editor_charge]
+Charger
+---
+[editor_moving_block]
+Moving block
+---
+[editor_fresh_path]
+Block path
+---
+[editor_used_path]
+Used block path
+---
+[editor_sensor]
+Sensor
+---
+[editor_closed_sensor]
+Closed sensor
+---
+[editor_slide]
+Sliding power
+---
+[editor_red_block]
+Red colour block
+---
+[editor_blue_block]
+Blue colour block
+---
+[editor_yellow_block]
+Yellow colour block
+---
+[editor_block_goal]
+Colour block goal
+---
+[editor_mirror_shovey]
+Mirror Shovey
+---
+[editor_hut]
+Hut
+---
+[editor_water]
+Water
+---
+[editor_sand]
+Sand
+---
+[editor_meadow]
+Meadow
+---
+[editor_clear]
+Remove object
+---
+[editor_pebbles]
+Pebbles
+---
+[editor_jade_bed]
+Jade flower bed
+---
+[editor_red_bed]
+Red flower bed
+---
+[editor_barrel_spot]
+Barrel spot
+---
+[editor_red_spot]
+Red statue spot
+---
+[editor_blue_spot]
+Blue statue spot
+---
+[editor_green_spot]
+Green statue spot
+---
+[editor_sunken_crate]
+Sunken crate
+---
+[editor_spike_plate]
+Spike plate
+---
+[editor_well]
+Well
+---
+[editor_farm]
+Farm field
+---
+[editor_planted]
+Planted field
+---
+[editor_blast_spot]
+Blast spot
+---
+[editor_item_teleporter]
+Item teleporter
+---
+[editor_raft]
+Raft
+---
+[editor_ice]
+Thin ice
+---
+[editor_watch_plate]
+Watch plate
+---
+[editor_hidden_path]
+Hidden path
+---
+[editor_channel]
+Coconut channel
+---
+[editor_channel_end]
+Channel end
+---
+[editor_yellow_ring]
+Yellow flower ring
+---
+[editor_red_ring]
+Red flower ring
+---
+[editor_barrel]
+Barrel
+---
+[editor_red_statue]
+Red statue
+---
+[editor_blue_statue]
+Blue statue
+---
+[editor_green_statue]
+Green statue
+---
+[editor_palm]
+Palm tree
+---
+[editor_coconut_palm]
+Coconut palm
+---
+[editor_boulder]
+Boulder
+---
+[editor_snail]
+Snail
+---
+[editor_buoy]
+Buoy
+---
+[editor_sea_star]
+Sea star
+---
+[editor_baby_crab]
+Baby crab
+---
+[editor_mother_crab]
+Mother crab
+---
+[editor_happy_crab]
+Happy mother crab
+---
+[editor_chest]
+Treasure chest
+---
+[editor_seed]
+Seed
+---
+[editor_bottle]
+Bottle
+---
+[editor_coconut]
+Coconut
+---
+[editor_coconut_hole]
+Coconut hole
+---
+[editor_bomb]
+Bomb
+---
+[editor_spring]
+Spring flower
+---
+[editor_slingshot]
+Slingshot
+---
+[editor_leaf_up]
+Leaf pointing up
+---
+[editor_leaf_right]
+Leaf pointing right
+---
+[editor_leaf_down]
+Leaf pointing down
+---
+[editor_leaf_left]
+Leaf pointing left
+---
+[editor_turner_up]
+Leaf turner, up
+---
+[editor_turner_right]
+Leaf turner, right
+---
+[editor_turner_down]
+Leaf turner, down
+---
+[editor_turner_left]
+Leaf turner, left
+---
+[editor_pearl]
+Pearl
+---
+[editor_lantern]
+Stone lantern
+---
+[editor_clam]
+Clam
+---
+[editor_coin]
+Coin
+---
+[editor_pirate]
+Pirate
+---
+[editor_stall]
+Pirate stall
+---
+[editor_spikes]
+Spikes
+---
+[editor_red_shell]
+Grumpy red shell
+---
+[editor_blue_shell]
+Sleepy blue shell
+---
+[editor_yellow_shell]
+Happy yellow shell
+---
+[editor_stone_1]
+Numbered stone 1
+---
+[editor_stone_2]
+Numbered stone 2
+---
+[editor_stone_3]
+Numbered stone 3
+---
+[editor_stone_4]
+Numbered stone 4
+---
+[editor_stone_5]
+Numbered stone 5
+---
+[editor_yellow_flower]
+Yellow flower
+---
+[editor_red_flower]
+Red flower
+---
+[editor_octopus]
+Octopus
+---
+[editor_string_post]
+String post
+---
+[editor_shell_turning]
+Shell changing colour
+---
+[editor_yellow_turning]
+Shell turning yellow
+---
+[editor_ground]
+Ground
+---
+[editor_object]
+Object
+---

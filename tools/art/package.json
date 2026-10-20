@@ -1,0 +1,13 @@
+{
+  "name": "shovey-art",
+  "private": true,
+  "description": "Renders every Shovey sprite from Three.js models.",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "25.14.0",
+    "three": "0.186.1"
+  }
+}

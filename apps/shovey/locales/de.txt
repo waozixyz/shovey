@@ -1,0 +1,150 @@
+[shovey_level]
+Level
+---
+[shovey_ready]
+Alles erledigt. Geh nach Hause!
+---
+[shovey_won]
+Rätsel geschafft!
+---
+[shovey_finale]
+Du hast alle Rätsel gelöst. Danke fürs Spielen!
+---
+[shovey_lost]
+Zu viel Ladung! Starte das Level neu.
+---
+[shovey_restart]
+Neu starten
+---
+[shovey_help]
+Hilfe
+---
+[shovey_close_help]
+Hilfe schließen
+---
+[shovey_previous]
+Voriges Level
+---
+[shovey_next]
+Nächstes Level
+---
+[shovey_fire]
+Werfen
+---
+[shovey_up]
+Hoch
+---
+[shovey_down]
+Runter
+---
+[shovey_left]
+Links
+---
+[shovey_right]
+Rechts
+---
+[shovey_save_failed]
+Speichern fehlgeschlagen. Versuche einen weiteren Zug.
+---
+[shovey_controls]
+Pfeiltasten / WASD · R Neustart · H Hilfe · Leertaste werfen
+---
+[shovey_shadow_pending]
+Die Schattenregeln dieses Levels müssen noch geprüft werden.
+---
+[shovey_ball]
+Kugel
+---
+[shovey_ball_goal]
+Passendes Kugelloch
+---
+[shovey_home]
+Haus
+---
+[shovey_portal]
+Teleporter
+---
+[shovey_crate]
+Kiste
+---
+[shovey_trail]
+Spurfeld
+---
+[shovey_wall]
+Mauer
+---
+[shovey_plate]
+Druckplatte
+---
+[shovey_door]
+Drucktür
+---
+[shovey_paint]
+Kugelfarbe
+---
+[shovey_crate_goal]
+Kistenziel
+---
+[shovey_star]
+Sternstein
+---
+[shovey_sensor]
+Schließsensor
+---
+[shovey_apple]
+Apfel
+---
+[shovey_reverse]
+Umgekehrte Steuerung
+---
+[shovey_ammo]
+Wurfkugel
+---
+[shovey_charge]
+Ladefeld
+---
+[shovey_target]
+Schussziel
+---
+[shovey_light]
+Lichtkreis
+---
+[shovey_key]
+Schlüssel
+---
+[shovey_lock]
+Schloss
+---
+[shovey_slide]
+Gleitkraft
+---
+[shovey_color_block]
+Farbwechselstein
+---
+[shovey_color_goal]
+Rotes Steinziel
+---
+[shovey_shadow]
+Schatten-Shovey
+---
+[shovey_floor]
+Boden
+---
+[shovey_instructions]
+Bewege Shovey mit den Pfeiltasten oder WASD. Schiebe immer nur einen Gegenstand; Ziehen geht nicht. Kugeln gehören in Löcher derselben Farbe, Kisten auf markierte Felder. Farbe färbt Kugeln um. Sammle Äpfel und bringe Sternsteine zusammen. Erledige die Aufgaben, bevor du nach Hause gehst. Kisten halten Drucktüren offen. Schlüssel öffnen Schlösser. Die Leertaste wirft eine eingesammelte Wurfkugel in Blickrichtung. Manche Felder kehren die Steuerung um, hinterlassen eine Spur oder lassen Shovey bis zum Hindernis gleiten. Geladener Shovey kann einen Lichtkreis starten; lade ihn nicht zweimal auf. Farbsteine wechseln beim Schieben von Rot zu Blau zu Gelb. Ihre Ziele brauchen Rot. R startet neu, H öffnet die Hilfe.
+---
+[shovey_continue]
+Fortsetzen
+---
+[shovey_levels]
+Level
+---
+[shovey_locked]
+Gesperrt
+---
+[shovey_completed]
+Geschafft
+---
+[shovey_available]
+Verfügbar
+---

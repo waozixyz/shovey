@@ -1,0 +1,140 @@
+#import, file "../apps/shovey/engine.zi";
+#import, file "../apps/shovey/progress.zi";
+
+// Opening the game lands on the newest unlocked puzzle; an unfinished
+// position there is kept, and a replay of an older puzzle is left behind.
+OpenChecks :: () -> s32 {
+    progress := ShoveyProgressNew()
+    game: ShoveyGame
+    if !ShoveyLoad(*game, 1) { return 10 }
+    if ShoveyOpenLatest(*progress, *game) || game.level != 1 { return 11 }
+    game.won = true
+    if !ShoveyOpenLatest(*progress, *game) || game.level != 2 || game.won || progress.unlocked != 2 || !progress.completed[0] { return 12 }
+    if !ShoveySelectLevel(*progress, *game, 1) || game.level != 1 { return 13 }
+    if !ShoveyOpenLatest(*progress, *game) || game.level != 2 || game.moves != 0 { return 14 }
+    game.moves = 7
+    if ShoveyOpenLatest(*progress, *game) || game.moves != 7 { return 15 }
+    game.lost = true
+    if !ShoveyOpenLatest(*progress, *game) || game.lost || game.moves != 0 { return 16 }
+    return 0
+}
+
+ProgressChecks :: () -> s32 {
+    progress := ShoveyProgressNew()
+    if !ShoveyLevelUnlocked(*progress, 1) || ShoveyLevelUnlocked(*progress, 2) || ShoveyLevelUnlocked(*progress, 0) { return 20 }
+    game: ShoveyGame
+    unused ShoveyLoad(*game, 1)
+    ShoveyRecordWin(*progress, *game)
+    if progress.completed[0] || progress.unlocked != 1 { return 21 }
+    game.won = true
+    ShoveyRecordWin(*progress, *game)
+    if !progress.completed[0] || progress.unlocked != 2 || ShoveyLevelUnlocked(*progress, 3) { return 22 }
+    if !ShoveyContinue(*progress, *game) || game.level != 2 || game.won { return 23 }
+    game.moves = 5
+    saved := ShoveyCampaignSave(*progress, *game)
+    restored: ShoveyProgress
+    position: ShoveyGame
+    if !ShoveyCampaignRestore(*restored, *position, saved) || restored.unlocked != 2 || !restored.completed[0] ||
+    position.level != 2 || position.moves != 5 { return 24 }
+    // A game saved before the boards changed keeps its progress and
+    // restarts its level: first an old C1 save, then a changed board.
+    campaign_bytes[1] = #char "1"
+    if !ShoveyCampaignRestore(*restored, *position, TextView(campaign_bytes[:SHOVEY_CAMPAIGN_C1])) ||
+    restored.unlocked != 2 || !restored.completed[0] || position.level != 2 || position.moves != 0 { return 26 }
+    campaign_bytes[1] = #char "2"
+    campaign_bytes[SHOVEY_CAMPAIGN_C1] = ifx campaign_bytes[SHOVEY_CAMPAIGN_C1] == #char "0" then #char "1" else #char "0"
+    position.moves = 9
+    if !ShoveyCampaignRestore(*restored, *position, TextView(campaign_bytes[:])) || position.level != 2 || position.moves != 0 { return 27 }
+    if ShoveySelectLevel(*progress, *game, 3) || game.level != 2 { return 25 }
+    return 0
+}
+
+BoardChecks :: () -> s32 {
+    game: ShoveyGame
+    for level: cast(s32)1..ShoveyLevelCount() {
+        if !ShoveyLoad(*game, level) || game.player < 0 { return 30 }
+        saved := ShoveySave(*game)
+        copy: ShoveyGame
+        if !ShoveyRestore(*copy, saved) || ShoveySave(*copy) != saved { return 31 }
+    }
+    // The finale is a picture: Shovey cannot move there.
+    if !ShoveyLoad(*game, ShoveyLevelCount()) || ShoveyMove(*game, 0) || ShoveyMove(*game, 2) { return 32 }
+    return 0
+}
+
+// Every autonomous block gets one step per tick. Blocks that begin beside
+// one another are still occupied for that tick and cannot collide.
+TickChecks :: () -> s32 {
+    game := Floor()
+    for at: cast(s32)22..26 { game.ground[at] = 30 }
+    game.ground[23] = 29; game.ground[25] = 29; game.light_from[23] = 2; game.light_from[25] = 2
+    if !ShoveyTick(*game) || game.ground[23] != 31 || game.ground[24] != 29 ||
+    game.ground[25] != 31 || game.ground[26] != 29 { return 60 }
+
+    game = Floor()
+    for at: cast(s32)22..24 { game.ground[at] = 30 }
+    game.ground[23] = 29; game.ground[24] = 29; game.light_from[23] = 2; game.light_from[24] = 2
+    if !ShoveyTick(*game) || game.ground[23] != 29 || game.ground[24] != 31 { return 61 }
+    if !ShoveyTick(*game) || game.ground[22] != 29 || game.ground[23] != 31 || game.ground[24] != 31 { return 62 }
+    return 0
+}
+
+// One move (or a throw, for -1) and what it is heard as; -1 when nothing moved.
+Heard :: (game: *ShoveyGame, direction: s32) -> s32 {
+    before := game.*
+    moved := false
+    if direction < 0 { moved = ShoveyFire(game) } else { moved = ShoveyMove(game, direction) }
+    if !moved { return -1 }
+    return ShoveyEvent(*before, game)
+}
+
+// A plain floor with Shovey in the second row, second column, facing right.
+Floor :: () -> ShoveyGame {
+    return ShoveyGame.{.level = 1, .player = 21, .direction = 2}
+}
+
+// A plain step is quiet; pushes, pits, goals, pickups, doors, portals,
+// throws, a win and a loss are each heard as themselves.
+EventChecks :: () -> s32 {
+    game := Floor()
+    if Heard(*game, 2) != SHOVEY_EVENT_NONE { return 40 }
+    game = Floor(); game.objects[22] = 9
+    if Heard(*game, 2) != SHOVEY_EVENT_PUSH { return 41 }
+    game = Floor(); game.objects[22] = 1; game.ground[23] = 4
+    if Heard(*game, 2) != SHOVEY_EVENT_PIT { return 42 }
+    game = Floor(); game.objects[22] = 9; game.ground[23] = 18
+    if Heard(*game, 2) != SHOVEY_EVENT_GOAL { return 43 }
+    game = Floor(); game.ground[22] = 33
+    if Heard(*game, 2) != SHOVEY_EVENT_PICKUP { return 44 }
+    game = Floor(); game.ground[22] = 21; game.ground[60] = 21
+    if Heard(*game, 2) != SHOVEY_EVENT_PICKUP { return 45 }
+    game = Floor(); game.keys = 1; game.ground[22] = 34
+    if Heard(*game, 2) != SHOVEY_EVENT_DOOR { return 46 }
+    game = Floor(); game.objects[22] = 9; game.ground[23] = 13; game.ground[60] = 14
+    if Heard(*game, 2) != SHOVEY_EVENT_DOOR { return 47 }
+    game = Floor(); game.ground[22] = 8; game.ground[100] = 8
+    if Heard(*game, 2) != SHOVEY_EVENT_TELEPORT { return 48 }
+    game = Floor(); game.powers = SHOVEY_AMMO
+    if Heard(*game, -1) != SHOVEY_EVENT_SHOT { return 49 }
+    game = Floor(); game.ground[22] = 7
+    if Heard(*game, 2) != SHOVEY_EVENT_WON { return 50 }
+    game = Floor(); game.powers = SHOVEY_CHARGED; game.ground[22] = 27
+    if Heard(*game, 2) != SHOVEY_EVENT_LOST { return 51 }
+    // A wall is no move at all.
+    game = Floor(); game.ground[22] = 12
+    if Heard(*game, 2) != -1 { return 52 }
+    return 0
+}
+
+#program_export
+Check :: () -> s32 {
+    result := OpenChecks()
+    if result != 0 { return result }
+    result = ProgressChecks()
+    if result != 0 { return result }
+    result = EventChecks()
+    if result != 0 { return result }
+    result = TickChecks()
+    if result != 0 { return result }
+    return BoardChecks()
+}

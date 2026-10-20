@@ -1,0 +1,115 @@
+// Campaign progress is separate from a board: visiting a puzzle is not a win.
+#import "text_buffer"
+#import, file "engine.zi";
+#import, file "levels.zi";
+
+ShoveyProgress :: struct {
+    unlocked: s32
+    completed: [175]bool
+}
+
+ShoveyProgressNew :: () -> ShoveyProgress { return ShoveyProgress.{.unlocked = 1} }
+
+ShoveyLevelUnlocked :: (progress: *ShoveyProgress, level: s32) -> bool {
+    return level >= 1 && level <= ShoveyLevelCount() && level <= progress.unlocked
+}
+
+ShoveyRecordWin :: (progress: *ShoveyProgress, game: *ShoveyGame) {
+    if !game.won || game.level < 1 || game.level >= ShoveyLevelCount() || !ShoveyLevelUnlocked(progress, game.level) { return }
+    progress.completed[game.level - 1] = true
+    if game.level == progress.unlocked { progress.unlocked = game.level + 1 }
+}
+
+// Selecting a level always starts its first board. Continuing a game
+// preserves an unfinished position, or moves past a completed puzzle.
+ShoveySelectLevel :: (progress: *ShoveyProgress, game: *ShoveyGame, level: s32) -> bool {
+    if !ShoveyLevelUnlocked(progress, level) { return false }
+    return ShoveyLoad(game, level)
+}
+
+// Opening the game goes straight to the newest unlocked puzzle. An unfinished
+// position on that puzzle is kept; anything else starts it from the beginning.
+ShoveyOpenLatest :: (progress: *ShoveyProgress, game: *ShoveyGame) -> bool {
+    ShoveyRecordWin(progress, game)
+    if game.level == progress.unlocked && !game.won && !game.lost { return false }
+    return ShoveySelectLevel(progress, game, progress.unlocked)
+}
+
+ShoveyContinue :: (progress: *ShoveyProgress, game: *ShoveyGame) -> bool {
+    ShoveyRecordWin(progress, game)
+    if !game.won || game.level >= ShoveyLevelCount() { return false }
+    return ShoveySelectLevel(progress, game, game.level + 1)
+}
+
+// An earlier version saved only a board. Preserve access to that existing
+// position without inventing completed marks for puzzles it never recorded.
+ShoveyMigrateProgress :: (game: *ShoveyGame) -> ShoveyProgress {
+    progress := ShoveyProgress.{.unlocked = game.level}
+    ShoveyRecordWin(*progress, game)
+    return progress
+}
+
+// C2 adds a fingerprint of the level's starting board after the C1 layout.
+SHOVEY_CAMPAIGN_C1 :: 1651
+campaign_bytes: [SHOVEY_CAMPAIGN_C1 + 8]u8;
+
+// FNV-1a over a level's starting board. A saved position is kept only while
+// its level still starts from that board, so a game saved before levels were
+// renumbered or edited restarts its level instead of showing another board.
+ShoveyBoardMark :: (level: s32) -> u64 {
+    data := ShoveyLevelData(level)
+    mark: u64 = 2166136261
+    for at: cast(s64)0..data.count - 1 {
+        mark = ((mark ^ cast(u64)data[at]) * 16777619) & 4294967295
+    }
+    return mark
+}
+
+ShoveyCampaignSave :: (progress: *ShoveyProgress, game: *ShoveyGame) -> string {
+    campaign_bytes[0] = #char "C"
+    campaign_bytes[1] = #char "2"
+    alphabet := "0123456789abcdef"
+    campaign_bytes[2] = alphabet[(progress.unlocked >> 4) & 15]
+    campaign_bytes[3] = alphabet[progress.unlocked & 15]
+    for index: cast(s32)0..174 {
+        campaign_bytes[4 + index] = ifx progress.completed[index] then #char "1" else #char "0"
+    }
+    position := ShoveySave(game)
+    for index: cast(s32)0..1471 { campaign_bytes[179 + index] = position[index] }
+    mark := ShoveyBoardMark(game.level)
+    for digit: cast(s32)0..7 {
+        campaign_bytes[SHOVEY_CAMPAIGN_C1 + digit] = alphabet[cast(s32)((mark >> cast(u64)((7 - digit) * 4)) & 15)]
+    }
+    return TextView(campaign_bytes[:])
+}
+
+ShoveyCampaignRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, text: string) -> bool {
+    marked := text.count == SHOVEY_CAMPAIGN_C1 + 8 && text[:2] == "C2"
+    if !marked && (text.count != SHOVEY_CAMPAIGN_C1 || text[:2] != "C1") { return false }
+    restored: ShoveyProgress
+    restored.unlocked = ShoveyByte(text, 2)
+    if restored.unlocked < 1 || restored.unlocked > ShoveyLevelCount() { return false }
+    for index: cast(s32)0..174 {
+        byte := text[4 + index]
+        if byte != #char "0" && byte != #char "1" { return false }
+        restored.completed[index] = byte == #char "1"
+        if restored.completed[index] && index + 1 >= restored.unlocked { return false }
+    }
+    position: ShoveyGame
+    if !ShoveyRestore(*position, text[179:SHOVEY_CAMPAIGN_C1]) || !ShoveyLevelUnlocked(*restored, position.level) { return false }
+    mark: u64 = 0
+    if marked {
+        for digit: cast(s32)0..7 {
+            value := ShoveyDigit(text[SHOVEY_CAMPAIGN_C1 + digit])
+            if value < 0 { marked = false; break }
+            mark = mark * 16 + cast(u64)value
+        }
+    }
+    // Keep the progress, but start a level whose board has changed afresh.
+    if !marked || mark != ShoveyBoardMark(position.level) {
+        if !ShoveyLoad(*position, position.level) { return false }
+    }
+    progress.* = restored
+    game.* = position
+    return true
+}

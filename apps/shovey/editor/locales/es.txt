@@ -1,0 +1,633 @@
+[editor_choose]
+Elige la edición cuyos niveles quieres ver, crear o editar.
+---
+[editor_classic]
+Classic
+---
+[editor_island]
+Island
+---
+[editor_custom_count]
+Tus niveles: {n}
+---
+[editor_explore]
+Explorar
+---
+[editor_export]
+Exportar
+---
+[editor_back]
+Atrás
+---
+[editor_publish]
+Publicar
+---
+[editor_your_levels]
+Tus niveles
+---
+[editor_new_level]
+Nivel nuevo
+---
+[editor_not_proven]
+Aún sin demostrar
+---
+[editor_proven]
+Se puede ganar, demostrado
+---
+[editor_completed]
+Ganado por ti
+---
+[editor_by_author]
+De @{s}
+---
+[editor_story_levels]
+Niveles de la historia
+---
+[editor_story_named]
+{n} · {s}
+---
+[editor_story_level]
+Nivel de la historia {n}
+---
+[editor_story_note]
+Nivel de la historia {n}. Pintar en él crea tu propia copia; el nivel de la historia queda como está.
+---
+[editor_custom_level]
+Nivel {n}
+---
+[editor_copy_of]
+Copia del nivel de la historia {n}
+---
+[editor_levels]
+Niveles
+---
+[editor_undo]
+Deshacer
+---
+[editor_play]
+Jugar
+---
+[editor_board]
+Tablero: toca o arrastra para pintar
+---
+[editor_pick]
+Tomar
+---
+[editor_pick_hint]
+Toca el tablero para tomar su pieza.
+---
+[editor_name]
+Nombre
+---
+[editor_name_hint]
+Ponle nombre a este nivel
+---
+[editor_delete]
+Borrar
+---
+[editor_delete_confirm]
+Borrar ya
+---
+[editor_delete_again]
+Toca «Borrar ya» para eliminar este nivel para siempre.
+---
+[editor_copied]
+Guardado como un nivel nuevo tuyo.
+---
+[editor_full]
+No hay sitio para más niveles.
+---
+[editor_unreadable]
+No se pudo leer este nivel.
+---
+[editor_check_waiting]
+La comprobación empieza enseguida…
+---
+[editor_checking]
+Comprobando si se puede ganar… {n} posiciones
+---
+[editor_never]
+No se puede ganar: se probaron todas las posiciones alcanzables.
+---
+[editor_unknown]
+Aún sin demostrar. Gánalo en Jugar para demostrarlo.
+---
+[editor_proven_solver]
+Se puede ganar, demostrado: lo ganó el solucionador.
+---
+[editor_proven_played]
+Se puede ganar, demostrado: lo ganaste tú.
+---
+[editor_proven_download]
+Se puede ganar, demostrado: su recorrido lo ganó aquí.
+---
+[editor_edit]
+Editar
+---
+[editor_testing]
+Prueba
+---
+[editor_restart]
+Reiniciar
+---
+[editor_throw]
+Lanzar
+---
+[editor_controls]
+Flechas o WASD, deslizar, tocar o la palanca; Espacio lanza en Classic
+---
+[editor_won]
+¡Ganado!
+---
+[editor_won_proof]
+¡Ganado! Tu recorrido demuestra este nivel.
+---
+[editor_lost]
+¡Demasiada carga! Reinicia o deshaz.
+---
+[editor_ready_classic]
+Todo listo. ¡Vuelve a casa!
+---
+[editor_ready_island]
+Objetivos cumplidos. Entra en la cabaña desde abajo.
+---
+[editor_copy]
+Copiar
+---
+[editor_copied_text]
+Copiado.
+---
+[editor_export_note]
+{n} niveles demostrados como texto para el desarrollador de Shovey. Cópialo y envíalo.
+---
+[editor_export_none]
+Aún no hay niveles demostrados. Un nivel cuenta en cuanto el solucionador o tú lo ganáis.
+---
+[editor_export_full]
+Demasiados niveles para una sola exportación.
+---
+[editor_classic_levels]
+Mis niveles de Classic
+---
+[editor_island_levels]
+Mis niveles de Island
+---
+[editor_publish_note]
+Comparte tus niveles demostrados como una colección.
+---
+[editor_collection_title]
+Título de la colección
+---
+[editor_public]
+Pública
+---
+[editor_friends]
+Amigos
+---
+[editor_private]
+Privada
+---
+[editor_publish_now]
+Publicar
+---
+[editor_publish_again]
+Volver a publicar
+---
+[editor_unpublish]
+Retirar
+---
+[editor_publish_levels]
+Niveles de esta colección
+---
+[editor_publish_none]
+Elige al menos un nivel demostrado.
+---
+[editor_title_needed]
+Ponle un título a la colección.
+---
+[editor_published]
+Publicada.
+---
+[editor_unpublished]
+Ya no está publicada.
+---
+[editor_explore_note]
+Encuentra colecciones de niveles por el alias o el ID público de su autor, o busca sin escribir nada para ver las más recientes.
+---
+[editor_search_label]
+Alias o ID público
+---
+[editor_search_hint]
+alias o ID
+---
+[editor_search]
+Buscar
+---
+[editor_found]
+Elige una colección para añadir sus niveles a los tuyos.
+---
+[editor_found_none]
+No se encontraron colecciones.
+---
+[editor_result_detail]
+{n} niveles · {s}
+---
+[editor_verifying]
+Comprobando recorridos… {n} niveles añadidos
+---
+[editor_downloaded]
+{n} niveles añadidos a los tuyos. {s}
+---
+[editor_refused]
+{n} rechazados: sus recorridos no ganan.
+---
+[editor_share_waiting]
+Esperando la respuesta…
+---
+[editor_share_unavailable]
+Aquí no se pueden compartir colecciones de niveles.
+---
+[editor_share_rejected]
+La solicitud fue rechazada.
+---
+[editor_share_failed]
+Algo salió mal. Inténtalo de nuevo.
+---
+[editor_share_invalid]
+No se pudo leer esta colección.
+---
+[editor_signed_out]
+Inicia sesión para compartir colecciones de niveles.
+---
+[editor_offline]
+No tienes conexión. Inténtalo más tarde.
+---
+[editor_not_found]
+Esa colección ya no existe.
+---
+[editor_forbidden]
+Esa colección no está compartida contigo.
+---
+[editor_too_large]
+La colección es demasiado grande para compartirla.
+---
+[editor_invalid]
+La colección no fue aceptada.
+---
+[editor_busy]
+El servicio está ocupado. Inténtalo dentro de un momento.
+---
+[editor_save_failed]
+No se pudo guardar. Tu próximo cambio lo intentará de nuevo.
+---
+[editor_shovey]
+Shovey
+---
+[editor_floor]
+Suelo
+---
+[editor_wall]
+Muro
+---
+[editor_home]
+Casa
+---
+[editor_crate]
+Caja
+---
+[editor_crate_goal]
+Destino de caja
+---
+[editor_red_ball]
+Bola roja
+---
+[editor_blue_ball]
+Bola azul
+---
+[editor_green_ball]
+Bola verde
+---
+[editor_red_pit]
+Hoyo rojo
+---
+[editor_blue_pit]
+Hoyo azul
+---
+[editor_green_pit]
+Hoyo verde
+---
+[editor_red_paint]
+Pintura roja
+---
+[editor_blue_paint]
+Pintura azul
+---
+[editor_green_paint]
+Pintura verde
+---
+[editor_star_block]
+Bloque estrella
+---
+[editor_apple]
+Manzana
+---
+[editor_plate]
+Placa de presión
+---
+[editor_gate]
+Puerta
+---
+[editor_key]
+Llave
+---
+[editor_lock]
+Candado
+---
+[editor_teleporter]
+Teletransportador
+---
+[editor_trail]
+Marca de rastro
+---
+[editor_reverse]
+Controles invertidos
+---
+[editor_ammo]
+Munición
+---
+[editor_target]
+Diana
+---
+[editor_charge]
+Cargador
+---
+[editor_moving_block]
+Bloque móvil
+---
+[editor_fresh_path]
+Camino del bloque
+---
+[editor_used_path]
+Camino del bloque recorrido
+---
+[editor_sensor]
+Sensor
+---
+[editor_closed_sensor]
+Sensor cerrado
+---
+[editor_slide]
+Poder de deslizar
+---
+[editor_red_block]
+Bloque de color rojo
+---
+[editor_blue_block]
+Bloque de color azul
+---
+[editor_yellow_block]
+Bloque de color amarillo
+---
+[editor_block_goal]
+Destino del bloque de color
+---
+[editor_mirror_shovey]
+Shovey espejo
+---
+[editor_hut]
+Cabaña
+---
+[editor_water]
+Agua
+---
+[editor_sand]
+Arena
+---
+[editor_meadow]
+Pradera
+---
+[editor_clear]
+Quitar objeto
+---
+[editor_pebbles]
+Guijarros
+---
+[editor_jade_bed]
+Parterre de flores jade
+---
+[editor_red_bed]
+Parterre de flores rojas
+---
+[editor_barrel_spot]
+Sitio para barril
+---
+[editor_red_spot]
+Sitio para estatua roja
+---
+[editor_blue_spot]
+Sitio para estatua azul
+---
+[editor_green_spot]
+Sitio para estatua verde
+---
+[editor_sunken_crate]
+Caja hundida
+---
+[editor_spike_plate]
+Placa de pinchos
+---
+[editor_well]
+Pozo
+---
+[editor_farm]
+Campo de cultivo
+---
+[editor_planted]
+Campo sembrado
+---
+[editor_blast_spot]
+Punto de explosión
+---
+[editor_item_teleporter]
+Teletransportador de objetos
+---
+[editor_raft]
+Balsa
+---
+[editor_ice]
+Hielo fino
+---
+[editor_watch_plate]
+Placa vigía
+---
+[editor_hidden_path]
+Camino oculto
+---
+[editor_channel]
+Canal de cocos
+---
+[editor_channel_end]
+Fin del canal
+---
+[editor_yellow_ring]
+Anillo de flores amarillas
+---
+[editor_red_ring]
+Anillo de flores rojas
+---
+[editor_barrel]
+Barril
+---
+[editor_red_statue]
+Estatua roja
+---
+[editor_blue_statue]
+Estatua azul
+---
+[editor_green_statue]
+Estatua verde
+---
+[editor_palm]
+Palmera
+---
+[editor_coconut_palm]
+Cocotero
+---
+[editor_boulder]
+Roca
+---
+[editor_snail]
+Caracol
+---
+[editor_buoy]
+Boya
+---
+[editor_sea_star]
+Estrella de mar
+---
+[editor_baby_crab]
+Cangrejo bebé
+---
+[editor_mother_crab]
+Mamá cangrejo
+---
+[editor_happy_crab]
+Mamá cangrejo feliz
+---
+[editor_chest]
+Cofre del tesoro
+---
+[editor_seed]
+Semilla
+---
+[editor_bottle]
+Botella
+---
+[editor_coconut]
+Coco
+---
+[editor_coconut_hole]
+Hoyo para cocos
+---
+[editor_bomb]
+Bomba
+---
+[editor_spring]
+Flor resorte
+---
+[editor_slingshot]
+Tirachinas
+---
+[editor_leaf_up]
+Hoja hacia arriba
+---
+[editor_leaf_right]
+Hoja hacia la derecha
+---
+[editor_leaf_down]
+Hoja hacia abajo
+---
+[editor_leaf_left]
+Hoja hacia la izquierda
+---
+[editor_turner_up]
+Giradora de hojas, arriba
+---
+[editor_turner_right]
+Giradora de hojas, derecha
+---
+[editor_turner_down]
+Giradora de hojas, abajo
+---
+[editor_turner_left]
+Giradora de hojas, izquierda
+---
+[editor_pearl]
+Perla
+---
+[editor_lantern]
+Farol de piedra
+---
+[editor_clam]
+Almeja
+---
+[editor_coin]
+Moneda
+---
+[editor_pirate]
+Pirata
+---
+[editor_stall]
+Puesto del pirata
+---
+[editor_spikes]
+Pinchos
+---
+[editor_red_shell]
+Concha roja gruñona
+---
+[editor_blue_shell]
+Concha azul dormilona
+---
+[editor_yellow_shell]
+Concha amarilla alegre
+---
+[editor_stone_1]
+Piedra numerada 1
+---
+[editor_stone_2]
+Piedra numerada 2
+---
+[editor_stone_3]
+Piedra numerada 3
+---
+[editor_stone_4]
+Piedra numerada 4
+---
+[editor_stone_5]
+Piedra numerada 5
+---
+[editor_yellow_flower]
+Flor amarilla
+---
+[editor_red_flower]
+Flor roja
+---
+[editor_octopus]
+Pulpo
+---
+[editor_string_post]
+Poste del cordel
+---
+[editor_shell_turning]
+Concha que cambia de color
+---
+[editor_yellow_turning]
+Concha que se vuelve amarilla
+---
+[editor_ground]
+Terreno
+---
+[editor_object]
+Objeto
+---
