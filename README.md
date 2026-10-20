@@ -91,10 +91,11 @@ times larger. Walls,
 floor, pits and markings are drawn by `tools/pixel/pixel.py`; characters and
 objects come from an image model through OpenRouter, asked for pixel art and
 fitted to the grid (prompts and sizes in `tools/pixel/sprites.json`, kept
-results in `tools/pixel/native/`). Shovey's mint character is kept as transparent
-artwork in `tools/pixel/source/player.png`, fitted by the build to the same
-32-pixel grid; its generation prompts are in `tools/pixel/source/player.json`.
-The card is composed from the sprites.
+results in `tools/pixel/native/`). The original round green player is preserved
+in `tools/pixel/native/player.png`; only its dark interior ring was removed by
+a manual pixel edit. The card is composed from the sprites. In landscape,
+houses and other fixed objects stay upright, while shores, directional markers
+and player facings turn with the board.
 
     OPENROUTER_API_KEY=... python3 tools/pixel/pixel.py generate   # missing sprites only
     python3 tools/pixel/pixel.py build

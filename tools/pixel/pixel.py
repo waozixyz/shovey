@@ -193,17 +193,6 @@ def native(name):
     return Image.open(NATIVE / f'{name}.png').convert('RGBA')
 
 
-def fit_player():
-    """Fit the kept transparent character artwork to its gameplay footprint."""
-    source = Image.open(HERE / 'source/player.png').convert('RGBA')
-    source = source.crop(source.getchannel('A').getbbox())
-    size = SPEC['sizes']['player']
-    ratio = size / max(source.size)
-    source = source.resize((round(source.width * ratio), round(source.height * ratio)), Image.NEAREST)
-    image = Image.new('RGBA', (SIZE, SIZE))
-    image.alpha_composite(source, ((SIZE - source.width) // 2, (SIZE - source.height) // 2))
-    image.save(NATIVE / 'player.png', optimize=True)
-
 # ---------------------------------------------------------------- drawn tiles
 
 
@@ -543,7 +532,6 @@ def saturate(image, amount=1.18):
 
 
 def build():
-    fit_player()
     manifest = []
     sheet = {name: (depicts, saturate(image)) for name, (depicts, image) in sprites().items()}
     preview = ROOT / 'assets/shovey/preview.png'

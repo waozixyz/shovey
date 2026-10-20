@@ -1,306 +1,306 @@
 {
   "generator": "tools/levels/landscape.py",
-  "method": "Counterclockwise presentation copies of the portrait sprites; no outside image is used.",
+  "method": "Objects stay upright; player facings, directional markers and shore edges turn counterclockwise with the board. No outside image is used.",
   "files": [
     {
       "path": "sprites/charged-down.png",
       "depicts": "landscape presentation of charged Shovey looking down",
-      "sha256": "847a15e03ce05e862d95f0fb2d0906884884264f77ca6144063dbb39463cf345"
+      "sha256": "091a3217cadb018a6adc1798369713b6dd9cb36dce863be9accacd0c3fd0a6b1"
     },
     {
       "path": "sprites/charged-left.png",
       "depicts": "landscape presentation of charged Shovey looking left",
-      "sha256": "5719527fa6d4d7bee8d5756793334a14e0f17af168421d2d255013996d3aeac9"
+      "sha256": "98bb4e8868bfe9be8e7fb203e064ce2d7b7630645e9dc584a948939751a1eae6"
     },
     {
       "path": "sprites/charged-right.png",
       "depicts": "landscape presentation of charged Shovey looking right",
-      "sha256": "f202ce4275eb641156844eca1031f13d15fddbd8b1cd78de61e1017172f9c9d3"
+      "sha256": "93baa32b5002a887cbecd306c5f092ba92f995e1d930e3503b8bf62cd80a4be9"
     },
     {
       "path": "sprites/charged-up.png",
       "depicts": "landscape presentation of charged Shovey looking up",
-      "sha256": "788485ec6cdfb8f3f2c37cf68920e3a103a96ba8b11d466bb71c494f7603eb77"
+      "sha256": "657d947c3fd55ebe113235a7b40fae134d0f1789317a4f768d119fdaea76c86a"
     },
     {
       "path": "sprites/door-open.png",
       "depicts": "landscape presentation of open gate: the mossy block sunk level with the floor",
-      "sha256": "9d95fc95e23a0ce2768fce02ac160ebc2dadec17029ede42b169bb3c310b3b5f"
+      "sha256": "2605f8c94c5c8e165f014db759dc48afac3e8bb4ad7fb60e4d54d0431b3f2bbf"
     },
     {
       "path": "sprites/player-down.png",
       "depicts": "landscape presentation of Shovey looking down",
-      "sha256": "8aae96b30cbbaf5fa3503edfee9b3997fa212e69d6bd9b6248047cef9ba13106"
+      "sha256": "e5f534b8bbc8defb8e3a160cd145a5ecbad0742eca709b52a9f4b65f03d53173"
     },
     {
       "path": "sprites/player-left.png",
       "depicts": "landscape presentation of Shovey looking left",
-      "sha256": "8bda61efcf05403f72ff74b82fdd82a24100f52e362e1fb92623a8ccf9f731bf"
+      "sha256": "ce5a15c1dedc4826dc30eb837bac7ec49d38735adde157d686cfc49061f371ff"
     },
     {
       "path": "sprites/player-right.png",
       "depicts": "landscape presentation of Shovey looking right",
-      "sha256": "f54c116f1a8fd22ea607108b90509dd152ef26fbb9be7bcc69b8a5e4603c9189"
+      "sha256": "f8c4574ec7c31a196ff6d681ab512344ca1ba19cb229bc60af9d789f11e7f815"
     },
     {
       "path": "sprites/player-up.png",
       "depicts": "landscape presentation of Shovey looking up",
-      "sha256": "38a116b14c1f84723e234d211ecded48294b8974a0b15fd0fda7524d173910d6"
+      "sha256": "f38ea9d30a789de00d239347ed80859d59da224231d17136cb28a89eb55fae17"
     },
     {
       "path": "sprites/projectile.png",
       "depicts": "landscape presentation of a flying iron shot",
-      "sha256": "7b50702ed4c4bb3c6af64ae179eebadb7eef7e87499e5c55efd2d804cd81ca59"
+      "sha256": "b395b4301bbff6e3d229fa631d31a1bf139b9745b7e3f4bf07f1e41728ea2c12"
     },
     {
       "path": "sprites/sensor-1.png",
       "depicts": "landscape presentation of active sensor, frame 1 of 8",
-      "sha256": "2707bf5ba0717c5dbc74efd5ca2694dc96ea064aef362742bc1f992a45a46d39"
+      "sha256": "617fe57b2d10c293af226f9998ce6a5d20d320a8736954d19b53c8e326702783"
     },
     {
       "path": "sprites/sensor-2.png",
       "depicts": "landscape presentation of active sensor, frame 2 of 8",
-      "sha256": "3c447983031bd8b9cd1a5b8aa9008c75087686d12a65db53e3179520977005be"
+      "sha256": "80d8609f6ea52c81cf125118498a6ef0a331418b12e0475d68be9e48a94bbe6e"
     },
     {
       "path": "sprites/sensor-3.png",
       "depicts": "landscape presentation of active sensor, frame 3 of 8",
-      "sha256": "55faecf042c1218215061722b0e32a4872f58e067b12aa4935af764651dde63f"
+      "sha256": "7217f644f4c8545f9d47017df783144d42087a4967f3bea38c1313f65357ded2"
     },
     {
       "path": "sprites/sensor-4.png",
       "depicts": "landscape presentation of active sensor, frame 4 of 8",
-      "sha256": "f88adf3d476cad219b8f863f4c9a6147676fa23f5a86684d5b453daa3eb5caa4"
+      "sha256": "afd096df330f8b561a45be39edf12b36f133655b244e6e23dd2da2245564fa83"
     },
     {
       "path": "sprites/sensor-5.png",
       "depicts": "landscape presentation of active sensor, frame 5 of 8",
-      "sha256": "4b07f78cbcc3aeb0dea5142708f892b65415f2d6b1030af8cd6af79cedacfc6e"
+      "sha256": "a1d8d4a5091d145378cad88766c727b5641102460ae2379142782b3e4efcb348"
     },
     {
       "path": "sprites/sensor-6.png",
       "depicts": "landscape presentation of active sensor, frame 6 of 8",
-      "sha256": "af12c65927f78a963f2fae505a1ec08501de27f66a4b440704651a2e690f4e63"
+      "sha256": "8afacb0a804cbc39593df68f6fb50ec963279568224b8edae91d9168f29f4af3"
     },
     {
       "path": "sprites/sensor-7.png",
       "depicts": "landscape presentation of active sensor, frame 7 of 8",
-      "sha256": "6b3968b6112054744920675a11186da97d8215e6ed99da9ece882e22c4d826bd"
+      "sha256": "178e2f7f292af438e41eb0e9abfbc349e1deca3def7ef6ef47ca093eee3eb45c"
     },
     {
       "path": "sprites/sensor-8.png",
       "depicts": "landscape presentation of active sensor, frame 8 of 8",
-      "sha256": "1201d691957792e2065839befda4e7287f95f40915998b623f8321c26268fcf6"
+      "sha256": "128b4dd009cf773ae0b330fdcf16c2ace4bb65e2c16c4fbec4dccdd76cdc81cb"
     },
     {
       "path": "sprites/shadow.png",
       "depicts": "landscape presentation of mirror Shovey (pink)",
-      "sha256": "74eaef243851bfaff01f5fc0a058ee3bc1d0a17746ca9eea3b58d51e6a886ff0"
+      "sha256": "b9b2f371616e372d1dc05c7e876e9097ded59b06345bb197acc04a41ac4692bf"
     },
     {
       "path": "sprites/tile-0.png",
       "depicts": "landscape presentation of floor: a pale grey paving stone",
-      "sha256": "db71c0f509eeb5aecb175ebb22b5ced56ce70d47206b05dc76be4c60dc7c1477"
+      "sha256": "0a86d032642479c4e68d3d50bcbcca762f682975d1c529878c1c65b0117bf225"
     },
     {
       "path": "sprites/tile-1.png",
       "depicts": "landscape presentation of red ball (pushable)",
-      "sha256": "5d0ee4f137cbec092b10181a52b5657fd6e992a7e8991e5f81c5d65c1d659676"
+      "sha256": "5debdbf49c3193738f3e3eb9e8653e14d0b4be25790be74fe0db2f62790e9310"
     },
     {
       "path": "sprites/tile-10.png",
       "depicts": "landscape presentation of start position, drawn as floor",
-      "sha256": "db71c0f509eeb5aecb175ebb22b5ced56ce70d47206b05dc76be4c60dc7c1477"
+      "sha256": "0a86d032642479c4e68d3d50bcbcca762f682975d1c529878c1c65b0117bf225"
     },
     {
       "path": "sprites/tile-11.png",
       "depicts": "landscape presentation of trail field: a lilac ring mark",
-      "sha256": "e10c51d697257e1360cfe0e216f4a64e395f9414260eaf2f96988926dc471f60"
+      "sha256": "d4092ba6e01d636a994770506994b618652748ea187ce0ea516045c555ab710c"
     },
     {
       "path": "sprites/tile-12.png",
       "depicts": "landscape presentation of wall: a raised grey stone block",
-      "sha256": "5d48d39bd54388df042cac96a0296aacf73a5cb36ac4fe796c9ab09182d4738b"
+      "sha256": "fc4bdf449e32b89f422dd7571fa39c0af9ab667c6e80ec6a8b7eaa3797724da8"
     },
     {
       "path": "sprites/tile-13.png",
       "depicts": "landscape presentation of pressure plate: a round orange button",
-      "sha256": "6fcbeaeb617df6ae535dc53f584821bcb4558ef2717814cdc751d03e960cd00f"
+      "sha256": "1787d48b967c5615cd588021d69391da444ba81fbf2ea03b4b55e410da72cec1"
     },
     {
       "path": "sprites/tile-14.png",
       "depicts": "landscape presentation of closed gate: a stone block overgrown with moss",
-      "sha256": "df3718aad99efedc80397200eb2d0871860f8355bb6ce4f10c1a0f5f82773436"
+      "sha256": "cf816daf054638e7bd6f1d42c6edc1aef23666607ce7ed352ee4152f0b005320"
     },
     {
       "path": "sprites/tile-15.png",
       "depicts": "landscape presentation of red paint puddle",
-      "sha256": "3484462f6de46110b2b7b9b698058c6154d20386b2c0991992c3e94342126755"
+      "sha256": "bd227b21f6ec2366eca8a4ed9d9cf0e66661461dd2e5c902f7d5e4b1b73482e0"
     },
     {
       "path": "sprites/tile-16.png",
       "depicts": "landscape presentation of blue paint puddle",
-      "sha256": "04a55e093a857dfe952fe7f47f5994855100b69171eb3ad29d365a1c0f7e451a"
+      "sha256": "86c337ac8d6aad457412d702edb8dcd8a72a8657c614ead8ec9b88297ee3bcfb"
     },
     {
       "path": "sprites/tile-17.png",
       "depicts": "landscape presentation of green paint puddle",
-      "sha256": "78a6b0a6160081f27b6f4557b001ead1c0c4d1b2b4281450ad04c03bf14c591f"
+      "sha256": "852c0c22671dee01a2cfb21337b5d6f2ba27749ee899d6b11edc928e738d1004"
     },
     {
       "path": "sprites/tile-18.png",
       "depicts": "landscape presentation of crate goal: four corner brackets",
-      "sha256": "00333f28e2e6d2179c4596a843fbcca4d16983b20e7d2f75df8748cfcff9793a"
+      "sha256": "c235e5c7dbb22efbd86db9f92a776b0773c765c943aa91a677217711a8bbb43a"
     },
     {
       "path": "sprites/tile-19.png",
       "depicts": "landscape presentation of star block: a stone block with a bright star (pushable)",
-      "sha256": "c39e0d89e6c3270d5322287a7dca519cee75fa489180d070915437d661d0bb93"
+      "sha256": "2313d8444ebe80546d0278d1fd2b0e0dfa6ad04891604667878576d10f08e81d"
     },
     {
       "path": "sprites/tile-2.png",
       "depicts": "landscape presentation of blue ball (pushable)",
-      "sha256": "04d16668c82507d4f29debdaa01ff4aa8f82228a3d00beb22d7bf0c61b103fa1"
+      "sha256": "383d80d504afdccb721c8cee0cb29ceea9b5179cfd9c74cdb74eecc0054c2a20"
     },
     {
       "path": "sprites/tile-20.png",
       "depicts": "landscape presentation of sensor not yet visited: a grey ring with a red dot",
-      "sha256": "f5c745c15793efbe071e261019770c9dd050e8834b30589bae1b4ea0cd7b21df"
+      "sha256": "ee2198f9bca14c157b5dc44934822f32a525e3f4d34101e632cd88885dadb3e0"
     },
     {
       "path": "sprites/tile-21.png",
       "depicts": "landscape presentation of apple",
-      "sha256": "b222d9529f451f16173cbe0982d26f3f4784d945f8651425a9ccbf24d7399a93"
+      "sha256": "6cc42e8e60281ceba75d699c32f700328694769b1e60936dec87195d3dea7733"
     },
     {
       "path": "sprites/tile-22.png",
       "depicts": "landscape presentation of active sensor",
-      "sha256": "2707bf5ba0717c5dbc74efd5ca2694dc96ea064aef362742bc1f992a45a46d39"
+      "sha256": "617fe57b2d10c293af226f9998ce6a5d20d320a8736954d19b53c8e326702783"
     },
     {
       "path": "sprites/tile-23.png",
       "depicts": "landscape presentation of closed sensor: a raised block with a red light",
-      "sha256": "16b92cdd57da2ff3241c6e48f7c5ec962147572946994bd990b0e98e5427cda5"
+      "sha256": "31208766c98aa7867d4e609e28b5fa7a7124e69d83518a2f17d6c863e37eb01b"
     },
     {
       "path": "sprites/tile-24.png",
       "depicts": "landscape presentation of active sensor",
-      "sha256": "2707bf5ba0717c5dbc74efd5ca2694dc96ea064aef362742bc1f992a45a46d39"
+      "sha256": "617fe57b2d10c293af226f9998ce6a5d20d320a8736954d19b53c8e326702783"
     },
     {
       "path": "sprites/tile-25.png",
       "depicts": "landscape presentation of reverse controls: a token with two opposite arrows",
-      "sha256": "5417ae6b8802a22fa74de1c37104c348d623e1a6bd701d7230481a7155042a8c"
+      "sha256": "477709081db5dcb56c04993da6a4aea5d0fc9570c52df244712dd7a0d11115ec"
     },
     {
       "path": "sprites/tile-26.png",
       "depicts": "landscape presentation of ammunition: one iron shot",
-      "sha256": "9257b2b744ec7079c4ec4b2e6eb50d1c3b7cb6580f13d32d1e4e5abc818f2259"
+      "sha256": "15d70a2567172363dbe18b17d9ae3b9bc9f74e4f59ec5b41b7356ff5375d137b"
     },
     {
       "path": "sprites/tile-27.png",
       "depicts": "landscape presentation of charge: a token with a lightning bolt",
-      "sha256": "f574d102cf13e0db249fabf68c5b8ff79f0391f11af4d9371a4b5d4c4ddb7f83"
+      "sha256": "3ac21ca69e25bb51bb235c71aeb980c2f904edefd474ee798dcb62922230b77c"
     },
     {
       "path": "sprites/tile-28.png",
       "depicts": "landscape presentation of target: a red and white target board (pushable)",
-      "sha256": "43a3ea506c0039897d2ce1ce1a1f7e1aa59b5cdcf367be0d8f2ef4f451be0d53"
+      "sha256": "7977e039a6c4a01dab442996063b6c5c5ebf182dbfa05ebbc38b2baadc41eb90"
     },
     {
       "path": "sprites/tile-29.png",
       "depicts": "landscape presentation of moving block: a stone puck with a blue light",
-      "sha256": "b53e90421cafb931cd8570399637cecf5e23e6fa162056f5e62c08a632677c2c"
+      "sha256": "4a2c9c7b4b25034a75f4e99577b4acd76a0475bfb8a79c3e270226f12ad92267"
     },
     {
       "path": "sprites/tile-3.png",
       "depicts": "landscape presentation of green ball (pushable)",
-      "sha256": "5d52db2a18810bc1e4f57b35a676b3964cfb04c7b362260c869169bdab7efb62"
+      "sha256": "88ac896f6a181e478ed0a1399f078c512be6bd1552e995b043525752d52dcda6"
     },
     {
       "path": "sprites/tile-30.png",
       "depicts": "landscape presentation of fresh path: a ring of blue dots",
-      "sha256": "705fbdf023b5858d02861cda89c7972761cb339994c7b989ffed26465ce102ce"
+      "sha256": "6bb7da03bcff0674ab440aeeff289df13c9c4b30420481e16d7bc92fd67ad8d0"
     },
     {
       "path": "sprites/tile-31.png",
       "depicts": "landscape presentation of used path: a ring of grey dots",
-      "sha256": "8205daf89ab9ed9c0e2bfe38c9ad2c9ad4ab637e2165f5819e752cedcef76797"
+      "sha256": "87882b66fa57fd615dc580443f05a97fafbf70d42e2f0954e667270a01864a23"
     },
     {
       "path": "sprites/tile-32.png",
       "depicts": "landscape presentation of moving block stopping: its light turns red",
-      "sha256": "f10227bde1b922dc9d9e1ffe55b5a6e2e1e4b241f7f1751dabfac8079fd12754"
+      "sha256": "49a61aee37187e65c2c6e5bdb8846217404ed2a6314f0db8b4cb0d1c13ff5104"
     },
     {
       "path": "sprites/tile-33.png",
       "depicts": "landscape presentation of key",
-      "sha256": "49082b8b62347d78ce2904114d6102a0cb2fab0d81ac0c588790a3d3692b34f9"
+      "sha256": "208b3adad10c5db99327eb3313e0c2ee2e440703ec1cf801780869f6d30c1cb0"
     },
     {
       "path": "sprites/tile-34.png",
       "depicts": "landscape presentation of lock: a padlock",
-      "sha256": "8e74e765fa75becc282807b9bae14df85c3cf35b644eaa1c559d63d40cdbb205"
+      "sha256": "929a8e6b2a3eccde1ee03264f76cd33094963a572c36e041408a6de5c7a56bcf"
     },
     {
       "path": "sprites/tile-35.png",
       "depicts": "landscape presentation of slide power: a token with an ice crystal",
-      "sha256": "118bb78fa22e003c8cb26a401ae14cb7377762e484281239e57eab23f13770d7"
+      "sha256": "f696c38fcb63741508b31a5d485f13aa856ee5220e1bdc39c38d45e55e5964ca"
     },
     {
       "path": "sprites/tile-36.png",
       "depicts": "landscape presentation of red colour block (pushable)",
-      "sha256": "9d7abef313bd4013ba6a885f21f43f7c1e0813f7d3e8d889c4b04c42119350e1"
+      "sha256": "0cbbde75c20b8a103847c78256036968b857c46f6d1f496fab762bb5ad2619ea"
     },
     {
       "path": "sprites/tile-37.png",
       "depicts": "landscape presentation of blue colour block (pushable)",
-      "sha256": "81c8780fce53b8b87c3652a41baadb603f3d2c7f765a46127cddd78f16c91219"
+      "sha256": "a9af1f77b35e876a41a468961c510ee9149d62ec8f0349e32dff8504d20d2ebd"
     },
     {
       "path": "sprites/tile-38.png",
       "depicts": "landscape presentation of yellow colour block (pushable)",
-      "sha256": "d0fae1a1dcc88f41cb0cc56a2dde67210446a8007797d40d5914a45627de7836"
+      "sha256": "69e4d308606b1a0bed868a60c12bb19443e49ff18c9d90d116a4ef84d5a0bbe5"
     },
     {
       "path": "sprites/tile-39.png",
       "depicts": "landscape presentation of colour block goal: a red hatched square",
-      "sha256": "a5b86972ce58268de9e7e3fe8476230343fbc0bedd62067fddf2c545523d2f61"
+      "sha256": "924605064ec7bdb3da5e827bfa963ddc2771c7217a93adcc7c71ddca88d9aa93"
     },
     {
       "path": "sprites/tile-4.png",
       "depicts": "landscape presentation of red pit: takes the red ball",
-      "sha256": "07e4cf209145b88f2ba52cc8b2ae0fccb7b455776b9f806e093dc7795e92020b"
+      "sha256": "ea8e0d91199324460820f28271565649c89157575d59cd9678148a5e5cb77849"
     },
     {
       "path": "sprites/tile-40.png",
       "depicts": "landscape presentation of mirror Shovey (pink)",
-      "sha256": "74eaef243851bfaff01f5fc0a058ee3bc1d0a17746ca9eea3b58d51e6a886ff0"
+      "sha256": "b9b2f371616e372d1dc05c7e876e9097ded59b06345bb197acc04a41ac4692bf"
     },
     {
       "path": "sprites/tile-5.png",
       "depicts": "landscape presentation of blue pit: takes the blue ball",
-      "sha256": "307dc80543e771d5c27d02f19a636607cdc4918a0d66b03a13d908ca0393182d"
+      "sha256": "c05c325ed0cdf1b0d55795107ce2ec834881c0c59ace487496829d3f80d8341c"
     },
     {
       "path": "sprites/tile-6.png",
       "depicts": "landscape presentation of green pit: takes the green ball",
-      "sha256": "06f894780e5106afe88ad9030c50d71e7368cb5ddaafed2f4138ba5dc4cd1eb1"
+      "sha256": "831d1ac9c16706ed5227689c8f66da4adde4c0e093335d0f2a716076aac58e95"
     },
     {
       "path": "sprites/tile-7.png",
       "depicts": "landscape presentation of home: a small cottage with a jade roof and a lit door, on grass",
-      "sha256": "37231fc08bb3666dc80834c53b5ef62a23cef5f7a87c7d9f97ff34ec400626f6"
+      "sha256": "8bd2dbdeb4797c4f6385f4aa272e1c5271b5e4bde73ef4370c786737b837c4b9"
     },
     {
       "path": "sprites/tile-8.png",
       "depicts": "landscape presentation of teleporter: a stone pad with blue rings",
-      "sha256": "50a341006a636a1e4be63b16ac4f10e4984b66f567b515b2bb4d6b44346db8c6"
+      "sha256": "aab2fd7a5b827c691fb5eff67c0d4d1bed925ad8eb20ddb792528c7743d619bb"
     },
     {
       "path": "sprites/tile-9.png",
       "depicts": "landscape presentation of crate (pushable)",
-      "sha256": "aa8d513cd1232b9531d2fcc247d699df3a167465b93912425f9ee124ca52cf56"
+      "sha256": "93bb7634ccd6fdfd1c3eb7f7f04ca547e2e0295cdb146c5f033cf0acb96f5763"
     }
   ]
 }

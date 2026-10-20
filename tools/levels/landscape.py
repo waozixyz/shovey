@@ -1,8 +1,8 @@
-"""Make counterclockwise landscape copies of every board bitmap.
+"""Prepare upright objects and board-aligned terrain for landscape.
 
 The engines keep one portrait board. Landscape is a presentation of that
-same board, so every tile is turned with it; generated files are committed
-for the game's packed assets.
+same board. Shores, directional markers and player facings turn with the
+board; houses, items and other fixed artwork stay upright on the screen.
 """
 import argparse
 import hashlib
@@ -20,7 +20,19 @@ COPIES = (
 )
 
 
-def turned_bytes(path):
+def turns_with_board(path):
+    if path.parent.name == 'player':
+        return True
+    if path.parent.name == 'sprites':
+        return path.stem.startswith(('player-', 'charged-')) or path.stem in ('shadow', 'tile-40')
+    kind = int(path.stem)
+    return (2 <= kind <= 9 or 11 <= kind <= 12 or 14 <= kind <= 23
+            or 85 <= kind <= 88 or 117 <= kind <= 120)
+
+
+def landscape_bytes(path):
+    if not turns_with_board(path):
+        return path.read_bytes()
     with Image.open(path) as image:
         turned = image.transpose(Image.Transpose.ROTATE_90).convert('RGBA')
     output = io.BytesIO()
@@ -50,13 +62,13 @@ def run(check):
         manifest_path = target_root / 'art.json'
         manifest = manifests.setdefault(manifest_path, {
             'generator': 'tools/levels/landscape.py',
-            'method': 'Counterclockwise presentation copies of the portrait sprites; no outside image is used.',
+            'method': 'Objects stay upright; player facings, directional markers and shore edges turn counterclockwise with the board. No outside image is used.',
             'files': [],
         })
         expected = {}
         for source in sorted(source_folder.glob('*.png')):
             target = target_folder / source.name
-            data = turned_bytes(source)
+            data = landscape_bytes(source)
             expected[target] = data
             if check:
                 if not target.is_file() or target.read_bytes() != data:
@@ -79,7 +91,7 @@ def run(check):
     if changed:
         print('out of date: ' + ', '.join(changed[:5]))
         return 1 if check else 2
-    print(f"Landscape assets: {'checked' if check else 'turned'} for both editions")
+    print(f"Landscape assets: {'checked' if check else 'prepared'} for both editions")
     return 0
 
 

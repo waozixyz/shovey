@@ -34,6 +34,28 @@ for path in (ROOT / 'assets/shovey-island/levels').glob('*.png'):
     with Image.open(path) as image:
         assert image.size == (192, 320), path
 
+# Screen rotation changes the board layout, without tipping houses, readable
+# numbers or ordinary objects sideways. Directional art still follows the board.
+for folder, names in (
+        ('shovey/sprites', ('tile-0', 'tile-7', 'tile-21')),
+        ('shovey-island/tiles', ('51', '58', '75', '106'))):
+    for name in names:
+        source = ROOT / 'assets' / folder / (name + '.png')
+        target = ROOT / 'assets' / folder.replace('/', '-landscape/', 1) / (name + '.png')
+        with Image.open(source) as portrait, Image.open(target) as landscape:
+            assert portrait.convert('RGBA').tobytes() == landscape.convert('RGBA').tobytes(), \
+                f'{name}: fixed artwork must stay upright'
+for folder, names in (
+        ('shovey/sprites', ('player-up', 'player-right', 'player-down', 'player-left')),
+        ('shovey-island/tiles', ('2', '6', '8', '85', '117'))):
+    for name in names:
+        source = ROOT / 'assets' / folder / (name + '.png')
+        target = ROOT / 'assets' / folder.replace('/', '-landscape/', 1) / (name + '.png')
+        with Image.open(source) as portrait, Image.open(target) as landscape:
+            expected_turn = portrait.transpose(Image.Transpose.ROTATE_90).convert('RGBA')
+            assert expected_turn.tobytes() == landscape.convert('RGBA').tobytes(), \
+                f'{name}: directional artwork must follow the board'
+
 listed = set()
 for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-island',
                'assets/shovey-island-landscape', 'assets/shovey-editor'):
