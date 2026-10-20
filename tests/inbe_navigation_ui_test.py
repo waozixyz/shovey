@@ -79,7 +79,7 @@ def main():
                                 apps_last_update_check=1900000000,
                                 node_apps_checked_at=int(time.time()), navigation_placement=2,
                                 node_apps_offers='arcade|Arcade\n', node_app_slot_0='arcade',
-                                app_used_arcade=1)
+                                app_used_arcade=1, app_used_leaderboard=1)
                 for key, value in settings.items():
                     db.execute('INSERT INTO settings(user_id,key,value,updated_at) VALUES(?,?,?,1) '
                                'ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value',
@@ -130,7 +130,22 @@ def main():
                 driver.press(label='Apps', role='button')
                 driver.wait(label='Find an app', role='text_field')
                 assert driver.find(label='Arcade', role='button'), f'{edition}: dock did not open Apps'
-    print('Inbe: Classic and Island editor play preserve bottom-dock pixels and its Apps action')
+                if edition == 'classic':
+                    # Classic reports only its solved-level count, under its
+                    # own identity, and Leaderboard offers Arcade by game.
+                    with sqlite3.connect(profile / 'inbe.db') as db:
+                        scores = db.execute("SELECT value FROM settings WHERE key='leaderboard_game_scores'").fetchone()
+                    assert scores and scores[0].startswith('arcade\tarcade.shovey\tShovey Classic\tlevels\t'), scores
+                    driver.press(label='Leaderboard', role='button')
+                    driver.press(role='combo_box')
+                    options = {node['label'] for node in driver.find(role='option', visible=True)}
+                    assert options == {'Practice', 'Arcade'}, f'Leaderboard offered apps without a ranking: {options}'
+                    driver.press(role='option', label='Arcade')
+                    driver.wait(label='Shovey Classic', role='button')
+                    driver.wait(label='Levels', role='button')
+                    capture(child, window, 'leaderboard-arcade')
+    print('Inbe: Classic and Island editor play preserve bottom-dock pixels and its Apps action; '
+          'Classic reports its solved levels to an Arcade board in Leaderboard')
 
 
 if __name__ == '__main__':

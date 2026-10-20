@@ -152,10 +152,14 @@ Sprite :: (key: u64, index: s32, bounds: Rectangle, label: string) {
             .alt_text = label, .bounds = bounds, .fit = ImageFit.ImageFitContain, .smooth = true})
 }
 
+// The solved-level count last reported to the leaderboard.
+reported_levels: s32 = -1;
+
 Remember :: () {
     ShoveyRecordWin(*progress, *game)
     saved := ShoveyCampaignSave(*progress, *game)
     save_failed = !SaveAppRecordHost("campaign", saved)
+    ReportSolvedLevels(progress.completed[:], *reported_levels)
 
 }
 
@@ -207,6 +211,7 @@ ShoveyFrame :: () {
             }
         }
         if ShoveyOpenLatest(*progress, *game) { Remember() }
+        ReportSolvedLevels(progress.completed[:], *reported_levels)
         last_tick = frame.now
         loaded = true
     }

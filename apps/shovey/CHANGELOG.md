@@ -3,6 +3,7 @@
 ## [0.6.4] - 2026-10-20
 
 - Hold a press or touch on the board to keep walking.
+- Friends can compare how many levels you have solved on Inner Breeze's Leaderboard.
 
 ## [0.6.3] - 2026-10-20
 
