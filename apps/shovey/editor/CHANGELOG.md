@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [0.2.1] - 2026-10-20
+
+- Every screen keeps Shovey's own slate, stone and green look, whatever app it runs in.
+
 ## [0.2.0] - 2026-10-19
 
 - The editor is named Shovey Editor and appears beside Shovey Classic and Shovey Island.
