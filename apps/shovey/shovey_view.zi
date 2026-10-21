@@ -56,6 +56,7 @@ joystick_hidden: bool = true;
 last_tick: float64;
 header_bytes: [256]u8;
 level_preview_paths: [175][64]u8;
+level_preview_landscape: bool;
 sprite_names: [SPRITE_COUNT]string;
 
 
@@ -179,7 +180,7 @@ ShoveyAct :: (direction: s32) -> bool {
     if direction < 0 { changed = ShoveyFire(*game) } else { changed = ShoveyMove(*game, direction) }
     event := SHOVEY_EVENT_NONE
     if changed { event = ShoveyEvent(*before, *game) }
-    if event != SHOVEY_EVENT_NONE {
+    if event != SHOVEY_EVENT_NONE && !SoundMuted() {
         sounds: [10]string = .["", "assets/shovey/sounds/push.wav", "assets/shovey/sounds/pit.wav",
         "assets/shovey/sounds/goal.wav", "assets/shovey/sounds/pickup.wav", "assets/shovey/sounds/door.wav",
         "assets/shovey/sounds/teleport.wav", "assets/shovey/sounds/shot.wav", "assets/shovey/sounds/won.wav",
@@ -187,6 +188,14 @@ ShoveyAct :: (direction: s32) -> bool {
         unused AppSoundHost(sounds[event])
     }
     return changed
+}
+
+ResetLevelPreviews :: (landscape: bool) {
+    if level_preview_landscape == landscape && level_preview_paths[0][0] != 0 { return }
+    for at: cast(s32)0..ShoveyLevelCount() - 1 {
+        level_preview_paths[at][0] = 0
+    }
+    level_preview_landscape = landscape
 }
 
 ContinueGame :: () {
@@ -220,6 +229,8 @@ ShoveyFrame :: () {
     bottom := cast(float32)(frame.height - frame.bottom)
     ShoveyDress(frame.session, width, top, bottom)
     if selector_open {
+        landscape := BoardLandscape(width, bottom - top)
+        ResetLevelPreviews(landscape)
         Caption(20103, Rectangle.{16.0, top + 12.0, width - 152.0, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
@@ -228,7 +239,7 @@ ShoveyFrame :: () {
         if columns < 2 { columns = 2 }
         rows := (ShoveyLevelCount() + columns - 1) / columns
         cell := (width - 32.0 - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
-        preview_height := (cell - 12.0) * 5.0 / 3.0
+        preview_height := (cell - 12.0) * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
         row_height := cast(s32)(preview_height + 52.0 + 8.0)
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
                 .bounds = Rectangle.{16.0, top + 72.0, width - 32.0, bottom - top - 88.0},
@@ -256,7 +267,7 @@ ShoveyFrame :: () {
                 if unlocked {
                     if level_preview_paths[at][0] == 0 {
                         length: s32 = 0
-                        AppendText(level_preview_paths[at][:], *length, "assets/shovey/levels/")
+                        AppendText(level_preview_paths[at][:], *length, ifx landscape then "assets/shovey/levels-landscape/" else "assets/shovey/levels/")
                         AppendText(level_preview_paths[at][:], *length, label)
                         AppendText(level_preview_paths[at][:], *length, ".png")
                     }
@@ -295,19 +306,26 @@ ShoveyFrame :: () {
     key := AppKeyHost()
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
-    // A compact bar of three icons, so the level's name keeps the width it
-    // needs on a phone: the board takes the rest of the screen.
-    if Control(20002, Rectangle.{8.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+    // Return sits at the edge, then the game's own navigation and status.
+    if Control(20022, Rectangle.{8.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_select_game"), false, "", ICON_GAMES) {
+        LeaveForGameSelection()
+    }
+    if Control(20002, Rectangle.{56.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         selector_open = true
     }
-    Caption(20001, Rectangle.{60.0, top + 4.0, width - 172.0, 44.0}, HeaderText(), 18, true)
-    if Control(20016, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
+    Caption(20001, Rectangle.{108.0, top + 4.0, width - 220.0, 44.0}, HeaderText(), 14, true)
+    if Control(20016, Rectangle.{width - 156.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
         ChangeLevel(game.level)
     }
-    if Control(20017, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
+    if Control(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
         AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
         ifx help_open then ICON_CLOSE else ICON_HELP) {
         help_open = !help_open
+    }
+    if Control(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
+        AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"), false, "",
+        ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
+        SoundSetMuted(!SoundMuted())
     }
     if help_open {
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,

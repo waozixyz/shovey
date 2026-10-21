@@ -2,34 +2,150 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="Play Shovey in your browser.">
+  <meta name="theme-color" content="#10231d">
   <title>Shovey</title>
   <style>
-    html, body { margin: 0; width: 100%; height: 100%; background: #10231d; overflow: hidden; }
-    #zib-controls { display: none; }
-    #canvas-frame { width: 100%; height: 100%; }
-    canvas { display: block; width: 100%; height: 100%; }
-    #result { display: none; }
+    :root {
+      --app-background: #10231d;
+      --loading-background: radial-gradient(circle at 50% 36%, #26543f 0%, #173226 58%, #10231d 100%);
+      --loading-ink: #edf7f0;
+      --loading-muted: #b7d3c2;
+      --loading-track: rgba(184, 227, 198, 0.18);
+      --loading-progress: #58c467;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --app-background: #edf7ef;
+        --loading-background: radial-gradient(circle at 50% 36%, #ffffff 0%, #e5f5e8 58%, #d2ecd8 100%);
+        --loading-ink: #173226;
+        --loading-muted: #50705d;
+        --loading-track: rgba(38, 84, 63, 0.16);
+        --loading-progress: #2f9b4b;
+      }
+    }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--app-background);
+      color: var(--loading-ink);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    #zib-controls, #result { display: none; }
+    #canvas-frame { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; }
+    canvas {
+      display: block;
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      border: 0;
+      background: var(--app-background);
+    }
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+      box-sizing: border-box;
+      background: var(--loading-background);
+      opacity: 1;
+      transition: opacity 360ms ease, visibility 360ms ease;
+    }
+    .loading-screen.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loading-panel {
+      width: min(360px, 100%);
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      text-align: center;
+    }
+    .loading-mark {
+      width: min(280px, 72vw);
+      aspect-ratio: 5 / 3;
+      object-fit: contain;
+      border-radius: 18px;
+      filter: drop-shadow(0 12px 28px rgba(8, 30, 20, 0.28));
+    }
+    .loading-title { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: 0.04em; }
+    #status { min-height: 1.4em; color: var(--loading-muted); font-size: 13px; }
+    #progress {
+      width: min(280px, 100%);
+      height: 8px;
+      overflow: hidden;
+      border: 0;
+      border-radius: 999px;
+      background: var(--loading-track);
+    }
+    #progress::-webkit-progress-bar { border-radius: 999px; background: var(--loading-track); }
+    #progress::-webkit-progress-value { border-radius: 999px; background: var(--loading-progress); }
+    #progress::-moz-progress-bar { border-radius: 999px; background: var(--loading-progress); }
   </style>
 </head>
 <body>
+  <div class="loading-screen" id="loading-screen" role="status" aria-live="polite">
+    <div class="loading-panel">
+      <img class="loading-mark" src="loading.png" alt="" width="280" height="168">
+      <h1 class="loading-title">Shovey</h1>
+      <div id="status">Downloading…</div>
+      <progress id="progress" value="0" max="100" hidden></progress>
+    </div>
+  </div>
   <div id="zib-controls"></div>
   <div id="canvas-frame"><canvas id="canvas"></canvas></div>
   <pre id="result">pending</pre>
   <script>
+    var loadingScreen = document.getElementById('loading-screen');
+    var statusElement = document.getElementById('status');
+    var progressElement = document.getElementById('progress');
+    function hideLoadingScreen() {
+      window.requestAnimationFrame(function() { loadingScreen.classList.add('is-hidden'); });
+    }
     var Module = {
-      locateFile: function (path) {
-        return path === "runtime.wasm" ? "index.wasm" : path;
+      locateFile: function(path) { return path === 'runtime.wasm' ? 'index.wasm' : path; },
+      setStatus: function(text) {
+        if (!Module.setStatus.last) Module.setStatus.last = {time: Date.now(), text: ''};
+        if (text === Module.setStatus.last.text) return;
+        var match = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+        var now = Date.now();
+        if (match && now - Module.setStatus.last.time < 30) return;
+        Module.setStatus.last.time = now;
+        Module.setStatus.last.text = text;
+        if (match) {
+          statusElement.textContent = match[1];
+          progressElement.value = parseInt(match[2], 10) * 100;
+          progressElement.max = parseInt(match[4], 10) * 100;
+          progressElement.hidden = false;
+        } else {
+          statusElement.textContent = text;
+          progressElement.hidden = true;
+          if (!text) hideLoadingScreen();
+        }
       },
-      onExit: function (status) {
-        document.getElementById("result").textContent = status === 0 ? "PASS" : "FAIL " + status;
+      monitorRunDependencies: function(left) {
+        this.totalDependencies = Math.max(this.totalDependencies || 0, left);
+        this.setStatus(left ? 'Preparing… (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'Ready.');
       },
-      onAbort: function (reason) {
-        document.getElementById("result").textContent = "ABORT " + reason;
+      onExit: function(status) {
+        document.getElementById('result').textContent = status === 0 ? 'PASS' : 'FAIL ' + status;
+        Module.setStatus(status === 0 ? '' : 'Shovey stopped (' + status + ')');
+      },
+      onAbort: function(reason) {
+        Module.setStatus('Could not start Shovey.');
+        console.error('Shovey aborted:', reason);
       }
     };
+    var runtimeScript = document.createElement('script');
+    runtimeScript.async = true;
+    runtimeScript.src = 'index.js';
+    runtimeScript.onerror = function() { Module.setStatus('Could not download Shovey.'); };
+    document.body.appendChild(runtimeScript);
   </script>
-  <script async src="index.js"></script>
 </body>
 </html>

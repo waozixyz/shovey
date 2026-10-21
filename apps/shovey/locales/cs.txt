@@ -160,3 +160,15 @@ Dokončeno
 [shovey_available]
 Dostupné
 ---
+
+[shovey_select_game]
+Vybrat hru
+---
+
+[shovey_mute]
+Ztlumit zvuk
+---
+
+[shovey_unmute]
+Zapnout zvuk
+---

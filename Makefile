@@ -5,7 +5,7 @@ TOOLCHAIN = $(shell $(ZIRAN) pkg path ziran $(LOCK_FLAGS))
 KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 
-.PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-itch
+.PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-test web-itch
 
 .PHONY: inbe-ui-test
 inbe-ui-test:
@@ -45,11 +45,15 @@ web: bundles
 		ZIB_CANVAS_BUNDLE='$(abspath build/web/shovey.zib)' \
 		ZIB_CANVAS_PROGRAM='$(abspath build/web/runtime.html)'
 	cp apps/shovey/web/index.html build/web/index.html
+	cp assets/shovey/preview.png build/web/loading.png
 	cp build/web/runtime.js build/web/index.js
 	cp build/web/runtime.wasm build/web/index.wasm
 	rm -f build/web/runtime.html build/web/runtime.js build/web/runtime.wasm
 
 web-itch: web
+
+web-test: web
+	node tests/web_loading_test.mjs
 
 previews:
 	python3 tools/levels/levels.py previews

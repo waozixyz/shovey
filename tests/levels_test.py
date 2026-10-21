@@ -40,6 +40,7 @@ for level in classic:
     assert all(board[at] == 12 for at in range(CELLS) if at < WIDTH or at >= CELLS - WIDTH or at % WIDTH in (0, WIDTH - 1)), \
         f'Classic {level["number"]}: walled border'
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
+    assert (ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png').is_file()
     # The last Classic level is the finale picture, with nothing to solve.
     if level['number'] < len(classic):
         assert set(level['solution']) <= set('0123ft') and level['solution'], f'Classic {level["number"]}: solution'
@@ -53,6 +54,7 @@ for level in island:
     assert objects.count(75) >= 1, f'Island {level["number"]}: a hut'
     assert all(kind <= 48 for kind in terrain) and all(kind <= 124 and kind not in (50, 79) for kind in objects)
     assert (ROOT / f'assets/shovey-island/levels/{level["number"]}.png').is_file()
+    assert (ROOT / f'assets/shovey-island/levels-landscape/{level["number"]}.png').is_file()
     assert set(level['solution']) <= set('0123') and level['solution'], f'Island {level["number"]}: solution'
     checks.append(('island', level['number'], ''.join(level['terrain']) + ''.join(level['objects']), level['solution']))
 

@@ -160,3 +160,15 @@
 [shovey_available]
 プレイ可能
 ---
+
+[shovey_select_game]
+ゲームを選ぶ
+---
+
+[shovey_mute]
+ミュート
+---
+
+[shovey_unmute]
+音量をオン
+---

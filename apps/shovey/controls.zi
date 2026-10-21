@@ -1,10 +1,18 @@
 #if #defined(SHOVEY_WEB) {
     WebApp :: #import "kryon/app_context";
     AppServiceHost :: (name: string, request: string) -> string {
-        if name != "arcade.controls" { return "" }
-        if request == "get" { return WebApp.DocumentRead("controls") }
-        if request == "set-auto" || request == "set-on" || request == "set-off" {
-            return ifx WebApp.DocumentWrite("controls", request[4:]) then "saved" else ""
+        if name == "arcade.controls" {
+            if request == "get" { return WebApp.DocumentRead("controls") }
+            if request == "set-auto" || request == "set-on" || request == "set-off" {
+                return ifx WebApp.DocumentWrite("controls", request[4:]) then "saved" else ""
+            }
+        }
+        if name == "arcade.sound" {
+            if request == "get" { return WebApp.DocumentRead("sound") }
+            if request == "mute" || request == "unmute" {
+                value := ifx request == "mute" then "muted" else "on"
+                return ifx WebApp.DocumentWrite("sound", value) then "saved" else ""
+            }
         }
         return ""
     }
@@ -49,12 +57,16 @@ ICON_LEVELS :: "S1.6rr:M5 5H10V10H5ZM14 5H19V10H14ZM5 14H10V19H5ZM14 14H19V19H14
 ICON_RESTART :: "S1.6rr:M5 9C6.5 5.5 9 4 12 4C16.5 4 20 7.5 20 12C20 16.5 16.5 20 12 20C8.5 20 5.8 17.8 4.6 15M5 4V9H10"
 ICON_HELP :: "S1.6rr:M12 21C7 21 3 17 3 12C3 7 7 3 12 3C17 3 21 7 21 12C21 17 17 21 12 21ZM9.5 9.5C9.5 8.1 10.6 7 12 7C13.4 7 14.5 8.1 14.5 9.4C14.5 11.4 12 11.6 12 13.5M12 16.5V17"
 ICON_CLOSE :: "S2rr:M6 6L18 18M18 6L6 18"
+ICON_GAMES :: "S2rr:M5 12L11 18M5 12L11 6M5 12H19"
+ICON_SOUND_ON :: "S2rr:M4 9H7L11 5V19L7 15H4ZM14 8.5C15.3 9.3 15.3 14.7 14 15.5M16.5 6C19 7.8 19 16.2 16.5 18"
+ICON_SOUND_OFF :: "S2rr:M4 9H7L11 5V19L7 15H4ZM15 9L20 15M20 9L15 15"
 
 CONTROLS_AUTO :: 0;
 CONTROLS_ON :: 1;
 CONTROLS_OFF :: 2;
 controls_setting: s32 = -1;
 controls_touch: bool;
+sound_muted: s32 = -1;
 
 ControlsSetting :: () -> s32 {
     if controls_setting < 0 {
@@ -80,4 +92,20 @@ ControlsJoystickAllowed :: () -> bool {
     if setting == CONTROLS_OFF { return false }
     if setting == CONTROLS_ON { return true }
     return controls_touch
+}
+
+SoundMuted :: () -> bool {
+    if sound_muted < 0 {
+        sound_muted = ifx AppServiceHost("arcade.sound", "get") == "muted" then 1 else 0
+    }
+    return sound_muted != 0
+}
+
+SoundSetMuted :: (muted: bool) {
+    unused AppServiceHost("arcade.sound", ifx muted then "mute" else "unmute")
+    sound_muted = ifx muted then 1 else 0
+}
+
+LeaveForGameSelection :: () {
+    unused AppServiceHost("arcade.navigation", "back")
 }

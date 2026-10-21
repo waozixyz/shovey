@@ -160,3 +160,15 @@ Geschafft
 [shovey_available]
 Verfügbar
 ---
+
+[shovey_select_game]
+Spiel wählen
+---
+
+[shovey_mute]
+Ton aus
+---
+
+[shovey_unmute]
+Ton an
+---

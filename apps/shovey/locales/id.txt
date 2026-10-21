@@ -160,3 +160,15 @@ Selesai
 [shovey_available]
 Tersedia
 ---
+
+[shovey_select_game]
+Pilih game
+---
+
+[shovey_mute]
+Bisukan
+---
+
+[shovey_unmute]
+Nyalakan suara
+---

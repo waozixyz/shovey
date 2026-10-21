@@ -160,3 +160,15 @@
 [shovey_available]
 플레이 가능
 ---
+
+[shovey_select_game]
+게임 선택
+---
+
+[shovey_mute]
+음소거
+---
+
+[shovey_unmute]
+소리 켜기
+---

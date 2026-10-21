@@ -38,9 +38,15 @@ for path in ('assets/shovey/preview.png', 'assets/shovey-island/preview.png', 'a
 for path in (ROOT / 'assets/shovey/levels').glob('*.png'):
     with Image.open(path) as image:
         assert image.size == (192, 320), path
+for path in (ROOT / 'assets/shovey/levels-landscape').glob('*.png'):
+    with Image.open(path) as image:
+        assert image.size == (320, 192), path
 for path in (ROOT / 'assets/shovey-island/levels').glob('*.png'):
     with Image.open(path) as image:
         assert image.size == (192, 320), path
+for path in (ROOT / 'assets/shovey-island/levels-landscape').glob('*.png'):
+    with Image.open(path) as image:
+        assert image.size == (320, 192), path
 
 # Screen rotation changes the board layout, without tipping houses, readable
 # numbers or ordinary objects sideways. Directional art still follows the board.
@@ -75,6 +81,11 @@ for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-island
         listed.add(f'{folder}/{item["path"]}')
 missing = set(expected) - listed
 assert not missing, f'Not described in art.json: {sorted(missing)[:5]}'
+
+island_shared = json.loads((ROOT / 'apps/shovey/island/shared_assets.json').read_text())['copies']
+assert {item['from'] for item in island_shared} == {
+    'assets/shovey-island-landscape/tiles', 'assets/shovey-island-landscape/player'
+}, 'Island must package its rotated sprites with its hosted bundle'
 
 # Every sound a view plays is a short mono 16-bit 22050 Hz WAV in its
 # edition's folder, described in that folder's sounds.json.

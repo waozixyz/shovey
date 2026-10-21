@@ -160,3 +160,15 @@ Completed
 [shovey_available]
 Available
 ---
+
+[shovey_select_game]
+Select game
+---
+
+[shovey_mute]
+Mute
+---
+
+[shovey_unmute]
+Unmute
+---

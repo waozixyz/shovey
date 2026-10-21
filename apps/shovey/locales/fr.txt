@@ -160,3 +160,15 @@ Terminé
 [shovey_available]
 Disponible
 ---
+
+[shovey_select_game]
+Choisir un jeu
+---
+
+[shovey_mute]
+Couper le son
+---
+
+[shovey_unmute]
+Activer le son
+---

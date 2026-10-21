@@ -6,7 +6,7 @@ Each row is 12 cells written as two hexadecimal digits per cell.
 
     python3 tools/levels/levels.py generate          # write the .zi level code
     python3 tools/levels/levels.py generate --check  # fail if it is out of date
-    python3 tools/levels/levels.py previews          # draw every level picture
+    python3 tools/levels/levels.py previews          # draw every level picture in both orientations
 """
 import argparse
 import json
@@ -117,33 +117,54 @@ def save(image, path):
 def previews(cell):
     from PIL import Image
     size = (WIDTH * cell, HEIGHT * cell)
+    turned_size = (HEIGHT * cell, WIDTH * cell)
     sprites = Sprites(ROOT / 'assets/shovey/sprites', cell)
+    turned_sprites = Sprites(ROOT / 'assets/shovey-landscape/sprites', cell)
     for level in load('classic'):
         board = cells(level['cells'])
         image = Image.new('RGBA', size)
+        turned = Image.new('RGBA', turned_size)
         for at, kind in enumerate(board):
             x, y = at % WIDTH * cell, at // WIDTH * cell
+            display = (WIDTH - 1 - at % WIDTH) * HEIGHT + at // WIDTH
+            turned_x, turned_y = display % HEIGHT * cell, display // HEIGHT * cell
             if kind in CLASSIC_PIECES or kind in CLASSIC_ON_FLOOR or kind == CLASSIC_PLAYER:
                 image.alpha_composite(sprites.get('tile-0'), (x, y))
+                turned.alpha_composite(turned_sprites.get('tile-0'), (turned_x, turned_y))
             if kind == CLASSIC_PLAYER:
                 image.alpha_composite(sprites.get('player-up'), (x, y))
+                turned.alpha_composite(turned_sprites.get('player-up'), (turned_x, turned_y))
             else:
                 image.alpha_composite(sprites.get(f'tile-{kind}'), (x, y))
+                turned.alpha_composite(turned_sprites.get(f'tile-{kind}'), (turned_x, turned_y))
         save(image, ROOT / f'assets/shovey/levels/{level["number"]}.png')
+        save(turned, ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png')
     tiles = Sprites(ROOT / 'assets/shovey-island/tiles', cell)
     players = Sprites(ROOT / 'assets/shovey-island/player', cell)
+    turned_tiles = Sprites(ROOT / 'assets/shovey-island-landscape/tiles', cell)
+    turned_players = Sprites(ROOT / 'assets/shovey-island-landscape/player', cell)
     for level in load('island'):
         terrain, objects = cells(level['terrain']), cells(level['objects'])
         image = Image.new('RGBA', size)
+        turned = Image.new('RGBA', turned_size)
         for at, kind in enumerate(terrain):
-            image.alpha_composite(tiles.get(str(kind)), (at % WIDTH * cell, at // WIDTH * cell))
+            x, y = at % WIDTH * cell, at // WIDTH * cell
+            image.alpha_composite(tiles.get(str(kind)), (x, y))
+            display = (WIDTH - 1 - at % WIDTH) * HEIGHT + at // WIDTH
+            turned_x, turned_y = display % HEIGHT * cell, display // HEIGHT * cell
+            turned.alpha_composite(turned_tiles.get(str(kind)), (turned_x, turned_y))
         for at, kind in enumerate(objects):
             position = (at % WIDTH * cell, at // WIDTH * cell)
+            display = (WIDTH - 1 - at % WIDTH) * HEIGHT + at // WIDTH
+            turned_position = (display % HEIGHT * cell, display // HEIGHT * cell)
             if kind == ISLAND_PLAYER:
                 image.alpha_composite(players.get('1'), position)
+                turned.alpha_composite(turned_players.get('1'), turned_position)
             elif kind:
                 image.alpha_composite(tiles.get(str(kind)), position)
+                turned.alpha_composite(turned_tiles.get(str(kind)), turned_position)
         save(image, ROOT / f'assets/shovey-island/levels/{level["number"]}.png')
+        save(turned, ROOT / f'assets/shovey-island/levels-landscape/{level["number"]}.png')
     print(f"drew {len(load('classic')) + len(load('island'))} level pictures")
     return 0
 

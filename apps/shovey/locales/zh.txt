@@ -160,3 +160,15 @@
 [shovey_available]
 可游玩
 ---
+
+[shovey_select_game]
+选择游戏
+---
+
+[shovey_mute]
+静音
+---
+
+[shovey_unmute]
+取消静音
+---

@@ -75,6 +75,11 @@ OrientationChecks :: () -> s32 {
     }
     if BoardDisplayIndex(11, true) != 0 || BoardLogicalIndex(0, true) != 11 { return 72 }
     if BoardDisplayIndex(228, true) != 239 || BoardLogicalIndex(239, true) != 228 { return 73 }
+    // Input uses visible directions, so logical right and up must land in the
+    // display places selected by visible up and left.
+    center: s32 = 117
+    if BoardDisplayIndex(cast(s32)(center + 1), true) != BoardDisplayIndex(center, true) - 20 { return 76 }
+    if BoardDisplayIndex(cast(s32)(center - 12), true) != BoardDisplayIndex(center, true) - 1 { return 77 }
     for direction: cast(s32)0..3 {
         if BoardEngineDirection(direction, true) != (direction + 1) % 4 { return 74 }
         if BoardEngineDirection(direction, false) != direction { return 75 }

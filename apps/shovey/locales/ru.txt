@@ -160,3 +160,15 @@
 [shovey_available]
 Доступен
 ---
+
+[shovey_select_game]
+Выбрать игру
+---
+
+[shovey_mute]
+Выключить звук
+---
+
+[shovey_unmute]
+Включить звук
+---
