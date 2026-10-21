@@ -224,20 +224,21 @@ ShoveyFrame :: () {
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
         }
-        columns := cast(s32)((width - 24.0) / 156.0)
+        columns := cast(s32)((width - 24.0) / 112.0)
         if columns < 2 { columns = 2 }
         rows := (ShoveyLevelCount() + columns - 1) / columns
-        row_height: s32 = 142
+        cell := (width - 32.0 - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
+        preview_height := (cell - 12.0) * 5.0 / 3.0
+        row_height := cast(s32)(preview_height + 52.0 + 8.0)
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
                 .bounds = Rectangle.{16.0, top + 72.0, width - 32.0, bottom - top - 88.0},
                 .content_height = rows * row_height, .scroll_offset = levels_scroll})
         levels_scroll = scroll.scroll_offset
         if scroll.opened {
-            cell := (scroll.content.width - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
             for number: cast(s32)1..ShoveyLevelCount() {
                 at := number - 1
                 bounds := Rectangle.{scroll.content.x + cast(float32)(at % columns) * (cell + 8.0),
-                    scroll.content.y + cast(float32)(at / columns) * cast(float32)row_height, cell, 134.0}
+                    scroll.content.y + cast(float32)(at / columns) * cast(float32)row_height, cell, preview_height + 52.0}
                 unlocked := ShoveyLevelUnlocked(*progress, number)
                 completed := progress.completed[at]
                 digits: [24]u8
@@ -263,11 +264,11 @@ ShoveyFrame :: () {
                     // area, then repeat the number in the card's footer.
                     Image(frame.session, ImageProps.{.key = cast(u64)(35000 + number),
                             .asset_path = TextUntilNul(level_preview_paths[at][:]),
-                            .alt_text = label, .bounds = Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, 88.0},
+                            .alt_text = label, .bounds = Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height},
                             .fit = ImageFit.ImageFitContain, .smooth = true})
                 }
                 {
-                    Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + 98.0, bounds.width - 48.0, 28.0}, label, 18)
+                    Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)
                 }
                 icon := ""
                 if !unlocked {
@@ -279,8 +280,8 @@ ShoveyFrame :: () {
                     // A disabled icon button is a canonical widget, with a
                     // translated accessibility label and no extra action.
                     unused Button(frame.session, ButtonProps.{.key = cast(u64)(37000 + number),
-                            .bounds = ifx unlocked then Rectangle.{bounds.x + bounds.width - 32.0, bounds.y + 98.0, 28.0, 28.0} else
-                            Rectangle.{bounds.x + bounds.width / 2.0 - 22.0, bounds.y + 34.0, 44.0, 44.0},
+                            .bounds = ifx unlocked then Rectangle.{bounds.x + bounds.width - 32.0, bounds.y + preview_height + 12.0, 28.0, 28.0} else
+                            Rectangle.{bounds.x + bounds.width / 2.0 - 22.0, bounds.y + preview_height * 0.5 - 18.0, 44.0, 44.0},
                             .label = status, .icon_only = true, .icon_shape = icon, .disabled = true,
                             .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
                             .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
@@ -336,9 +337,12 @@ ShoveyFrame :: () {
         }
         return
     }
+    // The board fills the space under the bar, in portrait or landscape.
+    status_y := top + 52.0
+    area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
+    landscape := BoardLandscape(area.width, area.height)
     before_direction := game.direction
     changed := false
-    landscape := BoardLandscape(width, bottom - top)
     keyed: s32 = -1
     if key == 263 || key == 65 { keyed = 0 }
     if key == 265 || key == 87 { keyed = 1 }
@@ -352,9 +356,6 @@ ShoveyFrame :: () {
         changed = ShoveyTick(*game) || changed
         last_tick = frame.now
     }
-    // The board fills the space under the bar, in portrait or landscape.
-    status_y := top + 52.0
-    area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
     SpriteNames()
     grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:])
     // No move or piece counters: the line speaks only when there is news.

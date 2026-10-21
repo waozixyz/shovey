@@ -968,19 +968,6 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
         unused EditPlayRestart(*editor_play)
         editor_play_tick = editor_frame.now
     }
-    keyed: s32 = -1
-    landscape := BoardLandscape(width, bottom - top)
-    key := editor_key
-    if key == 263 || key == 65 { keyed = 0 }
-    if key == 265 || key == 87 { keyed = 1 }
-    if key == 262 || key == 68 { keyed = 2 }
-    if key == 264 || key == 83 { keyed = 3 }
-    if keyed >= 0 { editor_joystick_hidden = true; EditorAct(BoardEngineDirection(keyed, landscape)) }
-    if key == 32 && !editor_island { EditorAct(-1) }
-    if !editor_island && editor_frame.now - editor_play_tick >= 1.0 {
-        unused EditPlayTick(*editor_play)
-        editor_play_tick = editor_frame.now
-    }
     won := EditPlayWon(*editor_play)
     lost := EditPlayLost(*editor_play)
     status := ""
@@ -1008,6 +995,19 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     if editor_island { EditorInventory(Rectangle.{16.0, status_y + 24.0, width - 32.0, 24.0}) }
     below: float32 = ifx editor_island then 52.0 else 28.0
     area := Rectangle.{8.0, status_y + below, width - 16.0, bottom - status_y - below - 8.0}
+    landscape := BoardLandscape(area.width, area.height)
+    keyed: s32 = -1
+    key := editor_key
+    if key == 263 || key == 65 { keyed = 0 }
+    if key == 265 || key == 87 { keyed = 1 }
+    if key == 262 || key == 68 { keyed = 2 }
+    if key == 264 || key == 83 { keyed = 3 }
+    if keyed >= 0 { editor_joystick_hidden = true; EditorAct(BoardEngineDirection(keyed, landscape)) }
+    if key == 32 && !editor_island { EditorAct(-1) }
+    if !editor_island && editor_frame.now - editor_play_tick >= 1.0 {
+        unused EditPlayTick(*editor_play)
+        editor_play_tick = editor_frame.now
+    }
     grid: TileMapResult
     if editor_island {
         grid = IslandBoard(editor_frame.session, *editor_play.isle, area, cast(u64)200000, editor_island_names[:])
