@@ -1,0 +1,5 @@
+{
+  "generator": "Built-in image_gen edit",
+  "path": "tools/pixel/native/teleporter.png",
+  "prompt": "Edit target: image 1 is the CURRENT Shovey teleporter sprite. Supporting style/depth reference: image 2 is the ORIGINAL teleporter. Replace the raised, flat-looking blue stone platform in image 1 with a visibly RECESSED teleporter that sinks INTO the tile, inspired by image 2's inward colored spiral. One circular sunken opening viewed straight from overhead: a dark upper-left inner wall, a very thin pale stone lip on the lower-right, and a clean colorful green/cyan/blue spiral with a little warm orange winding down into a small deep center. The opening should read clearly as a hole with depth, not a disc or coin above the floor. Crisp simple pixel art designed on a 32 by 32 grid, enlarged with square pixels. Bold simple shapes and few colors readable at 24 pixels. Preserve a truly transparent background outside the circular lip. No attached floor square, no texture, no noisy speckles, no scenery, no text, no grid. Center the one complete teleporter, filling about 90 percent of the square image."
+}

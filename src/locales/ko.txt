@@ -1,0 +1,177 @@
+[shovey_level]
+단계
+---
+[shovey_ready]
+준비 끝. 집으로 가세요!
+---
+[shovey_won]
+퍼즐 완료!
+---
+[shovey_finale]
+모든 퍼즐을 풀었습니다. 플레이해 주셔서 감사합니다!
+---
+[shovey_lost]
+전하가 너무 많아요! 이 단계를 다시 시작하세요.
+---
+[shovey_restart]
+다시 시작
+---
+[shovey_help]
+도움말
+---
+[shovey_close_help]
+도움말 닫기
+---
+[shovey_previous]
+이전 단계
+---
+[shovey_next]
+다음 단계
+---
+[shovey_fire]
+던지기
+---
+[shovey_up]
+위
+---
+[shovey_down]
+아래
+---
+[shovey_left]
+왼쪽
+---
+[shovey_right]
+오른쪽
+---
+[shovey_save_failed]
+저장하지 못했습니다. 한 번 더 움직여 다시 시도하세요.
+---
+[shovey_controls]
+방향키 / WASD · R 다시 시작 · H 도움말 · 스페이스 던지기
+---
+[shovey_controls_setting]
+터치 조작
+---
+[shovey_controls_auto]
+자동
+---
+[shovey_controls_stick]
+조이스틱
+---
+[shovey_controls_swipe]
+스와이프만
+---
+[shovey_shadow_pending]
+이 단계의 그림자 규칙은 아직 확인이 필요합니다.
+---
+[shovey_ball]
+공
+---
+[shovey_ball_goal]
+같은 색 구멍
+---
+[shovey_home]
+집
+---
+[shovey_portal]
+순간이동 장치
+---
+[shovey_crate]
+상자
+---
+[shovey_trail]
+흔적 표식
+---
+[shovey_wall]
+벽
+---
+[shovey_plate]
+압력판
+---
+[shovey_door]
+압력문
+---
+[shovey_paint]
+공 물감
+---
+[shovey_crate_goal]
+상자 목표
+---
+[shovey_star]
+별 블록
+---
+[shovey_sensor]
+닫힘 감지기
+---
+[shovey_apple]
+사과
+---
+[shovey_cherry]
+체리
+---
+[shovey_reverse]
+조작 반전
+---
+[shovey_ammo]
+투사체
+---
+[shovey_charge]
+충전기
+---
+[shovey_target]
+투사체 표적
+---
+[shovey_light]
+빛 회로
+---
+[shovey_key]
+열쇠
+---
+[shovey_lock]
+자물쇠
+---
+[shovey_slide]
+미끄러지기
+---
+[shovey_color_block]
+색이 바뀌는 블록
+---
+[shovey_color_goal]
+빨간 블록 목표
+---
+[shovey_shadow]
+그림자 Shovey
+---
+[shovey_floor]
+바닥
+---
+[shovey_instructions]
+방향키나 WASD로 이동하세요. 한 번에 물건 하나만 밀 수 있고 당길 수는 없습니다. 공은 같은 색 구멍에, 상자는 표시된 칸에 놓으세요. 물감은 공의 색을 바꿉니다. 사과를 모으고 별 블록끼리 맞닿게 하세요. 목표를 마친 뒤 집으로 돌아가세요. 상자는 압력문을 열린 상태로 유지합니다. 열쇠는 자물쇠를 엽니다. 스페이스를 누르면 주운 투사체를 Shovey가 바라보는 방향으로 던집니다. 일부 아이템은 조작을 뒤집거나 흔적을 남기거나 장애물까지 미끄러지게 합니다. 충전한 Shovey는 빛 회로를 켤 수 있지만 두 번 연속 충전하면 안 됩니다. 변색 블록은 밀 때마다 빨강→파랑→노랑으로 바뀌며 목표에는 빨강이 필요합니다. R은 다시 시작, H는 이 안내를 엽니다.
+---
+[shovey_continue]
+계속하기
+---
+[shovey_levels]
+단계 선택
+---
+[shovey_locked]
+잠김
+---
+[shovey_completed]
+완료
+---
+[shovey_available]
+플레이 가능
+---
+
+[shovey_select_game]
+게임 선택
+---
+
+[shovey_mute]
+음소거
+---
+
+[shovey_unmute]
+소리 켜기
+---

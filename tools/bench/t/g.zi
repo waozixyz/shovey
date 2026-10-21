@@ -1,0 +1,3 @@
+big: [1048576]u8;
+#program_export
+Main :: () -> s64 { big[5] = 1; return cast(s64)big[5] }

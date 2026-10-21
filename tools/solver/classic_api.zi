@@ -13,11 +13,11 @@
 //   723       keys
 //   724       1 when won, 2 when lost
 // Level, move and teleport counters are constant or cosmetic and stay out.
-#import, file "../../apps/shovey/engine.zi";
+#import, file "../../src/engine.zi";
 
 CLASSIC_STATE_SIZE :: 725
 
-classic_hex: [SHOVEY_CELLS * 2]u8;
+classic_hex: [SHOVEY_CELLS * 6]u8;
 // The loaded board supplies the constant fields of every decoded state.
 classic_initial: ShoveyGame;
 classic_base: ShoveyGame;
@@ -33,7 +33,7 @@ ClassicApiStateSize :: () -> s32 { return CLASSIC_STATE_SIZE }
 ClassicApiLoad :: (hex: *u8, level: s32) -> s32 {
     count: s32 = 0
     while hex[count] != cast(u8)0 {
-        if count >= SHOVEY_CELLS * 2 { return 0 }
+        if count >= SHOVEY_CELLS * 6 { return 0 }
         classic_hex[count] = hex[count]
         count += 1
     }
@@ -41,6 +41,9 @@ ClassicApiLoad :: (hex: *u8, level: s32) -> s32 {
     classic_base = classic_initial
     classic_game = classic_initial
     ClassicApiCrateCells()
+    ClassicApiDoorCells()
+    ClassicApiPushTable(18, false, classic_goal_table[:])
+    ClassicApiPushTable(13, true, classic_plate_table[:])
     return 1
 }
 
@@ -50,6 +53,14 @@ ClassicApiLoad :: (hex: *u8, level: s32) -> s32 {
 classic_crate_live: [SHOVEY_CELLS]bool;
 classic_crate_pushes: [SHOVEY_CELLS]s32;
 classic_crate_check: bool;
+
+// Gates (14) stay shut while no plate (13) holds an object. With gates shut,
+// areas number the parts of the board Shovey can walk between, and
+// switch_pushes counts the pushes that bring a crate onto a plate from each
+// cell. A goal or the house in another area than Shovey waits for a plate.
+classic_doors: bool;
+classic_switch_pushes: [SHOVEY_CELLS]s32;
+classic_area: [SHOVEY_CELLS]s32;
 
 // Ground a crate can never enter: walls, holes, home, portals and the
 // colour-block goal. Apples, paint, pickups, locks and doors can go away.
@@ -93,6 +104,166 @@ ClassicApiCrateCells :: () {
             queue[count] = from
             count += 1
         }
+    }
+}
+
+// Exact pushes a crate needs, with Shovey's side taken into account: a state
+// is a crate cell and the part of the floor Shovey can walk in with that crate
+// as a wall (named by its smallest cell). A crate may have to be pushed past
+// its place and back so that Shovey can stand behind it, and the count
+// includes that detour. The tables hold the fewest pushes to a goal (18) with
+// gates open, and to a plate (13) with gates shut. Other pieces are ignored.
+CLASSIC_TABLE :: SHOVEY_CELLS * SHOVEY_CELLS
+classic_goal_table: [CLASSIC_TABLE]s32;
+classic_plate_table: [CLASSIC_TABLE]s32;
+classic_table_queue: [CLASSIC_TABLE]s32;
+classic_fill_seen: [SHOVEY_CELLS]s32;
+classic_fill_queue: [SHOVEY_CELLS]s32;
+classic_fill_stamp: s32;
+classic_fill_count: s32;
+
+// The cells Shovey can walk to from start with one crate cell as an extra
+// wall, left marked in classic_fill_seen. Returns the region's smallest cell,
+// or -1 when Shovey cannot stand on start.
+ClassicApiFill :: (crate: s32, start: s32, shut: bool) -> s32 {
+    game := *classic_initial
+    if start < 0 || start == crate || game.ground[start] == 12 || (shut && game.ground[start] == 14) { return -1 }
+    classic_fill_stamp += 1
+    stamp := classic_fill_stamp
+    smallest := start
+    classic_fill_queue[0] = start
+    classic_fill_seen[start] = stamp
+    count: s32 = 1
+    head: s32 = 0
+    while head < count {
+        at := classic_fill_queue[head]
+        head += 1
+        if at < smallest { smallest = at }
+        for side: cast(s32)0..3 {
+            next := ShoveyNeighbor(at, side)
+            if next < 0 || next == crate || classic_fill_seen[next] == stamp { continue }
+            if game.ground[next] == 12 || (shut && game.ground[next] == 14) { continue }
+            classic_fill_seen[next] = stamp
+            classic_fill_queue[count] = next
+            count += 1
+        }
+    }
+    classic_fill_count = count
+    return smallest
+}
+
+ClassicApiCrateCan :: (ground: s32, shut: bool) -> bool {
+    return !ClassicApiCrateWall(ground) && !(shut && ground == 14)
+}
+
+ClassicApiPushTable :: (target: s32, shut: bool, table: []s32) {
+    game := *classic_initial
+    for index: cast(s32)0..CLASSIC_TABLE - 1 { table[index] = CLASSIC_FAR }
+    count: s32 = 0
+    done: [SHOVEY_CELLS]bool
+    for t: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.ground[t] != target { continue }
+        for at: cast(s32)0..SHOVEY_CELLS - 1 { done[at] = false }
+        for p: cast(s32)0..SHOVEY_CELLS - 1 {
+            if done[p] { continue }
+            canon := ClassicApiFill(t, p, shut)
+            if canon < 0 { done[p] = true; continue }
+            for index: cast(s32)0..classic_fill_count - 1 { done[classic_fill_queue[index]] = true }
+            if table[t * SHOVEY_CELLS + canon] > 0 {
+                table[t * SHOVEY_CELLS + canon] = 0
+                classic_table_queue[count] = t * SHOVEY_CELLS + canon
+                count += 1
+            }
+        }
+    }
+    // Backwards: a push moved the crate from f to e with Shovey on f's far side.
+    head: s32 = 0
+    while head < count {
+        state := classic_table_queue[head]
+        head += 1
+        e := state / SHOVEY_CELLS
+        canon := state % SHOVEY_CELLS
+        here := table[state]
+        unused ClassicApiFill(e, canon, shut)
+        inside: [4]bool
+        for d: cast(s32)0..3 {
+            f := ShoveyNeighbor(e, d)
+            inside[d] = f >= 0 && classic_fill_seen[f] == classic_fill_stamp
+        }
+        for d: cast(s32)0..3 {
+            if !inside[d] { continue }
+            f := ShoveyNeighbor(e, d)
+            g := ShoveyNeighbor(f, d)
+            if g < 0 || !ClassicApiCrateCan(game.ground[f], shut) { continue }
+            canon2 := ClassicApiFill(f, g, shut)
+            if canon2 < 0 { continue }
+            key := f * SHOVEY_CELLS + canon2
+            if table[key] > here + 1 {
+                table[key] = here + 1
+                classic_table_queue[count] = key
+                count += 1
+            }
+        }
+    }
+}
+
+// The pushes this crate still needs from where Shovey stands now.
+ClassicApiCrateDistance :: (crate: s32, table: []s32, shut: bool) -> s32 {
+    canon := ClassicApiFill(crate, classic_game.player, shut)
+    if canon < 0 { return CLASSIC_FAR }
+    return table[crate * SHOVEY_CELLS + canon]
+}
+
+ClassicApiDoorCells :: () {
+    game := *classic_initial
+    queue: [SHOVEY_CELLS]s32
+    count: s32 = 0
+    doors := false
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        classic_switch_pushes[at] = CLASSIC_FAR
+        classic_area[at] = -1
+        if game.ground[at] == 14 { doors = true }
+        if game.ground[at] == 13 {
+            classic_switch_pushes[at] = 0
+            queue[count] = at
+            count += 1
+        }
+    }
+    classic_doors = doors && count > 0
+    head: s32 = 0
+    while head < count {
+        at := queue[head]
+        head += 1
+        for side: cast(s32)0..3 {
+            from := ShoveyNeighbor(at, side)
+            behind := ShoveyNeighbor(from, side)
+            if from < 0 || behind < 0 || classic_switch_pushes[from] < CLASSIC_FAR { continue }
+            if ClassicApiCrateWall(game.ground[from]) || game.ground[from] == 14 { continue }
+            if game.ground[behind] == 12 || game.ground[behind] == 14 { continue }
+            classic_switch_pushes[from] = classic_switch_pushes[at] + 1
+            queue[count] = from
+            count += 1
+        }
+    }
+    areas: s32 = 0
+    for start: cast(s32)0..SHOVEY_CELLS - 1 {
+        if classic_area[start] >= 0 || game.ground[start] == 12 || game.ground[start] == 14 { continue }
+        classic_area[start] = areas
+        queue[0] = start
+        count = 1
+        head = 0
+        while head < count {
+            at := queue[head]
+            head += 1
+            for side: cast(s32)0..3 {
+                next := ShoveyNeighbor(at, side)
+                if next < 0 || classic_area[next] >= 0 || game.ground[next] == 12 || game.ground[next] == 14 { continue }
+                classic_area[next] = areas
+                queue[count] = next
+                count += 1
+            }
+        }
+        areas += 1
     }
 }
 
@@ -173,6 +344,23 @@ ClassicApiLost :: () -> s32 { return ifx classic_game.lost then 1 else 0 }
 #program_export
 ClassicApiRemaining :: () -> s32 { return ShoveyRemaining(*classic_game) }
 
+// What the goal chain counts down: the goals still to finish, plus one while
+// gates exist and no plate holds anything. Pressing a plate is a step of its
+// own, as a person plays: clear the balls and stars, bring one crate to the
+// plate so the gate opens, then place the other crates.
+#program_export
+ClassicApiProgress :: () -> s32 {
+    progress := ShoveyRemaining(*classic_game)
+    if classic_doors {
+        held := false
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if classic_game.ground[at] == 13 && classic_game.objects[at] != 0 { held = true }
+        }
+        if !held { progress += 1 }
+    }
+    return progress
+}
+
 // Byte offsets of Shovey's cell and facing in the state vector. A move that
 // changes no other byte is a free walk, so the solver may treat every cell
 // reached that way as one region.
@@ -208,7 +396,7 @@ ClassicApiPlainStep :: (direction: s32) -> s32 {
     game := *classic_base
     if classic_shadow || (game.powers & (SHOVEY_TRAIL | SHOVEY_REVERSE | SHOVEY_SLIDE)) != 0 { return -1 }
     to := ShoveyNeighbor(game.player, direction)
-    if to < 0 || game.ground[to] != 0 || game.objects[to] != 0 { return -1 }
+    if to < 0 || game.ground[to] != 0 || game.objects[to] != 0 || game.ground[game.player] == SHOVEY_CRACKED_FLOOR { return -1 }
     return to * 4 + (ifx (game.powers & SHOVEY_AMMO) != 0 then direction else 0)
 }
 
@@ -223,7 +411,7 @@ ClassicApiWalkerFree :: (action: s32) -> s32 { return ifx action == 5 then 1 els
 ClassicApiDead :: () -> s32 {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         object := classic_game.objects[at]
-        if object < 1 || object > 3 { continue }
+        if ShoveyBallColor(object) <= 0 { continue }
         blocked: [4]bool
         for side: cast(s32)0..3 {
             neighbor := ShoveyNeighbor(at, side)
@@ -291,6 +479,12 @@ ClassicApiNearest :: (from: s32, cells: []s32) -> s32 {
 CLASSIC_FAR :: 1000
 // Finishing a goal must outweigh the longest walk home (at most 28 cells).
 CLASSIC_GOAL :: 32
+// Search order, as a person plays: loose balls and stars are cleared before a
+// crate goes to a plate, and a plate before the remaining crates. Each earlier
+// kind of goal weighs more, so finishing it beats any later goal.
+CLASSIC_BALL_ORDER :: 8
+CLASSIC_STAR_ORDER :: 4
+CLASSIC_DOOR_ORDER :: 2
 
 // Fills distance with the cost of pushing a piece (object kind) from each
 // cell into the nearest source cell, each source starting at its own cost.
@@ -337,7 +531,7 @@ ClassicApiPushField :: (game: *ShoveyGame, piece: s32, sources: []s32, starts: [
 ClassicApiEstimate :: () -> s32 {
     game := *classic_game
     balls: [SHOVEY_CELLS]s32; ball_count: s32 = 0
-    holes: [3][SHOVEY_CELLS]s32; hole_count: [3]s32
+    holes: [6][SHOVEY_CELLS]s32; hole_count: [6]s32
     painters: [SHOVEY_CELLS]s32; painter_count: s32 = 0
     crates: [SHOVEY_CELLS]s32; crate_count: s32 = 0
     plates: [SHOVEY_CELLS]s32; plate_count: s32 = 0
@@ -346,57 +540,73 @@ ClassicApiEstimate :: () -> s32 {
     stars: [SHOVEY_CELLS]s32; star_count: s32 = 0
     goals: [SHOVEY_CELLS]s32; goal_count: s32 = 0
     homes: [SHOVEY_CELLS]s32; home_count: s32 = 0
-    colors: [3]bool
+    colors: [6]bool
     estimate: s32 = 0
+    plate_held := false
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         ground := game.ground[at]; object := game.objects[at]
-        if object >= 1 && object <= 3 {
-            balls[ball_count] = at * 4 + object; ball_count += 1
-            colors[object - 1] = true
+        if ground == 13 && object != 0 { plate_held = true }
+        ball_color := ShoveyBallColor(object)
+        if ball_color > 0 {
+            balls[ball_count] = at * 64 + object; ball_count += 1
+            colors[ball_color - 1] = true
         }
-        if ground >= 4 && ground <= 6 { holes[ground - 4][hole_count[ground - 4]] = at; hole_count[ground - 4] += 1 }
-        if ground >= 15 && ground <= 17 { painters[painter_count] = at; painter_count += 1 }
+        pit_color := ShoveyPitColor(ground)
+        if pit_color > 0 { holes[pit_color - 1][hole_count[pit_color - 1]] = at; hole_count[pit_color - 1] += 1 }
+        if ShoveyPaintColor(ground) > 0 { painters[painter_count] = at; painter_count += 1 }
         if object == 9 && ground != 18 { crates[crate_count] = at; crate_count += 1 }
         if ground == 18 && object != 9 { plates[plate_count] = at; plate_count += 1 }
-        if object >= 36 && object <= 38 && ground != 39 { rings[ring_count] = at; ring_count += 1 }
-        if ground == 39 && object != 36 { rests[rest_count] = at; rest_count += 1 }
+        if ShoveyColorBlock(object) && ground != 39 { rings[ring_count] = at; ring_count += 1 }
+        if ground == 39 && !ShoveyColorRest(object) { rests[rest_count] = at; rest_count += 1 }
         if object == 19 { stars[star_count] = at; star_count += 1 }
         if ground == 7 { homes[home_count] = at; home_count += 1 }
-        if ground == 21 || object == 28 || object == 40 { estimate += CLASSIC_GOAL; goals[goal_count] = at; goal_count += 1 }
+        if ground == 21 || ground == 56 || object == 28 || object == 40 { estimate += CLASSIC_GOAL; goals[goal_count] = at; goal_count += 1 }
         if object == 40 { estimate += ClassicApiDistance(at, game.player) }
         if ground == 29 || ground == 30 { estimate += 1 }
     }
-    for color: cast(s32)0..2 {
+    for color: cast(s32)0..5 {
         if !colors[color] { continue }
         sources: [SHOVEY_CELLS]s32; starts: [SHOVEY_CELLS]s32; source_count: s32 = 0
         for index: cast(s32)0..hole_count[color] - 1 {
             sources[source_count] = holes[color][index]; source_count += 1
         }
         for index: cast(s32)0..painter_count - 1 {
-            at := painters[index]; painted := game.ground[at] - 15
+            at := painters[index]; painted := ShoveyPaintColor(game.ground[at])
             sources[source_count] = at
             starts[source_count] = 1 + ClassicApiNearest(at, holes[painted][0:hole_count[painted]])
             source_count += 1
         }
         distance: [SHOVEY_CELLS]s32
-        ClassicApiPushField(game, color + 1, sources[0:source_count], starts[0:source_count], distance[:])
+        ClassicApiPushField(game, ShoveyBallForColor(color + 1), sources[0:source_count], starts[0:source_count], distance[:])
         for index: cast(s32)0..ball_count - 1 {
-            if balls[index] % 4 != color + 1 { continue }
-            at := balls[index] / 4
-            estimate += CLASSIC_GOAL + (ifx distance[at] >= CLASSIC_FAR then 100 else distance[at])
+            if balls[index] % 64 != ShoveyBallForColor(color + 1) { continue }
+            at := balls[index] / 64
+            estimate += CLASSIC_BALL_ORDER * (CLASSIC_GOAL + (ifx distance[at] >= CLASSIC_FAR then 100 else distance[at]))
             goals[goal_count] = at; goal_count += 1
         }
     }
     if classic_crate_check {
         // Every crate needs a goal: count the pushes each still needs.
         for index: cast(s32)0..crate_count - 1 {
-            pushes := classic_crate_pushes[crates[index]]
+            pushes := ClassicApiCrateDistance(crates[index], classic_goal_table[:], false)
             estimate += CLASSIC_GOAL + (ifx pushes >= CLASSIC_FAR then 100 else pushes)
             goals[goal_count] = crates[index]; goal_count += 1
         }
     } else {
+        // Spare crates: the crates nearest to a goal fill the open goals.
+        costs: [SHOVEY_CELLS]s32
+        for index: cast(s32)0..crate_count - 1 { costs[index] = ClassicApiCrateDistance(crates[index], classic_goal_table[:], false) }
         for index: cast(s32)0..plate_count - 1 {
-            estimate += CLASSIC_GOAL + ClassicApiNearest(plates[index], crates[0:crate_count])
+            best: s32 = -1
+            for crate_index: cast(s32)0..crate_count - 1 {
+                if costs[crate_index] >= 0 && (best < 0 || costs[crate_index] < costs[best]) { best = crate_index }
+            }
+            pushes: s32 = 100
+            if best >= 0 {
+                if costs[best] < CLASSIC_FAR { pushes = costs[best] }
+                costs[best] = -1
+            }
+            estimate += CLASSIC_GOAL + pushes
             goals[goal_count] = plates[index]; goal_count += 1
         }
     }
@@ -406,8 +616,28 @@ ClassicApiEstimate :: () -> s32 {
     }
     for index: cast(s32)0..star_count - 1 {
         nearest := ClassicApiNearest(stars[index], stars[0:star_count])
-        estimate += CLASSIC_GOAL + (ifx nearest > 1 then nearest - 1 else 0)
+        estimate += CLASSIC_STAR_ORDER * (CLASSIC_GOAL + (ifx nearest > 1 then nearest - 1 else 0))
         goals[goal_count] = stars[index]; goal_count += 1
+    }
+    // A goal or the house beyond a shut gate: the nearest free crate has to
+    // reach a plate first, which outweighs the goals it unlocks.
+    if classic_doors && !plate_held {
+        needed := false
+        here := classic_area[game.player]
+        for index: cast(s32)0..goal_count - 1 {
+            if classic_area[goals[index]] != here { needed = true }
+        }
+        for index: cast(s32)0..home_count - 1 {
+            if classic_area[homes[index]] != here { needed = true }
+        }
+        if needed {
+            nearest: s32 = CLASSIC_FAR
+            for index: cast(s32)0..crate_count - 1 {
+                pushes := ClassicApiCrateDistance(crates[index], classic_plate_table[:], true)
+                if pushes < nearest { nearest = pushes }
+            }
+            estimate += CLASSIC_GOAL * 8 * CLASSIC_DOOR_ORDER + (ifx nearest >= CLASSIC_FAR then 100 else nearest)
+        }
     }
     if goal_count > 0 { estimate += ClassicApiNearest(game.player, goals[0:goal_count]) }
     else { estimate += ClassicApiNearest(game.player, homes[0:home_count]) }

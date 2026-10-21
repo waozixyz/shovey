@@ -34,17 +34,21 @@ assert [level['number'] for level in island] == list(range(1, len(island) + 1))
 checks = []
 for level in classic:
     board = cells(level['cells'])
+    tiles = cells(level['tiles']) if 'tiles' in level else [0] * CELLS
+    decorations = cells(level['decorations']) if 'decorations' in level else [0] * CELLS
+    assert all(kind in {0, *range(57, 72), 12, 4, 5, 6, 47, 48, 49, 76, 77, 78} for kind in tiles)
+    assert all(kind in {0, 57, 58, 59, 84} for kind in decorations)
     assert board.count(10) == 1, f'Classic {level["number"]}: one Shovey'
     assert board.count(7) >= 1, f'Classic {level["number"]}: a home'
-    assert all(kind <= 40 and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
-    assert all(board[at] == 12 for at in range(CELLS) if at < WIDTH or at >= CELLS - WIDTH or at % WIDTH in (0, WIDTH - 1)), \
+    assert all((kind <= 76 or kind in (82, 83)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
+    assert all(board[at] == 12 or (board[at] == 0 and tiles[at] == 12) for at in range(CELLS) if at < WIDTH or at >= CELLS - WIDTH or at % WIDTH in (0, WIDTH - 1)), \
         f'Classic {level["number"]}: walled border'
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
     assert (ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png').is_file()
     # The last Classic level is the finale picture, with nothing to solve.
     if level['number'] < len(classic):
         assert set(level['solution']) <= set('0123ft') and level['solution'], f'Classic {level["number"]}: solution'
-        checks.append(('classic', level['number'], ''.join(level['cells']), level['solution']))
+        checks.append(('classic', level['number'], ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', [])), level['solution']))
 
 names = [level['name'] for level in island]
 assert all(names) and len(set(names)) == len(island), 'Every island has its own name'

@@ -1,0 +1,1425 @@
+// The Shovey Editor's screens: choose Classic or Island, browse the story
+// levels and your own, paint boards, play them with the real engines and
+// let the Ziran solver check them, export them for the developer, and
+// share level collections where the host offers it.
+//
+// Custom levels live in the editor's own records (see edit.zi). A story
+// level is never changed: the first stroke on one makes a custom copy.
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/text_props"
+#import "kryon/text_align"
+#import "kryon/text_widget"
+#import "kryon/text_input_props"
+#import "kryon/text_field_widget"
+#import "kryon/text_area_widget"
+#import "kryon/button_props"
+#import "kryon/button_widget"
+#import "kryon/control_props"
+#import "kryon/image_props"
+#import "kryon/image_widget"
+#import "kryon/box_props"
+#import "kryon/box_widget"
+#import "kryon/press_props"
+#import "kryon/press_widget"
+#import "kryon/scroll_props"
+#import "kryon/scroll_widget"
+#import "kryon/joystick"
+#import "kryon/tree"
+#import "kryon/tile_map"
+#import "kryon/widget_palette"
+#import "std/number_text"
+#import "std/c_string"
+#import "std/text_buffer"
+#import "std/json_scan"
+#import "apps/node_types"
+#import, file "../orientation.zi";
+#import, file "../engine.zi";
+#import, file "../shovey_board.zi";
+#import, file "../island/island_engine.zi";
+#import, file "../island/island_board.zi";
+#import, file "../levels.zi";
+#import, file "../controls.zi";
+#import, file "../shovey_theme.zi";
+#import, file "../island_levels.zi";
+#import, file "../solver/solver.zi";
+#import, file "coast.zi";
+#import, file "edit.zi";
+#import, file "sharing.zi";
+host_api :: #system_library "host_api";
+ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
+// The editor's text in the player's language, from its own locale files;
+// every host that runs the editor reads them from the bundle.
+AppLocaleHost :: (key: string) -> string #foreign host_api;
+AppRecordHost :: (name: string) -> string #foreign host_api;
+SaveAppRecordHost :: (name: string, text: string) -> bool #foreign host_api;
+AppKeyHost :: () -> s32 #foreign host_api;
+// One of the game's own packed sounds; a host without audio answers false.
+AppSoundHost :: (path: string) -> bool #foreign host_api;
+// Asks for frames at the full rate while the solver or sharing works.
+SmoothFramesHost :: (frames: s32) -> bool #foreign host_api;
+// Optional host services: AppSupportsHost says whether the host offers one,
+// and AppServiceHost answers {"status":"unavailable"} for any it does not.
+AppSupportsHost :: (capability: string) -> bool #foreign host_api;
+AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+// What was typed this frame into the focused text field.
+AppFieldInputHost :: () -> TextFieldInput #foreign host_api;
+
+EDITOR_ERASER :: "S2rr:M5 19H19M7 15L15 7L19 11L13 17H9Z"
+
+EDITOR_HOME :: 0
+EDITOR_LEVELS :: 1
+EDITOR_EDIT :: 2
+EDITOR_PLAY :: 3
+EDITOR_EXPORT :: 4
+EDITOR_PUBLISH :: 5
+EDITOR_EXPLORE :: 6
+
+// What the check of the open level knows.
+CHECK_NONE :: 0
+CHECK_WAITING :: 1
+CHECK_RUNNING :: 2
+CHECK_PROVEN :: 3
+CHECK_NEVER :: 4
+CHECK_UNKNOWN :: 5
+
+// Sharing requests in flight.
+SHARE_IDLE :: 0
+SHARE_PUBLISH :: 1
+SHARE_UNPUBLISH :: 2
+SHARE_FIND :: 3
+SHARE_FETCH :: 4
+SHARE_VERIFY :: 5
+
+EditorField :: struct {
+    bytes: [128]u8
+    length: s32
+    cursor: s32
+    anchor: s32
+    scroll_x: s32
+    focused: bool
+}
+
+editor_frame: AppUiFrame;
+editor_language: string;
+editor_loaded: bool;
+editor_page: s32;
+editor_island: bool;
+editor_key: s32;
+editor_last_now: float64;
+editor_save_failed: bool;
+// A short message under the bar, shown for a few seconds.
+editor_notice: string;
+editor_notice_until: float64;
+
+editor_classic: EditCatalog;
+editor_isle: EditCatalog;
+// An index that could not be read is never overwritten.
+editor_index_bad: [2]bool;
+
+// The open level: a story level (open_story > 0) or a custom one (open_id).
+editor_level: EditLevel;
+editor_open_id: s32;
+editor_open_story: s32;
+editor_history: EditHistory;
+editor_piece: [2]s32;
+editor_picking: bool;
+editor_stroke: bool;
+editor_stroke_cell: s32;
+editor_stroke_changed: bool;
+editor_delete_armed: bool;
+editor_name: EditorField;
+
+editor_check: s32;
+editor_check_at: float64;
+editor_budget: s64;
+
+editor_play: EditPlay;
+editor_play_tick: float64;
+editor_joystick_hidden: bool = true;
+
+editor_levels_scroll: s32;
+editor_palette_scroll: s32;
+editor_list_scroll: s32;
+
+editor_export_bytes: [1048576]u8;
+editor_export_length: s32;
+editor_export_count: s32;
+editor_export_cursor: s32;
+editor_export_anchor: s32;
+editor_export_scroll: s32;
+editor_export_focused: bool;
+editor_export_copy: bool;
+
+editor_sharing: bool;
+editor_share: s32;
+editor_share_request: s32;
+editor_share_poll: float64;
+// The translated key of the last sharing outcome.
+editor_share_status: string;
+editor_share_title: EditorField;
+editor_share_query: EditorField;
+editor_share_visibility: s32;
+editor_share_skip: [EDIT_LEVELS]bool;
+editor_publication: [2][96]u8;
+editor_publication_length: [2]s32;
+editor_results: [SHARING_RESULTS]SharingMeta;
+editor_result_count: s32;
+editor_request_bytes: [600000]u8;
+editor_reply_bytes: [600000]u8;
+editor_reply_length: s32;
+editor_document: SharingDocument;
+editor_document_at: s32;
+editor_verify_index: s32;
+editor_verify_at: s32;
+editor_verify_added: s32;
+editor_verify_refused: s32;
+editor_verify_author: [EDIT_ALIAS]u8;
+editor_verify_author_length: s32;
+editor_download: EditLevel;
+editor_download_name: [EDIT_NAME]u8;
+editor_download_name_length: s32;
+
+editor_text_bytes: [4][512]u8;
+editor_classic_names: [SPRITE_COUNT]string;
+// The palette's names in the player's language, by edition and place.
+editor_piece_names: [2][EDIT_ISLAND_PIECES]string;
+editor_island_names: [ISLAND_PICTURES]string;
+editor_view_classic: ShoveyGame;
+editor_view_isle: IslandGame;
+editor_picture_paths: [512]string;
+
+EditorText :: (key: string) -> string { return AppLocaleHost(key) }
+
+// A translated line with {n} replaced by number and {s} by text, kept in
+// one of four slots until the next call with that slot.
+EditorSay :: (slot: s32, key: string, number: s64 = 0, text: string = "") -> string {
+    template := EditorText(key)
+    writer := EditWriter.{.bytes = editor_text_bytes[slot][:]}
+    at: s64 = 0
+    while at < template.count {
+        if at + 2 < template.count && template[at] == #char "{" && template[at + 2] == #char "}" {
+            if template[at + 1] == #char "n" { EditPutNumber(*writer, number); at += 3; continue }
+            if template[at + 1] == #char "s" { EditPut(*writer, text); at += 3; continue }
+        }
+        EditPutByte(*writer, template[at])
+        at += 1
+    }
+    return TextView(editor_text_bytes[slot][0:writer.length])
+}
+
+// Text kept in a slot, as EditorSay keeps its lines.
+EditorKeep :: (slot: s32, text: string) -> string {
+    writer := EditWriter.{.bytes = editor_text_bytes[slot][:]}
+    EditPut(*writer, text)
+    return TextView(editor_text_bytes[slot][0:writer.length])
+}
+
+EditorCatalog :: () -> *EditCatalog { return ifx editor_island then *editor_isle else *editor_classic }
+
+EditorEdition :: () -> s32 { return ifx editor_island then 1 else 0 }
+
+EditorCaption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16, center: bool = false) {
+    Text(editor_frame.session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = font,
+            .wrap = TextWrap.TextWrapAuto, .align = ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
+            .vertical_align = TextAlign.TextAlignCenter})
+}
+
+EditorControl :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, selected: bool = false, detail: string = "") -> bool {
+    return Button(editor_frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds,
+            .label = label, .detail = detail, .disabled = disabled, .selected = selected, .fit_content = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
+}
+
+EditorImage :: (key: u64, path: string, bounds: Rectangle, label: string) {
+    Image(editor_frame.session, ImageProps.{.key = key, .asset_path = path, .bounds = bounds,
+            .alt_text = label, .fit = ImageFit.ImageFitContain, .smooth = true})
+}
+
+EditorNotice :: (key: string) {
+    editor_notice = EditorText(key)
+    editor_notice_until = editor_frame.now + 4.0
+}
+
+// ---------------------------------------------------------------------------
+// Pictures: the editions' sprites, packed under the editor's own folder
+
+// Points the board modules at the editor's copies of their pictures before
+// they prepare their own paths, which would name the editions' folders.
+EditorPictures :: () {
+    digits: [24]u8
+    for kind: cast(s32)0..40 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "assets/shovey-editor/classic/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
+        sprite_files[kind] = BuilderFinish(bytes)
+        turned_tile: Vec(u8)
+        BuilderPrint(*turned_tile, "assets/shovey-editor/classic/sprites-landscape/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
+        landscape_sprite_files[kind] = BuilderFinish(turned_tile)
+    }
+    facings: [4]string = .["left", "up", "right", "down"]
+    for direction: cast(s32)0..3 {
+        player: Vec(u8)
+        BuilderPrint(*player, "assets/shovey-editor/classic/sprites/player-%.png", facings[direction])
+        sprite_files[SPRITE_PLAYER + direction] = BuilderFinish(player)
+        turned_player: Vec(u8)
+        BuilderPrint(*turned_player, "assets/shovey-editor/classic/sprites-landscape/player-%.png", facings[direction])
+        landscape_sprite_files[SPRITE_PLAYER + direction] = BuilderFinish(turned_player)
+        charged: Vec(u8)
+        BuilderPrint(*charged, "assets/shovey-editor/classic/sprites/charged-%.png", facings[direction])
+        sprite_files[SPRITE_CHARGED + direction] = BuilderFinish(charged)
+        turned_charge: Vec(u8)
+        BuilderPrint(*turned_charge, "assets/shovey-editor/classic/sprites-landscape/charged-%.png", facings[direction])
+        landscape_sprite_files[SPRITE_CHARGED + direction] = BuilderFinish(turned_charge)
+    }
+    sprite_files[SPRITE_DOOR_OPEN] = "assets/shovey-editor/classic/sprites/door-open.png"
+    landscape_sprite_files[SPRITE_DOOR_OPEN] = "assets/shovey-editor/classic/sprites-landscape/door-open.png"
+    for number: cast(s32)0..7 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "assets/shovey-editor/classic/sprites/sensor-%.png", FormatInteger(cast(s64)(number + 1), digits[:]))
+        sprite_files[SPRITE_SENSOR + number] = BuilderFinish(bytes)
+        turned_sensor: Vec(u8)
+        BuilderPrint(*turned_sensor, "assets/shovey-editor/classic/sprites-landscape/sensor-%.png", FormatInteger(cast(s64)(number + 1), digits[:]))
+        landscape_sprite_files[SPRITE_SENSOR + number] = BuilderFinish(turned_sensor)
+    }
+    sprite_files[SPRITE_SHOT] = "assets/shovey-editor/classic/sprites/projectile.png"
+    landscape_sprite_files[SPRITE_SHOT] = "assets/shovey-editor/classic/sprites-landscape/projectile.png"
+    sprites_ready = true
+    for number: cast(s32)0..ISLAND_PICTURES - 1 {
+        bytes: Vec(u8)
+        if number < ISLAND_TILES { BuilderPrint(*bytes, "assets/shovey-editor/island/tiles/%.png", number) }
+        else { BuilderPrint(*bytes, "assets/shovey-editor/island/player/%.png", number - ISLAND_TILES + 1) }
+        island_picture_files[number] = BuilderFinish(bytes)
+        turned: Vec(u8)
+        if number < ISLAND_TILES { BuilderPrint(*turned, "assets/shovey-editor/island/tiles-landscape/%.png", number) }
+        else { BuilderPrint(*turned, "assets/shovey-editor/island/player-landscape/%.png", number - ISLAND_TILES + 1) }
+        island_landscape_files[number] = BuilderFinish(turned)
+    }
+    island_pictures_ready = true
+}
+
+// A story level's picture, made once per level.
+EditorStoryPicture :: (island: bool, number: s32) -> string {
+    slot := (ifx island then 256 else 0) + number
+    if slot < 0 || slot >= 512 { return "" }
+    if editor_picture_paths[slot].count == 0 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "assets/shovey-editor/%/levels/%.png", ifx island then "island" else "classic", number)
+        editor_picture_paths[slot] = BuilderFinish(bytes)
+    }
+    return editor_picture_paths[slot]
+}
+
+// The descriptions of every picture, in the player's language.
+editor_names_language: [8]u8;
+
+EditorNames :: () {
+    if TextUntilNul(editor_names_language[:]) == editor_language && editor_classic_names[0].count > 0 { return }
+    unused CopyCString(editor_language, editor_names_language[:])
+    for kind: cast(s32)0..SPRITE_COUNT - 1 {
+        editor_classic_names[kind] = ifx kind <= 40 then EditorText(EditPieceName(false, kind)) else EditorText("editor_shovey")
+    }
+    editor_classic_names[SPRITE_DOOR_OPEN] = EditorText("editor_gate")
+    for number: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { editor_classic_names[number] = EditorText("editor_sensor") }
+    editor_classic_names[SPRITE_SHOT] = EditorText("editor_ammo")
+    for number: cast(s32)0..ISLAND_PICTURES - 1 {
+        editor_island_names[number] = ifx number < ISLAND_TILES then EditorText(EditPieceName(true, number)) else EditorText("editor_shovey")
+    }
+    for edition: cast(s32)0..1 {
+        island := edition == 1
+        count := EditPieceCount(island)
+        for index: cast(s32)0..count - 1 { editor_piece_names[edition][index] = EditorText(EditPieceKey(island, index)) }
+    }
+}
+
+// A palette piece's picture: Classic's kind on its floor, Island's tile.
+// Uses keys key and key + 1.
+EditorPieceImage :: (key: u64, island: bool, kind: s32, bounds: Rectangle, label: string) {
+    if island {
+        // The eraser is drawn by its button's icon.
+        if kind == EDIT_CLEAR || kind < 0 || kind >= ISLAND_TILES { return }
+        picture := ifx kind == ISLAND_SHOVEY then ISLAND_TILES + 2 else kind
+        // Pieces and shores stand on sand, as on an island.
+        if kind != 0 { EditorImage(key, IslandPictureFile(1), bounds, label) }
+        EditorImage(key + 1, IslandPictureFile(picture), bounds, label)
+        return
+    }
+    floor := FloorSprite(kind)
+    if kind == CLASSIC_SHOVEY { floor = 0 }
+    if floor >= 0 { EditorImage(key, SpriteFile(floor), bounds, label) }
+    sprite := ifx kind == CLASSIC_SHOVEY then SPRITE_PLAYER + 3 else KindSprite(*editor_view_classic, kind, -1, editor_frame.now)
+    if sprite >= 0 { EditorImage(key + 1, SpriteFile(sprite), bounds, label) }
+}
+
+// Draws a board in bounds and returns where its grid landed.
+EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64) -> TileMapResult {
+    if board.island {
+        view := IslandGame.{.player = -1, .direction = 3, .spike = -1, .spike_switch = -1, .water_switch = -1}
+        for at: cast(s32)0..EDIT_CELLS - 1 {
+            view.terrain[at] = cast(s32)board.ground[at]
+            object := cast(s32)board.objects[at]
+            if object == ISLAND_SHOVEY { view.player = at } else { view.objects[at] = object }
+        }
+        editor_view_isle = view
+        return IslandBoard(editor_frame.session, *editor_view_isle, bounds, key, editor_island_names[:], true)
+    }
+    view := ShoveyGame.{.player = -1, .direction = 3}
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        kind := cast(s32)board.ground[at]
+        view.tiles[at] = cast(s32)board.tiles[at]
+        view.decorations[at] = cast(s32)board.decorations[at]
+        view.light_from[at] = 4
+        if kind == CLASSIC_SHOVEY { view.player = at }
+        else if ShoveyMovable(kind) { view.objects[at] = kind }
+        else { view.ground[at] = kind }
+    }
+    editor_view_classic = view
+    return ShoveyBoard(editor_frame.session, *editor_view_classic, bounds, key, editor_frame.now, editor_classic_names[:], true)
+}
+
+// ---------------------------------------------------------------------------
+// Records
+
+EditorSaveIndex :: (island: bool) {
+    edition := ifx island then 1 else 0
+    if editor_index_bad[edition] { editor_save_failed = true; return }
+    catalog := ifx island then *editor_isle else *editor_classic
+    text := EditIndexText(catalog)
+    editor_save_failed = text == "" || !SaveAppRecordHost(EditIndexRecord(island), text)
+}
+
+EditorSaveLevel :: () {
+    if editor_open_id <= 0 { return }
+    if !SaveAppRecordHost(EditLevelRecord(editor_island, editor_open_id), EditLevelText(*editor_level)) {
+        editor_save_failed = true
+    }
+}
+
+// The summary of the open custom level, or null.
+EditorSummary :: () -> *EditSummary {
+    catalog := EditorCatalog()
+    at := EditFind(catalog, editor_open_id)
+    if editor_open_id <= 0 || at < 0 { return null }
+    return *catalog.levels[at]
+}
+
+EditorLoad :: () {
+    EditorPictures()
+    EditPiecesPrepare()
+    editor_piece[0] = 12
+    editor_piece[1] = 1
+    editor_budget = 1500
+    editor_index_bad[0] = !EditIndexRead(*editor_classic, false, AppRecordHost(EditIndexRecord(false)))
+    editor_index_bad[1] = !EditIndexRead(*editor_isle, true, AppRecordHost(EditIndexRecord(true)))
+    if editor_index_bad[0] { editor_classic = EditCatalog.{.next = 1} }
+    if editor_index_bad[1] { editor_isle = EditCatalog.{.island = true, .next = 1} }
+    for edition: cast(s32)0..1 {
+        id := AppRecordHost(ifx edition == 1 then "island-publication" else "classic-publication")
+        editor_publication_length[edition] = EditSetField(editor_publication[edition][:], id)
+    }
+    editor_sharing = AppSupportsHost(SHARING_SERVICE)
+    editor_loaded = true
+}
+
+// ---------------------------------------------------------------------------
+// Opening levels
+
+EditorClear :: () {
+    editor_history = EditHistory.{}
+    editor_stroke = false
+    editor_picking = false
+    editor_delete_armed = false
+    editor_palette_scroll = 0
+    SolverStop()
+    editor_check = CHECK_NONE
+}
+
+EditorNameField :: () {
+    editor_name = EditorField.{}
+    summary := EditorSummary()
+    if summary != null {
+        for at: cast(s32)0..summary.name_length - 1 { editor_name.bytes[at] = summary.name[at] }
+        editor_name.length = summary.name_length
+    }
+}
+
+EditorOpenStory :: (number: s32) {
+    if !EditStoryBoard(*editor_level.board, editor_island, number) { return }
+    editor_level.route_length = 0
+    EditorClear()
+    editor_open_id = 0
+    editor_open_story = number
+    EditorNameField()
+    editor_page = EDITOR_EDIT
+}
+
+// Opens a custom level by its place in the catalog.
+EditorOpenCustom :: (at: s32) {
+    catalog := EditorCatalog()
+    if at < 0 || at >= catalog.count { return }
+    id := catalog.levels[at].id
+    if !EditLevelRead(*editor_level, editor_island, AppRecordHost(EditLevelRecord(editor_island, id))) {
+        EditorNotice("editor_unreadable")
+        return
+    }
+    EditorClear()
+    editor_open_id = id
+    editor_open_story = 0
+    EditorNameField()
+    proof := catalog.levels[at].proof
+    if proof == EDIT_PROOF_NONE || editor_level.route_length == 0 {
+        editor_check = CHECK_WAITING
+        editor_check_at = editor_frame.now
+    } else { editor_check = CHECK_PROVEN }
+    editor_page = EDITOR_EDIT
+}
+
+EditorNewLevel :: () {
+    catalog := EditorCatalog()
+    at := EditAdd(catalog, 0, "")
+    if at < 0 { EditorNotice("editor_full"); return }
+    editor_level.board = EditNewBoard(editor_island)
+    editor_level.route_length = 0
+    EditorClear()
+    editor_open_id = catalog.levels[at].id
+    editor_open_story = 0
+    EditorSaveLevel()
+    EditorSaveIndex(editor_island)
+    EditorNameField()
+    editor_check = CHECK_WAITING
+    editor_check_at = editor_frame.now
+    editor_page = EDITOR_EDIT
+}
+
+// The board changed: its proof no longer holds; keep it and check it again.
+EditorBoardChanged :: () {
+    editor_level.route_length = 0
+    summary := EditorSummary()
+    if summary != null {
+        summary.proof = EDIT_PROOF_NONE
+        summary.completed = false
+    }
+    EditorSaveLevel()
+    EditorSaveIndex(editor_island)
+    SolverStop()
+    editor_check = CHECK_WAITING
+    editor_check_at = editor_frame.now + 0.6
+    editor_delete_armed = false
+}
+
+// A story level is copied into a new custom level before its first change.
+EditorMakeCopy :: () -> bool {
+    if editor_open_id > 0 { return true }
+    catalog := EditorCatalog()
+    at := EditAdd(catalog, editor_open_story, "")
+    if at < 0 { EditorNotice("editor_full"); return false }
+    editor_open_id = catalog.levels[at].id
+    editor_open_story = 0
+    EditorNameField()
+    EditorNotice("editor_copied")
+    return true
+}
+
+EditorPaintCell :: (cell: s32) {
+    if cell < 0 || cell == editor_stroke_cell { return }
+    editor_stroke_cell = cell
+    kind := editor_piece[EditorEdition()]
+    trial := editor_level.board
+    if !EditPaint(*trial, kind, cell) { return }
+    if !EditorMakeCopy() { return }
+    if !editor_stroke_changed { EditRemember(*editor_history, *editor_level.board) }
+    editor_level.board = trial
+    editor_stroke_changed = true
+}
+
+EditorUndo :: () {
+    if EditUndo(*editor_history, *editor_level.board) { EditorBoardChanged() }
+}
+
+EditorDelete :: () {
+    if !editor_delete_armed { editor_delete_armed = true; EditorNotice("editor_delete_again"); return }
+    catalog := EditorCatalog()
+    at := EditFind(catalog, editor_open_id)
+    if at < 0 { return }
+    unused SaveAppRecordHost(EditLevelRecord(editor_island, editor_open_id), "")
+    EditRemove(catalog, at)
+    EditorSaveIndex(editor_island)
+    EditorClear()
+    editor_open_id = 0
+    editor_page = EDITOR_LEVELS
+}
+
+// The name of a custom level, or the name it shows without one.
+EditorLevelName :: (slot: s32, summary: *EditSummary) -> string {
+    if summary.name_length > 0 { return EditorKeep(slot, EditField(summary.name[:], summary.name_length)) }
+    if summary.from > 0 { return EditorSay(slot, "editor_copy_of", cast(s64)summary.from) }
+    return EditorSay(slot, "editor_custom_level", cast(s64)summary.id)
+}
+
+// ---------------------------------------------------------------------------
+// Checking the open level with the solver, a little every frame
+
+EditorCheckStep :: (elapsed: float64) {
+    if editor_open_id <= 0 { return }
+    if editor_check == CHECK_WAITING && editor_frame.now >= editor_check_at && !editor_stroke {
+        if SolverStart(editor_island, EditBoardHex(*editor_level.board)) { editor_check = CHECK_RUNNING }
+        else { editor_check = CHECK_NEVER }
+    }
+    if editor_check != CHECK_RUNNING { return }
+    // Keep the frames smooth: less work when a frame took long, more when
+    // there was time to spare, within what every host can run in a frame.
+    if elapsed > 0.05 { editor_budget = editor_budget * 7 / 10 }
+    else if elapsed < 0.03 { editor_budget = editor_budget * 23 / 20 + 10 }
+    if editor_budget < 200 { editor_budget = 200 }
+    if editor_budget > 12000 { editor_budget = 12000 }
+    SolverRun(editor_budget)
+    unused SmoothFramesHost(30)
+    status := SolverStatus()
+    if status == SOLVER_RUNNING { return }
+    summary := EditorSummary()
+    if status == SOLVER_WON && summary != null && EditSetRoute(*editor_level, SolverRoute()) {
+        summary.proof = EDIT_PROOF_SOLVER
+        EditorSaveLevel()
+        EditorSaveIndex(editor_island)
+        editor_check = CHECK_PROVEN
+    } else if status == SOLVER_NEVER { editor_check = CHECK_NEVER }
+    else { editor_check = CHECK_UNKNOWN }
+}
+
+EditorCheckText :: () -> string {
+    if editor_open_id <= 0 { return EditorSay(1, "editor_story_note", cast(s64)editor_open_story) }
+    if editor_check == CHECK_WAITING { return EditorText("editor_check_waiting") }
+    if editor_check == CHECK_RUNNING { return EditorSay(1, "editor_checking", SolverStates()) }
+    if editor_check == CHECK_NEVER { return EditorText("editor_never") }
+    if editor_check == CHECK_UNKNOWN { return EditorText("editor_unknown") }
+    summary := EditorSummary()
+    if summary != null && summary.proof == EDIT_PROOF_PLAYED { return EditorText("editor_proven_played") }
+    if summary != null && summary.proof == EDIT_PROOF_DOWNLOAD { return EditorText("editor_proven_download") }
+    return EditorText("editor_proven_solver")
+}
+
+// ---------------------------------------------------------------------------
+// Text fields
+
+// What the focused field receives this frame: the host's typing, from a
+// keyboard, an input method or a phone's keyboard.
+EditorFieldInput :: () -> TextFieldInput { return AppFieldInputHost() }
+
+// Draws a field and applies its edit. Returns true when Enter committed it.
+EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: string, placeholder: string,
+    max_bytes: s32) -> bool {
+    edited: TextFieldResult
+    {
+        value := EditField(field.bytes[:], field.length)
+        edited = TextField(editor_frame.session, TextFieldProps.{.key = key, .bounds = bounds, .value = value,
+                .label = label, .placeholder = placeholder, .cursor = field.cursor, .anchor = field.anchor,
+                .scroll_x = field.scroll_x, .focused = field.focused, .focus_id = cast(s32)key,
+                .max_bytes = max_bytes, .max_codepoints = max_bytes,
+                .input = ifx field.focused then EditorFieldInput() else TextFieldInput.{}})
+    }
+    if edited.edit.changed {
+        start := edited.edit.start; end := edited.edit.end
+        replacement := edited.edit.replacement
+        if start >= 0 && end >= start && end <= field.length &&
+        cast(s64)(field.length - (end - start)) + replacement.count <= cast(s64)max_bytes {
+            joined: [256]u8
+            length: s32 = 0
+            for at: cast(s32)0..start - 1 { joined[length] = field.bytes[at]; length += 1 }
+            for byte: replacement { joined[length] = byte; length += 1 }
+            for at: cast(s32)end..field.length - 1 { joined[length] = field.bytes[at]; length += 1 }
+            for at: cast(s32)0..length - 1 { field.bytes[at] = joined[at] }
+            field.length = length
+        }
+    }
+    field.cursor = edited.cursor
+    field.anchor = edited.anchor
+    field.scroll_x = edited.scroll_x
+    field.focused = edited.focused
+    // A key typed into the field does nothing else.
+    if field.focused { editor_key = 0 }
+    return edited.committed
+}
+
+// ---------------------------------------------------------------------------
+// The first page: Classic or Island
+
+EditorHome :: (width: float32, top: float32, bottom: float32) {
+    EditorCaption(101, Rectangle.{16.0, top + 8.0, width - 32.0, 40.0}, EditorText("editor_choose"), 15)
+    portrait := width < 560.0
+    gap: float32 = 12.0
+    card_top := top + 52.0
+    card_height := (bottom - card_top - 72.0 - gap) / (ifx portrait then 2.0 else 1.0)
+    card_width := ifx portrait then width - 32.0 else (width - 32.0 - gap) / 2.0
+    for edition: cast(s32)0..1 {
+        island := edition == 1
+        x: float32 = ifx portrait then 16.0 else 16.0 + cast(float32)edition * (card_width + gap)
+        y: float32 = ifx portrait then card_top + cast(float32)edition * (card_height + gap) else card_top
+        card := Rectangle.{x, y, card_width, card_height}
+        catalog := ifx island then *editor_isle else *editor_classic
+        name := EditorText(ifx island then "editor_island" else "editor_classic")
+        if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(110 + edition * 4), .id = 110 + edition * 4,
+                .bounds = card, .label = name, .detail = EditorSay(edition, "editor_custom_count", cast(s64)catalog.count),
+                .invisible = true}) != 0 {
+            // The open level belongs to one edition; choosing the other closes it.
+            if island != editor_island { EditorClear(); editor_open_id = 0; editor_open_story = 0 }
+            editor_island = island
+            editor_levels_scroll = 0
+            editor_page = EDITOR_LEVELS
+        }
+        EditorImage(cast(u64)(111 + edition * 4),
+            ifx island then "assets/shovey-editor/island/preview.png" else "assets/shovey-editor/classic/preview.png",
+            Rectangle.{x + 8.0, y + 8.0, card_width - 16.0, card_height - 64.0}, name)
+        EditorCaption(cast(u64)(112 + edition * 4), Rectangle.{x + 12.0, y + card_height - 52.0, card_width - 24.0, 26.0}, name, 20, true)
+        EditorCaption(cast(u64)(113 + edition * 4), Rectangle.{x + 12.0, y + card_height - 28.0, card_width - 24.0, 22.0},
+            EditorSay(2, "editor_custom_count", cast(s64)catalog.count), 14, true)
+    }
+    row := bottom - 60.0
+    half := (width - 32.0 - gap) / 2.0
+    if EditorControl(120, Rectangle.{16.0, row, half, 48.0}, EditorText("editor_explore")) {
+        editor_list_scroll = 0
+        editor_sharing = AppSupportsHost(SHARING_SERVICE)
+        editor_page = EDITOR_EXPLORE
+    }
+    if EditorControl(121, Rectangle.{16.0 + half + gap, row, half, 48.0}, EditorText("editor_export")) { EditorExportOpen() }
+}
+
+// ---------------------------------------------------------------------------
+// The levels of one edition: your own, then the story
+
+EditorLevels :: (width: float32, top: float32, bottom: float32) {
+    catalog := EditorCatalog()
+    if EditorControl(200, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_HOME; return }
+    EditorCaption(201, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0},
+        EditorText(ifx editor_island then "editor_island" else "editor_classic"), 20, true)
+    if EditorControl(202, Rectangle.{width - 108.0, top + 6.0, 100.0, 40.0}, EditorText("editor_publish")) {
+        EditorPublishOpen()
+        return
+    }
+    columns := cast(s32)((width - 32.0) / 160.0)
+    if columns < 2 { columns = 2 }
+    gap: float32 = 8.0
+    cell_width := (width - 32.0 - gap * cast(float32)(columns - 1)) / cast(float32)columns
+    custom_height: float32 = 64.0
+    story_height := cell_width * 5.0 / 3.0 + 40.0
+    customs := catalog.count + 1
+    custom_rows := (customs + columns - 1) / columns
+    story_rows := (EditStoryCount(editor_island) + columns - 1) / columns
+    story_top := 36.0 + cast(float32)custom_rows * (custom_height + gap) + 40.0
+    content := story_top + cast(float32)story_rows * (story_height + gap)
+    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)203,
+            .bounds = Rectangle.{16.0, top + 56.0, width - 32.0, bottom - top - 64.0},
+            .content_height = cast(s32)content, .scroll_offset = editor_levels_scroll})
+    editor_levels_scroll = scroll.scroll_offset
+    open_custom: s32 = -1
+    open_story: s32 = 0
+    make := false
+    if scroll.opened {
+        base := scroll.content
+        EditorCaption(204, Rectangle.{base.x, base.y, base.width, 32.0}, EditorText("editor_your_levels"), 18)
+        for index: cast(s32)0..customs - 1 {
+            cell := Rectangle.{base.x + cast(float32)(index % columns) * (cell_width + gap),
+                base.y + 36.0 + cast(float32)(index / columns) * (custom_height + gap), cell_width, custom_height}
+            if cell.y + cell.height < scroll.viewport.y || cell.y > scroll.viewport.y + scroll.viewport.height { continue }
+            if index == 0 {
+                if Button(editor_frame.session, ButtonProps.{.key = cast(u64)205, .id = 205, .bounds = cell,
+                        .label = EditorText("editor_new_level"), .icon_shape = "S2rr:M12 5V19M5 12H19", .fit_content = true,
+                        .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { make = true }
+                continue
+            }
+            summary := *catalog.levels[index - 1]
+            status := EditorText(ifx summary.proof == EDIT_PROOF_NONE then "editor_not_proven" else ifx summary.completed then "editor_completed" else "editor_proven")
+            // A downloaded level names its author until you win it.
+            if summary.author_length > 0 && !summary.completed {
+                status = EditorSay(1, "editor_by_author", 0, EditField(summary.author[:], summary.author_length))
+            }
+            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(240000 + index * 4), .id = 240000 + index * 4,
+                    .bounds = cell, .label = EditorLevelName(0, summary), .detail = status, .fit_content = true,
+                    .selected = summary.completed,
+                    .tone = ifx summary.proof != EDIT_PROOF_NONE then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
+                    .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { open_custom = index - 1 }
+        }
+        y := base.y + story_top
+        EditorCaption(206, Rectangle.{base.x, y - 36.0, base.width, 32.0}, EditorText("editor_story_levels"), 18)
+        for number: cast(s32)1..EditStoryCount(editor_island) {
+            at := number - 1
+            cell := Rectangle.{base.x + cast(float32)(at % columns) * (cell_width + gap),
+                y + cast(float32)(at / columns) * (story_height + gap), cell_width, story_height}
+            if cell.y + cell.height < scroll.viewport.y || cell.y > scroll.viewport.y + scroll.viewport.height { continue }
+            digits: [24]u8
+            label := FormatInteger(cast(s64)number, digits[:])
+            detail := ifx editor_island then IslandLevelName(number) else ""
+            key := cast(u64)(260000 + number * 4)
+            if Button(editor_frame.session, ButtonProps.{.key = key, .id = 260000 + number * 4, .bounds = cell,
+                    .label = label, .detail = detail, .invisible = true}) != 0 { open_story = number }
+            EditorImage(key + 1, EditorStoryPicture(editor_island, number),
+                Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.width * 5.0 / 3.0 - 8.0}, label)
+            EditorCaption(key + 2, Rectangle.{cell.x + 6.0, cell.y + cell.width * 5.0 / 3.0, cell.width - 12.0, 32.0},
+                ifx editor_island then EditorSay(3, "editor_story_named", cast(s64)number, detail) else label, 14)
+        }
+        unused End(editor_frame.session)
+    }
+    if make { EditorNewLevel() }
+    else if open_custom >= 0 { EditorOpenCustom(open_custom) }
+    else if open_story > 0 { EditorOpenStory(open_story) }
+}
+
+// ---------------------------------------------------------------------------
+// Painting a board
+
+EditorEdit :: (width: float32, top: float32, bottom: float32) {
+    island := editor_island
+    summary := EditorSummary()
+    if EditorControl(300, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_levels")) {
+        editor_page = EDITOR_LEVELS
+        return
+    }
+    // Lines borrowed from the text slots end before anything else runs.
+    {
+        title := EditorSay(0, "editor_story_level", cast(s64)editor_open_story)
+        if summary != null { title = EditorLevelName(0, summary) }
+        else if island { title = EditorSay(0, "editor_story_named", cast(s64)editor_open_story, IslandLevelName(editor_open_story)) }
+        EditorCaption(301, Rectangle.{112.0, top + 6.0, width - 312.0, 40.0}, title, 17, true)
+    }
+    typing := editor_name.focused
+    if EditorControl(302, Rectangle.{width - 196.0, top + 6.0, 88.0, 40.0}, EditorText("editor_undo"), editor_history.count == 0) ||
+    (!typing && (editor_key == 90 || editor_key == 259) && editor_history.count > 0) { EditorUndo() }
+    if EditorControl(303, Rectangle.{width - 104.0, top + 6.0, 96.0, 40.0}, EditorText("editor_play")) {
+        if EditPlayStart(*editor_play, *editor_level.board) {
+            editor_play_tick = editor_frame.now
+            editor_page = EDITOR_PLAY
+            return
+        }
+    }
+    {
+        status := ifx editor_notice_until > editor_frame.now then editor_notice else EditorCheckText()
+        EditorCaption(304, Rectangle.{16.0, top + 50.0, width - 32.0, 24.0}, status, 14, true)
+    }
+    // The palette sits under the board, so the board itself keeps the
+    // screen's orientation instead of collapsing back into a narrow column.
+    area := Rectangle.{8.0, top + 78.0, width - 16.0, bottom - top - 86.0}
+    board_area: Rectangle
+    palette: Rectangle
+    if BoardLandscape(area.width, area.height) {
+        board_height := area.width * 3.0 / 5.0
+        if board_height > area.height * 0.68 { board_height = area.height * 0.68 }
+        board_area = Rectangle.{area.x, area.y, area.width, board_height}
+        palette = Rectangle.{area.x, area.y + board_height + 8.0, area.width, area.height - board_height - 8.0}
+    } else {
+        board_height := area.width * 5.0 / 3.0
+        if board_height > area.height * 0.62 { board_height = area.height * 0.62 }
+        board_area = Rectangle.{area.x, area.y, area.width, board_height}
+        palette = Rectangle.{area.x, area.y + board_height + 8.0, area.width, area.height - board_height - 8.0}
+    }
+    grid := EditorBoard(*editor_level.board, board_area, cast(u64)200000)
+    landscape := true
+    // Tap or drag to paint, one stroke while the press lasts.
+    press := Press(editor_frame.session, PressProps.{.key = cast(u64)305, .id = 305, .bounds = grid.board,
+            .label = EditorText("editor_board"), .now = editor_frame.now, .capture = true, .hold_seconds = 3600.0})
+    if press.down {
+        cell := TileMapCellAt(grid, press.x, press.y)
+        cell = BoardLogicalIndex(cell, landscape)
+        if !editor_stroke {
+            editor_stroke = true
+            editor_stroke_cell = -1
+            editor_stroke_changed = false
+            if editor_picking && cell >= 0 {
+                picked := EditPick(*editor_level.board, cell)
+                if picked >= 0 { editor_piece[EditorEdition()] = picked }
+                editor_picking = false
+                editor_stroke_cell = cell
+            }
+        }
+        EditorPaintCell(cell)
+    }
+    if editor_stroke && (press.released || !press.down) {
+        editor_stroke = false
+        if editor_stroke_changed { EditorBoardChanged() }
+        editor_stroke_changed = false
+    }
+    EditorPalette(palette, summary != null)
+}
+
+EditorPalette :: (bounds: Rectangle, custom: bool) {
+    island := editor_island
+    edition := EditorEdition()
+    tools_height: float32 = ifx custom then 96.0 else 48.0
+    if EditorControl(310, Rectangle.{bounds.x, bounds.y, 88.0, 40.0}, EditorText("editor_pick"), false, editor_picking) {
+        editor_picking = !editor_picking
+    }
+    chosen := editor_piece[edition]
+    EditorPieceImage(cast(u64)311, island, chosen, Rectangle.{bounds.x + 96.0, bounds.y + 2.0, 36.0, 36.0}, EditorText(EditPieceName(island, chosen)))
+    EditorCaption(313, Rectangle.{bounds.x + 140.0, bounds.y, bounds.width - 140.0, 40.0},
+        EditorText(ifx editor_picking then "editor_pick_hint" else EditPieceName(island, chosen)), 14)
+    if custom {
+        name_width := bounds.width - 104.0
+        if EditorFieldDraw(*editor_name, cast(u64)314, Rectangle.{bounds.x, bounds.y + 48.0, name_width, 40.0},
+            EditorText("editor_name"), EditorText("editor_name_hint"), EDIT_NAME) || !editor_name.focused {
+            summary := EditorSummary()
+            name := EditField(editor_name.bytes[:], editor_name.length)
+            if summary != null && EditField(summary.name[:], summary.name_length) != name {
+                EditSetName(summary, name)
+                EditorSaveIndex(island)
+            }
+        }
+        if Button(editor_frame.session, ButtonProps.{.key = cast(u64)315, .id = 315,
+                .bounds = Rectangle.{bounds.x + bounds.width - 96.0, bounds.y + 48.0, 96.0, 40.0},
+                .label = EditorText(ifx editor_delete_armed then "editor_delete_confirm" else "editor_delete"), .fit_content = true,
+                .tone = ButtonTone.ButtonToneDanger, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { EditorDelete() }
+    }
+    size: float32 = 48.0
+    gap: float32 = 4.0
+    columns := cast(s32)((bounds.width - 12.0 + gap) / (size + gap))
+    if columns < 1 { columns = 1 }
+    count := EditPieceCount(island)
+    rows := (count + columns - 1) / columns
+    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)316,
+            .bounds = Rectangle.{bounds.x, bounds.y + tools_height, bounds.width, bounds.height - tools_height},
+            .content_height = cast(s32)(cast(float32)rows * (size + gap)), .scroll_offset = editor_palette_scroll})
+    editor_palette_scroll = scroll.scroll_offset
+    choose: s32 = -1
+    if scroll.opened {
+        for index: cast(s32)0..count - 1 {
+            cell := Rectangle.{scroll.content.x + cast(float32)(index % columns) * (size + gap),
+                scroll.content.y + cast(float32)(index / columns) * (size + gap), size, size}
+            if cell.y + cell.height < scroll.viewport.y || cell.y > scroll.viewport.y + scroll.viewport.height { continue }
+            kind := EditPieceKind(island, index)
+            name := editor_piece_names[edition][index]
+            key := cast(u64)(230000 + index * 4)
+            if Button(editor_frame.session, ButtonProps.{.key = key, .id = 230000 + index * 4, .bounds = cell,
+                    .label = name, .icon_only = true, .selected = kind == chosen && !editor_picking,
+                    .icon_shape = ifx kind == EDIT_CLEAR then EDITOR_ERASER else "",
+                    .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { choose = kind }
+            EditorPieceImage(key + 1, island, kind, Rectangle.{cell.x + 6.0, cell.y + 6.0, size - 12.0, size - 12.0}, name)
+        }
+        unused End(editor_frame.session)
+    }
+    if choose >= 0 { editor_piece[edition] = choose; editor_picking = false }
+}
+
+// ---------------------------------------------------------------------------
+// Playing the board
+
+EditorSound :: (event: s32) {
+    if event <= 0 { return }
+    if editor_island {
+        sounds: [9]string = .["", "assets/shovey-editor/island/sounds/push.wav", "assets/shovey-editor/island/sounds/splash.wav",
+        "assets/shovey-editor/island/sounds/goal.wav", "assets/shovey-editor/island/sounds/pickup.wav",
+        "assets/shovey-editor/island/sounds/gate.wav", "assets/shovey-editor/island/sounds/teleport.wav",
+        "assets/shovey-editor/island/sounds/shot.wav", "assets/shovey-editor/island/sounds/won.wav"]
+        if event < 9 { unused AppSoundHost(sounds[event]) }
+        return
+    }
+    sounds: [10]string = .["", "assets/shovey-editor/classic/sounds/push.wav", "assets/shovey-editor/classic/sounds/pit.wav",
+    "assets/shovey-editor/classic/sounds/goal.wav", "assets/shovey-editor/classic/sounds/pickup.wav",
+    "assets/shovey-editor/classic/sounds/door.wav", "assets/shovey-editor/classic/sounds/teleport.wav",
+    "assets/shovey-editor/classic/sounds/shot.wav", "assets/shovey-editor/classic/sounds/won.wav",
+    "assets/shovey-editor/classic/sounds/lost.wav"]
+    if event < 10 { unused AppSoundHost(sounds[event]) }
+}
+
+EditorAct :: (direction: s32) {
+    if editor_island {
+        before := editor_play.isle
+        if EditPlayAct(*editor_play, direction) { EditorSound(IslandEvent(*before, *editor_play.isle)) }
+    } else {
+        before := editor_play.classic
+        if EditPlayAct(*editor_play, direction) { EditorSound(ShoveyEvent(*before, *editor_play.classic)) }
+    }
+    EditorPlayWon()
+}
+
+// A win proves the board: the played route is kept beside it, and the level
+// counts as completed.
+EditorPlayWon :: () {
+    if !EditPlayProven(*editor_play) || editor_open_id <= 0 { return }
+    summary := EditorSummary()
+    if summary == null || summary.completed { return }
+    if !EditSame(*editor_play.start, *editor_level.board) { return }
+    if summary.proof == EDIT_PROOF_NONE || editor_level.route_length == 0 {
+        if !EditSetRoute(*editor_level, EditField(editor_play.route[:], editor_play.route_length)) { return }
+        summary.proof = EDIT_PROOF_PLAYED
+        SolverStop()
+        editor_check = CHECK_PROVEN
+    }
+    summary.completed = true
+    EditorSaveLevel()
+    EditorSaveIndex(editor_island)
+}
+
+EditorInventory :: (bounds: Rectangle) {
+    game := *editor_play.isle
+    values: [6]s32 = .[game.keys, game.seeds, game.crabs, game.ammunition, game.coins, game.pearls]
+    pictures: [6]s32 = .[60, 64, 66, 80, 82, 81]
+    cell := bounds.width / 6.0
+    for at: cast(s32)0..5 {
+        if values[at] <= 0 { continue }
+        x := bounds.x + cast(float32)at * cell
+        EditorImage(cast(u64)(420 + at * 2), IslandPictureFile(pictures[at]), Rectangle.{x, bounds.y, 24.0, 24.0},
+            EditorText(EditPieceName(true, pictures[at])))
+        digits: [24]u8
+        EditorCaption(cast(u64)(421 + at * 2), Rectangle.{x + 26.0, bounds.y, cell - 26.0, 24.0}, FormatInteger(cast(s64)values[at], digits[:]), 14)
+    }
+}
+
+EditorPlay :: (width: float32, top: float32, bottom: float32) {
+    if EditorControl(400, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_edit")) { editor_page = EDITOR_EDIT; return }
+    EditorCaption(401, Rectangle.{112.0, top + 6.0, width - 312.0, 40.0}, EditorText("editor_testing"), 17, true)
+    if EditorControl(402, Rectangle.{width - 196.0, top + 6.0, 88.0, 40.0}, EditorText("editor_undo"), editor_play.undo_count == 0) ||
+    editor_key == 90 || editor_key == 259 { unused EditPlayUndo(*editor_play) }
+    if EditorControl(403, Rectangle.{width - 104.0, top + 6.0, 96.0, 40.0}, EditorText("editor_restart")) || editor_key == 82 {
+        unused EditPlayRestart(*editor_play)
+        editor_play_tick = editor_frame.now
+    }
+    won := EditPlayWon(*editor_play)
+    lost := EditPlayLost(*editor_play)
+    status := ""
+    status_icon := ""
+    if won {
+        status = EditorText(ifx editor_open_id > 0 then "editor_won_proof" else "editor_won")
+        status_icon = "S2rr:M5 12L10 17L19 7"
+    } else if lost {
+        status = EditorText("editor_lost")
+        status_icon = "S2rr:M6 6L18 18M18 6L6 18"
+    } else if editor_island && IslandRemaining(*editor_play.isle) == 0 {
+        status = EditorText("editor_ready_island")
+        status_icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10"
+    } else if !editor_island && ShoveyRemaining(*editor_play.classic) == 0 {
+        status = EditorText("editor_ready_classic")
+        status_icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10"
+    }
+    status_y := top + 52.0
+    if status_icon != "" {
+        unused Button(editor_frame.session, ButtonProps.{.key = cast(u64)420, .id = 420,
+                .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
+                .label = status, .icon_shape = status_icon, .icon_only = true,
+                .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
+    }
+    if editor_island { EditorInventory(Rectangle.{16.0, status_y + 24.0, width - 32.0, 24.0}) }
+    below: float32 = ifx editor_island then 52.0 else 28.0
+    area := Rectangle.{8.0, status_y + below, width - 16.0, bottom - status_y - below - 8.0}
+    landscape := true
+    keyed: s32 = -1
+    key := editor_key
+    if key == 263 || key == 65 { keyed = 0 }
+    if key == 265 || key == 87 { keyed = 1 }
+    if key == 262 || key == 68 { keyed = 2 }
+    if key == 264 || key == 83 { keyed = 3 }
+    if keyed >= 0 { editor_joystick_hidden = true; EditorAct(BoardEngineDirection(keyed, landscape)) }
+    if key == 32 && !editor_island { EditorAct(-1) }
+    if !editor_island && editor_frame.now - editor_play_tick >= 1.0 {
+        unused EditPlayTick(*editor_play)
+        editor_play_tick = editor_frame.now
+    }
+    grid: TileMapResult
+    if editor_island {
+        grid = IslandBoard(editor_frame.session, *editor_play.isle, area, cast(u64)200000, editor_island_names[:], true)
+    } else {
+        grid = ShoveyBoard(editor_frame.session, *editor_play.classic, area, cast(u64)200000, editor_frame.now, editor_classic_names[:], true)
+    }
+    disabled := won || lost
+    // Swipe on the board to step, or tap a cell to step towards it; hold
+    // either to keep walking.
+    gesture := SwipeArea(editor_frame.session, SwipeAreaProps.{.key = cast(u64)405, .id = 405, .bounds = grid.board,
+            .label = EditorText("editor_controls"), .now = editor_frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
+    joystick_allowed := ControlsJoystickAllowed()
+    if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { editor_joystick_hidden = true }
+    if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { editor_joystick_hidden = false }
+    if gesture.down && joystick_allowed { editor_joystick_hidden = false }
+    step := BoardEngineDirection(gesture.swiped, landscape)
+    player := ifx editor_island then editor_play.isle.player else editor_play.classic.player
+    if gesture.tapped || gesture.held {
+        cell := TileMapCellAt(grid, gesture.x, gesture.y)
+        cell = BoardLogicalIndex(cell, landscape)
+        if cell >= 0 {
+            step = TouchDirection(cast(float32)(cell % EDIT_WIDTH - player % EDIT_WIDTH),
+                cast(float32)(cell / EDIT_WIDTH - player / EDIT_WIDTH), 1.0)
+        }
+    }
+    if !editor_joystick_hidden && !disabled {
+        size := ifx width < bottom - top then width else bottom - top
+        size *= 0.3
+        if size < 104.0 { size = 104.0 }
+        if size > 180.0 { size = 180.0 }
+        stick := Joystick(editor_frame.session, JoystickProps.{.key = cast(u64)406, .id = 406,
+                .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size}, .repeat_seconds = 0.16,
+                .label = EditorText("editor_controls"), .now = editor_frame.now})
+        if stick.step { step = BoardEngineDirection(stick.direction, landscape) }
+        if !editor_island && (editor_play.classic.powers & SHOVEY_AMMO) != 0 {
+            if EditorControl(407, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, EditorText("editor_throw")) { EditorAct(-1) }
+        }
+    }
+    if step >= 0 { EditorAct(step) }
+}
+
+// ---------------------------------------------------------------------------
+// Export for the developer
+
+// Collects every proven custom level of both editions as text.
+EditorExportOpen :: () {
+    writer := EditWriter.{.bytes = editor_export_bytes[:]}
+    EditExportBegin(*writer)
+    editor_export_count = 0
+    for edition: cast(s32)0..1 {
+        island := edition == 1
+        catalog := ifx island then *editor_isle else *editor_classic
+        for at: cast(s32)0..catalog.count - 1 {
+            summary := *catalog.levels[at]
+            if summary.proof == EDIT_PROOF_NONE { continue }
+            if !EditLevelRead(*editor_download, island, AppRecordHost(EditLevelRecord(island, summary.id))) { continue }
+            if editor_download.route_length == 0 { continue }
+            EditExportLevel(*writer, summary, *editor_download, editor_export_count == 0, EditorLevelName(1, summary))
+            editor_export_count += 1
+        }
+    }
+    EditExportEnd(*writer)
+    editor_export_length = ifx writer.full then 0 else writer.length
+    editor_export_cursor = 0
+    editor_export_anchor = 0
+    editor_export_scroll = 0
+    editor_export_copy = false
+    editor_page = EDITOR_EXPORT
+    if writer.full { EditorNotice("editor_export_full") }
+}
+
+EditorExport :: (width: float32, top: float32, bottom: float32) {
+    if EditorControl(500, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_HOME; return }
+    EditorCaption(501, Rectangle.{112.0, top + 6.0, width - 232.0, 40.0}, EditorText("editor_export"), 20, true)
+    copy := EditorControl(502, Rectangle.{width - 112.0, top + 6.0, 104.0, 40.0}, EditorText("editor_copy"), editor_export_length == 0)
+    note := EditorSay(0, ifx editor_export_count == 0 then "editor_export_none" else "editor_export_note", cast(s64)editor_export_count)
+    if editor_notice_until > editor_frame.now { note = editor_notice }
+    EditorCaption(503, Rectangle.{16.0, top + 52.0, width - 32.0, 44.0}, note, 14)
+    // Copy selects everything and copies it through the text area, the way
+    // its own Copy command does; the text can also be selected by hand.
+    input: TextAreaInput
+    if copy || editor_export_copy {
+        editor_export_anchor = 0
+        editor_export_cursor = editor_export_length
+        input.focus = true
+        input.copy = true
+        editor_export_copy = false
+        EditorNotice("editor_copied_text")
+    }
+    area := TextArea(editor_frame.session, TextAreaProps.{.key = cast(u64)504,
+            .bounds = Rectangle.{16.0, top + 100.0, width - 32.0, bottom - top - 108.0},
+            .value = TextView(editor_export_bytes[0:editor_export_length]), .label = EditorText("editor_export"),
+            .cursor = editor_export_cursor, .anchor = editor_export_anchor, .scroll_y = editor_export_scroll,
+            .focused = editor_export_focused || copy, .read_only = true, .wrap = true, .input = input})
+    editor_export_cursor = area.cursor
+    editor_export_anchor = area.anchor
+    editor_export_scroll = area.scroll_y
+    editor_export_focused = area.focused
+}
+
+// ---------------------------------------------------------------------------
+// Sharing level collections
+
+EditorShareCall :: (length: s32) -> SharingReply {
+    reply := AppServiceHost(SHARING_SERVICE, TextView(editor_request_bytes[0:length]))
+    read := SharingReplyRead(reply)
+    if read.status == SHARING_DONE || read.status == SHARING_FAILED { EditorShareKeep(reply) }
+    return read
+}
+
+// Keeps a reply's text for reading over the next frames.
+EditorShareKeep :: (reply: string) {
+    editor_reply_length = 0
+    if reply.count > cast(s64)editor_reply_bytes.count { return }
+    for at: cast(s64)0..reply.count - 1 { editor_reply_bytes[at] = reply[at] }
+    editor_reply_length = cast(s32)reply.count
+}
+
+// Starts a request; the reply says pending with its number, or why not.
+EditorShareStart :: (kind: s32, length: s32) {
+    reply := EditorShareCall(length)
+    if reply.status == SHARING_PENDING && reply.request >= 0 {
+        editor_share = kind
+        editor_share_request = reply.request
+        editor_share_poll = editor_frame.now + 1.0
+        editor_share_status = "editor_share_waiting"
+        return
+    }
+    editor_share = SHARE_IDLE
+    editor_share_status = "editor_share_failed"
+    if reply.status == SHARING_UNAVAILABLE { editor_share_status = "editor_share_unavailable" }
+    if reply.status == SHARING_REJECTED {
+        editor_share_status = ifx reply.error_length > 0 then EditorShareError(*reply) else "editor_share_rejected"
+        if editor_share_status == "editor_share_failed" { editor_share_status = "editor_share_rejected" }
+    }
+}
+
+EditorShareError :: (reply: *SharingReply) -> string {
+    error := EditField(reply.error[:], reply.error_length)
+    if error == "signed-out" { return "editor_signed_out" }
+    if error == "offline" { return "editor_offline" }
+    if error == "not-found" { return "editor_not_found" }
+    if error == "forbidden" { return "editor_forbidden" }
+    if error == "too-large" { return "editor_too_large" }
+    if error == "invalid" { return "editor_invalid" }
+    if error == "busy" { return "editor_busy" }
+    return "editor_share_failed"
+}
+
+// Polls the request in flight about once a second, and checks a fetched
+// collection's routes a few at a time.
+EditorShareStep :: () {
+    if editor_share == SHARE_IDLE { return }
+    unused SmoothFramesHost(30)
+    if editor_share == SHARE_VERIFY { EditorVerifyStep(); return }
+    if editor_frame.now < editor_share_poll { return }
+    editor_share_poll = editor_frame.now + 1.0
+    writer := EditWriter.{.bytes = editor_request_bytes[:]}
+    SharingStatusRequest(*writer, editor_share_request)
+    reply := EditorShareCall(writer.length)
+    if reply.status == SHARING_PENDING { return }
+    kind := editor_share
+    editor_share = SHARE_IDLE
+    if reply.status != SHARING_DONE {
+        editor_share_status = ifx reply.status == SHARING_FAILED then EditorShareError(*reply) else "editor_share_failed"
+        return
+    }
+    text := TextView(editor_reply_bytes[0:editor_reply_length])
+    edition := EditorEdition()
+    if kind == SHARE_PUBLISH {
+        meta: SharingMeta
+        if SharingPublicationRead(text, *meta) {
+            editor_publication_length[edition] = EditSetField(editor_publication[edition][:], EditField(meta.id[:], meta.id_length))
+            unused SaveAppRecordHost(ifx editor_island then "island-publication" else "classic-publication",
+                EditField(meta.id[:], meta.id_length))
+        }
+        editor_share_status = "editor_published"
+    } else if kind == SHARE_UNPUBLISH {
+        editor_publication_length[edition] = 0
+        unused SaveAppRecordHost(ifx editor_island then "island-publication" else "classic-publication", "")
+        editor_share_status = "editor_unpublished"
+    } else if kind == SHARE_FIND {
+        editor_result_count = SharingFindRead(text, editor_results[:])
+        if editor_result_count < 0 { editor_result_count = 0; editor_share_status = "editor_share_failed" }
+        else { editor_share_status = ifx editor_result_count == 0 then "editor_found_none" else "editor_found" }
+    } else if kind == SHARE_FETCH {
+        at := FieldAt(text, 0, "document")
+        if at < 0 || !SharingDocumentRead(text, at, *editor_document) { editor_share_status = "editor_share_invalid"; return }
+        editor_document_at = at
+        editor_verify_index = 0
+        editor_verify_at = 0
+        editor_verify_added = 0
+        editor_verify_refused = 0
+        editor_share = SHARE_VERIFY
+        editor_share_status = "editor_verifying"
+    }
+}
+
+// Replays a fetched level's route a few hundred moves per frame; a level
+// whose route wins becomes a custom level, any other is refused.
+EditorVerifyStep :: () {
+    text := TextView(editor_reply_bytes[0:editor_reply_length])
+    while editor_verify_index < editor_document.count {
+        if editor_verify_at == 0 {
+            if !SharingDocumentLevelRead(text, *editor_document, editor_verify_index, editor_download_name[:],
+                *editor_download_name_length, *editor_download) {
+                editor_verify_refused += 1
+                editor_verify_index += 1
+                continue
+            }
+        }
+        result := EditReplay(*editor_play, *editor_download.board, EditField(editor_download.route[:], editor_download.route_length),
+            *editor_verify_at, 300)
+        if result < 0 { return }
+        editor_verify_at = 0
+        editor_verify_index += 1
+        if result == 0 { editor_verify_refused += 1; continue }
+        catalog := ifx editor_document.island then *editor_isle else *editor_classic
+        at := EditAdd(catalog, 0, EditField(editor_download_name[:], editor_download_name_length))
+        if at < 0 { editor_verify_refused += 1; continue }
+        catalog.levels[at].proof = EDIT_PROOF_DOWNLOAD
+        EditSetAuthor(*catalog.levels[at], EditField(editor_verify_author[:], editor_verify_author_length))
+        unused SaveAppRecordHost(EditLevelRecord(editor_document.island, catalog.levels[at].id), EditLevelText(*editor_download))
+        EditorSaveIndex(editor_document.island)
+        editor_verify_added += 1
+        return
+    }
+    EditorSaveIndex(editor_document.island)
+    editor_share = SHARE_IDLE
+    editor_share_status = "editor_downloaded"
+}
+
+EditorPublishOpen :: () {
+    editor_share_title = EditorField.{}
+    title := EditorText(ifx editor_island then "editor_island_levels" else "editor_classic_levels")
+    editor_share_title.length = EditSetField(editor_share_title.bytes[:], title)
+    for at: cast(s32)0..EDIT_LEVELS - 1 { editor_share_skip[at] = false }
+    editor_share_status = ""
+    editor_list_scroll = 0
+    editor_sharing = AppSupportsHost(SHARING_SERVICE)
+    editor_page = EDITOR_PUBLISH
+}
+
+// Publishes the chosen proven levels of this edition as one collection.
+EditorPublish :: () {
+    catalog := EditorCatalog()
+    document := EditWriter.{.bytes = editor_reply_bytes[:]}
+    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.length))
+    if title.count == 0 { editor_share_status = "editor_title_needed"; return }
+    SharingDocumentBegin(*document, editor_island, title)
+    count: s32 = 0
+    for at: cast(s32)0..catalog.count - 1 {
+        summary := *catalog.levels[at]
+        if summary.proof == EDIT_PROOF_NONE || editor_share_skip[at] { continue }
+        if !EditLevelRead(*editor_download, editor_island, AppRecordHost(EditLevelRecord(editor_island, summary.id))) { continue }
+        if editor_download.route_length == 0 { continue }
+        SharingDocumentLevel(*document, EditorLevelName(1, summary), *editor_download, count == 0)
+        count += 1
+    }
+    SharingDocumentEnd(*document)
+    if count == 0 { editor_share_status = "editor_publish_none"; return }
+    if document.full || document.length > SHARING_DOCUMENT_MAX { editor_share_status = "editor_too_large"; return }
+    request := EditWriter.{.bytes = editor_request_bytes[:]}
+    edition := EditorEdition()
+    SharingPublishRequest(*request, title, editor_share_visibility, TextView(editor_reply_bytes[0:document.length]),
+        EditField(editor_publication[edition][:], editor_publication_length[edition]))
+    if request.full { editor_share_status = "editor_too_large"; return }
+    EditorShareStart(SHARE_PUBLISH, request.length)
+}
+
+EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
+    if EditorControl(600, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_LEVELS; return }
+    EditorCaption(601, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, EditorText("editor_publish"), 20, true)
+    busy := editor_share != SHARE_IDLE
+    status := EditorText("editor_publish_note")
+    if !editor_sharing { status = EditorText("editor_share_unavailable") }
+    else if editor_share_status != "" { status = EditorText(editor_share_status) }
+    EditorCaption(602, Rectangle.{16.0, top + 52.0, width - 32.0, 44.0}, status, 14)
+    y := top + 100.0
+    unused EditorFieldDraw(*editor_share_title, cast(u64)603, Rectangle.{16.0, y, width - 32.0, 40.0},
+        EditorText("editor_collection_title"), EditorText("editor_collection_title"), SHARING_TITLE_MAX)
+    y += 48.0
+    names: [3]string = .["editor_public", "editor_friends", "editor_private"]
+    third := (width - 32.0 - 16.0) / 3.0
+    for choice: cast(s32)0..2 {
+        if EditorControl(604 + choice, Rectangle.{16.0 + cast(float32)choice * (third + 8.0), y, third, 40.0},
+            EditorText(names[choice]), busy, editor_share_visibility == choice) { editor_share_visibility = choice }
+    }
+    y += 48.0
+    edition := EditorEdition()
+    published := editor_publication_length[edition] > 0
+    half := ifx published then (width - 40.0) / 2.0 else width - 32.0
+    if EditorControl(610, Rectangle.{16.0, y, half, 44.0}, EditorText(ifx published then "editor_publish_again" else "editor_publish_now"),
+        !editor_sharing || busy) { EditorPublish() }
+    if published && EditorControl(611, Rectangle.{24.0 + half, y, half, 44.0}, EditorText("editor_unpublish"), !editor_sharing || busy) {
+        request := EditWriter.{.bytes = editor_request_bytes[:]}
+        SharingUnpublishRequest(*request, EditField(editor_publication[edition][:], editor_publication_length[edition]))
+        EditorShareStart(SHARE_UNPUBLISH, request.length)
+    }
+    y += 52.0
+    EditorCaption(612, Rectangle.{16.0, y, width - 32.0, 28.0}, EditorText("editor_publish_levels"), 16)
+    y += 32.0
+    catalog := EditorCatalog()
+    rows: s32 = 0
+    for at: cast(s32)0..catalog.count - 1 { if catalog.levels[at].proof != EDIT_PROOF_NONE { rows += 1 } }
+    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)613, .bounds = Rectangle.{16.0, y, width - 32.0, bottom - y - 8.0},
+            .content_height = rows * 52, .scroll_offset = editor_list_scroll})
+    editor_list_scroll = scroll.scroll_offset
+    if scroll.opened {
+        row: s32 = 0
+        for at: cast(s32)0..catalog.count - 1 {
+            summary := *catalog.levels[at]
+            if summary.proof == EDIT_PROOF_NONE { continue }
+            bounds := Rectangle.{scroll.content.x, scroll.content.y + cast(float32)(row * 52), scroll.content.width, 46.0}
+            row += 1
+            if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
+            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(620000 + at * 2), .id = 620000 + at * 2, .bounds = bounds,
+                    .label = EditorLevelName(0, summary), .selected = !editor_share_skip[at], .disabled = busy,
+                    .icon_shape = ifx editor_share_skip[at] then "S2rr:M5 5H19V19H5Z" else "S2rr:M5 12L10 17L19 7",
+                    .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+                editor_share_skip[at] = !editor_share_skip[at]
+            }
+        }
+        unused End(editor_frame.session)
+    }
+}
+
+EditorExplore :: (width: float32, top: float32, bottom: float32) {
+    if EditorControl(700, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_HOME; return }
+    EditorCaption(701, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, EditorText("editor_explore"), 20, true)
+    busy := editor_share != SHARE_IDLE
+    refused := ifx editor_verify_refused > 0 then EditorSay(1, "editor_refused", cast(s64)editor_verify_refused) else ""
+    status := EditorText("editor_explore_note")
+    if !editor_sharing { status = EditorText("editor_share_unavailable") }
+    else if editor_share == SHARE_VERIFY { status = EditorSay(0, "editor_verifying", cast(s64)editor_verify_added) }
+    else if editor_share_status == "editor_downloaded" { status = EditorSay(0, "editor_downloaded", cast(s64)editor_verify_added, refused) }
+    else if editor_share_status != "" { status = EditorText(editor_share_status) }
+    EditorCaption(702, Rectangle.{16.0, top + 52.0, width - 32.0, 44.0}, status, 14)
+    y := top + 100.0
+    search := EditorFieldDraw(*editor_share_query, cast(u64)703, Rectangle.{16.0, y, width - 136.0, 40.0},
+        EditorText("editor_search_label"), EditorText("editor_search_hint"), 80)
+    if EditorControl(704, Rectangle.{width - 112.0, y, 96.0, 40.0}, EditorText("editor_search"), !editor_sharing || busy) || (search && editor_sharing && !busy) {
+        request := EditWriter.{.bytes = editor_request_bytes[:]}
+        SharingFindRequest(*request, EditField(editor_share_query.bytes[:], editor_share_query.length))
+        editor_result_count = 0
+        EditorShareStart(SHARE_FIND, request.length)
+    }
+    y += 52.0
+    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)705, .bounds = Rectangle.{16.0, y, width - 32.0, bottom - y - 8.0},
+            .content_height = editor_result_count * 64, .scroll_offset = editor_list_scroll})
+    editor_list_scroll = scroll.scroll_offset
+    fetch: s32 = -1
+    if scroll.opened {
+        for index: cast(s32)0..editor_result_count - 1 {
+            meta := *editor_results[index]
+            bounds := Rectangle.{scroll.content.x, scroll.content.y + cast(float32)(index * 64), scroll.content.width, 58.0}
+            if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
+            detail := EditorSay(index % 2 + 2, "editor_result_detail", cast(s64)meta.levels, EditField(meta.alias[:], meta.alias_length))
+            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(700000 + index * 2), .id = 700000 + index * 2, .bounds = bounds,
+                    .label = EditField(meta.title[:], meta.title_length), .detail = detail, .disabled = busy,
+                    .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { fetch = index }
+        }
+        unused End(editor_frame.session)
+    }
+    if fetch >= 0 {
+        meta := *editor_results[fetch]
+        editor_verify_author_length = EditSetField(editor_verify_author[:], EditField(meta.alias[:], meta.alias_length))
+        request := EditWriter.{.bytes = editor_request_bytes[:]}
+        SharingFetchRequest(*request, EditField(meta.id[:], meta.id_length))
+        EditorShareStart(SHARE_FETCH, request.length)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Each frame
+
+// Back from a page of the editor; false on its first page, so the host
+// leaves the editor.
+EditorBack :: () -> bool {
+    if editor_page == EDITOR_HOME { return false }
+    if editor_page == EDITOR_PLAY { editor_page = EDITOR_EDIT }
+    else if editor_page == EDITOR_EDIT || editor_page == EDITOR_PUBLISH { editor_page = EDITOR_LEVELS }
+    else { editor_page = EDITOR_HOME }
+    return true
+}
+
+EditorFrame :: (language: string) {
+    editor_frame = ReadAppUiHost()
+    editor_language = language
+    if !editor_loaded { EditorLoad() }
+    elapsed := editor_frame.now - editor_last_now
+    editor_last_now = editor_frame.now
+    EditorNames()
+    editor_key = AppKeyHost()
+    EditorCheckStep(elapsed)
+    EditorShareStep()
+    width := cast(float32)editor_frame.width
+    top := cast(float32)editor_frame.top
+    bottom := cast(float32)(editor_frame.height - editor_frame.bottom)
+    ShoveyDress(editor_frame.session, width, top, bottom)
+    if editor_key == 256 && editor_page != EDITOR_HOME && !editor_name.focused &&
+    !editor_share_title.focused && !editor_share_query.focused { unused EditorBack() }
+    if editor_page == EDITOR_HOME { EditorHome(width, top, bottom) }
+    else if editor_page == EDITOR_LEVELS { EditorLevels(width, top, bottom) }
+    else if editor_page == EDITOR_EDIT { EditorEdit(width, top, bottom) }
+    else if editor_page == EDITOR_PLAY { EditorPlay(width, top, bottom) }
+    else if editor_page == EDITOR_EXPORT { EditorExport(width, top, bottom) }
+    else if editor_page == EDITOR_PUBLISH { EditorPublishPage(width, top, bottom) }
+    else { EditorExplore(width, top, bottom) }
+    if editor_save_failed {
+        EditorCaption(900, Rectangle.{16.0, bottom - 26.0, width - 32.0, 22.0}, EditorText("editor_save_failed"), 13, true)
+    }
+}

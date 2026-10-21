@@ -1,4 +1,4 @@
-// Runs the Ziran solver (apps/shovey/solver) natively over story levels and
+// Runs the Ziran solver (src/solver) natively over story levels and
 // prints, for each, what it found, the states it saw, its work and the time.
 //
 //   build/solver/shovey-bench classic|island [FIRST [LAST [BUDGET]]]
@@ -8,9 +8,9 @@
 #import "byte_text_linux"
 #import "number_text"
 #import "timer_linux"
-#import, file "../../apps/shovey/solver/solver.zi";
-#import, file "../../apps/shovey/levels.zi";
-#import, file "../../apps/shovey/island_levels.zi";
+#import, file "../../src/solver/solver.zi";
+#import, file "../../src/levels.zi";
+#import, file "../../src/island_levels.zi";
 
 libc :: #system_library "libc";
 WriteOut :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";

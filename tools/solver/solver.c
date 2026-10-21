@@ -622,7 +622,7 @@ static int ChainWays(const Options *options, double deadline, int goal, Way *way
             API(Act)(edge.action);
             if (API(Dead)()) continue;
             Encode(next_vector);
-            if (API(Remaining)() < goal) {
+            if (API(Progress)() < goal) {
                 ways[found].vector = Resize(NULL, (size_t)state_size);
                 memcpy(ways[found].vector, next_vector, (size_t)state_size);
                 ways[found].won = false;
@@ -646,7 +646,7 @@ static int ChainWays(const Options *options, double deadline, int goal, Way *way
 static bool Chain(const Options *options, double deadline, Route *route, int depth) {
     if (depth > 64 || Now() >= deadline) return false;
     API(Decode)(root_vector);
-    int goal = API(Remaining)();
+    int goal = API(Progress)();
     Way ways[CHAIN_WAYS];
     int count = ChainWays(options, deadline, goal > 0 ? goal : 0, ways);
     bool solved = false;

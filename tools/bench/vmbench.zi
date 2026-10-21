@@ -1,0 +1,13 @@
+#import, file "../../src/solver/solver.zi";
+#import, file "../../src/levels.zi";
+#import, file "../../src/island_levels.zi";
+
+#program_export
+Bench :: () -> s64 {
+    island := 1 != 0
+    board := ifx island then IslandLevelData(40) else ShoveyLevelData(40)
+    if !SolverStart(island, board) { return -1 }
+    frames: s64 = 0
+    while SolverStatus() == SOLVER_RUNNING { SolverRun(3000); frames += 1 }
+    return cast(s64)SolverStatus() * 1000000000 + SolverStates() * 10000 + frames
+}

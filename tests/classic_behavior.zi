@@ -1,6 +1,6 @@
-#import, file "../apps/shovey/engine.zi";
-#import, file "../apps/shovey/orientation.zi";
-#import, file "../apps/shovey/progress.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/orientation.zi";
+#import, file "../src/progress.zi";
 
 // Opening the game lands on the newest unlocked puzzle; an unfinished
 // position there is kept, and a replay of an older puzzle is left behind.
@@ -45,7 +45,7 @@ ProgressChecks :: () -> s32 {
     campaign_bytes[1] = #char "2"
     campaign_bytes[SHOVEY_CAMPAIGN_C1] = ifx campaign_bytes[SHOVEY_CAMPAIGN_C1] == #char "0" then #char "1" else #char "0"
     position.moves = 9
-    if !ShoveyCampaignRestore(*restored, *position, TextView(campaign_bytes[:])) || position.level != 2 || position.moves != 0 { return 27 }
+    if !ShoveyCampaignRestore(*restored, *position, TextView(campaign_bytes[:SHOVEY_CAMPAIGN_C1 + 8])) || position.level != 2 || position.moves != 0 { return 27 }
     if ShoveySelectLevel(*progress, *game, 3) || game.level != 2 { return 25 }
     return 0
 }
@@ -151,6 +151,126 @@ EventChecks :: () -> s32 {
     return 0
 }
 
+// The second palette keeps six logical colors across balls, pits and paint.
+ColorChecks :: () -> s32 {
+    for kind: cast(s32)44..46 {
+        if ShoveyBallColor(kind) != kind - 40 { return 80 }
+    }
+    for kind: cast(s32)47..49 {
+        if ShoveyPitColor(kind) != kind - 43 { return 81 }
+    }
+    for kind: cast(s32)50..52 {
+        if ShoveyPaintColor(kind) != kind - 46 { return 82 }
+    }
+    if ShoveyBallForColor(4) != 44 || ShoveyBallForColor(5) != 45 || ShoveyBallForColor(6) != 46 { return 83 }
+
+    game := Floor()
+    game.objects[14] = 44
+    game.ground[15] = 47
+    if ShoveyRemaining(*game) != 1 || !ShoveyMove(*game, 2) || ShoveyRemaining(*game) != 0 || game.objects[15] != 0 { return 84 }
+
+    game = Floor()
+    game.objects[14] = 45
+    game.ground[15] = 51
+    if !ShoveyMove(*game, 2) || game.ground[15] != 0 || game.objects[15] != 45 { return 85 }
+    game.ground[16] = 48
+    if !ShoveyMove(*game, 2) || ShoveyRemaining(*game) != 0 || game.objects[16] != 0 { return 86 }
+
+    game = Floor()
+    game.objects[14] = 46
+    game.ground[15] = 47
+    if ShoveyMove(*game, 2) || game.objects[14] != 46 { return 87 }
+    return 0
+}
+
+// A cherry is a second fruit: stepping on it eats it, and it counts to finish.
+CherryChecks :: () -> s32 {
+    game := Floor()
+    game.ground[14] = 56
+    game.ground[50] = 21
+    if ShoveyRemaining(*game) != 2 { return 90 }
+    if !ShoveyMove(*game, 2) || game.ground[14] != 0 || ShoveyRemaining(*game) != 1 { return 91 }
+    return 0
+}
+
+// The newer tiles: a pit ends the game for Shovey and is filled by a crate,
+// arrows only admit one way, cracked floor falls once left, ice carries Shovey,
+// a bomb crate breaks a cracked wall, and portals pair by colour.
+TileChecks :: () -> s32 {
+    game := Floor()
+    game.ground[15] = SHOVEY_PIT
+    if !ShoveyMove(*game, 2) || !ShoveyMove(*game, 2) || !game.lost { return 100 }
+
+    game = Floor()
+    game.ground[15] = SHOVEY_PIT
+    game.objects[14] = 9
+    if !ShoveyMove(*game, 2) || game.ground[15] != 0 || game.objects[15] != 0 { return 101 }
+
+    game = Floor()
+    game.ground[14] = 68
+    if !ShoveyMove(*game, 2) { return 102 }
+    game = Floor()
+    game.ground[15] = 68
+    if !ShoveyMove(*game, 2) || !ShoveyMove(*game, 2) || game.player != 15 { return 103 }
+    game = Floor()
+    game.ground[15] = 66
+    unused ShoveyMove(*game, 2)
+    unused ShoveyMove(*game, 2)
+    if game.player != 14 { return 104 }
+
+    game = Floor()
+    game.ground[15] = SHOVEY_CRACKED_FLOOR
+    if !ShoveyMove(*game, 2) || !ShoveyMove(*game, 2) || game.ground[15] != SHOVEY_CRACKED_FLOOR { return 105 }
+    if !ShoveyMove(*game, 2) || game.ground[15] != SHOVEY_PIT || game.lost { return 110 }
+
+    game = Floor()
+    game.ground[14] = SHOVEY_ICE
+    game.ground[15] = SHOVEY_ICE
+    game.ground[16] = SHOVEY_ICE
+    if !ShoveyMove(*game, 2) || game.player != 17 { return 106 }
+
+    game = Floor()
+    game.objects[14] = SHOVEY_BOMB
+    game.ground[15] = SHOVEY_CRACKED_WALL
+    if !ShoveyMove(*game, 2) || game.ground[15] != 0 || game.objects[14] != 0 || game.objects[15] != 0 { return 107 }
+    game = Floor()
+    game.objects[14] = 9
+    game.ground[15] = SHOVEY_CRACKED_WALL
+    if ShoveyMove(*game, 2) { return 108 }
+
+    game = Floor()
+    game.ground[14] = 73
+    game.ground[30] = 74
+    game.ground[48] = 73
+    if !ShoveyMove(*game, 2) || game.player != 48 { return 109 }
+    return 0
+}
+
+NatureChecks :: () -> s32 {
+    game := Floor()
+    game.ground[14] = SHOVEY_TREE
+    game.decorations[14] = SHOVEY_TREE
+    if ShoveyMove(*game, 2) || game.player != 13 { return 120 }
+    game = Floor()
+    game.objects[14] = 9
+    game.ground[15] = SHOVEY_TREE
+    if ShoveyMove(*game, 2) || game.objects[14] != 9 { return 121 }
+    game = Floor()
+    game.ground[26] = SHOVEY_DOG
+    game.light_from[26] = 2
+    game.ground[27] = SHOVEY_TREE
+    game.objects[38] = 9
+    game.player = 25
+    if !ShoveyAnimalsTick(*game) || game.ground[14] != SHOVEY_DOG || game.ground[26] != 0 { return 122 }
+    if game.ground[27] != SHOVEY_TREE || game.objects[38] != 9 || game.player != 25 { return 123 }
+    // The animal's exact position and facing survive an ordinary game save.
+    saved := ShoveySave(*game)
+    restored: ShoveyGame
+    if !ShoveyRestore(*restored, saved) || restored.ground[14] != SHOVEY_DOG || restored.light_from[14] != 1 { return 124 }
+    if restored.decorations[27] != game.decorations[27] { return 125 }
+    return 0
+}
+
 #program_export
 Check :: () -> s32 {
     result := OpenChecks()
@@ -159,7 +279,15 @@ Check :: () -> s32 {
     if result != 0 { return result }
     result = EventChecks()
     if result != 0 { return result }
+    result = ColorChecks()
+    if result != 0 { return result }
+    result = CherryChecks()
+    if result != 0 { return result }
+    result = TileChecks()
+    if result != 0 { return result }
     result = TickChecks()
+    if result != 0 { return result }
+    result = NatureChecks()
     if result != 0 { return result }
     result = BoardChecks()
     if result != 0 { return result }

@@ -1,0 +1,1655 @@
+// Classic's level editor for the machine that keeps the originals: all 175
+// places of the original game in order, each beside its original. A place
+// is a level in the game, or waits for a winnable layout and starts from the
+// original board. Paint with the mouse, play with the keyboard, and let the
+// solver check while you edit. Every change is kept as a draft at once, and a
+// board saves itself into the game's levels as soon as a winning route the
+// engine replays exists: the solver's, or yours from play mode. A waiting
+// place then goes into the game in its place. Run from the Shovey root:
+//
+//     make editor && build/private-editor/shovey-level-editor
+//
+// Originals come from the ignored backup/original folder (classic-levels.zi
+// and sprites/) and backup/redesign/stuck.txt; nothing original is built in.
+//
+// Edit: left button paints, right button clears to floor, Alt+click (or
+// Shift+click) picks up the piece under the pointer, Z undoes a stroke,
+// N / P change place, U goes to the next waiting place, [ / ] change the
+// original shown, C checks now,
+// Ctrl+S saves, Tab plays. Play: arrows or WASD, Space throws, Z undoes,
+// R restarts, Tab goes back to editing.
+#import "c_string"
+#import "byte_text_linux"
+#import "file"
+#import "number_text"
+#import "text_buffer"
+#import "timer_linux"
+#import "cairo_raster"
+#import "desktop_runtime"
+#import "session"
+#import "geometry"
+#import "drawing_props"
+#import "text_props"
+#import "text_align"
+#import "text_widget"
+#import "button_props"
+#import "button_widget"
+#import "control_props"
+#import "image_props"
+#import "image_widget"
+#import "box_props"
+#import "box_widget"
+#import "tree"
+#import "tree_draw"
+#import "tree_input"
+#import "tile_map"
+#import "kryon/scroll_widget"
+#import "kryon/scroll_props"
+#import "kryon/scroll_device"
+#import "kryon/style_sheet"
+#import "kryon/widget_palette"
+#import, file "../../src/shovey_theme.zi";
+#import, file "../../src/engine.zi";
+#import, file "../../src/shovey_board.zi";
+#import, file "../../src/orientation.zi";
+#import, file "../../src/levels.zi";
+
+sdl :: #system_library "SDL2";
+SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
+libc :: #system_library "libc";
+RunShell :: (command: *u8) -> s32 #foreign libc "system";
+
+LEVELS_MAX :: 200
+PIECES_HEX :: 480
+HEX :: 1440
+ROUTE_MAX :: 60000
+HISTORY :: 64
+LETTERS :: "0123ft"
+SOLVE_SECONDS :: "120"
+PLACES :: 175
+
+level_count: s32;
+boards: [LEVELS_MAX * HEX]u8;
+saved_boards: [LEVELS_MAX * HEX]u8;
+originals: [(LEVELS_MAX + 1) * HEX]u8;
+original_found: [LEVELS_MAX + 1]bool;
+stuck: [LEVELS_MAX + 1]bool;
+// Private levels inserted into the game without replacing an original place.
+unlinked_before: [LEVELS_MAX + 1]s32;
+unlinked_count: s32;
+// False when the waiting list and the game's levels disagree: nothing saves then.
+mapping_ok: bool;
+// Places still too close to their original (backup/editor-drafts/focus.txt).
+focus: [LEVELS_MAX + 1]bool;
+original_sprites: bool;
+original_tiles: [SPRITE_COUNT]string;
+our_portrait_tiles: [SPRITE_COUNT]string;
+our_landscape_tiles: [SPRITE_COUNT]string;
+current: s32;
+original_shown: s32;
+boards_landscape: bool;
+selected: s32;
+palette_tab: s32;
+palette_scroll: [3]s32;
+unlinked_saved_place: s32;
+// The all-levels view: every place at once, each with how alike its board is to its original.
+selector_open: bool;
+drafts_refreshed: s64;
+
+history: [HISTORY * HEX]u8;
+history_count: s32;
+stroke: bool;
+
+playing: bool;
+play: ShoveyGame;
+play_route: [ROUTE_MAX]u8;
+play_length: s32;
+watching: bool;
+watch_at: s32;
+watch_last: s64;
+last_tick: s64;
+
+// Checking: 0 not yet, 1 running, 2 winnable, 3 no route found, 4 not a
+// board (Shovey missing or twice).
+check_state: s32;
+check_board: [HEX]u8;
+check_level: s32;
+check_started: s64;
+route: [ROUTE_MAX]u8;
+route_length: s32;
+edited_at: s64;
+check_wanted: bool;
+
+// A win you played is proof on its own.
+proof_board: [HEX]u8;
+proof_route: [ROUTE_MAX]u8;
+proof_length: s32;
+proof_level: s32;
+proof_record: [HEX + ROUTE_MAX + 1]u8;
+
+// Saving: 0 nothing, 1 running, 2 saved, 3 failed.
+save_state: s32;
+save_level: s32;
+save_board: [HEX]u8;
+save_message: [256]u8;
+save_message_length: s32;
+
+session: Session;
+pointer: PointerFrame;
+secondary: SecondaryPointerFrame;
+command: [ROUTE_MAX + 2048]u8;
+title_bytes: [256]u8;
+status_bytes: [512]u8;
+label_bytes: [128]u8;
+cell_bytes: [PLACES * 16]u8;
+draft_bytes: [64]u8;
+layers_original: [SHOVEY_CELLS * 3]s32;
+layers_edit: [SHOVEY_CELLS * 3]s32;
+names: [1]string;
+similarity_percent: s32;
+similarity_matches: s32;
+similarity_total: s32;
+
+// Palette: board kinds in the order a level is usually built.
+PALETTE :: 73
+palette_kinds: [73]s32 = .[10, 0, 12, 7, 9, 18, 1, 2, 3, 4, 5, 6,
+    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14,
+    33, 34, 8, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
+    35, 36, 37, 38, 53, 54, 55, 39, 40,
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 62, 57, 58, 59, 60, 61, 63, 64, 76, 82, 83];
+palette_names: [73]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Crate goal",
+    "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
+    "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
+    "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
+    "Star", "Apple", "Cherry", "Plate", "Gate", "Key", "Lock",
+    "Teleporter", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
+    "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
+    "Yellow block", "Cyan block", "Purple block", "Green block", "Block goal", "Mirror Shovey",
+    "Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
+    "Cyan portal", "Purple portal", "Yellow portal", "Cracked wall", "Flowers", "Grass tufts", "Pebbles",
+    "Checker floor", "Striped floor", "Mossy wall", "Water edge", "Torch wall", "Dog", "Turtle"];
+
+AppendText :: (bytes: []u8, length: *s32, text: string) {
+    if length.* + cast(s32)text.count > cast(s32)bytes.count { return }
+    for index: cast(s64)0..text.count - 1 {
+        bytes[length.*] = text[index]
+        length.* += 1
+    }
+}
+
+AppendNumber :: (bytes: []u8, length: *s32, number: s32) {
+    digits: [24]u8
+    AppendText(bytes, length, FormatInteger(cast(s64)number, digits[:]))
+}
+
+Board :: (number: s32) -> []u8 { return boards[(number - 1) * HEX:number * HEX] }
+SavedBoard :: (number: s32) -> []u8 { return saved_boards[(number - 1) * HEX:number * HEX] }
+Original :: (number: s32) -> []u8 { return originals[number * HEX:(number + 1) * HEX] }
+
+Same :: (a: []u8, b: []u8) -> bool {
+    for at: cast(s32)0..HEX - 1 { if a[at] != b[at] { return false } }
+    return true
+}
+
+Copy :: (to: []u8, from: []u8) {
+    for at: cast(s32)0..HEX - 1 { to[at] = from[at] }
+}
+
+Digit :: (byte: u8) -> s32 {
+    if byte >= cast(u8)48 && byte <= cast(u8)57 { return cast(s32)(byte - cast(u8)48) }
+    if byte >= cast(u8)97 && byte <= cast(u8)102 { return cast(s32)(byte - cast(u8)87) }
+    return 0
+}
+
+KindAt :: (board: []u8, at: s32) -> s32 { return Digit(board[at * 2]) * 16 + Digit(board[at * 2 + 1]) }
+
+SetKind :: (board: []u8, at: s32, kind: s32) {
+    alphabet := "0123456789abcdef"
+    board[at * 2] = alphabet[(kind >> 4) & 15]
+    board[at * 2 + 1] = alphabet[kind & 15]
+}
+
+DefaultTiles :: (board: []u8) {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        SetKind(board, SHOVEY_CELLS + at, ShoveyDefaultTile(KindAt(board, at)))
+        SetKind(board, SHOVEY_CELLS * 2 + at, 0)
+    }
+}
+
+NormalizeTiles :: (board: []u8) {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        decoration := KindAt(board, SHOVEY_CELLS * 2 + at)
+        if decoration >= 79 && decoration <= 81 { SetKind(board, SHOVEY_CELLS * 2 + at, 0) }
+        kind := KindAt(board, at)
+        if kind == 62 { SetKind(board, at, 71); SetKind(board, SHOVEY_CELLS + at, 12) }
+        if kind != 0 && ShoveyTerrain(kind) {
+            SetKind(board, SHOVEY_CELLS + at, kind)
+            SetKind(board, at, 0)
+        }
+        tile := KindAt(board, SHOVEY_CELLS + at)
+        if tile == 62 || tile == 71 {
+            SetKind(board, SHOVEY_CELLS + at, ifx tile == 62 then 12 else 0)
+            if KindAt(board, at) == 0 { SetKind(board, at, 71) }
+        }
+        if tile >= 66 && tile <= 69 && KindAt(board, at) == 0 {
+            SetKind(board, at, tile)
+            SetKind(board, SHOVEY_CELLS + at, 0)
+        }
+        if tile >= 57 && tile <= 59 {
+            SetKind(board, SHOVEY_CELLS * 2 + at, tile)
+            SetKind(board, SHOVEY_CELLS + at, 0)
+        }
+    }
+}
+
+VisibleKind :: (board: []u8, at: s32) -> s32 {
+    kind := KindAt(board, at)
+    return ifx kind != 0 then kind else KindAt(board, SHOVEY_CELLS + at)
+}
+
+ReadBoard :: (text: string, board: []u8) -> bool {
+    if text.count != PIECES_HEX && text.count != PIECES_HEX * 2 && text.count != HEX { return false }
+    for at: cast(s32)0..cast(s32)text.count - 1 {
+        byte := text[at]
+        if !((byte >= cast(u8)48 && byte <= cast(u8)57) || (byte >= cast(u8)97 && byte <= cast(u8)102)) { return false }
+        board[at] = byte
+    }
+    if text.count == PIECES_HEX { DefaultTiles(board) }
+    if text.count < HEX { for at: cast(s32)PIECES_HEX * 2..HEX - 1 { board[at] = cast(u8)48 } }
+    NormalizeTiles(board)
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if !ShoveyTile(KindAt(board, SHOVEY_CELLS + at)) || !ShoveyDecoration(KindAt(board, SHOVEY_CELLS * 2 + at)) { return false }
+    }
+    return true
+}
+
+Players :: (board: []u8) -> s32 {
+    count: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { if KindAt(board, at) == 10 { count += 1 } }
+    return count
+}
+
+PrivateColorPiece :: (kind: s32) -> bool { return kind >= 44 && kind <= 55 }
+
+HasPrivateColorPieces :: () -> bool {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { if PrivateColorPiece(KindAt(Board(current), at)) { return true } }
+    return false
+}
+
+// The board text between `number == N { return "` and the next quote.
+FindBoard :: (text: string, number: s32, into: []u8) -> bool {
+    marker: [48]u8
+    length: s32 = 0
+    AppendText(marker[:], *length, "number == ")
+    AppendNumber(marker[:], *length, number)
+    AppendText(marker[:], *length, " { return \"")
+    wanted := TextView(marker[:length])
+    at: s64 = 0
+    while at + wanted.count + cast(s64)PIECES_HEX <= text.count {
+        if text[at:at + wanted.count] == wanted {
+            start := at + wanted.count
+            if text[start + cast(s64)PIECES_HEX] != cast(u8)34 { return false }
+            for index: cast(s32)0..PIECES_HEX - 1 { into[index] = text[start + cast(s64)index] }
+            DefaultTiles(into)
+            NormalizeTiles(into)
+            return true
+        }
+        at += 1
+    }
+    return false
+}
+
+// A place is in the game unless it waits for a winnable layout; the last
+// place is the finale picture.
+InGame :: (place: s32) -> bool { return place == PLACES || !stuck[place] }
+
+// The game's level number of a place, or the number it gets once it is in.
+LevelNumber :: (place: s32) -> s32 {
+    if place == PLACES { return level_count }
+    number: s32 = 1
+    for other: cast(s32)1..place {
+        number += unlinked_before[other]
+        if other < place && !stuck[other] { number += 1 }
+    }
+    return number
+}
+
+// The engine's level for a board: only the finale picture is special.
+LevelFor :: (place: s32) -> s32 { return ifx place == PLACES then level_count else 1 }
+
+// Hex digit `at` of a board with a wall around plain floor.
+EmptyDigit :: (at: s32) -> u8 {
+    if at >= PIECES_HEX { return cast(u8)48 }
+    cell := at / 2
+    x := cell % SHOVEY_WIDTH
+    y := cell / SHOVEY_WIDTH
+    border := x == 0 || y == 0 || x == SHOVEY_WIDTH - 1 || y == SHOVEY_HEIGHT - 1
+    return ifx at % 2 == 1 && border then cast(u8)99 else cast(u8)48
+}
+
+// The game's boards fill their places in order; a waiting place starts from
+// its original board, or an empty one on a machine without originals.
+LoadLevels :: () {
+    text, found := ReadEntireFile(LEVELS_FILE)
+    live := found && ReadLevelFile(text)
+    level_count = ifx live then file_count else ShoveyLevelCount()
+    in_game: s32 = 0
+    for place: cast(s32)1..PLACES - 1 { if !stuck[place] { in_game += 1 } }
+    linked_count := level_count - unlinked_count - 1
+    // Without the list of waiting places, the game's levels fill the first places.
+    mapping_ok = in_game == linked_count
+    if in_game != linked_count {
+        for place: cast(s32)1..PLACES - 1 { stuck[place] = place >= linked_count }
+    }
+    number: s32 = 0
+    for place: cast(s32)1..PLACES {
+        number += unlinked_before[place]
+        data := ""
+        if place == PLACES {
+            data = ifx live then TextView(file_boards[(level_count - 1) * HEX:level_count * HEX]) else ShoveyLevelData(level_count)
+        }
+        else if !stuck[place] {
+            number += 1
+            data = ifx live then TextView(file_boards[(number - 1) * HEX:number * HEX]) else ShoveyLevelData(number)
+        }
+        if data.count >= PIECES_HEX { unused ReadBoard(data, Board(place)) }
+        else if original_found[place] { Copy(Board(place), Original(place)) }
+        else {
+            for at: cast(s32)0..HEX - 1 { Board(place)[at] = EmptyDigit(at) }
+            DefaultTiles(Board(place))
+        }
+        Copy(SavedBoard(place), Board(place))
+    }
+}
+
+// Cells that differ from the place's own original.
+Differences :: (place: s32) -> s32 {
+    if place < 1 || place > PLACES || !original_found[place] { return -1 }
+    count: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if VisibleKind(Board(place), at) != VisibleKind(Original(place), at) { count += 1 }
+    }
+    return count
+}
+
+MirroredIndex :: (at: s32, flip_x: bool, flip_y: bool) -> s32 {
+    if at < 0 || at >= SHOVEY_CELLS { return -1 }
+    x := at % SHOVEY_WIDTH
+    y := at / SHOVEY_WIDTH
+    if flip_x { x = SHOVEY_WIDTH - 1 - x }
+    if flip_y { y = SHOVEY_HEIGHT - 1 - y }
+    return y * SHOVEY_WIDTH + x
+}
+
+OnBorder :: (at: s32) -> bool {
+    x := at % SHOVEY_WIDTH
+    y := at / SHOVEY_WIDTH
+    return x == 0 || y == 0 || x == SHOVEY_WIDTH - 1 || y == SHOVEY_HEIGHT - 1
+}
+
+// How alike a place's board and original `number` are over the whole map,
+// best of the four mirrorings. Empty floor in both and the border wall every
+// board shares are left out, so only the cells that make up either layout
+// count: the share of those that hold the same piece.
+SimilarityTo :: (place: s32, number: s32) -> s32 {
+    if number < 1 || number > PLACES || !original_found[number] { return -1 }
+    best := cast(s32)-1
+    for flip: cast(s32)0..3 {
+        flip_x := (flip & 1) != 0
+        flip_y := (flip & 2) != 0
+        same: s32 = 0
+        total: s32 = 0
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            edited := VisibleKind(Board(place), at)
+            original := VisibleKind(Original(number), MirroredIndex(at, flip_x, flip_y))
+            if edited == 0 && original == 0 { continue }
+            if edited == 12 && original == 12 && OnBorder(at) { continue }
+            total += 1
+            if edited == original { same += 1 }
+        }
+        percent: s32 = 100
+        if total > 0 { percent = (same * 100) / total }
+        if percent > best {
+            best = percent
+            similarity_percent = percent
+            similarity_matches = same
+            similarity_total = total
+        }
+    }
+    return best
+}
+
+BestMirrorMatch :: (place: s32) -> s32 { return SimilarityTo(place, original_shown) }
+
+// Still too close to its own original: it is on the list of places to change
+// and, measured over the whole map, most of its pieces match that original.
+TOO_CLOSE_PERCENT :: 70
+TooClose :: (place: s32) -> bool {
+    if !focus[place] { return false }
+    return SimilarityTo(place, place) >= TOO_CLOSE_PERCENT
+}
+
+// The next place to work on: waiting for a winnable layout, or still too
+// close to its original and not changed here yet.
+NextWaiting :: () -> s32 {
+    for step: cast(s32)1..PLACES {
+        place := (current - 1 + step) % PLACES + 1
+        if !InGame(place) || (TooClose(place) && Same(Board(place), SavedBoard(place)) && !PathExists(DraftPath(place))) { return place }
+    }
+    return current
+}
+
+LoadOriginals :: () {
+    text, found := ReadEntireFile("backup/original/classic-levels.zi")
+    if found {
+        for number: cast(s32)1..LEVELS_MAX { original_found[number] = FindBoard(text, number, Original(number)) }
+    }
+    list, listed := ReadEntireFile("backup/redesign/stuck.txt")
+    if listed {
+        at: s64 = 0
+        while at < list.count {
+            if at + 8 <= list.count && list[at:at + 8] == "classic " {
+                at += 8
+                number: s32 = 0
+                while at < list.count && list[at] >= cast(u8)48 && list[at] <= cast(u8)57 {
+                    number = number * 10 + cast(s32)(list[at] - cast(u8)48)
+                    at += 1
+                }
+                if number > 0 && number <= LEVELS_MAX { stuck[number] = true }
+            }
+            while at < list.count && list[at] != cast(u8)10 { at += 1 }
+            at += 1
+        }
+    }
+    focused, has_focus := ReadEntireFile("backup/editor-drafts/focus.txt")
+    if has_focus {
+        number: s32 = 0
+        for at: cast(s64)0..focused.count - 1 {
+            byte := focused[at]
+            if byte >= cast(u8)48 && byte <= cast(u8)57 { number = number * 10 + cast(s32)(byte - cast(u8)48) }
+            else { if number > 0 && number <= LEVELS_MAX { focus[number] = true }; number = 0 }
+        }
+    }
+    original_sprites = PathExists("backup/original/sprites/tile-0.png")
+    SpritesPrepare()
+    for index: cast(s32)0..SPRITE_COUNT - 1 {
+        our_portrait_tiles[index] = sprite_files[index]
+        our_landscape_tiles[index] = landscape_sprite_files[index]
+        original_tiles[index] = SpriteFile(index)
+    }
+    if original_sprites {
+        digits: [24]u8
+        for kind: cast(s32)0..40 {
+            bytes: Vec(u8)
+            BuilderPrint(*bytes, "backup/original/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
+            original_tiles[kind] = BuilderFinish(bytes)
+        }
+        original_tiles[SPRITE_PLAYER + 1] = "backup/original/sprites/player.png"
+    }
+    for kind: cast(s32)44..55 {
+        digits: [24]u8
+        portrait: Vec(u8)
+        BuilderPrint(*portrait, "assets/shovey/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
+        our_portrait_tiles[SPRITE_NEW_COLOR + kind - 44] = BuilderFinish(portrait)
+        landscape: Vec(u8)
+        BuilderPrint(*landscape, "assets/shovey-landscape/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
+        our_landscape_tiles[SPRITE_NEW_COLOR + kind - 44] = BuilderFinish(landscape)
+    }
+    our_portrait_tiles[SPRITE_CHERRY] = "assets/shovey/sprites/tile-56.png"
+    our_landscape_tiles[SPRITE_CHERRY] = "assets/shovey-landscape/sprites/tile-56.png"
+}
+
+// Two layers: the floor under pieces and Shovey, then each cell's kind.
+PrivateFloorSprite :: (kind: s32) -> s32 {
+    if (kind >= 44 && kind <= 46) || (kind >= 53 && kind <= 55) { return 0 }
+    return FloorSprite(kind)
+}
+
+OurTiles :: () -> []string {
+    return ifx boards_landscape then our_landscape_tiles[:] else our_portrait_tiles[:]
+}
+
+PrivateSprite :: (kind: s32) -> s32 {
+    if kind == SHOVEY_DOG { return SPRITE_DOG + 1 }
+    if kind == SHOVEY_TURTLE { return SPRITE_TURTLE + 1 }
+    if kind == SHOVEY_TREE { return SPRITE_TREE }
+    if kind >= 44 && kind <= 55 { return SPRITE_NEW_COLOR + kind - 44 }
+    if kind == 56 { return SPRITE_CHERRY }
+    if kind >= 57 && kind <= 78 { return SPRITE_NEW_TILE + kind - 57 }
+    return kind
+}
+
+HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string) -> TileMapResult {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        kind := KindAt(board, at)
+        display := BoardDisplayIndex(at, landscape)
+        layers[display] = PrivateSprite(KindAt(board, SHOVEY_CELLS + at))
+        if KindAt(board, SHOVEY_CELLS + at) == 77 {
+            mask: s32 = 0
+            for direction: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, direction)
+                if neighbor >= 0 && KindAt(board, SHOVEY_CELLS + neighbor) != 77 { mask |= 1 << direction }
+            }
+            layers[display] = SPRITE_GRASS_EDGE + mask
+        }
+        decoration := KindAt(board, SHOVEY_CELLS * 2 + at)
+        layers[SHOVEY_CELLS + display] = ifx decoration == 0 then -1 else PrivateSprite(decoration)
+        layers[SHOVEY_CELLS * 2 + display] = ifx kind == 10 then SPRITE_PLAYER + 1 else ifx kind > 0 && kind <= SHOVEY_LAST_KIND then PrivateSprite(kind) else -1
+    }
+    columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
+    rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
+    fitted := TileMapFit(bounds, columns, rows)
+    cell := cast(float32)cast(s32)fitted.cell
+    fitted.board = Rectangle.{cast(float32)cast(s32)(bounds.x + (bounds.width - cell * cast(float32)columns) / 2.0),
+            cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
+            cell * cast(float32)columns, cell * cast(float32)rows}
+    return TileMap(session, TileMapProps.{.key = key, .bounds = fitted.board, .columns = columns, .rows = rows,
+            .tiles = tiles, .names = names[0:0], .layers = layers, .layer_count = 3, .label = label})
+}
+
+// ---------------------------------------------------------------- editing
+
+Remember :: () {
+    if history_count == HISTORY {
+        for index: cast(s32)0..(HISTORY - 1) * HEX - 1 { history[index] = history[index + HEX] }
+        history_count -= 1
+    }
+    Copy(history[history_count * HEX:(history_count + 1) * HEX], Board(current))
+    history_count += 1
+}
+
+UndoEdit :: () {
+    if history_count == 0 { return }
+    history_count -= 1
+    Copy(Board(current), history[history_count * HEX:(history_count + 1) * HEX])
+    Edited()
+}
+
+Edited :: () {
+    StopCheck()
+    check_state = 0
+    edited_at = MonotonicMilliseconds()
+    check_wanted = true
+    if save_state == 2 { save_state = 0 }
+    unused WriteEntireFile(DraftPath(current), TextView(Board(current)))
+}
+
+// An unsaved board is kept in backup/editor-drafts/NNN.hex until it is saved.
+DraftPath :: (number: s32, suffix: string = ".hex") -> string {
+    length: s32 = 0
+    AppendText(draft_bytes[:], *length, "backup/editor-drafts/")
+    if number < 100 { AppendText(draft_bytes[:], *length, "0") }
+    if number < 10 { AppendText(draft_bytes[:], *length, "0") }
+    AppendNumber(draft_bytes[:], *length, number)
+    AppendText(draft_bytes[:], *length, suffix)
+    return TextView(draft_bytes[:length])
+}
+
+LoadDrafts :: () {
+    unused CreateDirectory("backup")
+    unused CreateDirectory("backup/editor-drafts")
+    for number: cast(s32)1..PLACES {
+        RestoreDraft(number)
+    }
+}
+
+RestoreDraft :: (number: s32) {
+    if number == current && playing { return }
+    text, found := ReadEntireFile(DraftPath(number))
+    restored: [HEX]u8
+    if found && ReadBoard(text, restored[:]) { Copy(Board(number), restored[:]) }
+}
+
+LoadUnlinked :: () {
+    unlinked_count = 0
+    for place: cast(s32)1..PLACES { unlinked_before[place] = 0 }
+    text, found := ReadEntireFile("backup/editor-drafts/unlinked.txt")
+    if !found { return }
+    at: s64 = 0
+    while at < text.count {
+        if at + 7 <= text.count && text[at:at + 7] == "before " {
+            at += 7
+            place: s32 = 0
+            while at < text.count && text[at] >= cast(u8)48 && text[at] <= cast(u8)57 {
+                place = place * 10 + cast(s32)(text[at] - cast(u8)48)
+                at += 1
+            }
+            if place >= 1 && place <= PLACES {
+                unlinked_before[place] += 1
+                unlinked_count += 1
+            }
+        }
+        while at < text.count && text[at] != cast(u8)10 { at += 1 }
+        at += 1
+    }
+}
+
+Paint :: (at: s32, kind: s32) {
+    board := Board(current)
+    if palette_tab == 2 {
+        decoration := ifx kind >= 512 then kind - 512 else 0
+        if !ShoveyDecoration(decoration) || KindAt(board, SHOVEY_CELLS * 2 + at) == decoration { return }
+        if decoration == SHOVEY_TREE && KindAt(board, at) != 0 { return }
+        SetKind(board, SHOVEY_CELLS * 2 + at, decoration)
+        Edited()
+        return
+    }
+    if palette_tab == 0 {
+        tile := ifx kind >= 256 then kind - 256 else 0
+        if !ShoveyTile(tile) || KindAt(board, SHOVEY_CELLS + at) == tile { return }
+        SetKind(board, SHOVEY_CELLS + at, tile)
+        Edited()
+        return
+    }
+    replaced_wall := false
+    if kind != 0 && KindAt(board, SHOVEY_CELLS * 2 + at) == SHOVEY_TREE { return }
+    tile := KindAt(board, SHOVEY_CELLS + at)
+    if kind != 0 && kind != 71 && (tile == 12 || ShoveySolidDecor(tile)) {
+        SetKind(board, SHOVEY_CELLS + at, 0)
+        replaced_wall = true
+    }
+    if KindAt(board, at) == kind { if replaced_wall { Edited() }; return }
+    // There is one Shovey: painting it moves it.
+    if kind == 10 {
+        for other: cast(s32)0..SHOVEY_CELLS - 1 { if KindAt(board, other) == 10 { SetKind(board, other, 0) } }
+    }
+    SetKind(board, at, kind)
+    Edited()
+}
+
+Open :: (place: s32) {
+    StopCheck()
+    check_state = 0
+    current = (place - 1 + PLACES) % PLACES + 1
+    playing = false
+    RestoreDraft(current)
+    original_shown = current
+    // Reopening the editor comes back to this place.
+    digits: [24]u8
+    unused WriteEntireFile("backup/editor-drafts/place", FormatInteger(cast(s64)current, digits[:]))
+    history_count = 0
+    playing = false
+    watching = false
+    check_wanted = true
+    edited_at = 0
+    if save_state != 1 { save_state = 0 }
+    if !RestoreProof() { unused RestoreSavedRoute() }
+}
+
+// ---------------------------------------------------------------- checking
+
+// Plays a route on a board in the game engine; true when it wins.
+Wins :: (board: []u8, level: s32, letters: []u8, length: s32) -> bool {
+    game: ShoveyGame
+    if !ShoveyLoadData(*game, level, TextView(board)) { return false }
+    for index: cast(s32)0..length - 1 {
+        letter := letters[index]
+        if letter >= cast(u8)48 && letter <= cast(u8)51 { unused ShoveyMove(*game, cast(s32)(letter - cast(u8)48)) }
+        else if letter == cast(u8)102 { unused ShoveyFire(*game) }
+        else if letter == cast(u8)116 { unused ShoveyTick(*game) }
+        if game.won { return true }
+    }
+    return game.won
+}
+
+Shell :: (text: string) {
+    bytes: [ROUTE_MAX + 2048]u8
+    if CopyCString(text, bytes[:]) { unused RunShell(*bytes[0]) }
+}
+
+// The solver's four searches run side by side as separate processes; the
+// first win counts and stops the others.
+SEARCHES :: 4
+search_names: [4]string = .["greedy", "macro-bfs", "chain", "bfs"];
+search_done: [4]bool;
+
+CheckFile :: (index: s32, suffix: string) -> string {
+    length: s32 = 0
+    AppendText(path_bytes[:], *length, "build/editor/check-")
+    AppendText(path_bytes[:], *length, search_names[index])
+    AppendText(path_bytes[:], *length, suffix)
+    return TextView(path_bytes[:length])
+}
+
+StopCheck :: () {
+    if check_state == 1 {
+        Shell("for f in build/editor/check-*.pid; do kill -- -$(cat $f) 2>/dev/null; done; rm -f build/editor/check-*")
+    }
+}
+
+StartCheck :: () {
+    check_wanted = false
+    StopCheck()
+    if Solved() { return }
+    if Proven() {
+        AcceptRoute(proof_route[:], proof_length)
+        return
+    }
+    if RestoreProof() { return }
+    if RestoreSavedRoute() { return }
+    board := Board(current)
+    Copy(check_board[:], board)
+    check_level = current
+    route_length = 0
+    if Players(board) != 1 { check_state = 4; return }
+    for index: cast(s32)0..SEARCHES - 1 {
+        search_done[index] = false
+        length: s32 = 0
+        AppendText(command[:], *length, "mkdir -p build/editor && (setsid sh -c 'nice -n 10 build/solver/shovey-solve-classic solve --level ")
+        AppendNumber(command[:], *length, LevelFor(current))
+        AppendText(command[:], *length, " --seconds ")
+        AppendText(command[:], *length, SOLVE_SECONDS)
+        AppendText(command[:], *length, " --max-mb 128 --only ")
+        AppendText(command[:], *length, search_names[index])
+        AppendText(command[:], *length, " ")
+        AppendText(command[:], *length, TextView(board))
+        AppendText(command[:], *length, " > ")
+        AppendText(command[:], *length, CheckFile(index, ".tmp"))
+        AppendText(command[:], *length, " 2>&1; mv ")
+        AppendText(command[:], *length, CheckFile(index, ".tmp"))
+        AppendText(command[:], *length, " ")
+        AppendText(command[:], *length, CheckFile(index, ".out"))
+        AppendText(command[:], *length, "' & echo $! > ")
+        AppendText(command[:], *length, CheckFile(index, ".pid"))
+        AppendText(command[:], *length, ")")
+        Shell(TextView(command[:length]))
+    }
+    check_state = 1
+    check_started = MonotonicMilliseconds()
+}
+
+Contains :: (text: string, part: string) -> bool {
+    if part.count > text.count { return false }
+    for at: cast(s64)0..text.count - part.count {
+        if text[at:at + part.count] == part { return true }
+    }
+    return false
+}
+
+// The solver writes its stats line and the route on its own line, in either
+// order: the route is the line made only of route letters.
+ReadRoute :: (text: string) -> bool {
+    route_length = 0
+    if !Contains(text, "\"solved\":true") { return false }
+    start: s64 = 0
+    while start < text.count && route_length == 0 {
+        end := start
+        while end < text.count && text[end] != cast(u8)10 { end += 1 }
+        whole := end > start
+        for at: start..end - 1 {
+            letter := text[at]
+            if !((letter >= cast(u8)48 && letter <= cast(u8)51) || letter == cast(u8)102 || letter == cast(u8)116) { whole = false }
+        }
+        if whole && end - start <= cast(s64)ROUTE_MAX {
+            for at: start..end - 1 {
+                route[route_length] = text[at]
+                route_length += 1
+            }
+        }
+        start = end + 1
+    }
+    return route_length > 0
+}
+
+PollCheck :: () {
+    if check_state != 1 { return }
+    finished: s32 = 0
+    for index: cast(s32)0..SEARCHES - 1 {
+        if !search_done[index] && PathExists(CheckFile(index, ".out")) {
+            text, found := ReadEntireFile(CheckFile(index, ".out"))
+            search_done[index] = true
+            // Only a route the engine replays to a win counts.
+            if found && ReadRoute(text) && Wins(check_board[:], LevelFor(check_level), route[:], route_length) {
+                AcceptRoute(route[:], route_length)
+                return
+            }
+            route_length = 0
+        }
+        if search_done[index] { finished += 1 }
+    }
+    if finished == SEARCHES {
+        StopCheck()
+        check_state = 3
+    }
+}
+
+// The check belongs to the board on screen.
+Checked :: () -> bool { return check_level == current && Same(check_board[:], Board(current)) }
+
+AcceptRoute :: (letters: []u8, length: s32) {
+    StopCheck()
+    Copy(check_board[:], Board(current))
+    check_level = current
+    for at: cast(s32)0..length - 1 { route[at] = letters[at] }
+    route_length = length
+    check_state = 2
+    check_wanted = false
+    record_length: s32 = 0
+    AppendText(proof_record[:], *record_length, TextView(Board(current)))
+    AppendText(proof_record[:], *record_length, "\n")
+    AppendText(proof_record[:], *record_length, TextView(route[:route_length]))
+    unused WriteEntireFile(DraftPath(current, ".proof"), TextView(proof_record[:record_length]))
+}
+
+// A played or checked win survives switching boards and reopening the editor.
+RestoreProof :: () -> bool {
+    text, found := ReadEntireFile(DraftPath(current, ".proof"))
+    if !found || text.count <= cast(s64)HEX + 1 || text.count > cast(s64)(HEX + ROUTE_MAX + 1) { return false }
+    if text[HEX] != cast(u8)10 { return false }
+    length := cast(s32)text.count - HEX - 1
+    for at: cast(s32)0..length - 1 {
+        letter := text[HEX + 1 + at]
+        if !((letter >= cast(u8)48 && letter <= cast(u8)51) || letter == cast(u8)102 || letter == cast(u8)116) { return false }
+        proof_route[at] = letter
+    }
+    if text[0:HEX] != TextView(Board(current)) && !Wins(Board(current), LevelFor(current), proof_route[:], length) { return false }
+    Copy(proof_board[:], Board(current))
+    proof_length = length
+    proof_level = current
+    AcceptRoute(proof_route[:], length)
+    if InGame(current) && Same(Board(current), SavedBoard(current)) {
+        save_level = current
+        save_state = 2
+        Copy(save_board[:], Board(current))
+    }
+    return true
+}
+
+// Saved levels keep their winning route. A changed board can reuse that
+// route when it still wins, including changes to flowers or floor artwork.
+RestoreSavedRoute :: () -> bool {
+    if !InGame(current) || !mapping_ok { return false }
+    text, found := ReadEntireFile(LEVELS_FILE)
+    if !found || !ReadLevelFile(text) { return false }
+    index := LevelNumber(current) - 1
+    if index < 0 || index >= file_count { return false }
+    start := file_route_start[index]
+    length := file_route_length[index]
+    if length <= 0 || length > ROUTE_MAX { return false }
+    saved := FileHolds(index, Board(current))
+    letters := file_routes[start:start + length]
+    if !saved && !Wins(Board(current), LevelFor(current), letters, length) { return false }
+    AcceptRoute(letters, length)
+    if saved {
+        Copy(save_board[:], Board(current))
+        save_level = current
+        save_state = 2
+    }
+    return true
+}
+
+// ---------------------------------------------------------------- saving
+
+// levels/classic.json, read and written in its current portrait layout: every
+// level's board and winning route (the finale picture has none). Comparison
+// mode turns that board for display, but never changes the stored orientation.
+LEVELS_FILE :: "levels/classic.json"
+ROUTES_SIZE :: 400000
+file_count: s32;
+file_boards: [LEVELS_MAX * HEX]u8;
+file_tiles: [LEVELS_MAX]bool;
+file_decorations: [LEVELS_MAX]bool;
+file_route_start: [LEVELS_MAX]s32;
+file_route_length: [LEVELS_MAX]s32;
+file_routes: [ROUTES_SIZE]u8;
+file_routes_used: s32;
+file_text: [ROUTES_SIZE + LEVELS_MAX * 3072]u8;
+path_bytes: [256]u8;
+
+Find :: (text: string, part: string, from: s64) -> s64 {
+    at := from
+    while at + part.count <= text.count {
+        if text[at:at + part.count] == part { return at }
+        at += 1
+    }
+    return -1
+}
+
+ReadLevelFile :: (text: string) -> bool {
+    file_count = 0
+    file_routes_used = 0
+    at: s64 = 0
+    while file_count < LEVELS_MAX {
+        cells := Find(text, "\"cells\": [", at)
+        if cells < 0 { break }
+        at = cells + 10
+        for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+            quote := Find(text, "\"", at)
+            if quote < 0 || quote + 25 >= text.count { return false }
+            for column: cast(s32)0..SHOVEY_WIDTH - 1 { file_boards[file_count * HEX + row * SHOVEY_WIDTH * 2 + column * 2] = text[quote + 1 + cast(s64)column * 2] }
+            for column: cast(s32)0..SHOVEY_WIDTH - 1 { file_boards[file_count * HEX + row * SHOVEY_WIDTH * 2 + column * 2 + 1] = text[quote + 2 + cast(s64)column * 2] }
+            at = quote + 26
+        }
+        for cell: cast(s32)0..SHOVEY_CELLS - 1 {
+            SetKind(file_boards[file_count * HEX:(file_count + 1) * HEX], SHOVEY_CELLS + cell,
+                    ShoveyDefaultTile(KindAt(file_boards[file_count * HEX:(file_count + 1) * HEX], cell)))
+        }
+        next_level := Find(text, "\"number\":", at)
+        tiles := Find(text, "\"tiles\": [", at)
+        file_tiles[file_count] = tiles >= 0 && (next_level < 0 || tiles < next_level)
+        if file_tiles[file_count] {
+            tile_at := tiles + 10
+            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                quote := Find(text, "\"", tile_at)
+                if quote < 0 || quote + 25 >= text.count { return false }
+                for digit: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
+                    file_boards[file_count * HEX + PIECES_HEX + row * SHOVEY_WIDTH * 2 + digit] = text[quote + 1 + cast(s64)digit]
+                }
+                tile_at = quote + 26
+            }
+        }
+        for cell: cast(s32)0..SHOVEY_CELLS - 1 { SetKind(file_boards[file_count * HEX:(file_count + 1) * HEX], SHOVEY_CELLS * 2 + cell, 0) }
+        decorations := Find(text, "\"decorations\": [", at)
+        file_decorations[file_count] = decorations >= 0 && (next_level < 0 || decorations < next_level)
+        if file_decorations[file_count] {
+            deco_at := decorations + 16
+            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                quote := Find(text, "\"", deco_at)
+                if quote < 0 || quote + 25 >= text.count { return false }
+                for digit: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
+                    file_boards[file_count * HEX + PIECES_HEX * 2 + row * SHOVEY_WIDTH * 2 + digit] = text[quote + 1 + cast(s64)digit]
+                }
+                deco_at = quote + 26
+            }
+        }
+        file_route_start[file_count] = file_routes_used
+        file_route_length[file_count] = -1
+        next := Find(text, "\"number\":", at)
+        solution := Find(text, "\"solution\": \"", at)
+        if solution >= 0 && (next < 0 || solution < next) {
+            from := solution + 13
+            length: s32 = 0
+            while from + cast(s64)length < text.count && text[from + cast(s64)length] != cast(u8)34 { length += 1 }
+            if file_routes_used + length > ROUTES_SIZE { return false }
+            for index: cast(s32)0..length - 1 { file_routes[file_routes_used + index] = text[from + cast(s64)index] }
+            file_route_length[file_count] = length
+            file_routes_used += length
+            at = from + cast(s64)length
+        }
+        file_count += 1
+    }
+    return file_count > 0
+}
+
+// The level file's text, as Python's json.dumps(indent=1) writes it.
+LevelFileText :: () -> string {
+    length: s32 = 0
+    AppendText(file_text[:], *length, "{\n \"edition\": \"classic\",\n \"width\": 12,\n \"height\": 20,\n \"levels\": [\n")
+    for index: cast(s32)0..file_count - 1 {
+        AppendText(file_text[:], *length, "  {\n   \"number\": ")
+        AppendNumber(file_text[:], *length, index + 1)
+        AppendText(file_text[:], *length, ",\n   \"cells\": [\n")
+        for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+            AppendText(file_text[:], *length, "    \"")
+            AppendText(file_text[:], *length, TextView(file_boards[index * HEX + row * SHOVEY_WIDTH * 2:index * HEX + row * SHOVEY_WIDTH * 2 + SHOVEY_WIDTH * 2]))
+            AppendText(file_text[:], *length, ifx row < SHOVEY_HEIGHT - 1 then "\",\n" else "\"\n")
+        }
+        AppendText(file_text[:], *length, "   ]")
+        if file_tiles[index] {
+            AppendText(file_text[:], *length, ",\n   \"tiles\": [\n")
+            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                AppendText(file_text[:], *length, "    \"")
+                from := index * HEX + PIECES_HEX + row * SHOVEY_WIDTH * 2
+                AppendText(file_text[:], *length, TextView(file_boards[from:from + SHOVEY_WIDTH * 2]))
+                AppendText(file_text[:], *length, ifx row < SHOVEY_HEIGHT - 1 then "\",\n" else "\"\n")
+            }
+            AppendText(file_text[:], *length, "   ]")
+        }
+        if file_decorations[index] {
+            AppendText(file_text[:], *length, ",\n   \"decorations\": [\n")
+            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                AppendText(file_text[:], *length, "    \"")
+                from := index * HEX + PIECES_HEX * 2 + row * SHOVEY_WIDTH * 2
+                AppendText(file_text[:], *length, TextView(file_boards[from:from + SHOVEY_WIDTH * 2]))
+                AppendText(file_text[:], *length, ifx row < SHOVEY_HEIGHT - 1 then "\",\n" else "\"\n")
+            }
+            AppendText(file_text[:], *length, "   ]")
+        }
+        if file_route_length[index] >= 0 {
+            AppendText(file_text[:], *length, ",\n   \"solution\": \"")
+            start := file_route_start[index]
+            AppendText(file_text[:], *length, TextView(file_routes[start:start + file_route_length[index]]))
+            AppendText(file_text[:], *length, "\"")
+        }
+        AppendText(file_text[:], *length, ifx index < file_count - 1 then "\n  },\n" else "\n  }\n")
+    }
+    AppendText(file_text[:], *length, " ]\n}\n")
+    return TextView(file_text[:length])
+}
+
+SaveFailed :: (message: string) {
+    save_state = 3
+    save_message_length = 0
+    AppendText(save_message[:], *save_message_length, message)
+}
+
+// Whether level `index` of the file on disk holds exactly `board`.
+FileHolds :: (index: s32, board: []u8) -> bool {
+    if index < 0 || index >= file_count { return false }
+    normalized: [HEX]u8
+    if !ReadBoard(TextView(file_boards[index * HEX:(index + 1) * HEX]), normalized[:]) { return false }
+    return Same(normalized[:], board)
+}
+
+// Does the file still hold, at the spot this place saves to, the board the
+// editor loaded for it? A place only ever replaces its own level, or goes in
+// between the levels of the places on both sides of it, so a save can never
+// land on another place's level.
+SaveSpotMatches :: (place: s32, index: s32) -> bool {
+    if !mapping_ok { return false }
+    if InGame(place) { return FileHolds(index, SavedBoard(place)) }
+    before: s32 = 0
+    after: s32 = 0
+    other: s32 = 1
+    while other <= PLACES {
+        if InGame(other) {
+            if other < place { before = other }
+            else if other > place && after == 0 { after = other }
+        }
+        other += 1
+    }
+    if before > 0 && !FileHolds(index - 1, SavedBoard(before)) { return false }
+    if after > 0 && !FileHolds(index, SavedBoard(after)) { return false }
+    return index == file_count || after > 0
+}
+
+// Writes the board on screen with its winning route into the level file: a
+// place in the game gets the new board, a waiting place goes in at its place
+// and leaves the waiting list. The level code and pictures follow.
+StartSave :: () {
+    if save_state == 1 || (!Solved() && !Proven()) { return }
+    Copy(save_board[:], Board(current))
+    save_level = current
+    if InGame(current) && Same(Board(current), SavedBoard(current)) { save_state = 2; return }
+    text, found := ReadEntireFile(LEVELS_FILE)
+    if !found || !ReadLevelFile(text) { SaveFailed("levels/classic.json could not be read."); return }
+    // Only a file this editor writes back unchanged is safe to rewrite.
+    if LevelFileText() != text { SaveFailed("levels/classic.json is not in the layout the editor writes."); return }
+    letters := ifx Solved() then route[:route_length] else proof_route[:proof_length]
+    if file_routes_used + cast(s32)letters.count > ROUTES_SIZE { SaveFailed("the route is too long to keep."); return }
+    index := LevelNumber(current) - 1
+    if !SaveSpotMatches(current, index) {
+        SaveFailed("this place and levels/classic.json no longer agree; nothing was saved. Reopen the editor.")
+        return
+    }
+    if !InGame(current) {
+        if file_count >= LEVELS_MAX { SaveFailed("there is no room for another level."); return }
+        at := file_count
+        while at > index {
+            for cell: cast(s32)0..HEX - 1 { file_boards[at * HEX + cell] = file_boards[(at - 1) * HEX + cell] }
+            file_tiles[at] = file_tiles[at - 1]
+            file_decorations[at] = file_decorations[at - 1]
+            file_route_start[at] = file_route_start[at - 1]
+            file_route_length[at] = file_route_length[at - 1]
+            at -= 1
+        }
+        file_count += 1
+    }
+    board := Board(current)
+    for cell: cast(s32)0..HEX - 1 { file_boards[index * HEX + cell] = board[cell] }
+    file_tiles[index] = true
+    file_decorations[index] = true
+    file_route_start[index] = file_routes_used
+    file_route_length[index] = cast(s32)letters.count
+    for at: cast(s32)0..cast(s32)letters.count - 1 { file_routes[file_routes_used + at] = letters[at] }
+    file_routes_used += cast(s32)letters.count
+    if !WriteEntireFile(LEVELS_FILE, LevelFileText()) { SaveFailed("levels/classic.json could not be written."); return }
+    Copy(save_board[:], board)
+    save_level = current
+    Copy(SavedBoard(current), board)
+    if !InGame(current) {
+        stuck[current] = false
+        level_count += 1
+        WriteWaiting()
+    }
+    unused RemoveFile(DraftPath(current))
+    save_state = 2
+    // The game's level code and the level pictures follow the file.
+    Shell("(python3 tools/levels/levels.py generate && python3 tools/levels/levels.py previews) > /dev/null 2>&1 &")
+}
+
+// backup/redesign/stuck.txt: the places still waiting for a winnable layout.
+WriteWaiting :: () {
+    length: s32 = 0
+    for place: cast(s32)1..PLACES - 1 {
+        if stuck[place] {
+            AppendText(file_text[:], *length, "classic ")
+            AppendNumber(file_text[:], *length, place)
+            AppendText(file_text[:], *length, "\n")
+        }
+    }
+    unused WriteEntireFile("backup/redesign/stuck.txt", TextView(file_text[:length]))
+}
+
+// A board saves itself once it is proven winnable and changed; a save that
+// failed is not repeated for the same board.
+AutoSave :: () {
+    if save_state == 1 || (!Solved() && !Proven()) { return }
+    if Same(Board(current), SavedBoard(current)) { return }
+    if save_state == 3 && save_level == current && Same(save_board[:], Board(current)) { return }
+    StartSave()
+}
+
+// ---------------------------------------------------------------- playing
+
+StartPlay :: () {
+    playing = true
+    watching = false
+    play_length = 0
+    unused ShoveyLoadData(*play, LevelFor(current), TextView(Board(current)))
+    last_tick = MonotonicMilliseconds()
+}
+
+PlayAct :: (action: s32) {
+    if play.won || play.lost || play_length >= ROUTE_MAX { return }
+    accepted := ifx action <= 3 then ShoveyMove(*play, action) else ifx action == 4 then ShoveyFire(*play) else ShoveyTick(*play)
+    if action == 5 && !accepted { return }
+    play_route[play_length] = LETTERS[action]
+    play_length += 1
+    // A win you just played is already proof; stop the searches and save it.
+    if play.won && !watching {
+        Copy(proof_board[:], Board(current))
+        for index: cast(s32)0..play_length - 1 { proof_route[index] = play_route[index] }
+        proof_length = play_length
+        proof_level = current
+        AcceptRoute(proof_route[:], proof_length)
+    }
+}
+
+// You won the board on screen yourself.
+Proven :: () -> bool { return proof_length > 0 && proof_level == current && Same(proof_board[:], Board(current)) }
+
+// The solver found a route for the board on screen.
+Solved :: () -> bool { return check_state == 2 && Checked() }
+
+PlayUndo :: () {
+    while play_length > 0 && play_route[play_length - 1] == cast(u8)116 { play_length -= 1 }
+    if play_length > 0 { play_length -= 1 }
+    length := play_length
+    play_length = 0
+    unused ShoveyLoadData(*play, LevelFor(current), TextView(Board(current)))
+    for index: cast(s32)0..length - 1 {
+        action: s32 = 0
+        for candidate: cast(s32)0..5 { if LETTERS[candidate] == play_route[index] { action = candidate } }
+        PlayAct(action)
+    }
+}
+
+StartWatch :: () {
+    if check_state != 2 || !Checked() { return }
+    StartPlay()
+    watching = true
+    watch_at = 0
+    watch_last = 0
+}
+
+// ---------------------------------------------------------------- screen
+
+Caption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16) {
+    Text(session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = font,
+            .wrap = TextWrap.TextWrapAuto, .align = TextAlign.TextAlignStart,
+            .vertical_align = TextAlign.TextAlignCenter})
+}
+
+Control :: (id: s32, bounds: Rectangle, label: string, selected: bool = false, icon: string = "", picture: string = "") -> bool {
+    return Button(session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label, .selected = selected, .icon_shape = icon, .image = ImageProps.{.asset_path = picture, .fit = ImageFit.ImageFitContain}, .fit_content = true,
+            .tone = ifx selected then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0
+}
+
+Inside :: (bounds: Rectangle, x: float32, y: float32) -> bool {
+    return x >= bounds.x && y >= bounds.y && x < bounds.x + bounds.width && y < bounds.y + bounds.height
+}
+
+// The colour of a place by how alike it is to its original: calm green up to
+// 50%, then yellow, orange and red; 100% is full red. Waiting places are blue.
+Lerp :: (a: s32, b: s32, part: s32, of: s32) -> u8 {
+    return cast(u8)(a + (b - a) * part / of)
+}
+
+SimilarityColor :: (percent: s32) -> Color {
+    if percent < 50 { return Color.{96, 168, 120, 255} }
+    over := percent - 50
+    if over < 25 { return Color.{Lerp(236, 238, over, 25), Lerp(208, 150, over, 25), Lerp(72, 50, over, 25), 255} }
+    over -= 25
+    return Color.{Lerp(238, 214, over, 25), Lerp(150, 36, over, 25), Lerp(50, 36, over, 25), 255}
+}
+
+// Every place at once: a button for each, coloured by what it needs, with
+// its number and how alike its board is to its own original (mirroring
+// and rotation ignored). A click opens that place.
+SELECTOR_COLUMNS :: 15
+SelectorScreen :: (area: Rectangle) {
+    rows := (PLACES + SELECTOR_COLUMNS - 1) / SELECTOR_COLUMNS
+    legend_height: float32 = 28.0
+    gap: float32 = 4.0
+    cell_width := (area.width - gap * cast(float32)(SELECTOR_COLUMNS - 1)) / cast(float32)SELECTOR_COLUMNS
+    cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
+    Caption(15, Rectangle.{area.x, area.y, area.width, legend_height},
+        "All levels, coloured by how alike each is to its original: green under 50%, then yellow, orange, and red at 100%. Blue: waiting for a winnable layout. Dark outline: open now. Click the title, Esc or L closes.", 14)
+    // Measuring a place sets the status line's numbers; keep them.
+    keep_percent := similarity_percent
+    keep_matches := similarity_matches
+    keep_total := similarity_total
+    for place: cast(s32)1..PLACES {
+        index := place - 1
+        column := index % SELECTOR_COLUMNS
+        row := index / SELECTOR_COLUMNS
+        bounds := Rectangle.{area.x + cast(float32)column * (cell_width + gap),
+                area.y + legend_height + cast(float32)row * (cell_height + gap), cell_width, cell_height}
+        length: s32 = 0
+        AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, place)
+        alike := SimilarityTo(place, place)
+        if alike >= 0 {
+            AppendText(cell_bytes[index * 16:index * 16 + 16], *length, " ")
+            AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, alike)
+            AppendText(cell_bytes[index * 16:index * 16 + 16], *length, "%")
+        }
+        fill := ifx alike >= 0 then SimilarityColor(alike) else Color.{96, 168, 120, 255}
+        if !InGame(place) { fill = Color.{104, 140, 196, 255} }
+        border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
+        unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
+                .fill = fill, .border = border, .radius = 5.0})
+        if Button(session, ButtonProps.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
+                .label = TextView(cell_bytes[index * 16:index * 16 + length]), .tone = ButtonTone.ButtonToneNeutral,
+                .emphasis = ButtonEmphasis.ButtonEmphasisGhost}) != 0 {
+            Open(place)
+            selector_open = false
+        }
+    }
+    similarity_percent = keep_percent
+    similarity_matches = keep_matches
+    similarity_total = keep_total
+}
+
+// What the solver says about the board on screen, while you play too.
+SolverText :: (bytes: []u8, length: *s32) {
+    if check_state == 1 {
+        AppendText(bytes, length, "Solver checking (")
+        AppendNumber(bytes, length, cast(s32)((MonotonicMilliseconds() - check_started) / 1000))
+        AppendText(bytes, length, " of ")
+        AppendText(bytes, length, SOLVE_SECONDS)
+        AppendText(bytes, length, " s).")
+    } else if Solved() {
+        AppendText(bytes, length, "Solver: winnable in ")
+        AppendNumber(bytes, length, route_length)
+        AppendText(bytes, length, " moves.")
+    } else if check_state == 3 && Checked() {
+        AppendText(bytes, length, "Solver: no route found in ")
+        AppendText(bytes, length, SOLVE_SECONDS)
+        AppendText(bytes, length, " s.")
+    }
+}
+
+StatusText :: () -> string {
+    length: s32 = 0
+    if playing {
+        if watching { AppendText(status_bytes[:], *length, "Watching the solver's route.    ") }
+        if play.won { AppendText(status_bytes[:], *length, "Won!    ") }
+        else if play.lost { AppendText(status_bytes[:], *length, "Lost. Z undoes, R restarts.    ") }
+        AppendNumber(status_bytes[:], *length, ShoveyRemaining(*play))
+        AppendText(status_bytes[:], *length, " still to do, ")
+        AppendNumber(status_bytes[:], *length, play_length)
+        AppendText(status_bytes[:], *length, " moves.    ")
+        SolverText(status_bytes[:], *length)
+        return TextView(status_bytes[:length])
+    }
+    if check_state == 4 { AppendText(status_bytes[:], *length, "Put exactly one Shovey on the board.") }
+    else if check_state == 1 || (check_wanted && !Checked()) {
+        AppendText(status_bytes[:], *length, "Checking whether it can be won")
+        if check_state == 1 {
+            AppendText(status_bytes[:], *length, " (")
+            AppendNumber(status_bytes[:], *length, cast(s32)((MonotonicMilliseconds() - check_started) / 1000))
+            AppendText(status_bytes[:], *length, " of ")
+            AppendText(status_bytes[:], *length, SOLVE_SECONDS)
+            AppendText(status_bytes[:], *length, " s)")
+        }
+        AppendText(status_bytes[:], *length, "...")
+    }
+    else if check_state == 2 && Checked() {
+        AppendText(status_bytes[:], *length, "Winnable: the engine replays a win in ")
+        AppendNumber(status_bytes[:], *length, route_length)
+        AppendText(status_bytes[:], *length, " moves.")
+    }
+    else if check_state == 3 && Checked() {
+        AppendText(status_bytes[:], *length, "No winning route found in ")
+        AppendText(status_bytes[:], *length, SOLVE_SECONDS)
+        AppendText(status_bytes[:], *length, ifx Proven() then " s." else " s. Play it (Tab) to prove it, or change it.")
+    }
+    if BestMirrorMatch(current) >= 0 {
+        AppendText(status_bytes[:], *length, "    Similarity: ")
+        AppendNumber(status_bytes[:], *length, similarity_percent)
+        AppendText(status_bytes[:], *length, "% (")
+        AppendNumber(status_bytes[:], *length, similarity_matches)
+        AppendText(status_bytes[:], *length, " of ")
+        AppendNumber(status_bytes[:], *length, similarity_total)
+        AppendText(status_bytes[:], *length, " pieces match, best mirror)")
+    }
+    if Proven() {
+        AppendText(status_bytes[:], *length, "    You won it in ")
+        AppendNumber(status_bytes[:], *length, proof_length)
+        AppendText(status_bytes[:], *length, " moves.")
+    }
+    AppendText(status_bytes[:], *length, "    ")
+    if save_state == 1 { AppendText(status_bytes[:], *length, "Saving...") }
+    else if save_state == 2 && save_level == current && Same(Board(current), SavedBoard(current)) {
+        AppendText(status_bytes[:], *length, "Saved in the game's levels.")
+    }
+    else if !InGame(current) && Same(Board(current), SavedBoard(current)) {
+        AppendText(status_bytes[:], *length, "Not in the game yet: once it is winnable it goes in by itself.")
+    }
+    else if TooClose(current) && Same(Board(current), SavedBoard(current)) {
+        AppendText(status_bytes[:], *length, "Too close to its original: change it so it differs more.")
+    }
+    else if save_state == 3 {
+        AppendText(status_bytes[:], *length, "Not saved: ")
+        AppendText(status_bytes[:], *length, TextView(save_message[:save_message_length]))
+    }
+    else if !Same(Board(current), SavedBoard(current)) {
+        AppendText(status_bytes[:], *length, "Kept as a draft; it saves itself once it is winnable.")
+    }
+    return TextView(status_bytes[:length])
+}
+
+Palette :: (area: Rectangle) {
+    tabs: [3]string = .["Tiles", "Objects", "Deco"]
+    eraser := "S2rr:M5 19H19M7 15L15 7L19 11L13 17H9Z"
+    for tab: cast(s32)0..2 {
+        if Control(69000 + tab, Rectangle.{area.x + cast(float32)tab * 120.0, area.y, 116.0, 36.0}, tabs[tab], palette_tab == tab) {
+            palette_tab = tab
+            selected = ifx tab == 0 then 256 else ifx tab == 2 then 512 else 0
+        }
+    }
+    tile_kinds: [16]s32 = .[0,77,78,60,61,12,63,64,65,4,5,6,47,48,49,70]
+    tile_names: [16]string = .["Stone","Grass","Sand","Checker","Stripes","Wall","Mossy wall","Water edge","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Ice"]
+    deco_kinds: [5]s32 = .[0,57,58,59,84]
+    deco_names: [5]string = .["Erase deco","Flowers","Grass tufts","Pebbles","Tree"]
+    count: s32 = ifx palette_tab == 0 then 16 else ifx palette_tab == 2 then 5 else PALETTE
+    visible_count: s32 = 0
+    for index: cast(s32)0..count - 1 {
+        kind := ifx palette_tab == 0 then tile_kinds[index] else ifx palette_tab == 2 then deco_kinds[index] else palette_kinds[index]
+        if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62 || (kind >= 57 && kind <= 59)) { continue }
+        visible_count += 1
+    }
+    scrolled := Scroll(session, ScrollProps.{.key = cast(u64)69500, .bounds = Rectangle.{area.x, area.y + 44.0, area.width, area.height - 44.0},
+            .content_height = ((visible_count + 2) / 3) * 96, .keep_scrollbar = true, .scroll_offset = palette_scroll[palette_tab]})
+    palette_scroll[palette_tab] = scrolled.scroll_offset
+    if !scrolled.opened { return }
+    row: s32 = 0
+    cell_width := (area.width - 16.0) / 3.0
+    for index: cast(s32)0..count - 1 {
+        kind := ifx palette_tab == 0 then tile_kinds[index] else ifx palette_tab == 2 then deco_kinds[index] else palette_kinds[index]
+        if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62 || (kind >= 57 && kind <= 59)) { continue }
+        name := ifx palette_tab == 0 then tile_names[index] else ifx palette_tab == 2 then deco_names[index] else ifx kind == 0 then "Erase object" else ifx kind == 71 then "Crack" else palette_names[index]
+        brush := kind + (ifx palette_tab == 0 then 256 else ifx palette_tab == 2 then 512 else 0)
+        bounds := Rectangle.{scrolled.content.x + cast(float32)(row % 3) * cell_width,
+                scrolled.content.y + cast(float32)(row / 3) * 96.0, cell_width - 4.0, 92.0}
+        row += 1
+        if bounds.y + bounds.height < scrolled.viewport.y || bounds.y > scrolled.viewport.y + scrolled.viewport.height { continue }
+        sprite := ifx kind == 10 then SPRITE_PLAYER + 1 else PrivateSprite(kind)
+        picture := ifx kind == 0 && palette_tab != 0 then "" else OurTiles()[sprite]
+        if Button(session, ButtonProps.{.key = cast(u64)(70000 + index), .id = 70000 + index, .class_name = 9001,
+                .bounds = bounds, .label = name, .selected = selected == brush, .fit_content = true,
+                .icon_shape = ifx kind == 0 && palette_tab != 0 then eraser else "",
+                .image = ImageProps.{.asset_path = picture, .fit = ImageFit.ImageFitContain},
+                .icon_placement = IconPlacement.IconPlacementAbove,
+                .tone = ifx selected == brush then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
+                .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 { selected = brush }
+    }
+    unused End(session)
+}
+
+Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
+    unused Box(session, BoxProps.{.key = cast(u64)19990, .bounds = viewport, .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
+    now := MonotonicMilliseconds()
+    PollCheck()
+    ctrl := (modifiers & 2) != 0
+    if key == 258 { if playing { playing = false; watching = false } else { StartPlay() } }
+    if key == 76 && !playing { selector_open = !selector_open }
+    if key == 256 { selector_open = false }
+    if playing {
+        if !watching {
+            if key == 263 || key == 65 { PlayAct(BoardEngineDirection(0, boards_landscape)) }
+            if key == 265 || key == 87 { PlayAct(BoardEngineDirection(1, boards_landscape)) }
+            if key == 262 || key == 68 { PlayAct(BoardEngineDirection(2, boards_landscape)) }
+            if key == 264 || key == 83 { PlayAct(BoardEngineDirection(3, boards_landscape)) }
+            if key == 32 { PlayAct(4) }
+            if key == 90 || key == 259 { PlayUndo() }
+        }
+        if key == 82 { StartPlay() }
+        // The moving block runs on its own timer, as in the game.
+        if !watching && now - last_tick >= 1000 {
+            last_tick = now
+            moving := false
+            unused ShoveyAnimalsTick(*play)
+            for at: cast(s32)0..SHOVEY_CELLS - 1 { if play.ground[at] == 29 { moving = true } }
+            if moving { PlayAct(5) }
+        }
+        if watching && watch_at < route_length && now - watch_last >= 120 {
+            watch_last = now
+            letter := route[watch_at]
+            action: s32 = 0
+            for candidate: cast(s32)0..5 { if LETTERS[candidate] == letter { action = candidate } }
+            PlayAct(action)
+            watch_at += 1
+        }
+    } else {
+        if key == 78 { Open(current + 1) }
+        if key == 80 { Open(current - 1) }
+        if key == 85 { Open(NextWaiting()) }
+        if key == 91 && original_shown > 1 { original_shown -= 1 }
+        if key == 93 && original_shown < PLACES { original_shown += 1 }
+        if key == 90 && !ctrl { UndoEdit() }
+        if key == 67 { StartCheck() }
+        if key == 83 && ctrl { StartSave() }
+    }
+    // Check again shortly after the last change.
+    if check_wanted && !pointer.down && !secondary.down && now - edited_at >= 1200 { StartCheck() }
+    AutoSave()
+
+    width := viewport.width
+    height := viewport.height
+    length: s32 = 0
+    if InGame(current) {
+        AppendText(title_bytes[:], *length, "Level ")
+        AppendNumber(title_bytes[:], *length, LevelNumber(current))
+        AppendText(title_bytes[:], *length, " of ")
+        AppendNumber(title_bytes[:], *length, level_count)
+    } else {
+        AppendText(title_bytes[:], *length, "Waiting: not in the game")
+    }
+    // The title is the button for the full list of levels.
+    if Control(1, Rectangle.{8.0, 8.0, 334.0, 40.0}, TextView(title_bytes[:length])) { selector_open = !selector_open }
+    // One row of controls: moving between places, play and check, then the
+    // fix queue and the rotation both boards share.
+    bx: float32 = 350.0
+    if Control(2, Rectangle.{bx, 8.0, 88.0, 40.0}, "Previous") { Open(current - 1) }
+    bx += 96.0
+    if Control(3, Rectangle.{bx, 8.0, 64.0, 40.0}, "Next") { Open(current + 1) }
+    bx += 72.0
+    if Control(4, Rectangle.{bx, 8.0, 108.0, 40.0}, ifx playing then "Edit (Tab)" else "Play (Tab)") {
+        if playing { playing = false; watching = false } else { StartPlay() }
+    }
+    bx += 116.0
+    if Control(5, Rectangle.{bx, 8.0, 104.0, 40.0}, "Check (C)") { StartCheck() }
+    bx += 112.0
+    if Control(6, Rectangle.{bx, 8.0, 112.0, 40.0}, "Watch route") { StartWatch() }
+    bx += 120.0
+    if Control(7, Rectangle.{bx, 8.0, 92.0, 40.0}, "Undo (Z)") { if playing { PlayUndo() } else { UndoEdit() } }
+    bx += 100.0
+    if Control(8, Rectangle.{bx, 8.0, 120.0, 40.0}, "Save (Ctrl+S)") { StartSave() }
+    bx += 128.0
+    if Control(13, Rectangle.{bx, 8.0, 136.0, 40.0}, "Next to fix (U)") { Open(NextWaiting()) }
+    bx += 144.0
+    if Control(14, Rectangle.{bx, 8.0, 168.0, 40.0}, ifx boards_landscape then "Rotate both: portrait" else "Rotate both: landscape") {
+        boards_landscape = !boards_landscape
+    }
+    Caption(9, Rectangle.{12.0, 52.0, width - 24.0, 28.0}, StatusText(), 15)
+
+    if selector_open {
+        if now - drafts_refreshed >= 1000 {
+            LoadDrafts()
+            drafts_refreshed = now
+        }
+        SelectorScreen(Rectangle.{8.0, 88.0, width - 16.0, height - 96.0})
+        return
+    }
+
+    palette_width: float32 = 360.0
+    boards_area := Rectangle.{8.0, 84.0, width - palette_width - 24.0, height - 84.0 - 8.0}
+    half := (boards_area.height - 28.0) / 2.0
+    has_original := original_shown >= 1 && original_shown <= LEVELS_MAX && original_found[original_shown]
+    length = 0
+    if has_original {
+        AppendText(label_bytes[:], *length, "Original level ")
+        AppendNumber(label_bytes[:], *length, original_shown)
+        AppendText(label_bytes[:], *length, ifx original_sprites then "" else "  (drawn with the new pictures)")
+    } else {
+        AppendText(label_bytes[:], *length, "No original on this machine")
+    }
+    Caption(11, Rectangle.{boards_area.x, boards_area.y, boards_area.width, 24.0}, TextView(label_bytes[:length]), 15)
+    if has_original {
+        unused HexBoard(Original(original_shown), ifx original_sprites then original_tiles[:] else OurTiles(), layers_original[:],
+            cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
+            boards_landscape, "Original")
+    }
+    edit_top := boards_area.y + half + 28.0
+    Caption(12, Rectangle.{boards_area.x, edit_top, boards_area.width, 24.0},
+        ifx playing then "New level: playing" else "New level: editing", 15)
+    edit_area := Rectangle.{boards_area.x, edit_top + 26.0, boards_area.width, half - 26.0}
+    if playing {
+        landscape_aspect := cast(float32)SHOVEY_HEIGHT / cast(float32)SHOVEY_WIDTH
+        portrait_aspect := cast(float32)SHOVEY_WIDTH / cast(float32)SHOVEY_HEIGHT
+        aspect := ifx boards_landscape then landscape_aspect else portrait_aspect
+        play_width := edit_area.width
+        play_height := play_width / aspect
+        if play_height > edit_area.height {
+            play_height = edit_area.height
+            play_width = play_height * aspect
+        }
+        play_bounds := Rectangle.{edit_area.x + (edit_area.width - play_width) / 2.0,
+                edit_area.y + (edit_area.height - play_height) / 2.0, play_width, play_height}
+        unused ShoveyBoard(session, *play, play_bounds, cast(u64)200000, cast(float64)now / 1000.0, names[0:0])
+    } else {
+        grid := HexBoard(Board(current), OurTiles(), layers_edit[:], cast(u64)200000, edit_area, boards_landscape, "New level")
+        // Alt+click (or Shift+click, if the desktop keeps Alt) picks up the
+        // piece under the pointer to paint with.
+        picking := (modifiers & 5) != 0
+        if picking && pointer.pressed && grid.cell > 0.0 {
+            at := BoardLogicalIndex(TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
+            if at >= 0 { selected = ifx palette_tab == 0 then 256 + KindAt(Board(current), SHOVEY_CELLS + at) else ifx palette_tab == 2 then 512 + KindAt(Board(current), SHOVEY_CELLS * 2 + at) else KindAt(Board(current), at) }
+        }
+        // A stroke paints every cell the pointer crosses; it is undone at once.
+        if !picking && (pointer.down || secondary.down || secondary.pressed) && grid.cell > 0.0 {
+            at := BoardLogicalIndex(TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
+            if at >= 0 {
+                if !stroke { Remember(); stroke = true }
+                Paint(at, ifx secondary.down || secondary.pressed then 0 else selected)
+            }
+        }
+        if !pointer.down && !secondary.down && !secondary.pressed { stroke = false }
+    }
+    Palette(Rectangle.{width - palette_width - 8.0, 88.0, palette_width, height - 88.0 - 8.0})
+}
+
+Draw :: () -> bool {
+    BeginDesktopFrame()
+    key := DesktopPressedKey()
+    modifiers := DesktopModifiers()
+    viewport := DesktopViewport()
+    pointer = PollPointer()
+    secondary = PollSecondaryPointer()
+    TreePointerUpdate(session, pointer)
+    BeginScrollFrame(session, Vector2.{pointer.x, pointer.y}, pointer.pressed, pointer.down, pointer.released,
+            DesktopWheelMove(), cast(float64)MonotonicMilliseconds() / 1000.0)
+    if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { Say("Editor frame could not begin.\n"); return false }
+    Screen(viewport, key, modifiers)
+    finished := EndFrameRetained(session, DesktopFrameReusable())
+    if finished.status != FrameStatus.FrameOk { Say("Editor frame could not finish.\n"); return false }
+    DesktopFrameUnchanged(finished.paint_unchanged)
+    drawn := EndDesktopFrame()
+    if !drawn { Say("Editor raster frame could not finish.\n") }
+    return drawn
+}
+
+WriteOut :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
+
+Say :: (text: string) {
+    bytes: [256]u8
+    if CopyCString(text, bytes[:]) { unused WriteOut(1, *bytes[0], cast(usize)text.count) }
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    // --check-file: can the level file be read and written back unchanged?
+    if argc >= 2 && TextFromCString(argv[1]) == "--check-file" {
+        text, found := ReadEntireFile(ifx argc >= 3 then TextFromCString(argv[2]) else LEVELS_FILE)
+        if !found || !ReadLevelFile(text) { Say("levels/classic.json could not be read\n"); return 1 }
+        if LevelFileText() != text { Say("levels/classic.json would not be written back unchanged\n"); return 1 }
+        Say("levels/classic.json reads and writes back unchanged\n")
+        return 0
+    }
+    LoadOriginals()
+    LoadUnlinked()
+    LoadLevels()
+    LoadDrafts()
+    selected = 256
+    palette_tab = 0
+    start: s32 = 1
+    last, remembered := ReadEntireFile("backup/editor-drafts/place")
+    if remembered {
+        number: s32 = 0
+        for at: cast(s64)0..last.count - 1 {
+            if last[at] >= cast(u8)48 && last[at] <= cast(u8)57 { number = number * 10 + cast(s32)(last[at] - cast(u8)48) }
+        }
+        if number > 0 { start = number }
+    }
+    if argc >= 2 {
+        text := TextFromCString(argv[1])
+        number: s32 = 0
+        for at: cast(s64)0..text.count - 1 {
+            if text[at] >= cast(u8)48 && text[at] <= cast(u8)57 { number = number * 10 + cast(s32)(text[at] - cast(u8)48) }
+        }
+        if number > 0 { start = number }
+    }
+    Open(start)
+    if !OpenDesktopSized(1500, 1000) {
+        CloseDesktop()
+        return 1
+    }
+    title: [32]u8
+    unused CopyCString("Shovey level editor", title[:])
+    SetTitle(window, *title[0])
+    session = SessionOpen()
+    if !SessionValid(session) {
+        CloseDesktop()
+        return 1
+    }
+    unused WidgetPaletteUse(session, ShoveyPalette())
+    rules := ActiveStyleRules()
+    icons: StyleRule
+    icons.selector = StyleDefaultSelector()
+    icons.selector.kind = StyleKindButton()
+    icons.selector.class_name = 9001
+    icons.style.fields = cast(u32)StyleField.StyleIconSize | cast(u32)StyleField.StyleFontSize |
+            cast(u32)StyleField.StylePaddingX | cast(u32)StyleField.StylePaddingY | cast(u32)StyleField.StyleGap
+    icons.style.icon_size = 64.0
+    icons.style.font_size = 12.0
+    icons.style.padding_x = 4.0
+    icons.style.padding_y = 4.0
+    icons.style.gap = 3.0
+    icons.order = rules.count
+    rules.items[rules.count] = icons
+    rules.count += 1
+    unused InstallStyleRules(rules)
+    ok := true
+    while ok && PollDesktop() {
+        ok = Draw()
+        // An idle window still draws a few frames a second, so a finished
+        // check or save shows without input.
+        if ok { PauseDesktop() }
+    }
+    StopCheck()
+    SessionClose(session)
+    CloseDesktop()
+    return ifx ok then 0 else 1
+}

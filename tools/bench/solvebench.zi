@@ -1,0 +1,26 @@
+#import, file "../../src/solver/solver.zi";
+#import, file "../../src/solver/classic_rules.zi";
+#import, file "../../src/levels.zi";
+#import, file "../../src/island_levels.zi";
+
+#program_export
+BenchSolve :: (island: s32, level: s32, only: s32) -> s32 {
+    board := ifx island != 0 then IslandLevelData(level) else ShoveyLevelData(level)
+    limits := SolverDefaultLimits()
+    if !SolverStart(island != 0, board, limits) { return -1 }
+    if only >= 0 { solver_search = only }
+    while SolverStatus() == SOLVER_RUNNING { SolverRun(100000) }
+    return SolverStatus()
+}
+
+#program_export
+BenchStates :: () -> s64 { return SolverStates() }
+
+#program_export
+BenchRouteLength :: () -> s32 { return solver_route_length }
+
+#program_export
+BenchSearch :: () -> s32 { return solver_search }
+
+#program_export
+BenchWork :: () -> s64 { return SolverWork() }

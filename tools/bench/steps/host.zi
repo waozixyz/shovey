@@ -1,0 +1,44 @@
+#import "std/bundle_host"
+#import "std/byte_text_linux"
+#import "std/c_string"
+libc :: #system_library "libc";
+Print :: (format: *u8, a: s64, b: s64, c: s64) -> s32 #foreign libc "printf";
+Flush :: (stream: *void) -> s32 #foreign libc "fflush";
+Clock :: (id: s32, time: *s64) -> s32 #foreign libc "clock_gettime";
+
+Now :: () -> s64 {
+    time: [2]s64
+    unused Clock(1, *time[0])
+    return time[0] * 1000000 + time[1] / 1000
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    bundle := OpenBundle(argv[1])
+    if bundle == null { return 2 }
+    instance := InstantiateBundle(bundle, null, 0)
+    if instance == null { return 3 }
+    format: [64]u8
+    unused CopyCString("board %lld slowest frame %lld us, frames %lld\n", format[:])
+    board: s64 = -2
+    slowest: s64 = 0
+    frames: s64 = 0
+    while true {
+        LimitBundleSteps(instance, 2000000000)
+        result: s64
+        has: s32
+        start := Now()
+        if RunBundleInstance(instance, *result, *has) == 0 { return 1 }
+        took := Now() - start
+        if result != board {
+            if board != -2 { unused Print(*format[0], board, slowest, frames); unused Flush(null) }
+            board = result
+            slowest = 0
+            frames = 0
+        }
+        frames += 1
+        if took > slowest { slowest = took }
+        if result < 0 { break }
+    }
+    return 0
+}

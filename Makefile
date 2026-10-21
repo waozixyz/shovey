@@ -7,6 +7,27 @@ APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 
 .PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-test web-itch
 
+.PHONY: editor editor-ui-test editor-save-test
+editor-save-test: editor
+	python3 tests/developer_editor_save_test.py
+
+editor-ui-test: editor
+	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
+		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_ui_test.py
+
+editor: levels build/ziran/libziran.a
+	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
+		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
+		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--entry editor:main -o build/private-editor/c tools/editor/editor.zi
+	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
+		$$(find build/private-editor/c -type d -printf ' -iquote %p') $$(find build/private-editor/c -name '*.c') \
+		build/ziran/libziran.a -Wl,--gc-sections \
+		$$(pkg-config --libs sdl2 cairo freetype2 fontconfig pangocairo) -lm -lpthread \
+		-o build/private-editor/shovey-level-editor.new
+	mv build/private-editor/shovey-level-editor.new build/private-editor/shovey-level-editor
+
 .PHONY: inbe-ui-test
 inbe-ui-test:
 	@test -n "$(INBE_BINARY)" || { echo 'Set INBE_BINARY to the intended Inbe host'; exit 2; }
@@ -20,9 +41,9 @@ inbe-ui-test:
 all: bundles
 
 # The JSON level files are the source; the game reads the generated code.
-levels: apps/shovey/levels.zi apps/shovey/island_levels.zi
+levels: src/levels.zi src/island_levels.zi
 
-apps/shovey/levels.zi apps/shovey/island_levels.zi: levels/classic.json levels/island.json tools/levels/levels.py
+src/levels.zi src/island_levels.zi: levels/classic.json levels/island.json tools/levels/levels.py
 	python3 tools/levels/levels.py generate
 
 landscape:
@@ -39,12 +60,12 @@ web: bundles
 		--module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--module-path build/game-generated/shovey --define KRYON_HOSTED_UI --define SHOVEY_WEB \
 		--asset-dir assets=build/game-assets/shovey/assets --entry game:Main \
-		-o build/web/shovey.zib apps/shovey/web/game.zi
+		-o build/web/shovey.zib src/web/game.zi
 	$(MAKE) -C '$(KRYON)' zib-canvas ZIRAN_ROOT='$(TOOLCHAIN)' \
 		ZIB_CANVAS_DIR='$(abspath build/web-runtime)' \
 		ZIB_CANVAS_BUNDLE='$(abspath build/web/shovey.zib)' \
 		ZIB_CANVAS_PROGRAM='$(abspath build/web/runtime.html)'
-	cp apps/shovey/web/index.html build/web/index.html
+	cp src/web/index.html build/web/index.html
 	cp assets/shovey/preview.png build/web/loading.png
 	cp build/web/runtime.js build/web/index.js
 	cp build/web/runtime.wasm build/web/index.wasm

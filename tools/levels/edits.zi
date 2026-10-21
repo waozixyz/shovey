@@ -10,10 +10,10 @@
 // by its route, or nothing is merged.
 #import "std/json_scan"
 #import "std/text_buffer"
-#import, file "../../apps/shovey/engine.zi";
-#import, file "../../apps/shovey/island/island_engine.zi";
-#import, file "../../apps/shovey/editor/edit.zi";
-#import, file "../../apps/shovey/editor/sharing.zi";
+#import, file "../../src/engine.zi";
+#import, file "../../src/island/island_engine.zi";
+#import, file "../../src/editor/edit.zi";
+#import, file "../../src/editor/sharing.zi";
 
 // Saves keep 175 places per edition.
 IMPORT_PLACES :: 175
@@ -34,7 +34,7 @@ import_count: s32;
 import_error: [256]u8;
 import_error_length: s32;
 import_play: EditPlay;
-import_hex: [EDIT_CELLS * 4]u8;
+import_hex: [EDIT_CELLS * 6]u8;
 
 ImportFail :: (message: string, index: s32 = -1) -> bool {
     writer := EditWriter.{.bytes = import_error[:]}
@@ -75,7 +75,11 @@ ImportReadLevel :: (text: string, at: s32, island: bool, index: s32) -> bool {
     } else if !SharingRows(text, FieldAt(text, at, "cells"), import_hex[:], 0) {
         return ImportFail("its cells are not 20 rows of 24 hex digits", index)
     }
-    layers: s32 = ifx island then 2 else 1
+    layered := !island && FieldAt(text, at, "tiles") >= 0
+    if layered && !SharingRows(text, FieldAt(text, at, "tiles"), import_hex[:], EDIT_CELLS * 2) { return false }
+    decorated := !island && FieldAt(text, at, "decorations") >= 0
+    if decorated && (!layered || !SharingRows(text, FieldAt(text, at, "decorations"), import_hex[:], EDIT_CELLS * 4)) { return false }
+    layers: s32 = ifx decorated then 3 else ifx island || layered then 2 else 1
     // Rows are stored in lower case, as the level files keep them.
     for cell: cast(s32)0..EDIT_CELLS * 2 * layers - 1 {
         if import_hex[cell] >= #char "A" && import_hex[cell] <= #char "F" { import_hex[cell] += 32 }
@@ -142,8 +146,8 @@ ImportCheck :: () -> bool {
             kind := cast(s32)(ifx board.island then board.objects[at] else board.ground[at])
             if kind == (ifx board.island then ISLAND_SHOVEY else CLASSIC_SHOVEY) { pushies += 1 }
             if kind == (ifx board.island then ISLAND_HOME else 7) { homes += 1 }
-            if !board.island && EditBorder(at) && kind != CLASSIC_WALL { return ImportFail("Classic boards keep their wall ring", index) }
-            if !board.island && (kind > 40 || kind == 22 || kind == 24 || kind == 32) { return ImportFail("it holds a piece no board starts with", index) }
+            if !board.island && EditBorder(at) && kind != CLASSIC_WALL && !(kind == 0 && board.tiles[at] == cast(u8)CLASSIC_WALL) { return ImportFail("Classic boards keep their wall ring", index) }
+            if !board.island && (kind > SHOVEY_LAST_KIND || kind == 22 || kind == 24 || kind == 32) { return ImportFail("it holds a piece no board starts with", index) }
             if board.island && (board.ground[at] > cast(u8)48 || board.objects[at] > cast(u8)124 ||
                 board.objects[at] == cast(u8)50 || board.objects[at] == cast(u8)79) { return ImportFail("it holds a piece no island starts with", index) }
         }
@@ -163,8 +167,10 @@ ImportCheck :: () -> bool {
 // imported level (fresh >= 0).
 StoredLevel :: struct {
     fresh: s32
+    has_tiles: bool
+    has_decorations: bool
     name: JsonSpan
-    layers: [2][EDIT_HEIGHT]JsonSpan
+    layers: [3][EDIT_HEIGHT]JsonSpan
     solution: JsonSpan
     has_solution: bool
 }
@@ -190,7 +196,7 @@ StoredRead :: (file: *StoredFile, island: bool, text: string) -> bool {
     positions: [IMPORT_PLACES + 1]s32
     count := ArrayPositions(text, list, positions[:])
     if list < 0 || count < 1 || count > IMPORT_PLACES { return ImportFail("a level file's levels are not a list") }
-    names: [2]string = .[ifx island then "terrain" else "cells", "objects"]
+    names: [3]string = .[ifx island then "terrain" else "cells", ifx island then "objects" else "tiles", "decorations"]
     for index: cast(s32)0..count - 1 {
         at := positions[index]
         level := *file.levels[index]
@@ -201,7 +207,9 @@ StoredRead :: (file: *StoredFile, island: bool, text: string) -> bool {
             level.name = ReadString(text, FieldAt(text, at, "name"))
             if !level.name.valid { return ImportFail("an island has no name") }
         }
-        for layer: cast(s32)0..(ifx island then 1 else 0) {
+        level.has_tiles = !island && FieldAt(text, at, "tiles") >= 0
+        level.has_decorations = !island && FieldAt(text, at, "decorations") >= 0
+        for layer: cast(s32)0..(ifx level.has_decorations then 2 else ifx island || level.has_tiles then 1 else 0) {
             rows: [EDIT_HEIGHT + 1]s32
             if ArrayPositions(text, FieldAt(text, at, names[layer]), rows[:]) != EDIT_HEIGHT { return ImportFail("a board is not 20 rows") }
             for row: cast(s32)0..EDIT_HEIGHT - 1 {
@@ -251,7 +259,7 @@ StoredWrite :: (writer: *EditWriter, file: *StoredFile, text: string) {
     EditPut(writer, "{\n \"edition\": ")
     EditPut(writer, ifx file.island then "\"island\"" else "\"classic\"")
     EditPut(writer, ",\n \"width\": 12,\n \"height\": 20,\n \"levels\": [")
-    layer_names: [2]string = .[ifx file.island then "terrain" else "cells", "objects"]
+    layer_names: [3]string = .[ifx file.island then "terrain" else "cells", ifx file.island then "objects" else "tiles", "decorations"]
     for index: cast(s32)0..file.count - 1 {
         level := *file.levels[index]
         EditPut(writer, ifx index == 0 then "\n  {\n   \"number\": " else ",\n  {\n   \"number\": ")
@@ -262,7 +270,8 @@ StoredWrite :: (writer: *EditWriter, file: *StoredFile, text: string) {
             if fresh != null { ImportPutJson(writer, EditField(fresh.name[:], fresh.name_length)) }
             else { ImportPutSpan(writer, text, level.name) }
         }
-        for layer: cast(s32)0..(ifx file.island then 1 else 0) {
+        layers := ifx fresh != null then EditLayers(*fresh.level.board) else ifx level.has_decorations then 3 else ifx file.island || level.has_tiles then 2 else 1
+        for layer: cast(s32)0..layers - 1 {
             EditPut(writer, ",\n   ")
             ImportPutJson(writer, layer_names[layer])
             EditPut(writer, ": [")

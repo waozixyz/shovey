@@ -1,0 +1,265 @@
+// Classic's board as a Kryon TileMap: floor under pieces, the ground, the
+// pieces and Shovey are four layers of the sprites in assets/shovey/sprites.
+// The game view and the level tools draw the board with it.
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/image_props"
+#import "kryon/image_widget"
+#import "kryon/tile_map"
+#import "std/number_text"
+#import "std/c_string"
+#import "std/text_buffer"
+Math :: #import "std/math";
+#import, file "engine.zi";
+#import, file "orientation.zi";
+
+// Sprites by number: tile-0 to tile-40 by board kind, then Shovey's facings,
+// the open gate, the sensor animation and a shot.
+SPRITE_PLAYER :: 41
+SPRITE_CHARGED :: 45
+SPRITE_DOOR_OPEN :: 49
+SPRITE_SENSOR :: 50
+SPRITE_SHOT :: 58
+SPRITE_NEW_COLOR :: 59
+SPRITE_CHERRY :: 71
+// The newer kinds 57 to 75, one picture each.
+SPRITE_NEW_TILE :: 72
+SPRITE_DOG :: 94
+SPRITE_TURTLE :: 98
+SPRITE_TREE :: 102
+SPRITE_GRASS_EDGE :: 103
+SPRITE_COUNT :: 119
+sprite_files: [SPRITE_COUNT]string;
+landscape_sprite_files: [SPRITE_COUNT]string;
+sprites_ready: bool;
+board_layers: [SHOVEY_CELLS * 4]s32;
+fall_active: bool;
+fall_started: float64;
+fall_level: s32;
+fall_moves: s32;
+fall_position: s32;
+fall_points: [4]Vector2;
+
+// The loss stays in the engine immediately; only the picture falls away.
+AbyssFallProgress :: (game: *ShoveyGame, now: float64) -> float32 {
+    if !game.lost || game.player < 0 || game.ground[game.player] != SHOVEY_PIT {
+        fall_active = false
+        return -1.0
+    }
+    if !fall_active || fall_level != game.level || fall_moves != game.moves || fall_position != game.player {
+        fall_started = now
+        fall_level = game.level
+        fall_moves = game.moves
+        fall_position = game.player
+        fall_active = true
+    }
+    progress := cast(float32)((now - fall_started) / 0.8)
+    return ifx progress >= 1.0 then 1.0 else ifx progress < 0.0 then 0.0 else progress
+}
+
+// A rotating, shrinking quad follows a small inward spiral inside the hole.
+AbyssFallMesh :: (cell: Rectangle, progress: float32) -> ImageMesh {
+    angle := cast(float64)(progress * (2.0 + progress)) * 6.283185307179586
+    cosine := cast(float32)Math.Cos(angle)
+    sine := cast(float32)Math.Sin(angle)
+    scale := (1.0 - progress) * (1.0 - progress)
+    half := cell.width * 0.5 * scale
+    orbit := cell.width * 0.4 * progress * (1.0 - progress)
+    center := Vector2.{cell.x + cell.width * 0.5 + sine * orbit,
+            cell.y + cell.height * 0.5 + (1.0 - cosine) * orbit * 0.5}
+    for corner: cast(s32)0..3 {
+        x := ifx corner % 2 == 0 then -half else half
+        y := ifx corner < 2 then -half else half
+        fall_points[corner] = Vector2.{center.x + x * cosine - y * sine,
+                center.y + x * sine + y * cosine}
+    }
+    return ImageMesh.{.columns = 2, .rows = 2, .points = fall_points[:]}
+}
+
+SpritePathIn :: (files: []string, index: s32, folder: string, name: string) {
+    bytes: Vec(u8)
+    BuilderPrint(*bytes, "assets/%/sprites/%.png", folder, name)
+    files[index] = BuilderFinish(bytes)
+}
+
+#if #defined(KRYON_HOSTED_UI) {
+    SPRITE_LANDSCAPE_FOLDER :: "shovey/landscape"
+} else {
+    SPRITE_LANDSCAPE_FOLDER :: "shovey-landscape"
+}
+
+SpritePath :: (index: s32, name: string) {
+    SpritePathIn(sprite_files[:], index, "shovey", name)
+    SpritePathIn(landscape_sprite_files[:], index, SPRITE_LANDSCAPE_FOLDER, name)
+}
+
+SpritesPrepare :: () {
+    digits: [24]u8
+    for kind: cast(s32)0..40 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(kind, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
+    for kind: cast(s32)44..55 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(SPRITE_NEW_COLOR + kind - 44, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
+    SpritePath(SPRITE_CHERRY, "tile-56")
+    for kind: cast(s32)57..78 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(SPRITE_NEW_TILE + kind - 57, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
+    // Engine directions are left, up, right, down.
+    facings: [4]string = .["left", "up", "right", "down"]
+    for direction: cast(s32)0..3 {
+        dog: Vec(u8)
+        BuilderPrint(*dog, "dog-%", facings[direction])
+        SpritePath(SPRITE_DOG + direction, BuilderFinish(dog))
+        turtle: Vec(u8)
+        BuilderPrint(*turtle, "turtle-%", facings[direction])
+        SpritePath(SPRITE_TURTLE + direction, BuilderFinish(turtle))
+    }
+    SpritePath(SPRITE_TREE, "tile-84")
+    for mask: cast(s32)0..15 {
+        edge: Vec(u8)
+        BuilderPrint(*edge, "grass-edge-%", FormatInteger(cast(s64)mask, digits[:]))
+        SpritePath(SPRITE_GRASS_EDGE + mask, BuilderFinish(edge))
+    }
+    for direction: cast(s32)0..3 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "player-%", facings[direction])
+        SpritePath(SPRITE_PLAYER + direction, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+        charged: Vec(u8)
+        BuilderPrint(*charged, "charged-%", facings[direction])
+        SpritePath(SPRITE_CHARGED + direction, TextView(VecSlice(charged, 0, charged.count)))
+        VecFree(charged)
+    }
+    SpritePath(SPRITE_DOOR_OPEN, "door-open")
+    for frame_number: cast(s32)0..7 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "sensor-%", FormatInteger(cast(s64)(frame_number + 1), digits[:]))
+        SpritePath(SPRITE_SENSOR + frame_number, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
+    SpritePath(SPRITE_SHOT, "projectile")
+    sprites_ready = true
+}
+
+// The picture file of one sprite number.
+SpriteFile :: (index: s32) -> string {
+    if !sprites_ready { SpritesPrepare() }
+    return sprite_files[index]
+}
+
+// Pieces that stand on the floor rather than being a whole floor tile.
+OnFloor :: (kind: s32) -> bool {
+    return (kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46) || kind == 9 ||
+    (kind >= 15 && kind <= 17) || (kind >= 50 && kind <= 52) || kind == 19 ||
+    kind == 21 || kind == 56 || (kind >= 25 && kind <= 29) || kind == 32 || (kind >= 33 && kind <= 38) ||
+    (kind >= 53 && kind <= 55) || kind == 40 || kind == 72
+}
+
+// The floor drawn under a piece: the moving block's path, plain floor, or
+// none (-1) for whole tiles.
+FloorSprite :: (kind: s32) -> s32 {
+    if !OnFloor(kind) { return -1 }
+    return ifx kind == 29 || kind == 32 then 31 else 0
+}
+
+// The sprite of one board kind at a cell, or -1. An open gate shows open;
+// active sensors turn, one frame every 100 milliseconds.
+KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64) -> s32 {
+    if kind == SHOVEY_TREE { return SPRITE_TREE }
+    if ShoveyAnimal(kind) {
+        facing := ifx position >= 0 && game.light_from[position] < 4 then game.light_from[position] else 1
+        return (ifx kind == SHOVEY_DOG then SPRITE_DOG else SPRITE_TURTLE) + facing
+    }
+    sprite := kind
+    if kind >= 44 && kind <= 55 { sprite = SPRITE_NEW_COLOR + kind - 44 }
+    if kind == 56 { sprite = SPRITE_CHERRY }
+    if kind >= 57 && kind <= 78 { sprite = SPRITE_NEW_TILE + kind - 57 }
+    if kind == 14 && position >= 0 && ShoveyDoorOpen(game, position) { sprite = SPRITE_DOOR_OPEN }
+    if kind == 22 || kind == 24 || kind == 41 || kind == 42 { sprite = SPRITE_SENSOR + cast(s32)(now * 10.0) % 8 }
+    if kind == 43 { sprite = 31 }
+    if sprite < 0 || sprite >= SPRITE_COUNT { return -1 }
+    return sprite
+}
+
+// Shovey facing its direction, charged or not.
+PlayerSprite :: (game: *ShoveyGame) -> s32 {
+    facing := ifx game.direction >= 0 && game.direction <= 3 then game.direction else 1
+    return (ifx (game.powers & SHOVEY_CHARGED) != 0 then SPRITE_CHARGED else SPRITE_PLAYER) + facing
+}
+
+// Draws the board fitted in bounds. `names` describes each sprite number.
+// Uses keys from `key` to key + 4 * SHOVEY_CELLS + 1.
+ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string,
+        landscape_only: bool = false) -> TileMapResult {
+    if !sprites_ready { SpritesPrepare() }
+    landscape := ifx landscape_only then true else BoardLandscape(bounds.width, bounds.height)
+    columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
+    rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        ground := game.ground[at]
+        object := game.objects[at]
+        display := BoardDisplayIndex(at, landscape)
+        base := game.tiles[at]
+        board_layers[display] = KindSprite(game, base, at, now)
+        if base == 77 {
+            mask: s32 = 0
+            for direction: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, direction)
+                if neighbor >= 0 && game.tiles[neighbor] != 77 { mask |= 1 << direction }
+            }
+            board_layers[display] = SPRITE_GRASS_EDGE + mask
+        }
+        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_TREE || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now)
+        decoration := game.decorations[at]
+        board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now)
+        piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) then ground else 0
+        board_layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now)
+    }
+    // Fractional cell sizes round neighbouring sprites to different pixel
+    // rows and look separated. Fit to one integer cell before drawing.
+    cell := bounds.width / cast(float32)columns
+    height_cell := bounds.height / cast(float32)rows
+    if height_cell < cell { cell = height_cell }
+    if cell > 0.0 {
+        cell = cast(float32)(cast(s32)cell)
+        bounds = Rectangle.{cast(float32)cast(s32)(bounds.x + (bounds.width - cell * cast(float32)columns) / 2.0),
+            cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
+            cell * cast(float32)columns, cell * cast(float32)rows}
+    }
+    // The stone grey behind the cells hides the seams between scaled tiles,
+    // whatever the host paints around the game.
+    grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
+            .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
+            .fill = Color.{170, 174, 173, 255}, .label = "Shovey"})
+    if game.player >= 0 && game.player < SHOVEY_CELLS {
+        files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
+        cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+        fall := AbyssFallProgress(game, now)
+        image := ImageProps.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(game)],
+                .alt_text = "Shovey", .bounds = cell, .fit = ImageFit.ImageFitContain, .smooth = true}
+        if fall >= 0.0 { image.mesh = AbyssFallMesh(cell, fall) }
+        if fall >= 1.0 { image.tint = cast(u32)0xffffff00 }
+        Image(session, image)
+    }
+    // A held shot shows as a small ball at Shovey's corner.
+    if (game.powers & SHOVEY_AMMO) != 0 && !game.lost && game.player >= 0 && game.player < SHOVEY_CELLS {
+        cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+        s := cell.width
+        Image(session, ImageProps.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = sprite_files[SPRITE_SHOT],
+                .alt_text = ifx cast(s64)SPRITE_SHOT < names.count then names[SPRITE_SHOT] else "",
+                .bounds = Rectangle.{cell.x + s * 0.58, cell.y + s * 0.58, s * 0.4, s * 0.4},
+                .fit = ImageFit.ImageFitContain, .smooth = true})
+    }
+    return grid
+}

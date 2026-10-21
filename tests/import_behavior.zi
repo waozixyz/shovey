@@ -3,8 +3,8 @@
 #import "std/file"
 #import "std/json_scan"
 #import "std/text_buffer"
-#import, file "../apps/shovey/editor/edit.zi";
-#import, file "../apps/shovey/editor/sharing.zi";
+#import, file "../src/editor/edit.zi";
+#import, file "../src/editor/sharing.zi";
 #import, file "../tools/levels/edits.zi";
 
 export_bytes: [200000]u8;

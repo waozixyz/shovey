@@ -12,7 +12,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
-classic = [f'tile-{kind}' for kind in range(41)]
+classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), 82, 83, 84)]
+classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle') for facing in ('left', 'up', 'right', 'down')]
+classic += [f'grass-edge-{mask}' for mask in range(16)]
 classic += [f'{kind}-{facing}' for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
 classic += ['shadow', 'door-open', 'projectile'] + [f'sensor-{frame}' for frame in range(1, 9)]
 expected = [f'assets/shovey/sprites/{name}.png' for name in classic]
@@ -24,6 +26,13 @@ expected += [f'assets/shovey-island-landscape/player/{facing}.png' for facing in
 for path in expected:
     with Image.open(ROOT / path) as image:
         assert image.size == (128, 128) and image.mode == 'RGBA', path
+# Objects and decorations must reveal whichever tile is beneath them.
+for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
+             28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,
+             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84):
+    with Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png') as picture:
+        assert picture.getpixel((0, 0))[3] == 0, f'{kind}: object has an attached background'
+
 for index, facing in enumerate(('up', 'right', 'down', 'left'), 1):
     classic_player = ROOT / f'assets/shovey/sprites/player-{facing}.png'
     island_player = ROOT / f'assets/shovey-island/player/{index}.png'
@@ -82,14 +91,14 @@ for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-island
 missing = set(expected) - listed
 assert not missing, f'Not described in art.json: {sorted(missing)[:5]}'
 
-island_shared = json.loads((ROOT / 'apps/shovey/island/shared_assets.json').read_text())['copies']
+island_shared = json.loads((ROOT / 'src/island/shared_assets.json').read_text())['copies']
 assert {item['from'] for item in island_shared} == {
     'assets/shovey-island-landscape/tiles', 'assets/shovey-island-landscape/player'
 }, 'Island must package its rotated sprites with its hosted bundle'
 
 # Every sound a view plays is a short mono 16-bit 22050 Hz WAV in its
 # edition's folder, described in that folder's sounds.json.
-views = (ROOT / 'apps/shovey/shovey_view.zi').read_text() + (ROOT / 'apps/shovey/island/island_view.zi').read_text()
+views = (ROOT / 'src/shovey_view.zi').read_text() + (ROOT / 'src/island/island_view.zi').read_text()
 played = sorted(set(re.findall(r'assets/shovey(?:-island)?/sounds/[a-z]+\.wav', views)))
 assert played, 'No sounds played'
 for path in played:

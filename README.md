@@ -13,7 +13,7 @@ every shipped level by replaying it through the real game rules.
 
 ## Play
 
-- **Shovey Classic**: 155 stone-courtyard puzzles and a finale. Push balls
+- **Shovey Classic**: 157 stone-courtyard puzzles and a finale. Push balls
   into matching holes, crates onto corners, coloured blocks onto marks,
   collect keys and powers, then walk home.
 - **Shovey Editor**: paint, test and share your own Classic boards. The
@@ -70,7 +70,7 @@ banks follow the sand, meadow and water you paint. A story level is never
 changed: the first stroke on one makes your own copy. Every change is kept
 in the editor's own records.
 
-While you build, the solver in `apps/shovey/solver/` (Ziran, with the
+While you build, the solver in `src/solver/` (Ziran, with the
 searches of `tools/solver/solver.c`) checks the board a little every frame,
 and a winning route it finds counts once the engine replays it. Winning the
 board yourself under Play proves it too. Proven levels can be copied as text
@@ -87,7 +87,31 @@ unless all of them win. A copy of a story level replaces that level;
 `--append` adds every level after the story instead. The level code and
 pictures are then generated again (`--no-generate` skips that).
 
-The developer editor keeps level work private while the public editor above handles painting, checking and sharing.
+The developer editor runs directly from the repository:
+
+    make editor
+    build/private-editor/shovey-level-editor
+
+Its source is `tools/editor/editor.zi`. **Tiles**, **Objects** and **Deco**
+paint independent layers: grass or sand can sit under a house, crate or
+character, with flowers, tufts or pebbles above the floor. The active
+tab and brush are highlighted, and the palette scrolls with large icons.
+Cracks are transparent objects that can sit on floors or walls; placing an
+ordinary object on a wall replaces it with stone. Right-click erases the active layer; **Undo**
+restores a complete stroke without changing the other layers. Existing boards and drafts remain readable. The editor
+keeps drafts immediately and checks winning routes before saving story levels.
+Played wins save immediately and remain proven when the editor reopens. Saved
+levels load from the current level file; decoration edits reuse a winning route
+when it still works. Flowers and grass tufts have large, clear silhouettes,
+grass blends into neighbouring paving, and dogs and turtles wander over clear
+floor during play. Trees belong to Deco and block Shovey and every pushed piece.
+Falling into the abyss spins and shrinks Shovey into the opening. Teleporters
+have an inward spiral recessed below the tile's surface.
+
+Classic's optional `tiles` and `decorations` rows are stored separately from
+`cells`; existing level numbers and untouched records are retained. Private
+reference boards and editor drafts stay in the ignored `backup/` folder.
+The public editor above handles painting, checking and sharing.
 
 ## Art
 

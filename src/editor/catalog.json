@@ -1,0 +1,17 @@
+{
+  "id": "arcade.shovey-editor",
+  "name": "shovey-editor",
+  "title": "Shovey Editor",
+  "kind": "game",
+  "contract_version": 1,
+  "module_api": 2,
+  "host_api": 12,
+  "save_schema": 1,
+  "harnesses": ["arcade"],
+  "entry": "editor:Main",
+  "source": "src/editor/editor.zi",
+  "assets": "assets/shovey-editor",
+  "locales": "src/editor/locales",
+  "locale_prefix": "editor_",
+  "preview": "assets/shovey-editor/preview.png"
+}

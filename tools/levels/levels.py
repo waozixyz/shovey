@@ -18,7 +18,7 @@ WIDTH, HEIGHT = 12, 20
 CELLS = WIDTH * HEIGHT
 
 # Classic kinds that are pieces standing on the floor rather than floor.
-CLASSIC_PIECES = {1, 2, 3, 9, 19, 28, 36, 37, 38, 40}
+CLASSIC_PIECES = {1, 2, 3, 9, 19, 28, 36, 37, 38, 40, 72}
 CLASSIC_ON_FLOOR = {15, 16, 17, 21, 25, 26, 27, 33, 34, 35}
 CLASSIC_PLAYER = 10
 ISLAND_PLAYER = 56
@@ -45,7 +45,12 @@ def classic_code(levels):
              f'SHOVEY_LEVEL_COUNT :: {len(levels)}', '', 'ShoveyLevelData :: (number: s32) -> string {']
     for level in levels:
         cells(level['cells'])
-        lines.append(f'    if number == {level["number"]} {{ return "{"".join(level["cells"])}" }}')
+        if 'tiles' in level:
+            assert all(kind in {0,4,5,6,12,47,48,49,*range(57,79)} for kind in cells(level['tiles']))
+        if 'decorations' in level:
+            assert 'tiles' in level and all(kind in {0, 57, 58, 59} for kind in cells(level['decorations']))
+        data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))
+        lines.append(f'    if number == {level["number"]} {{ return "{data}" }}')
     lines += ['    return ""', '}', '', 'ShoveyLevelSolution :: (number: s32) -> string {']
     for level in levels:
         solution = level.get('solution', '')
@@ -76,8 +81,8 @@ def island_code(levels):
 
 def generate(check):
     outputs = {
-        ROOT / 'apps/shovey/levels.zi': classic_code(load('classic')),
-        ROOT / 'apps/shovey/island_levels.zi': island_code(load('island')),
+        ROOT / 'src/levels.zi': classic_code(load('classic')),
+        ROOT / 'src/island_levels.zi': island_code(load('island')),
     }
     stale = [path for path, text in outputs.items() if not path.exists() or path.read_text() != text]
     if check:
@@ -122,19 +127,24 @@ def previews(cell):
     turned_sprites = Sprites(ROOT / 'assets/shovey-landscape/sprites', cell)
     for level in load('classic'):
         board = cells(level['cells'])
+        floor_tiles = cells(level['tiles']) if 'tiles' in level else [77 if kind == 7 else 0 for kind in board]
+        decorations = cells(level['decorations']) if 'decorations' in level else [0] * CELLS
         image = Image.new('RGBA', size)
         turned = Image.new('RGBA', turned_size)
         for at, kind in enumerate(board):
             x, y = at % WIDTH * cell, at // WIDTH * cell
             display = (WIDTH - 1 - at % WIDTH) * HEIGHT + at // WIDTH
             turned_x, turned_y = display % HEIGHT * cell, display // HEIGHT * cell
-            if kind in CLASSIC_PIECES or kind in CLASSIC_ON_FLOOR or kind == CLASSIC_PLAYER:
-                image.alpha_composite(sprites.get('tile-0'), (x, y))
-                turned.alpha_composite(turned_sprites.get('tile-0'), (turned_x, turned_y))
+            tile = floor_tiles[at]
+            image.alpha_composite(sprites.get(f'tile-{tile}'), (x, y))
+            turned.alpha_composite(turned_sprites.get(f'tile-{tile}'), (turned_x, turned_y))
+            if decorations[at]:
+                image.alpha_composite(sprites.get(f'tile-{decorations[at]}'), (x, y))
+                turned.alpha_composite(turned_sprites.get(f'tile-{decorations[at]}'), (turned_x, turned_y))
             if kind == CLASSIC_PLAYER:
                 image.alpha_composite(sprites.get('player-up'), (x, y))
                 turned.alpha_composite(turned_sprites.get('player-up'), (turned_x, turned_y))
-            else:
+            elif kind != 0:
                 image.alpha_composite(sprites.get(f'tile-{kind}'), (x, y))
                 turned.alpha_composite(turned_sprites.get(f'tile-{kind}'), (turned_x, turned_y))
         save(image, ROOT / f'assets/shovey/levels/{level["number"]}.png')

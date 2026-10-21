@@ -1,6 +1,6 @@
 [package]
 name = "Shovey"
-module_roots = ["apps"]
+module_roots = ["src"]
 
 [toolchain]
 git = "https://github.com/ziranlang/ziran.git"

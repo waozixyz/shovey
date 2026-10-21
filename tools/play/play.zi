@@ -7,7 +7,7 @@
 // LIST names the boards, one "classic 57" or "island 24" per line. Routes go
 // to ROUTES/classic/057.txt and unfinished attempts to ROUTES/attempts, so
 // closing the player keeps them. The boards come from level code shaped like
-// apps/shovey/levels.zi; the last two arguments replace the shipped levels.
+// src/levels.zi; the last two arguments replace the shipped levels.
 //
 // Arrows or WASD move, Space throws (Classic), Z or Backspace undoes, R
 // restarts, N and P change level.
@@ -36,10 +36,10 @@
 #import "tree_draw"
 #import "tree_input"
 #import "tile_map"
-#import, file "../../apps/shovey/engine.zi";
-#import, file "../../apps/shovey/shovey_board.zi";
-#import, file "../../apps/shovey/island/island_engine.zi";
-#import, file "../../apps/shovey/island/island_board.zi";
+#import, file "../../src/engine.zi";
+#import, file "../../src/shovey_board.zi";
+#import, file "../../src/island/island_engine.zi";
+#import, file "../../src/island/island_board.zi";
 
 sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
@@ -392,8 +392,8 @@ main :: (argc: s32, argv: **u8) -> s32 {
     }
     list_file = TextFromCString(argv[1])
     routes_dir = TextFromCString(argv[2])
-    classic_file = ifx argc == 5 then TextFromCString(argv[3]) else "apps/shovey/levels.zi"
-    island_file = ifx argc == 5 then TextFromCString(argv[4]) else "apps/shovey/island_levels.zi"
+    classic_file = ifx argc == 5 then TextFromCString(argv[3]) else "src/levels.zi"
+    island_file = ifx argc == 5 then TextFromCString(argv[4]) else "src/island_levels.zi"
     if !LoadLevels() {
         Report("shovey-play: LIST names no boards\n")
         return 2

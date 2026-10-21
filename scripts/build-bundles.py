@@ -14,7 +14,7 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-EDITIONS = ['apps/shovey/catalog.json', 'apps/shovey/island/catalog.json', 'apps/shovey/editor/catalog.json']
+EDITIONS = ['src/catalog.json', 'src/island/catalog.json', 'src/editor/catalog.json']
 # A bundle may hold only its own assets/<name>/ folder. A game that draws
 # another's pictures lists copies in shared_assets.json beside its catalog.
 

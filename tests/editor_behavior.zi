@@ -3,14 +3,16 @@
 // Ziran solver, the export, and shared collections.
 #import "std/json_scan"
 #import "std/text_buffer"
-#import, file "../apps/shovey/engine.zi";
-#import, file "../apps/shovey/island/island_engine.zi";
-#import, file "../apps/shovey/levels.zi";
-#import, file "../apps/shovey/island_levels.zi";
-#import, file "../apps/shovey/editor/coast.zi";
-#import, file "../apps/shovey/editor/edit.zi";
-#import, file "../apps/shovey/editor/sharing.zi";
-#import, file "../apps/shovey/solver/solver.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/progress.zi";
+#import, file "../src/island/island_engine.zi";
+#import, file "../src/levels.zi";
+#import, file "../src/island_levels.zi";
+#import, file "../src/editor/coast.zi";
+#import, file "../src/editor/edit.zi";
+#import, file "../src/editor/sharing.zi";
+#import, file "../src/solver/solver.zi";
+#import, file "fixtures/classic_solver.zi";
 
 play: EditPlay;
 level: EditLevel;
@@ -33,6 +35,38 @@ Count :: (board: *EditBoard, kind: u8) -> s32 {
 
 // Shovey is always exactly one; painting him moves him, nothing paints over
 // him, and Classic's wall ring stays.
+LayerChecks :: () -> s32 {
+    board := EditNewBoard(false)
+    unused EditPaint(*board, 9, 50)
+    if !EditPaint(*board, EDIT_TILE_BRUSH + 77, 50) || board.ground[50] != 9 || board.tiles[50] != 77 { return 150 }
+    history: EditHistory
+    EditRemember(*history, *board)
+    if !EditPaint(*board, EDIT_TILE_BRUSH + 78, 50) || board.ground[50] != 9 { return 151 }
+    if !EditUndo(*history, *board) || board.tiles[50] != 77 || board.ground[50] != 9 { return 152 }
+    if !EditPaint(*board, 0, 50) || board.tiles[50] != 77 { return 153 }
+    home: s32 = 186
+    if !EditPaint(*board, EDIT_TILE_BRUSH + 78, home) || board.ground[home] != 7 { return 154 }
+    if !EditPaint(*board, EDIT_DECO_BRUSH + 57, home) || board.ground[home] != 7 || board.tiles[home] != 78 { return 159 }
+    copy: EditBoard
+    if !EditBoardRead(*copy, false, EditBoardHex(*board)) || !EditSame(*copy, *board) { return 155 }
+    game: ShoveyGame
+    if !ShoveyLoadData(*game, 1, EditBoardHex(*board)) || game.tiles[home] != 78 || game.ground[home] != 7 { return 156 }
+    restored: ShoveyGame
+    if !ShoveyRestore(*restored, ShoveySave(*game)) || (restored.tiles[home] != 78 || restored.decorations[home] != 57) { return 157 }
+    progress := ShoveyProgressNew()
+    campaign: ShoveyProgress
+    if !ShoveyCampaignRestore(*campaign, *restored, ShoveyCampaignSave(*progress, *game)) || (restored.tiles[home] != 78 || restored.decorations[home] != 57) { return 158 }
+    wall := EditNewBoard(false)
+    unused EditPaint(*wall, EDIT_TILE_BRUSH + 12, 50)
+    unused EditPaint(*wall, 71, 50)
+    if !ShoveyLoadData(*game, 1, EditBoardHex(*wall)) || game.ground[50] != SHOVEY_CRACKED_WALL || game.tiles[50] != 12 { return 160 }
+    unused EditPaint(*wall, EDIT_TILE_BRUSH + 77, 50)
+    if !ShoveyLoadData(*game, 1, EditBoardHex(*wall)) || game.ground[50] != SHOVEY_CRACKED_FLOOR || game.tiles[50] != 77 { return 161 }
+    unused EditPaint(*wall, EDIT_TILE_BRUSH + 12, 50)
+    if !EditPaint(*wall, 9, 50) || wall.tiles[50] != 0 || wall.ground[50] != 9 { return 162 }
+    return 0
+}
+
 PaintChecks :: () -> s32 {
     board := EditNewBoard(false)
     if EditShovey(*board) != 54 || Count(*board, 10) != 1 || Count(*board, 7) != 1 { return 10 }
@@ -40,7 +74,7 @@ PaintChecks :: () -> s32 {
     if EditPaint(*board, 0, 30) || EditPaint(*board, 9, 30) || EditShovey(*board) != 30 { return 12 }
     if EditPaint(*board, 9, 0) || EditPaint(*board, 0, 239) || board.ground[0] != 12 { return 13 }
     if !EditPaint(*board, 9, 50) || board.ground[50] != 9 || EditPaint(*board, 9, 50) { return 14 }
-    if EditPaint(*board, 22, 51) || EditPaint(*board, 41, 51) || EditPick(*board, 50) != 9 { return 15 }
+    if EditPaint(*board, 22, 51) || EditPaint(*board, 42, 51) || EditPick(*board, 50) != 9 { return 15 }
     isle := EditNewBoard(true)
     shovey := EditShovey(*isle)
     if shovey != 89 || Count(*isle, 56) != 1 || Count(*isle, 75) != 1 { return 16 }
@@ -198,7 +232,9 @@ SolverChecks :: () -> s32 {
     for index: cast(s32)0..3 {
         island := index >= 2
         story: EditBoard
-        if !EditStoryBoard(*story, island, checks[index]) { return 93 }
+        if island {
+            if !EditStoryBoard(*story, true, checks[index]) { return 93 }
+        } else if !EditBoardRead(*story, false, ClassicSolverFixture(index)) { return 93 }
         if Solve(island, EditBoardHex(*story), 4000000) != SOLVER_WON { return 94 + index }
         at = 0
         if EditReplay(*play, *story, SolverRoute(), *at, 100000) != 1 { return 98 }
@@ -308,7 +344,7 @@ ShareChecks :: () -> s32 {
 
 #program_export
 Check :: () -> s32 {
-    checks: [8]s32 = .[PaintChecks(), CoastChecks(), UndoChecks(), RecordChecks(), PlayChecks(), ExportChecks(),
+    checks: [9]s32 = .[LayerChecks(), PaintChecks(), CoastChecks(), UndoChecks(), RecordChecks(), PlayChecks(), ExportChecks(),
     ShareChecks(), SolverChecks()]
     for result: checks {
         if result != 0 { return result }

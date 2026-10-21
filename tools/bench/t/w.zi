@@ -1,0 +1,10 @@
+#import "std/text_buffer"
+W :: struct { bytes: []u8; length: s32 }
+buffer: [64]u8;
+A :: (writer: *W) -> string { return B(writer.bytes, writer.length) }
+B :: (bytes: []u8, length: s32) -> string { return TextView(bytes[0:length]) }
+#program_export
+Main :: () -> s64 {
+    w := W.{.bytes = buffer[:], .length = 3}
+    return A(*w).count + B(buffer[:], 2).count
+}

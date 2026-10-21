@@ -13,7 +13,7 @@ lib="$root/build/ziran/libziran.a"
 
 # The engines import their boards from the generated level code.
 for file in levels.zi island_levels.zi; do
-    [ -f "$root/apps/shovey/$file" ] || { echo "missing apps/shovey/$file; run make levels" >&2; exit 1; }
+    [ -f "$root/src/$file" ] || { echo "missing src/$file; run make levels" >&2; exit 1; }
 done
 
 [ -f "$lib" ] || make -s -C "$toolchain" BUILD_DIR="$root/build/ziran" "$lib"

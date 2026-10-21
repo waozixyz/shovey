@@ -1,0 +1,27 @@
+#import, file "../../../src/solver/solver.zi";
+#import, file "../../../src/levels.zi";
+#import, file "../../../src/island_levels.zi";
+
+board_index: s32;
+started: bool;
+frames: s32;
+
+// One editor-sized frame of solver work; returns the board being checked,
+// or -1 when every board is done.
+#program_export
+Frame :: () -> s64 {
+    boards: [24]s32 = .[3, 8, 20, 40, 60, 76, 97, 101, 122, 135, 142, 150, 1010, 1020, 1037, 1046, 1066, 1093, 1104, 1116, 1120, 1135, 1142, 1149]
+    if board_index >= 24 { return -1 }
+    if !started {
+        number := boards[board_index]
+        island := number >= 1000
+        unused SolverStart(island, ifx island then IslandLevelData(number - 1000) else ShoveyLevelData(number))
+        started = true
+        frames = 0
+    }
+    SolverRun(20000)
+    frames += 1
+    current := boards[board_index]
+    if SolverStatus() != SOLVER_RUNNING || frames >= 60 { board_index += 1; started = false }
+    return cast(s64)current
+}

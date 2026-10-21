@@ -1,0 +1,3 @@
+#import "translations"
+#program_export
+Main :: () -> s64 { return GameLocaleText("de", "editor_back").count }

@@ -17,7 +17,7 @@
 #import "std/number_text"
 #import "std/process_capture_linux"
 #import "std/text_buffer"
-#import, file "../../apps/shovey/editor/edit.zi";
+#import, file "../../src/editor/edit.zi";
 #import, file "edits.zi";
 
 libc :: #system_library "libc";

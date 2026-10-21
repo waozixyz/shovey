@@ -1,0 +1,13 @@
+a: [240]s32;
+b: [240]s32;
+
+#program_export
+Eq :: () -> s64 {
+    b[100] = 3
+    total: s64 = 0
+    for round: cast(s32)0..99999 {
+        if a[0:120] == b[0:120] { total += 1 }
+        if a[120:240] == b[120:240] { total += 2 }
+    }
+    return total
+}

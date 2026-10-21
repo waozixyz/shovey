@@ -1,0 +1,18 @@
+{
+  "generator": "Built-in image_gen",
+  "preparation": "Transparent sprites fitted to 32 × 32 with nearest-neighbor scaling and six flat colors.",
+  "assets": [
+    {
+      "path": "tools/pixel/native/dog.png",
+      "prompt": "Use case: stylized-concept. Asset type: game sprite for a top-down square tile puzzle, Shovey Classic. Generate ONE isolated DOG, seen straight from overhead, head pointing UP, tail pointing DOWN. Simple cheerful tan dog with dark brown floppy ears, four short paws, a short tail, and one warm cream patch. Actual crisp pixel art, designed on a 32 by 32 pixel grid and enlarged with square nearest-neighbor pixels. Large unmistakable silhouette, bold dark brown one-pixel outline, only 5 flat colors, small simple eyes, minimal shading. The dog fills about 80% of the square canvas, centered. Clean simple graphics readable when reduced to 24 pixels. Truly transparent background. No tile, no floor, no shadow, no scenery, no labels, no text, no sheet, no grid, no texture, no scattered pixels. One complete dog, fully inside the image."
+    },
+    {
+      "path": "tools/pixel/native/turtle.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game sprite for a top-down tile puzzle. Generate ONE isolated TURTLE seen directly from overhead, head pointing UP and tail DOWN, all four feet clearly visible. A large simple round jade shell, warm pale yellow head and legs, bold dark forest-green outline. Friendly obvious animal silhouette. Crisp pixel art deliberately designed on a 32 by 32 pixel grid, enlarged with square nearest-neighbor pixels. Only 5 flat colors, shell has only three big simple shapes and no fine pattern. The complete turtle fills about 80% of the centered square image. Extremely clean and readable when reduced to 24 pixels. Truly transparent background. No floor, no tile, no ground, no cast shadow, no text, no labels, no texture, no speckles, no grid, no sheet. One complete turtle fully within the image."
+    },
+    {
+      "path": "tools/pixel/native/tree.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE decoration sprite for a clean top-down square-tile pixel-art game. One compact broadleaf TREE, viewed slightly from overhead as in a 2D puzzle game. Clearly readable, rounded jade-green canopy with three large simple leafy lobes, short visible brown trunk at the bottom. Dark forest green one-pixel outline, 5 flat colors, almost no internal detail, no grain, no tiny leaves. Design it on a 32 by 32 pixel grid and enlarge with crisp square pixels. Big clear silhouette filling 85% of the square canvas, fully visible and centered. Truly transparent background, including around the trunk. No ground, no grass tile, no scenery, no shadow, no text, no grid, no sheet. The tree must look clean and recognizable at 24 pixels, and occupy one game tile."
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+[shovey_level]
+Niveau
+---
+[shovey_ready]
+Tout est prêt. Rentre à la maison !
+---
+[shovey_won]
+Énigme terminée !
+---
+[shovey_finale]
+Tu as terminé toutes les énigmes. Merci d'avoir joué !
+---
+[shovey_lost]
+Trop de charge ! Recommence ce niveau.
+---
+[shovey_restart]
+Recommencer
+---
+[shovey_help]
+Aide
+---
+[shovey_close_help]
+Fermer l’aide
+---
+[shovey_previous]
+Niveau précédent
+---
+[shovey_next]
+Niveau suivant
+---
+[shovey_fire]
+Lancer
+---
+[shovey_up]
+Haut
+---
+[shovey_down]
+Bas
+---
+[shovey_left]
+Gauche
+---
+[shovey_right]
+Droite
+---
+[shovey_save_failed]
+Enregistrement impossible. Réessaie avec un autre coup.
+---
+[shovey_controls]
+Flèches / WASD · R recommencer · H aide · Espace lancer
+---
+[shovey_controls_setting]
+Commandes tactiles
+---
+[shovey_controls_auto]
+Auto
+---
+[shovey_controls_stick]
+Joystick
+---
+[shovey_controls_swipe]
+Gestes uniquement
+---
+[shovey_shadow_pending]
+Les règles de l’ombre restent à vérifier dans ce niveau.
+---
+[shovey_ball]
+Boule
+---
+[shovey_ball_goal]
+Trou de la même couleur
+---
+[shovey_home]
+Maison
+---
+[shovey_portal]
+Téléporteur
+---
+[shovey_crate]
+Caisse
+---
+[shovey_trail]
+Trace
+---
+[shovey_wall]
+Mur
+---
+[shovey_plate]
+Plaque de pression
+---
+[shovey_door]
+Porte à pression
+---
+[shovey_paint]
+Peinture pour boule
+---
+[shovey_crate_goal]
+Cible pour caisse
+---
+[shovey_star]
+Bloc étoilé
+---
+[shovey_sensor]
+Capteur de fermeture
+---
+[shovey_apple]
+Pomme
+---
+[shovey_cherry]
+Cerise
+---
+[shovey_reverse]
+Commandes inversées
+---
+[shovey_ammo]
+Projectile
+---
+[shovey_charge]
+Chargeur
+---
+[shovey_target]
+Cible de projectile
+---
+[shovey_light]
+Circuit lumineux
+---
+[shovey_key]
+Clé
+---
+[shovey_lock]
+Serrure
+---
+[shovey_slide]
+Glissade
+---
+[shovey_color_block]
+Bloc à couleur changeante
+---
+[shovey_color_goal]
+Cible pour bloc rouge
+---
+[shovey_shadow]
+Shovey ombre
+---
+[shovey_floor]
+Sol
+---
+[shovey_instructions]
+Utilise les flèches ou WASD. Pousse un seul objet à la fois ; tu ne peux pas tirer. Place les boules dans les trous de même couleur et les caisses sur leurs cases. La peinture recolore une boule. Ramasse les pommes et réunis les blocs étoilés. Termine les tâches avant de rentrer. Les caisses maintiennent les portes à pression ouvertes. Les clés ouvrent les serrures. Espace lance un projectile ramassé dans la direction de Shovey. Certains objets inversent les commandes, laissent une trace ou font glisser Shovey jusqu’à un obstacle. Shovey chargé peut allumer un circuit ; évite une double charge. Les blocs changent de rouge à bleu puis jaune à chaque poussée ; leurs cibles exigent du rouge. R recommence, H ouvre ce guide.
+---
+[shovey_continue]
+Continuer
+---
+[shovey_levels]
+Niveaux
+---
+[shovey_locked]
+Verrouillé
+---
+[shovey_completed]
+Terminé
+---
+[shovey_available]
+Disponible
+---
+
+[shovey_select_game]
+Choisir un jeu
+---
+
+[shovey_mute]
+Couper le son
+---
+
+[shovey_unmute]
+Activer le son
+---

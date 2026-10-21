@@ -234,6 +234,22 @@ def grass():
     return grain(image, 11, dark=0.82, light=1.12, share=0.34)
 
 
+def grass_edge(mask):
+    """Connected grass cells stay solid; exposed edges blend into paving."""
+    image, stone = grass(), floor()
+    px, paving = image.load(), stone.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            distances = [distance for bit, distance in enumerate((x, y, SIZE - 1 - x, SIZE - 1 - y))
+                         if mask & (1 << bit)]
+            distance = min(distances, default=SIZE)
+            if distance < 4:
+                mix = (distance + 0.25) / 4
+                px[x, y] = tuple(round(paving[x, y][channel] * (1 - mix) + px[x, y][channel] * mix)
+                                 for channel in range(3)) + (255,)
+    return image
+
+
 def bevel(image, box, face, depth, raised=True, light=1.28, dark=0.58):
     """A square face with lit and shaded edges, raised or sunken."""
     left, top, right, bottom = box
@@ -298,7 +314,7 @@ def mossy_floor():
 
 def pit(colour):
     """A coloured pit filling nearly the whole cell, like the original's."""
-    image = floor()
+    image = Image.new('RGBA', (SIZE, SIZE))
     bevel(image, (1, 1, 30, 30), colour, 4, raised=False)
     px = image.load()
     # The rim's shadow falls into the top left of the pit.
@@ -344,7 +360,7 @@ def star_block():
 
 
 def crate_goal():
-    image = floor()
+    image = Image.new('RGBA', (SIZE, SIZE))
     px = image.load()
     brown = (122, 86, 60, 255)
     for cx, cy in ((5, 5), (26, 5), (5, 26), (26, 26)):
@@ -357,7 +373,7 @@ def crate_goal():
 
 
 def colour_goal():
-    image = floor()
+    image = Image.new('RGBA', (SIZE, SIZE))
     px = image.load()
     red, pale = (204, 82, 66, 255), (238, 200, 190, 255)
     for y in range(6, 26):
@@ -367,7 +383,7 @@ def colour_goal():
 
 
 def ring(colour, dots, lit=None, angle=None):
-    image = floor()
+    image = Image.new('RGBA', (SIZE, SIZE))
     px = image.load()
     for step in range(dots):
         a = 2 * math.pi * step / dots
@@ -386,9 +402,7 @@ def ring(colour, dots, lit=None, angle=None):
 
 
 def over_floor(sprite):
-    image = floor()
-    image.alpha_composite(sprite)
-    return image
+    return sprite.copy()
 
 
 def on_grass(sprite):
@@ -425,7 +439,188 @@ def glow(sprite, colour=(242, 204, 80, 255)):
     image.alpha_composite(sprite)
     return image
 
+# ------------------------------------------------------- newer tiles (57 to 76)
+
+
+def scatter(image, seed, count, paint):
+    """Drops `count` small marks at random places that keep to the cell's middle."""
+    rng = random.Random(seed)
+    for _ in range(count):
+        paint(image.load(), rng.randrange(3, SIZE - 4), rng.randrange(3, SIZE - 4), rng)
+    return image
+
+
+def flowers():
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    for x, y, petal in ((8, 9, (255, 246, 226, 255)),
+                        (24, 8, (249, 171, 126, 255)),
+                        (18, 23, (223, 195, 255, 255))):
+        draw.line((x, y + 2, x, y + 7), fill=(35, 86, 48, 255), width=2)
+        draw.polygon([(x, y + 6), (x - 5, y + 3), (x - 4, y + 6), (x, y + 8)], fill=(52, 123, 62, 255))
+        draw.polygon([(x + 1, y + 5), (x + 5, y + 2), (x + 5, y + 5)], fill=(110, 173, 75, 255))
+        for dx, dy in ((0, -3), (3, 0), (0, 3), (-3, 0)):
+            draw.rectangle((x + dx - 1, y + dy - 1, x + dx + 1, y + dy + 1), fill=petal)
+        draw.rectangle((x - 1, y - 1, x + 1, y + 1), fill=(147, 88, 28, 255))
+        draw.rectangle((x - 1, y - 1, x, y), fill=(255, 215, 76, 255))
+    return image
+
+
+def grass_tufts():
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    for x, y in ((7, 15), (24, 13), (17, 29)):
+        draw.polygon([(x - 3, y), (x - 6, y - 8), (x - 1, y - 5),
+                      (x, y - 12), (x + 2, y - 5), (x + 6, y - 9), (x + 4, y)],
+                     fill=(34, 79, 45, 255))
+        draw.line((x - 2, y - 1, x - 4, y - 6), fill=(119, 186, 82, 255), width=2)
+        draw.line((x, y - 1, x, y - 9), fill=(163, 208, 102, 255), width=2)
+        draw.line((x + 2, y - 1, x + 4, y - 6), fill=(102, 165, 69, 255), width=2)
+    return image
+
+
+def pebbles():
+    def pebble(px, x, y, rng):
+        colour = shade(FLOOR, rng.choice((0.72, 0.8, 0.9)))
+        for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (-1, 0)):
+            px[x + dx, y + dy] = colour
+        px[x - 1, y - 1] = shade(FLOOR, 1.12)
+    return scatter(Image.new('RGBA', (SIZE, SIZE)), 47, 8, pebble)
+
+
+def checker():
+    image = floor()
+    px = image.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            if (x // 8 + y // 8) % 2 == 0 and 1 <= x < SIZE - 1 and 1 <= y < SIZE - 1:
+                px[x, y] = shade(px[x, y], 0.9)
+                px[x, y] = (px[x, y][0] - 6, px[x, y][1] - 1, px[x, y][2] + 4, 255)
+    return image
+
+
+def stripes():
+    image = floor()
+    px = image.load()
+    for y in range(1, SIZE - 1):
+        for x in range(1, SIZE - 1):
+            if (x + y) % 8 < 2:
+                px[x, y] = (150, 186, 196, 255)
+    return image
+
+
+def cracks(image, seed, colour=(52, 56, 56, 255), lines=3):
+    rng = random.Random(seed)
+    px = image.load()
+    for _ in range(lines):
+        x, y = rng.randrange(6, SIZE - 6), rng.randrange(2, 8)
+        for _ in range(rng.randrange(12, 22)):
+            px[x, y] = colour
+            x = max(2, min(SIZE - 3, x + rng.choice((-1, 0, 0, 1))))
+            y += 1
+            if y >= SIZE - 2:
+                break
+    return image
+
+
+def fracture(image, wall=False):
+    draw = ImageDraw.Draw(image)
+    paths = [[(17, 4), (14, 10), (17, 15), (13, 21), (15, 28)],
+             [(14, 10), (10, 12), (6, 9)],
+             [(17, 15), (22, 18), (26, 14)],
+             [(13, 21), (9, 25)]]
+    shadow = (64, 76, 73, 255) if wall else (99, 112, 107, 255)
+    highlight = (218, 229, 221, 255) if wall else (239, 244, 237, 255)
+    for points in paths:
+        draw.line([(x + 1, y) for x, y in points], fill=highlight, width=1)
+        draw.line(points, fill=shadow, width=1)
+    draw.polygon([(14, 11), (17, 14), (15, 17)], fill=shadow)
+    return image
+
+
+def cracked_wall():
+    return fracture(Image.new('RGBA', (SIZE, SIZE)))
+
+
+def water_edge():
+    image = Image.new('RGBA', (SIZE, SIZE), (74, 132, 170, 255))
+    grain(image, 53, dark=0.86, light=1.14, share=0.3)
+    px = image.load()
+    for row, offset in ((7, 0), (15, 4), (23, 2)):
+        for x in range(2, SIZE - 2):
+            if (x + offset) % 8 < 4:
+                px[x, row] = (170, 214, 232, 255)
+    for i in range(SIZE):
+        px[i, 0] = px[0, i] = (52, 104, 140, 255)
+        px[i, SIZE - 1] = px[SIZE - 1, i] = (120, 176, 204, 255)
+    return image
+
+
+def hole():
+    """Adjacent abyss cells join into one opening, without internal rims."""
+    return Image.new('RGBA', (SIZE, SIZE), (2, 4, 5, 255))
+
+
+def arrow(direction):
+    """A one-way arrow; direction 0 left, 1 up, 2 right, 3 down."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    body = (62, 118, 150, 255)
+    draw.polygon([(16, 5), (26, 16), (20, 16), (20, 26), (12, 26), (12, 16), (6, 16)], fill=body, outline=(30, 62, 84, 255))
+    draw.polygon([(16, 8), (22, 15), (18, 15), (18, 24), (14, 24), (14, 15), (10, 15)], fill=(96, 158, 190, 255))
+    turns = {1: 0, 0: 90, 3: 180, 2: -90}
+    rotated = image.rotate(turns[direction])
+    return rotated
+
+
+def ice_patch():
+    image = Image.new('RGBA', (SIZE, SIZE), (178, 216, 232, 255))
+    grain(image, 67, dark=0.92, light=1.06, share=0.2)
+    px = image.load()
+    for i in range(SIZE):
+        px[i, 0] = px[0, i] = (222, 242, 250, 255)
+        px[i, SIZE - 1] = px[SIZE - 1, i] = (126, 172, 196, 255)
+    for y in range(6, 14):
+        px[6 + (y - 6), y] = (244, 252, 255, 255)
+        px[7 + (y - 6), y] = (230, 246, 252, 255)
+    for y in range(18, 24):
+        px[18 + (y - 18), y] = (244, 252, 255, 255)
+    return image
+
+
+def cracked_floor():
+    return fracture(Image.new('RGBA', (SIZE, SIZE)))
+
+
+def bomb_crate():
+    image = crate_sprite()
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((9, 11, 23, 25), fill=(34, 36, 40, 255), outline=(10, 10, 12, 255))
+    draw.ellipse((12, 14, 15, 17), fill=(120, 126, 132, 255))
+    draw.line((20, 12, 24, 7), fill=(150, 112, 70, 255), width=1)
+    draw.point((25, 6), fill=(250, 170, 60, 255))
+    draw.point((24, 5), fill=(250, 222, 110, 255))
+    return image
+
+
+def colour_portal(hue):
+    return over_floor(recolour(native('teleporter'), lambda h, s, v: s > 0.12, hue))
+
+
+def grainy(sprite, seed):
+    """Shovey's coat, speckled like the stone around him."""
+    return grain(sprite.copy(), seed, dark=0.8, light=1.16, share=0.42)
+
+
 # ---------------------------------------------------------------- the set
+
+
+def crate_sprite():
+    sprite = native('crate-v2')
+    sprite = sprite.crop(sprite.getbbox()).resize((28, 28), Image.Resampling.NEAREST)
+    image = Image.new('RGBA', (SIZE, SIZE))
+    image.alpha_composite(sprite, (2, 2))
+    return image
 
 
 def sprites():
@@ -446,17 +641,17 @@ def sprites():
         'tile-1': ('red ball (pushable)', native('ball-red')),
         'tile-2': ('blue ball (pushable)', native('ball-blue')),
         'tile-3': ('green ball (pushable)', native('ball-green')),
-        'tile-4': ('red pit: takes the red ball', pit((222, 40, 30, 255))),
-        'tile-5': ('blue pit: takes the blue ball', pit((28, 92, 222, 255))),
-        'tile-6': ('green pit: takes the green ball', pit((36, 172, 52, 255))),
-        'tile-7': ('home: a small cottage with a jade roof and a lit door, on grass', on_grass(native('home'))),
-        'tile-8': ('teleporter: a stone pad with blue rings', over_floor(native('teleporter'))),
-        'tile-9': ('crate (pushable)', native('crate')),
+        'tile-4': ('red pit: takes the red ball', native('pit-red-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)),
+        'tile-5': ('blue pit: takes the blue ball', native('pit-blue-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)),
+        'tile-6': ('green pit: takes the green ball', native('pit-green-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)),
+        'tile-7': ('home: a small cottage with a jade roof and a lit door, on grass', native('home')),
+        'tile-8': ('teleporter: a recessed opening with an inward blue-green spiral', over_floor(native('teleporter'))),
+        'tile-9': ('crate: clean chestnut planks with crossed wooden braces (pushable)', crate_sprite()),
         'tile-10': ('start position, drawn as floor', floor()),
-        'tile-11': ('trail field: a lilac ring mark', over_floor(native('trail'))),
+        'tile-11': ('trail field: a ring with a bar, drawn in deep teal', over_floor(recolour(native('trail'), lambda h, s, v: s > 0.2, 188))),
         'tile-12': ('wall: a raised grey stone block', wall()),
         'tile-13': ('pressure plate: a round orange button', over_floor(native('plate'))),
-        'tile-14': ('closed gate: a stone block overgrown with moss', mossy_wall()),
+        'tile-14': ('closed gate: a clean stone-and-iron gate without moss', native('gate-closed')),
         'tile-15': ('red paint puddle', native('paint-red')),
         'tile-16': ('blue paint puddle', native('paint-blue')),
         'tile-17': ('green paint puddle', native('paint-green')),
@@ -483,13 +678,44 @@ def sprites():
         'tile-38': ('yellow colour block (pushable)', block((242, 206, 36, 255))),
         'tile-39': ('colour block goal: a red hatched square', colour_goal()),
         'tile-40': ('mirror Shovey (pink)', mirror),
+        'tile-57': ('flowers scattered on the floor (decoration)', flowers()),
+        'tile-58': ('grass tufts on the floor (decoration)', grass_tufts()),
+        'tile-59': ('pebbles on the floor (decoration)', pebbles()),
+        'tile-60': ('checker floor (decoration)', checker()),
+        'tile-61': ('striped floor (decoration)', stripes()),
+        'tile-62': ('legacy transparent crack on a wall', cracked_wall()),
+        'tile-63': ('mossy wall (decoration, solid)', moss(wall(), 63, 12)),
+        'tile-64': ('water edge (decoration, solid)', water_edge()),
+        'tile-65': ('abyss: a bottomless black drop that Shovey falls into', hole()),
+        'tile-66': ('one-way arrow left', arrow(0)),
+        'tile-67': ('one-way arrow up', arrow(1)),
+        'tile-68': ('one-way arrow right', arrow(2)),
+        'tile-69': ('one-way arrow down', arrow(3)),
+        'tile-70': ('ice patch: Shovey slides across', ice_patch()),
+        'tile-71': ('crack: a transparent fracture placed over a floor or wall', cracked_floor()),
+        'tile-72': ('bomb crate (pushable): breaks a cracked wall', bomb_crate()),
+        'tile-73': ('cyan portal', colour_portal(180)),
+        'tile-74': ('purple portal', colour_portal(275)),
+        'tile-75': ('yellow portal', colour_portal(48)),
+        'tile-76': ('legacy wall, shown as a plain stone wall', wall()),
+        'tile-77': ('grass floor tile, independent of objects', grass()),
+        'tile-78': ('sand floor tile, independent of objects', Image.new('RGBA', (SIZE, SIZE), (218, 199, 151, 255))),
+        'tile-82': ('dog: a clean tan animal with brown ears', native('dog')),
+        'tile-83': ('turtle: a clean jade shell with pale yellow feet', native('turtle')),
+        'tile-84': ('tree: a broad jade canopy and brown trunk; blocks movement', native('tree')),
         'shadow': ('mirror Shovey (pink)', mirror),
-        'door-open': ('open gate: the mossy block sunk level with the floor', mossy_floor()),
+        'door-open': ('open gate: the gate withdrawn into its frame', native('gate-open')),
         'projectile': ('a flying iron shot', native('projectile')),
     }
     for facing, sprite in players.items():
         out[f'player-{facing}'] = (f'Shovey looking {facing}', sprite)
         out[f'charged-{facing}'] = (f'charged Shovey looking {facing}', glow(sprite))
+    for animal in ('dog', 'turtle'):
+        up = native(animal)
+        for facing, angle in (('up', 0), ('right', -90), ('down', 180), ('left', 90)):
+            out[f'{animal}-{facing}'] = (f'{animal} facing {facing}', up.rotate(angle))
+    for mask in range(16):
+        out[f'grass-edge-{mask}'] = ('grass blending into adjacent paving with connected corners', grass_edge(mask))
     for frame in range(1, 9):
         out[f'sensor-{frame}'] = (f'active sensor, frame {frame} of 8',
                                   ring((120, 186, 214, 255), 12, (240, 248, 250, 255), -90 + 45 * (frame - 1)))
@@ -516,8 +742,8 @@ def card(sheet):
               'P': 'player-right', 'c': 'tile-9', '*': 'tile-19', 'k': 'tile-33'}
     for y, row in enumerate(CARD):
         for x, cell in enumerate(row):
-            if cell not in '#Hr':
-                image.alpha_composite(sheet['tile-0'][1], (x * SIZE, y * SIZE))
+            if cell not in '#r':
+                image.alpha_composite(sheet['tile-77' if cell == 'H' else 'tile-0'][1], (x * SIZE, y * SIZE))
             image.alpha_composite(sheet[pieces[cell]][1], (x * SIZE, y * SIZE))
     return image
 
@@ -533,7 +759,7 @@ def saturate(image, amount=1.18):
 
 def build():
     manifest = []
-    sheet = {name: (depicts, saturate(image)) for name, (depicts, image) in sprites().items()}
+    sheet = {name: (depicts, image if name in ('tile-4', 'tile-5', 'tile-6') else saturate(image)) for name, (depicts, image) in sprites().items()}
     preview = ROOT / 'assets/shovey/preview.png'
     buffer = io.BytesIO()
     card(sheet).save(buffer, 'PNG', optimize=True)
@@ -547,6 +773,16 @@ def build():
         path.write_bytes(buffer.getvalue())
         manifest.append({'path': f'sprites/{name}.png', 'depicts': depicts,
                          'sha256': hashlib.sha256(buffer.getvalue()).hexdigest()})
+    # The cyan, purple and yellow pieces and the cherry are kept pictures; list them.
+    extra = {44: 'cyan ball (pushable)', 45: 'purple ball (pushable)', 46: 'yellow ball (pushable)',
+             47: 'cyan pit: takes the cyan ball', 48: 'purple pit: takes the purple ball',
+             49: 'yellow pit: takes the yellow ball', 50: 'cyan paint puddle', 51: 'purple paint puddle',
+             52: 'yellow paint puddle', 53: 'cyan colour block (pushable)', 54: 'purple colour block (pushable)',
+             55: 'yellow colour block (pushable)', 56: 'cherry'}
+    for kind, depicts in extra.items():
+        data = (SPRITES / f'tile-{kind}.png').read_bytes()
+        manifest.append({'path': f'sprites/tile-{kind}.png', 'depicts': depicts,
+                         'sha256': hashlib.sha256(data).hexdigest()})
     # Keep what other tools describe in the same folder, such as the card.
     art_path = ROOT / 'assets/shovey/art.json'
     art = json.loads(art_path.read_text())

@@ -1,0 +1,177 @@
+[shovey_level]
+Livello
+---
+[shovey_ready]
+Tutto pronto. Torna a casa!
+---
+[shovey_won]
+Rompicapo completato!
+---
+[shovey_finale]
+Hai completato tutti i rompicapi. Grazie per aver giocato!
+---
+[shovey_lost]
+Troppa carica! Ricomincia questo livello.
+---
+[shovey_restart]
+Ricomincia
+---
+[shovey_help]
+Aiuto
+---
+[shovey_close_help]
+Chiudi l’aiuto
+---
+[shovey_previous]
+Livello precedente
+---
+[shovey_next]
+Livello successivo
+---
+[shovey_fire]
+Lancia
+---
+[shovey_up]
+Su
+---
+[shovey_down]
+Giù
+---
+[shovey_left]
+Sinistra
+---
+[shovey_right]
+Destra
+---
+[shovey_save_failed]
+Salvataggio non riuscito. Prova un’altra mossa.
+---
+[shovey_controls]
+Frecce / WASD · R ricomincia · H aiuto · Spazio lancia
+---
+[shovey_controls_setting]
+Controlli touch
+---
+[shovey_controls_auto]
+Automatico
+---
+[shovey_controls_stick]
+Joystick
+---
+[shovey_controls_swipe]
+Solo gesti
+---
+[shovey_shadow_pending]
+Le regole dell’ombra in questo livello sono ancora da verificare.
+---
+[shovey_ball]
+Palla
+---
+[shovey_ball_goal]
+Buca dello stesso colore
+---
+[shovey_home]
+Casa
+---
+[shovey_portal]
+Teletrasporto
+---
+[shovey_crate]
+Cassa
+---
+[shovey_trail]
+Traccia
+---
+[shovey_wall]
+Muro
+---
+[shovey_plate]
+Piastra a pressione
+---
+[shovey_door]
+Porta a pressione
+---
+[shovey_paint]
+Vernice per palle
+---
+[shovey_crate_goal]
+Obiettivo per cassa
+---
+[shovey_star]
+Blocco stella
+---
+[shovey_sensor]
+Sensore di chiusura
+---
+[shovey_apple]
+Mela
+---
+[shovey_cherry]
+Ciliegia
+---
+[shovey_reverse]
+Comandi invertiti
+---
+[shovey_ammo]
+Proiettile
+---
+[shovey_charge]
+Caricatore
+---
+[shovey_target]
+Bersaglio
+---
+[shovey_light]
+Circuito luminoso
+---
+[shovey_key]
+Chiave
+---
+[shovey_lock]
+Serratura
+---
+[shovey_slide]
+Scivolamento
+---
+[shovey_color_block]
+Blocco che cambia colore
+---
+[shovey_color_goal]
+Obiettivo per blocco rosso
+---
+[shovey_shadow]
+Shovey ombra
+---
+[shovey_floor]
+Pavimento
+---
+[shovey_instructions]
+Usa le frecce o WASD. Spingi un oggetto alla volta; non puoi tirare. Metti le palle nelle buche dello stesso colore e le casse sulle caselle segnate. La vernice cambia il colore delle palle. Raccogli le mele e unisci i blocchi stella. Completa i compiti prima di tornare a casa. Le casse tengono aperte le porte a pressione. Le chiavi aprono le serrature. Spazio lancia un proiettile raccolto nella direzione di Shovey. Alcuni oggetti invertono i comandi, lasciano una traccia o fanno scivolare Shovey fino a un ostacolo. Shovey carico può accendere un circuito; evita di caricarlo due volte. I blocchi cambiano da rosso a blu a giallo a ogni spinta; i loro obiettivi richiedono rosso. R ricomincia, H apre questa guida.
+---
+[shovey_continue]
+Continua
+---
+[shovey_levels]
+Livelli
+---
+[shovey_locked]
+Bloccato
+---
+[shovey_completed]
+Completato
+---
+[shovey_available]
+Disponibile
+---
+
+[shovey_select_game]
+Scegli gioco
+---
+
+[shovey_mute]
+Silenzia
+---
+
+[shovey_unmute]
+Riattiva audio
+---

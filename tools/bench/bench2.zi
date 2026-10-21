@@ -1,0 +1,38 @@
+#import, file "../../src/engine.zi";
+
+work: ShoveyGame;
+base: ShoveyGame;
+vector: [485]u8;
+
+Encode :: (game: *ShoveyGame) {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        vector[at] = cast(u8)game.ground[at]
+        vector[SHOVEY_CELLS + at] = cast(u8)game.objects[at]
+    }
+    vector[480] = cast(u8)game.player
+}
+
+#program_export
+Copy :: () -> s64 {
+    unused ShoveyLoad(*base, 10)
+    for round: cast(s32)0..7999 { work = base }
+    return 0
+}
+#program_export
+Move :: () -> s64 {
+    unused ShoveyLoad(*base, 10)
+    work = base
+    total: s64 = 0
+    for round: cast(s32)0..1999 {
+        for action: cast(s32)0..3 {
+            if ShoveyMove(*work, action) { total += 1 }
+        }
+    }
+    return total
+}
+#program_export
+Enc :: () -> s64 {
+    unused ShoveyLoad(*base, 10)
+    for round: cast(s32)0..7999 { Encode(*base) }
+    return 0
+}
