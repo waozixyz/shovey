@@ -361,7 +361,7 @@ EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64) -> TileMapResult
             if object == ISLAND_SHOVEY { view.player = at } else { view.objects[at] = object }
         }
         editor_view_isle = view
-        return IslandBoard(editor_frame.session, *editor_view_isle, bounds, key, editor_island_names[:])
+        return IslandBoard(editor_frame.session, *editor_view_isle, bounds, key, editor_island_names[:], true)
     }
     view := ShoveyGame.{.player = -1, .direction = 3}
     for at: cast(s32)0..EDIT_CELLS - 1 {
@@ -372,7 +372,7 @@ EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64) -> TileMapResult
         else { view.ground[at] = kind }
     }
     editor_view_classic = view
-    return ShoveyBoard(editor_frame.session, *editor_view_classic, bounds, key, editor_frame.now, editor_classic_names[:])
+    return ShoveyBoard(editor_frame.session, *editor_view_classic, bounds, key, editor_frame.now, editor_classic_names[:], true)
 }
 
 // ---------------------------------------------------------------------------
@@ -809,7 +809,7 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
         palette = Rectangle.{area.x, area.y + board_height + 8.0, area.width, area.height - board_height - 8.0}
     }
     grid := EditorBoard(*editor_level.board, board_area, cast(u64)200000)
-    landscape := BoardLandscape(board_area.width, board_area.height)
+    landscape := true
     // Tap or drag to paint, one stroke while the press lasts.
     press := Press(editor_frame.session, PressProps.{.key = cast(u64)305, .id = 305, .bounds = grid.board,
             .label = EditorText("editor_board"), .now = editor_frame.now, .capture = true, .hold_seconds = 3600.0})
@@ -995,7 +995,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     if editor_island { EditorInventory(Rectangle.{16.0, status_y + 24.0, width - 32.0, 24.0}) }
     below: float32 = ifx editor_island then 52.0 else 28.0
     area := Rectangle.{8.0, status_y + below, width - 16.0, bottom - status_y - below - 8.0}
-    landscape := BoardLandscape(area.width, area.height)
+    landscape := true
     keyed: s32 = -1
     key := editor_key
     if key == 263 || key == 65 { keyed = 0 }
@@ -1010,9 +1010,9 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     }
     grid: TileMapResult
     if editor_island {
-        grid = IslandBoard(editor_frame.session, *editor_play.isle, area, cast(u64)200000, editor_island_names[:])
+        grid = IslandBoard(editor_frame.session, *editor_play.isle, area, cast(u64)200000, editor_island_names[:], true)
     } else {
-        grid = ShoveyBoard(editor_frame.session, *editor_play.classic, area, cast(u64)200000, editor_frame.now, editor_classic_names[:])
+        grid = ShoveyBoard(editor_frame.session, *editor_play.classic, area, cast(u64)200000, editor_frame.now, editor_classic_names[:], true)
     }
     disabled := won || lost
     // Swipe on the board to step, or tap a cell to step towards it; hold

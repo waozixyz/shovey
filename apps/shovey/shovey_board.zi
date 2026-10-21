@@ -112,9 +112,10 @@ PlayerSprite :: (game: *ShoveyGame) -> s32 {
 
 // Draws the board fitted in bounds. `names` describes each sprite number.
 // Uses keys from `key` to key + 4 * SHOVEY_CELLS + 1.
-ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string) -> TileMapResult {
+ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string,
+        landscape_only: bool = false) -> TileMapResult {
     if !sprites_ready { SpritesPrepare() }
-    landscape := BoardLandscape(bounds.width, bounds.height)
+    landscape := ifx landscape_only then true else BoardLandscape(bounds.width, bounds.height)
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
