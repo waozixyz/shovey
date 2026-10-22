@@ -661,3 +661,39 @@ Shovey
 [editor_mossy_wall]
 이끼 벽
 ---
+[editor_door]
+문
+---
+[editor_lantern]
+랜턴
+---
+[editor_red_door]
+빨간 문
+---
+[editor_blue_door]
+파란 문
+---
+[editor_green_door]
+초록 문
+---
+[editor_red_gate]
+빨간 철문
+---
+[editor_red_lever]
+빨간 레버
+---
+[editor_blue_gate]
+파란 철문
+---
+[editor_blue_lever]
+파란 레버
+---
+[editor_green_gate]
+초록 철문
+---
+[editor_green_lever]
+초록 레버
+---
+[editor_lever]
+레버
+---

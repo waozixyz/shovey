@@ -20,9 +20,9 @@ LAYERS = ('cells', 'tiles', 'decorations')
 COSMETIC = {0, 57, 58, 59, 60, 61, 77, 78, *range(99, 104)}
 WALLS = {12, 62, 63, 76, 95, 96, 97, 98}
 ALLOWED = (
-    ({0, *range(1, 77), *range(82, 104)} - {22, 24, 32, 41, 42, 43}),
+    ({0, *range(1, 77), *range(82, 122)} - {22, 24, 32, 41, 42, 43}),
     {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104)},
-    {0, 57, 58, 59, 84},
+    {0, 57, 58, 59, 84, 106},
 )
 
 
@@ -175,7 +175,7 @@ def apply_proposal(original, proposal):
                 raise ValueError('Fish must remain on water')
         elif kind and kind != 71 and kind != tile and tile in WALLS | {14, 64, 65}:
             raise ValueError('A puzzle piece overlaps blocked terrain')
-        if decoration == 84 and (kind or tile in WALLS | {14, 64, 65}):
+        if decoration in (84, 106) and (kind or tile in WALLS | {14, 64, 65}):
             raise ValueError('Keep trees clear of puzzle pieces and blocked terrain')
     return ''.join(f'{kind:02x}' for kind in updated)
 

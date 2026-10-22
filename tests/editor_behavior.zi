@@ -83,6 +83,16 @@ LayerChecks :: () -> s32 {
         unused EditPaint(*paving, EDIT_TILE_BRUSH, 56)
         if paving.tiles[56] != 0 || paving.ground[56] != 9 { return 173 }
     }
+    lit := EditNewBoard(false)
+    unused EditPaint(*lit, EDIT_TILE_BRUSH + 77, 55)
+    if !EditPaint(*lit, EDIT_DECO_BRUSH + SHOVEY_LANTERN, 55) || lit.tiles[55] != 77 { return 174 }
+    if EditPaint(*lit, 9, 55) { return 175 }
+    if !ShoveyLoadData(*game, 1, EditBoardHex(*lit)) || ShoveyMove(*game, 2) { return 176 }
+    if !ShoveyRestore(*restored, ShoveySave(*game)) || restored.decorations[55] != SHOVEY_LANTERN { return 177 }
+    unused EditPaint(*lit, EDIT_DECO_BRUSH, 55)
+    unused EditPaint(*lit, 9, 55)
+    unused EditPaint(*lit, EDIT_DECO_BRUSH + SHOVEY_LANTERN, 56)
+    if !ShoveyLoadData(*game, 1, EditBoardHex(*lit)) || ShoveyMove(*game, 2) || game.objects[55] != 9 { return 178 }
     return 0
 }
 

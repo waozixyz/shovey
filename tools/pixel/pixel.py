@@ -268,13 +268,17 @@ def bevel(image, box, face, depth, raised=True, light=1.28, dark=0.58):
                 px[x, y] = dark
 
 
-STONE = (157, 171, 171, 255)
+STONE = (178, 178, 174, 255)
 MATERIALS = ((104, 126, 137, 255), (166, 102, 78, 255),
              (198, 177, 128, 255), (145, 110, 76, 255))
 
 
 def wall(face=STONE):
     image = Image.new('RGBA', (SIZE, SIZE))
+    if face == STONE:
+        bevel(image, (0, 0, SIZE - 1, SIZE - 1), face, 4, light=1.36, dark=0.46)
+        bevel(image, (10, 10, 21, 21), face, 2, raised=False, light=1.3, dark=0.55)
+        return grain(image, 21, dark=0.86, light=1.1, share=0.3)
     bevel(image, (0, 0, SIZE - 1, SIZE - 1), face, 4, light=1.27, dark=0.58)
     grain(image, 21, dark=0.94, light=1.04, share=0.18)
     draw = ImageDraw.Draw(image)
@@ -411,7 +415,47 @@ def pressure_plate():
     return image
 
 
-def gate(opened=False):
+def lantern():
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    frame = (70, 65, 48, 255)
+    draw.ellipse((7, 25, 25, 29), fill=(35, 39, 34, 90))
+    draw.ellipse((12, 2, 20, 11), outline=frame, width=2)
+    draw.polygon(((7, 11), (11, 7), (21, 7), (25, 11)), fill=frame)
+    draw.line((10, 9, 22, 9), fill=(153, 137, 83, 255))
+    for y in range(12, 25):
+        draw.line((10, y, 22, y), fill=(247, 159 + (24 - y) * 5, 57 + (24 - y) * 7, 255))
+    draw.polygon(((14, 23), (13, 19), (16, 14), (16, 18), (19, 20), (18, 23)), fill=(255, 242, 162, 255))
+    draw.rectangle((8, 12, 10, 25), fill=frame)
+    draw.rectangle((22, 12, 24, 25), fill=frame)
+    draw.line((9, 12, 9, 23), fill=(163, 146, 94, 255))
+    draw.rectangle((7, 25, 25, 27), fill=frame)
+    draw.line((9, 25, 23, 25), fill=(175, 150, 89, 255))
+    return image
+
+
+def door(opened=False, colour=None):
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((3, 4, 28, 7), fill=(92, 65, 43, 255))
+    draw.line((4, 4, 27, 4), fill=shade(colour, 1.15) if colour else (201, 168, 111, 255))
+    draw.rectangle((3, 8, 6, 28), fill=(112, 78, 48, 255))
+    draw.rectangle((25, 8, 28, 28), fill=(78, 57, 42, 255))
+    draw.line((3, 8, 3, 27), fill=(189, 146, 91, 255))
+    if opened:
+        draw.polygon(((7, 8), (11, 11), (11, 28), (7, 25)), fill=colour or (146, 99, 56, 255))
+        draw.line((8, 9, 11, 11, 11, 27), fill=(207, 165, 104, 255))
+        draw.point((10, 19), fill=(237, 195, 77, 255))
+    else:
+        bevel(image, (7, 8, 24, 28), colour or (166, 117, 65, 255), 2, light=1.22, dark=0.66)
+        for box in ((10, 11, 21, 16), (10, 20, 21, 25)):
+            bevel(image, box, shade(colour, 0.90) if colour else (153, 103, 59, 255), 1, raised=False, light=1.18, dark=0.67)
+        draw.rectangle((20, 17, 22, 19), fill=(94, 63, 35, 255))
+        draw.point((21, 17), fill=(249, 207, 90, 255))
+    return image
+
+
+def gate(opened=False, colour=None):
     image = Image.new('RGBA', (SIZE, SIZE))
     stone = (164, 176, 179, 255)
     for box in ((1, 2, 5, 29), (26, 2, 30, 29), (4, 2, 27, 6)):
@@ -423,10 +467,16 @@ def gate(opened=False):
     if not opened:
         draw.rectangle((7, 17, 24, 19), fill=(45, 73, 87, 255))
         draw.point((16, 18), fill=(236, 181, 76, 255))
+    if colour:
+        draw.line((5, 5, 26, 5), fill=colour, width=2)
+        for x in (4, 26):
+            draw.rectangle((x, 22, x + 1, 27), fill=colour)
+        if not opened:
+            draw.line((8, 18, 23, 18), fill=colour)
     return image
 
 
-def lever(active=False):
+def lever(active=False, colour=None):
     image = Image.new('RGBA', (SIZE, SIZE))
     bevel(image, (7, 23, 24, 29), (151, 163, 165, 255), 2)
     draw = ImageDraw.Draw(image)
@@ -435,7 +485,10 @@ def lever(active=False):
     draw.line((16, 22, x, y), fill=(30, 48, 58, 255), width=4)
     draw.line((15, 22, x - 1, y), fill=(155, 186, 194, 255), width=2)
     bevel(image, (x - 4, y - 2, x + 3, y + 3),
-          (100, 181, 123, 255) if active else (221, 137, 64, 255), 1)
+          colour or ((100, 181, 123, 255) if active else (221, 137, 64, 255)), 1)
+    if colour:
+        draw.line((10, 27, 21, 27), fill=colour, width=2)
+        draw.point((22, 25), fill=(239, 226, 162, 255) if active else (64, 71, 66, 255))
     return image
 
 
@@ -870,10 +923,23 @@ def sprites():
         'tile-101': ('sandstone floor: flat pale sandstone paving', material_floor(2)),
         'tile-102': ('timber floor: flat wooden floorboards', material_floor(3)),
         'tile-103': ('mossy floor: flat stone paving with green moss', material_floor(4)),
+        'tile-104': ('wooden door: opens when Shovey walks through it', door()),
+        'tile-105': ('wooden door standing open, with a clear passage', door(True)),
+        'tile-106': ('floor lantern: warm glass in a metal frame; blocks movement', lantern()),
         'shadow': ('mirror Shovey (pink)', mirror),
         'door-open': ('mossy wall lowered, leaving a moss-covered stone rim', mossy_floor()),
         'projectile': ('a flying iron shot', native('projectile')),
     }
+    for color, (name, colour) in enumerate((('red', (180, 78, 66, 255)),
+                                           ('blue', (67, 117, 172, 255)),
+                                           ('green', (80, 143, 88, 255)))):
+        kind = 107 + color * 3
+        out[f'tile-{kind}'] = (f'{name} gate: controlled by matching levers', gate(colour=colour))
+        out[f'tile-{kind + 1}'] = (f'{name} lever: switched off', lever(colour=colour))
+        out[f'tile-{kind + 2}'] = (f'{name} lever: switched on', lever(True, colour))
+        out[f'gate-open-{color}'] = (f'{name} gate standing open', gate(True, colour))
+        out[f'tile-{116 + color * 2}'] = (f'{name} wooden door: opens when walked through', door(colour=colour))
+        out[f'tile-{117 + color * 2}'] = (f'{name} wooden door standing open', door(True, colour))
     for facing, sprite in players.items():
         out[f'player-{facing}'] = (f'Shovey looking {facing}', sprite)
         out[f'charged-{facing}'] = (f'charged Shovey looking {facing}', glow(sprite))

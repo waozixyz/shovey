@@ -661,3 +661,39 @@ Island
 [editor_mossy_wall]
 Мшистая стена
 ---
+[editor_door]
+Дверь
+---
+[editor_lantern]
+Фонарь
+---
+[editor_red_door]
+Красная дверь
+---
+[editor_blue_door]
+Синяя дверь
+---
+[editor_green_door]
+Зелёная дверь
+---
+[editor_red_gate]
+Красные ворота
+---
+[editor_red_lever]
+Красный рычаг
+---
+[editor_blue_gate]
+Синие ворота
+---
+[editor_blue_lever]
+Синий рычаг
+---
+[editor_green_gate]
+Зелёные ворота
+---
+[editor_green_lever]
+Зелёный рычаг
+---
+[editor_lever]
+Рычаг
+---

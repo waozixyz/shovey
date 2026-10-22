@@ -661,3 +661,39 @@ Holzwand
 [editor_mossy_wall]
 Mooswand
 ---
+[editor_door]
+Tür
+---
+[editor_lantern]
+Laterne
+---
+[editor_red_door]
+Rote Tür
+---
+[editor_blue_door]
+Blaue Tür
+---
+[editor_green_door]
+Grüne Tür
+---
+[editor_red_gate]
+Rotes Tor
+---
+[editor_red_lever]
+Roter Hebel
+---
+[editor_blue_gate]
+Blaues Tor
+---
+[editor_blue_lever]
+Blauer Hebel
+---
+[editor_green_gate]
+Grünes Tor
+---
+[editor_green_lever]
+Grüner Hebel
+---
+[editor_lever]
+Hebel
+---

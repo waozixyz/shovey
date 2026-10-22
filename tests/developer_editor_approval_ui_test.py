@@ -70,7 +70,25 @@ with (output / 'app.log').open('w') as log:
                 break
             time.sleep(0.025)
         assert (drafts / 'worker-done').exists()
-        print('Approve publishes in the background; navigation remains responsive')
+        click(390, 28)  # Return to the approved board.
+        time.sleep(0.15)
+        click(1300, 174)  # Moss floor, before every wall brush.
+        time.sleep(0.15)
+        click(476, 615)  # Cosmetic edit under Shovey preserves the winning route.
+        for attempt in range(120):
+            if (drafts / '001.approval-request').exists():
+                break
+            time.sleep(0.05)
+        requested = (drafts / '001.approval-request').read_text().splitlines()[0]
+        assert requested[480 + 13 * 2:482 + 13 * 2] == '67'
+        assert (drafts / '001.approved').read_text() == requested
+        for attempt in range(40):
+            if (drafts / 'worker-started').read_text() == 'approve 1':
+                break
+            time.sleep(0.025)
+        assert (drafts / 'worker-started').read_text() == 'approve 1'
+        time.sleep(2.1)  # Let our detached disposable worker finish too.
+        print('Background approval, responsive navigation and automatic publication after edits passed')
     finally:
         if windows:
             subprocess.run(['import', '-window', windows[0], str(output / 'last.png')], check=True)

@@ -106,7 +106,7 @@ with (output / 'app.log').open('w') as log:
         click(palette + 170, 274)
         click(x, y)
         click(palette + 58, 106)
-        click(palette + 282, 658)
+        click(palette + 56, 562)
         click(x, y)
         cleared = draft()
         assert cleared[at * 2:at * 2 + 2] == '00'

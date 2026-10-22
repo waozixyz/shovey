@@ -661,3 +661,39 @@ Mur en bois
 [editor_mossy_wall]
 Mur moussu
 ---
+[editor_door]
+Porte
+---
+[editor_lantern]
+Lanterne
+---
+[editor_red_door]
+Porte rouge
+---
+[editor_blue_door]
+Porte bleue
+---
+[editor_green_door]
+Porte verte
+---
+[editor_red_gate]
+Grille rouge
+---
+[editor_red_lever]
+Levier rouge
+---
+[editor_blue_gate]
+Grille bleue
+---
+[editor_blue_lever]
+Levier bleu
+---
+[editor_green_gate]
+Grille verte
+---
+[editor_green_lever]
+Levier vert
+---
+[editor_lever]
+Levier
+---

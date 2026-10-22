@@ -661,3 +661,39 @@ Dinding kayu
 [editor_mossy_wall]
 Dinding berlumut
 ---
+[editor_door]
+Pintu
+---
+[editor_lantern]
+Lentera
+---
+[editor_red_door]
+Pintu merah
+---
+[editor_blue_door]
+Pintu biru
+---
+[editor_green_door]
+Pintu hijau
+---
+[editor_red_gate]
+Gerbang merah
+---
+[editor_red_lever]
+Tuas merah
+---
+[editor_blue_gate]
+Gerbang biru
+---
+[editor_blue_lever]
+Tuas biru
+---
+[editor_green_gate]
+Gerbang hijau
+---
+[editor_green_lever]
+Tuas hijau
+---
+[editor_lever]
+Tuas
+---

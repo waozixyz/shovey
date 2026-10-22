@@ -304,9 +304,14 @@ EditorNames :: () {
     for kind: cast(s32)SPRITE_WATER..SPRITE_WATER + 3 {
         editor_classic_names[kind] = EditorText("editor_water")
     }
-    for kind: cast(s32)SPRITE_WALL..SPRITE_COUNT - 1 {
+    for kind: cast(s32)SPRITE_WALL..SPRITE_WALL + 3 {
         editor_classic_names[kind] = EditorText("editor_wall")
     }
+    floor_names: [5]string = .["editor_slate_floor", "editor_brick_floor", "editor_sandstone_floor", "editor_timber_floor", "editor_mossy_floor"]
+    for floor: cast(s32)0..4 { editor_classic_names[SPRITE_MATERIAL_FLOOR + floor] = EditorText(floor_names[floor]) }
+    editor_classic_names[SPRITE_DOOR] = EditorText("editor_door")
+    editor_classic_names[SPRITE_DOOR + 1] = EditorText("editor_door")
+    editor_classic_names[SPRITE_LANTERN] = EditorText("editor_lantern")
     editor_classic_names[SPRITE_DOOR_OPEN] = EditorText("editor_gate")
     for number: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { editor_classic_names[number] = EditorText("editor_sensor") }
     editor_classic_names[SPRITE_SHOT] = EditorText("editor_ammo")
@@ -323,6 +328,7 @@ EditorNames :: () {
 // A palette piece's picture: Classic's kind on its floor, Island's tile.
 // Uses keys key and key + 1.
 EditorPieceImage :: (key: u64, island: bool, kind: s32, bounds: Rectangle, label: string) {
+    if !island && kind == 0 { return }
     if island {
         // The eraser is drawn by its button's icon.
         if kind == EDIT_CLEAR || kind < 0 || kind >= ISLAND_TILES { return }
@@ -332,7 +338,8 @@ EditorPieceImage :: (key: u64, island: bool, kind: s32, bounds: Rectangle, label
         EditorImage(key + 1, IslandPictureFile(picture), bounds, label)
         return
     }
-    if kind >= EDIT_TILE_BRUSH && kind < EDIT_DECO_BRUSH { kind -= EDIT_TILE_BRUSH }
+    if kind >= EDIT_DECO_BRUSH { kind -= EDIT_DECO_BRUSH }
+    else if kind >= EDIT_TILE_BRUSH { kind -= EDIT_TILE_BRUSH }
     floor := FloorSprite(kind)
     if kind == CLASSIC_SHOVEY { floor = 0 }
     if floor >= 0 { EditorImage(key, SpriteFile(floor), bounds, label) }
@@ -879,7 +886,7 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
             key := cast(u64)(230000 + index * 4)
             if Button(editor_frame.session, ButtonProps.{.key = key, .id = 230000 + index * 4, .bounds = cell,
                     .label = name, .icon_only = true, .selected = kind == chosen && !editor_picking,
-                    .icon_shape = ifx kind == EDIT_CLEAR then EDITOR_ERASER else "",
+                    .icon_shape = ifx kind == EDIT_CLEAR || (!island && kind == 0) then EDITOR_ERASER else "",
                     .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { choose = kind }
             EditorPieceImage(key + 1, island, kind, Rectangle.{cell.x + 6.0, cell.y + 6.0, size - 12.0, size - 12.0}, name)
         }

@@ -156,7 +156,7 @@ EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
 // ---------------------------------------------------------------------------
 // Pieces
 
-EDIT_CLASSIC_PIECES :: 48
+EDIT_CLASSIC_PIECES :: 61
 EDIT_ISLAND_PIECES :: 82
 edit_classic_kinds: [EDIT_CLASSIC_PIECES]s32;
 edit_classic_names: [EDIT_CLASSIC_PIECES]string;
@@ -167,29 +167,28 @@ edit_pieces_ready: bool;
 EditPiecesPrepare :: () {
     // Classic's pieces, in palette order.
     classic_kinds: [EDIT_CLASSIC_PIECES]s32 = .[
-    10, EDIT_TILE_BRUSH, EDIT_TILE_BRUSH + 12, 7, 9, 18, 1, 2, 3, 4, 5, 6,
-    15, 16, 17, 19, 21, 13, EDIT_TILE_BRUSH + 14, 33, 34, 8, 11, 25,
-    26, 28, 27, 29, 30, 31, 20, 23, 35, 36, 37, 38,
-    39, 40,
-    EDIT_TILE_BRUSH + 103,
-    EDIT_TILE_BRUSH + 99, EDIT_TILE_BRUSH + 95,
-    EDIT_TILE_BRUSH + 100, EDIT_TILE_BRUSH + 96,
-    EDIT_TILE_BRUSH + 101, EDIT_TILE_BRUSH + 97,
-    EDIT_TILE_BRUSH + 102, EDIT_TILE_BRUSH + 98, 0]
+    EDIT_TILE_BRUSH, EDIT_TILE_BRUSH + 103, EDIT_TILE_BRUSH + 99,
+    EDIT_TILE_BRUSH + 100, EDIT_TILE_BRUSH + 101, EDIT_TILE_BRUSH + 102,
+    EDIT_TILE_BRUSH + 12, EDIT_TILE_BRUSH + 14, EDIT_TILE_BRUSH + 95,
+    EDIT_TILE_BRUSH + 96, EDIT_TILE_BRUSH + 97, EDIT_TILE_BRUSH + 98,
+    10, 7, 9, 18, 1, 2, 3, 4, 5, 6,
+    15, 16, 17, 19, 21, 13, 92, 93, 104, 116, 118, 120, 107, 108, 110, 111, 113, 114, EDIT_DECO_BRUSH + 106, 33, 34, 8, 11, 25,
+    26, 28, 27, 29, 30, 31, 20, 23, 35, 36, 37, 38, 39, 40, 0]
     classic_names: [EDIT_CLASSIC_PIECES]string = .[
-    "editor_shovey", "editor_floor", "editor_wall", "editor_home",
-    "editor_crate", "editor_crate_goal", "editor_red_ball", "editor_blue_ball",
-    "editor_green_ball", "editor_red_pit", "editor_blue_pit", "editor_green_pit",
+    "editor_floor", "editor_mossy_floor", "editor_slate_floor",
+    "editor_brick_floor", "editor_sandstone_floor", "editor_timber_floor",
+    "editor_wall", "editor_mossy_wall", "editor_slate_wall",
+    "editor_brick_wall", "editor_sandstone_wall", "editor_timber_wall",
+    "editor_shovey", "editor_home", "editor_crate", "editor_crate_goal",
+    "editor_red_ball", "editor_blue_ball", "editor_green_ball",
+    "editor_red_pit", "editor_blue_pit", "editor_green_pit",
     "editor_red_paint", "editor_blue_paint", "editor_green_paint", "editor_star_block",
-    "editor_apple", "editor_plate", "editor_mossy_wall", "editor_key",
+    "editor_apple", "editor_plate", "editor_gate", "editor_lever", "editor_door", "editor_red_door", "editor_blue_door", "editor_green_door", "editor_red_gate", "editor_red_lever", "editor_blue_gate", "editor_blue_lever", "editor_green_gate", "editor_green_lever", "editor_lantern", "editor_key",
     "editor_lock", "editor_teleporter", "editor_trail", "editor_reverse",
     "editor_ammo", "editor_target", "editor_charge", "editor_moving_block",
     "editor_fresh_path", "editor_used_path", "editor_sensor", "editor_closed_sensor",
     "editor_slide", "editor_red_block", "editor_blue_block", "editor_yellow_block",
-    "editor_block_goal", "editor_mirror_shovey",
-    "editor_mossy_floor", "editor_slate_floor", "editor_slate_wall",
-    "editor_brick_floor", "editor_brick_wall", "editor_sandstone_floor", "editor_sandstone_wall",
-    "editor_timber_floor", "editor_timber_wall", "editor_clear"]
+    "editor_block_goal", "editor_mirror_shovey", "editor_clear"]
     // Island's terrain (kinds below 50), then objects. Sand and meadow take
     // their coast tiles by themselves; EDIT_CLEAR erases an object.
     island_kinds: [EDIT_ISLAND_PIECES]s32 = .[
@@ -245,7 +244,13 @@ EditPieceKey :: (island: bool, index: s32) -> string {
 EditPieceName :: (island: bool, kind: s32) -> string {
     for index: cast(s32)0..EditPieceCount(island) - 1 {
         piece := EditPieceKind(island, index)
-        if piece == kind || (!island && piece >= EDIT_TILE_BRUSH && piece < EDIT_DECO_BRUSH && piece - EDIT_TILE_BRUSH == kind) { return EditPieceKey(island, index) }
+        if piece == kind { return EditPieceKey(island, index) }
+    }
+    if !island {
+        for index: cast(s32)0..EditPieceCount(false) - 1 {
+            piece := EditPieceKind(false, index)
+            if piece >= EDIT_TILE_BRUSH && piece < EDIT_DECO_BRUSH && piece - EDIT_TILE_BRUSH == kind { return EditPieceKey(false, index) }
+        }
     }
     if island && CoastSand(kind) { return "editor_sand" }
     if island && CoastMeadow(kind) { return "editor_meadow" }
@@ -271,6 +276,9 @@ EditPaint :: (board: *EditBoard, kind: s32, at: s32) -> bool {
         if kind >= EDIT_DECO_BRUSH {
             decoration := kind - EDIT_DECO_BRUSH
             if !ShoveyDecoration(decoration) || board.decorations[at] == cast(u8)decoration { return false }
+            if ShoveyBlockingDecoration(decoration) && board.ground[at] != 0 { return false }
+            tile := cast(s32)board.tiles[at]
+            if ShoveyBlockingDecoration(decoration) && (tile == 12 || tile == 14 || tile == SHOVEY_PIT || ShoveySolidDecor(tile)) { board.tiles[at] = 0 }
             board.decorations[at] = cast(u8)decoration
             return true
         }
@@ -289,6 +297,7 @@ EditPaint :: (board: *EditBoard, kind: s32, at: s32) -> bool {
             return true
         }
         if kind < 0 || kind > SHOVEY_LAST_KIND || kind == 22 || kind == 24 || kind == 32 || kind == 41 || kind == 42 || kind == 43 { return false }
+        if kind != 0 && ShoveyBlockingDecoration(cast(s32)board.decorations[at]) { return false }
         if EditBorder(at) || at == shovey { return false }
         if kind == 0 && board.decorations[at] != 0 {
             board.ground[at] = 0

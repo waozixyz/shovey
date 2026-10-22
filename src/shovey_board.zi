@@ -39,7 +39,11 @@ SPRITE_LEVER :: 180
 SPRITE_ABYSS :: 182
 SPRITE_WALL :: 198
 SPRITE_MATERIAL_FLOOR :: 202
-SPRITE_COUNT :: 207
+SPRITE_DOOR :: 207
+SPRITE_LANTERN :: 209
+SPRITE_COLORED_GATE :: 210
+SPRITE_COLORED_DOOR :: 222
+SPRITE_COUNT :: 228
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -185,6 +189,24 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_GATE_OPEN, "gate-open")
     SpritePath(SPRITE_LEVER, "tile-93")
     SpritePath(SPRITE_LEVER + 1, "tile-94")
+    SpritePath(SPRITE_DOOR, "tile-104")
+    SpritePath(SPRITE_DOOR + 1, "tile-105")
+    SpritePath(SPRITE_LANTERN, "tile-106")
+    for color: cast(s32)0..2 {
+        for part: cast(s32)0..2 {
+            name: Vec(u8)
+            BuilderPrint(*name, "tile-%", FormatInteger(cast(s64)(107 + color * 3 + part), digits[:]))
+            SpritePath(SPRITE_COLORED_GATE + color * 4 + (ifx part == 0 then 0 else part + 1), BuilderFinish(name))
+        }
+        name: Vec(u8)
+        BuilderPrint(*name, "gate-open-%", FormatInteger(cast(s64)color, digits[:]))
+        SpritePath(SPRITE_COLORED_GATE + color * 4 + 1, BuilderFinish(name))
+    }
+    for door: cast(s32)0..5 {
+        name: Vec(u8)
+        BuilderPrint(*name, "tile-%", FormatInteger(cast(s64)(116 + door), digits[:]))
+        SpritePath(SPRITE_COLORED_DOOR + door, BuilderFinish(name))
+    }
     for wall: cast(s32)0..3 {
         name: Vec(u8)
         BuilderPrint(*name, "tile-%", FormatInteger(cast(s64)(95 + wall), digits[:]))
@@ -273,6 +295,13 @@ FloorSprite :: (kind: s32) -> s32 {
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
 // active sensors turn, one frame every 100 milliseconds.
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
+    color := ShoveyGateColor(kind)
+    if color > 0 { return SPRITE_COLORED_GATE + (color - 1) * 4 + (ifx position >= 0 && ShoveyGateOpen(game, position) then 1 else 0) }
+    lever_color := ShoveyLeverColor(kind)
+    if lever_color > 0 { return SPRITE_COLORED_GATE + (lever_color - 1) * 4 + (ifx ShoveyLeverActive(kind) then 3 else 2) }
+    if kind >= 116 && kind <= 121 { return SPRITE_COLORED_DOOR + kind - 116 }
+    if kind == SHOVEY_LANTERN { return SPRITE_LANTERN }
+    if kind == SHOVEY_DOOR || kind == SHOVEY_DOOR_OPEN { return SPRITE_DOOR + kind - SHOVEY_DOOR }
     if ShoveyMaterialFloor(kind) { return SPRITE_MATERIAL_FLOOR + kind - 99 }
     if kind == 64 { return SPRITE_WATER + cast(s32)(now * 2.0) % 4 }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
@@ -333,7 +362,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             }
             board_layers[display] = SPRITE_GRASS_EDGE + mask
         }
-        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_TREE || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
         decoration := game.decorations[at]
         board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
         piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) then ground else 0

@@ -105,9 +105,14 @@ int main(int argc, char **argv) {
     editor_Remember(true);
     editor_SetKind(editor_Board(1), SHOVEY_CELLS * 2 + 13, 59);
     editor_Edited();
-    assert(!editor_Approved(1));
+    assert(editor_Approved(1) && !editor_ApprovalMatches(1));
     editor_UndoEdit();
-    assert(editor_Approved(1));
+    assert(editor_Approved(1) && editor_ApprovalMatches(1));
+    editor_RedoEdit();
+    editor_StartCheck();
+    assert(editor_Solved() && editor_Approved(1) && !editor_ApprovalMatches(1));
+    editor_AutoSave();
+    assert(save_state == 2 && editor_ApprovalMatches(1));
     /* Change the route, play the new win, and save without a solver search. */
     editor_SetKind(editor_Board(1), 14, 0);
     editor_SetKind(editor_Board(1), 15, 7);

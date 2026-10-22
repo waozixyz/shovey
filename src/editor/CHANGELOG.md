@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [0.2.13] - 2026-10-22
+
+- Arrange floor materials before walls.
+- Add an easy-opening door and a solid floor lantern.
 ## [0.2.12] - 2026-10-22
 
 - Paint matching floors and walls in stone, moss, slate, brick, sandstone and timber.

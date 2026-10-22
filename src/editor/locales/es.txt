@@ -661,3 +661,39 @@ Muro de madera
 [editor_mossy_wall]
 Muro con musgo
 ---
+[editor_door]
+Puerta
+---
+[editor_lantern]
+Farol
+---
+[editor_red_door]
+Puerta roja
+---
+[editor_blue_door]
+Puerta azul
+---
+[editor_green_door]
+Puerta verde
+---
+[editor_red_gate]
+Portón rojo
+---
+[editor_red_lever]
+Palanca roja
+---
+[editor_blue_gate]
+Portón azul
+---
+[editor_blue_lever]
+Palanca azul
+---
+[editor_green_gate]
+Portón verde
+---
+[editor_green_lever]
+Palanca verde
+---
+[editor_lever]
+Palanca
+---

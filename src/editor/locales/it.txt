@@ -661,3 +661,39 @@ Parete di legno
 [editor_mossy_wall]
 Muro muschioso
 ---
+[editor_door]
+Porta
+---
+[editor_lantern]
+Lanterna
+---
+[editor_red_door]
+Porta rossa
+---
+[editor_blue_door]
+Porta blu
+---
+[editor_green_door]
+Porta verde
+---
+[editor_red_gate]
+Cancello rosso
+---
+[editor_red_lever]
+Leva rossa
+---
+[editor_blue_gate]
+Cancello blu
+---
+[editor_blue_lever]
+Leva blu
+---
+[editor_green_gate]
+Cancello verde
+---
+[editor_green_lever]
+Leva verde
+---
+[editor_lever]
+Leva
+---

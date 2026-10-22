@@ -1,0 +1,10 @@
+---
+description: Reload Shovey's developer editor when the owner requests it
+alwaysApply: true
+---
+
+Owner instruction, 2026-10-22: when the owner asks to reload or reopen Shovey's
+developer editor, close and relaunch that editor after backing up its drafts and
+preserving the current level. Do not request repeat confirmation. This is the
+owner's explicit exception to the parent rule to leave running applications open.
+Keep every other application open.

@@ -81,7 +81,8 @@ ShoveyColorRest :: (kind: s32) -> bool {
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
 ShoveyMaterialFloor :: (kind: s32) -> bool { return kind >= 99 && kind <= 103 }
 ShoveyDecorFloor :: (kind: s32) -> bool { return (kind >= 57 && kind <= 61) || ShoveyMaterialFloor(kind) }
-ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || kind == SHOVEY_TREE || (kind >= 95 && kind <= 98) }
+ShoveyBlockingDecoration :: (kind: s32) -> bool { return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN }
+ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98) }
 SHOVEY_CRACKED_WALL :: 62
 SHOVEY_PIT :: 65
 SHOVEY_ICE :: 70
@@ -96,8 +97,24 @@ SHOVEY_FISH :: 89
 SHOVEY_GATE :: 92
 SHOVEY_LEVER :: 93
 SHOVEY_LEVER_ON :: 94
-SHOVEY_LAST_KIND :: 103
-ShoveyLever :: (kind: s32) -> bool { return kind == SHOVEY_LEVER || kind == SHOVEY_LEVER_ON }
+SHOVEY_DOOR :: 104
+SHOVEY_DOOR_OPEN :: 105
+SHOVEY_LANTERN :: 106
+SHOVEY_LAST_KIND :: 121
+ShoveyGateColor :: (kind: s32) -> s32 {
+    if kind == SHOVEY_GATE { return 0 }
+    if kind >= 107 && kind <= 113 && (kind - 107) % 3 == 0 { return 1 + (kind - 107) / 3 }
+    return -1
+}
+ShoveyLeverColor :: (kind: s32) -> s32 {
+    if kind == SHOVEY_LEVER || kind == SHOVEY_LEVER_ON { return 0 }
+    if kind >= 108 && kind <= 115 && (kind - 108) % 3 < 2 { return 1 + (kind - 108) / 3 }
+    return -1
+}
+ShoveyLever :: (kind: s32) -> bool { return ShoveyLeverColor(kind) >= 0 }
+ShoveyLeverActive :: (kind: s32) -> bool { return kind == SHOVEY_LEVER_ON || (kind >= 108 && kind <= 115 && (kind - 108) % 3 == 1) }
+ShoveyClosedDoor :: (kind: s32) -> bool { return kind == SHOVEY_DOOR || (kind >= 116 && kind <= 120 && kind % 2 == 0) }
+ShoveyOpenDoor :: (kind: s32) -> bool { return kind == SHOVEY_DOOR_OPEN || (kind >= 117 && kind <= 121 && kind % 2 == 1) }
 ShoveyFish :: (kind: s32) -> bool { return kind >= SHOVEY_FISH && kind <= 91 }
 ShoveyAnimal :: (kind: s32) -> bool { return kind == SHOVEY_CHICKEN || kind == SHOVEY_TURTLE || kind == SHOVEY_CRAB || ShoveyFish(kind) }
 
@@ -150,7 +167,7 @@ ShoveyTerrain :: (kind: s32) -> bool {
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
-ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || kind == SHOVEY_TREE }
+ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || ShoveyBlockingDecoration(kind) }
 ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) }
 ShoveyDefaultTile :: (kind: s32) -> s32 {
     return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else 0
@@ -179,9 +196,9 @@ ShoveyLoadData :: (game: *ShoveyGame, level: s32, data: string) -> bool {
             game.ground[position] = SHOVEY_CRACKED_WALL
         }
         else if kind != 0 { game.ground[position] = kind }
-        if game.decorations[position] == SHOVEY_TREE {
+        if ShoveyBlockingDecoration(game.decorations[position]) {
             if kind != 0 { return false }
-            game.ground[position] = SHOVEY_TREE
+            game.ground[position] = game.decorations[position]
         }
     }
     return game.player >= 0
@@ -197,7 +214,8 @@ ShoveyDoorOpen :: (game: *ShoveyGame, position: s32) -> bool {
 
 ShoveyGateOpen :: (game: *ShoveyGame, position: s32) -> bool {
     if game.objects[position] != 0 || game.player == position { return true }
-    for kind: game.ground { if kind == SHOVEY_LEVER_ON { return true } }
+    color := ShoveyGateColor(game.ground[position])
+    for kind: game.ground { if ShoveyLeverColor(kind) == color && ShoveyLeverActive(kind) { return true } }
     return false
 }
 
@@ -218,10 +236,12 @@ ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     kind := game.ground[position]
     if ShoveyAnimal(kind) { return false }
     player := object == 10
+    if ShoveyClosedDoor(kind) { return player }
+    if ShoveyOpenDoor(kind) { return true }
     if kind == 0 || kind == 13 || kind == 18 || kind == 20 ||
     kind == 29 || kind == 30 || kind == 31 || kind == 41 || kind == 42 || kind == 43 { return true }
     if kind == 14 { return ShoveyDoorOpen(game, position) }
-    if kind == SHOVEY_GATE { return ShoveyGateOpen(game, position) }
+    if ShoveyGateColor(kind) >= 0 { return ShoveyGateOpen(game, position) }
     if ShoveyDecorFloor(kind) || kind == SHOVEY_ICE || kind == SHOVEY_CRACKED_FLOOR { return true }
     if kind == SHOVEY_PIT {
         return player || ShoveyBallColor(object) > 0 || object == 9 || object == SHOVEY_BOMB || ShoveyColorBlock(object)
@@ -324,7 +344,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     to := ShoveyNeighbor(game.player, direction)
     if to < 0 { return false }
     if ShoveyLever(game.ground[to]) {
-        game.ground[to] = ifx game.ground[to] == SHOVEY_LEVER then SHOVEY_LEVER_ON else SHOVEY_LEVER
+        game.ground[to] = ifx ShoveyLeverActive(game.ground[to]) then game.ground[to] - 1 else game.ground[to] + 1
         game.moves += 1
         return true
     }
@@ -343,6 +363,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     from := game.player
     if game.objects[to] != 0 && game.objects[to] != 40 && !ShoveyPush(game, to, direction) { return false }
     kind := game.ground[to]
+    if ShoveyClosedDoor(kind) { game.ground[to] = kind + 1 }
     game.player = to
     ShoveyShadowAdvance(game, direction)
     if kind == 8 || ShoveyColorPortal(kind) {
@@ -456,7 +477,7 @@ ShoveyFire :: (game: *ShoveyGame) -> bool {
         if object == 28 { game.objects[at] = 0 }
         else if ShoveyBallColor(object) > 0 || object == 9 || object == 19 ||
         ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ground == 14 ||
-        ground == 26 || ground == 33 || ground == 34 || ground == SHOVEY_GATE || ShoveyLever(ground) { break }
+        ground == 26 || ground == 33 || ground == 34 || ShoveyGateColor(ground) >= 0 || ShoveyClosedDoor(ground) || ShoveyLever(ground) { break }
         at = ShoveyNeighbor(at, game.direction)
     }
     game.moves += 1
@@ -488,7 +509,7 @@ ShoveyCount :: (game: *ShoveyGame) -> ShoveyTally {
         object := game.objects[at]; ground := game.ground[at]
         if ShoveyBallColor(object) > 0 { tally.balls += 1 }
         if ground == 21 || ground == 56 { tally.apples += 1 }
-        if ground == 34 || (ground == 14 && !ShoveyDoorOpen(game, at)) || (ground == SHOVEY_GATE && !ShoveyGateOpen(game, at)) { tally.closed += 1 }
+        if ground == 34 || ShoveyClosedDoor(ground) || (ground == 14 && !ShoveyDoorOpen(game, at)) || (ShoveyGateColor(ground) >= 0 && !ShoveyGateOpen(game, at)) { tally.closed += 1 }
     }
     return tally
 }
@@ -522,14 +543,18 @@ ShoveyAnimalsTick :: (game: *ShoveyGame) -> bool {
     moved := false
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         kind := game.ground[at]
-        if visited[at] || !ShoveyAnimal(kind) || ShoveyFish(kind) { continue }
+        if visited[at] || !ShoveyAnimal(kind) { continue }
+        aquatic := ShoveyFish(kind)
         direction := game.light_from[at]
         if direction < 0 || direction > 3 { direction = 1 }
         for turn: cast(s32)0..3 {
             facing := (direction + turn) % 4
             to := ShoveyNeighbor(at, facing)
-            if to < 0 || to == game.player || game.objects[to] != 0 || visited[to] || game.ground[to] != 0 { continue }
-            game.ground[at] = 0
+            if to < 0 || to == game.player || game.objects[to] != 0 || visited[to] { continue }
+            if aquatic {
+                if game.ground[to] != 64 || game.tiles[to] != 64 { continue }
+            } else if game.ground[to] != 0 { continue }
+            game.ground[at] = ifx aquatic then 64 else 0
             game.light_from[at] = 4
             game.ground[to] = kind
             game.light_from[to] = facing

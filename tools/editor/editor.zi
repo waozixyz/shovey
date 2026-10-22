@@ -166,17 +166,17 @@ similarity_cached: [PLACES + 1]bool;
 similarity_scores: [PLACES + 1]s32;
 
 // Palette: board kinds in the order a level is usually built.
-PALETTE :: 83
-palette_kinds: [83]s32 = .[10, 0, 12, 7, 9, 57, 58, 59, 84, 18, 1, 2, 3, 4, 5, 6,
-    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14, 92, 93,
-    33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
+PALETTE :: 94
+palette_kinds: [94]s32 = .[10, 0, 12, 7, 9, 57, 58, 59, 84, 18, 1, 2, 3, 4, 5, 6,
+    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14, 92, 93, 107, 108, 110, 111, 113, 114,
+    104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
     35, 36, 37, 38, 53, 54, 55, 39, 40,
     65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91];
-palette_names: [83]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Pebbles", "Tree", "Crate goal",
+palette_names: [94]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Pebbles", "Tree", "Crate goal",
     "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
     "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
     "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
-    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Gate", "Lever", "Key", "Lock",
+    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Gate", "Lever", "Red gate", "Red lever", "Blue gate", "Blue lever", "Green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
     "Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
     "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
     "Yellow block", "Cyan block", "Purple block", "Green block", "Block goal", "Mirror Shovey",
@@ -510,6 +510,13 @@ OurTiles :: () -> []string {
 
 PrivateSprite :: (kind: s32) -> s32 {
     facing := BoardEngineDirection(1, boards_landscape)
+    color := ShoveyGateColor(kind)
+    if color > 0 { return SPRITE_COLORED_GATE + (color - 1) * 4 }
+    lever_color := ShoveyLeverColor(kind)
+    if lever_color > 0 { return SPRITE_COLORED_GATE + (lever_color - 1) * 4 + (ifx ShoveyLeverActive(kind) then 3 else 2) }
+    if kind >= 116 && kind <= 121 { return SPRITE_COLORED_DOOR + kind - 116 }
+    if kind == SHOVEY_LANTERN { return SPRITE_LANTERN }
+    if kind == SHOVEY_DOOR || kind == SHOVEY_DOOR_OPEN { return SPRITE_DOOR + kind - SHOVEY_DOOR }
     if ShoveyMaterialFloor(kind) { return SPRITE_MATERIAL_FLOOR + kind - 99 }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
     if kind == SHOVEY_GATE { return SPRITE_GATE }
@@ -601,8 +608,10 @@ ResetEdit :: () {
 }
 
 Approved :: (place: s32) -> bool {
-    return approved_places[place - 1] && Same(Board(place), approved_boards[(place - 1) * HEX:place * HEX])
+    return approved_places[place - 1]
 }
+
+ApprovalMatches :: (place: s32) -> bool { return Approved(place) && Same(Board(place), approved_boards[(place - 1) * HEX:place * HEX]) }
 
 LoadApprovals :: () {
     for place: cast(s32)1..PLACES {
@@ -629,7 +638,7 @@ RunAction :: (action: string) {
 
 ApproveEdit :: () {
     if playing { return }
-    if Approved(current) {
+    if ApprovalMatches(current) || (Approved(current) && !Solved() && !Proven()) {
         ActionMessage("Publishing…")
         RunAction("update")
         return
@@ -778,7 +787,9 @@ Paint :: (at: s32, kind: s32) {
     if kind >= 512 {
         decoration := kind - 512
         if !ShoveyDecoration(decoration) || KindAt(board, SHOVEY_CELLS * 2 + at) == decoration { return }
-        if decoration == SHOVEY_TREE && KindAt(board, at) != 0 { return }
+        if ShoveyBlockingDecoration(decoration) && KindAt(board, at) != 0 { return }
+        tile := KindAt(board, SHOVEY_CELLS + at)
+        if ShoveyBlockingDecoration(decoration) && (tile == 12 || tile == 14 || tile == SHOVEY_PIT || ShoveySolidDecor(tile)) { SetKind(board, SHOVEY_CELLS + at, 0) }
         SetKind(board, SHOVEY_CELLS * 2 + at, decoration)
         Edited()
         return
@@ -807,7 +818,7 @@ Paint :: (at: s32, kind: s32) {
         return
     }
     replaced_wall := false
-    if kind != 0 && KindAt(board, SHOVEY_CELLS * 2 + at) == SHOVEY_TREE { return }
+    if kind != 0 && ShoveyBlockingDecoration(KindAt(board, SHOVEY_CELLS * 2 + at)) { return }
     tile := KindAt(board, SHOVEY_CELLS + at)
     if ShoveyFish(kind) && tile != 64 { SetKind(board, SHOVEY_CELLS + at, 64); replaced_wall = true }
     else if !ShoveyFish(kind) && kind != 0 && kind != 71 && (tile == 12 || tile == 14 || ShoveySolidDecor(tile)) {
@@ -1293,9 +1304,11 @@ WriteWaiting :: () {
 // failed is not repeated for the same board.
 AutoSave :: () {
     if save_state == 1 || (!Solved() && !Proven()) { return }
-    if Same(Board(current), SavedBoard(current)) { return }
-    if save_state == 3 && save_level == current && Same(save_board[:], Board(current)) { return }
-    StartSave()
+    if !Same(Board(current), SavedBoard(current)) {
+        if save_state == 3 && save_level == current && Same(save_board[:], Board(current)) { return }
+        StartSave()
+    }
+    if save_state == 2 && !playing && Approved(current) && !ApprovalMatches(current) { ApproveEdit() }
 }
 
 // ---------------------------------------------------------------- playing
@@ -1393,7 +1406,7 @@ SelectorScreen :: (area: Rectangle) {
     cell_width := (area.width - gap * cast(float32)(SELECTOR_COLUMNS - 1)) / cast(float32)SELECTOR_COLUMNS
     cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
     Caption(15, Rectangle.{area.x, area.y, area.width, legend_height},
-        "Purple: approved layout. Other colours show similarity to the original: green under 50%, then yellow, orange, red at 100%. Blue: waiting. Editing an approved layout removes its purple mark until approved again.", 14)
+        "Purple: approved. Similarity: green under 50%, yellow under 75%, orange under 100%, red at 100%. Blue: waiting.", 14)
     // Measuring a place sets the status line's numbers; keep them.
     keep_percent := similarity_percent
     keep_matches := similarity_matches
@@ -1524,8 +1537,8 @@ Palette :: (area: Rectangle) {
             selected = ifx tab == 0 then 256 else 0
         }
     }
-    tile_kinds: [25]s32 = .[0,12,103,14,99,95,100,96,101,97,102,98,77,78,60,61,64,65,4,5,6,47,48,49,70]
-    tile_names: [25]string = .["Stone floor","Stone wall","Mossy floor","Mossy wall","Slate floor","Slate wall","Brick floor","Brick wall","Sandstone floor","Sandstone wall","Timber floor","Timber wall","Grass","Sand","Checker","Stripes","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Ice"]
+    tile_kinds: [25]s32 = .[0,103,99,100,101,102,77,78,60,61,70,64,65,4,5,6,47,48,49,12,14,95,96,97,98]
+    tile_names: [25]string = .["Stone floor","Mossy floor","Slate floor","Brick floor","Sandstone floor","Timber floor","Grass","Sand","Checker","Stripes","Ice","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Stone wall","Mossy wall","Slate wall","Brick wall","Sandstone wall","Timber wall"]
     count: s32 = ifx palette_tab == 0 then 25 else PALETTE
     visible_count: s32 = 0
     for index: cast(s32)0..count - 1 {
@@ -1544,6 +1557,7 @@ Palette :: (area: Rectangle) {
         if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62) { continue }
         name := ifx palette_tab == 0 then tile_names[index] else ifx kind == 0 then "Erase object" else ifx kind == 71 then "Crack" else palette_names[index]
         brush := kind + (ifx palette_tab == 0 then 256 else ifx kind != 0 && ShoveyDecoration(kind) then 512 else 0)
+        if palette_tab == 0 && kind == 12 { row = ((row + 2) / 3) * 3 }
         bounds := Rectangle.{scrolled.content.x + cast(float32)(row % 3) * cell_width,
                 scrolled.content.y + cast(float32)(row / 3) * 96.0, cell_width - 4.0, 92.0}
         row += 1

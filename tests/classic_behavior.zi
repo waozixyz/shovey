@@ -248,6 +248,30 @@ TileChecks :: () -> s32 {
 }
 
 NatureChecks :: () -> s32 {
+    door := Floor()
+    door.ground[14] = SHOVEY_DOOR
+    if ShoveyCanEnter(*door, 14, 9) { return 142 }
+    before_door := door
+    if !ShoveyMove(*door, 2) || door.player != 14 || door.ground[14] != SHOVEY_DOOR_OPEN || door.moves != 1 || door.keys != 0 { return 143 }
+    if !ShoveyCanEnter(*door, 14, 9) || ShoveyEvent(*before_door, *door) != SHOVEY_EVENT_DOOR { return 144 }
+    saved_door: ShoveyGame
+    if !ShoveyRestore(*saved_door, ShoveySave(*door)) || saved_door.ground[14] != SHOVEY_DOOR_OPEN { return 145 }
+    for color: cast(s32)0..2 {
+        colored := Floor()
+        colored.ground[14] = 108 + color * 3
+        for group: cast(s32)0..2 { colored.ground[26 + group] = 107 + group * 3 }
+        colored.ground[29] = SHOVEY_GATE
+        if !ShoveyMove(*colored, 2) || colored.player != 13 { return 148 }
+        for group: cast(s32)0..2 {
+            if ShoveyGateOpen(*colored, 26 + group) != (group == color) { return 149 }
+        }
+        if ShoveyGateOpen(*colored, 29) { return 150 }
+        if !ShoveyRestore(*saved_door, ShoveySave(*colored)) || !ShoveyGateOpen(*saved_door, 26 + color) { return 151 }
+        if !ShoveyMove(*colored, 2) || ShoveyGateOpen(*colored, 26 + color) { return 152 }
+        colored = Floor()
+        colored.ground[14] = 116 + color * 2
+        if !ShoveyMove(*colored, 2) || colored.player != 14 || colored.ground[14] != 117 + color * 2 { return 153 }
+    }
     gate := Floor()
     gate.ground[14] = SHOVEY_LEVER
     gate.ground[26] = SHOVEY_GATE
@@ -303,8 +327,11 @@ NatureChecks :: () -> s32 {
         pool.ground[27] = 64
         pool.tiles[27] = 64
         pool.light_from[26] = 2
-        if ShoveyTick(*pool) || pool.ground[26] != fish || pool.ground[27] != 64 { return 131 }
-        if ShoveyCanEnter(*pool, 26, 9) { return 132 }
+        if !ShoveyTick(*pool) || pool.ground[26] != 64 || pool.ground[27] != fish || pool.light_from[27] != 2 { return 131 }
+        if ShoveyCanEnter(*pool, 27, 9) { return 132 }
+        if !ShoveyTick(*pool) || pool.ground[26] != fish || pool.ground[27] != 64 || pool.light_from[26] != 0 { return 146 }
+        pool.objects[27] = 9
+        if ShoveyTick(*pool) || pool.ground[26] != fish || pool.objects[27] != 9 { return 147 }
     }
     portals: [6]s32 = .[73, 74, 75, 85, 86, 87]
     for portal: portals {

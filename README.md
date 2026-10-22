@@ -106,16 +106,18 @@ favoring a useful push sequence or dependency. It keeps the puzzle's pieces,
 colors, terrain, start and home.
 A variation is applied only after its solution wins in the game engine, and
 Undo, Redo and Reset remain available. Unproven proposals leave the level intact.
-**Update** rebuilds and ships the already approved campaign, including software
-and artwork fixes; it stays available while the open level is still being edited.
+**Approve** saves approval and publishes in the background; pressing it again retries publication.
+Saved edits to approved levels publish automatically once their winning route is proven.
+Approved levels retain their purple mark while being edited.
 
 Chickens, turtles and crabs wander over clear floor and block Shovey and pushed
-pieces. Goldfish, koi and minnows stay still on water, with gentle
+pieces. Goldfish, koi and minnows swim between water tiles with still sprites. Water has gentle
 animated ripples. Trees also block movement. Red, green and orange portals join
 cyan, purple and yellow; each color connects to matching portals. Pressure plates
 lower mossy stone walls. A separate iron gate opens and closes when Shovey pushes
-a lever. Stone, moss, slate, brick, sandstone and timber walls share the same
-blocking rules. Sand has visible grains; every paint color shares the same silhouette.
+a matching lever; red, blue and green groups work independently. A wooden door opens when Shovey walks through it, with plain, red, blue and green variants. Floor lanterns block
+Shovey and pushed pieces. Stone, moss, slate, brick, sandstone and timber walls share the same
+blocking rules, with matching floors arranged before walls in the tile palette. Sand has visible grains; every paint color shares the same silhouette.
 Placing abyss clears objects and decoration above it. Adjacent abyss cells share
 one opening with a recessed stone lip at its boundary. Falling spins and shrinks
 Shovey into the opening. Teleporters have a recessed inward spiral.

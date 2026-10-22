@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.16] - 2026-10-22
+
+- Restore neutral grey, textured stone walls with strong recessed bevels.
+- Fish swim between water tiles without sprite animation.
+- Match red, blue and green levers to independent gate groups and choose matching door colours.
+- Add a door that opens when walked through and a floor lantern that blocks movement.
 ## [0.6.15] - 2026-10-22
 
 - Stone walls have cleaner bevels and a recessed center matching the other walls.

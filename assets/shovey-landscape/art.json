@@ -388,6 +388,21 @@
       "sha256": "253047435da5083eb4aeeacc5aadd8b8a49b05070b688c8fc99ebbad6135c3f1"
     },
     {
+      "path": "sprites/gate-open-0.png",
+      "depicts": "landscape presentation of red gate standing open",
+      "sha256": "ce8311e1b77e8bdc90e8659329650a7a471f0822dcf8e8eead4f54a519966851"
+    },
+    {
+      "path": "sprites/gate-open-1.png",
+      "depicts": "landscape presentation of blue gate standing open",
+      "sha256": "c438f0e518d190c1db7e64f445e1414a55e4447444bad35f08310cd2d8637a74"
+    },
+    {
+      "path": "sprites/gate-open-2.png",
+      "depicts": "landscape presentation of green gate standing open",
+      "sha256": "82a0f285aa4acf2fb213c2b9e45caec6b7fc269eea04a78fcd818db1a1faef47"
+    },
+    {
       "path": "sprites/gate-open.png",
       "depicts": "landscape presentation of iron gate with its bars drawn aside",
       "sha256": "7881ddda48a02f92be3324049594035b584021b48a0428f67065baf6a7b0c49c"
@@ -578,14 +593,104 @@
       "sha256": "9d0d7407e3132ac5d1377b7c95a4488f4929ccc357195125e605b044f58803fa"
     },
     {
+      "path": "sprites/tile-104.png",
+      "depicts": "landscape presentation of wooden door: opens when Shovey walks through it",
+      "sha256": "e3c41e6269aabe2c5ae1e9d95de52ba552c68eadf91e1398b3067204f0d30b0e"
+    },
+    {
+      "path": "sprites/tile-105.png",
+      "depicts": "landscape presentation of wooden door standing open, with a clear passage",
+      "sha256": "e82f08f6d88ce591061d9fbbe994273a77128467b00c3557f39bb0a972b3907b"
+    },
+    {
+      "path": "sprites/tile-106.png",
+      "depicts": "landscape presentation of floor lantern: warm glass in a metal frame; blocks movement",
+      "sha256": "50f73e22102ea09bba5dec103eb870a880a38b1a589494b3d2355910ccbaf534"
+    },
+    {
+      "path": "sprites/tile-107.png",
+      "depicts": "landscape presentation of red gate: controlled by matching levers",
+      "sha256": "8109fefda39a7365418e0391d473da0ae00ae073b8530af3608c368fdc306b81"
+    },
+    {
+      "path": "sprites/tile-108.png",
+      "depicts": "landscape presentation of red lever: switched off",
+      "sha256": "eeb4fdd77283ee982274f6c0e5897dff59ff83640fb246bd99fcc24d8edeb20d"
+    },
+    {
+      "path": "sprites/tile-109.png",
+      "depicts": "landscape presentation of red lever: switched on",
+      "sha256": "6d6ad2d578957bc89128e2318bf9897d5c94a045c76eeba4c9cec5deec62880d"
+    },
+    {
       "path": "sprites/tile-11.png",
       "depicts": "landscape presentation of trail field: a ring with a bar, drawn in deep teal",
       "sha256": "7ef8fc9bd2ce4b60b1c474b27b6d8d68277909b2935c6af36e21472187ac17e4"
     },
     {
+      "path": "sprites/tile-110.png",
+      "depicts": "landscape presentation of blue gate: controlled by matching levers",
+      "sha256": "5d89822df9a45b322743b7856c44a93c82a99b0562b813fdcfb5dec1ae04e233"
+    },
+    {
+      "path": "sprites/tile-111.png",
+      "depicts": "landscape presentation of blue lever: switched off",
+      "sha256": "72d99dd28b6b17aee1cad8b20418280642c1196b7b06d47bdecd03292ce50156"
+    },
+    {
+      "path": "sprites/tile-112.png",
+      "depicts": "landscape presentation of blue lever: switched on",
+      "sha256": "5cdb3c4c36cf7f7ce7b1d8a2b431ed7f4c0148acc0498eb445e8ca6de2ff9adb"
+    },
+    {
+      "path": "sprites/tile-113.png",
+      "depicts": "landscape presentation of green gate: controlled by matching levers",
+      "sha256": "d433dcc6ab0d17a8c19d6671d2a2401c08c421cb12e992d4dea9505f6d422705"
+    },
+    {
+      "path": "sprites/tile-114.png",
+      "depicts": "landscape presentation of green lever: switched off",
+      "sha256": "4795399c7acba3f056f4e6705a379de7342f9e4b744f8e708d2c2694d1a5032a"
+    },
+    {
+      "path": "sprites/tile-115.png",
+      "depicts": "landscape presentation of green lever: switched on",
+      "sha256": "d5b9a84b7ad4cb5b5b6b1354adf9545eb39d37da629f62075355a67abf6e6ef0"
+    },
+    {
+      "path": "sprites/tile-116.png",
+      "depicts": "landscape presentation of red wooden door: opens when walked through",
+      "sha256": "4b20151c3c328f663fed0023cee7f0952ae41419919d7e95ce61ae51bfbd3c43"
+    },
+    {
+      "path": "sprites/tile-117.png",
+      "depicts": "landscape presentation of red wooden door standing open",
+      "sha256": "f2a5c5b5978639bd6b8180e9f4344813aa8d377144f724d99410676d13047184"
+    },
+    {
+      "path": "sprites/tile-118.png",
+      "depicts": "landscape presentation of blue wooden door: opens when walked through",
+      "sha256": "fcace467f704d9fbd8826d0139098c212c350e467010d37ae1be47021a5702a6"
+    },
+    {
+      "path": "sprites/tile-119.png",
+      "depicts": "landscape presentation of blue wooden door standing open",
+      "sha256": "aa3c13ae27096ba91918d1110a3adbe40b7d4a35d779cb5ef1ab0d85e34d32fc"
+    },
+    {
       "path": "sprites/tile-12.png",
       "depicts": "landscape presentation of wall: a raised grey stone block",
-      "sha256": "780618a23a8155ba2d7975fc91a9b43653e9fd311eb1a561a4e0ec153e3eeb05"
+      "sha256": "0674c3bc3d5ce25f6b4c52a5f2a07eb83ed0d38928a70214570eb6afc2903a28"
+    },
+    {
+      "path": "sprites/tile-120.png",
+      "depicts": "landscape presentation of green wooden door: opens when walked through",
+      "sha256": "a6769ca6f5227fd8f0937605790b380723203f38b61ec7fa99d576ae03c9cdda"
+    },
+    {
+      "path": "sprites/tile-121.png",
+      "depicts": "landscape presentation of green wooden door standing open",
+      "sha256": "168f58ed6fe12bff7a60c2150b61ef5f41ff9f1848c38a868a0e62ebf5cae52d"
     },
     {
       "path": "sprites/tile-13.png",
@@ -595,7 +700,7 @@
     {
       "path": "sprites/tile-14.png",
       "depicts": "landscape presentation of mossy stone wall: sinks when a pressure plate is held",
-      "sha256": "d50d517afae9faa4c8640f198ab3c688a1dc78cc23369064e1fb0acad886b3d6"
+      "sha256": "500aeda9c1847f7437d6cde0c82e1f03de35c7233579317e27633e68ee92e910"
     },
     {
       "path": "sprites/tile-15.png",
@@ -850,7 +955,7 @@
     {
       "path": "sprites/tile-63.png",
       "depicts": "landscape presentation of mossy wall (decoration, solid)",
-      "sha256": "bff182b2fd57bb6c8cdd81e8fa54a60b9b719c67d0659833957c51d6552afd21"
+      "sha256": "b028d8f707da5d9fcb983be0c1488eccd9e326af97df620ed7cb3f488ee0e131"
     },
     {
       "path": "sprites/tile-64.png",
@@ -920,7 +1025,7 @@
     {
       "path": "sprites/tile-76.png",
       "depicts": "landscape presentation of legacy wall, shown as a plain stone wall",
-      "sha256": "780618a23a8155ba2d7975fc91a9b43653e9fd311eb1a561a4e0ec153e3eeb05"
+      "sha256": "0674c3bc3d5ce25f6b4c52a5f2a07eb83ed0d38928a70214570eb6afc2903a28"
     },
     {
       "path": "sprites/tile-77.png",

@@ -661,3 +661,39 @@ Parede de madeira
 [editor_mossy_wall]
 Parede com musgo
 ---
+[editor_door]
+Porta
+---
+[editor_lantern]
+Lanterna
+---
+[editor_red_door]
+Porta vermelha
+---
+[editor_blue_door]
+Porta azul
+---
+[editor_green_door]
+Porta verde
+---
+[editor_red_gate]
+Portão vermelho
+---
+[editor_red_lever]
+Alavanca vermelha
+---
+[editor_blue_gate]
+Portão azul
+---
+[editor_blue_lever]
+Alavanca azul
+---
+[editor_green_gate]
+Portão verde
+---
+[editor_green_lever]
+Alavanca verde
+---
+[editor_lever]
+Alavanca
+---
