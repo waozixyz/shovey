@@ -151,6 +151,28 @@ class Variations(unittest.TestCase):
                 self.assertEqual(json.loads((drafts / '001.glm-details.json').read_text())['mode'], mode)
                 self.assertIn(phrase, json.loads(request.call_args.args[0].data)['messages'][0]['content'])
 
+    def test_redesigns_easier_than_the_source_are_rejected(self):
+        values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+        values[at(2, 3)], values[at(4, 3)], values[at(5, 3)] = 0, 10, 1
+        values[at(7, 2)], values[at(6, 2)] = 0, 7
+        for x in range(2, 11): values[240 + at(x, 7)] = 12
+        easy = ''.join(f'{kind:02x}' for kind in values)
+        proposal = {name: [[values[layer * 240 + at(x, y)] for x in range(20)] for y in range(12)]
+                    for layer, name in enumerate(actions.LAYERS)}
+        proposal.update(solution=actions.prove_proposal(1, easy), explanation='One push and home.')
+        response = dict(choices=[dict(message=dict(content=json.dumps(proposal)))])
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.glm-base').write_text(board())
+            with patch.object(actions, 'DRAFTS', drafts), patch.object(actions, 'existing_route', return_value='333332'), \
+                    patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                    patch.object(actions.urllib.request, 'urlopen',
+                                 side_effect=lambda *_, **__: io.BytesIO(json.dumps(response).encode())) as request:
+                with self.assertRaisesRegex(ValueError, 'as hard as the original'):
+                    actions.modify(1, mode='redesign')
+            self.assertFalse((drafts / '001.glm-result').exists())
+            self.assertIn('difficulty_target', json.loads(request.call_args.args[0].data)['messages'][1]['content'])
+
     def test_every_door_and_search_can_open_then_push_a_crate_through(self):
         for door in (104, 105, *range(116, 122)):
             cells, tiles = [0] * 240, [12] * 240

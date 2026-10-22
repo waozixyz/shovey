@@ -310,6 +310,51 @@ def prove_proposal(number, candidate, proposed_route='', source_route='', second
     return route
 
 
+DIFFICULTY = ('found by a quick plain search', 'found by the goal-chain search', 'not found by a 10-second search')
+
+
+def difficulty(number, board, known_route=''):
+    """How hard the solver finds a board: tier 0 when a quick plain search wins,
+    1 when the goal-chain search does, 2 beyond a short search; with the length
+    of the win. None when no win is known at all."""
+    path = DRAFTS / 'difficulty.json'
+    try:
+        cache = json.loads(path.read_text())
+    except (OSError, ValueError):
+        cache = {}
+    key = hashlib.sha256(board.encode()).hexdigest()
+    if key in cache:
+        return cache[key]
+
+    def search(*options):
+        result = subprocess.run([str(SOLVER), 'solve', '--level', str(number), *options, board],
+                                cwd=ROOT, capture_output=True, text=True, timeout=40)
+        route = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ''
+        return route if result.returncode == 0 and verify_route(number, board, route) else ''
+    route, tier = search('--only', 'bfs', '--seconds', '3', '--max-states', '300000', '--max-mb', '256'), 0
+    if not route:
+        route, tier = search('--seconds', '10', '--max-states', '3000000', '--max-mb', '512'), 1
+    if not route:
+        if not verify_route(number, board, known_route):
+            return None
+        route, tier = known_route, 2
+    measured = dict(tier=tier, moves=len(route))
+    cache[key] = measured
+    atomic(path, json.dumps(dict(list(cache.items())[-200:])) + '\n')
+    return measured
+
+
+def too_easy(target, measured):
+    """Why a proposal is easier than its source level, or an empty string."""
+    if measured['tier'] > target['tier'] or (measured['tier'] == target['tier'] and
+                                             (target['tier'] == 2 or measured['moves'] >= 0.7 * target['moves'])):
+        return ''
+    return (f"Too easy: the solver's win was {DIFFICULTY[measured['tier']]} in {measured['moves']} moves, but the "
+            f"original's was {DIFFICULTY[target['tier']]} in {target['moves']} moves. Make it at least as hard: several "
+            'objectives whose pushes depend on each other, pieces that must be moved aside in the right order, tight rooms '
+            'where a careless push deadlocks, and lever, gate or button sequences. Long empty walks are not difficulty.')
+
+
 def proven_variations(number, original, route, limit=8):
     """Keep inventory and nearby geometry, proving every candidate's route."""
     if not route:
@@ -396,7 +441,7 @@ def proven_variations(number, original, route, limit=8):
     return combined[:limit]
 
 
-def modify_once(number, feedback='', choices=None, repair=False, mode='modify'):
+def modify_once(number, feedback='', choices=None, repair=False, mode='modify', target=None):
     status = DRAFTS / f'{number:03}.glm-status'
     atomic(status, 'Repairing…' if repair else 'Prettifying…' if mode == 'prettify' else 'Designing…')
     original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
@@ -476,6 +521,9 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify'):
         'Player must remove ALL balls, collect every apple, cover all crate goals, then enter home. '
         'Crates with no goals can stay on the board. Objects cannot be pushed into portals, home, water or walls. '
         'Do not add animals or autonomous objects. Preserve the outer border exactly. No scripts, tools, commands, prose outside the JSON.')
+    if target:
+        instruction += ('difficulty_target is how hard the engine\'s solver finds the source level. Your level must be at least as '
+                        'hard: the same or a harder tier and at least 70% of its moves. Never make it easier; easier proposals are rejected. ')
     if mode == 'redesign':
         instruction += ('Instead of edits, return full cells, tiles and decorations grids, each 12 rows of 20 integer IDs in landscape order, '
                         'plus solution and explanation. Preserve the outer border from the input exactly.')
@@ -489,6 +537,7 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify'):
     messages = [dict(role='system', content=instruction), dict(role='user', content=json.dumps(dict(
         level=number, cells=rows[:12], tiles=rows[12:24], decorations=rows[24:],
         existing_solution=source_route or None,
+        difficulty_target=dict(tier=target['tier'], meaning=DIFFICULTY[target['tier']], moves=target['moves']) if target else None,
         verified_variations=[dict(choice=index, edits=choice['edits']) for index, choice in enumerate(choices)])))]
     if feedback:
         messages.append(dict(role='user', content='The previous proposal failed validation. Correct it relative to the ORIGINAL grids: ' + feedback))
@@ -520,6 +569,12 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify'):
             route = source_route
         else:
             route = prove_proposal(number, candidate, proposal.get('solution', ''), source_route if mode != 'redesign' else '')
+            if target:
+                atomic(status, 'Checking difficulty…')
+                measured = difficulty(number, candidate, route)
+                reason = too_easy(target, measured) if measured else 'The engine could not measure this proposal'
+                if reason:
+                    raise ValueError(reason)
     except (ValueError, subprocess.TimeoutExpired) as error:
         rejected = ValueError(str(error) if isinstance(error, ValueError) else 'The route check ran out of time; simplify the variation')
         rejected.proposal = proposal
@@ -541,6 +596,12 @@ def modify(number, repair=False, mode='modify'):
     atomic(DRAFTS / f'{number:03}.glm-state', 'working')
     glm_settings()  # Configuration errors cannot be corrected by another proposal.
     feedback = ''
+    target = None
+    if not repair and mode in ('modify', 'redesign'):
+        source = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
+        if re.fullmatch('[0-9a-f]{1440}', source):
+            atomic(DRAFTS / f'{number:03}.glm-status', 'Measuring difficulty…')
+            target = difficulty(number, source, existing_route(number, source))
     started = time.monotonic()
     for attempt in range(3):
         try:
@@ -549,13 +610,15 @@ def modify(number, repair=False, mode='modify'):
                 original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
                 atomic(DRAFTS / f'{number:03}.glm-status', 'Finding proven alternatives…')
                 choices = proven_variations(number, original, existing_route(number, original))
-            modify_once(number, feedback, choices, repair=repair, mode=mode)
+            modify_once(number, feedback, choices, repair=repair, mode=mode, target=target)
             return
         except ValueError as error:
             feedback = json.dumps(dict(reason=str(error), rejected_proposal=getattr(error, 'proposal', None)))
             atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(
                 attempt=attempt + 1, seconds=round(time.monotonic() - started, 1),
                 reason=str(error), rejected_proposal=getattr(error, 'proposal', None)), indent=2) + '\n')
+    if feedback and json.loads(feedback)['reason'].startswith('Too easy'):
+        raise ValueError('No variation as hard as the original was found. Try GLM again.')
     raise ValueError('No winnable repair found. Try Fix it again.' if repair else 'No solvable variation found. Try GLM again.')
 
 
