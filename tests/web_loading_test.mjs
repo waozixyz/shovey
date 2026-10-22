@@ -129,6 +129,11 @@ try {
     initial = await canvasSignature();
   }
   assert.notEqual(initial.sum, generic.sum, 'Embedded Shovey app never left the generic loading screen');
+  // Classic now opens on its title artwork. Enter Play before checking the game bar.
+  await call('Input.dispatchMouseEvent', {type: 'mousePressed', x: 195, y: 680, button: 'left', buttons: 1, clickCount: 1});
+  await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x: 195, y: 680, button: 'left', buttons: 0, clickCount: 1});
+  assert.notEqual((await settle('Module.FS.analyzePath("/kryon-apps/shovey/campaign").exists', value => value)), false, 'Play did not open the campaign');
+  await delay(500);
   const beforeMuteShot = (await call('Page.captureScreenshot', {format: 'png'})).data;
 
   await evaluate(`(() => {
