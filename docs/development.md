@@ -29,21 +29,6 @@ When the solver cannot finish a board, play it and keep your winning route:
 LIST names the boards, one `classic 12` or `island 40` per line; each win is
 replayed from the start and saved under ROUTES.
 
-Classic boards can be dressed with scenery that keeps their stored routes:
-
-    make scenery-pictures SCENERY_LEVELS='3 4'
-    make scenery-tool
-    build/levels/scenery 3 4
-
-The pictures in `build/scenery/` show each board before and after, and the
-cells its route uses. The tool replays each route and records every cell
-Shovey, a moving piece, a shot or an animal touches. Mossy walls, sand shores,
-mossy paving, flowers, tufts and pebbles never change the rules, so they may
-cover the route too. Trees, lanterns and boulders take only corners off the
-route, away from land animals, where every open area stays joined. Each level
-is written only when its route still wins on the dressed board. Dress a level
-once; a second run adds more.
-
 ## Level editors
 
 **Shovey Editor** opens from the game chooser alongside Shovey Classic.
