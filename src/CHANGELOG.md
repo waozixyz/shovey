@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.39] - 2026-10-22
+
+- The integrated editor follows screen orientation while painting and testing Classic and Island levels.
+- Keep controls aligned with the board when rotating.
+
 ## [0.6.36] - 2026-10-22
 
 - Play the approved Classic campaign through level 27.

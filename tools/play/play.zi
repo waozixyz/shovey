@@ -37,6 +37,7 @@
 #import "tree_input"
 #import "tile_map"
 #import, file "../../src/engine.zi";
+#import, file "../../src/orientation.zi";
 #import, file "../../src/shovey_board.zi";
 #import, file "../../src/island/island_engine.zi";
 #import, file "../../src/island/island_board.zi";
@@ -356,8 +357,9 @@ Screen :: (viewport: Rectangle, key: s32) {
         "Arrows or WASD move    Space throws    Z undoes    R restarts    N / P next or previous level", 14)
     area := Rectangle.{8.0, 84.0, width - 16.0, viewport.height - 84.0 - 40.0}
     names: [1]string
-    if Edition() == 0 { unused ShoveyBoard(session, *classic, area, cast(u64)100000, cast(float64)now / 1000.0, names[0:0]) }
-    else { IslandCounters(IslandBoard(session, *island, area, cast(u64)100000, names[0:0]).board) }
+    landscape := BoardLandscape(area.width, area.height)
+    if Edition() == 0 { unused ShoveyBoard(session, *classic, area, cast(u64)100000, cast(float64)now / 1000.0, names[0:0], landscape) }
+    else { IslandCounters(IslandBoard(session, *island, area, cast(u64)100000, names[0:0], landscape).board) }
 }
 
 Draw :: () -> bool {

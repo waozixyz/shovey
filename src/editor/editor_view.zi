@@ -348,7 +348,7 @@ EditorPieceImage :: (key: u64, island: bool, kind: s32, bounds: Rectangle, label
 }
 
 // Draws a board in bounds and returns where its grid landed.
-EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64) -> TileMapResult {
+EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64, landscape: bool) -> TileMapResult {
     if board.island {
         view := IslandGame.{.player = -1, .direction = 3, .spike = -1, .spike_switch = -1, .water_switch = -1}
         for at: cast(s32)0..EDIT_CELLS - 1 {
@@ -357,7 +357,7 @@ EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64) -> TileMapResult
             if object == ISLAND_SHOVEY { view.player = at } else { view.objects[at] = object }
         }
         editor_view_isle = view
-        return IslandBoard(editor_frame.session, *editor_view_isle, bounds, key, editor_island_names[:], true)
+        return IslandBoard(editor_frame.session, *editor_view_isle, bounds, key, editor_island_names[:], landscape)
     }
     view := ShoveyGame.{.player = -1, .direction = 3}
     for at: cast(s32)0..EDIT_CELLS - 1 {
@@ -370,7 +370,7 @@ EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64) -> TileMapResult
         else { view.ground[at] = kind }
     }
     editor_view_classic = view
-    return ShoveyBoard(editor_frame.session, *editor_view_classic, bounds, key, editor_frame.now, editor_classic_names[:], true)
+    return ShoveyBoard(editor_frame.session, *editor_view_classic, bounds, key, editor_frame.now, editor_classic_names[:], landscape)
 }
 
 // ---------------------------------------------------------------------------
@@ -798,7 +798,8 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
     area := Rectangle.{8.0, top + 78.0, width - 16.0, bottom - top - 86.0}
     board_area: Rectangle
     palette: Rectangle
-    if BoardLandscape(area.width, area.height) {
+    landscape := BoardLandscape(width, cast(float32)editor_frame.height)
+    if landscape {
         board_height := area.width * 3.0 / 5.0
         if board_height > area.height * 0.68 { board_height = area.height * 0.68 }
         board_area = Rectangle.{area.x, area.y, area.width, board_height}
@@ -809,8 +810,7 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
         board_area = Rectangle.{area.x, area.y, area.width, board_height}
         palette = Rectangle.{area.x, area.y + board_height + 8.0, area.width, area.height - board_height - 8.0}
     }
-    grid := EditorBoard(*editor_level.board, board_area, cast(u64)200000)
-    landscape := true
+    grid := EditorBoard(*editor_level.board, board_area, cast(u64)200000, landscape)
     // Tap or drag to paint, one stroke while the press lasts.
     press := Press(editor_frame.session, PressProps.{.key = cast(u64)305, .id = 305, .bounds = grid.board,
             .label = EditorText("editor_board"), .now = editor_frame.now, .capture = true, .hold_seconds = 3600.0})
@@ -996,7 +996,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     if editor_island { EditorInventory(Rectangle.{16.0, status_y + 24.0, width - 32.0, 24.0}) }
     below: float32 = ifx editor_island then 52.0 else 28.0
     area := Rectangle.{8.0, status_y + below, width - 16.0, bottom - status_y - below - 8.0}
-    landscape := true
+    landscape := BoardLandscape(width, cast(float32)editor_frame.height)
     keyed: s32 = -1
     key := editor_key
     if key == 263 || key == 65 { keyed = 0 }
@@ -1011,9 +1011,9 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     }
     grid: TileMapResult
     if editor_island {
-        grid = IslandBoard(editor_frame.session, *editor_play.isle, area, cast(u64)200000, editor_island_names[:], true)
+        grid = IslandBoard(editor_frame.session, *editor_play.isle, area, cast(u64)200000, editor_island_names[:], landscape)
     } else {
-        grid = ShoveyBoard(editor_frame.session, *editor_play.classic, area, cast(u64)200000, editor_frame.now, editor_classic_names[:], true)
+        grid = ShoveyBoard(editor_frame.session, *editor_play.classic, area, cast(u64)200000, editor_frame.now, editor_classic_names[:], landscape)
     }
     disabled := won || lost
     // Swipe on the board to step, or tap a cell to step towards it; hold

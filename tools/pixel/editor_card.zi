@@ -93,14 +93,14 @@ Draw :: () -> bool {
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { return false }
     unused Box(session, BoxProps.{.key = 1, .bounds = Rectangle.{0.0, 0.0, cast(float32)CARD_WIDTH, cast(float32)CARD_HEIGHT},
             .fill = Color.{236, 241, 238, 255}})
-    grid := ShoveyBoard(session, *classic, Rectangle.{10.0, 10.0, 320.0, 192.0}, cast(u64)1000, 0.0, names[:])
+    grid := ShoveyBoard(session, *classic, Rectangle.{10.0, 10.0, 320.0, 192.0}, cast(u64)1000, 0.0, names[:], true)
     // The cell being painted, under the pointer.
     cell := TileMapCell(grid, 109)
     unused Box(session, BoxProps.{.key = 3000, .bounds = Rectangle.{cell.x - 1.0, cell.y - 1.0, cell.width + 2.0, cell.height + 2.0},
             .fill = Color.{255, 196, 110, 140}, .radius = 2.0})
     classic_pieces: [7]string = .[SpriteFile(9), SpriteFile(18), SpriteFile(1), SpriteFile(4), SpriteFile(12), SpriteFile(33), SpriteFile(21)]
     Palette(4000, 13.0, 222.0, 7, classic_pieces[:], SpriteFile(0), 0)
-    unused IslandBoard(session, *island, Rectangle.{340.0, 10.0, 130.0, 78.0}, cast(u64)6000, island_names[:])
+    unused IslandBoard(session, *island, Rectangle.{340.0, 10.0, 130.0, 78.0}, cast(u64)6000, island_names[:], true)
     island_pieces: [6]string = .[IslandPictureFile(1), IslandPictureFile(13), IslandPictureFile(61), IslandPictureFile(26),
     IslandPictureFile(51), IslandPictureFile(75)]
     Palette(8000, 351.0, 104.0, 3, island_pieces[:], IslandPictureFile(1), 1)

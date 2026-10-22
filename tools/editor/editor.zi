@@ -2101,7 +2101,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         }
         play_bounds := Rectangle.{edit_area.x + (edit_area.width - play_width) / 2.0,
                 edit_area.y + (edit_area.height - play_height) / 2.0, play_width, play_height}
-        unused ShoveyBoard(session, *play, play_bounds, cast(u64)200000, cast(float64)now / 1000.0, names[0:0])
+        unused ShoveyBoard(session, *play, play_bounds, cast(u64)200000, cast(float64)now / 1000.0, names[0:0], boards_landscape)
     } else {
         grid := HexBoard(Board(current), OurTiles(), layers_edit[:], cast(u64)200000, edit_area, boards_landscape, "New level")
         if diff_open { HighlightDifferences(grid, cast(u64)801000) }

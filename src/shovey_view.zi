@@ -428,7 +428,7 @@ ShoveyFrame :: () {
         last_tick = frame.now
     }
     SpriteNames()
-    grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:])
+    grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:], landscape)
     // No move or piece counters: the line speaks only when there is news.
     status := ""
     status_icon := ""
