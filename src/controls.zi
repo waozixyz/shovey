@@ -1,6 +1,12 @@
 #if #defined(SHOVEY_WEB) {
     WebApp :: #import "kryon/app_context";
+    web_editor_open: bool;
+    #program_export
     AppServiceHost :: (name: string, request: string) -> string {
+        if name == "arcade.navigation" {
+            if request == "editor" { web_editor_open = true; return "opened" }
+            if request == "back" { web_editor_open = false; return "opened" }
+        }
         if name == "arcade.controls" {
             if request == "get" { return WebApp.DocumentRead("controls") }
             if request == "set-auto" || request == "set-on" || request == "set-off" {
@@ -94,8 +100,10 @@ LibraryAvailable :: () -> bool {
 
 #if #defined(SHOVEY_WEB) {
     GameSelectionAvailable :: () -> bool { return false }
+    EditorAvailable :: () -> bool { return true }
 } else {
     GameSelectionAvailable :: () -> bool { return AppSupportsHost("arcade.navigation") }
+    EditorAvailable :: () -> bool { return AppSupportsHost("arcade.navigation") }
 }
 
 // Only a standalone native host offers this route. Embedded games keep the
