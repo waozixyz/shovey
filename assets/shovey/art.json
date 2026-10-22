@@ -438,6 +438,11 @@
       "sha256": "50f73e22102ea09bba5dec103eb870a880a38b1a589494b3d2355910ccbaf534"
     },
     {
+      "path": "sprites/tile-122.png",
+      "depicts": "boulder: a solid faceted stone that blocks movement",
+      "sha256": "b0a2b8b7222c4672c93dd1d1db5dc97d4ea3981336a80336288871c901726680"
+    },
+    {
       "path": "sprites/shadow.png",
       "depicts": "mirror Shovey (pink)",
       "sha256": "695ae45c5a5b87f9056a7817d03d5a292883b77fb5999dc2cea307b6a4200445"

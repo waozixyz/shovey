@@ -1,5 +1,15 @@
 # Shovey Editor changelog
 
+## [0.2.16] - 2026-10-22
+
+- Replace the pebble brush with a solid boulder.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.15] - 2026-10-22
+
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.14] - 2026-10-22
+
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.13] - 2026-10-22
 
 - Arrange floor materials before walls.

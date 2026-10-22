@@ -73,6 +73,12 @@ class Variations(unittest.TestCase):
         self.assertEqual(candidate[at(3, 3) * 2:at(3, 3) * 2 + 2], '01')
         self.assertTrue(actions.verify_route(1, candidate, '333332'))
 
+    def test_saved_win_remains_valid_with_later_recorded_input(self):
+        candidate = actions.apply_proposal(board(), variation())
+        self.assertTrue(actions.verify_route(1, candidate, '333332tt01'))
+        self.assertFalse(actions.verify_route(1, candidate, '333332x'))
+        self.assertFalse(actions.verify_route(1, candidate, '2'))
+
     def test_variation_choices_are_changes_of_the_source_and_engine_proven(self):
         choices = actions.proven_variations(1, board(), '333332')
         self.assertTrue(choices)

@@ -693,6 +693,11 @@
       "sha256": "168f58ed6fe12bff7a60c2150b61ef5f41ff9f1848c38a868a0e62ebf5cae52d"
     },
     {
+      "path": "sprites/tile-122.png",
+      "depicts": "landscape presentation of boulder: a solid faceted stone that blocks movement",
+      "sha256": "b0a2b8b7222c4672c93dd1d1db5dc97d4ea3981336a80336288871c901726680"
+    },
+    {
       "path": "sprites/tile-13.png",
       "depicts": "landscape presentation of pressure plate: a round green button recessed into the paving",
       "sha256": "bf2e4593616c0733f3a7778349108745a1411188d76cc4d787d8c1a177453c4b"

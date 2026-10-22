@@ -415,6 +415,20 @@ def pressure_plate():
     return image
 
 
+def boulder():
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((4, 25, 29, 30), fill=(38, 40, 34, 90))
+    draw.polygon(((3, 15), (7, 7), (16, 3), (25, 7), (29, 17), (26, 26), (17, 29), (6, 26)), fill=(82, 84, 76, 255))
+    draw.polygon(((5, 15), (9, 8), (16, 5), (24, 9), (22, 15), (12, 18)), fill=(177, 178, 166, 255))
+    draw.polygon(((5, 16), (12, 18), (16, 27), (7, 24)), fill=(141, 143, 131, 255))
+    draw.polygon(((13, 19), (22, 16), (27, 18), (24, 25), (17, 27)), fill=(111, 115, 103, 255))
+    draw.polygon(((24, 10), (27, 16), (23, 14)), fill=(146, 149, 136, 255))
+    draw.line((9, 9, 16, 6, 22, 9), fill=(206, 205, 191, 255))
+    draw.line((13, 18, 17, 13, 21, 13), fill=(126, 130, 116, 255))
+    return grain(image, 122, dark=0.94, light=1.04, share=0.22)
+
+
 def lantern():
     image = Image.new('RGBA', (SIZE, SIZE))
     draw = ImageDraw.Draw(image)
@@ -926,6 +940,7 @@ def sprites():
         'tile-104': ('wooden door: opens when Shovey walks through it', door()),
         'tile-105': ('wooden door standing open, with a clear passage', door(True)),
         'tile-106': ('floor lantern: warm glass in a metal frame; blocks movement', lantern()),
+        'tile-122': ('boulder: a solid faceted stone that blocks movement', boulder()),
         'shadow': ('mirror Shovey (pink)', mirror),
         'door-open': ('mossy wall lowered, leaving a moss-covered stone rim', mossy_floor()),
         'projectile': ('a flying iron shot', native('projectile')),

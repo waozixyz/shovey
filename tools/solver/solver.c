@@ -756,6 +756,12 @@ static int Solve(const char *hex, const Options *options) {
 
 static int Verify(const char *hex, const char *route, int level) {
     if (!Load(hex, level)) return 2;
+    for (size_t step = 0; route[step]; step++) {
+        if (!strchr(LETTERS, route[step])) {
+            fprintf(stderr, "step %zu: '%c' is not a %s action\n", step + 1, route[step], EDITION);
+            return 1;
+        }
+    }
     uint8_t *debug_vector = Resize(NULL, (size_t)state_size);
     int debug_remaining = API(Remaining)();
     for (size_t step = 0; route[step]; step++) {
@@ -765,8 +771,7 @@ static int Verify(const char *hex, const char *route, int level) {
             return 1;
         }
         if (API(Won)()) {
-            fprintf(stderr, "step %zu: the level was already won\n", step + 1);
-            return 1;
+            break; /* Gameplay and the editor ignore input after a win. */
         }
         API(Act)((int32_t)(letter - LETTERS));
         if (API(Lost)()) {

@@ -93,7 +93,7 @@ The developer editor runs directly from the repository:
     build/private-editor/shovey-level-editor
 
 Its source is `tools/editor/editor.zi`. **Tiles** paints the floor; **Objects**
-holds pieces, animals, flowers, tufts, pebbles and trees. Tiles remain underneath
+holds pieces, animals, flowers, tufts, boulders and trees. Tiles remain underneath
 objects. Right-click in Objects clears pieces and decoration together, while
 Undo restores the whole stroke. The active tab and brush are highlighted, and
 the palette scrolls with large icons. Existing boards and drafts remain readable.
@@ -115,7 +115,7 @@ pieces. Goldfish, koi and minnows swim between water tiles with still sprites. W
 animated ripples. Trees also block movement. Red, green and orange portals join
 cyan, purple and yellow; each color connects to matching portals. Pressure plates
 lower mossy stone walls. A separate iron gate opens and closes when Shovey pushes
-a matching lever; red, blue and green groups work independently. A wooden door opens when Shovey walks through it, with plain, red, blue and green variants. Floor lanterns block
+a matching lever; red, blue and green groups work independently. A wooden door opens when Shovey walks through it, with plain, red, blue and green variants. Floor lanterns and boulders block
 Shovey and pushed pieces. Stone, moss, slate, brick, sandstone and timber walls share the same
 blocking rules, with matching floors arranged before walls in the tile palette. Sand has visible grains; every paint color shares the same silhouette.
 Placing abyss clears objects and decoration above it. Adjacent abyss cells share

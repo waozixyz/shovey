@@ -43,7 +43,8 @@ SPRITE_DOOR :: 207
 SPRITE_LANTERN :: 209
 SPRITE_COLORED_GATE :: 210
 SPRITE_COLORED_DOOR :: 222
-SPRITE_COUNT :: 228
+SPRITE_BOULDER :: 228
+SPRITE_COUNT :: 229
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -192,6 +193,7 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_DOOR, "tile-104")
     SpritePath(SPRITE_DOOR + 1, "tile-105")
     SpritePath(SPRITE_LANTERN, "tile-106")
+    SpritePath(SPRITE_BOULDER, "tile-122")
     for color: cast(s32)0..2 {
         for part: cast(s32)0..2 {
             name: Vec(u8)
@@ -295,6 +297,7 @@ FloorSprite :: (kind: s32) -> s32 {
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
 // active sensors turn, one frame every 100 milliseconds.
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
+    if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     color := ShoveyGateColor(kind)
     if color > 0 { return SPRITE_COLORED_GATE + (color - 1) * 4 + (ifx position >= 0 && ShoveyGateOpen(game, position) then 1 else 0) }
     lever_color := ShoveyLeverColor(kind)

@@ -81,7 +81,7 @@ ShoveyColorRest :: (kind: s32) -> bool {
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
 ShoveyMaterialFloor :: (kind: s32) -> bool { return kind >= 99 && kind <= 103 }
 ShoveyDecorFloor :: (kind: s32) -> bool { return (kind >= 57 && kind <= 61) || ShoveyMaterialFloor(kind) }
-ShoveyBlockingDecoration :: (kind: s32) -> bool { return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN }
+ShoveyBlockingDecoration :: (kind: s32) -> bool { return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN || kind == SHOVEY_BOULDER }
 ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98) }
 SHOVEY_CRACKED_WALL :: 62
 SHOVEY_PIT :: 65
@@ -100,7 +100,8 @@ SHOVEY_LEVER_ON :: 94
 SHOVEY_DOOR :: 104
 SHOVEY_DOOR_OPEN :: 105
 SHOVEY_LANTERN :: 106
-SHOVEY_LAST_KIND :: 121
+SHOVEY_BOULDER :: 122
+SHOVEY_LAST_KIND :: 122
 ShoveyGateColor :: (kind: s32) -> s32 {
     if kind == SHOVEY_GATE { return 0 }
     if kind >= 107 && kind <= 113 && (kind - 107) % 3 == 0 { return 1 + (kind - 107) / 3 }
