@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ROOT = Path(__file__).resolve().parents[1]
 DRAFTS = ROOT / 'backup/editor-drafts'
@@ -84,13 +85,13 @@ def approve(number):
                      start_new_session=True)
 
 
-def update():
+def update(force=True):
     # Updating an approved campaign never depends on the open draft's proof.
     if not (ROOT / 'backup/editor-publish.json').is_file():
         atomic(DRAFTS / 'publish-status', 'Approved')
         return
     atomic(DRAFTS / 'publish-status', 'Updating…')
-    subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py'), '--force'], cwd=ROOT,
+    subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py')] + (['--force'] if force else []), cwd=ROOT,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True)
 
@@ -109,43 +110,81 @@ def published_campaign():
 def update_all():
     if not (ROOT / 'backup/editor-publish.json').is_file():
         return
+    with (DRAFTS / 'update-all.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        update_all_levels()
+
+
+def update_all_levels():
+    atomic(DRAFTS / 'publish-status', 'Checking…')
     published = published_campaign()
     saved = json.loads((ROOT / 'levels/classic.json').read_text())['levels']
     path = ROOT / 'levels/approved.json'
     before = {level['number']: level for level in json.loads(path.read_text())['levels']}
-    changes = {}
-    kept_drafts = []
+    inputs, changes, unproven = {}, {}, {}
     for level in saved:
         number = level['number']
-        if not 1 <= number <= len(published):
+        if not 1 <= number <= len(published) or number not in before:
             continue
-        board, route = board_hex(level), level.get('solution', '')
         draft = DRAFTS / f'{number:03}.hex'
-        candidate = draft.read_text().strip() if draft.exists() else board
-        if candidate != board:
-            proof = DRAFTS / f'{number:03}.proof'
-            lines = proof.read_text().splitlines() if proof.exists() else []
-            if len(lines) == 2 and lines[0] == candidate and verify_route(number, candidate, lines[1]):
-                board, route = candidate, lines[1]
-            else:
-                kept_drafts.append(number)
-        if board != published[number - 1] and verify_route(number, board, route):
-            changes[number] = record(number, board, route)
-    updated = []
+        candidate = draft.read_text().strip() if draft.exists() else board_hex(level)
+        if candidate == published[number - 1]:
+            continue
+        proof = DRAFTS / f'{number:03}.proof'
+        lines = proof.read_text().splitlines() if proof.exists() else []
+        marker = DRAFTS / f'{number:03}.approved'
+        inputs[number] = dict(board=candidate,
+            marker=marker.read_text().strip() if marker.exists() else None,
+            routes=[lines[1] if len(lines) == 2 else '', level.get('solution', ''), before[number].get('solution', '')])
+
+    def check(number, source):
+        board = source['board']
+        if not re.fullmatch('[0-9a-f]{1440}', board):
+            raise ValueError('Incomplete draft')
+        for route in dict.fromkeys(source['routes']):
+            if verify_route(number, board, route):
+                return record(number, board, route)
+        return record(number, board, prove_proposal(number, board, seconds=120))
+
+    atomic(DRAFTS / 'publish-status', f'Checking levels 0/{len(inputs)}…')
+    with ThreadPoolExecutor(max_workers=3) as workers:
+        pending = {workers.submit(check, number, source): number for number, source in inputs.items()}
+        for done, future in enumerate(as_completed(pending), 1):
+            number = pending[future]
+            try:
+                changes[number] = future.result()
+            except (ValueError, subprocess.TimeoutExpired):
+                unproven[str(number)] = hashlib.sha256(inputs[number]['board'].encode()).hexdigest()
+            atomic(DRAFTS / 'publish-status', f'Checking levels {done}/{len(inputs)}…')
+
+    updated, changed = [], []
     with (DRAFTS / 'approval.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         data = json.loads(path.read_text())
         approved = {level['number']: level for level in data['levels']}
+        current_saved = {level['number']: level for level in json.loads((ROOT / 'levels/classic.json').read_text())['levels']}
         for number, level in changes.items():
-            if number in approved and approved[number] == before.get(number):
-                approved[number] = level
-                atomic(DRAFTS / f'{number:03}.approved', board_hex(level))
-                updated.append(number)
+            source = inputs[number]
+            draft, marker = DRAFTS / f'{number:03}.hex', DRAFTS / f'{number:03}.approved'
+            latest = draft.read_text().strip() if draft.exists() else board_hex(current_saved[number])
+            latest_marker = marker.read_text().strip() if marker.exists() else None
+            if latest != source['board'] or (approved.get(number) != before[number] and approved.get(number) != level) or latest_marker not in (source['marker'], source['board']):
+                changed.append(number)
+                unproven[str(number)] = hashlib.sha256(latest.encode()).hexdigest()
+                continue
+            approved[number] = level
+            atomic(marker, source['board'])
+            atomic(DRAFTS / f'{number:03}.proof', source['board'] + '\n' + level['solution'])
+            updated.append(number)
         data['levels'] = [approved[number] for number in sorted(approved)]
         atomic(path, json.dumps(data, indent=1) + '\n')
     atomic(DRAFTS / 'update-all-summary.json', json.dumps(dict(
-        updated=sorted(updated), kept_unproven_drafts=kept_drafts), indent=2) + '\n')
-    update()
+        updated=sorted(updated), checked=sorted(inputs), kept_unproven_drafts=sorted(map(int, unproven)),
+        unproven_boards=unproven, changed_during_check=sorted(changed)), indent=2) + '\n')
+    update(force=False)
 
 
 def glm_settings():
@@ -253,14 +292,14 @@ def apply_proposal(original, proposal, repair=False):
     return ''.join(f'{kind:02x}' for kind in updated)
 
 
-def prove_proposal(number, candidate, proposed_route='', source_route=''):
+def prove_proposal(number, candidate, proposed_route='', source_route='', seconds=30):
     # A model's claim is never proof: replay the route in the shipped engine.
     for route in (proposed_route, source_route):
         if verify_route(number, candidate, route):
             return route
     solved = subprocess.run([str(SOLVER), 'solve', '--level', str(number),
-                             '--seconds', '30', '--max-states', '5000000', '--max-mb', '768', candidate],
-                            cwd=ROOT, capture_output=True, text=True, timeout=40)
+                             '--seconds', str(seconds), '--max-states', '5000000', '--max-mb', '768', candidate],
+                            cwd=ROOT, capture_output=True, text=True, timeout=seconds + 10)
     route = solved.stdout.strip().splitlines()[0] if solved.stdout.strip() else ''
     if solved.returncode or not verify_route(number, candidate, route):
         raise ValueError('No winning route was proven. Keep the original puzzle structure and fix the pushes; do not remove goals or pieces')

@@ -77,8 +77,11 @@ below 50% and shifts smoothly toward red above 90%, including waiting levels.
 Changed published boards show Update. Saved wins are reused; unproven edits
 start a check before publishing. Diff shows the server board above your draft,
 counts changed cells and highlights their objects, floor or decoration changes.
-Update all publishes saved, proven changes to the existing public campaign in
-one background operation. Unproven drafts and unpublished levels stay intact.
+Update all checks the latest drafts of every published level in the background,
+reuses winning routes when they still work, and searches for new routes when
+needed. It publishes the proven drafts together. Drafts that change during a
+check or have no proven solution stay intact; the result reports any left
+unpublished. Unpublished levels stay out of this operation.
 The solution status remains visible beside the controls while actions run.
 
 **Fix it** asks the configured GLM provider to repair an unwinnable board with

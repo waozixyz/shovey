@@ -669,7 +669,7 @@ NeedsUpdate :: (place: s32) -> bool {
 
 PublicationBusy :: () -> bool {
     status := TextView(publish_message[:publish_message_length])
-    return status == "Updating…" || status == "Checking…" || status == "Publishing…" || status == "Verifying…"
+    return status == "Updating…" || status == "Checking…" || status == "Publishing…" || status == "Verifying…" || Contains(status, "Checking levels ")
 }
 
 UpdateAvailable :: () -> bool {
@@ -743,7 +743,7 @@ ApprovalAvailable :: () -> bool {
     if !Approved(current) { return saved_approval_ready }
     if PublishedApprovalMatches(current) { return false }
     status := TextView(publish_message[:publish_message_length])
-    return status != "Updating…" && status != "Checking…" && status != "Publishing…" && status != "Verifying…"
+    return !PublicationBusy()
 }
 
 LoadApprovals :: () {
@@ -941,7 +941,7 @@ PollActions :: (now: s64) {
     } else {
         status, found := ReadEntireFile("backup/editor-drafts/publish-status")
         if found && status != TextView(publish_message[:publish_message_length]) {
-            if status == "Published" {
+            if status == "Published" || Contains(status, "Published · ") {
                 server_check_started = 0
                 CheckServer(now)
             }

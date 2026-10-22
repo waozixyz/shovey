@@ -42,6 +42,18 @@ def publication_status():
     pending = campaign.get('pending', {})
     if pending:
         return f'Level {min(map(int, pending))} queued. Approve {len(campaign["levels"]) + 1}.'
+    summary = ROOT / 'backup/editor-drafts/update-all-summary.json'
+    if summary.exists():
+        skipped = json.loads(summary.read_text()).get('unproven_boards', {})
+        remaining = 0
+        for number, digest in skipped.items():
+            draft = ROOT / f'backup/editor-drafts/{int(number):03}.hex'
+            published = ROOT / f'backup/editor-drafts/{int(number):03}.published'
+            if draft.exists() and hashlib.sha256(draft.read_text().strip().encode()).hexdigest() == digest and (
+                    not published.exists() or published.read_text().strip() != draft.read_text().strip()):
+                remaining += 1
+        if remaining:
+            return f'Published · {remaining} not updated'
     return 'Published'
 
 

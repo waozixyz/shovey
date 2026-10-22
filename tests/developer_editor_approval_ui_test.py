@@ -183,8 +183,15 @@ with (output / 'app.log').open('w') as log:
             if (drafts / 'worker-started').exists(): break
             time.sleep(.025)
         assert (drafts / 'worker-started').read_text() == 'update-all 1'
-        time.sleep(2.1)
+        (drafts / 'publish-status').write_text('Checking levels 1/2…')
+        time.sleep(.7)
         (drafts / 'worker-started').unlink()
+        click(670, 66)
+        time.sleep(.2)
+        assert not (drafts / 'worker-started').exists(), 'Bulk checking allowed an overlapping update'
+        time.sleep(2.1)
+        (drafts / 'publish-status').write_text('Published · 1 not updated')
+        time.sleep(.7)
         click(560, 66)
         for attempt in range(40):
             if (drafts / 'worker-started').exists(): break
