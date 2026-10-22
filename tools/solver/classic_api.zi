@@ -64,8 +64,13 @@ classic_area: [SHOVEY_CELLS]s32;
 
 // Ground a crate can never enter: walls, holes, home, portals and the
 // colour-block goal. Apples, paint, pickups, locks and doors can go away.
+ClassicApiPermanentWall :: (ground: s32) -> bool {
+    return ground == 12 || ground == 63 || ground == 64 || ground == SHOVEY_PIT || ground == 76 ||
+        ShoveyBlockingDecoration(ground) || (ground >= 95 && ground <= 98)
+}
+
 ClassicApiCrateWall :: (ground: s32) -> bool {
-    return ground == 12 || (ground >= 4 && ground <= 8) || ground == 39
+    return ClassicApiPermanentWall(ground) || (ground >= 4 && ground <= 8) || ground == 39
 }
 
 // A crate reaches a place by pushes exactly when pulling it back from that
@@ -98,7 +103,7 @@ ClassicApiCrateCells :: () {
             from := ShoveyNeighbor(at, side)
             behind := ShoveyNeighbor(from, side)
             if from < 0 || behind < 0 || classic_crate_live[from] { continue }
-            if ClassicApiCrateWall(game.ground[from]) || game.ground[behind] == 12 { continue }
+            if ClassicApiCrateWall(game.ground[from]) || ClassicApiPermanentWall(game.ground[behind]) { continue }
             classic_crate_live[from] = true
             classic_crate_pushes[from] = classic_crate_pushes[at] + 1
             queue[count] = from
@@ -127,7 +132,7 @@ classic_fill_count: s32;
 // or -1 when Shovey cannot stand on start.
 ClassicApiFill :: (crate: s32, start: s32, shut: bool) -> s32 {
     game := *classic_initial
-    if start < 0 || start == crate || game.ground[start] == 12 || (shut && game.ground[start] == 14) { return -1 }
+    if start < 0 || start == crate || ClassicApiPermanentWall(game.ground[start]) || (shut && game.ground[start] == 14) { return -1 }
     classic_fill_stamp += 1
     stamp := classic_fill_stamp
     smallest := start
@@ -142,7 +147,7 @@ ClassicApiFill :: (crate: s32, start: s32, shut: bool) -> s32 {
         for side: cast(s32)0..3 {
             next := ShoveyNeighbor(at, side)
             if next < 0 || next == crate || classic_fill_seen[next] == stamp { continue }
-            if game.ground[next] == 12 || (shut && game.ground[next] == 14) { continue }
+            if ClassicApiPermanentWall(game.ground[next]) || (shut && game.ground[next] == 14) { continue }
             classic_fill_seen[next] = stamp
             classic_fill_queue[count] = next
             count += 1
@@ -419,7 +424,7 @@ ClassicApiDead :: () -> s32 {
         blocked: [4]bool
         for side: cast(s32)0..3 {
             neighbor := ShoveyNeighbor(at, side)
-            blocked[side] = neighbor < 0 || classic_game.ground[neighbor] == 12
+            blocked[side] = neighbor < 0 || ClassicApiPermanentWall(classic_game.ground[neighbor])
         }
         if (blocked[0] || blocked[2]) && (blocked[1] || blocked[3]) { return 1 }
     }
@@ -458,7 +463,7 @@ ClassicApiFrozen :: (at: s32, axis: s32, held: []bool, goal: bool = false) -> bo
 ClassicApiCanPush :: (from: s32, to: s32, axis: s32, held: []bool, goal: bool) -> bool {
     game := *classic_game
     if from < 0 || to < 0 || held[from] || held[to] { return false }
-    if game.ground[from] == 12 || ClassicApiCrateWall(game.ground[to]) { return false }
+    if ClassicApiPermanentWall(game.ground[from]) || ClassicApiCrateWall(game.ground[to]) { return false }
     if goal && !classic_crate_live[to] { return false }
     if ShoveyMovable(game.objects[to]) && ClassicApiFrozen(to, 1 - axis, held) { return false }
     return true
