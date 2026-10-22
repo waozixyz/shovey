@@ -50,6 +50,52 @@ def repair():
 
 
 class Variations(unittest.TestCase):
+    def test_every_door_and_search_can_open_then_push_a_crate_through(self):
+        for door in (104, 105, *range(116, 122)):
+            cells, tiles = [0] * 240, [12] * 240
+            for y in (2, 3):
+                for x in range(2, 7): tiles[at(x, y)] = 0
+            cells[at(2, 3)], cells[at(3, 3)], cells[at(4, 3)], cells[at(5, 3)], cells[at(6, 3)] = 10, 9, door, 18, 7
+            tiles[at(4, 3)] = 12
+            candidate = ''.join(f'{kind:02x}' for kind in cells + tiles + [0] * 240)
+            for method in ('bfs', 'greedy', 'macro-bfs', 'chain'):
+                with self.subTest(door=door, method=method):
+                    result = actions.subprocess.run([str(actions.SOLVER), 'solve', '--seconds', '2',
+                        '--only', method, '--max-mb', '64', candidate], capture_output=True, text=True, timeout=5)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(actions.verify_route(1, candidate, result.stdout.strip()))
+
+    def test_continues_a_learned_route_after_moving_home(self):
+        values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+        values[at(7, 2)], values[at(7, 1)] = 0, 7
+        candidate = ''.join(f'{kind:02x}' for kind in values)
+        self.assertFalse(actions.verify_route(1, candidate, '333332'))
+        route = actions.prove_proposal(1, candidate, prefixes=['333332'])
+        self.assertTrue(route.startswith('333332'))
+        self.assertTrue(actions.verify_route(1, candidate, route))
+
+    def test_a_losing_old_route_falls_back_to_a_fresh_search(self):
+        values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+        values[240 + at(2, 4)] = 65
+        candidate = ''.join(f'{kind:02x}' for kind in values)
+        self.assertFalse(actions.verify_route(1, candidate, '0'))
+        route = actions.prove_proposal(1, candidate, prefixes=['0'])
+        self.assertTrue(actions.verify_route(1, candidate, route))
+        self.assertFalse(route.startswith('0'))
+
+    def test_route_history_keeps_completed_examples_and_ranks_the_closest(self):
+        candidate = actions.apply_proposal(board(), variation(4, 4))
+        route = actions.prove_proposal(1, candidate)
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.proof').write_text(board() + '\n333332')
+            with patch.object(actions, 'DRAFTS', drafts):
+                actions.remember_route(1, candidate, route)
+                self.assertEqual(actions.learned_routes(1, board())[0], '333332')
+                self.assertEqual(actions.learned_routes(1, candidate)[0], route)
+                for index in range(10): actions.remember_route(1, board(), '333332' + '0' * index)
+                self.assertEqual(len(actions.route_examples(1)), 8)
+
     def test_fix_uses_glm_and_proves_a_minimal_repair(self):
         source = blocked_board()
         self.assertFalse(actions.verify_route(1, source, '333332'))

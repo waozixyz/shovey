@@ -143,6 +143,8 @@ check_level: s32;
 check_started: s64;
 route: [ROUTE_MAX]u8;
 route_length: s32;
+check_prefix: [ROUTE_MAX]u8;
+check_prefix_length: s32;
 edited_at: s64;
 check_wanted: bool;
 
@@ -1085,7 +1087,8 @@ Open :: (place: s32) {
     check_wanted = true
     edited_at = 0
     if save_state != 1 { save_state = 0 }
-    if !RestoreProof() { unused RestoreSavedRoute() }
+    check_prefix_length = 0
+    if !RestoreProof() && !RestoreLearnedRoute() { unused RestoreSavedRoute() }
     saved_approval_ready = false
     if InGame(current) && mapping_ok {
         text, found := ReadEntireFile(LEVELS_FILE)
@@ -1145,8 +1148,21 @@ StartCheck :: () {
         AcceptRoute(proof_route[:], proof_length)
         return
     }
-    if RestoreProof() { return }
+    check_prefix_length = 0
+    if RestoreProof() || RestoreLearnedRoute() { return }
     if RestoreSavedRoute() { return }
+    previous, has_previous := ReadEntireFile(DraftPath(current, ".proof"))
+    if check_prefix_length == 0 && has_previous && previous.count > HEX + 1 && previous.count <= HEX + ROUTE_MAX + 1 && previous[HEX] == cast(u8)10 {
+        valid := true
+        for at: cast(s64)HEX + 1..previous.count - 1 {
+            byte := previous[at]
+            if !((byte >= cast(u8)48 && byte <= cast(u8)51) || byte == cast(u8)102 || byte == cast(u8)116) { valid = false; break }
+        }
+        if valid {
+            check_prefix_length = cast(s32)previous.count - HEX - 1
+            for at: cast(s32)0..check_prefix_length - 1 { check_prefix[at] = previous[HEX + 1 + at] }
+        }
+    }
     board := Board(current)
     Copy(check_board[:], board)
     check_level = current
@@ -1161,6 +1177,11 @@ StartCheck :: () {
         AppendText(command[:], *length, SOLVE_SECONDS)
         AppendText(command[:], *length, " --max-mb 128 --only ")
         AppendText(command[:], *length, search_names[index])
+        if check_prefix_length > 0 && (index == 0 || index == 2) {
+            AppendText(command[:], *length, " --prefix ")
+            part := ifx index == 0 then check_prefix_length else ifx check_prefix_length > 16 then check_prefix_length - 16 else (check_prefix_length + 1) / 2
+            AppendText(command[:], *length, TextView(check_prefix[:part]))
+        }
         AppendText(command[:], *length, " ")
         AppendText(command[:], *length, TextView(board))
         AppendText(command[:], *length, " > ")
@@ -1236,6 +1257,58 @@ PollCheck :: () {
 // The check belongs to the board on screen.
 Checked :: () -> bool { return check_level == current && Same(check_board[:], Board(current)) }
 
+RememberRoute :: (record: string) {
+    if record.count <= HEX + 1 || record.count > HEX + ROUTE_MAX + 1 || record[HEX] != cast(u8)10 { return }
+    old, found := ReadEntireFile(DraftPath(current, ".routes"))
+    if found && Contains(old, record) { return }
+    end: s64 = 0
+    lines: s32 = 0
+    while found && end < old.count && lines < 14 {
+        if old[end] == cast(u8)10 { lines += 1 }
+        end += 1
+    }
+    text: Vec(u8)
+    BuilderPrint(*text, "%\n%", record, ifx found then old[:end] else "")
+    unused WriteEntireFile(DraftPath(current, ".routes"), BuilderFinish(text))
+}
+
+RestoreLearnedRoute :: () -> bool {
+    text, found := ReadEntireFile(DraftPath(current, ".routes"))
+    if !found { return false }
+    at: s64 = 0
+    best: s32 = HEX + 1
+    while at + HEX + 2 <= text.count {
+        start := at + HEX + 1
+        if text[at + HEX] != cast(u8)10 { break }
+        end := start
+        while end < text.count && text[end] != cast(u8)10 { end += 1 }
+        if end - start > ROUTE_MAX { break }
+        valid := end > start
+        for index: start..end - 1 {
+            byte := text[index]
+            if !((byte >= cast(u8)48 && byte <= cast(u8)51) || byte == cast(u8)102 || byte == cast(u8)116) { valid = false }
+        }
+        if valid {
+            moves: [ROUTE_MAX]u8
+            length := cast(s32)(end - start)
+            for index: cast(s32)0..length - 1 { moves[index] = text[start + index] }
+            if Wins(Board(current), LevelFor(current), moves[:], length) {
+                AcceptRoute(moves[:], length)
+                return true
+            }
+            changes: s32 = 0
+            for index: cast(s32)0..HEX - 1 { if text[at + index] != Board(current)[index] { changes += 1 } }
+            if changes < best {
+                best = changes
+                check_prefix_length = length
+                for index: cast(s32)0..length - 1 { check_prefix[index] = moves[index] }
+            }
+        }
+        at = end + 1
+    }
+    return false
+}
+
 AcceptRoute :: (letters: []u8, length: s32) {
     StopCheck()
     Copy(check_board[:], Board(current))
@@ -1248,6 +1321,9 @@ AcceptRoute :: (letters: []u8, length: s32) {
     AppendText(proof_record[:], *record_length, TextView(Board(current)))
     AppendText(proof_record[:], *record_length, "\n")
     AppendText(proof_record[:], *record_length, TextView(route[:route_length]))
+    previous, found := ReadEntireFile(DraftPath(current, ".proof"))
+    if found { RememberRoute(previous) }
+    RememberRoute(TextView(proof_record[:record_length]))
     unused WriteEntireFile(DraftPath(current, ".proof"), TextView(proof_record[:record_length]))
 }
 

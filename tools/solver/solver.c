@@ -71,6 +71,7 @@ typedef struct {
     double greedy_share;
     int weight;
     const char *only;
+    const char *prefix;
 } Options;
 
 typedef enum { STOP_NONE, STOP_SOLVED, STOP_EXHAUSTED, STOP_STATES, STOP_MEMORY, STOP_TIME } Stop;
@@ -713,26 +714,36 @@ static int Load(const char *hex, int level) {
 
 static int Solve(const char *hex, const Options *options) {
     if (!Load(hex, options->level)) return 2;
+    const char *prefix = options->prefix ? options->prefix : "";
+    for (size_t step = 0; prefix[step]; step++) {
+        const char *action = strchr(LETTERS, prefix[step]);
+        if (!action) { fprintf(stderr, "invalid prefix action\n"); return 2; }
+        if (API(Won)()) continue;
+        API(Act)((int32_t)(action - LETTERS));
+        if (API(Lost)()) { fprintf(stderr, "prefix loses at step %zu\n", step + 1); return 1; }
+    }
+    Encode(root_vector);
     double start = Now();
     const char *method = "none";
     char phases[256] = "";
     uint64_t states_seen = 0, expanded = 0;
-    Result result = {STOP_NONE, {NULL, 0, 0}, 0};
-    // The goal chain runs only when asked for: it is quick on big boards
-    // but, unlike the others, never proves a board unsolvable.
+    Result result = {API(Won)() ? STOP_SOLVED : STOP_NONE, {NULL, 0, 0}, 0};
+    // Combine exact short searches with goal-focused planning. Spare crates
+    // otherwise consume the whole budget before the useful pushes are tried.
     struct { const char *name; double share; } plan[4] = {
-        {"bfs", options->bfs_share}, {"greedy", options->greedy_share},
-        {"macro-bfs", 1.0 - options->bfs_share - options->greedy_share}, {"chain", 0.0}};
+        {"bfs", options->bfs_share * 0.75}, {"chain", 0.25},
+        {"greedy", options->greedy_share * 0.75},
+        {"macro-bfs", (1.0 - options->bfs_share - options->greedy_share) * 0.75}};
     double deadline = start;
     for (int index = 0; index < 4 && result.stop != STOP_SOLVED; index++) {
-        if (options->only ? strcmp(options->only, plan[index].name) != 0 : index == 3) continue;
+        if (options->only && strcmp(options->only, plan[index].name) != 0) continue;
         deadline += options->seconds * (options->only ? 1.0 : plan[index].share);
-        if (index == 2 && !options->only) deadline = start + options->seconds;
+        if (index == 3 && !options->only) deadline = start + options->seconds;
         if (deadline <= Now()) continue;
         method = plan[index].name;
         if (index == 0) result = BreadthFirst(options, deadline);
-        else if (index == 3) result = ChainSearch(options, deadline);
-        else result = MacroSearch(options, deadline, index == 1);
+        else if (strcmp(method, "chain") == 0) result = ChainSearch(options, deadline);
+        else result = MacroSearch(options, deadline, strcmp(method, "greedy") == 0);
         states_seen += states.count;
         expanded += result.expanded;
         size_t used = strlen(phases);
@@ -744,11 +755,11 @@ static int Solve(const char *hex, const Options *options) {
     getrusage(RUSAGE_SELF, &usage);
     double seconds = Now() - start;
     bool solved = result.stop == STOP_SOLVED;
-    printf("%s\n", solved ? result.route.text : "unsolved");
+    printf("%s%s\n", solved ? prefix : "", solved ? (result.route.text ? result.route.text : "") : "unsolved");
     fprintf(stderr, "stats {\"edition\":\"%s\",\"solved\":%s,\"method\":\"%s\",\"length\":%zu,"
         "\"states\":%llu,\"expanded\":%llu,\"seconds\":%.3f,\"phases\":\"%s\",\"stop\":\"%s\","
         "\"max_rss_mb\":%.1f}\n",
-        EDITION, solved ? "true" : "false", method, solved ? result.route.length : (size_t)0,
+        EDITION, solved ? "true" : "false", method, solved ? strlen(prefix) + result.route.length : (size_t)0,
         (unsigned long long)states_seen, (unsigned long long)expanded, seconds, phases,
         StopName(result.stop), (double)usage.ru_maxrss / 1024.0);
     return solved ? 0 : 1;
@@ -800,7 +811,7 @@ static int Verify(const char *hex, const char *route, int level) {
 
 static void Usage(void) {
     fprintf(stderr,
-        "usage: shovey-solve-%s solve [--level N] [--seconds S] [--max-states N] [--max-mb N]\n"
+        "usage: shovey-solve-%s solve [--level N] [--seconds S] [--max-states N] [--max-mb N] [--prefix ROUTE]\n"
         "           [--bfs-share F] [--greedy-share F] [--weight W] [--only bfs|greedy|macro-bfs|chain] BOARDHEX\n"
         "       shovey-solve-%s verify [--level N] BOARDHEX ROUTE\n"
         "Route letters: %s\n", EDITION, EDITION, LETTERS);
@@ -826,6 +837,7 @@ int main(int argc, char **argv) {
             else if (strcmp(arg, "--greedy-share") == 0) options.greedy_share = atof(value);
             else if (strcmp(arg, "--weight") == 0) options.weight = atoi(value);
             else if (strcmp(arg, "--only") == 0) options.only = value;
+            else if (strcmp(arg, "--prefix") == 0) options.prefix = value;
             else { Usage(); return 2; }
             continue;
         }

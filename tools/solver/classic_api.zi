@@ -494,6 +494,15 @@ CLASSIC_DOOR_ORDER :: 2
 // cell into the nearest source cell, each source starting at its own cost.
 // A push needs the piece's floor where it stands and Shovey's floor behind
 // it; any other object on either cell must move first and costs 3 more.
+ClassicApiEventuallyAllows :: (game: *ShoveyGame, at: s32, piece: s32) -> bool {
+    if at < 0 || at >= SHOVEY_CELLS { return false }
+    kind := game.ground[at]
+    // These are state changes, not permanent walls. Only the real engine
+    // decides when a move through them is legal; the estimate stays optimistic.
+    return ShoveyFloorAllows(game, at, piece) || ShoveyClosedDoor(kind) ||
+        ShoveyGateColor(kind) >= 0 || ShoveyMossColor(kind) >= 0
+}
+
 ClassicApiPushField :: (game: *ShoveyGame, piece: s32, sources: []s32, starts: []s32,
     distance: []s32) {
     queue: [SHOVEY_CELLS]s32
@@ -513,7 +522,7 @@ ClassicApiPushField :: (game: *ShoveyGame, piece: s32, sources: []s32, starts: [
             // The piece came from `from`, pushed toward cell by Shovey behind it.
             from := ShoveyNeighbor(cell, direction)
             behind := ShoveyNeighbor(from, direction)
-            if behind < 0 || !ShoveyFloorAllows(game, from, piece) || !ShoveyFloorAllows(game, behind, 10) { continue }
+            if behind < 0 || !ClassicApiEventuallyAllows(game, from, piece) || !ClassicApiEventuallyAllows(game, behind, 10) { continue }
             cost := distance[cell] + 1
             if game.objects[from] != 0 && game.objects[from] != piece { cost += 3 }
             if game.objects[behind] != 0 { cost += 3 }
@@ -523,6 +532,45 @@ ClassicApiPushField :: (game: *ShoveyGame, piece: s32, sources: []s32, starts: [
             }
         }
     }
+}
+
+// Route guidance through the actual room geometry. Spare crates obstruct the
+// route but are not extra goals; walking into an ordinary door opens it.
+// This orders work only and never prunes a state or claims a solution.
+ClassicApiWalkNearest :: (game: *ShoveyGame, targets: []s32) -> s32 {
+    if targets.count == 0 { return 0 }
+    distance: [SHOVEY_CELLS]s32
+    queue: [SHOVEY_CELLS]s32
+    queued: [SHOVEY_CELLS]bool
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { distance[at] = CLASSIC_FAR }
+    distance[game.player] = 0
+    queue[0] = game.player
+    queued[game.player] = true
+    head: s32 = 0
+    count: s32 = 1
+    while count > 0 {
+        at := queue[head]
+        head = (head + 1) % SHOVEY_CELLS
+        count -= 1
+        queued[at] = false
+        for direction: cast(s32)0..3 {
+            to := ShoveyNeighbor(at, direction)
+            if !ClassicApiEventuallyAllows(game, to, 10) { continue }
+            cost := distance[at] + 1
+            if game.objects[to] != 0 && game.objects[to] != 40 { cost += 4 }
+            if !ShoveyFloorAllows(game, to, 10) { cost += 4 }
+            if cost >= distance[to] { continue }
+            distance[to] = cost
+            if !queued[to] {
+                queued[to] = true
+                queue[(head + count) % SHOVEY_CELLS] = to
+                count += 1
+            }
+        }
+    }
+    best: s32 = CLASSIC_FAR
+    for target: targets { if distance[target] < best { best = distance[target] } }
+    return ifx best >= CLASSIC_FAR then 100 else best
 }
 
 // Search guidance only, never a rule: each unfinished goal of ShoveyRemaining
@@ -643,7 +691,7 @@ ClassicApiEstimate :: () -> s32 {
             estimate += CLASSIC_GOAL * 8 * CLASSIC_DOOR_ORDER + (ifx nearest >= CLASSIC_FAR then 100 else nearest)
         }
     }
-    if goal_count > 0 { estimate += ClassicApiNearest(game.player, goals[0:goal_count]) }
-    else { estimate += ClassicApiNearest(game.player, homes[0:home_count]) }
+    if goal_count > 0 { estimate += ClassicApiWalkNearest(game, goals[0:goal_count]) }
+    else { estimate += ClassicApiWalkNearest(game, homes[0:home_count]) }
     return estimate
 }

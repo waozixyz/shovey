@@ -83,6 +83,13 @@ needed. It publishes the proven drafts together. Drafts that change during a
 check or have no proven solution stay intact; the result reports any left
 unpublished. Unpublished levels stay out of this operation.
 The solution status remains visible beside the controls while actions run.
+Completed runs are kept as bounded examples per level. Edits first reuse a
+working example, then continue from full or partial recorded routes before
+starting a fresh search. The solver combines breadth-first search, goal chains
+and weighted macro searches. Its path guidance accounts for room geometry,
+spare crates and doors that can open; legal moves and final wins still come
+from the game engine. The macro and domain-guidance approach follows the
+[Sokoban search research](https://www.ijcai.org/Proceedings/99-1/Papers/082.pdf).
 
 **Fix it** asks the configured GLM provider to repair an unwinnable board with
 small changes. It can open pushing space or reposition existing pieces and

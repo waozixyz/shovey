@@ -31,6 +31,7 @@ for edition in classic island; do
     # shellcheck disable=SC2046,SC2086
     "${CC:-cc}" -std=c11 ${CFLAGS:--O2} -D"$define" -I"$toolchain/include" $includes \
         "$root/tools/solver/solver.c" $(find "$work/c" -name '*.c') "$lib" \
-        -Wl,--gc-sections -lm -lpthread -o "$out/shovey-solve-$edition"
+        -Wl,--gc-sections -lm -lpthread -o "$out/shovey-solve-$edition.new"
+    mv "$out/shovey-solve-$edition.new" "$out/shovey-solve-$edition"
 done
 echo "built $out/shovey-solve-classic and $out/shovey-solve-island"

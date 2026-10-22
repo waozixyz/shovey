@@ -203,6 +203,13 @@ int main(int argc, char **argv) {
     editor_PlayAct(2);
     editor_PlayAct(2);
     assert(play.won && editor_Proven() && editor_Solved() && !check_wanted);
+    /* Completed play teaches a reusable route even after the latest proof
+       is replaced or removed by later editing. */
+    remove("backup/editor-drafts/001.proof");
+    proof_length = 0;
+    check_state = 0;
+    assert(editor_RestoreLearnedRoute() && editor_Solved());
+    assert(route_length == 2 && route[0] == '2' && route[1] == '2');
     editor_AutoSave();
     assert(save_state == 2 && route_length == 2);
     /* Clear process-local proof, as happens when the application restarts. */

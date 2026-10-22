@@ -147,7 +147,8 @@ def update_all_levels():
         for route in dict.fromkeys(source['routes']):
             if verify_route(number, board, route):
                 return record(number, board, route)
-        return record(number, board, prove_proposal(number, board, seconds=120))
+        return record(number, board, prove_proposal(number, board, seconds=120,
+            prefixes=source['routes'] + learned_routes(number, board)))
 
     atomic(DRAFTS / 'publish-status', f'Checking levels 0/{len(inputs)}…')
     with ThreadPoolExecutor(max_workers=3) as workers:
@@ -177,6 +178,7 @@ def update_all_levels():
                 continue
             approved[number] = level
             atomic(marker, source['board'])
+            remember_route(number, source['board'], level['solution'])
             atomic(DRAFTS / f'{number:03}.proof', source['board'] + '\n' + level['solution'])
             updated.append(number)
         data['levels'] = [approved[number] for number in sorted(approved)]
@@ -230,6 +232,34 @@ def existing_route(number, original):
             if verify_route(number, original, route):
                 return route
     return ''
+
+
+def route_examples(number):
+    path = DRAFTS / f'{number:03}.routes'
+    lines = path.read_text().splitlines() if path.exists() else []
+    examples = []
+    for index in range(0, len(lines) - 1, 2):
+        base, route = lines[index:index + 2]
+        if re.fullmatch('[0-9a-f]{1440}', base) and re.fullmatch('[0123ft]{1,60000}', route):
+            examples.append((base, route))
+    return examples
+
+
+def remember_route(number, board, route):
+    proof = DRAFTS / f'{number:03}.proof'
+    previous = proof.read_text().splitlines() if proof.exists() else []
+    examples = [(board, route)]
+    if len(previous) == 2 and re.fullmatch('[0-9a-f]{1440}', previous[0]) and re.fullmatch('[0123ft]{1,60000}', previous[1]):
+        examples.append(tuple(previous))
+    examples += route_examples(number)
+    examples = list(dict.fromkeys(examples))[:8]
+    atomic(DRAFTS / f'{number:03}.routes', ''.join(base + '\n' + moves + '\n' for base, moves in examples))
+
+
+def learned_routes(number, board):
+    examples = [(sum(base[at:at + 2] != board[at:at + 2] for at in range(0, 1440, 2)), index, route)
+                for index, (base, route) in enumerate(route_examples(number))]
+    return [route for _, _, route in sorted(examples)[:3]]
 
 
 def apply_proposal(original, proposal, repair=False):
@@ -292,11 +322,21 @@ def apply_proposal(original, proposal, repair=False):
     return ''.join(f'{kind:02x}' for kind in updated)
 
 
-def prove_proposal(number, candidate, proposed_route='', source_route='', seconds=30):
+def prove_proposal(number, candidate, proposed_route='', source_route='', seconds=30, prefixes=()):
     # A model's claim is never proof: replay the route in the shipped engine.
     for route in (proposed_route, source_route):
         if verify_route(number, candidate, route):
             return route
+    references = [reference for reference in dict.fromkeys(prefixes)
+                  if isinstance(reference, str) and re.fullmatch('[0123ft]{1,60000}', reference)]
+    for reference in references[:3]:
+        for length in dict.fromkeys((len(reference), max(1, len(reference) - 16), max(1, len(reference) // 2))):
+            continued = subprocess.run([str(SOLVER), 'solve', '--level', str(number),
+                '--seconds', '3', '--max-states', '500000', '--max-mb', '256', '--prefix', reference[:length], candidate],
+                cwd=ROOT, capture_output=True, text=True, timeout=13)
+            route = continued.stdout.strip().splitlines()[0] if continued.stdout.strip() else ''
+            if continued.returncode == 0 and verify_route(number, candidate, route):
+                return route
     solved = subprocess.run([str(SOLVER), 'solve', '--level', str(number),
                              '--seconds', str(seconds), '--max-states', '5000000', '--max-mb', '768', candidate],
                             cwd=ROOT, capture_output=True, text=True, timeout=seconds + 10)
