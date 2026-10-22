@@ -1,4 +1,4 @@
-"""Keep Inbe's bottom dock visible and usable while every Shovey edition runs."""
+"""Verify Shovey navigation in dock-based and immersive Inbe game hosts."""
 import argparse
 import contextlib
 import json
@@ -112,11 +112,25 @@ def main():
                     driver.key('right')
                 driver.wait_idle(frames=12)
                 apps = driver.find(label='Apps', role='button', visible=True)
-                assert apps, f'{edition}: host navigation is missing'
+                if not apps:
+                    # Current Inbe intentionally hides its navigation inside
+                    # games. Back must return through the game's own pages to
+                    # Arcade, where the host dock becomes usable again.
+                    capture(child, window, edition + '-immersive-playing')
+                    for attempt in range(8):
+                        back = driver.find(label='Back', role='button', visible=True)
+                        assert back, f'{edition}: immersive game has no visible Back action'
+                        driver.press(key=min(back, key=lambda node: node['y'])['key'])
+                        driver.wait_idle(frames=3)
+                        apps = driver.find(label='Apps', role='button', visible=True)
+                        if apps:
+                            break
+                    assert apps, f'{edition}: immersive game has no return to host navigation'
+                    driver.wait(label='Arcade')
                 dock = apps[0]
                 after = capture(child, window, edition + '-playing')
-                # The dock is drawn before the game. Its pixels must remain
-                # visible, even when a game's backdrop is opaque.
+                # Dock hosts retain the dock while playing; immersive hosts
+                # restore its pixels and actions when the game returns.
                 origin = driver.tree()[0]
                 box = (round(dock['x'] - origin['x']), round(dock['y'] - origin['y']),
                        round(dock['x'] - origin['x'] + dock['width']),
@@ -145,7 +159,7 @@ def main():
                     driver.wait(label='Shovey Classic', role='button')
                     driver.wait(label='Levels', role='button')
                     capture(child, window, 'leaderboard-arcade')
-    print('Inbe: Classic and Island editor play preserve bottom-dock pixels and its Apps action; '
+    print('Inbe: Classic and Editor preserve host navigation or return from immersive play; '
           'Classic reports its solved levels to an Arcade board in Leaderboard')
 
 

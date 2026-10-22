@@ -266,7 +266,7 @@ FloorSprite :: (kind: s32) -> s32 {
 
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
 // active sensors turn, one frame every 100 milliseconds.
-KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64) -> s32 {
+KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
     if kind == 64 { return SPRITE_WATER + cast(s32)(now * 2.0) % 4 }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
     if kind == SHOVEY_GATE { return ifx position >= 0 && ShoveyGateOpen(game, position) then SPRITE_GATE_OPEN else SPRITE_GATE }
@@ -274,7 +274,7 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64) -> s32
     if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
     if kind == SHOVEY_TREE { return SPRITE_TREE }
     if ShoveyAnimal(kind) {
-        facing := ifx position >= 0 && game.light_from[position] < 4 then game.light_from[position] else 1
+        facing := ifx position >= 0 && game.light_from[position] < 4 then game.light_from[position] else BoardEngineDirection(1, landscape)
         if ShoveyFish(kind) { return SPRITE_FISH + (kind - SHOVEY_FISH) * 16 + facing }
         if kind == SHOVEY_CRAB { return SPRITE_CRAB + facing }
         return (ifx kind == SHOVEY_DOG then SPRITE_DOG else SPRITE_TURTLE) + facing
@@ -291,8 +291,8 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64) -> s32
 }
 
 // Shovey facing its direction, charged or not.
-PlayerSprite :: (game: *ShoveyGame) -> s32 {
-    facing := ifx game.direction >= 0 && game.direction <= 3 then game.direction else 1
+PlayerSprite :: (game: *ShoveyGame, landscape: bool = false) -> s32 {
+    facing := ifx game.moves == 0 then BoardEngineDirection(1, landscape) else ifx game.direction >= 0 && game.direction <= 3 then game.direction else BoardEngineDirection(1, landscape)
     return (ifx (game.powers & SHOVEY_CHARGED) != 0 then SPRITE_CHARGED else SPRITE_PLAYER) + facing
 }
 
@@ -309,7 +309,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         object := game.objects[at]
         display := BoardDisplayIndex(at, landscape)
         base := game.tiles[at]
-        board_layers[display] = KindSprite(game, base, at, now)
+        board_layers[display] = KindSprite(game, base, at, now, landscape)
         if base == SHOVEY_PIT {
             mask: s32 = 0
             for direction: cast(s32)0..3 {
@@ -326,11 +326,11 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             }
             board_layers[display] = SPRITE_GRASS_EDGE + mask
         }
-        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_TREE || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now)
+        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_TREE || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
         decoration := game.decorations[at]
-        board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now)
+        board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
         piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) then ground else 0
-        board_layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now)
+        board_layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now, landscape)
     }
     // Fractional cell sizes round neighbouring sprites to different pixel
     // rows and look separated. Fit to one integer cell before drawing.
@@ -354,7 +354,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         position := ifx portal >= 0.0 && portal < 0.5 then portal_entry else game.player
         cell := TileMapCell(grid, BoardDisplayIndex(position, landscape))
         fall := AbyssFallProgress(game, now)
-        image := ImageProps.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(game)],
+        image := ImageProps.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(game, landscape)],
                 .alt_text = "Shovey", .bounds = cell, .fit = ImageFit.ImageFitContain, .smooth = true}
         // Fully collapsed quads have no area. Omit them instead of handing
         // the rasterizer a singular image transform at the end/midpoint.

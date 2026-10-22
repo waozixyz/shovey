@@ -335,7 +335,7 @@ EditorPieceImage :: (key: u64, island: bool, kind: s32, bounds: Rectangle, label
     floor := FloorSprite(kind)
     if kind == CLASSIC_SHOVEY { floor = 0 }
     if floor >= 0 { EditorImage(key, SpriteFile(floor), bounds, label) }
-    sprite := ifx kind == CLASSIC_SHOVEY then SPRITE_PLAYER + 3 else KindSprite(*editor_view_classic, kind, -1, editor_frame.now)
+    sprite := ifx kind == CLASSIC_SHOVEY then SPRITE_PLAYER + 1 else KindSprite(*editor_view_classic, kind, -1, editor_frame.now)
     if sprite >= 0 { EditorImage(key + 1, SpriteFile(sprite), bounds, label) }
 }
 

@@ -34,6 +34,26 @@ static void glm_result(const uint8_t *candidate, const uint8_t *proof_board, con
 }
 
 int main(int argc, char **argv) {
+    /* Starting sprites face up in either presentation; recorded movement
+       directions keep their existing board-relative meaning. */
+    ShoveyGame facing = {0};
+    facing.direction = 1;
+    facing.light_from[13] = 4;
+    assert(shovey_board_PlayerSprite(&facing, false) == SPRITE_PLAYER + 1);
+    assert(shovey_board_PlayerSprite(&facing, true) == SPRITE_PLAYER + 2);
+    int animals[] = {SHOVEY_CHICKEN, SHOVEY_TURTLE, SHOVEY_CRAB, SHOVEY_FISH};
+    int sprites[] = {SPRITE_DOG, SPRITE_TURTLE, SPRITE_CRAB, SPRITE_FISH};
+    for (int i = 0; i < 4; i++) {
+        assert(shovey_board_KindSprite(&facing, animals[i], 13, 0, false) == sprites[i] + 1);
+        assert(shovey_board_KindSprite(&facing, animals[i], 13, 0, true) == sprites[i] + 2);
+    }
+    facing.moves = 1;
+    for (int direction = 0; direction < 4; direction++) {
+        facing.direction = direction;
+        facing.light_from[13] = direction;
+        assert(shovey_board_PlayerSprite(&facing, true) == SPRITE_PLAYER + direction);
+        assert(shovey_board_KindSprite(&facing, SHOVEY_CHICKEN, 13, 0, true) == SPRITE_DOG + direction);
+    }
     load();
     if (argc == 3 && strcmp(argv[1], "recover") == 0) {
         editor_Open(atoi(argv[2]));
