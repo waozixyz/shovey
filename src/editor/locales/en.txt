@@ -335,7 +335,7 @@ Apple
 Pressure plate
 ---
 [editor_gate]
-Gate
+Orange gate
 ---
 [editor_key]
 Key
@@ -695,10 +695,10 @@ Green gate
 Green lever
 ---
 [editor_lever]
-Lever
+Orange lever
 ---
 [editor_open_gate]
-Open gate
+Open orange gate
 ---
 [editor_open_red_gate]
 Open red gate

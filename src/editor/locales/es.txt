@@ -335,7 +335,7 @@ Manzana
 Placa de presión
 ---
 [editor_gate]
-Puerta
+Puerta naranja
 ---
 [editor_key]
 Llave
@@ -695,10 +695,10 @@ Portón verde
 Palanca verde
 ---
 [editor_lever]
-Palanca
+Palanca naranja
 ---
 [editor_open_gate]
-Puerta abierta
+Puerta naranja abierta
 ---
 [editor_open_red_gate]
 Puerta roja abierta

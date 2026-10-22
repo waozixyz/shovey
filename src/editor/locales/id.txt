@@ -335,7 +335,7 @@ Apel
 Pelat tekan
 ---
 [editor_gate]
-Gerbang
+Gerbang oranye
 ---
 [editor_key]
 Kunci
@@ -695,10 +695,10 @@ Gerbang hijau
 Tuas hijau
 ---
 [editor_lever]
-Tuas
+Tuas oranye
 ---
 [editor_open_gate]
-Gerbang terbuka
+Gerbang oranye terbuka
 ---
 [editor_open_red_gate]
 Gerbang merah terbuka

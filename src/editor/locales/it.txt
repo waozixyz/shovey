@@ -335,7 +335,7 @@ Mela
 Piastra a pressione
 ---
 [editor_gate]
-Cancello
+Cancello arancione
 ---
 [editor_key]
 Chiave
@@ -695,10 +695,10 @@ Cancello verde
 Leva verde
 ---
 [editor_lever]
-Leva
+Leva arancione
 ---
 [editor_open_gate]
-Cancello aperto
+Cancello arancione aperto
 ---
 [editor_open_red_gate]
 Cancello rosso aperto

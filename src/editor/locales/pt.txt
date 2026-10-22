@@ -335,7 +335,7 @@ Maçã
 Placa de pressão
 ---
 [editor_gate]
-Portão
+Portão laranja
 ---
 [editor_key]
 Chave
@@ -695,10 +695,10 @@ Portão verde
 Alavanca verde
 ---
 [editor_lever]
-Alavanca
+Alavanca laranja
 ---
 [editor_open_gate]
-Portão aberto
+Portão laranja aberto
 ---
 [editor_open_red_gate]
 Portão vermelho aberto

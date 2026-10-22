@@ -335,7 +335,7 @@ Shovey
 压力板
 ---
 [editor_gate]
-门
+橙色闸门
 ---
 [editor_key]
 钥匙
@@ -695,10 +695,10 @@ Shovey
 绿色拉杆
 ---
 [editor_lever]
-拉杆
+橙色拉杆
 ---
 [editor_open_gate]
-开启的闸门
+开启的橙色闸门
 ---
 [editor_open_red_gate]
 开启的红色闸门

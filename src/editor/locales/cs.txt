@@ -335,7 +335,7 @@ Jablko
 Nášlapná deska
 ---
 [editor_gate]
-Brána
+Oranžová brána
 ---
 [editor_key]
 Klíč
@@ -695,10 +695,10 @@ Zelená brána
 Zelená páka
 ---
 [editor_lever]
-Páka
+Oranžová páka
 ---
 [editor_open_gate]
-Otevřená brána
+Otevřená oranžová brána
 ---
 [editor_open_red_gate]
 Otevřená červená brána

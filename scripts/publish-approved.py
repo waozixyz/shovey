@@ -150,7 +150,7 @@ def main(force=False):
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
                 status("Updating…")
                 changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
-                          f'- Play the approved Classic campaign through level {len(approved)}.\n- Use any matching lever to open or close every gate of its color.\n- Keep opposite-state gates synchronized even with several levers.\n- Keep your progress and use the integrated level editor.', True)
+                          f'- Play the approved Classic campaign through level {len(approved)}.\n- Use any matching lever to open or close every gate of its color.\n- Larger doors share the stone walls’ frame and texture.\n- Orange levers and gates keep their color in both states.\n- Keep your progress and use the integrated level editor.', True)
                 changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
                           '- Test puzzles with several matching levers; any handle switches their shared gate state.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
                 changelog(arcade / 'CHANGELOG.md', versions['arcade'],

@@ -335,7 +335,7 @@ Pomme
 Plaque de pression
 ---
 [editor_gate]
-Portail
+Portail orange
 ---
 [editor_key]
 Clé
@@ -695,10 +695,10 @@ Grille verte
 Levier vert
 ---
 [editor_lever]
-Levier
+Levier orange
 ---
 [editor_open_gate]
-Portail ouvert
+Portail orange ouvert
 ---
 [editor_open_red_gate]
 Portail rouge ouvert

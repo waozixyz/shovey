@@ -359,23 +359,23 @@
     },
     {
       "path": "sprites/tile-92.png",
-      "depicts": "iron gate: opened by pushing a lever",
-      "sha256": "8c490bcd3179786cbd9b44c79932a60a66a8adfee2d5bc262da3ef16e9931a09"
+      "depicts": "orange gate: controlled by matching orange levers",
+      "sha256": "5b598970ad5909181c39fe8bbbdb77fa283f02c8aa8d484d3faac081d8ef875f"
     },
     {
       "path": "sprites/tile-93.png",
-      "depicts": "lever: push to open the iron gates",
-      "sha256": "fc78c452e8a78993bade1352755f121e6984e0f346f52d4791074ee2ed713411"
+      "depicts": "orange lever: switched off",
+      "sha256": "75c10af2c08b3d76cdc9813ac8425d415bed8434c5417f726455eca1e0af42cb"
     },
     {
       "path": "sprites/tile-94.png",
-      "depicts": "lever switched on: push again to close the iron gates",
-      "sha256": "bb7c8e2ed81d127c5d2707c00c486929692b839a68b3360ec419128338c4a6ad"
+      "depicts": "orange lever: switched on",
+      "sha256": "3123a35377610607b15fb545884f2763c87190511416a3a3ed3219564e3345f4"
     },
     {
       "path": "sprites/gate-open.png",
-      "depicts": "iron gate with its bars drawn aside",
-      "sha256": "7881ddda48a02f92be3324049594035b584021b48a0428f67065baf6a7b0c49c"
+      "depicts": "orange gate with its bars drawn aside",
+      "sha256": "64ec7d8742a63efbcce43c2b0774a0a5f18d9f88a0b978bd7c1115a147f53287"
     },
     {
       "path": "sprites/tile-95.png",
@@ -425,12 +425,12 @@
     {
       "path": "sprites/tile-104.png",
       "depicts": "wooden door: opens when Shovey walks through it",
-      "sha256": "e3c41e6269aabe2c5ae1e9d95de52ba552c68eadf91e1398b3067204f0d30b0e"
+      "sha256": "f8579457fa6edf859784455a5408dc1c451c81426a7493002be9f2fb23c72d99"
     },
     {
       "path": "sprites/tile-105.png",
       "depicts": "wooden door standing open, with a clear passage",
-      "sha256": "e82f08f6d88ce591061d9fbbe994273a77128467b00c3557f39bb0a972b3907b"
+      "sha256": "7e70177f4d4312d9eccfccdd70789393dc3c30128df5aa76804607f61fead02c"
     },
     {
       "path": "sprites/tile-106.png",
@@ -444,8 +444,8 @@
     },
     {
       "path": "sprites/tile-123.png",
-      "depicts": "iron gate: starts open and closes when its lever is on",
-      "sha256": "7881ddda48a02f92be3324049594035b584021b48a0428f67065baf6a7b0c49c"
+      "depicts": "orange gate: starts open and closes when its lever is on",
+      "sha256": "64ec7d8742a63efbcce43c2b0774a0a5f18d9f88a0b978bd7c1115a147f53287"
     },
     {
       "path": "sprites/shadow.png",
@@ -490,12 +490,12 @@
     {
       "path": "sprites/tile-116.png",
       "depicts": "red wooden door: opens when walked through",
-      "sha256": "4b20151c3c328f663fed0023cee7f0952ae41419919d7e95ce61ae51bfbd3c43"
+      "sha256": "39e2cafca4bfcbacb6639b67902fd4782684509d9e79f9066aac398a60269cda"
     },
     {
       "path": "sprites/tile-117.png",
       "depicts": "red wooden door standing open",
-      "sha256": "f2a5c5b5978639bd6b8180e9f4344813aa8d377144f724d99410676d13047184"
+      "sha256": "569c0951ec0a829a10ff2f1d5e38f897778d05fd437d5fa86541086b2ce9c6ff"
     },
     {
       "path": "sprites/tile-110.png",
@@ -525,12 +525,12 @@
     {
       "path": "sprites/tile-118.png",
       "depicts": "blue wooden door: opens when walked through",
-      "sha256": "fcace467f704d9fbd8826d0139098c212c350e467010d37ae1be47021a5702a6"
+      "sha256": "63f58f3f1a64105e789a6644150f3301aa27fd0690139799bb36c26bb39c07b9"
     },
     {
       "path": "sprites/tile-119.png",
       "depicts": "blue wooden door standing open",
-      "sha256": "aa3c13ae27096ba91918d1110a3adbe40b7d4a35d779cb5ef1ab0d85e34d32fc"
+      "sha256": "b7c6484cdd105c3f77df1153a76cfcbc33c90c801ae07e9f17ab91f0045b5903"
     },
     {
       "path": "sprites/tile-113.png",
@@ -560,12 +560,12 @@
     {
       "path": "sprites/tile-120.png",
       "depicts": "green wooden door: opens when walked through",
-      "sha256": "a6769ca6f5227fd8f0937605790b380723203f38b61ec7fa99d576ae03c9cdda"
+      "sha256": "5784c983000ed6e48b958d327e49dbb219a4dcb40e7b2c54293497d1c12ca99a"
     },
     {
       "path": "sprites/tile-121.png",
       "depicts": "green wooden door standing open",
-      "sha256": "168f58ed6fe12bff7a60c2150b61ef5f41ff9f1848c38a868a0e62ebf5cae52d"
+      "sha256": "2458f36711f152e4a02897a07233c2a141f4421e374d28c6ed31af86bfcb818f"
     },
     {
       "path": "sprites/player-up.png",

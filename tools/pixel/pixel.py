@@ -202,6 +202,7 @@ def shade(colour, factor):
 
 FLOOR = (208, 211, 210, 255)
 GRASS = (104, 172, 92, 255)
+ORANGE = (221, 137, 64, 255)
 
 
 def grain(image, seed, dark=0.88, light=1.08, share=0.22):
@@ -449,23 +450,32 @@ def lantern():
 
 
 def door(opened=False, colour=None):
-    image = Image.new('RGBA', (SIZE, SIZE))
+    # The stone jamb uses the wall's exact bevel and grain, at the same
+    # full-cell scale. Only the actual doorway reveals the floor underneath.
+    image = wall()
     draw = ImageDraw.Draw(image)
-    draw.rectangle((3, 4, 28, 7), fill=(92, 65, 43, 255))
-    draw.line((4, 4, 27, 4), fill=shade(colour, 1.15) if colour else (201, 168, 111, 255))
-    draw.rectangle((3, 8, 6, 28), fill=(112, 78, 48, 255))
-    draw.rectangle((25, 8, 28, 28), fill=(78, 57, 42, 255))
-    draw.line((3, 8, 3, 27), fill=(189, 146, 91, 255))
+    draw.rectangle((5, 5, 26, 28), fill=(0, 0, 0, 0))
+    draw.line((5, 5, 26, 5), fill=shade(STONE, 0.46))
+    draw.line((5, 5, 5, 28), fill=shade(STONE, 0.54))
+    draw.line((26, 6, 26, 28), fill=shade(STONE, 1.12))
+    wood = colour or (158, 109, 61, 255)
     if opened:
-        draw.polygon(((7, 8), (11, 11), (11, 28), (7, 25)), fill=colour or (146, 99, 56, 255))
-        draw.line((8, 9, 11, 11, 11, 27), fill=(207, 165, 104, 255))
-        draw.point((10, 19), fill=(237, 195, 77, 255))
+        draw.polygon(((6, 6), (12, 9), (12, 28), (6, 28)), fill=wood)
+        draw.line((6, 6, 12, 9, 12, 27), fill=shade(wood, 1.26))
+        draw.line((7, 9, 7, 26), fill=shade(wood, 0.62))
+        draw.point((11, 18), fill=(246, 203, 89, 255))
     else:
-        bevel(image, (7, 8, 24, 28), colour or (166, 117, 65, 255), 2, light=1.22, dark=0.66)
-        for box in ((10, 11, 21, 16), (10, 20, 21, 25)):
-            bevel(image, box, shade(colour, 0.90) if colour else (153, 103, 59, 255), 1, raised=False, light=1.18, dark=0.67)
-        draw.rectangle((20, 17, 22, 19), fill=(94, 63, 35, 255))
-        draw.point((21, 17), fill=(249, 207, 90, 255))
+        bevel(image, (6, 6, 25, 28), wood, 2, light=1.24, dark=0.60)
+        for box in ((9, 9, 22, 15), (9, 20, 22, 25)):
+            bevel(image, box, shade(wood, 0.92), 1, raised=False, light=1.20, dark=0.64)
+        draw.rectangle((21, 16, 23, 18), fill=shade(wood, 0.50))
+        draw.rectangle((22, 16, 23, 17), fill=(235, 184, 67, 255))
+        draw.point((22, 16), fill=(255, 225, 136, 255))
+    for y in (9, 24):
+        draw.line((5, y, 7, y), fill=(66, 68, 63, 255))
+        draw.point((5, y), fill=(207, 208, 195, 255))
+    for point in ((0, 0), (SIZE - 1, 0), (0, SIZE - 1), (SIZE - 1, SIZE - 1)):
+        draw.point(point, fill=(0, 0, 0, 0))
     return image
 
 
@@ -937,10 +947,10 @@ def sprites():
         'tile-86': ('green portal', colour_portal(125)),
         'tile-87': ('orange portal', colour_portal(28)),
         'tile-88': ('crab: a bright orange shell and clear raised pincers', native('crab')),
-        'tile-92': ('iron gate: opened by pushing a lever', gate()),
-        'tile-93': ('lever: push to open the iron gates', lever()),
-        'tile-94': ('lever switched on: push again to close the iron gates', lever(True)),
-        'gate-open': ('iron gate with its bars drawn aside', gate(True)),
+        'tile-92': ('orange gate: controlled by matching orange levers', gate(colour=ORANGE)),
+        'tile-93': ('orange lever: switched off', lever(colour=ORANGE)),
+        'tile-94': ('orange lever: switched on', lever(True, ORANGE)),
+        'gate-open': ('orange gate with its bars drawn aside', gate(True, ORANGE)),
         'tile-95': ('slate wall: dark blue-grey stone slabs', wall_variant(0)),
         'tile-96': ('brick wall: warm bricks with pale mortar', wall_variant(1)),
         'tile-97': ('sandstone wall: pale carved blocks', wall_variant(2)),
@@ -954,7 +964,7 @@ def sprites():
         'tile-105': ('wooden door standing open, with a clear passage', door(True)),
         'tile-106': ('floor lantern: warm glass in a metal frame; blocks movement', lantern()),
         'tile-122': ('boulder: a solid faceted stone that blocks movement', boulder()),
-        'tile-123': ('iron gate: starts open and closes when its lever is on', gate(True)),
+        'tile-123': ('orange gate: starts open and closes when its lever is on', gate(True, ORANGE)),
         'shadow': ('mirror Shovey (pink)', mirror),
         'door-open': ('mossy wall lowered, leaving a moss-covered stone rim', mossy_floor()),
         'projectile': ('a flying iron shot', native('projectile')),

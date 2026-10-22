@@ -335,7 +335,7 @@ Apfel
 Druckplatte
 ---
 [editor_gate]
-Tor
+Oranges Tor
 ---
 [editor_key]
 Schlüssel
@@ -695,10 +695,10 @@ Grünes Tor
 Grüner Hebel
 ---
 [editor_lever]
-Hebel
+Oranger Hebel
 ---
 [editor_open_gate]
-Offenes Tor
+Offenes oranges Tor
 ---
 [editor_open_red_gate]
 Offenes rotes Tor

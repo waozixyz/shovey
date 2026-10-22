@@ -179,7 +179,7 @@ palette_names: [98]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowe
     "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
     "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
     "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
-    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Gate", "Open gate", "Lever", "Red gate", "Open red gate", "Red lever", "Blue gate", "Open blue gate", "Blue lever", "Green gate", "Open green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
+    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Orange gate", "Open orange gate", "Orange lever", "Red gate", "Open red gate", "Red lever", "Blue gate", "Open blue gate", "Blue lever", "Green gate", "Open green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
     "Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
     "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
     "Yellow block", "Cyan block", "Purple block", "Green block", "Block goal", "Mirror Shovey",

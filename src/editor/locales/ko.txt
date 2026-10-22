@@ -335,7 +335,7 @@ Shovey
 압력판
 ---
 [editor_gate]
-문
+주황색 문
 ---
 [editor_key]
 열쇠
@@ -695,10 +695,10 @@ Shovey
 초록 레버
 ---
 [editor_lever]
-레버
+주황색 레버
 ---
 [editor_open_gate]
-열린 문
+열린 주황색 문
 ---
 [editor_open_red_gate]
 열린 빨간 문
