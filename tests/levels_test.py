@@ -3,6 +3,7 @@
 through the real game engine (the solver's verify mode runs the shipped
 Ziran rules). Build the solver first: make solver."""
 from concurrent.futures import ThreadPoolExecutor
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -26,8 +27,11 @@ def verify(edition, level, board, route):
     return level, result.returncode == 0
 
 
-classic = json.loads((ROOT / 'levels/classic.json').read_text())['levels']
-island = json.loads((ROOT / 'levels/island.json').read_text())['levels']
+spec = importlib.util.spec_from_file_location('levels_tool', ROOT / 'tools/levels/levels.py')
+levels_tool = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(levels_tool)
+classic = levels_tool.load('classic')
+island = levels_tool.load('island')
 assert [level['number'] for level in classic] == list(range(1, len(classic) + 1))
 assert [level['number'] for level in island] == list(range(1, len(island) + 1))
 

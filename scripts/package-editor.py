@@ -29,7 +29,7 @@ def main():
     for binary in (payload / 'bin/shovey-level-editor', payload / 'build/solver/shovey-solve-classic'):
         binary.chmod(0o755)
         data = binary.read_bytes()
-        for item in json.loads((ROOT / 'levels/classic.json').read_text())['levels']:
+        for item in levels.load('classic'):
             assert ''.join(item['cells']).encode() not in data, 'Story data was compiled into the authoring package'
         assert b'backup/original/' not in data, 'Reference loader was compiled into the authoring package'
     shutil.copyfile(ROOT / 'scripts/editor_actions.py', payload / 'scripts/editor_actions.py')

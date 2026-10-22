@@ -7,7 +7,7 @@ APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
-.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool scenery-pictures editor-card web web-test web-itch
+.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test
 editor-server-test:
@@ -59,8 +59,11 @@ all: bundles
 # The JSON level files are the source; the game reads the generated code.
 levels: src/levels.zi src/island_levels.zi
 
-src/levels.zi src/island_levels.zi: levels/classic.json levels/island.json tools/levels/levels.py
+# levels/classic.json and levels/island.json are private; without them the
+# published campaign in levels/approved.json is built.
+src/levels.zi src/island_levels.zi: $(wildcard levels/classic.json levels/island.json) levels/approved.json tools/levels/levels.py
 	python3 tools/levels/levels.py generate
+	python3 tools/levels/levels.py previews
 
 landscape:
 	python3 tools/levels/landscape.py --check
@@ -116,6 +119,13 @@ bench: levels build/ziran/libziran.a
 		$$(find build/solver/bench -type d -printf ' -iquote %p') $$(find build/solver/bench -name '*.c') \
 		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/solver/shovey-bench
 
+# The checks the public repository can run with only the published campaign.
+public-test: solver
+	python3 tools/levels/levels.py generate --check
+	python3 tools/levels/landscape.py --check
+	python3 tests/levels_test.py
+	python3 tests/assets_test.py
+
 test: solver
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
@@ -160,6 +170,17 @@ scenery-tool: levels build/ziran/libziran.a
 	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
 		$$(find build/levels/scenery-c -type d -printf ' -iquote %p') $$(find build/levels/scenery-c -name '*.c') \
 		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/levels/scenery
+
+# Keeps the shortest winning route found for each Classic level:
+#   build/levels/shorten [--levels DIR] [--no-generate] [LEVEL...]
+routes-tool: levels build/ziran/libziran.a
+	rm -rf build/levels/routes-c
+	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
+		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--entry routes_tool:main -o build/levels/routes-c tools/levels/routes_tool.zi
+	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
+		$$(find build/levels/routes-c -type d -printf ' -iquote %p') $$(find build/levels/routes-c -name '*.c') \
+		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/levels/shorten
 
 # Before and after pictures of scenery, with the cells each route uses, drawn
 # on a private display: make scenery-pictures SCENERY_LEVELS='1 2' writes

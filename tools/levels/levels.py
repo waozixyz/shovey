@@ -27,8 +27,26 @@ CLASSIC_WALL_FLOORS = {12: 0, 14: 0, 62: 0, 63: 0, 76: 0,
 ISLAND_PLAYER = 56
 
 
+def finale(number):
+    """A plain closing room: Shovey and home inside the wall ring."""
+    walls = [12 if at < WIDTH or at >= CELLS - WIDTH or at % WIDTH in (0, WIDTH - 1) else 0 for at in range(CELLS)]
+    pieces = [0] * CELLS
+    pieces[WIDTH + 1], pieces[CELLS - 2 * WIDTH + 1] = 10, 7
+    def rows(values):
+        return [''.join(f'{kind:02x}' for kind in values[at:at + WIDTH]) for at in range(0, CELLS, WIDTH)]
+    return dict(number=number, cells=rows(pieces), tiles=rows(walls), decorations=rows([0] * CELLS))
+
+
 def load(edition):
-    data = json.loads((ROOT / 'levels' / f'{edition}.json').read_text())
+    path = ROOT / 'levels' / f'{edition}.json'
+    if not path.exists():
+        # The repository carries only the published campaign; the full level
+        # files stay private with the developer.
+        if edition == 'island':
+            return []
+        published = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
+        return published + [finale(len(published) + 1)]
+    data = json.loads(path.read_text())
     levels = data['levels']
     if not levels or [level['number'] for level in levels] != list(range(1, len(levels) + 1)):
         raise SystemExit(f'{edition}: levels must be numbered from 1 without gaps')

@@ -1,0 +1,164 @@
+// Keeps the shortest known winning route of Classic levels (routes.zi).
+// Run from Shovey's root:
+//
+//     make routes-tool
+//     build/levels/shorten [--levels DIR] [--no-generate] [LEVEL...]
+//     build/levels/shorten --route LEVEL BOARDHEX ROUTE
+//
+// Without levels, every level with a route is checked. A level is written
+// back only with a shorter route that wins in the engine; afterwards the
+// level code is generated again, unless --no-generate. --route prints the
+// shortest route found for one board.
+#import "std/byte_text_linux"
+#import "std/file"
+#import "std/number_text"
+#import "std/process_capture_linux"
+#import "std/text_buffer"
+#import, file "../../src/engine.zi";
+#import, file "../../src/editor/edit.zi";
+#import, file "edits.zi";
+#import, file "scenery.zi";
+#import, file "routes.zi";
+
+libc :: #system_library "libc";
+WriteError :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
+
+level_out: [IMPORT_FILE]u8;
+output_bytes: [65536]u8;
+path_bytes: [1024]u8;
+say_bytes: [4096]u8;
+board_bytes: [EDIT_CELLS * 6]u8;
+
+Say :: (fd: s32, text: string) {
+    at: s64 = 0
+    while at < text.count {
+        count: s64 = 0
+        while count < 4096 && at + count < text.count { say_bytes[count] = text[at + count]; count += 1 }
+        unused WriteError(fd, *say_bytes[0], cast(usize)count)
+        at += count
+    }
+}
+
+SayNumber :: (fd: s32, value: s64) {
+    digits: [24]u8
+    Say(fd, FormatInteger(value, digits[:]))
+}
+
+Fail :: (message: string) -> s32 {
+    Say(2, "shorten: nothing written: ")
+    Say(2, message)
+    Say(2, "\n")
+    return 1
+}
+
+Number :: (text: string) -> s32 {
+    value: s32 = 0
+    for byte: text {
+        if byte < #char "0" || byte > #char "9" || value > 100000 { return -1 }
+        value = value * 10 + cast(s32)(byte - #char "0")
+    }
+    return ifx text.count == 0 then -1 else value
+}
+
+Run :: (arguments: []string) -> bool {
+    result := CaptureOutput(arguments, output_bytes[:])
+    Say(1, TextView(output_bytes[0:result.length]))
+    return !result.error && result.code == 0
+}
+
+// A stable copy of a board's hex digits.
+BoardText :: (board: *EditBoard) -> string {
+    hex := EditBoardHex(board)
+    for at: cast(s64)0..hex.count - 1 { board_bytes[at] = hex[at] }
+    return TextView(board_bytes[0:hex.count])
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    if argc == 5 && TextFromCString(argv[1]) == "--route" {
+        route := RoutesShorten(TextFromCString(argv[3]), TextFromCString(argv[4]))
+        if !RoutesWins(TextFromCString(argv[3]), route) { return 1 }
+        Say(1, route)
+        Say(1, "\n")
+        return 0
+    }
+    generate := true
+    levels := "levels"
+    numbers: [IMPORT_PLACES]s32
+    count: s32 = 0
+    at: s32 = 1
+    while at < argc {
+        argument := TextFromCString(argv[at])
+        if argument == "--no-generate" { generate = false }
+        else if argument == "--levels" && at + 1 < argc { at += 1; levels = TextFromCString(argv[at]) }
+        else if Number(argument) > 0 && count < IMPORT_PLACES { numbers[count] = Number(argument); count += 1 }
+        else {
+            Say(2, "usage: shorten [--levels DIR] [--no-generate] [LEVEL...] | --route LEVEL BOARDHEX ROUTE\n")
+            return 2
+        }
+        at += 1
+    }
+    path_writer := EditWriter.{.bytes = path_bytes[:]}
+    EditPut(*path_writer, levels)
+    EditPut(*path_writer, "/classic.json")
+    path := TextView(path_bytes[0:path_writer.length])
+    text, found := ReadEntireFile(path)
+    if !found { return Fail("the level file cannot be read") }
+    if !StoredRead(*stored[0], false, text) { return Fail(ImportError()) }
+    if count == 0 {
+        for number: cast(s32)1..stored[0].count {
+            if stored[0].levels[number - 1].has_solution && count < IMPORT_PLACES { numbers[count] = number; count += 1 }
+        }
+    }
+    changed: s32 = 0
+    saved: s64 = 0
+    for index: cast(s32)0..count - 1 {
+        number := numbers[index]
+        if number > stored[0].count { return Fail("there is no such level") }
+        level := *stored[0].levels[number - 1]
+        if !level.has_solution || level.fresh >= 0 { continue }
+        incoming := *import_levels[changed]
+        incoming.island = false
+        incoming.number = number
+        incoming.name_length = 0
+        if !SceneryStoredBoard(text, level, *incoming.level.board) { return Fail("a board cannot be read") }
+        route := text[level.solution.start:level.solution.end]
+        shorter := RoutesShorten(BoardText(*incoming.level.board), route)
+        if shorter.count >= route.count { continue }
+        if !EditSetRoute(*incoming.level, shorter) { return Fail("a route is too long") }
+        level.fresh = changed
+        changed += 1
+        saved += route.count - shorter.count
+        Say(1, "level ")
+        SayNumber(1, cast(s64)number)
+        Say(1, ": ")
+        SayNumber(1, route.count)
+        Say(1, " -> ")
+        SayNumber(1, shorter.count)
+        Say(1, " moves\n")
+    }
+    if changed == 0 {
+        Say(1, "every route is already as short as this finds\n")
+        return 0
+    }
+    writer := EditWriter.{.bytes = level_out[:]}
+    StoredWrite(*writer, *stored[0], text)
+    if writer.full { return Fail("the level file grew too large") }
+    // The developer editor saves into the same file; never overwrite a save
+    // made meanwhile.
+    again, read := ReadEntireFile(path)
+    if !read || again != text { return Fail("the level file changed meanwhile; run again") }
+    if !WriteEntireFile(path, TextView(level_out[0:writer.length])) { return Fail("the level file cannot be written") }
+    SayNumber(1, cast(s64)changed)
+    Say(1, " routes shortened by ")
+    SayNumber(1, saved)
+    Say(1, " moves in all\n")
+    if generate {
+        command: [3]string = .["python3", "tools/levels/levels.py", "generate"]
+        if !Run(command[:]) {
+            Say(2, "shorten: tools/levels/levels.py failed; run it again by hand\n")
+            return 2
+        }
+    }
+    return 0
+}

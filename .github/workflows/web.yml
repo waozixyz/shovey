@@ -49,7 +49,7 @@ jobs:
           "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" fetch --locked
       - name: Check the game and build the approved campaign
         run: |
-          make test ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
+          make public-test ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
           make web ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
       - name: Play in a private browser
         run: |

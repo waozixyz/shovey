@@ -4,3 +4,13 @@
 node_modules/
 __pycache__/
 *.pyc
+# Private level work: only levels/approved.json, the published campaign, is
+# public. Level code and pictures are generated from the level files.
+/levels/classic.json
+/levels/island.json
+/src/levels.zi
+/src/island_levels.zi
+/assets/shovey/levels/
+/assets/shovey/levels-landscape/
+/assets/shovey-island/levels/
+/assets/shovey-island/levels-landscape/
