@@ -3,9 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="Play Shovey in your browser.">
-  <meta name="theme-color" content="#10231d">
-  <title>Shovey</title>
+  <meta name="description" content="Push. Solve. Come home. Play Shovey's __SHOVEY_LEVEL_COUNT__ Classic puzzles in your browser with touch or arrow keys, saved progress and a level editor.">
+  <meta name="theme-color" content="#173226">
+  <meta name="application-name" content="Shovey">
+  <meta name="author" content="Waozi">
+  <title>Shovey — Push. Solve. Come home.</title>
+  <link rel="canonical" href="https://shovey.waozi.xyz/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Shovey">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://shovey.waozi.xyz/">
+  <meta property="og:title" content="Shovey — Push. Solve. Come home.">
+  <meta property="og:description" content="A little green friend, clever puzzles and a path home. Play __SHOVEY_LEVEL_COUNT__ Classic levels with touch or arrow keys, and make your own puzzles.">
+  <meta property="og:image" content="https://shovey.waozi.xyz/og.png?v=__SHOVEY_REVISION__">
+  <meta property="og:image:secure_url" content="https://shovey.waozi.xyz/og.png?v=__SHOVEY_REVISION__">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Shovey, the little green puzzle hero, beside a wooden crate in a sunny garden, beneath the Shovey logo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@waozixyz">
+  <meta name="twitter:title" content="Shovey — Push. Solve. Come home.">
+  <meta name="twitter:description" content="Play __SHOVEY_LEVEL_COUNT__ Classic puzzles in your browser. Push balls into matching pits, move crates onto their marks and find your way home.">
+  <meta name="twitter:image" content="https://shovey.waozi.xyz/og.png?v=__SHOVEY_REVISION__">
+  <meta name="twitter:image:alt" content="Shovey and a wooden crate in a sunny garden, with the Shovey logo.">
+  <link rel="icon" type="image/png" href="icon.png?v=__SHOVEY_REVISION__">
+  <link rel="apple-touch-icon" href="icon.png?v=__SHOVEY_REVISION__">
+  <link rel="manifest" href="manifest.webmanifest?v=__SHOVEY_REVISION__">
+  <link rel="preload" as="image" href="title-portrait.png?v=__SHOVEY_REVISION__" media="(max-aspect-ratio: 1/1)">
+  <link rel="preload" as="image" href="title-landscape.png?v=__SHOVEY_REVISION__" media="(min-aspect-ratio: 1/1)">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Shovey","url":"https://shovey.waozi.xyz/","image":"https://shovey.waozi.xyz/og.png?v=__SHOVEY_REVISION__","description":"Push. Solve. Come home. A puzzle game with __SHOVEY_LEVEL_COUNT__ Classic levels, touch and keyboard controls, saved progress and an integrated level editor.","genre":"Puzzle","gamePlatform":"Web browser","operatingSystem":"Any","inLanguage":"en","isAccessibleForFree":true,"softwareVersion":"__SHOVEY_VERSION__","dateModified":"__SHOVEY_RELEASE_DATE__","author":{"@type":"Person","name":"Waozi","url":"https://waozi.xyz/"},"sameAs":["https://waozi.itch.io/shovey","https://github.com/waozixyz/shovey"]}</script>
   <style>
     :root {
       --app-background: #10231d;
@@ -49,52 +76,83 @@
       position: fixed;
       inset: 0;
       z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
-      box-sizing: border-box;
-      background: var(--loading-background);
+      isolation: isolate;
+      overflow: hidden;
+      background: #173226;
       opacity: 1;
-      transition: opacity 360ms ease, visibility 360ms ease;
+      transition: opacity 420ms ease, visibility 420ms ease;
     }
     .loading-screen.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .loading-panel {
-      width: min(360px, 100%);
-      display: grid;
-      justify-items: center;
-      gap: 18px;
-      text-align: center;
+    .loading-art, .loading-art img { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .loading-art { z-index: -2; }
+    .loading-art img { object-fit: cover; }
+    .loading-screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(180deg, #10231d00 42%, #10231d12 62%, #10231dc9 100%);
     }
     .loading-mark {
-      width: min(280px, 72vw);
-      aspect-ratio: 5 / 3;
-      object-fit: contain;
-      border-radius: 18px;
-      filter: drop-shadow(0 12px 28px rgba(8, 30, 20, 0.28));
+      position: absolute;
+      top: max(5vh, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(88vw, 95vh, 760px);
+      height: auto;
+      filter: drop-shadow(0 5px 16px #17322650);
     }
-    .loading-title { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: 0.04em; }
-    #status { min-height: 1.4em; color: var(--loading-muted); font-size: 13px; }
+    .loading-panel {
+      position: absolute;
+      left: 50%;
+      bottom: max(7vh, calc(env(safe-area-inset-bottom) + 24px));
+      transform: translateX(-50%);
+      width: min(300px, calc(100% - 48px));
+      box-sizing: border-box;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      padding: 20px 22px;
+      border: 1px solid #e2f3d344;
+      border-radius: 18px;
+      background: #163b2be8;
+      box-shadow: 0 10px 35px #10231d3b;
+      text-align: center;
+      color: #f7f9eb;
+    }
+    .loading-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .loading-tagline { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .01em; }
+    #status { min-height: 1.4em; color: #d5e9cf; font-size: 13px; }
     #progress {
-      width: min(280px, 100%);
-      height: 8px;
+      width: 100%;
+      height: 7px;
       overflow: hidden;
       border: 0;
       border-radius: 999px;
-      background: var(--loading-track);
+      background: #c0dfac35;
     }
+    @media (max-height: 420px) and (min-aspect-ratio: 1/1) {
+      .loading-panel { bottom: 20px; padding: 12px 18px; gap: 7px; }
+      .loading-mark { width: min(62vh, 480px); top: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .loading-screen { transition: none; } }
     #progress::-webkit-progress-bar { border-radius: 999px; background: var(--loading-track); }
     #progress::-webkit-progress-value { border-radius: 999px; background: var(--loading-progress); }
     #progress::-moz-progress-bar { border-radius: 999px; background: var(--loading-progress); }
   </style>
 </head>
 <body>
-  <div class="loading-screen" id="loading-screen" role="status" aria-live="polite">
+  <div class="loading-screen" id="loading-screen" aria-labelledby="loading-title">
+    <picture class="loading-art" aria-hidden="true">
+      <source media="(max-aspect-ratio: 1/1)" srcset="title-portrait.png?v=__SHOVEY_REVISION__">
+      <img src="title-landscape.png?v=__SHOVEY_REVISION__" width="1440" height="960" alt="" fetchpriority="high">
+    </picture>
+    <img class="loading-mark" src="logo.png?v=__SHOVEY_REVISION__" alt="" width="1200" height="410" fetchpriority="high">
     <div class="loading-panel">
-      <img class="loading-mark" src="loading.png" alt="" width="280" height="168">
-      <h1 class="loading-title">Shovey</h1>
-      <div id="status">Downloading…</div>
-      <progress id="progress" value="0" max="100" hidden></progress>
+      <h1 class="loading-title" id="loading-title">Shovey</h1>
+      <p class="loading-tagline">Push. Solve. Come home.</p>
+      <div id="status" role="status" aria-live="polite">Loading your way home…</div>
+      <progress id="progress" value="0" max="100" aria-label="Loading Shovey" hidden></progress>
     </div>
   </div>
   <div id="zib-controls"></div>
@@ -105,8 +163,26 @@
     var statusElement = document.getElementById('status');
     var progressElement = document.getElementById('progress');
     var buildRevision = '__SHOVEY_REVISION__';
+    var loadingCheck;
     function hideLoadingScreen() {
-      window.requestAnimationFrame(function() { loadingScreen.classList.add('is-hidden'); });
+      if (loadingCheck) return;
+      function ready() {
+        try {
+          var fs = Module.FS;
+          var canvas = document.getElementById('canvas');
+          if (fs && fs.analyzePath('/kryon-apps/shovey/assets/shovey/catalog.json').exists && canvas.width && canvas.height) {
+            var pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+            var colors = new Set();
+            for (var at = 0; at < pixels.length; at += 388) colors.add((pixels[at] << 16) | (pixels[at + 1] << 8) | pixels[at + 2]);
+            if (colors.size > 64) {
+              loadingScreen.classList.add('is-hidden');
+              return;
+            }
+          }
+        } catch (_) {}
+        loadingCheck = window.requestAnimationFrame(ready);
+      }
+      loadingCheck = window.requestAnimationFrame(ready);
     }
     var Module = {
       locateFile: function(path) { return path === 'runtime.wasm' ? 'index.wasm?v=' + buildRevision : path; },

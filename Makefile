@@ -89,6 +89,10 @@ web: bundles
 	cp src/web/index.html build/web/index.html
 	python3 scripts/stamp-web.py
 	cp assets/shovey/preview.png build/web/loading.png
+	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png build/web/
+	cp assets/branding/shovey-icon.png build/web/icon.png
+	cp assets/branding/shovey-social.png build/web/og.png
+	cp src/web/manifest.webmanifest src/web/_headers build/web/
 	cp build/web/runtime.js build/web/index.js
 	cp build/web/runtime.wasm build/web/index.wasm
 	rm -f build/web/runtime.html build/web/runtime.js build/web/runtime.wasm
