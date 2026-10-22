@@ -52,6 +52,8 @@ loaded: bool;
 help_open: bool;
 // The title screen opens the game and returns until Play.
 title_open: bool = true;
+// Whether the host has a game library to return to: -1 until asked.
+title_library: s32 = -1;
 save_failed: bool;
 help_scroll: s32;
 // Touch-first: hidden until the board is touched, then hidden again for keyboard.
@@ -246,6 +248,16 @@ ContinueGame :: () {
     Remember()
 }
 
+// Back from a level, its list or help returns to the title screen; false
+// on the title screen, so the host can leave the game.
+ShoveyBack :: () -> bool {
+    if title_open { return false }
+    title_open = true
+    selector_open = false
+    help_open = false
+    return true
+}
+
 // The title screen: the game's art and name, then the way in.
 ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) {
     height := bottom - top
@@ -267,11 +279,19 @@ ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) 
             .tone = ButtonTone.ButtonToneSuccess, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
         title_open = false
     }
-    // Levels, help and sound, and the other games when the host has them.
-    count: s32 = ifx can_leave then 4 else 3
+    // Levels, help and sound, then the editor and the other games when the
+    // host has them.
+    if title_library < 0 { title_library = ifx LibraryAvailable() then 1 else 0 }
+    count: s32 = ifx title_library == 1 then 4 else 3
     row_width := cast(float32)count * 56.0 - 12.0
     x := (width - row_width) / 2.0
     y := play_y + 76.0
+    if can_leave && Button(frame.session, ButtonProps.{.key = cast(u64)20207, .id = 20207,
+            .bounds = Rectangle.{width / 2.0 + play_width / 2.0 + 12.0, play_y + 10.0, 128.0, 44.0},
+            .label = AppLocaleHost("shovey_editor"), .icon_shape = ICON_EDITOR, .fit_content = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        OpenEditor()
+    }
     if Control(20203, Rectangle.{x, y, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         title_open = false
         selector_open = true
@@ -284,7 +304,7 @@ ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) 
             ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
         SoundSetMuted(!SoundMuted())
     }
-    if can_leave && Control(20206, Rectangle.{x + 168.0, y, 44.0, 44.0}, AppLocaleHost("shovey_games"), false, "", ICON_GAMES) {
+    if title_library == 1 && Control(20206, Rectangle.{x + 168.0, y, 44.0, 44.0}, AppLocaleHost("shovey_games"), false, "", ICON_GAMES) {
         LeaveForGameSelection()
     }
 }
@@ -319,11 +339,11 @@ ShoveyFrame :: () {
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
-        if can_leave && Control(20022, Rectangle.{16.0, top + 12.0, 88.0, 44.0}, AppLocaleHost("shovey_back")) {
-            LeaveForGameSelection()
+        if Control(20022, Rectangle.{16.0, top + 12.0, 88.0, 44.0}, AppLocaleHost("shovey_back")) {
+            unused ShoveyBack()
             return
         }
-        heading_x: float32 = ifx can_leave then 112.0 else 16.0
+        heading_x: float32 = 112.0
         Caption(20103, Rectangle.{heading_x, top + 12.0, width - 144.0 - heading_x, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
@@ -400,11 +420,11 @@ ShoveyFrame :: () {
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
     // Return sits at the edge, then the game's own navigation and status.
-    if can_leave && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
-        LeaveForGameSelection()
+    if Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
+        unused ShoveyBack()
         return
     }
-    levels_x: float32 = ifx can_leave then 92.0 else 8.0
+    levels_x: float32 = 92.0
     if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         selector_open = true
     }

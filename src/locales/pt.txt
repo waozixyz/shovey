@@ -175,3 +175,6 @@ Jogos
 [shovey_title_art]
 Shovey empurra uma caixa até casa por um jardim ensolarado
 ---
+[shovey_editor]
+Editor
+---

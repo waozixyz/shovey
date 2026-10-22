@@ -175,3 +175,6 @@ Hry
 [shovey_title_art]
 Shovey tlačí bednu domů slunnou zahradou
 ---
+[shovey_editor]
+Editor
+---

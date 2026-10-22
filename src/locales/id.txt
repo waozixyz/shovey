@@ -175,3 +175,6 @@ Permainan
 [shovey_title_art]
 Shovey mendorong peti pulang melewati taman yang cerah
 ---
+[shovey_editor]
+Editor
+---

@@ -175,3 +175,6 @@
 [shovey_title_art]
 쇼비가 햇살 가득한 정원에서 상자를 집으로 밀고 있어요
 ---
+[shovey_editor]
+편집기
+---

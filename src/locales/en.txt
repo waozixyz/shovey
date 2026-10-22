@@ -175,3 +175,6 @@ Games
 [shovey_title_art]
 Shovey pushes a crate home through a sunny garden
 ---
+[shovey_editor]
+Editor
+---

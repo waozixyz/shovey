@@ -175,3 +175,6 @@ Giochi
 [shovey_title_art]
 Shovey spinge una cassa verso casa in un giardino soleggiato
 ---
+[shovey_editor]
+Editor
+---

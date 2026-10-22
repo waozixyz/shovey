@@ -175,3 +175,6 @@
 [shovey_title_art]
 ショーヴィーが晴れた庭で木箱を家へ押していく
 ---
+[shovey_editor]
+エディター
+---

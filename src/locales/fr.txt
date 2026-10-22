@@ -175,3 +175,6 @@ Jeux
 [shovey_title_art]
 Shovey pousse une caisse jusqu’à la maison dans un jardin ensoleillé
 ---
+[shovey_editor]
+Éditeur
+---

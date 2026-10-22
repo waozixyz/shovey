@@ -175,3 +175,6 @@
 [shovey_title_art]
 Shovey 推着木箱穿过阳光花园回家
 ---
+[shovey_editor]
+编辑器
+---
