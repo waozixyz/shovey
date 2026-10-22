@@ -265,15 +265,17 @@ ShoveyFrame :: () {
     width := cast(float32)frame.width
     top := cast(float32)frame.top
     bottom := cast(float32)(frame.height - frame.bottom)
+    can_leave := GameSelectionAvailable()
     ShoveyDress(frame.session, width, top, bottom)
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
-        if Control(20022, Rectangle.{16.0, top + 12.0, 88.0, 44.0}, AppLocaleHost("shovey_back")) {
+        if can_leave && Control(20022, Rectangle.{16.0, top + 12.0, 88.0, 44.0}, AppLocaleHost("shovey_back")) {
             LeaveForGameSelection()
             return
         }
-        Caption(20103, Rectangle.{112.0, top + 12.0, width - 256.0, 44.0}, AppLocaleHost("shovey_levels"), 24)
+        heading_x := ifx can_leave then 112.0 else 16.0
+        Caption(20103, Rectangle.{heading_x, top + 12.0, width - 144.0 - heading_x, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
         }
@@ -349,14 +351,15 @@ ShoveyFrame :: () {
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
     // Return sits at the edge, then the game's own navigation and status.
-    if Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
+    if can_leave && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
         LeaveForGameSelection()
         return
     }
-    if Control(20002, Rectangle.{92.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+    levels_x := ifx can_leave then 92.0 else 8.0
+    if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         selector_open = true
     }
-    Caption(20001, Rectangle.{140.0, top + 4.0, width - 296.0, 44.0}, HeaderText(), 14, true)
+    Caption(20001, Rectangle.{levels_x + 48.0, top + 4.0, width - 204.0 - levels_x, 44.0}, HeaderText(), 14, true)
     if Control(20016, Rectangle.{width - 156.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
         ChangeLevel(game.level)
     }

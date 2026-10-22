@@ -1,6 +1,11 @@
 # Shovey changelog
 
-## [0.6.9] - 2026-10-21
+## [0.6.11] - 2026-10-21
+
+- Use the Back button to return from play or level selection.
+- Older Inner Breeze versions keep their existing Back button.
+- The approved Classic campaign ends at level 19; Island remains unavailable.
+## [0.6.10] - 2026-10-21
 
 - Return to the Shovey chooser with a clearly labelled Back button from the board or level selector.
 - Play the approved Classic campaign through level 19 while later levels remain in the editor.

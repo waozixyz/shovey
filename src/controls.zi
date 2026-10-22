@@ -19,6 +19,7 @@
 } else {
     host_api :: #system_library "host_api";
     AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+    AppSupportsHost :: (capability: string) -> bool #foreign host_api;
 }
 #import "std/text_buffer"
 
@@ -108,4 +109,9 @@ SoundSetMuted :: (muted: bool) {
 
 LeaveForGameSelection :: () {
     unused AppServiceHost("arcade.navigation", "back")
+}
+
+GameSelectionAvailable :: () -> bool {
+    #if #defined(SHOVEY_WEB) { return false }
+    else { return AppSupportsHost("arcade.navigation") }
 }

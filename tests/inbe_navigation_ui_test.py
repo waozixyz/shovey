@@ -23,6 +23,8 @@ def main():
                         help='Arcade collection built with these Shovey sources')
     parser.add_argument('--release-metadata', type=Path,
                         help='Load the signed installed package cache instead of a developer override')
+    parser.add_argument('--host-navigation-only', action='store_true',
+                        help='Check the working host Back control on older Inbe versions')
     args = parser.parse_args()
     assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
     assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
@@ -122,11 +124,13 @@ def main():
                     driver.wait(label=f'Level 1 / {approved_count}', role='text')
                     # Exercise Shovey's own action, below Inbe's return bar.
                     back = driver.find(label='Back', role='button', visible=True)
+                    assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working Back action'
                     driver.press(key=max(back, key=lambda node: node['y'])['key'])
                     driver.wait(label='Shovey Classic', role='button')
                     driver.press(label='Shovey Classic', role='button')
                     driver.press(label='Levels', role='button')
                     back = driver.find(label='Back', role='button', visible=True)
+                    assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working selector Back action'
                     driver.press(key=max(back, key=lambda node: node['y'])['key'])
                     driver.wait(label='Shovey Classic', role='button')
                     driver.press(label='Shovey Classic', role='button')
