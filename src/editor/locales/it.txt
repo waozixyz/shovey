@@ -134,7 +134,7 @@ Ricomincia
 Lancia
 ---
 [editor_controls]
-Frecce o WASD, scorri, tocca o la levetta; Spazio lancia in Classic
+Frecce o WASD, scorri o tocca; Spazio lancia in Classic
 ---
 [editor_won]
 Vinto!

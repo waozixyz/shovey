@@ -49,18 +49,6 @@
 [shovey_controls]
 방향키 / WASD · R 다시 시작 · H 도움말 · 스페이스 던지기
 ---
-[shovey_controls_setting]
-터치 조작
----
-[shovey_controls_auto]
-자동
----
-[shovey_controls_stick]
-조이스틱
----
-[shovey_controls_swipe]
-스와이프만
----
 [shovey_shadow_pending]
 이 단계의 그림자 규칙은 아직 확인이 필요합니다.
 ---

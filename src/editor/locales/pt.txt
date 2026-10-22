@@ -134,7 +134,7 @@ Reiniciar
 Lançar
 ---
 [editor_controls]
-Setas ou WASD, deslizar, tocar ou o joystick; Espaço lança no Classic
+Setas ou WASD, deslizar ou tocar; Espaço lança no Classic
 ---
 [editor_won]
 Vitória!

@@ -134,7 +134,7 @@ Neu starten
 Werfen
 ---
 [editor_controls]
-Pfeiltasten oder WASD, wischen, tippen oder der Stick; Leertaste wirft in Classic
+Pfeiltasten oder WASD, wischen oder tippen; Leertaste wirft in Classic
 ---
 [editor_won]
 Geschafft!

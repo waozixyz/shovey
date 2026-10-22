@@ -49,18 +49,6 @@
 [shovey_controls]
 矢印キー / WASD · R やり直し · H ヘルプ · スペース 投げる
 ---
-[shovey_controls_setting]
-タッチ操作
----
-[shovey_controls_auto]
-自動
----
-[shovey_controls_stick]
-ジョイスティック
----
-[shovey_controls_swipe]
-スワイプのみ
----
 [shovey_shadow_pending]
 このレベルの影のルールは、まだ確認が必要です。
 ---

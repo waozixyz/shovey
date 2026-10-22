@@ -62,38 +62,7 @@ ICON_GAMES :: "S2rr:M5 12L11 18M5 12L11 6M5 12H19"
 ICON_SOUND_ON :: "S2rr:M4 9H7L11 5V19L7 15H4ZM14 8.5C15.3 9.3 15.3 14.7 14 15.5M16.5 6C19 7.8 19 16.2 16.5 18"
 ICON_SOUND_OFF :: "S2rr:M4 9H7L11 5V19L7 15H4ZM15 9L20 15M20 9L15 15"
 
-CONTROLS_AUTO :: 0;
-CONTROLS_ON :: 1;
-CONTROLS_OFF :: 2;
-controls_setting: s32 = -1;
-controls_touch: bool;
 sound_muted: s32 = -1;
-
-ControlsSetting :: () -> s32 {
-    if controls_setting < 0 {
-        value := AppServiceHost("arcade.controls", "get")
-        controls_setting = CONTROLS_AUTO
-        if value == "on" { controls_setting = CONTROLS_ON }
-        if value == "off" { controls_setting = CONTROLS_OFF }
-        controls_touch = AppServiceHost("arcade.controls", "mode") == "touch"
-    }
-    return controls_setting
-}
-
-ControlsSet :: (value: s32) {
-    request := "set-auto"
-    if value == CONTROLS_ON { request = "set-on" }
-    if value == CONTROLS_OFF { request = "set-off" }
-    unused AppServiceHost("arcade.controls", request)
-    controls_setting = value
-}
-
-ControlsJoystickAllowed :: () -> bool {
-    setting := ControlsSetting()
-    if setting == CONTROLS_OFF { return false }
-    if setting == CONTROLS_ON { return true }
-    return controls_touch
-}
 
 SoundMuted :: () -> bool {
     if sound_muted < 0 {

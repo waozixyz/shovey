@@ -134,7 +134,7 @@ Restart
 Throw
 ---
 [editor_controls]
-Arrow keys or WASD, swipe, tap or the stick; Space throws in Classic
+Arrow keys or WASD, swipe or tap; Space throws in Classic
 ---
 [editor_won]
 Won!

@@ -134,7 +134,7 @@ Island
 投げる
 ---
 [editor_controls]
-矢印キーかWASD、スワイプ、タップ、スティック。Classicではスペースで投げます
+矢印キーかWASD、スワイプかタップ。Classicではスペースで投げます
 ---
 [editor_won]
 クリア！

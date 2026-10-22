@@ -49,18 +49,6 @@ Could not save. Try another move to retry.
 [shovey_controls]
 Arrow keys / WASD · R restart · H help · Space throw
 ---
-[shovey_controls_setting]
-Touch controls
----
-[shovey_controls_auto]
-Auto
----
-[shovey_controls_stick]
-Joystick
----
-[shovey_controls_swipe]
-Swipe only
----
 [shovey_shadow_pending]
 Shadow rules still need verification in this level.
 ---

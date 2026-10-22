@@ -2,6 +2,7 @@
 // way the engine allows, and loops that bring the board back to an earlier
 // state are cut. A route is only replaced by one the engine replays to a
 // win; moves after the win are dropped.
+#import "std/number_text"
 #import "std/text_buffer"
 #import, file "../../src/engine.zi";
 
@@ -219,4 +220,96 @@ RoutesShorten :: (data: string, route: string) -> string {
         best = loops
     }
     return TextView(routes_best[0:best])
+}
+
+// ---------------------------------------------------------------------------
+// What a route does
+
+routes_moved: [SHOVEY_CELLS]bool;
+routes_gates: [SHOVEY_CELLS]bool;
+
+RoutesPut :: (out: []u8, length: *s32, text: string) {
+    for byte: text {
+        if length.* < cast(s32)out.count { out[length.*] = byte; length.* += 1 }
+    }
+}
+
+RoutesPutCount :: (out: []u8, length: *s32, name: string, value: s32) {
+    digits: [24]u8
+    if length.* > 0 { RoutesPut(out, length, " ") }
+    RoutesPut(out, length, name)
+    RoutesPut(out, length, "=")
+    RoutesPut(out, length, FormatInteger(cast(s64)value, digits[:]))
+}
+
+// One line of name=value counts for a route on a board: moves, pushes,
+// pieces moved and left idle, lever switches and levers never used, doors
+// opened, gates crossed, pickups, shots, ticks and whether it wins.
+RoutesDescribe :: (data: string, route: string, out: []u8) -> s32 {
+    game: ShoveyGame
+    if !ShoveyLoadData(*game, 0, data) { return -1 }
+    start := game
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { routes_moved[at] = false; routes_gates[at] = false }
+    moves: s32 = 0
+    pushes: s32 = 0
+    switches: s32 = 0
+    doors: s32 = 0
+    pickups: s32 = 0
+    shots: s32 = 0
+    ticks: s32 = 0
+    used_colors: s32 = 0
+    for letter: route {
+        if game.won || game.lost { break }
+        action := RoutesAction(letter)
+        if action < 0 { return -1 }
+        before := game
+        RoutesAct(*game, action)
+        if action <= 3 && game.player != before.player { moves += 1 }
+        if action == 4 { shots += 1 }
+        if action == 5 { ticks += 1 }
+        pushed := false
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.objects[at] != before.objects[at] && action <= 3 { pushed = true }
+            if game.objects[at] != start.objects[at] && start.objects[at] != 0 { routes_moved[at] = true }
+            was := before.ground[at]
+            now := game.ground[at]
+            if was == now { continue }
+            if ShoveyLever(was) && ShoveyLever(now) { switches += 1; used_colors |= 1 << ShoveyLeverColor(was) }
+            else if ShoveyClosedDoor(was) { doors += 1 }
+            else if now == 0 && (was == 21 || was == 56 || was == 33 || was == 26 || was == 25 || was == 27 || was == 35) { pickups += 1 }
+        }
+        if pushed { pushes += 1 }
+        if game.player >= 0 && ShoveyGateColor(game.ground[game.player]) >= 0 { routes_gates[game.player] = true }
+    }
+    pieces: s32 = 0
+    moved: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if start.objects[at] != 0 && ShoveyMovable(start.objects[at]) {
+            pieces += 1
+            if routes_moved[at] { moved += 1 }
+        }
+    }
+    idle_colors: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        color := ShoveyLeverColor(start.ground[at])
+        if color >= 0 && (used_colors & (1 << color)) == 0 && (idle_colors & (1 << color)) == 0 { idle_colors |= 1 << color }
+    }
+    idle_levers: s32 = 0
+    for color: cast(s32)0..7 { if (idle_colors & (1 << color)) != 0 { idle_levers += 1 } }
+    gates: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { if routes_gates[at] { gates += 1 } }
+    length: s32 = 0
+    RoutesPutCount(out, *length, "moves", moves)
+    RoutesPutCount(out, *length, "pushes", pushes)
+    RoutesPutCount(out, *length, "pieces_moved", moved)
+    RoutesPutCount(out, *length, "pieces_idle", pieces - moved)
+    RoutesPutCount(out, *length, "lever_switches", switches)
+    RoutesPutCount(out, *length, "lever_colors_idle", idle_levers)
+    RoutesPutCount(out, *length, "doors_opened", doors)
+    RoutesPutCount(out, *length, "gates_crossed", gates)
+    RoutesPutCount(out, *length, "pickups", pickups)
+    RoutesPutCount(out, *length, "shots", shots)
+    RoutesPutCount(out, *length, "ticks", ticks)
+    RoutesPutCount(out, *length, "wins", ifx game.won && !game.lost then 1 else 0)
+    return length
 }

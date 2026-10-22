@@ -134,7 +134,7 @@ Island
 投掷
 ---
 [editor_controls]
-方向键或 WASD、滑动、点按或摇杆；在 Classic 中按空格键投掷
+方向键或 WASD、滑动或点按；在 Classic 中按空格键投掷
 ---
 [editor_won]
 通关！

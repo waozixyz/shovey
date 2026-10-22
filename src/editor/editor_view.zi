@@ -25,7 +25,6 @@
 #import "kryon/press_widget"
 #import "kryon/scroll_props"
 #import "kryon/scroll_widget"
-#import "kryon/joystick"
 #import "kryon/tree"
 #import "kryon/tile_map"
 #import "kryon/widget_palette"
@@ -137,7 +136,6 @@ editor_budget: s64;
 
 editor_play: EditPlay;
 editor_play_tick: float64;
-editor_joystick_hidden: bool = true;
 
 editor_levels_scroll: s32;
 editor_palette_scroll: s32;
@@ -1007,7 +1005,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     if key == 265 || key == 87 { keyed = 1 }
     if key == 262 || key == 68 { keyed = 2 }
     if key == 264 || key == 83 { keyed = 3 }
-    if keyed >= 0 { editor_joystick_hidden = true; EditorAct(BoardEngineDirection(keyed, landscape)) }
+    if keyed >= 0 { EditorAct(BoardEngineDirection(keyed, landscape)) }
     if key == 32 && !editor_island { EditorAct(-1) }
     if !editor_island && editor_frame.now - editor_play_tick >= 1.0 {
         unused EditPlayTick(*editor_play)
@@ -1024,10 +1022,6 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     // either to keep walking.
     gesture := SwipeArea(editor_frame.session, SwipeAreaProps.{.key = cast(u64)405, .id = 405, .bounds = grid.board,
             .label = EditorText("editor_controls"), .now = editor_frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
-    joystick_allowed := ControlsJoystickAllowed()
-    if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { editor_joystick_hidden = true }
-    if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { editor_joystick_hidden = false }
-    if gesture.down && joystick_allowed { editor_joystick_hidden = false }
     step := BoardEngineDirection(gesture.swiped, landscape)
     player := ifx editor_island then editor_play.isle.player else editor_play.classic.player
     if gesture.tapped || gesture.held {
@@ -1038,18 +1032,8 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
                 cast(float32)(cell / EDIT_WIDTH - player / EDIT_WIDTH), 1.0)
         }
     }
-    if !editor_joystick_hidden && !disabled {
-        size := ifx width < bottom - top then width else bottom - top
-        size *= 0.3
-        if size < 104.0 { size = 104.0 }
-        if size > 180.0 { size = 180.0 }
-        stick := Joystick(editor_frame.session, JoystickProps.{.key = cast(u64)406, .id = 406,
-                .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size}, .repeat_seconds = 0.16,
-                .label = EditorText("editor_controls"), .now = editor_frame.now})
-        if stick.step { step = BoardEngineDirection(stick.direction, landscape) }
-        if !editor_island && (editor_play.classic.powers & SHOVEY_AMMO) != 0 {
-            if EditorControl(407, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, EditorText("editor_throw")) { EditorAct(-1) }
-        }
+    if !disabled && !editor_island && (editor_play.classic.powers & SHOVEY_AMMO) != 0 {
+        if EditorControl(407, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, EditorText("editor_throw")) { EditorAct(-1) }
     }
     if step >= 0 { EditorAct(step) }
 }

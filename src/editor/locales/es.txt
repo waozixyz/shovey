@@ -134,7 +134,7 @@ Reiniciar
 Lanzar
 ---
 [editor_controls]
-Flechas o WASD, deslizar, tocar o la palanca; Espacio lanza en Classic
+Flechas o WASD, deslizar o tocar; Espacio lanza en Classic
 ---
 [editor_won]
 ¡Ganado!

@@ -134,7 +134,7 @@ Recommencer
 Lancer
 ---
 [editor_controls]
-Flèches ou WASD, glisser, toucher ou le joystick ; Espace lance dans Classic
+Flèches ou WASD, glisser ou toucher ; Espace lance dans Classic
 ---
 [editor_won]
 Gagné !

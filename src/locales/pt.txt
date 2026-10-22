@@ -49,18 +49,6 @@ Não foi possível salvar. Tente outro movimento.
 [shovey_controls]
 Setas / WASD · R reiniciar · H ajuda · Espaço lançar
 ---
-[shovey_controls_setting]
-Controle por toque
----
-[shovey_controls_auto]
-Automático
----
-[shovey_controls_stick]
-Joystick
----
-[shovey_controls_swipe]
-Somente gestos
----
 [shovey_shadow_pending]
 As regras da sombra neste nível ainda precisam ser verificadas.
 ---

@@ -15,7 +15,6 @@
 #import "press_widget"
 #import "scroll_props"
 #import "scroll_widget"
-#import "joystick"
 #import "tree"
 #import "number_text"
 #import "text_buffer"
@@ -53,7 +52,6 @@ help_open: bool;
 save_failed: bool;
 help_scroll: s32;
 // Touch-first: hidden until the board is touched, then hidden again for keyboard.
-joystick_hidden: bool = true;
 last_tick: float64;
 // A slide plays one cell at a time: the boards it passes through, and which
 // one is drawn next. Input waits until the last is shown.
@@ -377,24 +375,13 @@ ShoveyFrame :: () {
     if help_open {
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
                 .bounds = Rectangle.{16.0, top + 56.0, width - 32.0, bottom - top - 64.0},
-                .content_height = 2280, .scroll_offset = help_scroll})
+                .content_height = 2192, .scroll_offset = help_scroll})
         help_scroll = scroll.scroll_offset
         if scroll.opened {
-            setting := ControlsSetting()
-            Caption(20030, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, 28.0}, AppLocaleHost("shovey_controls_setting"), 16)
-            choice_width := (scroll.content.width - 16.0 - 16.0) / 3.0
-            choices: [3]s32 = .[CONTROLS_AUTO, CONTROLS_ON, CONTROLS_OFF]
-            keys: [3]string = .["shovey_controls_auto", "shovey_controls_stick", "shovey_controls_swipe"]
-            for index: cast(s32)0..2 {
-                if Control(20031 + index, Rectangle.{scroll.content.x + cast(float32)index * (choice_width + 8.0),
-                        scroll.content.y + 34.0, choice_width, 44.0}, AppLocaleHost(keys[index]), setting != choices[index]) {
-                    ControlsSet(choices[index])
-                }
-            }
-            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y + 88.0, scroll.content.width - 16.0, 300.0}, AppLocaleHost("shovey_instructions"))
+            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, 300.0}, AppLocaleHost("shovey_instructions"))
             kinds: [27]s32 = .[10, 1, 4, 7, 8, 9, 11, 12, 13, 14, 15, 18, 19, 20, 21, 25, 26, 27, 28, 29, 33, 34, 35, 36, 39, 40, 0]
             for index: cast(s32)0..26 {
-                y := scroll.content.y + 404.0 + cast(float32)index * 68.0
+                y := scroll.content.y + 316.0 + cast(float32)index * 68.0
                 Tile(cast(u64)(40000 + index * 16), kinds[index], Rectangle.{scroll.content.x, y, 40.0, 40.0})
                 Caption(cast(u64)(41000 + index), Rectangle.{scroll.content.x + 52.0, y, scroll.content.width - 68.0, 44.0}, TileName(kinds[index]))
             }
@@ -414,7 +401,7 @@ ShoveyFrame :: () {
     if key == 262 || key == 68 { keyed = 2 }
     if key == 264 || key == 83 { keyed = 3 }
     // A keyboard player does not need the on-screen stick until they touch.
-    if keyed >= 0 { joystick_hidden = true; changed = ShoveyAct(BoardEngineDirection(keyed, landscape)) }
+    if keyed >= 0 { changed = ShoveyAct(BoardEngineDirection(keyed, landscape)) }
     if key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
     if slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
@@ -458,14 +445,10 @@ ShoveyFrame :: () {
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     disabled := game.won || game.lost || game.level == SHOVEY_LEVEL_COUNT
     // Touch: swipe anywhere under the bar to step, or tap a cell to step
-    // towards it; hold either to keep walking. The stick and Fire come after, so they stay on top.
+    // towards it; hold either to keep walking. Fire comes after, so it stays on top.
     play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
     gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
             .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
-    joystick_allowed := ControlsJoystickAllowed()
-    if !joystick_allowed || ControlsSetting() == CONTROLS_OFF { joystick_hidden = true }
-    if joystick_allowed && (ControlsSetting() == CONTROLS_ON || controls_touch) { joystick_hidden = false }
-    if gesture.down && joystick_allowed { joystick_hidden = false }
     step := BoardEngineDirection(gesture.swiped, landscape)
     if gesture.tapped || gesture.held {
         cell := TileMapCellAt(grid, gesture.x, gesture.y)
@@ -475,19 +458,9 @@ ShoveyFrame :: () {
                 cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
         }
     }
-    if !joystick_hidden && !disabled {
-        size := ifx width < bottom - top then width else bottom - top
-        size *= 0.3
-        if size < 104.0 { size = 104.0 }
-        if size > 180.0 { size = 180.0 }
-        stick := Joystick(frame.session, JoystickProps.{.key = cast(u64)20020, .id = 20020,
-                .bounds = Rectangle.{14.0, bottom - size - 14.0, size, size}, .repeat_seconds = 0.16,
-                .label = AppLocaleHost("shovey_controls"), .now = frame.now})
-        if stick.step { step = BoardEngineDirection(stick.direction, landscape) }
-        if (game.powers & SHOVEY_AMMO) != 0 {
-            if Control(20018, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, AppLocaleHost("shovey_fire"), disabled) {
-                changed = ShoveyAct(-1) || changed
-            }
+    if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
+        if Control(20018, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, AppLocaleHost("shovey_fire"), disabled) {
+            changed = ShoveyAct(-1) || changed
         }
     }
     if step >= 0 { changed = ShoveyAct(step) || changed }

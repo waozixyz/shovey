@@ -4,11 +4,12 @@
 //     make routes-tool
 //     build/levels/shorten [--levels DIR] [--no-generate] [LEVEL...]
 //     build/levels/shorten --route LEVEL BOARDHEX ROUTE
+//     build/levels/shorten --describe LEVEL BOARDHEX ROUTE
 //
 // Without levels, every level with a route is checked. A level is written
 // back only with a shorter route that wins in the engine; afterwards the
 // level code is generated again, unless --no-generate. --route prints the
-// shortest route found for one board.
+// shortest route found for one board; --describe what a route does.
 #import "std/byte_text_linux"
 #import "std/file"
 #import "std/number_text"
@@ -75,6 +76,14 @@ BoardText :: (board: *EditBoard) -> string {
 
 #program_export
 main :: (argc: s32, argv: **u8) -> s32 {
+    if argc == 5 && TextFromCString(argv[1]) == "--describe" {
+        line: [512]u8
+        length := RoutesDescribe(TextFromCString(argv[3]), TextFromCString(argv[4]), line[:])
+        if length < 0 { return 1 }
+        Say(1, TextView(line[0:length]))
+        Say(1, "\n")
+        return 0
+    }
     if argc == 5 && TextFromCString(argv[1]) == "--route" {
         route := RoutesShorten(TextFromCString(argv[3]), TextFromCString(argv[4]))
         if !RoutesWins(TextFromCString(argv[3]), route) { return 1 }

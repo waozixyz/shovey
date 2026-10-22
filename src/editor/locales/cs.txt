@@ -134,7 +134,7 @@ Znovu
 Hodit
 ---
 [editor_controls]
-Šipky nebo WASD, tah, klepnutí nebo páčka; mezerník v Classic hází
+Šipky nebo WASD, tah nebo klepnutí; mezerník v Classic hází
 ---
 [editor_won]
 Vyřešeno!

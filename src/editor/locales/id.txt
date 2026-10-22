@@ -134,7 +134,7 @@ Ulangi
 Lempar
 ---
 [editor_controls]
-Tombol panah atau WASD, usap, ketuk, atau stik; Spasi melempar di Classic
+Tombol panah atau WASD, usap atau ketuk; Spasi melempar di Classic
 ---
 [editor_won]
 Menang!

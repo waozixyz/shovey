@@ -49,18 +49,6 @@ Enregistrement impossible. Réessaie avec un autre coup.
 [shovey_controls]
 Flèches / WASD · R recommencer · H aide · Espace lancer
 ---
-[shovey_controls_setting]
-Commandes tactiles
----
-[shovey_controls_auto]
-Auto
----
-[shovey_controls_stick]
-Joystick
----
-[shovey_controls_swipe]
-Gestes uniquement
----
 [shovey_shadow_pending]
 Les règles de l’ombre restent à vérifier dans ce niveau.
 ---

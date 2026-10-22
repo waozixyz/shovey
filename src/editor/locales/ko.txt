@@ -134,7 +134,7 @@ Island
 던지기
 ---
 [editor_controls]
-화살표 키나 WASD, 스와이프, 탭 또는 스틱. Classic에서는 스페이스로 던집니다
+화살표 키나 WASD, 스와이프 또는 탭. Classic에서는 스페이스로 던집니다
 ---
 [editor_won]
 성공!
