@@ -115,7 +115,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
     route := text[level.solution.start:level.solution.end]
     if !ShoveyLoadData(*before, 0, EditBoardHex(*board)) { return Fail("the engine refuses the board") }
     count: SceneryCount
-    if !SceneryDress(*board, route, number, *count) { return Fail("the dressed route does not win") }
+    if !SceneryDress(*board, route, number, *count) { return Fail(scenery_failure) }
     if !ShoveyLoadData(*after, 0, EditBoardHex(*board)) { return Fail("the engine refuses the dressed board") }
     if !OpenDesktopSized(PICTURE_WIDTH, PICTURE_HEIGHT) {
         CloseDesktop()

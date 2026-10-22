@@ -47,6 +47,8 @@ scenery_seen: [EDIT_CELLS]bool;
 scenery_queue: [EDIT_CELLS]s32;
 scenery_animals: [EDIT_CELLS]bool;
 scenery_hex: [EDIT_CELLS * 6]u8;
+// Why the last dressing was refused.
+scenery_failure: string;
 
 // ---------------------------------------------------------------------------
 // The route
@@ -79,7 +81,9 @@ SceneryTrace :: (board: *EditBoard, route: string, path: []bool) -> bool {
     start := game
     SceneryMark(path, *game, *start)
     for letter: route {
-        if game.won || game.lost { return false }
+        // As in play and the solver's check, moves after the win are ignored.
+        if game.won { break }
+        if game.lost { return false }
         if letter >= #char "0" && letter <= #char "3" {
             direction := cast(s32)(letter - #char "0")
             count := ShoveyMoveFrames(*game, direction, scenery_frames[:])
@@ -387,7 +391,9 @@ SceneryLilies :: (board: *EditBoard, level: s32, count: *SceneryCount) {
 SceneryDress :: (board: *EditBoard, route: string, level: s32, count: *SceneryCount) -> bool {
     count.* = SceneryCount.{}
     for at: cast(s32)0..EDIT_CELLS - 1 { scenery_placed[at] = false }
+    scenery_failure = "its stored route does not win"
     if board.island || !SceneryTrace(board, route, scenery_path[:]) { return false }
+    scenery_failure = "its route does not win once dressed"
     dressed := board.*
     SceneryAnimalAreas(*dressed)
     SceneryShores(*dressed, count)

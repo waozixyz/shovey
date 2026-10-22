@@ -111,7 +111,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
         if !SceneryStoredBoard(text, level, *incoming.level.board) { return Fail("its board cannot be read", number) }
         route := text[level.solution.start:level.solution.end]
         tally: SceneryCount
-        if !SceneryDress(*incoming.level.board, route, number, *tally) { return Fail("its route does not win", number) }
+        if !SceneryDress(*incoming.level.board, route, number, *tally) { return Fail(scenery_failure, number) }
         if !EditSetRoute(*incoming.level, route) { return Fail("its route is too long", number) }
         level.fresh = index
         Say(1, "level ")
