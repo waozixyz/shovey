@@ -332,7 +332,7 @@ Balok bintang
 Apel
 ---
 [editor_plate]
-Pelat tekan
+Tombol hijau
 ---
 [editor_gate]
 Gerbang oranye
@@ -659,7 +659,7 @@ Lantai kayu
 Dinding kayu
 ---
 [editor_mossy_wall]
-Dinding berlumut
+Dinding batu berlumut
 ---
 [editor_door]
 Pintu
@@ -708,4 +708,28 @@ Gerbang biru terbuka
 ---
 [editor_open_green_gate]
 Gerbang hijau terbuka
+---
+[editor_mossy_slate_wall]
+Dinding batu sabak berlumut
+---
+[editor_mossy_brick_wall]
+Dinding bata berlumut
+---
+[editor_mossy_sandstone_wall]
+Dinding batu pasir berlumut
+---
+[editor_mossy_timber_wall]
+Dinding kayu berlumut
+---
+[editor_blue_button]
+Tombol biru
+---
+[editor_red_button]
+Tombol merah
+---
+[editor_yellow_button]
+Tombol kuning
+---
+[editor_purple_button]
+Tombol ungu
 ---

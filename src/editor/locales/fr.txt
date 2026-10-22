@@ -332,7 +332,7 @@ Bloc étoilé
 Pomme
 ---
 [editor_plate]
-Plaque de pression
+Bouton vert
 ---
 [editor_gate]
 Portail orange
@@ -659,7 +659,7 @@ Plancher en bois
 Mur en bois
 ---
 [editor_mossy_wall]
-Mur moussu
+Mur de pierre moussu
 ---
 [editor_door]
 Porte
@@ -708,4 +708,28 @@ Portail bleu ouvert
 ---
 [editor_open_green_gate]
 Portail vert ouvert
+---
+[editor_mossy_slate_wall]
+Mur d’ardoise moussu
+---
+[editor_mossy_brick_wall]
+Mur de briques moussu
+---
+[editor_mossy_sandstone_wall]
+Mur de grès moussu
+---
+[editor_mossy_timber_wall]
+Mur en bois moussu
+---
+[editor_blue_button]
+Bouton bleu
+---
+[editor_red_button]
+Bouton rouge
+---
+[editor_yellow_button]
+Bouton jaune
+---
+[editor_purple_button]
+Bouton violet
 ---

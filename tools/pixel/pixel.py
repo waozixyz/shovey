@@ -203,6 +203,8 @@ def shade(colour, factor):
 FLOOR = (208, 211, 210, 255)
 GRASS = (104, 172, 92, 255)
 ORANGE = (221, 137, 64, 255)
+MOSS_BUTTON_COLORS = ((57, 157, 61, 255), (65, 137, 211, 255),
+                      (207, 75, 60, 255), (224, 180, 47, 255), (155, 92, 204, 255))
 
 
 def grain(image, seed, dark=0.88, light=1.08, share=0.22):
@@ -383,9 +385,9 @@ def moss(image, seed, amount):
     return image
 
 
-def mossy_wall():
+def mossy_wall(style=-1):
     """The gate a button opens: the wall image with moss on top."""
-    image = moss(wall(), 31, 11)
+    image = moss(wall() if style < 0 else wall_variant(style), 31 + style + 1, 11)
     draw = ImageDraw.Draw(image)
     for points in ([(3, 4), (12, 4), (14, 7), (14, 12)],
                    [(27, 9), (25, 14), (27, 21), (24, 28)],
@@ -403,16 +405,16 @@ def mossy_floor():
     return floor()
 
 
-def pressure_plate():
+def pressure_plate(colour=None, material=None):
     """A round green push button recessed into the paving, like the original."""
     image = Image.new('RGBA', (SIZE, SIZE))
     draw = ImageDraw.Draw(image)
     draw.ellipse((4, 4, 27, 27), fill=(47, 58, 53, 255))
-    draw.ellipse((5, 5, 26, 26), fill=(201, 208, 198, 255))
-    draw.ellipse((7, 7, 24, 24), fill=(29, 85, 37, 255))
-    draw.ellipse((8, 8, 23, 23), fill=(57, 157, 61, 255))
-    draw.arc((8, 8, 23, 23), 195, 285, fill=(149, 212, 109, 255), width=1)
-    draw.arc((8, 8, 23, 23), 15, 105, fill=(37, 115, 44, 255), width=1)
+    draw.ellipse((5, 5, 26, 26), fill=shade(material, 1.25) if material else (201, 208, 198, 255))
+    draw.ellipse((7, 7, 24, 24), fill=shade(colour, 0.50) if colour else (29, 85, 37, 255))
+    draw.ellipse((8, 8, 23, 23), fill=colour or MOSS_BUTTON_COLORS[0])
+    draw.arc((8, 8, 23, 23), 195, 285, fill=shade(colour, 1.5) if colour else (149, 212, 109, 255), width=1)
+    draw.arc((8, 8, 23, 23), 15, 105, fill=shade(colour, 0.72) if colour else (37, 115, 44, 255), width=1)
     return image
 
 
@@ -450,32 +452,25 @@ def lantern():
 
 
 def door(opened=False, colour=None):
-    # The stone jamb uses the wall's exact bevel and grain, at the same
-    # full-cell scale. Only the actual doorway reveals the floor underneath.
-    image = wall()
+    # An overlay on the selected wall, without a built-in wall or floor.
+    image = Image.new('RGBA', (SIZE, SIZE))
     draw = ImageDraw.Draw(image)
-    draw.rectangle((5, 5, 26, 28), fill=(0, 0, 0, 0))
-    draw.line((5, 5, 26, 5), fill=shade(STONE, 0.46))
-    draw.line((5, 5, 5, 28), fill=shade(STONE, 0.54))
-    draw.line((26, 6, 26, 28), fill=shade(STONE, 1.12))
     wood = colour or (158, 109, 61, 255)
     if opened:
-        draw.polygon(((6, 6), (12, 9), (12, 28), (6, 28)), fill=wood)
-        draw.line((6, 6, 12, 9, 12, 27), fill=shade(wood, 1.26))
-        draw.line((7, 9, 7, 26), fill=shade(wood, 0.62))
-        draw.point((11, 18), fill=(246, 203, 89, 255))
+        draw.polygon(((3, 3), (10, 7), (10, 29), (3, 29)), fill=wood)
+        draw.line((3, 3, 10, 7, 10, 28), fill=shade(wood, 1.26))
+        draw.line((4, 7, 4, 27), fill=shade(wood, 0.62))
+        draw.point((9, 18), fill=(246, 203, 89, 255))
     else:
-        bevel(image, (6, 6, 25, 28), wood, 2, light=1.24, dark=0.60)
-        for box in ((9, 9, 22, 15), (9, 20, 22, 25)):
+        bevel(image, (3, 3, 28, 29), wood, 2, light=1.24, dark=0.60)
+        for box in ((7, 7, 24, 14), (7, 20, 24, 26)):
             bevel(image, box, shade(wood, 0.92), 1, raised=False, light=1.20, dark=0.64)
-        draw.rectangle((21, 16, 23, 18), fill=shade(wood, 0.50))
-        draw.rectangle((22, 16, 23, 17), fill=(235, 184, 67, 255))
-        draw.point((22, 16), fill=(255, 225, 136, 255))
+        draw.rectangle((24, 16, 26, 18), fill=shade(wood, 0.50))
+        draw.rectangle((25, 16, 26, 17), fill=(235, 184, 67, 255))
+        draw.point((25, 16), fill=(255, 225, 136, 255))
     for y in (9, 24):
-        draw.line((5, y, 7, y), fill=(66, 68, 63, 255))
-        draw.point((5, y), fill=(207, 208, 195, 255))
-    for point in ((0, 0), (SIZE - 1, 0), (0, SIZE - 1), (SIZE - 1, SIZE - 1)):
-        draw.point(point, fill=(0, 0, 0, 0))
+        draw.line((3, y, 5, y), fill=(66, 68, 63, 255))
+        draw.point((3, y), fill=(207, 208, 195, 255))
     return image
 
 
@@ -980,6 +975,9 @@ def sprites():
         out[f'tile-{124 + color}'] = (f'{name} gate: starts open and closes when its lever is on', gate(True, colour))
         out[f'tile-{116 + color * 2}'] = (f'{name} wooden door: opens when walked through', door(colour=colour))
         out[f'tile-{117 + color * 2}'] = (f'{name} wooden door standing open', door(True, colour))
+    for style, name in enumerate(('slate', 'brick', 'sandstone', 'timber')):
+        out[f'tile-{127 + style}'] = (f'mossy {name} wall: lowers onto its matching floor while its button is held', mossy_wall(style))
+        out[f'tile-{131 + style}'] = (f'{name} pressure button: controls matching mossy {name} walls', pressure_plate(MOSS_BUTTON_COLORS[style + 1], MATERIALS[style]))
     for facing, sprite in players.items():
         out[f'player-{facing}'] = (f'Shovey looking {facing}', sprite)
         out[f'charged-{facing}'] = (f'charged Shovey looking {facing}', glow(sprite))

@@ -425,12 +425,12 @@
     {
       "path": "sprites/tile-104.png",
       "depicts": "wooden door: opens when Shovey walks through it",
-      "sha256": "f8579457fa6edf859784455a5408dc1c451c81426a7493002be9f2fb23c72d99"
+      "sha256": "114f2e00c713a6cb720c4616b116d553aea21e2803cbbb55d3c159df327ccbf7"
     },
     {
       "path": "sprites/tile-105.png",
       "depicts": "wooden door standing open, with a clear passage",
-      "sha256": "7e70177f4d4312d9eccfccdd70789393dc3c30128df5aa76804607f61fead02c"
+      "sha256": "ab9dec8aef0780c304b200d681a84b9db1680945fbc9594d51b4b413bf203094"
     },
     {
       "path": "sprites/tile-106.png",
@@ -490,12 +490,12 @@
     {
       "path": "sprites/tile-116.png",
       "depicts": "red wooden door: opens when walked through",
-      "sha256": "39e2cafca4bfcbacb6639b67902fd4782684509d9e79f9066aac398a60269cda"
+      "sha256": "2e1618c0fad313a6c2e65516dbb59845e6d83002dc01bbad5826ad9dd67bd01f"
     },
     {
       "path": "sprites/tile-117.png",
       "depicts": "red wooden door standing open",
-      "sha256": "569c0951ec0a829a10ff2f1d5e38f897778d05fd437d5fa86541086b2ce9c6ff"
+      "sha256": "b20e0980f2c2d4eda294f79726dc16ca82a8990d26f240fcf22310756b0ca056"
     },
     {
       "path": "sprites/tile-110.png",
@@ -525,12 +525,12 @@
     {
       "path": "sprites/tile-118.png",
       "depicts": "blue wooden door: opens when walked through",
-      "sha256": "63f58f3f1a64105e789a6644150f3301aa27fd0690139799bb36c26bb39c07b9"
+      "sha256": "4c1d949d3d626f1f4ee50a8c7550bae6bda899eba176b3cde7442c2879164180"
     },
     {
       "path": "sprites/tile-119.png",
       "depicts": "blue wooden door standing open",
-      "sha256": "b7c6484cdd105c3f77df1153a76cfcbc33c90c801ae07e9f17ab91f0045b5903"
+      "sha256": "d3fe246bd7b2802c23580e5b2b0bfad52fc31995a79c7c6183bdd186b3b06a88"
     },
     {
       "path": "sprites/tile-113.png",
@@ -560,12 +560,52 @@
     {
       "path": "sprites/tile-120.png",
       "depicts": "green wooden door: opens when walked through",
-      "sha256": "5784c983000ed6e48b958d327e49dbb219a4dcb40e7b2c54293497d1c12ca99a"
+      "sha256": "bf69d708485520e4feb04c4fb7d151072c81b807ab5aceaca15c9ae380b05f9b"
     },
     {
       "path": "sprites/tile-121.png",
       "depicts": "green wooden door standing open",
-      "sha256": "2458f36711f152e4a02897a07233c2a141f4421e374d28c6ed31af86bfcb818f"
+      "sha256": "df41fae228578d3e3d70d9b126a27f98362ed23d0975e2e603e5f1291d19a97d"
+    },
+    {
+      "path": "sprites/tile-127.png",
+      "depicts": "mossy slate wall: lowers onto its matching floor while its button is held",
+      "sha256": "07660ff0818c6888809bd025d75a8e755f95db9e2fa10b1c53dd2d3051157ba3"
+    },
+    {
+      "path": "sprites/tile-131.png",
+      "depicts": "slate pressure button: controls matching mossy slate walls",
+      "sha256": "99a0278b27ae77e165a44509678f482433de836c34e682f5ea455c17dca4d90d"
+    },
+    {
+      "path": "sprites/tile-128.png",
+      "depicts": "mossy brick wall: lowers onto its matching floor while its button is held",
+      "sha256": "d2f74c3304a1d68597df5f830dd5c7543b7b4c4eaab0ce686200ed478f87c036"
+    },
+    {
+      "path": "sprites/tile-132.png",
+      "depicts": "brick pressure button: controls matching mossy brick walls",
+      "sha256": "42012722e42371ba49ff40f1a7207a0104dd6f361591d6561737c827dd4a1495"
+    },
+    {
+      "path": "sprites/tile-129.png",
+      "depicts": "mossy sandstone wall: lowers onto its matching floor while its button is held",
+      "sha256": "bb0170bf7e3b69ef462bd61f63b929419c1b8cecf4c3c9a92ccabd8b7d7b51b9"
+    },
+    {
+      "path": "sprites/tile-133.png",
+      "depicts": "sandstone pressure button: controls matching mossy sandstone walls",
+      "sha256": "cca5f63f8c4f799d882f6c4a2b68c6ebe7f2d2701287a94ac2b88115e206f82b"
+    },
+    {
+      "path": "sprites/tile-130.png",
+      "depicts": "mossy timber wall: lowers onto its matching floor while its button is held",
+      "sha256": "0bdc609d3eb6a41b5de7540a0b92f6f1b0801480c63d742d4b9b1bda6ac4d475"
+    },
+    {
+      "path": "sprites/tile-134.png",
+      "depicts": "timber pressure button: controls matching mossy timber walls",
+      "sha256": "00dc96c8daa512d08ca22a36dbc90e9cc449c923b150540c14414b32574e3677"
     },
     {
       "path": "sprites/player-up.png",

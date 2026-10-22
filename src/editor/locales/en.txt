@@ -332,7 +332,7 @@ Star block
 Apple
 ---
 [editor_plate]
-Pressure plate
+Green button
 ---
 [editor_gate]
 Orange gate
@@ -659,7 +659,7 @@ Timber floor
 Timber wall
 ---
 [editor_mossy_wall]
-Mossy wall
+Mossy stone wall
 ---
 [editor_door]
 Door
@@ -708,4 +708,28 @@ Open blue gate
 ---
 [editor_open_green_gate]
 Open green gate
+---
+[editor_mossy_slate_wall]
+Mossy slate wall
+---
+[editor_mossy_brick_wall]
+Mossy brick wall
+---
+[editor_mossy_sandstone_wall]
+Mossy sandstone wall
+---
+[editor_mossy_timber_wall]
+Mossy timber wall
+---
+[editor_blue_button]
+Blue button
+---
+[editor_red_button]
+Red button
+---
+[editor_yellow_button]
+Yellow button
+---
+[editor_purple_button]
+Purple button
 ---

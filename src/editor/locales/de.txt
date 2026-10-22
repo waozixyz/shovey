@@ -332,7 +332,7 @@ Sternstein
 Apfel
 ---
 [editor_plate]
-Druckplatte
+Grüner Knopf
 ---
 [editor_gate]
 Oranges Tor
@@ -659,7 +659,7 @@ Holzboden
 Holzwand
 ---
 [editor_mossy_wall]
-Mooswand
+Bemooste Steinwand
 ---
 [editor_door]
 Tür
@@ -708,4 +708,28 @@ Offenes blaues Tor
 ---
 [editor_open_green_gate]
 Offenes grünes Tor
+---
+[editor_mossy_slate_wall]
+Bemooste Schieferwand
+---
+[editor_mossy_brick_wall]
+Bemooste Ziegelwand
+---
+[editor_mossy_sandstone_wall]
+Bemooste Sandsteinwand
+---
+[editor_mossy_timber_wall]
+Bemooste Holzwand
+---
+[editor_blue_button]
+Blauer Knopf
+---
+[editor_red_button]
+Roter Knopf
+---
+[editor_yellow_button]
+Gelber Knopf
+---
+[editor_purple_button]
+Violetter Knopf
 ---

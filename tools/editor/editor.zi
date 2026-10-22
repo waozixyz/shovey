@@ -24,6 +24,7 @@
 #import "number_text"
 #import "text_buffer"
 #import "timer_linux"
+#import "std/json_scan"
 #import "cairo_raster"
 #import "desktop_runtime"
 #import "session"
@@ -169,17 +170,17 @@ similarity_cached: [PLACES + 1]bool;
 similarity_scores: [PLACES + 1]s32;
 
 // Palette: board kinds in the order a level is usually built.
-PALETTE :: 98
-palette_kinds: [98]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
-    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
+PALETTE :: 102
+palette_kinds: [102]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
+    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 131, 132, 133, 134, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
     104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
     35, 36, 37, 38, 53, 54, 55, 39, 40,
     65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91];
-palette_names: [98]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
+palette_names: [102]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
     "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
     "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
     "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
-    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Orange gate", "Open orange gate", "Orange lever", "Red gate", "Open red gate", "Red lever", "Blue gate", "Open blue gate", "Blue lever", "Green gate", "Open green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
+    "Star", "Apple", "Cherry", "Green button", "Blue button", "Red button", "Yellow button", "Purple button", "Mossy wall", "Orange gate", "Open orange gate", "Orange lever", "Red gate", "Open red gate", "Red lever", "Blue gate", "Open blue gate", "Blue lever", "Green gate", "Open green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
     "Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
     "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
     "Yellow block", "Cyan block", "Purple block", "Green block", "Block goal", "Mirror Shovey",
@@ -529,6 +530,8 @@ RotateBoards :: () {
 
 PrivateSprite :: (kind: s32) -> s32 {
     facing := BoardEngineDirection(1, boards_landscape)
+    if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return SPRITE_MOSS_WALL + kind - SHOVEY_MOSS_WALL }
+    if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_KIND { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     color := ShoveyGateColor(kind)
     if color >= 0 {
@@ -560,7 +563,9 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         kind := KindAt(board, at)
         display := BoardDisplayIndex(at, landscape)
-        layers[display] = PrivateSprite(KindAt(board, SHOVEY_CELLS + at))
+        tile := KindAt(board, SHOVEY_CELLS + at)
+        if ShoveyOpenDoor(kind) && ShoveyWallFloor(tile) >= 0 { tile = ShoveyWallFloor(tile) }
+        layers[display] = PrivateSprite(tile)
         if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT {
             mask: s32 = 0
             for direction: cast(s32)0..3 {
@@ -641,6 +646,41 @@ LoadApprovals :: () {
         text, found := ReadEntireFile(DraftPath(place, ".approved"))
         approved_places[place - 1] = found && ReadBoard(text, approved_boards[(place - 1) * HEX:place * HEX])
     }
+    // The campaign survives missing local markers and editor installations.
+    // A newer local approval still takes precedence while it is publishing.
+    text, found := ReadEntireFile("levels/approved.json")
+    if !found { return }
+    positions: [PLACES]s32
+    count := ArrayPositions(text, FieldAt(text, 0, "levels"), positions[:])
+    if count < 0 || count > PLACES { return }
+    names: [3]string = .["cells", "tiles", "decorations"]
+    for index: cast(s32)0..count - 1 {
+        at := positions[index]
+        number := ReadNumber(text, FieldAt(text, at, "number"))
+        if !number.valid || number.value < 1.0 || number.value > cast(float64)PLACES { continue }
+        place := cast(s32)number.value
+        if cast(float64)place != number.value || Approved(place) { continue }
+        candidate: [HEX]u8
+        valid := true
+        for layer: cast(s32)0..2 {
+            rows: [SHOVEY_HEIGHT]s32
+            if ArrayPositions(text, FieldAt(text, at, names[layer]), rows[:]) != SHOVEY_HEIGHT { valid = false; break }
+            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                span := ReadString(text, rows[row])
+                if !span.valid || span.end - span.start != SHOVEY_WIDTH * 2 { valid = false; break }
+                for digit: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
+                    candidate[layer * PIECES_HEX + row * SHOVEY_WIDTH * 2 + digit] = text[span.start + digit]
+                }
+            }
+            if !valid { break }
+        }
+        if valid { approved_places[place - 1] = ReadBoard(TextView(candidate[:]), approved_boards[(place - 1) * HEX:place * HEX]) }
+    }
+}
+
+ToggleSelector :: () {
+    selector_open = !selector_open
+    if selector_open { LoadApprovals() }
 }
 
 ActionMessage :: (text: string) {
@@ -747,6 +787,7 @@ PollActions :: (now: s64) {
     } else {
         status, found := ReadEntireFile("backup/editor-drafts/publish-status")
         if found && status != TextView(publish_message[:publish_message_length]) {
+            LoadApprovals()
             publish_message_length = 0
             AppendText(publish_message[:], *publish_message_length, status)
             ActionMessage(status)
@@ -820,7 +861,7 @@ Paint :: (at: s32, kind: s32) {
         if !ShoveyDecoration(decoration) || KindAt(board, SHOVEY_CELLS * 2 + at) == decoration { return }
         if ShoveyBlockingDecoration(decoration) && KindAt(board, at) != 0 { return }
         tile := KindAt(board, SHOVEY_CELLS + at)
-        if ShoveyBlockingDecoration(decoration) && (tile == 12 || tile == 14 || tile == SHOVEY_PIT || ShoveySolidDecor(tile)) { SetKind(board, SHOVEY_CELLS + at, 0) }
+        if ShoveyBlockingDecoration(decoration) && (tile == 12 || ShoveyMossColor(tile) >= 0 || tile == SHOVEY_PIT || ShoveySolidDecor(tile)) { SetKind(board, SHOVEY_CELLS + at, 0) }
         SetKind(board, SHOVEY_CELLS * 2 + at, decoration)
         Edited()
         return
@@ -852,7 +893,9 @@ Paint :: (at: s32, kind: s32) {
     if kind != 0 && ShoveyBlockingDecoration(KindAt(board, SHOVEY_CELLS * 2 + at)) { return }
     tile := KindAt(board, SHOVEY_CELLS + at)
     if ShoveyFish(kind) && tile != 64 { SetKind(board, SHOVEY_CELLS + at, 64); replaced_wall = true }
-    else if !ShoveyFish(kind) && kind != 0 && kind != 71 && (tile == 12 || tile == 14 || ShoveySolidDecor(tile)) {
+    else if !ShoveyFish(kind) && kind != 0 && kind != 71 &&
+        !((ShoveyClosedDoor(kind) || ShoveyOpenDoor(kind)) && ShoveyWallFloor(tile) >= 0) &&
+        (tile == 12 || ShoveyMossColor(tile) >= 0 || ShoveySolidDecor(tile)) {
         SetKind(board, SHOVEY_CELLS + at, 0)
         replaced_wall = true
     }
@@ -1568,13 +1611,14 @@ Palette :: (area: Rectangle) {
             selected = ifx tab == 0 then 256 else 0
         }
     }
-    tile_kinds: [25]s32 = .[0,103,99,100,101,102,77,78,60,61,70,64,65,4,5,6,47,48,49,12,14,95,96,97,98]
-    tile_names: [25]string = .["Stone floor","Mossy floor","Slate floor","Brick floor","Sandstone floor","Timber floor","Grass","Sand","Checker","Stripes","Ice","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Stone wall","Mossy wall","Slate wall","Brick wall","Sandstone wall","Timber wall"]
-    count: s32 = ifx palette_tab == 0 then 25 else PALETTE
+    tile_kinds: [29]s32 = .[0,103,99,100,101,102,77,78,60,61,70,64,65,4,5,6,47,48,49,12,14,95,127,96,128,97,129,98,130]
+    tile_names: [29]string = .["Stone floor","Mossy floor","Slate floor","Brick floor","Sandstone floor","Timber floor","Grass","Sand","Checker","Stripes","Ice","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Stone wall","Mossy stone","Slate wall","Mossy slate","Brick wall","Mossy brick","Sandstone wall","Mossy sand","Timber wall","Mossy timber"]
+    count: s32 = ifx palette_tab == 0 then 29 else PALETTE
     visible_count: s32 = 0
     for index: cast(s32)0..count - 1 {
         kind := ifx palette_tab == 0 then tile_kinds[index] else palette_kinds[index]
         if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62) { continue }
+        if palette_tab == 0 && kind == 12 { visible_count = ((visible_count + 2) / 3) * 3 }
         visible_count += 1
     }
     scrolled := Scroll(session, ScrollProps.{.key = cast(u64)69500, .bounds = Rectangle.{area.x, area.y + 44.0, area.width, area.height - 44.0},
@@ -1613,7 +1657,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     PollCheck()
     ctrl := (modifiers & 2) != 0
     if key == 258 { if playing { playing = false; watching = false } else { StartPlay() } }
-    if key == 76 && !playing { selector_open = !selector_open }
+    if key == 76 && !playing { ToggleSelector() }
     if key == 256 { selector_open = false }
     if playing {
         if !watching {
@@ -1665,7 +1709,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         AppendText(title_bytes[:], *length, "Waiting: not in the game")
     }
     // The title is the button for the full list of levels.
-    if Control(1, Rectangle.{8.0, 8.0, 334.0, 40.0}, TextView(title_bytes[:length])) { selector_open = !selector_open }
+    if Control(1, Rectangle.{8.0, 8.0, 334.0, 40.0}, TextView(title_bytes[:length])) { ToggleSelector() }
     // One row of controls: moving between places, play and check, then the
     // fix queue and the rotation both boards share.
     bx: float32 = 350.0

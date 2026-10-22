@@ -938,7 +938,7 @@ SolverStart :: (island: bool, board: string, limits: SolverLimits = SolverDefaul
     if !loaded { solver_status = SOLVER_INVALID; return false }
     if solver_greedy_alt_ok {
         for at: cast(s32)0..SHOVEY_CELLS - 1 {
-            if solve_classic_initial.ground[at] == 13 || solve_classic_initial.ground[at] == 14 { solver_greedy_alt_ok = false; break }
+            if ShoveyButtonColor(solve_classic_initial.ground[at]) >= 0 || ShoveyMossColor(solve_classic_initial.ground[at]) >= 0 { solver_greedy_alt_ok = false; break }
         }
     }
     SolverReset()

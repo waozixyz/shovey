@@ -13,7 +13,7 @@ every shipped level by replaying it through the real game rules.
 
 ## Play
 
-- **Shovey Classic**: approved stone-courtyard puzzles through level 19. Later boards stay in the developer editor while they are being edited. Push balls
+- **Shovey Classic**: approved stone-courtyard puzzles through level 23. Later boards stay in the developer editor while they are being edited. Push balls
   into matching holes, crates onto corners, coloured blocks onto marks,
   collect keys and powers, then walk home.
 - **Shovey Editor**: paint, test and share your own Classic boards. The
@@ -112,6 +112,10 @@ Approved levels retain their purple mark while being edited.
 Each gate color also has an open starting variant, which closes when its lever
 is switched on. Mix both starting states for opposite passages on one lever.
 All levers of one color share their state, so any matching lever toggles the passages.
+Stone, slate, brick, sandstone and timber each have a mossy wall and a matching
+colored pressure button. Buttons control only their matching wall type; an open
+wall becomes its material's flat floor. Doors overlay the selected wall and open
+that cell without adding their own wall frame.
 
 Ducks, turtles and crabs wander over clear floor and block Shovey and pushed
 pieces. Goldfish, koi and minnows swim between water tiles with still sprites. Water has gentle

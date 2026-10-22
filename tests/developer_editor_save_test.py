@@ -20,6 +20,12 @@ levels = {'edition': 'classic', 'width': 12, 'height': 20,
           'levels': [{'number': 1, 'cells': rows, 'solution': '2'},
                      {'number': 2, 'cells': rows}]}
 (profile / 'levels/classic.json').write_text(json.dumps(levels, indent=1) + '\n')
+tiles = [12 if kind == 12 else 77 if kind == 7 else 0 for kind in board]
+def rows_of(values):
+    return [''.join(f'{kind:02x}' for kind in values[start:start + 12]) for start in range(0, 240, 12)]
+(profile / 'levels/approved.json').write_text(json.dumps(dict(levels=[
+    dict(number=n, cells=rows, tiles=rows_of(tiles), decorations=rows_of([0] * 240))
+    for n in (21, 22, 23)])))
 (profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
 environment = {k: v for k, v in os.environ.items()
                if k not in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS')}

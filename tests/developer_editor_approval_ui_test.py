@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import time
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
@@ -26,7 +27,10 @@ level = dict(number=1, cells=rows(pieces), solution='2')
 (profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
 (profile / 'levels/classic.json').write_text(json.dumps(dict(
     edition='classic', width=12, height=20, levels=[level, dict(level, number=2)]), indent=1) + '\n')
-(drafts / '001.approved').write_text(''.join(rows(pieces) + rows(tiles)) + '00' * 240)
+campaign = dict(levels=[dict(level, number=n, tiles=rows(tiles), decorations=rows([0] * 240))
+                       for n in range(1, 23)])
+(profile / 'levels/approved.json').write_text(json.dumps(campaign))
+(drafts / 'publish-status').write_text('Published')
 (profile / 'scripts/editor_actions.py').write_text('''from pathlib import Path
 import sys, time
 root = Path('backup/editor-drafts')
@@ -54,6 +58,30 @@ with (output / 'app.log').open('w') as log:
             subprocess.run(['xdotool', 'mousemove', '--window', window, str(x), str(y), 'click', '1'], check=True)
         time.sleep(0.6)
         subprocess.run(['xdotool', 'windowfocus', window], check=True)
+        click(100, 28)
+        time.sleep(0.2)
+        def map_colors():
+            subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
+            shot = output / 'approvals-map.png'
+            subprocess.run(['import', '-window', window, str(shot)], check=True)
+            with Image.open(shot).convert('RGB') as image:
+                width, height = image.size
+                cell_width = (width - 16 - 4 * 14) / 15
+                cell_height = (height - 96 - 28 - 4 * 11) / 12
+                return [image.getpixel((int(14 + (n - 1) % 15 * (cell_width + 4)),
+                                        int(122 + (n - 1) // 15 * (cell_height + 4))))
+                        for n in range(1, 25)]
+        purple = (159, 111, 209)
+        colors = map_colors()
+        assert all(color == purple for color in colors[:22]), colors
+        assert colors[22] != purple and colors[23] != purple
+        campaign['levels'].append(dict(level, number=23, tiles=rows(tiles), decorations=rows([0] * 240)))
+        (profile / 'levels/approved.json').write_text(json.dumps(campaign))
+        (drafts / 'publish-status').write_text('Updating…')
+        time.sleep(0.7)
+        colors = map_colors()
+        assert all(color == purple for color in colors[:23]) and colors[23] != purple, colors
+        click(100, 28)
         click(350, 66)  # Approve also republishes an approved level.
         for attempt in range(40):
             if (drafts / 'worker-started').exists():
@@ -89,7 +117,7 @@ with (output / 'app.log').open('w') as log:
             time.sleep(0.025)
         assert (drafts / 'worker-started').read_text() == 'approve 1'
         time.sleep(2.1)  # Let our detached disposable worker finish too.
-        print('Background approval, responsive navigation and automatic publication after edits passed')
+        print('Purple campaign approvals refresh through 23; background publication, navigation and automatic updates passed')
     finally:
         if windows:
             subprocess.run(['import', '-window', windows[0], str(output / 'last.png')], check=True)

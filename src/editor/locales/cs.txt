@@ -332,7 +332,7 @@ Hvězdný blok
 Jablko
 ---
 [editor_plate]
-Nášlapná deska
+Zelené tlačítko
 ---
 [editor_gate]
 Oranžová brána
@@ -659,7 +659,7 @@ Dřevěná podlaha
 Dřevěná stěna
 ---
 [editor_mossy_wall]
-Mechová zeď
+Mechem porostlá kamenná zeď
 ---
 [editor_door]
 Dveře
@@ -708,4 +708,28 @@ Otevřená modrá brána
 ---
 [editor_open_green_gate]
 Otevřená zelená brána
+---
+[editor_mossy_slate_wall]
+Mechem porostlá břidlicová zeď
+---
+[editor_mossy_brick_wall]
+Mechem porostlá cihlová zeď
+---
+[editor_mossy_sandstone_wall]
+Mechem porostlá pískovcová zeď
+---
+[editor_mossy_timber_wall]
+Mechem porostlá dřevěná zeď
+---
+[editor_blue_button]
+Modré tlačítko
+---
+[editor_red_button]
+Červené tlačítko
+---
+[editor_yellow_button]
+Žluté tlačítko
+---
+[editor_purple_button]
+Fialové tlačítko
 ---

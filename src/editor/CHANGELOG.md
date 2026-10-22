@@ -1,5 +1,13 @@
 # Shovey Editor changelog
 
+## [0.2.22] - 2026-10-22
+
+- Test puzzles with several matching levers; any handle switches their shared gate state.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.21] - 2026-10-22
+
+- Test puzzles with several matching levers; any handle switches their shared gate state.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.20] - 2026-10-22
 
 - Design engine-proven GLM variations with clearer progress and errors.

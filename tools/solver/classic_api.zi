@@ -275,7 +275,7 @@ ClassicApiEncode :: (out: *u8) -> s32 {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         ground := game.ground[at]
         object := game.objects[at]
-        if ground < 0 || ground >= 128 || object < 0 || object > 255 { return 0 }
+        if ground < 0 || ground > 255 || object < 0 || object > 255 { return 0 }
         out[at] = cast(u8)ground
         out[SHOVEY_CELLS + at] = cast(u8)object
         source := game.light_from[at]

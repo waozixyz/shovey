@@ -21,6 +21,9 @@ CELLS = WIDTH * HEIGHT
 CLASSIC_PIECES = {1, 2, 3, 9, 19, 28, 36, 37, 38, 40, 72}
 CLASSIC_ON_FLOOR = {15, 16, 17, 21, 25, 26, 27, 33, 34, 35}
 CLASSIC_PLAYER = 10
+CLASSIC_WALL_FLOORS = {12: 0, 14: 0, 62: 0, 63: 0, 76: 0,
+                       **{95 + i: 99 + i for i in range(4)},
+                       **{127 + i: 99 + i for i in range(4)}}
 ISLAND_PLAYER = 56
 
 
@@ -45,7 +48,7 @@ def classic_functions(levels):
     for level in levels:
         cells(level['cells'])
         if 'tiles' in level:
-            assert all(kind in {0,4,5,6,12,14,47,48,49,*range(57,79),*range(95,104)} for kind in cells(level['tiles']))
+            assert all(kind in {0,4,5,6,12,14,47,48,49,*range(57,79),*range(95,104),*range(127,131)} for kind in cells(level['tiles']))
         if 'decorations' in level:
             assert 'tiles' in level and all(kind in {0, 57, 58, 59, 84, 106, 122} for kind in cells(level['decorations']))
         data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))
@@ -167,6 +170,8 @@ def previews(cell):
             display = (WIDTH - 1 - at % WIDTH) * HEIGHT + at // WIDTH
             turned_x, turned_y = display % HEIGHT * cell, display // HEIGHT * cell
             tile = floor_tiles[at]
+            if kind in {105, 117, 119, 121} and tile in CLASSIC_WALL_FLOORS:
+                tile = CLASSIC_WALL_FLOORS[tile]
             image.alpha_composite(sprites.get(f'tile-{tile}'), (x, y))
             turned.alpha_composite(turned_sprites.get(f'tile-{tile}'), (turned_x, turned_y))
             if decorations[at]:

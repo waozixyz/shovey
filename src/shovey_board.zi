@@ -44,7 +44,9 @@ SPRITE_LANTERN :: 209
 SPRITE_COLORED_GATE :: 210
 SPRITE_COLORED_DOOR :: 222
 SPRITE_BOULDER :: 228
-SPRITE_COUNT :: 229
+SPRITE_MOSS_WALL :: 229
+SPRITE_MOSS_BUTTON :: 233
+SPRITE_COUNT :: 237
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -194,6 +196,14 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_DOOR + 1, "tile-105")
     SpritePath(SPRITE_LANTERN, "tile-106")
     SpritePath(SPRITE_BOULDER, "tile-122")
+    for material: cast(s32)0..3 {
+        wall: Vec(u8)
+        BuilderPrint(*wall, "tile-%", FormatInteger(cast(s64)(SHOVEY_MOSS_WALL + material), digits[:]))
+        SpritePath(SPRITE_MOSS_WALL + material, BuilderFinish(wall))
+        button: Vec(u8)
+        BuilderPrint(*button, "tile-%", FormatInteger(cast(s64)(SHOVEY_MOSS_BUTTON + material), digits[:]))
+        SpritePath(SPRITE_MOSS_BUTTON + material, BuilderFinish(button))
+    }
     for color: cast(s32)0..2 {
         for part: cast(s32)0..2 {
             name: Vec(u8)
@@ -297,6 +307,16 @@ FloorSprite :: (kind: s32) -> s32 {
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
 // active sensors turn, one frame every 100 milliseconds.
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
+    if position >= 0 && ShoveyOpenDoor(game.ground[position]) {
+        floor := ShoveyWallFloor(kind)
+        if floor >= 0 { return ifx floor == 0 then 0 else SPRITE_MATERIAL_FLOOR + floor - 99 }
+    }
+    moss := ShoveyMossColor(kind)
+    if moss >= 0 {
+        if position >= 0 && ShoveyDoorOpen(game, position) { return ifx moss == 0 then 0 else SPRITE_MATERIAL_FLOOR + moss - 1 }
+        return ifx moss == 0 then 14 else SPRITE_MOSS_WALL + moss - 1
+    }
+    if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_KIND { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     color := ShoveyGateColor(kind)
     if color >= 0 {
@@ -325,7 +345,6 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     if kind >= 44 && kind <= 55 { sprite = SPRITE_NEW_COLOR + kind - 44 }
     if kind == 56 { sprite = SPRITE_CHERRY }
     if kind >= 57 && kind <= 78 { sprite = SPRITE_NEW_TILE + kind - 57 }
-    if kind == 14 && position >= 0 && ShoveyDoorOpen(game, position) { sprite = SPRITE_DOOR_OPEN }
     if kind == 22 || kind == 24 || kind == 41 || kind == 42 { sprite = SPRITE_SENSOR + cast(s32)(now * 10.0) % 8 }
     if kind == 43 { sprite = 31 }
     if sprite < 0 || sprite >= SPRITE_COUNT { return -1 }

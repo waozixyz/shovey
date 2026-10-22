@@ -248,6 +248,25 @@ TileChecks :: () -> s32 {
 }
 
 NatureChecks :: () -> s32 {
+    for color: cast(s32)0..4 {
+        moss := Floor()
+        wall := ifx color == 0 then 14 else SHOVEY_MOSS_WALL + color - 1
+        button := ifx color == 0 then 13 else SHOVEY_MOSS_BUTTON + color - 1
+        moss.ground[14] = wall
+        moss.ground[26] = button
+        moss.ground[27] = ifx color == 4 then 13 else SHOVEY_MOSS_BUTTON + color
+        moss.objects[27] = 9
+        if ShoveyGateColor(wall) >= 0 || ShoveyGateColor(button) >= 0 { return 177 }
+        if ShoveyMove(*moss, 2) || ShoveyDoorOpen(*moss, 14) { return 178 }
+        moss.objects[26] = 9
+        if !ShoveyDoorOpen(*moss, 14) || !ShoveyMove(*moss, 2) || moss.player != 14 { return 179 }
+        restored_moss: ShoveyGame
+        if !ShoveyRestore(*restored_moss, ShoveySave(*moss)) || !ShoveyDoorOpen(*restored_moss, 14) { return 180 }
+        moss.objects[26] = 0
+        if ShoveyDoorOpen(*moss, 14) { return 181 }
+        moss.objects[14] = 9
+        if !ShoveyDoorOpen(*moss, 14) { return 182 }
+    }
     // Matching normal and initially-open gates always move in opposite
     // directions. Other colours stay untouched, including after save/restore.
     for color: cast(s32)0..3 {

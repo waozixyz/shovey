@@ -332,7 +332,7 @@ Bloco estrela
 Maçã
 ---
 [editor_plate]
-Placa de pressão
+Botão verde
 ---
 [editor_gate]
 Portão laranja
@@ -659,7 +659,7 @@ Piso de madeira
 Parede de madeira
 ---
 [editor_mossy_wall]
-Parede com musgo
+Parede de pedra com musgo
 ---
 [editor_door]
 Porta
@@ -708,4 +708,28 @@ Portão azul aberto
 ---
 [editor_open_green_gate]
 Portão verde aberto
+---
+[editor_mossy_slate_wall]
+Parede de ardósia com musgo
+---
+[editor_mossy_brick_wall]
+Parede de tijolos com musgo
+---
+[editor_mossy_sandstone_wall]
+Parede de arenito com musgo
+---
+[editor_mossy_timber_wall]
+Parede de madeira com musgo
+---
+[editor_blue_button]
+Botão azul
+---
+[editor_red_button]
+Botão vermelho
+---
+[editor_yellow_button]
+Botão amarelo
+---
+[editor_purple_button]
+Botão roxo
 ---

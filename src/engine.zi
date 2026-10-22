@@ -103,8 +103,27 @@ SHOVEY_DOOR_OPEN :: 105
 SHOVEY_LANTERN :: 106
 SHOVEY_BOULDER :: 122
 SHOVEY_OPEN_GATE :: 123
-SHOVEY_LAST_KIND :: 126
-ShoveyGateStartsOpen :: (kind: s32) -> bool { return kind >= SHOVEY_OPEN_GATE && kind <= SHOVEY_LAST_KIND }
+SHOVEY_MOSS_WALL :: 127
+SHOVEY_MOSS_BUTTON :: 131
+SHOVEY_LAST_KIND :: 134
+ShoveyMossColor :: (kind: s32) -> s32 {
+    if kind == 14 { return 0 }
+    if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return kind - SHOVEY_MOSS_WALL + 1 }
+    return -1
+}
+ShoveyButtonColor :: (kind: s32) -> s32 {
+    if kind == 13 { return 0 }
+    if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_KIND { return kind - SHOVEY_MOSS_BUTTON + 1 }
+    return -1
+}
+ShoveyMossFloor :: (kind: s32) -> s32 { return ifx kind == 14 then 0 else 99 + kind - SHOVEY_MOSS_WALL }
+ShoveyWallFloor :: (kind: s32) -> s32 {
+    if ShoveyMossColor(kind) >= 0 { return ShoveyMossFloor(kind) }
+    if kind >= 95 && kind <= 98 { return 99 + kind - 95 }
+    if kind == 12 || kind == 62 || kind == 63 || kind == 76 { return 0 }
+    return -1
+}
+ShoveyGateStartsOpen :: (kind: s32) -> bool { return kind >= SHOVEY_OPEN_GATE && kind <= SHOVEY_OPEN_GATE + 3 }
 ShoveyGateColor :: (kind: s32) -> s32 {
     if kind == SHOVEY_GATE { return 0 }
     if ShoveyGateStartsOpen(kind) { return kind - SHOVEY_OPEN_GATE }
@@ -167,7 +186,7 @@ ShoveyLoad :: (game: *ShoveyGame, level: s32) -> bool {
 // Existing boards contain 480 hex digits of pieces. Layered boards append
 // 480 digits of independent floor tiles. Tiles never change puzzle rules.
 ShoveyTerrain :: (kind: s32) -> bool {
-    return kind == 0 || kind == 12 || kind == 14 || ShoveyPitColor(kind) > 0 ||
+    return kind == 0 || kind == 12 || ShoveyMossColor(kind) >= 0 || ShoveyPitColor(kind) > 0 ||
         kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 103)
 }
 
@@ -211,8 +230,10 @@ ShoveyLoadData :: (game: *ShoveyGame, level: s32, data: string) -> bool {
 
 ShoveyDoorOpen :: (game: *ShoveyGame, position: s32) -> bool {
     if game.objects[position] != 0 { return true }
+    color := ShoveyMossColor(game.ground[position])
+    if color < 0 { return false }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.ground[at] == 13 && game.objects[at] != 0 { return true }
+        if ShoveyButtonColor(game.ground[at]) == color && game.objects[at] != 0 { return true }
     }
     return false
 }
@@ -262,9 +283,9 @@ ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     player := object == 10
     if ShoveyClosedDoor(kind) { return player }
     if ShoveyOpenDoor(kind) { return true }
-    if kind == 0 || kind == 13 || kind == 18 || kind == 20 ||
+    if kind == 0 || ShoveyButtonColor(kind) >= 0 || kind == 18 || kind == 20 ||
     kind == 29 || kind == 30 || kind == 31 || kind == 41 || kind == 42 || kind == 43 { return true }
-    if kind == 14 { return ShoveyDoorOpen(game, position) }
+    if ShoveyMossColor(kind) >= 0 { return ShoveyDoorOpen(game, position) }
     if ShoveyGateColor(kind) >= 0 { return ShoveyGateOpen(game, position) }
     if ShoveyDecorFloor(kind) || kind == SHOVEY_ICE || kind == SHOVEY_CRACKED_FLOOR { return true }
     if kind == SHOVEY_PIT {
@@ -500,7 +521,7 @@ ShoveyFire :: (game: *ShoveyGame) -> bool {
         // walls, doors and pickups. In particular a star survives the shot.
         if object == 28 { game.objects[at] = 0 }
         else if ShoveyBallColor(object) > 0 || object == 9 || object == 19 ||
-        ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ground == 14 ||
+        ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ShoveyMossColor(ground) >= 0 ||
         ground == 26 || ground == 33 || ground == 34 || ShoveyGateColor(ground) >= 0 || ShoveyClosedDoor(ground) || ShoveyLever(ground) { break }
         at = ShoveyNeighbor(at, game.direction)
     }
@@ -533,7 +554,7 @@ ShoveyCount :: (game: *ShoveyGame) -> ShoveyTally {
         object := game.objects[at]; ground := game.ground[at]
         if ShoveyBallColor(object) > 0 { tally.balls += 1 }
         if ground == 21 || ground == 56 { tally.apples += 1 }
-        if ground == 34 || ShoveyClosedDoor(ground) || (ground == 14 && !ShoveyDoorOpen(game, at)) || (ShoveyGateColor(ground) >= 0 && !ShoveyGateOpen(game, at)) { tally.closed += 1 }
+        if ground == 34 || ShoveyClosedDoor(ground) || (ShoveyMossColor(ground) >= 0 && !ShoveyDoorOpen(game, at)) || (ShoveyGateColor(ground) >= 0 && !ShoveyGateOpen(game, at)) { tally.closed += 1 }
     }
     return tally
 }

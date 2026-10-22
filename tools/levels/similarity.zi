@@ -11,6 +11,8 @@ PuzzleKind :: (board: []u8, at: s32, flip: s32) -> s32 {
     if board.count >= SHOVEY_CELLS * 6 && ShoveyBlockingDecoration(ShoveyByte(text, SHOVEY_CELLS * 4 + at * 2)) { kind = 12 }
     if kind == 57 || kind == 58 || kind == 59 || kind == 60 || kind == 61 || kind == 77 || kind == 78 { return 0 }
     if kind >= 99 && kind <= 103 { return 0 }
+    if ShoveyMossColor(kind) >= 0 { return 14 }
+    if ShoveyButtonColor(kind) >= 0 { return 13 }
     if kind == 62 || kind == 63 || kind == 64 || kind == 76 || (kind >= 95 && kind <= 98) { return 12 }
     if ShoveyBallColor(kind) > 0 { return 1 }
     if ShoveyPitColor(kind) > 0 { return 4 }
@@ -26,8 +28,8 @@ PuzzleSimilarity :: (a: []u8, b: []u8) -> s32 {
     for flip: cast(s32)0..3 {
         left: [SHOVEY_CELLS]s32
         right: [SHOVEY_CELLS]s32
-        left_count: [128]s32
-        right_count: [128]s32
+        left_count: [256]s32
+        right_count: [256]s32
         for at: cast(s32)0..SHOVEY_CELLS - 1 {
             x := at % SHOVEY_WIDTH; y := at / SHOVEY_WIDTH
             if x == 0 || y == 0 || x == SHOVEY_WIDTH - 1 || y == SHOVEY_HEIGHT - 1 { continue }
@@ -35,11 +37,11 @@ PuzzleSimilarity :: (a: []u8, b: []u8) -> s32 {
                         (ifx (flip & 1) != 0 then SHOVEY_WIDTH - 1 - x else x)
             left[at] = PuzzleKind(a, at, 0)
             right[at] = PuzzleKind(b, mirrored, flip)
-            if left[at] > 0 && left[at] < 128 { left_count[left[at]] += 1 }
-            if right[at] > 0 && right[at] < 128 { right_count[right[at]] += 1 }
+            if left[at] > 0 && left[at] < 256 { left_count[left[at]] += 1 }
+            if right[at] > 0 && right[at] < 256 { right_count[right[at]] += 1 }
         }
         total: s32 = 0; score: s32 = 0
-        for kind: cast(s32)1..127 {
+        for kind: cast(s32)1..255 {
             count := ifx left_count[kind] > right_count[kind] then left_count[kind] else right_count[kind]
             total += count * 2 * (ifx kind == 12 then 1 else 4)
         }

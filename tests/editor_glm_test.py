@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('editor_actions', ROOT / 'scripts/editor_actions.py')
 actions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(actions)
+release_spec = importlib.util.spec_from_file_location('publish_approved', ROOT / 'scripts/publish-approved.py')
+release = importlib.util.module_from_spec(release_spec)
+release_spec.loader.exec_module(release)
 
 
 def at(x, y):
@@ -35,6 +38,46 @@ def variation(x=3, y=3):
 
 
 class Variations(unittest.TestCase):
+    def test_publication_status_identifies_a_gap_in_the_campaign(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            root = Path(directory)
+            (root / 'levels').mkdir()
+            path = root / 'levels/approved.json'
+            with patch.object(release, 'ROOT', root):
+                path.write_text(json.dumps(dict(levels=[{}] * 20, pending={'22': {}})))
+                self.assertEqual(release.publication_status(), 'Level 22 queued. Approve 21.')
+                path.write_text(json.dumps(dict(levels=[{}] * 23, pending={})))
+                self.assertEqual(release.publication_status(), 'Published')
+
+    def test_approving_a_gap_promotes_waiting_levels_in_order(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            root = Path(directory)
+            drafts = root / 'drafts'
+            drafts.mkdir()
+            (root / 'levels').mkdir()
+            (root / 'backup').mkdir()
+            path = root / 'levels/approved.json'
+            records = [actions.record(n, board(), '333332') for n in range(1, 4)]
+            path.write_text(json.dumps(dict(levels=records[:1], pending={'3': records[2]})))
+            (drafts / '002.approval-request').write_text(board() + '\n333332')
+            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts):
+                actions.approve(2)
+            campaign = json.loads(path.read_text())
+            self.assertEqual(campaign['levels'], records)
+            self.assertEqual(campaign['pending'], {})
+
+    def test_each_moss_wall_button_pair_is_solved_in_the_shipped_engine(self):
+        for wall, button in [(14, 13), *zip(range(127, 131), range(131, 135))]:
+            with self.subTest(wall=wall, button=button):
+                cells, tiles = [0] * 240, [12] * 240
+                for position in (13, 14, 15, 16, 17, 25, 26, 27, 28):
+                    tiles[position] = 0
+                cells[13], cells[14], cells[15], cells[17] = 10, 9, button, 7
+                tiles[16] = wall
+                encoded = ''.join(f'{kind:02x}' for kind in cells + tiles + [0] * 240)
+                self.assertTrue(actions.verify_route(1, encoded, '232212'))
+                route = actions.prove_proposal(1, encoded)
+                self.assertTrue(actions.verify_route(1, encoded, route))
     def test_approve_replaces_the_snapshot_and_detaches_publication(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
             root = Path(directory)

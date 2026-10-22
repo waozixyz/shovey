@@ -67,6 +67,14 @@ int main(int argc, char **argv) {
         return 0;
     }
     assert(level_count == 2 && mapping_ok);
+    /* Canonical approvals color published levels even without local markers.
+       Opening the map refreshes approvals made after this process started. */
+    assert(!editor_Approved(23));
+    editor_ToggleSelector();
+    assert(selector_open && editor_Approved(21) && editor_Approved(22) && editor_Approved(23));
+    assert(!editor_Approved(20) && !editor_Approved(24));
+    editor_ToggleSelector();
+    assert(!selector_open);
     remove("backup/editor-drafts/orientation");
     editor_LoadOrientation();
     assert(boards_landscape);
@@ -188,6 +196,32 @@ int main(int argc, char **argv) {
         int sprite = color == 0 ? SPRITE_GATE_OPEN : SPRITE_COLORED_GATE + (color - 1) * 4 + 1;
         assert(editor_PrivateSprite(kind) == sprite);
         assert(shovey_board_KindSprite(&facing, kind, -1, 0, false) == sprite);
+    }
+    palette_tab = 1;
+    int walls[] = {12, 14, 95, 96, 97, 98, 127, 128, 129, 130};
+    for (int i = 0; i < 10; i++) {
+        int material = walls[i];
+        editor_SetKind(editor_Board(1), 26, 0);
+        editor_SetKind(editor_Board(1), SHOVEY_CELLS + 26, material);
+        editor_Paint(26, SHOVEY_DOOR);
+        assert(editor_KindAt(editor_Board(1), SHOVEY_CELLS + 26) == material);
+        ShoveyGame opened = {0};
+        opened.ground[26] = SHOVEY_DOOR_OPEN;
+        int floor = engine_ShoveyWallFloor(material);
+        int floor_sprite = floor == 0 ? 0 : SPRITE_MATERIAL_FLOOR + floor - 99;
+        assert(shovey_board_KindSprite(&opened, material, 26, 0, false) == floor_sprite);
+        editor_Paint(26, 9);
+        assert(editor_KindAt(editor_Board(1), SHOVEY_CELLS + 26) == 0);
+    }
+    for (int color = 0; color < 5; color++) {
+        int wall = color == 0 ? 14 : SHOVEY_MOSS_WALL + color - 1;
+        int button = color == 0 ? 13 : SHOVEY_MOSS_BUTTON + color - 1;
+        ShoveyGame moss = {0};
+        moss.ground[26] = wall;
+        moss.ground[27] = button;
+        moss.objects[27] = 9;
+        int floor_sprite = color == 0 ? 0 : SPRITE_MATERIAL_FLOOR + color - 1;
+        assert(shovey_board_KindSprite(&moss, wall, 26, 0, false) == floor_sprite);
     }
     puts("Developer editor: saves, recovered wins, verified GLM results and undo/redo passed");
     return 0;

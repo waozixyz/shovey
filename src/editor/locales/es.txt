@@ -332,7 +332,7 @@ Bloque estrella
 Manzana
 ---
 [editor_plate]
-Placa de presión
+Botón verde
 ---
 [editor_gate]
 Puerta naranja
@@ -659,7 +659,7 @@ Suelo de madera
 Muro de madera
 ---
 [editor_mossy_wall]
-Muro con musgo
+Muro de piedra con musgo
 ---
 [editor_door]
 Puerta
@@ -708,4 +708,28 @@ Puerta azul abierta
 ---
 [editor_open_green_gate]
 Puerta verde abierta
+---
+[editor_mossy_slate_wall]
+Muro de pizarra con musgo
+---
+[editor_mossy_brick_wall]
+Muro de ladrillo con musgo
+---
+[editor_mossy_sandstone_wall]
+Muro de arenisca con musgo
+---
+[editor_mossy_timber_wall]
+Pared de madera con musgo
+---
+[editor_blue_button]
+Botón azul
+---
+[editor_red_button]
+Botón rojo
+---
+[editor_yellow_button]
+Botón amarillo
+---
+[editor_purple_button]
+Botón morado
 ---

@@ -21,9 +21,11 @@ SOLVER = ROOT / 'build/solver/shovey-solve-classic'
 LAYERS = ('cells', 'tiles', 'decorations')
 COSMETIC = {0, 57, 58, 59, 60, 61, 77, 78, *range(99, 104)}
 WALLS = {12, 62, 63, 76, 95, 96, 97, 98}
+MOSS_WALLS = {14, *range(127, 131)}
+DOORS = {104, 105, *range(116, 122)}
 ALLOWED = (
-    ({0, *range(1, 77), *range(82, 127)} - {22, 24, 32, 41, 42, 43}),
-    {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104)},
+    ({0, *range(1, 77), *range(82, 135)} - {22, 24, 32, 41, 42, 43}),
+    {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104), *range(127, 131)},
     {0, 57, 58, 59, 84, 106, 122},
 )
 
@@ -39,7 +41,7 @@ def board_hex(level):
     defaults = []
     for i in range(0, 480, 2):
         kind = int(cells[i:i + 2], 16)
-        tile = kind if kind in {0, 4, 5, 6, 12, 14, 47, 48, 49, 60, 61, 63, 64, 65, 70, 76, 77, 78, *range(95, 104)} else 77 if kind == 7 else 64 if 89 <= kind <= 91 else 12 if kind == 62 else 0
+        tile = kind if kind in {0, 4, 5, 6, 12, 14, 47, 48, 49, 60, 61, 63, 64, 65, 70, 76, 77, 78, *range(95, 104), *range(127, 131)} else 77 if kind == 7 else 64 if 89 <= kind <= 91 else 12 if kind == 62 else 0
         defaults.append(f'{tile:02x}')
     return cells + (''.join(level.get('tiles', [])) or ''.join(defaults)) + (''.join(level.get('decorations', [])) or '00' * 240)
 
@@ -181,9 +183,9 @@ def apply_proposal(original, proposal):
         if 89 <= kind <= 91:
             if tile != 64:
                 raise ValueError('Fish must remain on water')
-        elif kind and kind != 71 and kind != tile and tile in WALLS | {14, 64, 65}:
+        elif kind and kind != 71 and kind != tile and tile in WALLS | MOSS_WALLS | {64, 65} and not (kind in DOORS and tile in WALLS | MOSS_WALLS):
             raise ValueError('A puzzle piece overlaps blocked terrain')
-        if decoration in (84, 106, 122) and (kind or tile in WALLS | {14, 64, 65}):
+        if decoration in (84, 106, 122) and (kind or tile in WALLS | MOSS_WALLS | {64, 65}):
             raise ValueError('Keep trees clear of puzzle pieces and blocked terrain')
     return ''.join(f'{kind:02x}' for kind in updated)
 
@@ -316,7 +318,10 @@ def modify_once(number, feedback='', choices=None):
         'explanation briefly describes the concrete gameplay improvement. solution is a winning action string, not a claim of solvability. '
         'In this LANDSCAPE view route digits mean 0=DOWN, 1=LEFT, 2=UP, 3=RIGHT, f=fire, t=advance time. '
         'Cells: 0 empty, 1/2/3 red/blue/green balls, 7 home, 8 paired teleporters, 9 crate, 10 player (exactly one), '
-        '13 pressure plate, 14 mossy wall (opens while any object holds a plate), 15/16/17 paint red/blue/green, '
+        '13 green pressure button, 14 mossy stone wall (opens while an object holds a green button), '
+        '127/128/129/130 mossy slate/brick/sandstone/timber walls, opened only by their matching 131/132/133/134 blue/red/yellow/purple buttons. '
+        '104/105 wooden door closed/open and 116/117,118/119,120/121 red/blue/green doors: placed over the existing wall and opened by walking into them. '
+        '15/16/17 paint red/blue/green, '
         '18 crate goal, 21 apple, 33 key, 34 lock, 44/45/46 cyan/purple/yellow balls, 50/51/52 matching paint, '
         '73/74/75/85/86/87 portals (paired by ID), 92 orange gate, 93/94 orange lever off/on, '
         '107 red gate with 108/109 red lever, 110 blue gate with 111/112 blue lever, 113 green gate with 114/115 green lever. '

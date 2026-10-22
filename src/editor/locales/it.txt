@@ -332,7 +332,7 @@ Blocco stella
 Mela
 ---
 [editor_plate]
-Piastra a pressione
+Pulsante verde
 ---
 [editor_gate]
 Cancello arancione
@@ -659,7 +659,7 @@ Pavimento di legno
 Parete di legno
 ---
 [editor_mossy_wall]
-Muro muschioso
+Muro di pietra muschioso
 ---
 [editor_door]
 Porta
@@ -708,4 +708,28 @@ Cancello blu aperto
 ---
 [editor_open_green_gate]
 Cancello verde aperto
+---
+[editor_mossy_slate_wall]
+Muro di ardesia muschioso
+---
+[editor_mossy_brick_wall]
+Muro di mattoni muschioso
+---
+[editor_mossy_sandstone_wall]
+Muro di arenaria muschioso
+---
+[editor_mossy_timber_wall]
+Parete di legno muschiosa
+---
+[editor_blue_button]
+Pulsante blu
+---
+[editor_red_button]
+Pulsante rosso
+---
+[editor_yellow_button]
+Pulsante giallo
+---
+[editor_purple_button]
+Pulsante viola
 ---

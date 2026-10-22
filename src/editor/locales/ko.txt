@@ -332,7 +332,7 @@ Shovey
 사과
 ---
 [editor_plate]
-압력판
+초록색 버튼
 ---
 [editor_gate]
 주황색 문
@@ -659,7 +659,7 @@ Shovey
 나무 벽
 ---
 [editor_mossy_wall]
-이끼 벽
+이끼 낀 돌벽
 ---
 [editor_door]
 문
@@ -708,4 +708,28 @@ Shovey
 ---
 [editor_open_green_gate]
 열린 초록 문
+---
+[editor_mossy_slate_wall]
+이끼 낀 점판암 벽
+---
+[editor_mossy_brick_wall]
+이끼 낀 벽돌 벽
+---
+[editor_mossy_sandstone_wall]
+이끼 낀 사암 벽
+---
+[editor_mossy_timber_wall]
+이끼 낀 나무 벽
+---
+[editor_blue_button]
+파란색 버튼
+---
+[editor_red_button]
+빨간색 버튼
+---
+[editor_yellow_button]
+노란색 버튼
+---
+[editor_purple_button]
+보라색 버튼
 ---

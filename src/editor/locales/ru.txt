@@ -332,7 +332,7 @@ Island
 Яблоко
 ---
 [editor_plate]
-Нажимная плита
+Зелёная кнопка
 ---
 [editor_gate]
 Оранжевые ворота
@@ -659,7 +659,7 @@ Island
 Деревянная стена
 ---
 [editor_mossy_wall]
-Мшистая стена
+Замшелая каменная стена
 ---
 [editor_door]
 Дверь
@@ -708,4 +708,28 @@ Island
 ---
 [editor_open_green_gate]
 Открытые зелёные ворота
+---
+[editor_mossy_slate_wall]
+Замшелая сланцевая стена
+---
+[editor_mossy_brick_wall]
+Замшелая кирпичная стена
+---
+[editor_mossy_sandstone_wall]
+Замшелая стена из песчаника
+---
+[editor_mossy_timber_wall]
+Замшелая деревянная стена
+---
+[editor_blue_button]
+Синяя кнопка
+---
+[editor_red_button]
+Красная кнопка
+---
+[editor_yellow_button]
+Жёлтая кнопка
+---
+[editor_purple_button]
+Фиолетовая кнопка
 ---
