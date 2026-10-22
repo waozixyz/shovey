@@ -116,7 +116,7 @@ try {
   await call('Page.reload', {ignoreCache: true});
   await settle('!!document.querySelector(".loading-screen")', value => value);
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".loading-screen")).visibility'), 'visible');
-  assert.equal(await evaluate('document.querySelector(".loading-mark").naturalWidth'), 480);
+  assert.equal(await settle('document.querySelector(".loading-mark").naturalWidth', value => value === 480), 480);
   await settle('document.querySelector("#loading-screen").classList.contains("is-hidden")', value => value);
   await settle('Number(getComputedStyle(document.querySelector(".loading-screen")).opacity)', value => value === 0);
   await delay(100);
@@ -154,7 +154,7 @@ try {
   await evaluate(`(() => {
     const canvas = document.querySelector('canvas');
     for (const type of ['mousedown', 'mouseup', 'click']) {
-      canvas.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: 78, clientY: 26, button: 0, buttons: type === 'mousedown' ? 1 : 0}));
+      canvas.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: 114, clientY: 26, button: 0, buttons: type === 'mousedown' ? 1 : 0}));
     }
   })()`);
   await delay(500);
