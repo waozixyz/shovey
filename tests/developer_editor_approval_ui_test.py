@@ -113,6 +113,15 @@ with (output / 'app.log').open('w') as log:
         click(1300, 174)  # Moss floor, before every wall brush.
         time.sleep(0.15)
         click(476, 615)  # Cosmetic edit under Shovey preserves the winning route.
+        for attempt in range(80):
+            proof = drafts / '001.proof'
+            if proof.exists() and proof.read_text().splitlines()[0][480 + 13 * 2:482 + 13 * 2] == '67':
+                break
+            time.sleep(0.05)
+        # A prior approval without a published board cannot publish edits
+        # automatically. The first publication needs the Approve click.
+        assert not (drafts / '001.approval-request').exists()
+        click(350, 66)
         for attempt in range(120):
             if (drafts / '001.approval-request').exists():
                 break
