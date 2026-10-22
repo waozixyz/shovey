@@ -72,6 +72,70 @@ class Variations(unittest.TestCase):
             checked += 1
         self.assertGreater(checked, 100)
 
+    def test_spare_crates_do_not_distract_from_the_solution(self):
+        generated = ROOT / 'build/solver/classic/c'
+        output = ROOT / 'build/solver-focus-test'
+        output.mkdir(exist_ok=True)
+        toolchain = Path(actions.subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
+        binary = output / 'focus-test'
+        command = ['cc', '-std=c11', '-O2', '-I' + str(toolchain / 'include'), '-iquote', str(generated),
+                   str(ROOT / 'tests/solver_focus_test.c')]
+        command += [str(path) for path in generated.glob('*.c')]
+        command += [str(ROOT / 'build/ziran/libziran.a'), '-lm', '-lpthread', '-o', str(binary)]
+        actions.subprocess.run(command, check=True, capture_output=True)
+        actions.subprocess.run([str(binary)], check=True, capture_output=True)
+        candidate = json.loads((ROOT / 'tests/fixtures/spare-crates.json').read_text())['board']
+        result = actions.subprocess.run([str(actions.SOLVER), 'solve', '--seconds', '15',
+            '--only', 'greedy', '--max-mb', '128', candidate], capture_output=True, text=True, timeout=25)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(actions.verify_route(1, candidate, result.stdout.strip()))
+
+    def test_prettify_preserves_buttons_moss_and_blocking_decoration(self):
+        def edit(layer, x, y, before, after):
+            return dict(layer=layer, x=x, y=y, **{'from': before, 'to': after})
+        proposal = dict(edits=[edit('decorations', 3, 4, 0, 57), edit('tiles', 3, 4, 0, 103)])
+        candidate = actions.apply_proposal(board(), proposal, mode='prettify')
+        self.assertTrue(actions.verify_route(1, candidate, '333332'))
+        for layer, before, after in (('cells', 0, 13), ('tiles', 0, 14), ('tiles', 0, 127),
+                                    ('tiles', 0, 65), ('decorations', 0, 84), ('decorations', 0, 106)):
+            with self.subTest(layer=layer, after=after), self.assertRaises(ValueError):
+                actions.apply_proposal(board(), dict(edits=[edit(layer, 3, 4, before, after)]), mode='prettify')
+        for wall in (14, 127, 128, 129, 130):
+            values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+            values[240 + at(3, 4)] = wall
+            original = ''.join(f'{kind:02x}' for kind in values)
+            with self.subTest(wall=wall), self.assertRaises(ValueError):
+                actions.apply_proposal(original, dict(edits=[edit('tiles', 3, 4, wall, 12)]), mode='prettify')
+
+    def test_glm_modes_use_distinct_prompts_and_engine_checked_results(self):
+        prettify = dict(edits=[dict(layer='decorations', x=3, y=4, **{'from': 0, 'to': 57})],
+                        solution='333332', explanation='Flowers by the path.')
+        values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+        values[at(2, 3)], values[at(2, 4)] = 0, 10
+        values[at(7, 2)], values[at(8, 2)] = 0, 7
+        for x in range(2, 11): values[240 + at(x, 7)] = 12
+        new_board = ''.join(f'{kind:02x}' for kind in values)
+        route = actions.prove_proposal(1, new_board)
+        redesign = {name: [[values[layer * 240 + at(x, y)] for x in range(20)] for y in range(12)]
+                    for layer, name in enumerate(actions.LAYERS)}
+        redesign.update(solution=route, explanation='A new room and approach.')
+        for mode, proposal, phrase in (('prettify', prettify, 'NEVER add, remove, recolor or move any mossy'),
+                                       ('redesign', redesign, 'completely NEW')):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+                drafts = Path(directory)
+                (drafts / '001.glm-base').write_text(board())
+                response = dict(choices=[dict(message=dict(content=json.dumps(proposal)))])
+                with patch.object(actions, 'DRAFTS', drafts), patch.object(actions, 'existing_route', return_value='333332'), \
+                        patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                        patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())) as request:
+                    actions.modify(1, mode=mode)
+                result, proof = (drafts / '001.glm-proof').read_text().splitlines()
+                self.assertTrue(actions.verify_route(1, result, proof))
+                if mode == 'prettify': self.assertEqual(proof, '333332')
+                else: self.assertEqual(result, new_board)
+                self.assertEqual(json.loads((drafts / '001.glm-details.json').read_text())['mode'], mode)
+                self.assertIn(phrase, json.loads(request.call_args.args[0].data)['messages'][0]['content'])
+
     def test_every_door_and_search_can_open_then_push_a_crate_through(self):
         for door in (104, 105, *range(116, 122)):
             cells, tiles = [0] * 240, [12] * 240
@@ -165,124 +229,37 @@ class Variations(unittest.TestCase):
             self.assertFalse((drafts / '001.glm-result').exists())
             self.assertFalse((drafts / '001.glm-proof').exists())
 
-    def test_update_all_updates_saved_published_levels_and_keeps_unproven_drafts(self):
+    def test_update_all_force_publishes_approved_snapshots_without_rechecking(self):
         candidate = actions.apply_proposal(board(), variation(4, 4))
-        route = actions.prove_proposal(1, candidate)
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
             root = Path(directory)
             drafts = root / 'backup/editor-drafts'
             drafts.mkdir(parents=True)
             (root / 'levels').mkdir()
             (root / 'backup/editor-publish.json').write_text('{}')
-            originals = [actions.record(n, board(), '333332') for n in (1, 2)]
-            pending = {'4': actions.record(4, candidate, route)}
-            (root / 'levels/approved.json').write_text(json.dumps(dict(levels=originals, pending=pending)))
-            saved = [actions.record(1, candidate, route), originals[1], actions.record(3, candidate, route)]
-            (root / 'levels/classic.json').write_text(json.dumps(dict(levels=saved)))
-            (drafts / '002.hex').write_text(blocked_board())
+            approved = dict(levels=[actions.record(1, board(), '333332'),
+                                    actions.record(2, board(), '333332')],
+                            pending={'4': actions.record(4, board(), '333332')})
+            path = root / 'levels/approved.json'
+            path.write_text(json.dumps(approved))
+            (drafts / '001.hex').write_text(board())
+            (drafts / '002.hex').write_text(candidate)
+            # Even a winning draft is not a new approval.
+            (drafts / '002.proof').write_text(candidate + '\n333332')
+            before = {p.name: p.read_bytes() for p in drafts.iterdir()}
             with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
-                    patch.object(actions, 'published_campaign', return_value=[board(), board()]), \
+                    patch.object(actions, 'verify_route', side_effect=AssertionError('Already approved')), \
+                    patch.object(actions, 'prove_proposal', side_effect=AssertionError('No draft search')), \
+                    patch.object(actions.subprocess, 'run', side_effect=AssertionError('No server check')), \
                     patch.object(actions, 'update') as publish:
                 actions.update_all()
-            campaign = json.loads((root / 'levels/approved.json').read_text())
-            self.assertEqual(campaign['levels'], [saved[0], originals[1]])
-            self.assertEqual(campaign['pending'], pending)
-            self.assertEqual((drafts / '002.hex').read_text(), blocked_board())
-            self.assertEqual(json.loads((drafts / 'update-all-summary.json').read_text())['kept_unproven_drafts'], [2])
-            publish.assert_called_once()
-
-    def test_update_all_can_use_a_drafts_exact_winning_proof(self):
-        candidate = actions.apply_proposal(board(), variation(4, 4))
-        route = actions.prove_proposal(1, candidate)
-        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
-            root = Path(directory)
-            drafts = root / 'backup/editor-drafts'
-            drafts.mkdir(parents=True)
-            (root / 'levels').mkdir()
-            (root / 'backup/editor-publish.json').write_text('{}')
-            original = actions.record(1, board(), '333332')
-            for name in ('classic', 'approved'):
-                (root / f'levels/{name}.json').write_text(json.dumps(dict(levels=[original])))
-            (drafts / '001.hex').write_text(candidate)
-            (drafts / '001.proof').write_text(candidate + '\n' + route)
-            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
-                    patch.object(actions, 'published_campaign', return_value=[board()]), \
-                    patch.object(actions, 'update'):
-                actions.update_all()
-            self.assertEqual(json.loads((root / 'levels/approved.json').read_text())['levels'], [actions.record(1, candidate, route)])
-
-    def test_update_all_finds_a_new_win_for_the_latest_draft(self):
-        candidate = actions.apply_proposal(board(), variation(4, 4))
-        self.assertFalse(actions.verify_route(1, candidate, '333332'))
-        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
-            root = Path(directory)
-            drafts = root / 'backup/editor-drafts'
-            drafts.mkdir(parents=True)
-            (root / 'levels').mkdir()
-            (root / 'backup/editor-publish.json').write_text('{}')
-            original = actions.record(1, board(), '333332')
-            for name in ('classic', 'approved'):
-                (root / f'levels/{name}.json').write_text(json.dumps(dict(levels=[original])))
-            (drafts / '001.hex').write_text(candidate)
-            (drafts / '001.proof').write_text(board() + '\n333332')
-            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
-                    patch.object(actions, 'published_campaign', return_value=[board()]), \
-                    patch.object(actions, 'update') as publish:
-                actions.update_all()
-            updated = json.loads((root / 'levels/approved.json').read_text())['levels'][0]
-            self.assertEqual(actions.board_hex(updated), candidate)
-            self.assertTrue(actions.verify_route(1, candidate, updated['solution']))
-            self.assertEqual((drafts / '001.proof').read_text(), candidate + '\n' + updated['solution'])
-            self.assertEqual((drafts / '001.hex').read_text(), candidate)
-            self.assertEqual(json.loads((drafts / 'update-all-summary.json').read_text())['kept_unproven_drafts'], [])
-            publish.assert_called_once_with(force=False)
-
-    def test_update_all_reuses_a_win_after_decoration_changes(self):
-        candidate = board()[:960 + at(3, 4) * 2] + '39' + board()[962 + at(3, 4) * 2:]
-        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
-            root = Path(directory)
-            drafts = root / 'backup/editor-drafts'
-            drafts.mkdir(parents=True)
-            (root / 'levels').mkdir()
-            (root / 'backup/editor-publish.json').write_text('{}')
-            original = actions.record(1, board(), '333332')
-            for name in ('classic', 'approved'):
-                (root / f'levels/{name}.json').write_text(json.dumps(dict(levels=[original])))
-            (drafts / '001.hex').write_text(candidate)
-            (drafts / '001.proof').write_text(board() + '\n333332')
-            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
-                    patch.object(actions, 'published_campaign', return_value=[board()]), \
-                    patch.object(actions, 'prove_proposal', side_effect=AssertionError('Existing route must be reused')), \
-                    patch.object(actions, 'update'):
-                actions.update_all()
-            self.assertEqual(json.loads((root / 'levels/approved.json').read_text())['levels'],
-                             [actions.record(1, candidate, '333332')])
-
-    def test_update_all_preserves_edits_and_approvals_made_during_a_check(self):
-        candidate = actions.apply_proposal(board(), variation(4, 4))
-        route = actions.prove_proposal(1, candidate)
-        for newer in ('draft', 'approval'):
-            with self.subTest(newer=newer), tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
-                root = Path(directory)
-                drafts = root / 'backup/editor-drafts'
-                drafts.mkdir(parents=True)
-                (root / 'levels').mkdir()
-                (root / 'backup/editor-publish.json').write_text('{}')
-                original = actions.record(1, board(), '333332')
-                for name in ('classic', 'approved'):
-                    (root / f'levels/{name}.json').write_text(json.dumps(dict(levels=[original])))
-                (drafts / '001.hex').write_text(candidate)
-                def finish(*args, **kwargs):
-                    (drafts / ('001.hex' if newer == 'draft' else '001.approved')).write_text(blocked_board())
-                    return route
-                with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
-                        patch.object(actions, 'published_campaign', return_value=[board()]), \
-                        patch.object(actions, 'prove_proposal', side_effect=finish), \
-                        patch.object(actions, 'update'):
-                    actions.update_all()
-                self.assertEqual(json.loads((root / 'levels/approved.json').read_text())['levels'], [original])
-                self.assertFalse((drafts / '001.proof').exists())
-                self.assertEqual(json.loads((drafts / 'update-all-summary.json').read_text())['changed_during_check'], [1])
+            publish.assert_called_once_with(force=True)
+            self.assertEqual(json.loads(path.read_text()), approved)
+            self.assertEqual({name: (drafts / name).read_bytes() for name in before}, before)
+            summary = json.loads((drafts / 'update-all-summary.json').read_text())
+            self.assertEqual(summary['updated'], [1, 2])
+            self.assertEqual(summary['checked'], [])
+            self.assertEqual(summary['kept_unproven_drafts'], [2])
 
     def test_publication_reports_drafts_that_were_not_proven(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:

@@ -15,7 +15,6 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ROOT = Path(__file__).resolve().parents[1]
 DRAFTS = ROOT / 'backup/editor-drafts'
@@ -28,8 +27,9 @@ DOORS = {104, 105, *range(116, 122)}
 ALLOWED = (
     ({0, *range(1, 77), *range(82, 135)} - {22, 24, 32, 41, 42, 43}),
     {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104), *range(127, 131)},
-    {0, 57, 58, 59, 84, 106, 122},
+    {0, 57, 58, 59, 84, 106, 122, *range(135, 143)},
 )
+BLOCKING_DECORATIONS = {84, 106, 122, *range(139, 143)}
 
 
 def atomic(path, text):
@@ -96,17 +96,6 @@ def update(force=True):
                      start_new_session=True)
 
 
-def published_campaign():
-    spec = importlib.util.spec_from_file_location('editor_server', ROOT / 'scripts/editor_server.py')
-    server = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(server)
-    server.check(ROOT)
-    campaign = json.loads((DRAFTS / 'server-campaign.json').read_text())
-    if campaign.get('status') != 'verified':
-        raise ValueError('Server check unavailable. Retry.')
-    return campaign['boards']
-
-
 def update_all():
     if not (ROOT / 'backup/editor-publish.json').is_file():
         return
@@ -119,74 +108,18 @@ def update_all():
 
 
 def update_all_levels():
-    atomic(DRAFTS / 'publish-status', 'Checking…')
-    published = published_campaign()
-    saved = json.loads((ROOT / 'levels/classic.json').read_text())['levels']
-    path = ROOT / 'levels/approved.json'
-    before = {level['number']: level for level in json.loads(path.read_text())['levels']}
-    inputs, changes, unproven = {}, {}, {}
-    for level in saved:
-        number = level['number']
-        if not 1 <= number <= len(published) or number not in before:
-            continue
-        draft = DRAFTS / f'{number:03}.hex'
-        candidate = draft.read_text().strip() if draft.exists() else board_hex(level)
-        if candidate == published[number - 1]:
-            continue
-        proof = DRAFTS / f'{number:03}.proof'
-        lines = proof.read_text().splitlines() if proof.exists() else []
-        marker = DRAFTS / f'{number:03}.approved'
-        inputs[number] = dict(board=candidate,
-            marker=marker.read_text().strip() if marker.exists() else None,
-            routes=[lines[1] if len(lines) == 2 else '', level.get('solution', ''), before[number].get('solution', '')])
-
-    def check(number, source):
-        board = source['board']
-        if not re.fullmatch('[0-9a-f]{1440}', board):
-            raise ValueError('Incomplete draft')
-        for route in dict.fromkeys(source['routes']):
-            if verify_route(number, board, route):
-                return record(number, board, route)
-        return record(number, board, prove_proposal(number, board, seconds=120,
-            prefixes=source['routes'] + learned_routes(number, board)))
-
-    atomic(DRAFTS / 'publish-status', f'Checking levels 0/{len(inputs)}…')
-    with ThreadPoolExecutor(max_workers=3) as workers:
-        pending = {workers.submit(check, number, source): number for number, source in inputs.items()}
-        for done, future in enumerate(as_completed(pending), 1):
-            number = pending[future]
-            try:
-                changes[number] = future.result()
-            except (ValueError, subprocess.TimeoutExpired):
-                unproven[str(number)] = hashlib.sha256(inputs[number]['board'].encode()).hexdigest()
-            atomic(DRAFTS / 'publish-status', f'Checking levels {done}/{len(inputs)}…')
-
-    updated, changed = [], []
-    with (DRAFTS / 'approval.lock').open('a') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        data = json.loads(path.read_text())
-        approved = {level['number']: level for level in data['levels']}
-        current_saved = {level['number']: level for level in json.loads((ROOT / 'levels/classic.json').read_text())['levels']}
-        for number, level in changes.items():
-            source = inputs[number]
-            draft, marker = DRAFTS / f'{number:03}.hex', DRAFTS / f'{number:03}.approved'
-            latest = draft.read_text().strip() if draft.exists() else board_hex(current_saved[number])
-            latest_marker = marker.read_text().strip() if marker.exists() else None
-            if latest != source['board'] or (approved.get(number) != before[number] and approved.get(number) != level) or latest_marker not in (source['marker'], source['board']):
-                changed.append(number)
-                unproven[str(number)] = hashlib.sha256(latest.encode()).hexdigest()
-                continue
-            approved[number] = level
-            atomic(marker, source['board'])
-            remember_route(number, source['board'], level['solution'])
-            atomic(DRAFTS / f'{number:03}.proof', source['board'] + '\n' + level['solution'])
-            updated.append(number)
-        data['levels'] = [approved[number] for number in sorted(approved)]
-        atomic(path, json.dumps(data, indent=1) + '\n')
+    # The owner already approved these exact snapshots. Republish them without
+    # searching drafts, rewriting approval records or consulting server state.
+    approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
+    retained = {}
+    for level in approved:
+        draft = DRAFTS / f'{level["number"]:03}.hex'
+        if draft.exists() and draft.read_text().strip() != board_hex(level):
+            retained[str(level['number'])] = hashlib.sha256(draft.read_bytes().strip()).hexdigest()
     atomic(DRAFTS / 'update-all-summary.json', json.dumps(dict(
-        updated=sorted(updated), checked=sorted(inputs), kept_unproven_drafts=sorted(map(int, unproven)),
-        unproven_boards=unproven, changed_during_check=sorted(changed)), indent=2) + '\n')
-    update(force=False)
+        updated=[level['number'] for level in approved], checked=[],
+        kept_unproven_drafts=sorted(map(int, retained)), unproven_boards=retained), indent=2) + '\n')
+    update(force=True)
 
 
 def glm_settings():
@@ -262,18 +195,36 @@ def learned_routes(number, board):
     return [route for _, _, route in sorted(examples)[:3]]
 
 
-def apply_proposal(original, proposal, repair=False):
+def apply_proposal(original, proposal, repair=False, mode='modify'):
     """Apply small, explicit landscape-coordinate edits to the supplied board."""
+    if mode not in ('modify', 'redesign', 'prettify'):
+        raise ValueError('Unknown GLM mode')
+    if mode == 'redesign' and isinstance(proposal, dict) and 'edits' not in proposal:
+        edits = []
+        for layer, name in enumerate(LAYERS):
+            grid = proposal.get(name)
+            if not isinstance(grid, list) or len(grid) != 12 or any(not isinstance(row, list) or len(row) != 20 for row in grid):
+                raise ValueError('Redesign needs three landscape grids, each 12 rows of 20 integer IDs')
+            for y, row in enumerate(grid):
+                for x, after in enumerate(row):
+                    at = layer * 240 + 11 - y + x * 12
+                    before = int(original[at * 2:at * 2 + 2], 16)
+                    if type(after) is not int:
+                        raise ValueError('Use integer piece IDs in every grid')
+                    if after != before:
+                        edits.append(dict(layer=name, x=x, y=y, **{'from': before, 'to': after}))
+        proposal = proposal | dict(edits=edits)
     if not isinstance(proposal, dict) or not isinstance(proposal.get('edits'), list):
         raise ValueError('Return a JSON object with an edits list, not a replacement level')
-    if not 1 <= len(proposal['edits']) <= 80:
-        raise ValueError('Use between 1 and 80 layer edits at at most 40 board coordinates')
+    maximum = 720 if mode == 'redesign' else 480 if mode == 'prettify' else 80
+    if not 1 <= len(proposal['edits']) <= maximum:
+        raise ValueError(f'Use between 1 and {maximum} layer edits')
     cells = [int(original[i:i + 2], 16) for i in range(0, 1440, 2)]
     updated = cells.copy()
     touched = set()
     coordinates = set()
     for edit in proposal['edits']:
-        if not isinstance(edit, dict) or edit.get('layer') not in (LAYERS if repair else LAYERS[:2]):
+        if not isinstance(edit, dict) or edit.get('layer') not in (LAYERS if repair or mode != 'modify' else LAYERS[:2]):
             raise ValueError('Edit cells or tiles only; keep the existing decoration')
         x, y, before, after = (edit.get(key) for key in ('x', 'y', 'from', 'to'))
         if any(type(value) is not int for value in (x, y, before, after)) or not (0 <= x < 20 and 0 <= y < 12):
@@ -288,17 +239,17 @@ def apply_proposal(original, proposal, repair=False):
         touched.add(index)
         coordinates.add(at)
         updated[index] = after
-    limit = 12 if repair else 40
+    limit = 12 if repair else 180 if mode != 'modify' else 40
     if len(coordinates) > limit:
         raise ValueError(f'GLM changed too much of the layout; use at most {limit} board coordinates')
-    if cells[:240].count(10) != 1 or cells[:240].count(7) != 1:
-        raise ValueError('The source level needs one player and one home')
-    if Counter(updated[:240]) != Counter(cells[:240]):
+    if updated[:240].count(10) != 1 or updated[:240].count(7) != 1:
+        raise ValueError('The level needs exactly one player and one home')
+    if mode != 'redesign' and Counter(updated[:240]) != Counter(cells[:240]):
         raise ValueError('Keep the exact inventory of existing puzzle pieces, including their colors')
-    for kind in (10, 7):
+    for kind in (() if mode == 'redesign' else (10, 7)):
         if updated.index(kind) != cells.index(kind):
             raise ValueError('Keep the player and home in their existing cells')
-    if not repair and Counter(updated[240:480]) != Counter(cells[240:480]):
+    if not repair and mode == 'modify' and Counter(updated[240:480]) != Counter(cells[240:480]):
         raise ValueError('Keep the exact terrain inventory; move existing tiles rather than adding or removing them')
     if repair:
         structure = WALLS | {0, 77, 78, *range(99, 104)}
@@ -308,7 +259,20 @@ def apply_proposal(original, proposal, repair=False):
             raise ValueError('Keep all pits, water, abyss, pressure walls and other terrain mechanics')
         if Counter(updated[480:]) != Counter(cells[480:]):
             raise ValueError('Keep the existing decoration inventory; move a blocker rather than deleting it')
-    if not any(cells[i] != updated[i] and (cells[i] not in COSMETIC or updated[i] not in COSMETIC) for i in touched):
+    if mode == 'prettify':
+        floors = {0, 60, 61, 77, 78, *range(99, 104)}
+        walls = {12, 95, 96, 97, 98}
+        for index in touched:
+            before, after = cells[index], updated[index]
+            if index < 240:
+                raise ValueError('Prettify keeps every object and puzzle piece in place')
+            if index < 480 and not any(before in group and after in group for group in (floors, walls)):
+                raise ValueError('Prettify keeps mossy walls, buttons and all terrain mechanics unchanged')
+            if index >= 480 and not (before in {0, 57, 58, 59} and after in {0, 57, 58, 59}):
+                raise ValueError('Prettify only adds non-blocking decoration; keep trees, lanterns and boulders unchanged')
+    if mode == 'redesign' and (len(coordinates) < 12 or not any(i < 240 for i in touched)):
+        raise ValueError('Redesign a new puzzle layout and piece arrangement, not just its scenery')
+    if mode != 'prettify' and not any(cells[i] != updated[i] and (cells[i] not in COSMETIC or updated[i] not in COSMETIC) for i in touched):
         raise ValueError('Change the push puzzle, not just its scenery or floor colors')
     for at in coordinates:
         kind, tile, decoration = updated[at], updated[240 + at], updated[480 + at]
@@ -317,7 +281,7 @@ def apply_proposal(original, proposal, repair=False):
                 raise ValueError('Fish must remain on water')
         elif kind and kind != 71 and kind != tile and tile in WALLS | MOSS_WALLS | {64, 65} and not (kind in DOORS and tile in WALLS | MOSS_WALLS):
             raise ValueError('A puzzle piece overlaps blocked terrain')
-        if decoration in (84, 106, 122) and (kind or tile in WALLS | MOSS_WALLS | {64, 65}):
+        if decoration in BLOCKING_DECORATIONS and (kind or tile in WALLS | MOSS_WALLS | {64, 65}):
             raise ValueError('Keep trees clear of puzzle pieces and blocked terrain')
     return ''.join(f'{kind:02x}' for kind in updated)
 
@@ -363,7 +327,7 @@ def proven_variations(number, original, route, limit=8):
         return dict(layer=layer, x=at // 12, y=11 - at % 12, **{'from': before, 'to': after})
 
     interior = [at for at in range(240) if 0 < at % 12 < 11 and 0 < at // 12 < 19]
-    empty = [at for at in interior if cells[at] == 0 and tiles[at] in {0, 77, 78, *range(99, 104)} and decorations[at] not in (84, 106, 122)]
+    empty = [at for at in interior if cells[at] == 0 and tiles[at] in {0, 77, 78, *range(99, 104)} and decorations[at] not in BLOCKING_DECORATIONS]
     proposals = []
     for source in interior:
         kind = cells[source]
@@ -432,9 +396,9 @@ def proven_variations(number, original, route, limit=8):
     return combined[:limit]
 
 
-def modify_once(number, feedback='', choices=None, repair=False):
+def modify_once(number, feedback='', choices=None, repair=False, mode='modify'):
     status = DRAFTS / f'{number:03}.glm-status'
-    atomic(status, 'Repairing…' if repair else 'Designing…')
+    atomic(status, 'Repairing…' if repair else 'Prettifying…' if mode == 'prettify' else 'Designing…')
     original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
     if not re.fullmatch('[0-9a-f]{1440}', original):
         raise ValueError('The source board is incomplete; your level was kept')
@@ -455,20 +419,40 @@ def modify_once(number, feedback='', choices=None, repair=False):
         'Think through the pushes and a winning route; use compact connected rooms and purposeful obstacles, not empty walking or random decoration. '
         'This is a variation of THIS puzzle, not a new unrelated puzzle. Preserve the exact inventory of every non-empty object kind, '
         'every colored pit, all portal pairs, paints, gates, plates and levers. Keep the player and home in their existing cells. '
-        'Keep the main rooms and recognizable passage layout; change at most 40 board coordinates across the layers. '
+        'Keep a similar strategic winning route and dependencies but give them a different purposeful layout; change at most 40 board coordinates. '
         'Reposition a few selected crates, balls or walls to create one interesting dependency or push sequence. Prefer 2–12 changed coordinates. '
         'Design the variation yourself. Avoid merely nudging one unused piece while the old solution works unchanged. '
         'If the old route still wins, change at least four coordinates with a concrete purpose in the push puzzle. '
         'Do not add goals, new mechanics, new items or extra scenery. Keep comparable difficulty. '
     )
+    if not repair and mode == 'redesign':
+        task = (
+            'Design a completely NEW Shovey level in this board, with a new layout, piece arrangement and winning strategy. '
+            'The supplied board is context, not a layout to preserve. You may change inventory and move the player and home. '
+            'Use compact connected rooms, purposeful pushes and at least one real puzzle objective. '
+            'Think through a complete winning route. Keep exactly one player and one home and the existing outer border. '
+            'Do not add autonomous animals. Do not merely recolor or slightly nudge the old puzzle. '
+        )
+    elif not repair and mode == 'prettify':
+        task = (
+            'Make this exact Shovey puzzle prettier with a coherent floor and wall palette and more non-blocking decoration. '
+            'Preserve its strategy, every object position, player, home and ALL mechanics. Do not edit the cells layer. '
+            'Only swap ordinary floor IDs within 0/60/61/77/78/99/100/101/102/103, ordinary wall IDs within 12/95/96/97/98, '
+            'and add or adjust decorations 0/57/58/59 (empty, flowers, grass, small scenery). '
+            'NEVER add, remove, recolor or move any mossy wall or pressure button: their matching color controls puzzle logic. '
+            'Keep pits, paint, ice, water, abyss, portals, gates, levers and blocking trees/lanterns/boulders exactly unchanged. '
+            'Keep the outer border. The existing winning route must still win. '
+        )
     instruction = (task +
-        'Return only JSON with keys edits, solution, explanation. Do NOT regenerate the grids. '
-        'edits is a list of {"layer":"cells","x":integer,"y":integer,"from":old ID,"to":new ID} objects. '
-        'layer may be cells, tiles' + (' or decorations. ' if repair else '. ') +
+        ('Return only JSON with keys cells, tiles, decorations, solution, explanation. ' if mode == 'redesign' else
+         'Return only JSON with keys edits, solution, explanation. Do NOT regenerate the grids. ')
+        + 'For edit responses, edits is a list of {"layer":"cells","x":integer,"y":integer,"from":old ID,"to":new ID} objects. '
+        'layer may be cells, tiles' + (' or decorations. ' if repair or mode != 'modify' else '. ') +
         'Coordinates use the supplied LANDSCAPE grids: x is column 0–19 from left, y is row 0–11 from top. '
         'Every from value must match the input. Give each layer coordinate once. Move pieces by clearing the old cell and filling the new cell. ' +
         ('Preserve every object and decoration count; only ordinary walls and floor counts may change. Keep the outer border. ' if repair else
-         'Preserve the exact count of EVERY kind in EACH layer, including empty cells, walls and floor types. Do not edit decorations or the outer border. ') +
+         'Preserve the exact count of EVERY kind in EACH layer, including empty cells, walls and floor types. Do not edit decorations or the outer border. ' if mode == 'modify' else
+         'Follow the mode-specific editing restrictions above. ') +
         'explanation briefly describes the concrete gameplay improvement. solution is a winning action string, not a claim of solvability. '
         'In this LANDSCAPE view route digits mean 0=DOWN, 1=LEFT, 2=UP, 3=RIGHT, f=fire, t=advance time. '
         'Cells: 0 empty, 1/2/3 red/blue/green balls, 7 home, 8 paired teleporters, 9 crate, 10 player (exactly one), '
@@ -484,12 +468,17 @@ def modify_once(number, feedback='', choices=None, repair=False):
         'Tiles: 0 paving, 12 wall, 14 mossy pressure wall, 4/5/6 red/blue/green pits, 47/48/49 cyan/purple/yellow pits, 64 water, '
         '65 abyss, 70 ice, 77 grass, 78 sand; 95/96/97/98 slate/brick/sandstone/timber walls; 99/100/101/102 matching floors, 103 mossy floor. '
         'Objects 82 duck, 83 turtle and 88 crab wander and block movement; 89/90/91 fish stay on water. '
-        'Decorations: 0 empty, 57 flowers, 58 grass tuft, 84 blocking tree, 106 blocking lantern, 122 blocking boulder. '
+        'Decorations: 0 empty, 57 flowers, 58 grass tuft, 135 mushrooms, 136 fallen leaves, 137 bluebells, 138 lily pads (on water), '
+        '84 blocking tree, 106 blocking lantern, 122 blocking boulder, 139 blocking berry bush, 140 blocking flower pot, '
+        '141 blocking barrel, 142 blocking tree stump. '
         'A ball pushed onto matching pit disappears; pit is reusable. Paint recolors a ball and is consumed. '
         'No object can enter or fill abyss: balls, crates, bombs and color blocks all stop at its edge. '
         'Player must remove ALL balls, collect every apple, cover all crate goals, then enter home. '
         'Crates with no goals can stay on the board. Objects cannot be pushed into portals, home, water or walls. '
         'Do not add animals or autonomous objects. Preserve the outer border exactly. No scripts, tools, commands, prose outside the JSON.')
+    if mode == 'redesign':
+        instruction += ('Instead of edits, return full cells, tiles and decorations grids, each 12 rows of 20 integer IDs in landscape order, '
+                        'plus solution and explanation. Preserve the outer border from the input exactly.')
     if choices:
         instruction += (
             'The supplied verified_variations are small edits of this exact board, already proven to win in the real engine. '
@@ -503,7 +492,7 @@ def modify_once(number, feedback='', choices=None, repair=False):
         verified_variations=[dict(choice=index, edits=choice['edits']) for index, choice in enumerate(choices)])))]
     if feedback:
         messages.append(dict(role='user', content='The previous proposal failed validation. Correct it relative to the ORIGINAL grids: ' + feedback))
-    payload = dict(model=model, temperature=0.5, max_tokens=800 if choices else 3500,
+    payload = dict(model=model, temperature=0.5, max_tokens=800 if choices else 12000 if mode == 'redesign' else 6000 if mode == 'prettify' else 3500,
                    thinking={'type': 'disabled'}, response_format={'type': 'json_object'},
                    messages=messages)
     req = urllib.request.Request(base + '/chat/completions', data=json.dumps(payload).encode(),
@@ -519,13 +508,18 @@ def modify_once(number, feedback='', choices=None, repair=False):
             raise ValueError('Choose one of the supplied engine-proven variations')
         proposal = choices[choice] | {'explanation': str(proposal.get('explanation', ''))[:1000]}
     try:
-        candidate = apply_proposal(original, proposal, repair=repair)
+        candidate = apply_proposal(original, proposal, repair=repair, mode=mode)
         changed = {at % 240 for at in range(720)
                    if original[at * 2:at * 2 + 2] != candidate[at * 2:at * 2 + 2]}
-        if not repair and len(changed) < 4 and verify_route(number, candidate, source_route):
+        if not repair and mode == 'modify' and len(changed) < 4 and verify_route(number, candidate, source_route):
             raise ValueError('Only one piece was nudged and the old route still wins unchanged. Design a fuller push variation or a change requiring a new route')
         atomic(status, 'Checking repair…' if repair else 'Checking variation…')
-        route = prove_proposal(number, candidate, proposal.get('solution', ''), source_route)
+        if mode == 'prettify' and source_route:
+            if not verify_route(number, candidate, source_route):
+                raise ValueError('Prettify changed the winning route; keep all mechanics unchanged')
+            route = source_route
+        else:
+            route = prove_proposal(number, candidate, proposal.get('solution', ''), source_route if mode != 'redesign' else '')
     except (ValueError, subprocess.TimeoutExpired) as error:
         rejected = ValueError(str(error) if isinstance(error, ValueError) else 'The route check ran out of time; simplify the variation')
         rejected.proposal = proposal
@@ -534,13 +528,13 @@ def modify_once(number, feedback='', choices=None, repair=False):
     atomic(DRAFTS / f'{number:03}.glm-explanation', str(proposal.get('explanation', ''))[:1000])
     atomic(DRAFTS / f'{number:03}.glm-result', candidate)
     atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(
-        model=model, mode='repair' if repair else 'modify', changed_coordinates=len(changed), solution_length=len(route),
+        model=model, mode='repair' if repair else mode, changed_coordinates=len(changed), solution_length=len(route),
         explanation=str(proposal.get('explanation', ''))[:1000]), indent=2) + '\n')
     atomic(status, 'Repair ready' if repair else 'Variation ready')
     atomic(DRAFTS / f'{number:03}.glm-state', 'ready')
 
 
-def modify(number, repair=False):
+def modify(number, repair=False, mode='modify'):
     atomic(DRAFTS / f'{number:03}.glm-state', 'working')
     glm_settings()  # Configuration errors cannot be corrected by another proposal.
     feedback = ''
@@ -548,11 +542,11 @@ def modify(number, repair=False):
     for attempt in range(3):
         try:
             choices = None
-            if attempt == 2 and not repair:
+            if attempt == 2 and not repair and mode == 'modify':
                 original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
                 atomic(DRAFTS / f'{number:03}.glm-status', 'Finding proven alternatives…')
                 choices = proven_variations(number, original, existing_route(number, original))
-            modify_once(number, feedback, choices, repair=repair)
+            modify_once(number, feedback, choices, repair=repair, mode=mode)
             return
         except ValueError as error:
             feedback = json.dumps(dict(reason=str(error), rejected_proposal=getattr(error, 'proposal', None)))
@@ -578,7 +572,7 @@ def failure_message(error):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('approve', 'glm', 'fix', 'update', 'update-all'))
+    parser.add_argument('action', choices=('approve', 'glm', 'glm-redesign', 'glm-prettify', 'fix', 'update', 'update-all'))
     parser.add_argument('level', type=int)
     args = parser.parse_args()
     if not 1 <= args.level <= (175 if args.action in ('update', 'update-all') else 174):
@@ -590,12 +584,14 @@ if __name__ == '__main__':
             update_all()
         elif args.action == 'fix':
             modify(args.level, repair=True)
+        elif args.action.startswith('glm'):
+            modify(args.level, mode={'glm': 'modify', 'glm-redesign': 'redesign', 'glm-prettify': 'prettify'}[args.action])
         else:
-            (approve if args.action == 'approve' else modify)(args.level)
+            approve(args.level)
     except Exception as error:
-        message = failure_message(error) if args.action in ('glm', 'fix') else 'Update failed. Retry.'
-        path = DRAFTS / (f'{args.level:03}.glm-status' if args.action in ('glm', 'fix') else 'publish-status')
+        message = failure_message(error) if args.action in ('glm', 'glm-redesign', 'glm-prettify', 'fix') else 'Update failed. Retry.'
+        path = DRAFTS / (f'{args.level:03}.glm-status' if args.action in ('glm', 'glm-redesign', 'glm-prettify', 'fix') else 'publish-status')
         atomic(path, message[:220])
-        if args.action in ('glm', 'fix'):
+        if args.action in ('glm', 'glm-redesign', 'glm-prettify', 'fix'):
             atomic(DRAFTS / f'{args.level:03}.glm-state', 'error')
         raise SystemExit(1)

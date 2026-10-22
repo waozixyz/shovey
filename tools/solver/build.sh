@@ -34,4 +34,17 @@ for edition in classic island; do
         -Wl,--gc-sections -lm -lpthread -o "$out/shovey-solve-$edition.new"
     mv "$out/shovey-solve-$edition.new" "$out/shovey-solve-$edition"
 done
+python3 - "$root" "$out" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+root, out = map(Path, sys.argv[1:])
+digest = hashlib.sha256()
+for name in ('tools/solver/solver.c', 'tools/solver/classic_api.zi', 'src/engine.zi'):
+    digest.update(name.encode())
+    digest.update((root / name).read_bytes())
+temporary = out / 'fingerprint.new'
+temporary.write_text(digest.hexdigest())
+temporary.replace(out / 'fingerprint')
+PY
 echo "built $out/shovey-solve-classic and $out/shovey-solve-island"

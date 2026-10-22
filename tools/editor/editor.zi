@@ -47,6 +47,8 @@
 #import "kryon/scroll_widget"
 #import "kryon/scroll_props"
 #import "kryon/scroll_device"
+#import "kryon/dropdown_props"
+#import "kryon/dropdown_widget"
 #import "kryon/style_sheet"
 #import "kryon/widget_palette"
 #import, file "../../src/shovey_theme.zi";
@@ -116,6 +118,8 @@ diff_label: [32]u8;
 saved_approval_ready: bool;
 glm_busy: bool;
 glm_repair: bool;
+glm_mode: s32;
+glm_menu_open: bool;
 glm_place: s32;
 glm_base: [HEX]u8;
 glm_started: s64;
@@ -183,13 +187,14 @@ similarity_cached: [PLACES + 1]bool;
 similarity_scores: [PLACES + 1]s32;
 
 // Palette: board kinds in the order a level is usually built.
-PALETTE :: 102
-palette_kinds: [102]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
+PALETTE :: 110
+palette_kinds: [110]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
     44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 131, 132, 133, 134, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
     104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
     35, 36, 37, 38, 53, 54, 55, 39, 40,
-    65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91];
-palette_names: [102]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
+    65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91,
+    135, 136, 137, 138, 139, 140, 141, 142];
+palette_names: [110]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
     "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
     "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
     "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
@@ -198,7 +203,8 @@ palette_names: [102]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flow
     "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
     "Yellow block", "Cyan block", "Purple block", "Green block", "Block goal", "Mirror Shovey",
     "Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
-    "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Duck", "Turtle", "Crab", "Goldfish", "Koi", "Minnow"];
+    "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Duck", "Turtle", "Crab", "Goldfish", "Koi", "Minnow",
+    "Mushrooms", "Fallen leaves", "Bluebells", "Lily pads", "Berry bush", "Flower pot", "Barrel", "Tree stump"];
 
 AppendText :: (bytes: []u8, length: *s32, text: string) {
     if length.* + cast(s32)text.count > cast(s32)bytes.count { return }
@@ -850,12 +856,12 @@ UpdateEdit :: () {
     // must not publish that older board while this draft stays unchanged.
     if check_state != 1 || !Checked() { StartCheck() }
     if Solved() || Proven() { ApproveEdit(); return }
-    ActionMessage(ifx check_state == 1 then "Checking solution…" else ifx check_state == 4 then "Needs one player." else "No winning route found.")
+    ActionMessage("")
 }
 
 UpdateAll :: () {
     if !server_configured || playing || glm_busy || PublicationBusy() { return }
-    ActionMessage("Updating published levels…")
+    ActionMessage("")
     publish_message_length = 0
     AppendText(publish_message[:], *publish_message_length, "Updating…")
     RunAction("update-all")
@@ -876,9 +882,12 @@ QueueApproval :: (board: []u8, letters: []u8) {
     RunAction("approve")
 }
 
-ModifyGLM :: (repair: bool = false) {
+ModifyGLM :: (repair: bool = false, mode: s32 = 0) {
     if playing || glm_busy || current >= PLACES { return }
+    if repair && !NeedsRepair() { return }
     glm_repair = repair
+    glm_mode = mode
+    glm_menu_open = false
     Copy(glm_base[:], Board(current))
     glm_place = current
     unused RemoveFile(DraftPath(current, ".glm-result"))
@@ -888,8 +897,8 @@ ModifyGLM :: (repair: bool = false) {
     unused WriteEntireFile(DraftPath(current, ".glm-state"), "working")
     glm_busy = true
     glm_started = MonotonicMilliseconds()
-    ActionMessage(ifx repair then "Repairing…" else "Designing…")
-    RunAction(ifx repair then "fix" else "glm")
+    ActionMessage(ifx repair then "Repairing…" else ifx mode == 2 then "Prettifying…" else "Designing…")
+    RunAction(ifx repair then "fix" else ifx mode == 1 then "glm-redesign" else ifx mode == 2 then "glm-prettify" else "glm")
 }
 
 // A result and its proof must describe the same board, and its route must
@@ -930,7 +939,7 @@ PollActions :: (now: s64) {
                     for at: cast(s32)0..proof_length - 1 { proof_route[at] = proof[HEX + 1 + at] }
                     proof_level = current
                     AcceptRoute(proof_route[:], proof_length)
-                    ActionMessage(ifx glm_repair then "Repair applied" else "Variation applied")
+                    ActionMessage(ifx glm_repair then "Repair applied" else ifx glm_mode == 1 then "Redesign applied" else ifx glm_mode == 2 then "Prettify applied" else "Variation applied")
                 } else { ActionMessage(ifx glm_repair then "Repair failed its route check. Retry." else "Variation failed its route check. Retry.") }
             } else { ActionMessage("Level changed. Run GLM again.") }
             glm_busy = false
@@ -1092,7 +1101,7 @@ Open :: (place: s32) {
     edited_at = 0
     if save_state != 1 { save_state = 0 }
     check_prefix_length = 0
-    if !RestoreProof() && !RestoreLearnedRoute() { unused RestoreSavedRoute() }
+    if !RestoreProof() && !RestoreLearnedRoute() && !RestoreSavedRoute() { unused RestoreCheckStatus() }
     saved_approval_ready = false
     if InGame(current) && mapping_ok {
         text, found := ReadEntireFile(LEVELS_FILE)
@@ -1171,7 +1180,7 @@ StartCheck :: () {
     Copy(check_board[:], board)
     check_level = current
     route_length = 0
-    if Players(board) != 1 { check_state = 4; return }
+    if Players(board) != 1 { check_state = 4; RememberCheckStatus(); return }
     for index: cast(s32)0..SEARCHES - 1 {
         search_done[index] = false
         length: s32 = 0
@@ -1255,11 +1264,50 @@ PollCheck :: () {
     if finished == SEARCHES {
         StopCheck()
         check_state = 3
+        RememberCheckStatus()
     }
 }
 
 // The check belongs to the board on screen.
 Checked :: () -> bool { return check_level == current && Same(check_board[:], Board(current)) }
+
+// Completed checks belong to the exact board, not just its level number.
+// Winning routes already persist in .proof and are replayed before reuse.
+RememberCheckStatus :: () {
+    if !Checked() || (check_state != 3 && check_state != 4) { return }
+    bytes: [HEX + 128]u8
+    length: s32 = 0
+    AppendText(bytes[:], *length, TextView(check_board[:]))
+    AppendText(bytes[:], *length, "\n")
+    AppendNumber(bytes[:], *length, check_state)
+    AppendText(bytes[:], *length, "\n")
+    AppendText(bytes[:], *length, SolverFingerprint())
+    unused WriteEntireFile(DraftPath(current, ".check"), TextView(bytes[:length]))
+}
+
+RestoreCheckStatus :: () -> bool {
+    text, found := ReadEntireFile(DraftPath(current, ".check"))
+    if !found || text.count < HEX + 4 || text[HEX] != cast(u8)10 || text[HEX + 2] != cast(u8)10 || text[:HEX] != TextView(Board(current)) { return false }
+    if text[HEX + 3:] != SolverFingerprint() { return false }
+    state := cast(s32)text[HEX + 1] - 48
+    if state != 3 && state != 4 { return false }
+    Copy(check_board[:], Board(current))
+    check_level = current
+    check_state = state
+    check_wanted = false
+    route_length = 0
+    return true
+}
+
+SolverFingerprint :: () -> string {
+    text, found := ReadEntireFile("build/solver/fingerprint")
+    return ifx found then text else "local"
+}
+
+NeedsRepair :: () -> bool {
+    return !playing && current < PLACES && !Solved() && !Proven() &&
+        ((check_state == 3 && Checked()) || check_state == 4)
+}
 
 RememberRoute :: (record: string) {
     if record.count <= HEX + 1 || record.count > HEX + ROUTE_MAX + 1 || record[HEX] != cast(u8)10 { return }
@@ -1936,6 +1984,18 @@ Palette :: (area: Rectangle) {
     unused End(session)
 }
 
+GLMMenu :: () {
+    options: [3]DropdownOption
+    options[0].label = "Modify"
+    options[1].label = "Redesign"
+    options[2].label = "Prettify"
+    choice := Dropdown(session, DropdownProps.{.key = 18, .id = 18,
+        .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0}, .placeholder = "GLM", .selected_index = -1,
+        .disabled = playing || glm_busy || current >= PLACES}, options[:])
+    glm_menu_open = choice.open
+    if choice.changed { ModifyGLM(false, choice.selected_index) }
+}
+
 Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     unused Box(session, BoxProps.{.key = cast(u64)19990, .bounds = viewport, .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
     now := MonotonicMilliseconds()
@@ -2020,11 +2080,9 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if Control(14, Rectangle.{bx, 8.0, 168.0, 40.0}, ifx boards_landscape then "Rotate: portrait" else "Rotate: landscape") { RotateBoards() }
     if Control(16, Rectangle.{8.0, 51.0, 80.0, 30.0}, "Redo (Y)") && !playing { RedoEdit() }
     if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
-    if Button(session, ButtonProps.{.key = 18, .id = 18, .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0},
-            .label = ifx glm_busy && !glm_repair then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM() }
     update := NeedsUpdate(current)
     if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
-            .label = ifx update then ifx PublicationBusy() then "Updating…" else ifx check_state == 1 && Checked() && !ApprovalMatches(current) && !Solved() && !Proven() then "Checking…" else "Update" else "Approve",
+            .label = ifx update then ifx PublicationBusy() then "Updating…" else "Update" else "Approve",
             .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
         if update { UpdateEdit() } else { ApproveEdit() }
     }
@@ -2034,7 +2092,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if Button(session, ButtonProps.{.key = 20, .id = 20, .bounds = Rectangle.{414.0, 51.0, 96.0, 30.0},
             .label = TextView(diff_label[:differences]), .selected = diff_open,
             .disabled = playing || !server_verified || !published_places[current - 1]}) != 0 { diff_open = !diff_open }
-    if Button(session, ButtonProps.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
+    if NeedsRepair() && Button(session, ButtonProps.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
             .label = ifx glm_busy && glm_repair then "Fixing…" else "Fix it",
             .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM(true) }
     if Button(session, ButtonProps.{.key = 22, .id = 22, .bounds = Rectangle.{614.0, 51.0, 116.0, 30.0},
@@ -2052,6 +2110,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             drafts_refreshed = now
         }
         SelectorScreen(Rectangle.{8.0, 88.0, width - 16.0, height - 96.0})
+        GLMMenu()
         return
     }
 
@@ -2109,7 +2168,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         // Alt+click (or Shift+click, if the desktop keeps Alt) picks up the
         // piece under the pointer to paint with.
         picking := (modifiers & 5) != 0
-        if picking && pointer.pressed && grid.cell > 0.0 {
+        if !glm_menu_open && picking && pointer.pressed && grid.cell > 0.0 {
             at := BoardLogicalIndex(TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
             if at >= 0 {
                 piece := KindAt(Board(current), at)
@@ -2118,7 +2177,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             }
         }
         // A stroke paints every cell the pointer crosses; it is undone at once.
-        if !picking && (pointer.down || secondary.down || secondary.pressed) && grid.cell > 0.0 {
+        if !glm_menu_open && !picking && (pointer.down || secondary.down || secondary.pressed) && grid.cell > 0.0 {
             at := BoardLogicalIndex(TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
             if at >= 0 {
                 if !stroke { Remember(); stroke = true }
@@ -2128,6 +2187,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if !pointer.down && !secondary.down && !secondary.pressed { stroke = false }
     }
     Palette(Rectangle.{width - palette_width - 8.0, 88.0, palette_width, height - 88.0 - 8.0})
+    GLMMenu()
 }
 
 Draw :: () -> bool {

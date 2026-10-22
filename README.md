@@ -10,7 +10,9 @@ board one move at a time.
 
 ## Play
 
-- **26 Classic levels**, with a checked winning route for every published puzzle.
+[Download the signed Android APK](https://github.com/waozixyz/shovey/releases/latest).
+
+- **30 Classic levels**, with a checked winning route for every published puzzle.
 - **Touch and keyboard controls**, with portrait and landscape layouts.
 - **Saved progress**, restart and a level chooser for revisiting unlocked puzzles.
 - **An integrated level editor** for making and testing your own boards.

@@ -56,6 +56,40 @@ int main(int argc, char **argv) {
         assert(shovey_board_KindSprite(&facing, SHOVEY_CHICKEN, 13, 0, true) == SPRITE_DOG + direction);
     }
     load();
+    if (argc == 2 && strcmp(argv[1], "status") == 0) {
+        editor_Open(1);
+        assert(editor_Solved() && !editor_NeedsRepair());
+        editor_SetKind(editor_Board(1), 14, 0);
+        editor_SetKind(editor_Board(1), 15, 7);
+        editor_Edited();
+        memcpy(check_board, editor_Board(1).data, HEX);
+        check_level = current;
+        check_state = 3;
+        check_wanted = false;
+        editor_RememberCheckStatus();
+        editor_Open(2);
+        editor_Open(1);
+        assert(check_state == 3 && editor_Checked() && !check_wanted);
+        assert(editor_NeedsRepair());
+        FILE *fingerprint = fopen("build/solver/fingerprint", "wb");
+        assert(fingerprint);
+        fputs("updated-solver", fingerprint);
+        fclose(fingerprint);
+        editor_Open(1);
+        assert(check_state == 0 && check_wanted && !editor_NeedsRepair());
+        remove("build/solver/fingerprint");
+        editor_SetKind(editor_Board(1), SHOVEY_CELLS * 2 + 14, 57);
+        editor_Edited();
+        assert(!editor_RestoreCheckStatus() && check_wanted);
+        editor_SetKind(editor_Board(1), 13, 0);
+        editor_Edited();
+        editor_StartCheck();
+        assert(check_state == 4 && editor_NeedsRepair());
+        editor_Open(1);
+        assert(check_state == 4 && !check_wanted);
+        puts("Completed check status survives reopening only for the same board; Fix it stays hidden for verified wins");
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "update") == 0) {
         editor_Open(1);
         assert(editor_Solved() && saved_approval_ready);
@@ -72,6 +106,7 @@ int main(int argc, char **argv) {
         assert(saved_approval_ready && editor_UpdateAvailable());
         editor_UpdateEdit();
         assert(check_state == 1 && editor_Checked());
+        assert(action_message_length == 0 && !editor_NeedsRepair());
         assert(access("backup/editor-drafts/001.approval-request", F_OK) != 0);
         int64_t started = check_started;
         sleep(1);

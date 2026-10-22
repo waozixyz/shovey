@@ -598,6 +598,139 @@ ClassicApiWalkNearest :: (game: *ShoveyGame, targets: []s32) -> s32 {
     return ifx best >= CLASSIC_FAR then 100 else best
 }
 
+// Focus the ordered searches on routes to objectives. Spare crates off
+// these routes remain legal to move, but are more expensive search steps.
+classic_focus: [SHOVEY_CELLS]bool;
+classic_focus_walk: [SHOVEY_CELLS]s32;
+classic_focus_from: [SHOVEY_CELLS]s32;
+
+ClassicApiFocusWalk :: (at: s32) {
+    if at < 0 || at >= SHOVEY_CELLS || classic_focus_walk[at] >= CLASSIC_FAR { return }
+    for step: cast(s32)0..SHOVEY_CELLS - 1 {
+        classic_focus[at] = true
+        from := classic_focus_from[at]
+        if from < 0 || from == at { return }
+        at = from
+    }
+}
+
+ClassicApiFocusPiece :: (game: *ShoveyGame, piece: s32, at: s32, sources: []s32, starts: []s32) {
+    if sources.count == 0 { return }
+    distance: [SHOVEY_CELLS]s32
+    ClassicApiPushField(game, piece, sources, starts, distance[:])
+    for step: cast(s32)0..SHOVEY_CELLS - 1 {
+        classic_focus[at] = true
+        for source: sources { if at == source { return } }
+        best: s32 = -1
+        support: s32 = -1
+        cost: s32 = CLASSIC_FAR
+        access: s32 = CLASSIC_FAR
+        for direction: cast(s32)0..3 {
+            next := ShoveyNeighbor(at, direction)
+            behind := ShoveyNeighbor(at, (direction + 2) % 4)
+            if behind < 0 || next < 0 || !ClassicApiEventuallyAllows(game, next, piece) ||
+                !ClassicApiEventuallyAllows(game, behind, 10) || distance[next] >= distance[at] { continue }
+            pushed := distance[next] + 1
+            if game.objects[at] != 0 && game.objects[at] != piece { pushed += 3 }
+            if game.objects[behind] != 0 { pushed += 3 }
+            if pushed < cost || (pushed == cost && classic_focus_walk[behind] < access) {
+                best = next; support = behind; cost = pushed; access = classic_focus_walk[behind]
+            }
+        }
+        if best < 0 { ClassicApiFocusWalk(at); return }
+        ClassicApiFocusWalk(support)
+        classic_focus[support] = true
+        at = best
+    }
+}
+
+#program_export
+ClassicApiFocus :: () {
+    game := *classic_game
+    queue: [SHOVEY_CELLS]s32
+    queued: [SHOVEY_CELLS]bool
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        classic_focus[at] = false
+        classic_focus_walk[at] = CLASSIC_FAR
+        classic_focus_from[at] = -1
+    }
+    classic_focus_walk[game.player] = 0
+    queue[0] = game.player; queued[game.player] = true
+    head: s32 = 0; count: s32 = 1
+    while count > 0 {
+        at := queue[head]; head = (head + 1) % SHOVEY_CELLS; count -= 1
+        queued[at] = false
+        for direction: cast(s32)0..3 {
+            to := ShoveyNeighbor(at, direction)
+            if !ClassicApiEventuallyAllows(game, to, 10) { continue }
+            cost := classic_focus_walk[at] + 1
+            if game.objects[to] != 0 && game.objects[to] != 40 { cost += 8 }
+            if !ShoveyFloorAllows(game, to, 10) { cost += 8 }
+            if cost >= classic_focus_walk[to] { continue }
+            classic_focus_walk[to] = cost; classic_focus_from[to] = at
+            if !queued[to] {
+                queued[to] = true; queue[(head + count) % SHOVEY_CELLS] = to; count += 1
+            }
+        }
+    }
+    crates: [SHOVEY_CELLS]s32; crate_count: s32 = 0
+    plates: [SHOVEY_CELLS]s32; plate_count: s32 = 0
+    switches: [SHOVEY_CELLS]s32; switch_count: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        ground := game.ground[at]; object := game.objects[at]
+        if object == 9 { crates[crate_count] = at; crate_count += 1 }
+        if ground == 18 && object != 9 { plates[plate_count] = at; plate_count += 1 }
+        if ground == 13 && object == 0 { switches[switch_count] = at; switch_count += 1 }
+        if ground == 21 || ground == 56 || object == 19 || object == 28 || object == 40 ||
+            ShoveyLever(ground) || (ground == 7 && ShoveyRemaining(game) == 0) { ClassicApiFocusWalk(at) }
+        color := ShoveyBallColor(object)
+        if color > 0 {
+            sources: [SHOVEY_CELLS]s32; starts: [SHOVEY_CELLS]s32; source_count: s32 = 0
+            for to: cast(s32)0..SHOVEY_CELLS - 1 {
+                pit := ShoveyPitColor(game.ground[to])
+                paint := ShoveyPaintColor(game.ground[to])
+                if pit != color && paint == 0 { continue }
+                sources[source_count] = to
+                if paint > 0 { starts[source_count] = CLASSIC_GOAL }
+                source_count += 1
+            }
+            ClassicApiFocusPiece(game, object, at, sources[0:source_count], starts[0:source_count])
+        }
+        if ShoveyColorBlock(object) {
+            rests: [SHOVEY_CELLS]s32; starts: [SHOVEY_CELLS]s32; rest_count: s32 = 0
+            for to: cast(s32)0..SHOVEY_CELLS - 1 {
+                if game.ground[to] == 39 { rests[rest_count] = to; rest_count += 1 }
+            }
+            ClassicApiFocusPiece(game, object, at, rests[0:rest_count], starts[0:rest_count])
+        }
+    }
+    starts: [SHOVEY_CELLS]s32
+    if plate_count > 0 {
+        best: s32 = -1; cost: s32 = CLASSIC_FAR
+        for index: cast(s32)0..crate_count - 1 {
+            pushes := ClassicApiCrateDistance(crates[index], classic_goal_table[:], false)
+            if pushes < cost { best = crates[index]; cost = pushes }
+        }
+        if best >= 0 { ClassicApiFocusPiece(game, 9, best, plates[0:plate_count], starts[0:plate_count]) }
+    }
+    if classic_doors && switch_count > 0 {
+        best: s32 = -1; cost: s32 = CLASSIC_FAR
+        for index: cast(s32)0..crate_count - 1 {
+            pushes := ClassicApiCrateDistance(crates[index], classic_plate_table[:], true)
+            if pushes < cost { best = crates[index]; cost = pushes }
+        }
+        if best >= 0 { ClassicApiFocusPiece(game, 9, best, switches[0:switch_count], starts[0:switch_count]) }
+    }
+}
+
+#program_export
+ClassicApiActionCost :: (action: s32) -> s32 {
+    if action < 0 || action > 3 || classic_crate_check { return 1 }
+    at := ShoveyNeighbor(classic_game.player, action)
+    if at < 0 || classic_game.objects[at] != 9 || classic_focus[at] { return 1 }
+    return 16
+}
+
 // Search guidance only, never a rule: each unfinished goal of ShoveyRemaining
 // costs CLASSIC_GOAL plus how far its piece is from the place that finishes it,
 // then Shovey's distance to the nearest open goal, or to a house when none is

@@ -79,17 +79,19 @@ still win on the visible draft; otherwise Update starts a check and shows
 Checking. It keeps an already running check and publishes that exact draft
 after the engine verifies its win. Diff shows the server board above your draft,
 counts changed cells and highlights their objects, floor or decoration changes.
-Update all checks the latest drafts of every published level in the background,
-reuses winning routes when they still work, and searches for new routes when
-needed. It publishes the proven drafts together. Drafts that change during a
-check or have no proven solution stay intact; the result reports any left
-unpublished. Unpublished levels stay out of this operation.
-The solution status remains visible beside the controls while actions run.
+Update all force-publishes the already approved campaign without checking or
+searching drafts again. Changed drafts and pending approvals stay intact.
+The solution status appears once beside the controls while actions run. Completed
+checks are remembered for the exact board and solver version; edits or a newer
+solver invalidate that result. Fix it appears only after a failed check.
 Completed runs are kept as bounded examples per level. Edits first reuse a
 working example, then continue from full or partial recorded routes before
 starting a fresh search. The solver combines breadth-first search, goal chains
 and weighted macro searches. Its path guidance accounts for room geometry,
-spare crates and doors that can open; legal moves and final wins still come
+spare crates and doors that can open. A bounded first search concentrates on
+objective routes and penalizes unrelated crate pushes; a fresh search with an
+unbounded frontier follows when needed. Spare crates remain legal to move.
+Legal moves and final wins still come
 from the game engine. The macro and domain-guidance approach follows the
 [Sokoban search research](https://www.ijcai.org/Proceedings/99-1/Papers/082.pdf).
 Objects cannot enter the abyss or replace it with floor. Cached wins are replayed under the current rules
@@ -101,12 +103,13 @@ blocking decoration, while keeping objectives and the player and home. A repair
 is applied only after a winning route passes the game engine; Undo restores the
 previous draft. Failed proposals leave the board intact.
 
-**GLM Modify** designs a variation of the open board, using its existing winning
-route as a reference. It can change the push sequence and find a new route;
-engine-checked alternatives help when a proposal cannot be solved. It keeps the
-puzzle's pieces, colors, terrain, start and home.
-A variation is applied only after its solution wins in the game engine, and
-Undo, Redo and Reset remain available. Unproven proposals leave the level intact.
+**GLM** has three actions. **Modify** creates a different layout with a similar
+strategic winning route and the same puzzle inventory. **Redesign** makes a new
+level, including its layout, pieces, start and home. **Prettify** changes ordinary
+floor and wall appearances and adds non-blocking scenery, preserving every
+object, mossy wall, button and other mechanic. It keeps the existing winning
+route. Every generated result must win in the game engine before it is applied;
+Undo restores the previous board, and failed proposals leave it intact.
 **Approve** publishes in the background. It is disabled when that approval is
 already published, and becomes available again if its update fails. A later
 unproven draft does not prevent approving the last saved winning layout.
@@ -174,3 +177,20 @@ The editor's card is drawn from both sets by `make editor-card`
 (`tools/pixel/editor_card.zi`, on a private display).
 
 `assets/*/art.json` lists each picture with what it shows.
+
+## Android downloads
+
+Arcade supplies the standalone native Android host. Build its release APK with
+`make -C ../arcade android-shovey-release`, then run:
+
+    python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.apk --version VERSION
+
+The signer checks the production package, version, release certificate, alignment,
+both ARM architectures and the embedded collection digest. The release key and
+password remain in ignored `backup/android-signing/`; preserve them for future
+updates. Only the public certificate belongs in Git.
+
+The Android download workflow prepares a draft release. Upload the checked APK
+as `shovey-vVERSION.apk`, then dispatch the workflow's publish operation with its
+exact digest. The workflow verifies the uploaded binary before publishing and
+creating its release tag. Download the public asset and verify it again.

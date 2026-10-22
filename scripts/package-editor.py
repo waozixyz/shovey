@@ -25,6 +25,7 @@ def main():
         (payload / folder).mkdir(parents=True, exist_ok=True)
     shutil.copyfile(OUTPUT / 'shovey-level-editor', payload / 'bin/shovey-level-editor')
     shutil.copyfile(OUTPUT / 'solver/shovey-solve-classic', payload / 'build/solver/shovey-solve-classic')
+    shutil.copyfile(OUTPUT / 'solver/fingerprint', payload / 'build/solver/fingerprint')
     for binary in (payload / 'bin/shovey-level-editor', payload / 'build/solver/shovey-solve-classic'):
         binary.chmod(0o755)
         data = binary.read_bytes()

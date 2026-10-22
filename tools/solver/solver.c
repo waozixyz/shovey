@@ -512,8 +512,13 @@ static uint64_t Priority(uint32_t depth, int weight) {
     return priority > 0xffffffffull ? 0xffffffffull : priority;
 }
 
+static int ComparePriority(const void *left, const void *right) {
+    uint64_t a = *(const uint64_t *)left, b = *(const uint64_t *)right;
+    return (a > b) - (a < b);
+}
+
 // Best-first (greedy) when ordered, else breadth-first, over macro actions.
-static Result MacroSearch(const Options *options, double deadline, bool ordered) {
+static Result MacroSearch(const Options *options, double deadline, bool ordered, bool focused) {
     Result result = {STOP_NONE, {NULL, 0, 0}, 0};
     ClearSearch();
     AddNode(key_buffer, 0, NO_PARENT, 0, 0, 0);
@@ -548,12 +553,21 @@ static Result MacroSearch(const Options *options, double deadline, bool ordered)
         if (SetAdd(&closed, key_buffer, Compress(work_vector, key_buffer)) < 0) continue;
         SetWalker(work_vector, region_queue[0]);
         result.expanded++;
-        uint32_t depth = node_depth[node] + 1;
         API(Decode)(work_vector);
+#if defined(SHOVEY_CLASSIC)
+        if (ordered) API(Focus)();
+#endif
         for (int index = 0; index < region_edge_count; index++) {
             Edge edge = region_edges[index];
             API(SetWalker)(edge.walker);
             API(Reset)();
+            uint32_t cost = 1;
+#if defined(SHOVEY_CLASSIC)
+            if (ordered) cost = (uint32_t)API(ActionCost)(edge.action);
+#endif
+            // Extra effort goes to crate pushes off the objective routes;
+            // they stay available for necessary detours and staging moves.
+            uint32_t depth = node_depth[node] + cost;
             API(Act)(edge.action);
             // A state the wrapper proves unwinnable is never stored.
             if (API(Dead)()) continue;
@@ -570,6 +584,13 @@ static Result MacroSearch(const Options *options, double deadline, bool ordered)
                     fprintf(stderr, "\n");
                 }
             }
+        }
+        // Keep a small set of promising continuations in the first attempt
+        // instead of filling the frontier with spare-crate rearrangements.
+        // The caller retries without this bound before leaving the phase.
+        if (focused && heap_count > 512) {
+            qsort(heap, (size_t)heap_count, sizeof *heap, ComparePriority);
+            heap_count = 128; /* A sorted prefix is also a valid min-heap. */
         }
     }
     return result;
@@ -615,12 +636,19 @@ static int ChainWays(const Options *options, double deadline, int goal, Way *way
         if (SetAdd(&closed, key_buffer, Compress(work_vector, key_buffer)) < 0) continue;
         SetWalker(work_vector, region_queue[0]);
         limits.expanded++;
-        uint32_t depth = node_depth[node] + 1;
         API(Decode)(work_vector);
+#if defined(SHOVEY_CLASSIC)
+        API(Focus)();
+#endif
         for (int index = 0; index < region_edge_count && found < CHAIN_WAYS; index++) {
             Edge edge = region_edges[index];
             API(SetWalker)(edge.walker);
             API(Reset)();
+            uint32_t cost = 1;
+#if defined(SHOVEY_CLASSIC)
+            cost = (uint32_t)API(ActionCost)(edge.action);
+#endif
+            uint32_t depth = node_depth[node] + cost;
             API(Act)(edge.action);
             if (API(Dead)()) continue;
             Encode(next_vector);
@@ -752,7 +780,20 @@ static int Solve(const char *hex, const Options *options) {
         method = plan[index].name;
         if (index == 0) result = BreadthFirst(options, deadline);
         else if (strcmp(method, "chain") == 0) result = ChainSearch(options, deadline);
-        else result = MacroSearch(options, deadline, strcmp(method, "greedy") == 0);
+        else {
+#if defined(SHOVEY_CLASSIC)
+            if (strcmp(method, "greedy") == 0) {
+                double focus_deadline = Now() + (deadline - Now()) * 0.5;
+                result = MacroSearch(options, focus_deadline, true, true);
+                if (result.stop != STOP_SOLVED && Now() < deadline) {
+                    states_seen += states.count;
+                    expanded += result.expanded;
+                    result = MacroSearch(options, deadline, true, false);
+                }
+            } else
+#endif
+            result = MacroSearch(options, deadline, strcmp(method, "greedy") == 0, false);
+        }
         states_seen += states.count;
         expanded += result.expanded;
         size_t used = strlen(phases);

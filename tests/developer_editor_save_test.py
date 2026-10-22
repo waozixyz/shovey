@@ -42,11 +42,12 @@ command += shlex.split(subprocess.check_output(['pkg-config', '--libs', 'sdl2', 
 command += ['-lm', '-lpthread', '-o', str(output / 'save-test')]
 subprocess.run(command, cwd=ROOT, env=environment, check=True)
 subprocess.run([str(output / 'save-test')], cwd=profile, env=environment, check=True)
-for record in (profile / 'backup/editor-drafts').iterdir():
-    record.unlink()
-(profile / 'levels/classic.json').write_text(json.dumps(levels, indent=1) + '\n')
 solver = profile / 'build/solver/shovey-solve-classic'
 solver.parent.mkdir(parents=True, exist_ok=True)
 if not solver.exists():
     solver.symlink_to(ROOT / 'build/solver/shovey-solve-classic')
-subprocess.run([str(output / 'save-test'), 'update'], cwd=profile, env=environment, check=True)
+for mode in ('update', 'status'):
+    for record in (profile / 'backup/editor-drafts').iterdir():
+        record.unlink()
+    (profile / 'levels/classic.json').write_text(json.dumps(levels, indent=1) + '\n')
+    subprocess.run([str(output / 'save-test'), mode], cwd=profile, env=environment, check=True)

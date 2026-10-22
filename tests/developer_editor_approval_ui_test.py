@@ -40,6 +40,8 @@ root = Path('backup/editor-drafts')
 (root / 'worker-started').write_text(' '.join(sys.argv[1:]))
 time.sleep(2)
 (root / 'worker-done').write_text('done')
+if sys.argv[1] in ('glm', 'glm-redesign', 'glm-prettify', 'fix'):
+    (root / (f'{int(sys.argv[2]):03}.glm-state')).write_text('error')
 ''')
 environment = {k: v for k, v in os.environ.items()
                if k not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
@@ -202,6 +204,24 @@ with (output / 'app.log').open('w') as log:
         (drafts / 'publish-status').write_text('Published · 1 not updated')
         time.sleep(.7)
         click(560, 66)
+        time.sleep(.2)
+        assert not (drafts / 'worker-started').exists(), 'A verified win must not offer repair'
+        subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
+        subprocess.run(['import', '-window', window, str(output / 'fix-hidden.png')], check=True)
+        with Image.open(output / 'fix-hidden.png').convert('RGB') as image:
+            assert image.getpixel((560, 66)) == image.getpixel((610, 66)), 'Fix it must be hidden, not just disabled'
+        # A completed unsuccessful check is remembered for this exact draft.
+        # Its moved home needs a different route from the existing saved win.
+        candidate = list(requested)
+        for start, value in ((14 * 2, '00'), (15 * 2, '07'), (480 + 15 * 2, '00')):
+            candidate[start:start + 2] = value
+        candidate = ''.join(candidate)
+        (drafts / '001.hex').write_text(candidate)
+        (drafts / '001.check').write_text(candidate + '\n3\nlocal')
+        click(480, 28)
+        click(390, 28)
+        time.sleep(.3)
+        click(560, 66)
         for attempt in range(40):
             if (drafts / 'worker-started').exists(): break
             time.sleep(.025)
@@ -209,10 +229,25 @@ with (output / 'app.log').open('w') as log:
         subprocess.run(['import', '-window', window, str(output / 'fix-status.png')], check=True)
         with Image.open(output / 'fix-status.png').convert('RGB') as image:
             red, green, blue = image.getpixel((746, 75))
-            assert green > red and green > blue, 'Known solution status was hidden by the GLM job'
+            assert red > green and red > blue, 'The remembered unsuccessful check was hidden by the GLM job'
         click(480, 28)
         assert (drafts / 'place').read_text().strip() == '2', 'GLM repair blocked navigation'
         time.sleep(2.1)
+        time.sleep(.7)
+        for index, action in enumerate(('glm', 'glm-redesign', 'glm-prettify')):
+            (drafts / 'worker-started').unlink(missing_ok=True)
+            base = (drafts / '002.hex').read_bytes() if (drafts / '002.hex').exists() else None
+            click(225, 66)
+            time.sleep(.25)
+            subprocess.run(['import', '-window', window, str(output / f'glm-menu-{index}.png')], check=True)
+            click(225, 102 + index * 34)
+            for attempt in range(40):
+                if (drafts / 'worker-started').exists(): break
+                time.sleep(.025)
+            assert (drafts / 'worker-started').read_text() == action + ' 2', f'Wrong GLM menu action {index}'
+            if base is not None:
+                assert (drafts / '002.hex').read_bytes() == base, 'Menu click painted the board below it'
+            time.sleep(2.7)
         print('Approval retries and saves passed; server matches purple, changed drafts pink, unverified gray; waiting 100% red and unknown/low similarity green')
     finally:
         if windows:
