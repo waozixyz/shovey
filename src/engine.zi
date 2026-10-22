@@ -217,12 +217,29 @@ ShoveyDoorOpen :: (game: *ShoveyGame, position: s32) -> bool {
     return false
 }
 
+ShoveyLeversActive :: (game: *ShoveyGame, color: s32) -> bool {
+    for kind: game.ground {
+        if ShoveyLeverColor(kind) == color && ShoveyLeverActive(kind) { return true }
+    }
+    return false
+}
+
+ShoveyToggleLevers :: (game: *ShoveyGame, color: s32) {
+    active := !ShoveyLeversActive(game, color)
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        kind := game.ground[at]
+        if ShoveyLeverColor(kind) == color && ShoveyLeverActive(kind) != active {
+            game.ground[at] = ifx active then kind + 1 else kind - 1
+        }
+    }
+}
+
 ShoveyGateOpen :: (game: *ShoveyGame, position: s32) -> bool {
     if game.objects[position] != 0 || game.player == position { return true }
     color := ShoveyGateColor(game.ground[position])
     if color < 0 { return false }
     starts_open := ShoveyGateStartsOpen(game.ground[position])
-    for kind: game.ground { if ShoveyLeverColor(kind) == color && ShoveyLeverActive(kind) { return !starts_open } }
+    if ShoveyLeversActive(game, color) { return !starts_open }
     return starts_open
 }
 
@@ -351,7 +368,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     to := ShoveyNeighbor(game.player, direction)
     if to < 0 { return false }
     if ShoveyLever(game.ground[to]) {
-        game.ground[to] = ifx ShoveyLeverActive(game.ground[to]) then game.ground[to] - 1 else game.ground[to] + 1
+        ShoveyToggleLevers(game, ShoveyLeverColor(game.ground[to]))
         game.moves += 1
         return true
     }

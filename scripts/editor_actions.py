@@ -321,6 +321,7 @@ def modify_once(number, feedback='', choices=None):
         '73/74/75/85/86/87 portals (paired by ID), 92 grey gate, 93/94 grey lever off/on, '
         '107 red gate with 108/109 red lever, 110 blue gate with 111/112 blue lever, 113 green gate with 114/115 green lever. '
         '123/124/125/126 grey/red/blue/green gates start OPEN and close when matching levers are on. Other gates start closed and open. '
+        'Any matching lever toggles their shared state; all lever handles of that color switch together. '
         'Tiles: 0 paving, 12 wall, 14 mossy pressure wall, 4/5/6 red/blue/green pits, 47/48/49 cyan/purple/yellow pits, 64 water, '
         '65 abyss, 70 ice, 77 grass, 78 sand. Decorations: 0 empty, 57 flowers, 58 grass tuft, 59 pebbles, 84 blocking tree. '
         'A ball pushed onto matching pit disappears; pit is reusable. Paint recolors a ball and is consumed. '

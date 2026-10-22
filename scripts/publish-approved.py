@@ -150,9 +150,9 @@ def main(force=False):
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
                 status("Updating…")
                 changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
-                          f'- Play the approved Classic campaign through level {len(approved)}.\n- Keep your progress while later levels are being edited.\n- Use opposite-state colored gates and a straight lilac trail marker.\n- Replace the chicken with an upright garden duck in four views.', True)
+                          f'- Play the approved Classic campaign through level {len(approved)}.\n- Use any matching lever to open or close every gate of its color.\n- Keep opposite-state gates synchronized even with several levers.\n- Keep your progress and use the integrated level editor.', True)
                 changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
-                          '- Design engine-proven GLM variations with clearer progress and errors.\n- Add initially open gates in every color for opposite lever-controlled passages.\n- Open the desktop editor in landscape and remember its rotation.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
+                          '- Test puzzles with several matching levers; any handle switches their shared gate state.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
                 changelog(arcade / 'CHANGELOG.md', versions['arcade'],
                           f'- Shovey includes approved Classic levels 1–{len(approved)} with updated artwork and portal travel.\n- Island stays unavailable while its levels are being edited.\n- Existing Shovey saves and completed levels are retained.')
                 run([arcade / 'update_version.sh'], arcade)

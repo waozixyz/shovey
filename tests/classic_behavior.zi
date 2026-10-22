@@ -270,6 +270,34 @@ NatureChecks :: () -> s32 {
         if !ShoveyGateOpen(*paired, 27) { return 165 }
         paired.objects[27] = 0
         if ShoveyGateOpen(*paired, 27) { return 166 }
+        // Any matching lever toggles the circuit, including the second and
+        // third lever. A different colour must remain independent.
+        shared := Floor()
+        shared.ground[14] = lever
+        shared.ground[25] = lever
+        shared.ground[37] = lever
+        other_lever := ifx color == 3 then SHOVEY_LEVER else 108 + color * 3
+        shared.ground[38] = other_lever
+        shared.ground[26] = normal
+        shared.ground[27] = SHOVEY_OPEN_GATE + color
+        if !ShoveyMove(*shared, 2) { return 167 }
+        if shared.ground[14] != lever + 1 || shared.ground[25] != lever + 1 || shared.ground[37] != lever + 1 { return 168 }
+        if !ShoveyGateOpen(*shared, 26) || ShoveyGateOpen(*shared, 27) || shared.ground[38] != other_lever { return 169 }
+        if !ShoveyMove(*shared, 3) { return 170 } // Push the second lever below Shovey.
+        if shared.ground[14] != lever || shared.ground[25] != lever || shared.ground[37] != lever { return 171 }
+        if ShoveyGateOpen(*shared, 26) || !ShoveyGateOpen(*shared, 27) { return 172 }
+        shared.player = 49
+        if !ShoveyMove(*shared, 1) || !ShoveyGateOpen(*shared, 26) { return 173 }
+        if !ShoveyRestore(*restored_pair, ShoveySave(*shared)) || !ShoveyGateOpen(*restored_pair, 26) { return 174 }
+        restored_pair.player = 13
+        if !ShoveyMove(*restored_pair, 3) || ShoveyGateOpen(*restored_pair, 26) || !ShoveyGateOpen(*restored_pair, 27) { return 175 }
+        // Older saves can have unsynchronised handles. Either handle still
+        // closes that active circuit instead of leaving the other one on.
+        shared.ground[14] = lever + 1
+        shared.ground[25] = lever
+        shared.ground[37] = lever
+        shared.player = 13
+        if !ShoveyMove(*shared, 3) || ShoveyLeversActive(*shared, color) { return 176 }
     }
     door := Floor()
     door.ground[14] = SHOVEY_DOOR

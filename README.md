@@ -111,6 +111,7 @@ Saved edits to approved levels publish automatically once their winning route is
 Approved levels retain their purple mark while being edited.
 Each gate color also has an open starting variant, which closes when its lever
 is switched on. Mix both starting states for opposite passages on one lever.
+All levers of one color share their state, so any matching lever toggles the passages.
 
 Ducks, turtles and crabs wander over clear floor and block Shovey and pushed
 pieces. Goldfish, koi and minnows swim between water tiles with still sprites. Water has gentle
