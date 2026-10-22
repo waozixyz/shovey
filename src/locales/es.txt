@@ -178,3 +178,15 @@ Shovey empuja una caja hacia casa por un jardín soleado
 [shovey_editor]
 Editor
 ---
+[shovey_open]
+Abrir
+---
+[shovey_editor_art]
+Shovey construye un tablero con cajas, bolas y baldosas flotantes
+---
+[shovey_page_previous]
+Anterior
+---
+[shovey_page_next]
+Siguiente
+---

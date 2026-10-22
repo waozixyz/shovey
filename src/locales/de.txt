@@ -178,3 +178,15 @@ Shovey schiebt eine Kiste durch einen sonnigen Garten nach Hause
 [shovey_editor]
 Editor
 ---
+[shovey_open]
+Öffnen
+---
+[shovey_editor_art]
+Shovey baut ein Rätselbrett aus schwebenden Kisten, Kugeln und Platten
+---
+[shovey_page_previous]
+Zurück
+---
+[shovey_page_next]
+Weiter
+---

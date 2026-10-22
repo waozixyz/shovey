@@ -178,3 +178,15 @@ Shovey spinge una cassa verso casa in un giardino soleggiato
 [shovey_editor]
 Editor
 ---
+[shovey_open]
+Apri
+---
+[shovey_editor_art]
+Shovey costruisce un tabellone con casse, palle e piastrelle sospese
+---
+[shovey_page_previous]
+Precedente
+---
+[shovey_page_next]
+Successivo
+---

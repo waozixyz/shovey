@@ -178,3 +178,15 @@ Shovey pushes a crate home through a sunny garden
 [shovey_editor]
 Editor
 ---
+[shovey_open]
+Open
+---
+[shovey_editor_art]
+Shovey builds a puzzle board with floating crates, balls and tiles
+---
+[shovey_page_previous]
+Previous
+---
+[shovey_page_next]
+Next
+---

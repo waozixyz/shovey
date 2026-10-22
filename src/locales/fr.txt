@@ -178,3 +178,15 @@ Shovey pousse une caisse jusqu’à la maison dans un jardin ensoleillé
 [shovey_editor]
 Éditeur
 ---
+[shovey_open]
+Ouvrir
+---
+[shovey_editor_art]
+Shovey construit un plateau avec des caisses, des boules et des dalles flottantes
+---
+[shovey_page_previous]
+Précédent
+---
+[shovey_page_next]
+Suivant
+---

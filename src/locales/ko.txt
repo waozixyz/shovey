@@ -178,3 +178,15 @@
 [shovey_editor]
 편집기
 ---
+[shovey_open]
+열기
+---
+[shovey_editor_art]
+쇼비가 떠다니는 상자와 공, 타일로 퍼즐 판을 만들고 있어요
+---
+[shovey_page_previous]
+이전
+---
+[shovey_page_next]
+다음
+---

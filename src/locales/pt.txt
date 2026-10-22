@@ -178,3 +178,15 @@ Shovey empurra uma caixa até casa por um jardim ensolarado
 [shovey_editor]
 Editor
 ---
+[shovey_open]
+Abrir
+---
+[shovey_editor_art]
+Shovey monta um tabuleiro com caixas, bolas e ladrilhos a flutuar
+---
+[shovey_page_previous]
+Anterior
+---
+[shovey_page_next]
+Seguinte
+---

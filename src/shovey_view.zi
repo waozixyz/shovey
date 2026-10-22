@@ -54,6 +54,10 @@ help_open: bool;
 title_open: bool = true;
 // Whether the host has a game library to return to: -1 until asked.
 title_library: s32 = -1;
+// The chosen title page and the position the pages are shown at.
+title_page: s32;
+title_slide: float32;
+title_slide_time: float64;
 save_failed: bool;
 help_scroll: s32;
 // Touch-first: hidden until the board is touched, then hidden again for keyboard.
@@ -258,54 +262,99 @@ ShoveyBack :: () -> bool {
     return true
 }
 
-// The title screen: the game's art and name, then the way in.
+// The title screen: one page per way into the game, Classic and, where the
+// host carries it, the editor. Swipe, the arrows or arrow keys turn pages.
 ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) {
     height := bottom - top
     portrait := height > width
-    Image(frame.session, ImageProps.{.key = cast(u64)20200,
-            .asset_path = ifx portrait then "assets/shovey/title-portrait.png" else "assets/shovey/title-landscape.png",
-            .alt_text = AppLocaleHost("shovey_title_art"), .bounds = Rectangle.{0.0, top, width, height},
-            .fit = ImageFit.ImageFitCover, .smooth = true})
-    logo_width := ifx portrait then width * 0.88 else height * 0.95
-    if logo_width > 760.0 { logo_width = 760.0 }
-    logo_height := logo_width * 0.42
-    Image(frame.session, ImageProps.{.key = cast(u64)20201, .asset_path = "assets/shovey/logo.png", .alt_text = "Shovey",
-            .bounds = Rectangle.{(width - logo_width) / 2.0, top + height * 0.05, logo_width, logo_height},
-            .fit = ImageFit.ImageFitContain, .smooth = true})
-    play_width: float32 = 260.0
-    play_y := bottom - 156.0
-    if Button(frame.session, ButtonProps.{.key = cast(u64)20202, .id = 20202,
-            .bounds = Rectangle.{(width - play_width) / 2.0, play_y, play_width, 64.0}, .label = AppLocaleHost("shovey_play"),
-            .tone = ButtonTone.ButtonToneSuccess, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
-        title_open = false
+    pages: s32 = ifx can_leave then 2 else 1
+    if title_page >= pages { title_page = pages - 1 }
+    // Pages ease towards the chosen one.
+    elapsed := cast(float32)(frame.now - title_slide_time)
+    title_slide_time = frame.now
+    if elapsed < 0.0 || elapsed > 0.2 { elapsed = 0.016 }
+    rate := elapsed * 10.0
+    if rate > 1.0 { rate = 1.0 }
+    title_slide += (cast(float32)title_page - title_slide) * rate
+    if title_slide - cast(float32)title_page < 0.002 && cast(float32)title_page - title_slide < 0.002 { title_slide = cast(float32)title_page }
+    gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)20210, .id = 20210, .bounds = Rectangle.{0.0, top, width, height},
+            .label = AppLocaleHost("shovey_title_art"), .now = frame.now, .min_distance = 48.0})
+    key := AppKeyHost()
+    if (gesture.swiped == 0 || key == 262) && title_page < pages - 1 { title_page += 1 }
+    if (gesture.swiped == 2 || key == 263) && title_page > 0 { title_page -= 1 }
+    if key == 257 || key == 32 { TitleEnter(title_page) }
+    for page: cast(s32)0..pages - 1 {
+        offset := (cast(float32)page - title_slide) * width
+        if offset <= -width || offset >= width { continue }
+        TitlePage(page, offset, width, top, height, portrait)
     }
-    // Levels, help and sound, then the editor and the other games when the
-    // host has them.
+    // Turning arrows at the sides, and dots for the pages.
+    middle := top + height * 0.5 - 22.0
+    if title_page > 0 && Control(20211, Rectangle.{12.0, middle, 44.0, 44.0}, AppLocaleHost("shovey_page_previous"), false, "", ICON_PREVIOUS) {
+        title_page -= 1
+    }
+    if title_page < pages - 1 && Control(20212, Rectangle.{width - 56.0, middle, 44.0, 44.0}, AppLocaleHost("shovey_page_next"), false, "", ICON_NEXT) {
+        title_page += 1
+    }
+    row_y := bottom - 60.0
+    if pages > 1 {
+        for page: cast(s32)0..pages - 1 {
+            dot := Rectangle.{width / 2.0 - cast(float32)pages * 12.0 + cast(float32)page * 24.0 + 4.0, row_y - 28.0, 16.0, 16.0}
+            Fill(cast(u64)(20213 + page), dot, ifx page == title_page then Color.{46, 125, 74, 235} else Color.{255, 255, 255, 210}, 8.0)
+        }
+    }
+    // Levels, help and sound, and the other games where the host has a list.
     if title_library < 0 { title_library = ifx LibraryAvailable() then 1 else 0 }
     count: s32 = ifx title_library == 1 then 4 else 3
-    row_width := cast(float32)count * 56.0 - 12.0
-    x := (width - row_width) / 2.0
-    y := play_y + 76.0
-    if can_leave && Button(frame.session, ButtonProps.{.key = cast(u64)20207, .id = 20207,
-            .bounds = Rectangle.{width / 2.0 + play_width / 2.0 + 12.0, play_y + 10.0, 128.0, 44.0},
-            .label = AppLocaleHost("shovey_editor"), .icon_shape = ICON_EDITOR, .fit_content = true,
-            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-        OpenEditor()
-    }
-    if Control(20203, Rectangle.{x, y, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+    x := (width - (cast(float32)count * 56.0 - 12.0)) / 2.0
+    if Control(20203, Rectangle.{x, row_y, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         title_open = false
         selector_open = true
     }
-    if Control(20204, Rectangle.{x + 56.0, y, 44.0, 44.0}, AppLocaleHost("shovey_help"), false, "", ICON_HELP) {
+    if Control(20204, Rectangle.{x + 56.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_help"), false, "", ICON_HELP) {
         title_open = false
         help_open = true
     }
-    if Control(20205, Rectangle.{x + 112.0, y, 44.0, 44.0}, AppLocaleHost("shovey_mute"), false, "",
+    if Control(20205, Rectangle.{x + 112.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_mute"), false, "",
             ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
         SoundSetMuted(!SoundMuted())
     }
-    if title_library == 1 && Control(20206, Rectangle.{x + 168.0, y, 44.0, 44.0}, AppLocaleHost("shovey_games"), false, "", ICON_GAMES) {
+    if title_library == 1 && Control(20206, Rectangle.{x + 168.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_games"), false, "", ICON_GAMES) {
         LeaveForGameSelection()
+    }
+}
+
+TitleEnter :: (page: s32) {
+    if page == 0 { title_open = false }
+    if page == 1 { OpenEditor() }
+}
+
+// One title page shifted by offset: its art, the logo and its way in.
+TitlePage :: (page: s32, offset: float32, width: float32, top: float32, height: float32, portrait: bool) {
+    key := cast(u64)(20220 + page * 8)
+    art := ifx portrait then "assets/shovey/title-portrait.png" else "assets/shovey/title-landscape.png"
+    if page == 1 { art = ifx portrait then "assets/shovey/editor-portrait.png" else "assets/shovey/editor-landscape.png" }
+    Image(frame.session, ImageProps.{.key = key, .asset_path = art,
+            .alt_text = AppLocaleHost(ifx page == 0 then "shovey_title_art" else "shovey_editor_art"),
+            .bounds = Rectangle.{offset, top, width, height}, .fit = ImageFit.ImageFitCover, .smooth = true})
+    logo_width := ifx portrait then width * 0.88 else height * 0.95
+    if logo_width > 760.0 { logo_width = 760.0 }
+    logo_height := logo_width * 0.36
+    logo_y := top + height * 0.05
+    Image(frame.session, ImageProps.{.key = key + 1, .asset_path = "assets/shovey/logo.png", .alt_text = "Shovey",
+            .bounds = Rectangle.{offset + (width - logo_width) / 2.0, logo_y, logo_width, logo_height},
+            .fit = ImageFit.ImageFitContain, .smooth = true})
+    if page == 1 {
+        tag := Rectangle.{offset + width / 2.0 - 80.0, logo_y + logo_height + 4.0, 160.0, 40.0}
+        Fill(key + 2, tag, Color.{255, 255, 255, 225}, 20.0)
+        Caption(key + 3, tag, AppLocaleHost("shovey_editor"), 22, true)
+    }
+    play_width: float32 = 260.0
+    if Button(frame.session, ButtonProps.{.key = key + 4, .id = cast(s32)(key + 4),
+            .bounds = Rectangle.{offset + (width - play_width) / 2.0, top + height - 196.0, play_width, 64.0},
+            .label = AppLocaleHost(ifx page == 0 then "shovey_play" else "shovey_open"),
+            .tone = ButtonTone.ButtonToneSuccess, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
+        TitleEnter(page)
     }
 }
 

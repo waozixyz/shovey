@@ -178,3 +178,15 @@ Shovey mendorong peti pulang melewati taman yang cerah
 [shovey_editor]
 Editor
 ---
+[shovey_open]
+Buka
+---
+[shovey_editor_art]
+Shovey menyusun papan teka-teki dengan peti, bola, dan ubin yang melayang
+---
+[shovey_page_previous]
+Sebelumnya
+---
+[shovey_page_next]
+Berikutnya
+---

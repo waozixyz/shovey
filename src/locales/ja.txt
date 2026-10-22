@@ -178,3 +178,15 @@
 [shovey_editor]
 エディター
 ---
+[shovey_open]
+開く
+---
+[shovey_editor_art]
+ショーヴィーが浮かぶ木箱やボールやタイルでパズル盤を作っている
+---
+[shovey_page_previous]
+前へ
+---
+[shovey_page_next]
+次へ
+---

@@ -178,3 +178,15 @@
 [shovey_editor]
 Редактор
 ---
+[shovey_open]
+Открыть
+---
+[shovey_editor_art]
+Шови собирает поле из парящих ящиков, шаров и плиток
+---
+[shovey_page_previous]
+Назад
+---
+[shovey_page_next]
+Далее
+---

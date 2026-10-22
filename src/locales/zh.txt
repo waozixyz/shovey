@@ -178,3 +178,15 @@ Shovey 推着木箱穿过阳光花园回家
 [shovey_editor]
 编辑器
 ---
+[shovey_open]
+打开
+---
+[shovey_editor_art]
+Shovey 用漂浮的木箱、球和地砖搭建谜题棋盘
+---
+[shovey_page_previous]
+上一页
+---
+[shovey_page_next]
+下一页
+---

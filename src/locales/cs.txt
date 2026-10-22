@@ -178,3 +178,15 @@ Shovey tlačí bednu domů slunnou zahradou
 [shovey_editor]
 Editor
 ---
+[shovey_open]
+Otevřít
+---
+[shovey_editor_art]
+Shovey staví hrací plochu z vznášejících se beden, koulí a dlaždic
+---
+[shovey_page_previous]
+Předchozí
+---
+[shovey_page_next]
+Další
+---
