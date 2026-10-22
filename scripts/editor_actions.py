@@ -194,6 +194,61 @@ def prove_proposal(number, candidate, proposed_route='', source_route=''):
     return route
 
 
+def proven_variations(number, original, route, limit=8):
+    """Keep the current solution and inventory while moving nearby pieces or walls."""
+    if not route:
+        return []
+    layers = [[int(original[i:i + 2], 16) for i in range(start, start + 480, 2)]
+              for start in (0, 480, 960)]
+    cells, tiles, decorations = layers
+    pushable = {1, 2, 3, 9, 36, 37, 38, 44, 45, 46, 53, 54, 55}
+    goals = [at for at in range(240) if cells[at] in {18, 39} or tiles[at] in {4, 5, 6, 47, 48, 49}]
+
+    def distance(a, b):
+        return abs(a % 12 - b % 12) + abs(a // 12 - b // 12)
+
+    def edit(layer, at, before, after):
+        return dict(layer=layer, x=at // 12, y=11 - at % 12, **{'from': before, 'to': after})
+
+    interior = [at for at in range(240) if 0 < at % 12 < 11 and 0 < at // 12 < 19]
+    empty = [at for at in interior if cells[at] == 0 and tiles[at] in {0, 77, 78} and decorations[at] != 84]
+    proposals = []
+    for source in interior:
+        kind = cells[source]
+        if kind in pushable:
+            for target in empty:
+                if not 1 <= distance(source, target) <= 2:
+                    continue
+                # A longer approach to a goal gives GLM a useful alternative
+                # to shortening a push or merely changing scenery.
+                farther = bool(goals) and min(distance(target, goal) for goal in goals) > min(distance(source, goal) for goal in goals)
+                score = 20 + 8 * farther - distance(source, target)
+                proposals.append((score, [edit('cells', source, kind, 0), edit('cells', target, 0, kind)]))
+        elif kind == 0 and tiles[source] in WALLS and decorations[source] == 0:
+            for target in empty:
+                if distance(source, target) != 1 or decorations[target] != 0:
+                    continue
+                nearby = sum(distance(target, at) <= 2 for at in interior if cells[at] in pushable | {13, 18, 39, 93})
+                proposals.append((5 + nearby, [edit('tiles', source, tiles[source], tiles[target]),
+                                             edit('tiles', target, tiles[target], tiles[source])]))
+    verified = []
+    seen = set()
+    for _, edits in sorted(proposals, key=lambda item: item[0], reverse=True)[:160]:
+        proposal = dict(edits=edits, solution=route)
+        try:
+            candidate = apply_proposal(original, proposal)
+        except ValueError:
+            continue
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if verify_route(number, candidate, route):
+            verified.append(proposal)
+            if len(verified) == limit:
+                break
+    return verified
+
+
 def modify_once(number, feedback=''):
     status = DRAFTS / f'{number:03}.glm-status'
     atomic(status, 'GLM is designing a variation…')
@@ -203,6 +258,7 @@ def modify_once(number, feedback=''):
     cells = [int(original[i:i + 2], 16) for i in range(0, 1440, 2)]
     rows = [[cells[(11 - y) + x * 12 + layer * 240] for x in range(20)] for layer in range(3) for y in range(12)]
     source_route = existing_route(number, original)
+    choices = proven_variations(number, original, source_route)
     instruction = (
         'You design Shovey push puzzles. Improve the supplied EXISTING level with a small purposeful variation inspired by its current solution and mechanics. '
         'Think through the pushes and a winning route; use compact connected rooms and purposeful obstacles, not empty walking or random decoration. '
@@ -228,13 +284,20 @@ def modify_once(number, feedback=''):
         'Player must remove ALL balls, collect every apple, cover all crate goals, then enter home. '
         'Crates with no goals can stay on the board. Objects cannot be pushed into portals, home, water or walls. '
         'Do not add animals or autonomous objects. Keep outer border walled. No scripts, tools, commands, prose outside the JSON.')
+    if choices:
+        instruction += (
+            'The supplied verified_variations are small edits of this exact board, already proven to win in the real engine. '
+            'Choose the one that most improves the push sequence, dependencies or use of space, inspired by the existing puzzle. '
+            'Return only {"choice":zero-based integer,"explanation":"the concrete gameplay improvement"}. '
+            'Do not reproduce grids, edits or the solution. The engine will apply and recheck the selected variation.')
     base, key, model = glm_settings()
     messages = [dict(role='system', content=instruction), dict(role='user', content=json.dumps(dict(
         level=number, cells=rows[:12], tiles=rows[12:24], decorations=rows[24:],
-        existing_solution=source_route or None)))]
+        existing_solution=source_route or None,
+        verified_variations=[dict(choice=index, edits=choice['edits']) for index, choice in enumerate(choices)])))]
     if feedback:
         messages.append(dict(role='user', content='The previous proposal failed validation. Correct it relative to the ORIGINAL grids: ' + feedback))
-    payload = dict(model=model, temperature=0.5, max_tokens=6000,
+    payload = dict(model=model, temperature=0.5, max_tokens=800 if choices else 6000,
                    thinking={'type': 'disabled'}, response_format={'type': 'json_object'},
                    messages=messages)
     req = urllib.request.Request(base + '/chat/completions', data=json.dumps(payload).encode(),
@@ -244,6 +307,11 @@ def modify_once(number, feedback=''):
     content = result['choices'][0]['message']['content'].strip()
     content = re.sub(r'^```(?:json)?\s*|\s*```$', '', content)
     proposal = json.loads(content)
+    if choices and isinstance(proposal, dict) and 'choice' in proposal:
+        choice = proposal['choice']
+        if type(choice) is not int or not 0 <= choice < len(choices):
+            raise ValueError('Choose one of the supplied engine-proven variations')
+        proposal = choices[choice] | {'explanation': str(proposal.get('explanation', ''))[:1000]}
     try:
         candidate = apply_proposal(original, proposal)
         atomic(status, 'GLM variation is being checked for a real winning route…')

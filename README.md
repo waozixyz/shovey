@@ -100,8 +100,10 @@ the palette scrolls with large icons. Existing boards and drafts remain readable
 Drafts save immediately, played wins remain proven after reopening, and saved
 levels load from the current level file.
 
-**GLM Modify** proposes small edits inspired by the open board and its existing
-winning route. It keeps the puzzle's pieces, colors, terrain, start and home.
+**GLM Modify** uses the open board and its existing winning route. With a proven
+route, GLM chooses among small changes the game engine has already checked,
+favoring a useful push sequence or dependency. It keeps the puzzle's pieces,
+colors, terrain, start and home.
 A variation is applied only after its solution wins in the game engine, and
 Undo, Redo and Reset remain available. Unproven proposals leave the level intact.
 **Update** rebuilds and ships the already approved campaign, including software

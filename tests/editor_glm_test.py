@@ -50,6 +50,28 @@ class Variations(unittest.TestCase):
         self.assertEqual(candidate[at(3, 3) * 2:at(3, 3) * 2 + 2], '01')
         self.assertTrue(actions.verify_route(1, candidate, '333332'))
 
+    def test_variation_choices_are_changes_of_the_source_and_engine_proven(self):
+        choices = actions.proven_variations(1, board(), '333332')
+        self.assertTrue(choices)
+        for choice in choices:
+            candidate = actions.apply_proposal(board(), choice)
+            self.assertNotEqual(candidate, board())
+            self.assertTrue(actions.verify_route(1, candidate, choice['solution']))
+
+    def test_glm_can_select_a_proven_variation_without_inventing_a_route(self):
+        response = dict(choices=[dict(message=dict(content=json.dumps(dict(choice=0, explanation='A longer push approach.'))))])
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.glm-base').write_text(board())
+            with patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions, 'existing_route', return_value='333332'), \
+                    patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                    patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())):
+                actions.modify(1)
+            candidate, route = (drafts / '001.glm-proof').read_text().splitlines()
+            self.assertEqual((drafts / '001.glm-result').read_text(), candidate)
+            self.assertTrue(actions.verify_route(1, candidate, route))
+
     def test_rejects_removing_or_recoloring_a_goal_piece(self):
         for change in (dict(edits=variation()['edits'][:1]),
                        dict(edits=[dict(layer='tiles', x=6, y=3, **{'from': 4, 'to': 5})])):
