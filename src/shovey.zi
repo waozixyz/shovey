@@ -10,6 +10,7 @@ Main :: () -> s32 {
     if message.abi != MODULE_ABI { return -1 }
     if message.action == MODULE_IDENTIFY { return MODULE_NODE_APP }
     message.succeeded = message.action == APP_ROUTE
+    if message.action == APP_ROUTE { ShoveyRoute() }
     if message.action == APP_FRAME {
         ShoveyFrame()
         message.succeeded = true

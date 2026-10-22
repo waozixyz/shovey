@@ -1,18 +1,9 @@
 #import "kryon/session"
 #import "kryon/geometry"
-#import "kryon/image_props"
-#import "kryon/image_widget"
+#import "kryon/carousel"
 
-// The game and its native loading screen share the complete title composition.
+// A shared cover composition for native startup before the game is ready.
 TitleArtwork :: (session: Session, bounds: Rectangle, key: u64, art: string, logo: string,
     label: string) -> Rectangle {
-    Image(session, ImageProps.{.key = key, .asset_path = art, .alt_text = label,
-            .bounds = bounds, .fit = ImageFit.ImageFitCover, .smooth = true})
-    width := ifx bounds.height > bounds.width then bounds.width * 0.88 else bounds.height * 0.95
-    if width > 760.0 { width = 760.0 }
-    logo_bounds := Rectangle.{bounds.x + (bounds.width - width) / 2.0,
-        bounds.y + bounds.height * 0.05, width, width * 0.36}
-    Image(session, ImageProps.{.key = key + 1, .asset_path = logo, .alt_text = "Shovey",
-            .bounds = logo_bounds, .fit = ImageFit.ImageFitContain, .smooth = true})
-    return logo_bounds
+    return CarouselArtwork(session, bounds, key, art, logo, label)
 }

@@ -32,7 +32,7 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import, file "progress.zi";
 #import, file "controls.zi";
 #import, file "shovey_theme.zi";
-#import, file "title_art.zi";
+#import "kryon/carousel"
 #if #defined(SHOVEY_WEB) {
     #import, file "web/host.zi";
 } else {
@@ -56,10 +56,9 @@ help_open: bool;
 title_open: bool = true;
 // Whether the host has a game library to return to: -1 until asked.
 title_library: s32 = -1;
-// The chosen title page and the position the pages are shown at.
-title_page: s32;
-title_slide: float32;
-title_slide_time: float64;
+// The same cover browser used by Arcade, with game-owned footer actions.
+title_carousel: CarouselState;
+title_external: bool;
 save_failed: bool;
 help_scroll: s32;
 // Touch-first: hidden until the board is touched, then hidden again for keyboard.
@@ -258,6 +257,14 @@ ContinueGame :: () {
 // on the title screen, so the host can leave the game.
 ShoveyBack :: () -> bool {
     if title_open { return false }
+    if title_external {
+        if selector_open || help_open {
+            selector_open = false
+            help_open = false
+            return true
+        }
+        return false
+    }
     title_open = true
     selector_open = false
     help_open = false
@@ -267,51 +274,28 @@ ShoveyBack :: () -> bool {
 // The title screen: one page per way into the game, Classic and, where the
 // host carries it, the editor. Swipe, the arrows or arrow keys turn pages.
 ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) {
-    height := bottom - top
-    portrait := height > width
-    pages: s32 = ifx can_leave then 2 else 1
-    if title_page >= pages { title_page = pages - 1 }
-    // Pages ease towards the chosen one.
-    elapsed := cast(float32)(frame.now - title_slide_time)
-    title_slide_time = frame.now
-    if elapsed < 0.0 || elapsed > 0.2 { elapsed = 0.016 }
-    rate := elapsed * 10.0
-    if rate > 1.0 { rate = 1.0 }
-    title_slide += (cast(float32)title_page - title_slide) * rate
-    if title_slide - cast(float32)title_page < 0.002 && cast(float32)title_page - title_slide < 0.002 { title_slide = cast(float32)title_page }
-    gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)20210, .id = 20210, .bounds = Rectangle.{0.0, top, width, height},
-            .label = AppLocaleHost("shovey_title_art"), .now = frame.now, .min_distance = 48.0})
-    key := AppKeyHost()
-    if (gesture.swiped == 0 || key == 262) && title_page < pages - 1 { title_page += 1 }
-    if (gesture.swiped == 2 || key == 263) && title_page > 0 { title_page -= 1 }
-    if key == 257 || key == 32 { TitleEnter(title_page) }
-    for page: cast(s32)0..pages - 1 {
-        offset := (cast(float32)page - title_slide) * width
-        if offset <= -width || offset >= width { continue }
-        TitlePage(page, offset, width, top, height, portrait)
-    }
+    pages: s32 = ifx EditorAvailable() then 2 else 1
+    items: [2]CarouselItem = .[
+    CarouselItem.{.label = AppLocaleHost("shovey_title_art"),
+        .portrait = "assets/shovey/title-portrait.png", .landscape = "assets/shovey/title-landscape.png",
+        .logo = "assets/shovey/logo.png", .action = AppLocaleHost("shovey_play")},
+    CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
+        .portrait = "assets/shovey/editor-portrait.png", .landscape = "assets/shovey/editor-landscape.png",
+        .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_editor"), .action = AppLocaleHost("shovey_open")}
+    ]
+    entered := Carousel(frame.session, CarouselProps.{.key = cast(u64)20210,
+            .bounds = Rectangle.{0.0, top, width, bottom - top}, .now = frame.now, .key_pressed = AppKeyHost(),
+            .dark = true, .label = AppLocaleHost("shovey_title_art"), .previous_label = AppLocaleHost("shovey_page_previous"),
+            .next_label = AppLocaleHost("shovey_page_next")}, items[:pages], *title_carousel)
+    if entered >= 0 { TitleEnter(entered) }
     if ProfileAvailable() && Control(20400, Rectangle.{width - 60.0, top + 12.0, 44.0, 44.0},
         AppLocaleHost("shovey_profile"), false, "", ProfileIcon.Shape) {
         OpenProfile()
     }
-    // Turning arrows at the sides, and dots for the pages.
-    middle := top + height * 0.5 - 22.0
-    if title_page > 0 && Control(20211, Rectangle.{12.0, middle, 44.0, 44.0}, AppLocaleHost("shovey_page_previous"), false, "", ICON_PREVIOUS) {
-        title_page -= 1
-    }
-    if title_page < pages - 1 && Control(20212, Rectangle.{width - 56.0, middle, 44.0, 44.0}, AppLocaleHost("shovey_page_next"), false, "", ICON_NEXT) {
-        title_page += 1
-    }
     row_y := bottom - 60.0
-    if pages > 1 {
-        for page: cast(s32)0..pages - 1 {
-            dot := Rectangle.{width / 2.0 - cast(float32)pages * 12.0 + cast(float32)page * 24.0 + 4.0, row_y - 28.0, 16.0, 16.0}
-            Fill(cast(u64)(20213 + page), dot, ifx page == title_page then Color.{46, 125, 74, 235} else Color.{255, 255, 255, 210}, 8.0)
-        }
-    }
     // Classic's levels, help and sound, and the other games where the host
     // has a list; the editor page keeps only its own button.
-    if title_page != 0 { return }
+    if title_carousel.selected != 0 { return }
     if title_library < 0 { title_library = ifx LibraryAvailable() then 1 else 0 }
     count: s32 = ifx title_library == 1 then 4 else 3
     x := (width - (cast(float32)count * 56.0 - 12.0)) / 2.0
@@ -337,26 +321,11 @@ TitleEnter :: (page: s32) {
     if page == 1 { OpenEditor() }
 }
 
-// One title page shifted by offset: its art, the logo and its way in.
-TitlePage :: (page: s32, offset: float32, width: float32, top: float32, height: float32, portrait: bool) {
-    key := cast(u64)(20220 + page * 8)
-    art := ifx portrait then "assets/shovey/title-portrait.png" else "assets/shovey/title-landscape.png"
-    if page == 1 { art = ifx portrait then "assets/shovey/editor-portrait.png" else "assets/shovey/editor-landscape.png" }
-    logo := TitleArtwork(frame.session, Rectangle.{offset, top, width, height}, key,
-        art, "assets/shovey/logo.png", AppLocaleHost(ifx page == 0 then "shovey_title_art" else "shovey_editor_art"))
-    if page == 1 {
-        tag := Rectangle.{offset + width / 2.0 - 80.0, logo.y + logo.height + 4.0, 160.0, 40.0}
-        // A dark tag, as the theme draws its text light.
-        Fill(key + 2, tag, Color.{36, 104, 60, 240}, 20.0)
-        Caption(key + 3, tag, AppLocaleHost("shovey_editor"), 22, true)
-    }
-    play_width: float32 = 260.0
-    if Button(frame.session, ButtonProps.{.key = key + 4, .id = cast(s32)(key + 4),
-            .bounds = Rectangle.{offset + (width - play_width) / 2.0, top + height - 196.0, play_width, 64.0},
-            .label = AppLocaleHost(ifx page == 0 then "shovey_play" else "shovey_open"),
-            .tone = ButtonTone.ButtonToneSuccess, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
-        TitleEnter(page)
-    }
+// A host that already presents this cover launches directly into play.
+// Older hosts and standalone Shovey keep their normal title screen.
+ShoveyRoute :: () {
+    title_external = LibraryAvailable()
+    title_open = !title_external
 }
 
 ShoveyFrame :: () {
@@ -390,7 +359,7 @@ ShoveyFrame :: () {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
         if Control(20022, Rectangle.{16.0, top + 12.0, 88.0, 44.0}, AppLocaleHost("shovey_back")) {
-            unused ShoveyBack()
+            if !ShoveyBack() { LeaveForGameSelection() }
             return
         }
         heading_x: float32 = 112.0
@@ -471,7 +440,7 @@ ShoveyFrame :: () {
     if key == 256 { help_open = false }
     // Return sits at the edge, then the game's own navigation and status.
     if Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
-        unused ShoveyBack()
+        if !ShoveyBack() { LeaveForGameSelection() }
         return
     }
     levels_x: float32 = 92.0
