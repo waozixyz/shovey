@@ -194,7 +194,7 @@ CherryChecks :: () -> s32 {
     return 0
 }
 
-// The newer tiles: a pit ends the game for Shovey and is filled by a crate,
+// The abyss ends the game for Shovey, rejects every object and stays open;
 // arrows only admit one way, cracked floor falls once left, ice carries Shovey,
 // a bomb crate breaks a cracked wall, and portals pair by colour.
 TileChecks :: () -> s32 {
@@ -202,10 +202,26 @@ TileChecks :: () -> s32 {
     game.ground[15] = SHOVEY_PIT
     if !ShoveyMove(*game, 2) || !ShoveyMove(*game, 2) || !game.lost { return 100 }
 
-    game = Floor()
-    game.ground[15] = SHOVEY_PIT
-    game.objects[14] = 9
-    if !ShoveyMove(*game, 2) || game.ground[15] != 0 || game.objects[15] != 0 { return 101 }
+    for object: cast(s32)1..SHOVEY_LAST_KIND {
+        if !ShoveyMovable(object) || object == 40 { continue }
+        for direction: cast(s32)0..3 {
+            game = Floor()
+            start := ShoveyNeighbor(78, (direction + 2) % 4)
+            abyss := ShoveyNeighbor(78, direction)
+            game.player = start
+            game.direction = direction
+            game.ground[abyss] = SHOVEY_PIT
+            game.tiles[abyss] = SHOVEY_PIT
+            game.objects[78] = object
+            // Both ordinary play and the editor's animated movement must
+            // leave the piece, player, abyss and underlying tile intact.
+            frames: [8]ShoveyGame
+            if ShoveyCanEnter(*game, abyss, object) || ShoveyPush(*game, 78, direction) ||
+                ShoveyMove(*game, direction) || ShoveyMoveFrames(*game, direction, frames[:]) != 0 { return 101 }
+            if game.player != start || game.moves != 0 || game.lost || game.objects[78] != object ||
+                game.objects[abyss] != 0 || game.ground[abyss] != SHOVEY_PIT || game.tiles[abyss] != SHOVEY_PIT { return 180 }
+        }
+    }
 
     game = Floor()
     game.ground[14] = 68

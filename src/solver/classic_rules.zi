@@ -202,7 +202,7 @@ solve_classic_door_needed: bool;
 // sensors, home, portals, trails, charges, other colours' holes and rests.
 // Doors only while shut. Apples, paint, pickups and locks can go away.
 SolveClassicLasting :: (ground: s32, piece: s32, shut: bool) -> bool {
-    if ground == 12 || ground == 23 || ShoveySolidDecor(ground) { return true }
+    if ground == 12 || ground == 23 || ground == SHOVEY_PIT || ShoveySolidDecor(ground) { return true }
     if ground == 14 { return shut }
     if piece == 10 { return false }
     if ground == 7 || ground == 8 || ground == 11 || ground == 27 { return true }

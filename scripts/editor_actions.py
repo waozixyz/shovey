@@ -486,6 +486,7 @@ def modify_once(number, feedback='', choices=None, repair=False):
         'Objects 82 duck, 83 turtle and 88 crab wander and block movement; 89/90/91 fish stay on water. '
         'Decorations: 0 empty, 57 flowers, 58 grass tuft, 84 blocking tree, 106 blocking lantern, 122 blocking boulder. '
         'A ball pushed onto matching pit disappears; pit is reusable. Paint recolors a ball and is consumed. '
+        'No object can enter or fill abyss: balls, crates, bombs and color blocks all stop at its edge. '
         'Player must remove ALL balls, collect every apple, cover all crate goals, then enter home. '
         'Crates with no goals can stay on the board. Objects cannot be pushed into portals, home, water or walls. '
         'Do not add animals or autonomous objects. Preserve the outer border exactly. No scripts, tools, commands, prose outside the JSON.')

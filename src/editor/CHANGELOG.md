@@ -1,5 +1,29 @@
 # Shovey Editor changelog
 
+## [0.2.33] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.32] - 2026-10-22
+
+- Animals and fish wander independently when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.31] - 2026-10-22
+
+- Animals and fish wander independently when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.30] - 2026-10-22
+
+- Animals and fish wander independently when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.29] - 2026-10-22
+
+- Animals and fish wander independently when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.28] - 2026-10-22
+
+- Animals and fish wander independently when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.27] - 2026-10-22
 
 - Animals and fish wander independently when testing Classic levels.

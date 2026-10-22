@@ -1,5 +1,35 @@
 # Shovey changelog
 
+## [0.6.36] - 2026-10-22
+
+- Play the approved Classic campaign through level 27.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.35] - 2026-10-22
+
+- Play the approved Classic campaign through level 27.
+- Balls stop at the abyss; falling objects leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.34] - 2026-10-22
+
+- Play the approved Classic campaign through level 27.
+- Animals and fish choose their own directions from their first step and wander through open spaces.
+- Keep your progress and use the integrated level editor.
+## [0.6.33] - 2026-10-22
+
+- Play the approved Classic campaign through level 27.
+- Animals and fish choose their own directions from their first step and wander through open spaces.
+- Keep your progress and use the integrated level editor.
+## [0.6.32] - 2026-10-22
+
+- Play the approved Classic campaign through level 27.
+- Animals and fish choose their own directions from their first step and wander through open spaces.
+- Keep your progress and use the integrated level editor.
+## [0.6.31] - 2026-10-22
+
+- Play the approved Classic campaign through level 27.
+- Animals and fish choose their own directions from their first step and wander through open spaces.
+- Keep your progress and use the integrated level editor.
 ## [0.6.30] - 2026-10-22
 
 - Play the approved Classic campaign through level 26.

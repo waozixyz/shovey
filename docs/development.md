@@ -90,6 +90,8 @@ and weighted macro searches. Its path guidance accounts for room geometry,
 spare crates and doors that can open; legal moves and final wins still come
 from the game engine. The macro and domain-guidance approach follows the
 [Sokoban search research](https://www.ijcai.org/Proceedings/99-1/Papers/082.pdf).
+Objects cannot enter the abyss or replace it with floor. Cached wins are replayed under the current rules
+before being reused; this does not start a fresh search.
 
 **Fix it** asks the configured GLM provider to repair an unwinnable board with
 small changes. It can open pushing space or reposition existing pieces and

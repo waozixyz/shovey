@@ -288,9 +288,7 @@ ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     if ShoveyMossColor(kind) >= 0 { return ShoveyDoorOpen(game, position) }
     if ShoveyGateColor(kind) >= 0 { return ShoveyGateOpen(game, position) }
     if ShoveyDecorFloor(kind) || kind == SHOVEY_ICE || kind == SHOVEY_CRACKED_FLOOR { return true }
-    if kind == SHOVEY_PIT {
-        return player || ShoveyBallColor(object) > 0 || object == 9 || object == SHOVEY_BOMB || ShoveyColorBlock(object)
-    }
+    if kind == SHOVEY_PIT { return player }
     arrow := ShoveyArrow(kind)
     if arrow >= 0 { return shovey_enter < 0 || shovey_enter == arrow }
     if ShoveyColorPortal(kind) { return player }
@@ -326,7 +324,6 @@ ShoveyPush :: (game: *ShoveyGame, from: s32, direction: s32) -> bool {
     if !allowed { return false }
     ground := game.ground[to]
     game.objects[from] = 0
-    if ground == SHOVEY_PIT { game.ground[to] = 0; if game.tiles[to] == SHOVEY_PIT { game.tiles[to] = 0 }; return true }
     if ground == 42 { game.ground[to] = 23 }
     if ShoveyPitColor(ground) == ShoveyBallColor(object) && ShoveyBallColor(object) > 0 { return true }
     paint := ShoveyPaintColor(ground)
