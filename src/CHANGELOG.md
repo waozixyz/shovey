@@ -1,5 +1,26 @@
 # Shovey changelog
 
+## [0.6.28] - 2026-10-22
+
+- Play the approved Classic campaign through level 25.
+- Place doors directly in any wall; opening them reveals the matching floor.
+- Use mossy walls for every material with matching colored pressure buttons.
+- Use any matching lever to switch every gate of its color.
+- Keep your progress and use the integrated level editor.
+## [0.6.27] - 2026-10-22
+
+- Play the approved Classic campaign through level 24.
+- Place doors directly in any wall; opening them reveals the matching floor.
+- Use mossy walls for every material with matching colored pressure buttons.
+- Use any matching lever to switch every gate of its color.
+- Keep your progress and use the integrated level editor.
+## [0.6.26] - 2026-10-22
+
+- Play the approved Classic campaign through level 23.
+- Place doors directly in any wall; opening them reveals the matching floor.
+- Use mossy walls for every material with matching colored pressure buttons.
+- Use any matching lever to switch every gate of its color.
+- Keep your progress and use the integrated level editor.
 ## [0.6.25] - 2026-10-22
 
 - Play the approved Classic campaign through level 23.

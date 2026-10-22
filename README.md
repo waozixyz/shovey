@@ -13,7 +13,7 @@ every shipped level by replaying it through the real game rules.
 
 ## Play
 
-- **Shovey Classic**: approved stone-courtyard puzzles through level 24. Later boards stay in the developer editor while they are being edited. Push balls
+- **Shovey Classic**: approved stone-courtyard puzzles through level 25. Later boards stay in the developer editor while they are being edited. Push balls
   into matching holes, crates onto corners, coloured blocks onto marks,
   collect keys and powers, then walk home.
 - **Shovey Editor**: paint, test and share your own Classic boards. The
