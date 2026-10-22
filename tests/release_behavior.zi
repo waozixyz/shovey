@@ -2,11 +2,12 @@
 #import, file "../src/engine.zi";
 #import, file "../src/levels.zi";
 #import, file "../src/island_levels.zi";
+#import, file "../src/editor/edit.zi";
 
 #program_export
 Check :: () -> s32 {
     last := cast(s32)SHOVEY_APPROVED_LEVEL_COUNT
-    if ShoveyLevelCount() != last || ShoveyLevelData(last + 1) != "" || ShoveyLevelSolution(last + 1) != "" || IslandLevelData(1) != "" || ISLAND_LEVEL_COUNT != 0 { return 1 }
+    if ShoveyLevelCount() != last || ShoveyLevelData(last + 1) != "" || ShoveyLevelSolution(last + 1) != "" || IslandLevelData(1) != "" || ISLAND_LEVEL_COUNT != 0 || EditStoryCount(true) != 0 || EditStoryCount(false) != last { return 1 }
     progress := ShoveyProgress.{.unlocked = last}
     game: ShoveyGame
     if !ShoveyLoad(*game, last) || ShoveyLoad(*game, last + 1) { return 2 }
