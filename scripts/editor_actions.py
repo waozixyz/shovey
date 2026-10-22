@@ -70,7 +70,7 @@ def approve(number):
         data['pending'] = pending
         atomic(path, json.dumps(data, indent=1) + '\n')
         atomic(DRAFTS / f'{number:03}.approved', request[0])
-    atomic(DRAFTS / 'publish-status', f'Level {number} approved. Preparing the server update.')
+    atomic(DRAFTS / 'publish-status', 'Updating…')
     subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py')], cwd=ROOT,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True)
@@ -78,7 +78,7 @@ def approve(number):
 
 def update():
     # Updating an approved campaign never depends on the open draft's proof.
-    atomic(DRAFTS / 'publish-status', 'Updating the previously approved levels…')
+    atomic(DRAFTS / 'publish-status', 'Updating…')
     subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py'), '--force'], cwd=ROOT,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True)

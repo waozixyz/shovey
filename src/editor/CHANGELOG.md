@@ -2,7 +2,7 @@
 
 ## [0.2.9] - 2026-10-22
 
-- Story levels follow the approved Classic campaign; Island stays unavailable while in development.
+- Create Island levels from scratch and edit approved Classic story levels.
 ## [0.2.8] - 2026-10-21
 
 - Story levels follow the approved Classic campaign; Island stays unavailable while in development.

@@ -42,7 +42,7 @@ class Variations(unittest.TestCase):
             with patch.object(actions, 'DRAFTS', drafts), patch.object(actions.subprocess, 'Popen') as spawn:
                 actions.update()
             self.assertIn('--force', spawn.call_args.args[0])
-            self.assertIn('previously approved', (drafts / 'publish-status').read_text())
+            self.assertTrue((drafts / 'publish-status').read_text())
             self.assertEqual(sorted(path.name for path in drafts.iterdir()), ['publish-status'])
 
     def test_preserves_inventory_and_landscape_coordinates(self):

@@ -91,9 +91,9 @@ def complete_release(config, receipt, output):
                 with archive.open('rb') as stream:
                     subprocess.run([*ssh, command], stdin=stream, stdout=output, stderr=subprocess.STDOUT, check=True)
             publisher.upload = upload
-            status('Publishing the checked Arcade update…')
+            status('Publishing…')
             publisher.publish_node_app(store, 'arcade', target, remote_store)
-    status('Verifying the exact published update…')
+    status('Verifying…')
     with contextlib.redirect_stdout(output):
         publisher.verify_node_app(store, 'arcade', origin)
     receipt.update(phase='published', release=release)
@@ -108,7 +108,7 @@ def complete_release(config, receipt, output):
         receipt['local_installed'] = True
     receipt['phase'] = 'verified'
     atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
-    status(f"Levels 1–{receipt['approved_levels']} are live on the server. Island is disabled.")
+    status("Published")
 
 
 def main(force=False):
@@ -133,13 +133,13 @@ def main(force=False):
                 approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
                 prior = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
                 if prior.get('approved_sha256') == approved_hash and prior.get('phase') in ('uploading', 'published'):
-                    status('Resuming the checked update; keeping the exact release artifact…')
+                    status('Updating…')
                     complete_release(config, prior, output)
                     if fingerprint() == approved_hash:
                         return 0
                     continue
                 if not force and prior.get('approved_sha256') == approved_hash and prior.get('phase') == 'verified':
-                    status(f'Levels 1–{len(approved)} are live on the server. Island is disabled.')
+                    status("Published")
                     return 0
                 ledger = json.loads((arcade / 'apps/versions.json').read_text())['node_apps']
                 if prior.get('approved_sha256') == approved_hash and prior.get('phase') != 'verified':
@@ -148,11 +148,11 @@ def main(force=False):
                     versions = {name: next_version(ledger[name]['version']) for name in ('arcade', 'shovey', 'shovey-editor')}
                 receipt = dict(approved_sha256=approved_hash, approved_levels=len(approved), versions=versions, phase='building')
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-                status(f'Approved through level {len(approved)}. Building the server update…')
+                status("Updating…")
                 changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
                           f'- Play the approved Classic campaign through level {len(approved)}.\n- Keep your progress while later levels are being edited.\n- Clearer animal directions, recessed green pressure buttons and quick portal travel.', True)
                 changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
-                          '- Story levels follow the approved Classic campaign; Island stays unavailable while in development.', True)
+                          '- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
                 changelog(arcade / 'CHANGELOG.md', versions['arcade'],
                           f'- Shovey includes approved Classic levels 1–{len(approved)} with updated artwork and portal travel.\n- Island stays unavailable while its levels are being edited.\n- Existing Shovey saves and completed levels are retained.')
                 run([arcade / 'update_version.sh'], arcade)
@@ -167,7 +167,7 @@ def main(force=False):
                 run(['sh', 'tests/release_test.sh', toolchain])
                 run(['python3', 'tests/assets_test.py'])
                 run(['make', 'all'], arcade)
-                status('Checking the exact update in Arcade and Inner Breeze…')
+                status('Checking…')
                 private = [
                     'env', '-u', 'DISPLAY', '-u', 'WAYLAND_DISPLAY', '-u', 'XAUTHORITY', '-u', 'DBUS_SESSION_BUS_ADDRESS',
                     '-u', 'SESSION_MANAGER', 'YUE_DESKTOP_RECOVERY=0', 'SDL_AUDIODRIVER=dummy',
@@ -177,7 +177,7 @@ def main(force=False):
                 run([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
                      '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
                 if fingerprint() != approved_hash:
-                    status('A newer approval arrived; rebuilding before publishing.')
+                    status('Updating…')
                     continue
                 bundle = arcade / 'build/arcade.zib'
                 receipt.update(phase='checked', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
@@ -201,7 +201,7 @@ if __name__ == '__main__':
     try:
         raise SystemExit(main(arguments.force))
     except Exception as error:
-        status('The approved update failed. Press Update to retry; no new approval is needed.')
+        status('Update failed. Retry.')
         with (ROOT / 'backup/approved-publication.log').open('a') as log:
             log.write(type(error).__name__ + ': ' + str(error) + '\n')
         raise SystemExit(1)
