@@ -168,6 +168,12 @@
       if (loadingCheck) return;
       function ready() {
         try {
+          var hostStatus = document.querySelector('#zib-controls span');
+          if (hostStatus && /could not|failed|unavailable|not available|not a valid/i.test(hostStatus.textContent)) {
+            statusElement.textContent = hostStatus.textContent;
+            progressElement.hidden = true;
+            return;
+          }
           var fs = Module.FS;
           var canvas = document.getElementById('canvas');
           if (fs && fs.analyzePath('/kryon-apps/shovey/assets/shovey/catalog.json').exists && canvas.width && canvas.height) {
