@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [0.2.35] - 2026-10-22
+
+- Show the flat Island board when choosing an edition.
+
 ## [0.2.33] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
