@@ -63,7 +63,7 @@ Draw :: () -> bool {
     grid := ShoveyBoard(session, *after, Rectangle.{xs[2], size.y, size.width, size.height}, cast(u64)5000, 0.0, names[:], false)
     for at: cast(s32)0..EDIT_CELLS - 1 {
         cell := TileMapCell(grid, BoardDisplayIndex(at, false))
-        if scenery_dressed_path[at] {
+        if scenery_steps[at] {
             unused Box(session, BoxProps.{.key = cast(u64)(7000 + at), .bounds = Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.height - 8.0},
                     .fill = Color.{255, 140, 40, 120}, .radius = 6.0})
         } else if scenery_placed[at] {

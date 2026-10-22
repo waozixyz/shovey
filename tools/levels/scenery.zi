@@ -40,6 +40,8 @@ SceneryCount :: struct {
 // Cells the stored route uses, before and after dressing.
 scenery_path: [EDIT_CELLS]bool;
 scenery_dressed_path: [EDIT_CELLS]bool;
+// Shovey's cells and pushed pieces in the last route traced, without animals.
+scenery_steps: [EDIT_CELLS]bool;
 // Blocking scenery this dressing placed.
 scenery_placed: [EDIT_CELLS]bool;
 scenery_frames: [EDIT_CELLS + 2]ShoveyGame;
@@ -54,11 +56,14 @@ scenery_failure: string;
 // The route
 
 // Shovey's cell and every cell whose piece or ground differs from the
-// start: pieces that moved, animals, opened doors, filled pits.
+// start: pieces that moved, animals, opened doors, filled pits. The steps
+// keep only Shovey and the pieces, which is the route a player sees.
 SceneryMark :: (path: []bool, game: *ShoveyGame, start: *ShoveyGame) {
-    if game.player >= 0 { path[game.player] = true }
+    if game.player >= 0 { path[game.player] = true; scenery_steps[game.player] = true }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.objects[at] != start.objects[at] || game.ground[at] != start.ground[at] { path[at] = true }
+        moved := game.objects[at] != start.objects[at]
+        if moved || game.ground[at] != start.ground[at] { path[at] = true }
+        if moved { scenery_steps[at] = true }
     }
 }
 
@@ -75,7 +80,7 @@ SceneryShot :: (path: []bool, game: *ShoveyGame) {
 
 // Replays route on board and marks every cell it uses. True when it wins.
 SceneryTrace :: (board: *EditBoard, route: string, path: []bool) -> bool {
-    for at: cast(s32)0..EDIT_CELLS - 1 { path[at] = false }
+    for at: cast(s32)0..EDIT_CELLS - 1 { path[at] = false; scenery_steps[at] = false }
     game: ShoveyGame
     if !ShoveyLoadData(*game, 0, EditBoardHex(board)) { return false }
     start := game
