@@ -283,6 +283,36 @@ int main(int argc, char **argv) {
         int floor_sprite = color == 0 ? 0 : SPRITE_MATERIAL_FLOOR + color - 1;
         assert(shovey_board_KindSprite(&moss, wall, 26, 0, false) == floor_sprite);
     }
+    /* A changed board has an Update action even before its proof is ready.
+       A saved, proven board updates without starting another solver run. */
+    remove("backup/editor-drafts/001.hex");
+    load();
+    editor_Open(1);
+    assert(editor_Solved());
+    approved_places[0] = true;
+    memcpy(approved_boards, editor_Board(1).data, HEX);
+    memcpy(published_boards, editor_Board(1).data, HEX);
+    server_configured = true;
+    server_verified = true;
+    published_places[0] = true;
+    publish_message_length = 0;
+    assert(!editor_NeedsUpdate(1));
+    editor_SetKind((Slice){published_boards, HEX}, SHOVEY_CELLS + 13, 99);
+    editor_SetKind((Slice){published_boards, HEX}, SHOVEY_CELLS * 2 + 13, 57);
+    assert(editor_NeedsUpdate(1) && editor_UpdateAvailable());
+    assert(editor_DifferenceCount(1) == 1);  /* Count cells, not changed layers. */
+    assert(editor_DifferenceAt(1, 13) && !editor_DifferenceAt(1, 14));
+    editor_UpdateEdit();
+    assert(editor_Solved() && check_state != 1);
+    proof_length = 0;
+    check_state = 0;
+    assert(editor_UpdateAvailable());
+    playing = true;
+    assert(!editor_UpdateAvailable());
+    playing = false;
+    check_state = 1;
+    assert(!editor_UpdateAvailable());
+    check_state = 0;
     puts("Developer editor: saves, recovered wins, verified GLM results and undo/redo passed");
     return 0;
 }

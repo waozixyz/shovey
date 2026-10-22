@@ -111,6 +111,8 @@ server_configured: bool;
 server_verified: bool;
 server_check_started: s64;
 server_polled: s64;
+diff_open: bool;
+diff_label: [32]u8;
 saved_approval_ready: bool;
 glm_busy: bool;
 glm_place: s32;
@@ -654,6 +656,51 @@ PublishedApprovalMatches :: (place: s32) -> bool {
         Same(approved_boards[(place - 1) * HEX:place * HEX], published_boards[(place - 1) * HEX:place * HEX])
 }
 
+ServerBoardMatches :: (place: s32) -> bool {
+    return server_verified && published_places[place - 1] &&
+        Same(Board(place), published_boards[(place - 1) * HEX:place * HEX])
+}
+
+NeedsUpdate :: (place: s32) -> bool {
+    return server_configured && server_verified && (Approved(place) || published_places[place - 1]) && !ServerBoardMatches(place)
+}
+
+PublicationBusy :: () -> bool {
+    status := TextView(publish_message[:publish_message_length])
+    return status == "Updating…" || status == "Checking…" || status == "Publishing…" || status == "Verifying…"
+}
+
+UpdateAvailable :: () -> bool {
+    return NeedsUpdate(current) && !playing && !glm_busy && check_state != 1 && !PublicationBusy()
+}
+
+DifferenceAt :: (place: s32, at: s32) -> bool {
+    if !server_verified || !published_places[place - 1] { return false }
+    server := published_boards[(place - 1) * HEX:place * HEX]
+    for layer: cast(s32)0..2 {
+        cell := layer * SHOVEY_CELLS + at
+        if KindAt(Board(place), cell) != KindAt(server, cell) { return true }
+    }
+    return false
+}
+
+DifferenceCount :: (place: s32) -> s32 {
+    count: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { if DifferenceAt(place, at) { count += 1 } }
+    return count
+}
+
+HighlightDifferences :: (grid: TileMapResult, key: u64) {
+    if grid.cell < 3.0 { return }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if !DifferenceAt(current, at) { continue }
+        cell := TileMapCell(grid, BoardDisplayIndex(at, boards_landscape))
+        bounds := Rectangle.{cell.x + 1.0, cell.y + 1.0, cell.width - 2.0, cell.height - 2.0}
+        unused Box(session, BoxProps.{.key = key + cast(u64)at, .bounds = bounds,
+            .fill = Color.{238, 102, 158, 35}, .border = Color.{248, 118, 174, 255}})
+    }
+}
+
 LoadServerCampaign :: () {
     server_configured = PathExists("backup/editor-publish.json")
     server_verified = false
@@ -784,6 +831,18 @@ ApproveEdit :: () {
     if save_state != 2 { return }
     letters := ifx Solved() then route[:route_length] else proof_route[:proof_length]
     QueueApproval(Board(current), letters)
+}
+
+UpdateEdit :: () {
+    if !UpdateAvailable() { return }
+    if Solved() || Proven() || ApprovalMatches(current) {
+        ApproveEdit()
+        return
+    }
+    // A saved winning route is reused immediately. A changed, unproven draft
+    // starts its check; the existing save/approval path publishes it on a win.
+    ActionMessage("")
+    StartCheck()
 }
 
 QueueApproval :: (board: []u8, letters: []u8) {
@@ -1001,6 +1060,7 @@ Open :: (place: s32) {
     check_state = 0
     current = (place - 1 + PLACES) % PLACES + 1
     playing = false
+    diff_open = false
     RestoreDraft(current)
     Copy(reset_board[:], Board(current))
     original_shown = current
@@ -1569,7 +1629,7 @@ LevelCardColor :: (place: s32, similarity: s32) -> Color {
     if Approved(place) || published_places[place - 1] {
         if !server_configured { return Color.{159, 111, 209, 255} }
         if !server_verified { return Color.{144, 148, 148, 255} }
-        if published_places[place - 1] && Same(Board(place), published_boards[(place - 1) * HEX:place * HEX]) {
+        if ServerBoardMatches(place) {
             return Color.{159, 111, 209, 255}
         }
         return Color.{218, 132, 167, 255}
@@ -1843,10 +1903,19 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
     if Button(session, ButtonProps.{.key = 18, .id = 18, .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0},
             .label = ifx glm_busy then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy}) != 0 { ModifyGLM() }
+    update := NeedsUpdate(current)
     if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
-            .label = "Approve", .selected = Approved(current),
-            .disabled = !ApprovalAvailable()}) != 0 { ApproveEdit() }
-    Caption(9, Rectangle.{420.0, 52.0, width - 432.0, 28.0},
+            .label = ifx update then ifx check_state == 1 then "Checking…" else ifx PublicationBusy() then "Updating…" else "Update" else "Approve",
+            .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
+        if update { UpdateEdit() } else { ApproveEdit() }
+    }
+    differences: s32 = 0
+    AppendText(diff_label[:], *differences, "Diff ")
+    AppendNumber(diff_label[:], *differences, DifferenceCount(current))
+    if Button(session, ButtonProps.{.key = 20, .id = 20, .bounds = Rectangle.{414.0, 51.0, 96.0, 30.0},
+            .label = TextView(diff_label[:differences]), .selected = diff_open,
+            .disabled = playing || !server_verified || !published_places[current - 1]}) != 0 { diff_open = !diff_open }
+    Caption(9, Rectangle.{522.0, 52.0, width - 534.0, 28.0},
         ifx action_message_length > 0 then TextView(action_message[:action_message_length]) else StatusText(), 14)
 
     if selector_open {
@@ -1869,7 +1938,9 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         edit_height = boards_area.height - 26.0
     } else {
     length = 0
-    if has_original {
+    if diff_open && server_verified && published_places[current - 1] {
+        AppendText(label_bytes[:], *length, "Server version")
+    } else if has_original {
         AppendText(label_bytes[:], *length, "Original level ")
         AppendNumber(label_bytes[:], *length, original_shown)
         AppendText(label_bytes[:], *length, ifx original_sprites then "" else "  (drawn with the new pictures)")
@@ -1877,14 +1948,19 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         AppendText(label_bytes[:], *length, "No original on this machine")
     }
     Caption(11, Rectangle.{boards_area.x, boards_area.y, boards_area.width, 24.0}, TextView(label_bytes[:length]), 15)
-    if has_original {
+    if diff_open && server_verified && published_places[current - 1] {
+        server_grid := HexBoard(published_boards[(current - 1) * HEX:current * HEX], OurTiles(), layers_original[:],
+            cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
+            boards_landscape, "Server version")
+        HighlightDifferences(server_grid, cast(u64)800000)
+    } else if has_original {
         unused HexBoard(Original(original_shown), ifx original_sprites then original_tiles[:] else OurTiles(), layers_original[:],
             cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
             boards_landscape, "Original")
     }
     }
     Caption(12, Rectangle.{boards_area.x, edit_top, boards_area.width, 24.0},
-        ifx playing then "New level: playing" else "New level: editing", 15)
+        ifx playing then "New level: playing" else ifx diff_open then "Your version" else "New level: editing", 15)
     edit_area := Rectangle.{boards_area.x, edit_top + 26.0, boards_area.width, edit_height}
     if playing {
         landscape_aspect := cast(float32)SHOVEY_HEIGHT / cast(float32)SHOVEY_WIDTH
@@ -1901,6 +1977,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         unused ShoveyBoard(session, *play, play_bounds, cast(u64)200000, cast(float64)now / 1000.0, names[0:0])
     } else {
         grid := HexBoard(Board(current), OurTiles(), layers_edit[:], cast(u64)200000, edit_area, boards_landscape, "New level")
+        if diff_open { HighlightDifferences(grid, cast(u64)801000) }
         // Alt+click (or Shift+click, if the desktop keeps Alt) picks up the
         // piece under the pointer to paint with.
         picking := (modifiers & 5) != 0

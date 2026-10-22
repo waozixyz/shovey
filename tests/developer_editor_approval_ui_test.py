@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import time
-from PIL import Image
+from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
@@ -141,6 +141,33 @@ with (output / 'app.log').open('w') as log:
         (drafts / 'server-campaign.json').write_text(json.dumps(server))
         time.sleep(2.3)
         assert map_colors()[0] == (218, 132, 167), 'Changed local board must be pink'
+        click(100, 28)
+        subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
+        subprocess.run(['import', '-window', window, str(output / 'diff-before.png')], check=True)
+        click(460, 66)
+        subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
+        subprocess.run(['import', '-window', window, str(output / 'diff.png')], check=True)
+        with Image.open(output / 'diff-before.png').convert('RGB') as before, Image.open(output / 'diff.png').convert('RGB') as after:
+            width, height = after.size
+            area_width, area_height = width - 384, height - 92
+            half = (area_height - 28) / 2
+            cell = int(min(area_width / 12, (half - 26) / 20))
+            x = int(8 + (area_width - cell * 12) / 2)
+            y = int(84 + half + 54 + (half - 26 - cell * 20) / 2)
+            def crop(at):
+                left, top = x + at % 12 * cell, y + at // 12 * cell
+                return (left, top, left + cell, top + cell)
+            assert ImageChops.difference(before.crop(crop(13)), after.crop(crop(13))).getbbox(), 'Changed cell lacks its diff highlight'
+            assert not ImageChops.difference(before.crop(crop(14)), after.crop(crop(14))).getbbox(), 'Diff highlighted an unchanged cell'
+        (drafts / 'worker-started').unlink()
+        (drafts / 'worker-done').unlink()
+        click(350, 66)
+        for attempt in range(40):
+            if (drafts / 'worker-started').exists(): break
+            time.sleep(.025)
+        assert (drafts / 'worker-started').read_text() == 'update 1', 'Pink level cannot update'
+        time.sleep(2.1)
+        click(100, 28)
         server['status'] = 'unavailable'
         (drafts / 'server-campaign.json').write_text(json.dumps(server))
         time.sleep(2.3)

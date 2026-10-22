@@ -74,6 +74,9 @@ The level overview checks the live signed server release in the background.
 Purple means the current board matches it; pink means a local change needs an
 update, and gray means the server could not be verified. Similarity stays green
 below 50% and shifts smoothly toward red above 90%, including waiting levels.
+Changed published boards show Update. Saved wins are reused; unproven edits
+start a check before publishing. Diff shows the server board above your draft,
+counts changed cells and highlights their objects, floor or decoration changes.
 
 **GLM Modify** designs a variation of the open board, using its existing winning
 route as a reference. It can change the push sequence and find a new route;
