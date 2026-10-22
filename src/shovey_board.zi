@@ -372,12 +372,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         base := game.tiles[at]
         board_layers[display] = KindSprite(game, base, at, now, landscape)
         if base == SHOVEY_PIT {
-            mask: s32 = 0
-            for direction: cast(s32)0..3 {
-                neighbor := ShoveyNeighbor(at, direction)
-                if neighbor < 0 || game.tiles[neighbor] != SHOVEY_PIT { mask |= 1 << direction }
-            }
-            board_layers[display] = SPRITE_ABYSS + mask
+            board_layers[display] = -1
         }
         if base == 77 {
             mask: s32 = 0
@@ -404,11 +399,30 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
             cell * cast(float32)columns, cell * cast(float32)rows}
     }
-    // The stone grey behind the cells hides the seams between scaled tiles,
-    // whatever the host paints around the game.
+    // Mobile density can put tile edges between physical pixels even with
+    // integer logical cells. Match the abyss interior behind the tiles so
+    // those edges cannot reveal a pale grid through a joined opening.
     grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
             .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
-            .fill = Color.{170, 174, 173, 255}, .label = "Shovey"})
+            .fill = Color.{2, 4, 5, 255}, .label = "Shovey"})
+    // TileMap smooths its pictures. On mobile, filtering can wrap a bright
+    // rim onto the opposite edge of the same texture. Draw the abyss's
+    // pixel art without filtering, over the matching dark background.
+    // Objects and decorations cannot occupy abyss cells.
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.tiles[at] != SHOVEY_PIT { continue }
+        mask: s32 = 0
+        for direction: cast(s32)0..3 {
+            neighbor := ShoveyNeighbor(at, direction)
+            if neighbor < 0 || game.tiles[neighbor] != SHOVEY_PIT { mask |= 1 << direction }
+        }
+        display := BoardDisplayIndex(at, landscape)
+        sprite := SPRITE_ABYSS + mask
+        files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
+        Image(session, ImageProps.{.key = key + cast(u64)(1 + display), .asset_path = files[sprite],
+                .alt_text = ifx cast(s64)sprite < names.count then names[sprite] else "Abyss",
+                .bounds = TileMapCell(grid, display), .fit = ImageFit.ImageFitContain, .smooth = false})
+    }
     if game.player >= 0 && game.player < SHOVEY_CELLS {
         files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
         portal := PortalTravelProgress(game, now)

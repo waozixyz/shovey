@@ -115,6 +115,9 @@ def main():
                               round(before_apps['x'] - origin['x'] + before_apps['width']),
                               round(before_apps['y'] - origin['y'] + before_apps['height']))
                 driver.press(label='Apps', role='button')
+                if not driver.find(label='Arcade', role='button', visible=True):
+                    driver.press(label='Find an app', role='text_field')
+                    driver.type('Arcade')
                 driver.press(label='Arcade', role='button')
                 driver.wait_gone(label='Find an app', role='text_field', timeout=30)
                 driver.press(label='Shovey', role='button')

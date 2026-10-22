@@ -1,14 +1,21 @@
 # Shovey Editor changelog
 
+## [0.2.37] - 2026-10-22
+
+- Connected abyss openings stay dark when testing Classic boards at fractional display scales.
+
 ## [0.2.36] - 2026-10-22
 
 - Follow screen orientation when painting or testing Classic and Island boards.
 - Keep cells and movement controls aligned when rotating.
-
 ## [0.2.35] - 2026-10-22
 
 - Show the flat Island board when choosing an edition.
 
+## [0.2.34] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.33] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.

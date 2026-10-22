@@ -1,10 +1,24 @@
 # Shovey changelog
 
+## [0.6.40] - 2026-10-22
+
+- Connected abyss openings stay dark without pale tile seams at mobile display scales.
+- Play updated Classic puzzles with checked winning routes.
+
 ## [0.6.39] - 2026-10-22
 
 - The integrated editor follows screen orientation while painting and testing Classic and Island levels.
 - Keep controls aligned with the board when rotating.
+## [0.6.38] - 2026-10-22
 
+- Play the approved Classic campaign through level 28.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.37] - 2026-10-22
+
+- Play the approved Classic campaign through level 28.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
 ## [0.6.36] - 2026-10-22
 
 - Play the approved Classic campaign through level 27.

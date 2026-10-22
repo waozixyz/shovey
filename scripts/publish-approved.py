@@ -208,12 +208,17 @@ def main(force=False):
                 run([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade)
                 run([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
                      '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
+                if len(approved) >= 28:
+                    run([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
+                         '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
                 if fingerprint() != approved_hash:
                     status('Updating…')
                     continue
                 bundle = arcade / 'build/arcade.zib'
                 receipt.update(phase='checked', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
                                checks=['approved routes', 'release boundary and saves', 'assets', 'Arcade UI', 'standalone Shovey UI', 'Inbe UI'])
+                if len(approved) >= 28:
+                    receipt['checks'].append('level 28 abyss pixels at fractional scales')
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
                 publisher = release_publisher(arcade)
                 store = ROOT / 'build/approved-releases'
