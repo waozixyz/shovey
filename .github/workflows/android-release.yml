@@ -1,0 +1,70 @@
+name: Android download release
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Prepare the draft, or verify and publish its uploaded APK
+        type: choice
+        options: [prepare, publish]
+        required: true
+      version:
+        description: Numeric Shovey version
+        required: true
+      apk_sha256:
+        description: Exact checked APK digest, required for publication
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-download-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      OPERATION: ${{ inputs.operation }}
+      APK_SHA256: ${{ inputs.apk_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check release version
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          version = os.environ['VERSION']
+          assert re.fullmatch(r'\d+\.\d+\.\d+', version)
+          assert re.search(r'^## \[' + re.escape(version) + r'\] - ', Path('src/CHANGELOG.md').read_text(), re.M)
+          if os.environ['OPERATION'] == 'publish':
+              assert re.fullmatch(r'[0-9a-f]{64}', os.environ['APK_SHA256'])
+          PY
+      - name: Prepare reviewed download
+        if: inputs.operation == 'prepare'
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" --json isDraft --jq .isDraft > draft-state; then
+            test "$(cat draft-state)" = true
+          else
+            gh release create "$tag" --draft --target "$GITHUB_SHA" \
+              --title "Shovey $VERSION" \
+              --notes 'Install the signed Shovey APK on Android. Includes the approved Classic campaign, touch controls, saved progress and the integrated level editor.'
+          fi
+      - name: Download exact checked APK
+        if: inputs.operation == 'publish'
+        run: |
+          test "$(gh release view "v$VERSION" --json isDraft --jq .isDraft)" = true
+          mkdir -p build/android-download
+          gh release download "v$VERSION" --pattern "shovey-v$VERSION.apk" --dir build/android-download
+          printf '%s  %s\n' "$APK_SHA256" "build/android-download/shovey-v$VERSION.apk" | sha256sum --check -
+      - name: Verify signed Android download
+        if: inputs.operation == 'publish'
+        run: python3 scripts/android-release.py verify "build/android-download/shovey-v$VERSION.apk" --version "$VERSION"
+      - name: Publish verified Android download
+        if: inputs.operation == 'publish'
+        run: gh release edit "v$VERSION" --draft=false --latest

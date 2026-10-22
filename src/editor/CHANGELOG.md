@@ -1,5 +1,29 @@
 # Shovey Editor changelog
 
+## [0.2.43] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.42] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.41] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.40] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.39] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.38] - 2026-10-22
+
+- All objects stop at the abyss when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.37] - 2026-10-22
 
 - Connected abyss openings stay dark when testing Classic boards at fractional display scales.
