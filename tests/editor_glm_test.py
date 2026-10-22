@@ -49,7 +49,145 @@ def repair():
                 solution='333332', explanation='Open one wall so the player can reach the ball.')
 
 
+PLAN = dict(win_route_analysis='The red ball needs two pushes into the reusable red pit.',
+            complexity_changes=['Stage a second ball before clearing the exit.'],
+            theme='Slate workshop with bluebells along the edges.',
+            previous_level_difference='Use a compact workshop instead of the previous courtyard.')
+
+
 class Variations(unittest.TestCase):
+    def test_glm53_uses_supported_reasoning_and_rejects_truncated_json(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory, \
+                patch.object(actions, 'DRAFTS', Path(directory)), \
+                patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-5.3')):
+            response = dict(choices=[dict(finish_reason='stop', message=dict(content='{"ok":true}'))])
+            with patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())) as provider:
+                self.assertEqual(actions.glm_json('JSON only', {}, 100)[0], dict(ok=True))
+            payload = json.loads(provider.call_args.args[0].data)
+            self.assertEqual(payload['thinking'], dict(type='enabled'))
+            self.assertEqual(payload['reasoning_effort'], 'low')
+            self.assertGreater(payload['max_tokens'], 100)
+            response['choices'][0].update(finish_reason='length', message=dict(content=''))
+            with patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())):
+                with self.assertRaisesRegex(ValueError, 'response budget'):
+                    actions.glm_json('JSON only', {}, 100)
+
+    def test_guided_redesign_builds_proves_shapes_then_decorates(self):
+        strategic = dict(edits=[dict(layer='cells', x=5, y=4, **{'from': 0, 'to': 1})],
+                         explanation='A second ball shares the pit and working lane.')
+        structure = dict(edits=[dict(layer='tiles', x=x, y=y, **{'from': 0, 'to': 12})
+                               for x, y in [(x, 7) for x in range(2, 11)] + [(x, 8) for x in range(2, 5)]],
+                         explanation='Close unused space into a compact workshop.')
+        scenery = dict(edits=[dict(layer='decorations', x=x, y=9, **{'from': 0, 'to': 137}) for x in (3, 5, 7)],
+                       explanation='Bluebells along the garden edge.')
+        design = dict(target=dict(goals=1, pushes=2, mechanics=0, moves=6, tier=0, solution='333332'),
+                      plan=PLAN, previous_board=None)
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory, \
+                patch.object(actions, 'DRAFTS', Path(directory)), \
+                patch.object(actions, 'glm_json', side_effect=[(p, 'glm-test') for p in (strategic, structure, scenery)]) as provider:
+            proposal, _ = actions.guided_redesign(1, board(), design, 'Design a completely NEW puzzle.', {})
+            candidate = actions.apply_proposal(board(), proposal, mode='redesign')
+            self.assertTrue(actions.verify_route(1, candidate, proposal['solution']))
+            self.assertEqual([call.args[1]['step'] for call in provider.call_args_list],
+                             ['strategy', 'structure', 'decoration'])
+            self.assertEqual(provider.call_args_list[1].args[1]['current_route_analysis']['goals'], 2)
+            self.assertIn('repeats the source', provider.call_args_list[1].args[1]['remaining_quality_issue'])
+            self.assertEqual(len(design['work']['steps']), 3)
+            self.assertFalse((Path(directory) / '001.glm-result').exists())
+
+    def test_guided_decoration_preserves_trail_floor_rules(self):
+        import time
+        values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+        values[at(2, 4)] = 11
+        source = ''.join(f'{kind:02x}' for kind in values)
+        design = dict(work=dict(board=source, route='333332', deadline=time.monotonic() + 60,
+                               steps=[dict(stage='strategy'), dict(stage='structure')]))
+        proposal = dict(edits=[dict(layer='tiles', x=3, y=4, **{'from': 0, 'to': 99})])
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory, \
+                patch.object(actions, 'DRAFTS', Path(directory)), \
+                patch.object(actions, 'glm_json', return_value=(proposal, 'glm-test')):
+            with self.assertRaisesRegex(ValueError, 'trail puzzle'):
+                actions.guided_redesign(1, source, design, '', {})
+            self.assertEqual(design['work']['board'], source)
+
+    def test_redesign_plan_uses_verified_source_and_previous_level(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            root = Path(directory)
+            drafts = root / 'drafts'
+            drafts.mkdir()
+            (root / 'levels').mkdir()
+            (root / 'levels/classic.json').write_text(json.dumps(dict(levels=[
+                actions.record(1, board(), '333332'), actions.record(2, board(), '333332')])))
+            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts):
+                target = dict(goals=1, pushes=2, moves=6, mechanics=0, solution='333332', tier=0)
+                context = actions.redesign_context(2, board(), target)
+                self.assertEqual(context['previous_level']['level'], 1)
+                self.assertEqual(context['previous_level']['metrics']['pushes'], 2)
+                self.assertEqual(context['source']['events'][0]['destination'], [5, 3])
+                with patch.object(actions, 'glm_json', return_value=(PLAN, 'glm-test')) as request:
+                    plan = actions.plan_redesign(2, context)
+                self.assertEqual(plan, PLAN)
+                self.assertEqual(request.call_args.args[1]['source_route_analysis'], context['source'])
+                self.assertEqual(request.call_args.args[1]['previous_level']['level'], 1)
+                self.assertEqual(json.loads((drafts / '002.glm-plan.json').read_text()), PLAN)
+                self.assertFalse((drafts / '002.glm-result').exists())
+                with patch.object(actions, 'glm_json', return_value=({}, 'glm-test')):
+                    with self.assertRaisesRegex(ValueError, 'complete redesign plan'):
+                        actions.plan_redesign(2, context)
+
+    def test_route_analysis_records_real_pushes_in_landscape_coordinates(self):
+        replay = actions.analyze_route(1, board(), '333332')
+        self.assertEqual((replay['goals'], replay['pushes']), (1, 2))
+        pushes = [event for event in replay['events'] if event['piece']]
+        self.assertEqual([event['destination'] for event in pushes], [[5, 3], [6, 3]])
+        self.assertEqual(pushes[0]['piece_id'], pushes[1]['piece_id'])
+        self.assertEqual(pushes[-1]['target'], 4)
+        self.assertEqual(pushes[-1]['piece_name'], 'red ball')
+        self.assertEqual(pushes[-1]['target_name'], 'red pit')
+        self.assertEqual(pushes[-1]['remaining'], 0)
+        with self.assertRaises(ValueError):
+            actions.analyze_route(1, board(), '3')
+
+    def test_push_loops_do_not_inflate_redesign_difficulty(self):
+        route = '33' + '2330' + '1' + '0112' + '33332'
+        observed = actions.analyze_route(1, board(), route)
+        self.assertEqual(observed['pushes'], 4)
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory, \
+                patch.object(actions, 'DRAFTS', Path(directory)):
+            measured = actions.difficulty(1, board(), route)
+        self.assertEqual(measured['pushes'], 2)
+
+    def test_redesign_checks_structure_complexity_and_scenery(self):
+        values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+        for x in range(2, 11): values[240 + at(x, 7)] = 95
+        for x in (3, 5, 7): values[480 + at(x, 8)] = 137
+        changed = ''.join(f'{kind:02x}' for kind in values)
+        metrics = dict(goals=1, pushes=2, mechanics=0)
+        context = dict(target=metrics, previous_board=None)
+        with self.assertRaisesRegex(ValueError, 'Too easy'):
+            actions.check_redesign(board(), changed, context, metrics)
+        with self.assertRaisesRegex(ValueError, 'repeats the source'):
+            actions.check_redesign(board(), board(), context, dict(metrics, goals=2))
+        # Material and decoration edits do not disguise a repeated puzzle.
+        self.assertEqual(actions.redesign_difference(board(), changed), 9)
+        for x in range(2, 11): values[240 + at(x, 8)] = 12; values[480 + at(x, 8)] = 0
+        structured = ''.join(f'{kind:02x}' for kind in values)
+        with self.assertRaisesRegex(ValueError, 'scenery'):
+            actions.check_redesign(board(), structured, context, dict(metrics, goals=2))
+        for x in (3, 5, 7): values[480 + at(x, 9)] = 137
+        unique = ''.join(f'{kind:02x}' for kind in values)
+        actions.check_redesign(board(), unique, context, dict(metrics, goals=2))
+        with self.assertRaisesRegex(ValueError, 'previous level'):
+            actions.check_redesign(board(), unique, dict(context, previous_board=unique), dict(metrics, goals=2))
+
+    def test_long_walks_and_slow_search_do_not_replace_pushes(self):
+        target = dict(tier=1, moves=50, pushes=12, goals=4)
+        self.assertIn('pushes', actions.too_easy(target, dict(tier=2, moves=200, pushes=2, goals=4)))
+        self.assertIn('goals', actions.too_easy(target, dict(tier=2, moves=200, pushes=12, goals=1)))
+        self.assertEqual(actions.too_easy(target, dict(tier=1, moves=55, pushes=14, goals=4)), '')
+        self.assertEqual(actions.too_easy(target, dict(tier=0, moves=40, pushes=14, goals=4)), '')
+        self.assertIn('mechanics', actions.too_easy(dict(target, mechanics=4), dict(tier=2, moves=100, pushes=14, goals=4, mechanics=1)))
+
     def test_deadlock_rules_preserve_existing_winning_routes(self):
         generated = ROOT / 'build/solver/classic/c'
         output = ROOT / 'build/solver-state-test'
@@ -128,7 +266,11 @@ class Variations(unittest.TestCase):
         values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
         values[at(2, 3)], values[at(2, 4)] = 0, 10
         values[at(7, 2)], values[at(8, 2)] = 0, 7
-        for x in range(2, 11): values[240 + at(x, 7)] = 12
+        values[at(5, 4)] = 1
+        for x in range(2, 11):
+            values[240 + at(x, 7)] = 12
+            values[240 + at(x, 8)] = 12
+        for x in (3, 5, 7): values[480 + at(x, 9)] = 137
         new_board = ''.join(f'{kind:02x}' for kind in values)
         route = actions.prove_proposal(1, new_board)
         redesign = {name: [[values[layer * 240 + at(x, y)] for x in range(20)] for y in range(12)]
@@ -141,6 +283,7 @@ class Variations(unittest.TestCase):
                 (drafts / '001.glm-base').write_text(board())
                 response = dict(choices=[dict(message=dict(content=json.dumps(proposal)))])
                 with patch.object(actions, 'DRAFTS', drafts), patch.object(actions, 'existing_route', return_value='333332'), \
+                        patch.object(actions, 'plan_redesign', return_value=PLAN), \
                         patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
                         patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())) as request:
                     actions.modify(1, mode=mode)
@@ -150,6 +293,10 @@ class Variations(unittest.TestCase):
                 else: self.assertEqual(result, new_board)
                 self.assertEqual(json.loads((drafts / '001.glm-details.json').read_text())['mode'], mode)
                 self.assertIn(phrase, json.loads(request.call_args.args[0].data)['messages'][0]['content'])
+                if mode == 'redesign':
+                    context = json.loads(json.loads(request.call_args.args[0].data)['messages'][1]['content'])
+                    self.assertEqual(context['redesign_plan'], PLAN)
+                    self.assertEqual(context['source_route_analysis']['pushes'], 2)
 
     def test_redesigns_easier_than_the_source_are_rejected(self):
         values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
@@ -165,6 +312,7 @@ class Variations(unittest.TestCase):
             drafts = Path(directory)
             (drafts / '001.glm-base').write_text(board())
             with patch.object(actions, 'DRAFTS', drafts), patch.object(actions, 'existing_route', return_value='333332'), \
+                    patch.object(actions, 'plan_redesign', return_value=PLAN), \
                     patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
                     patch.object(actions.urllib.request, 'urlopen',
                                  side_effect=lambda *_, **__: io.BytesIO(json.dumps(response).encode())) as request:

@@ -340,6 +340,40 @@ ClassicApiAct :: (action: s32) -> s32 {
     return ifx accepted then 1 else 0
 }
 
+// Describe an attempted push before replay; a rejected action never counts.
+#program_export
+ClassicApiPushKind :: (action: s32) -> s32 {
+    if action < 0 || action > 3 { return 0 }
+    at := ShoveyNeighbor(classic_game.player, action)
+    if at < 0 { return 0 }
+    kind := classic_game.objects[at]
+    return ifx kind != 40 && ShoveyMovable(kind) then kind else 0
+}
+
+// Mechanics used by this action, rather than unused pieces on the board.
+#program_export
+ClassicApiActionFeatures :: (action: s32) -> s32 {
+    if action < 0 || action > 3 { return 0 }
+    at := ShoveyNeighbor(classic_game.player, action)
+    if at < 0 { return 0 }
+    ground := classic_game.ground[at]
+    features: s32 = 0
+    if ShoveyArrow(ground) >= 0 { features |= 1 }
+    if ground == 8 || ShoveyColorPortal(ground) { features |= 2 }
+    if ground == 11 && (classic_game.powers & SHOVEY_TRAIL) == 0 { features |= 4 }
+    if ShoveyMossColor(ground) >= 0 || ShoveyGateColor(ground) >= 0 { features |= 8 }
+    if ShoveyLever(ground) { features |= 16 }
+    if ground == 35 || ground == SHOVEY_ICE { features |= 128 }
+    if ClassicApiPushKind(action) != 0 {
+        to := ShoveyNeighbor(at, action)
+        if to >= 0 {
+            if ShoveyPaintColor(classic_game.ground[to]) > 0 { features |= 32 }
+            if ShoveyButtonColor(classic_game.ground[to]) >= 0 { features |= 64 }
+        }
+    }
+    return features
+}
+
 #program_export
 ClassicApiWon :: () -> s32 { return ifx classic_game.won then 1 else 0 }
 

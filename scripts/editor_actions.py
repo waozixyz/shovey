@@ -195,7 +195,7 @@ def learned_routes(number, board):
     return [route for _, _, route in sorted(examples)[:3]]
 
 
-def apply_proposal(original, proposal, repair=False, mode='modify'):
+def apply_proposal(original, proposal, repair=False, mode='modify', partial=False):
     """Apply small, explicit landscape-coordinate edits to the supplied board."""
     if mode not in ('modify', 'redesign', 'prettify'):
         raise ValueError('Unknown GLM mode')
@@ -270,9 +270,9 @@ def apply_proposal(original, proposal, repair=False, mode='modify'):
                 raise ValueError('Prettify keeps mossy walls, buttons and all terrain mechanics unchanged')
             if index >= 480 and not (before in {0, 57, 58, 59} and after in {0, 57, 58, 59}):
                 raise ValueError('Prettify only adds non-blocking decoration; keep trees, lanterns and boulders unchanged')
-    if mode == 'redesign' and (len(coordinates) < 12 or not any(i < 240 for i in touched)):
+    if mode == 'redesign' and not partial and (len(coordinates) < 12 or not any(i < 240 for i in touched)):
         raise ValueError('Redesign a new puzzle layout and piece arrangement, not just its scenery')
-    if mode != 'prettify' and not any(cells[i] != updated[i] and (cells[i] not in COSMETIC or updated[i] not in COSMETIC) for i in touched):
+    if mode != 'prettify' and not partial and not any(cells[i] != updated[i] and (cells[i] not in COSMETIC or updated[i] not in COSMETIC) for i in touched):
         raise ValueError('Change the push puzzle, not just its scenery or floor colors')
     for at in coordinates:
         kind, tile, decoration = updated[at], updated[240 + at], updated[480 + at]
@@ -322,7 +322,8 @@ def difficulty(number, board, known_route=''):
         cache = json.loads(path.read_text())
     except (OSError, ValueError):
         cache = {}
-    key = hashlib.sha256(board.encode()).hexdigest()
+    fingerprint = SOLVER.with_name('fingerprint').read_text() if SOLVER.with_name('fingerprint').exists() else str(SOLVER.stat().st_mtime_ns)
+    key = hashlib.sha256(('push-effort-v3\n' + fingerprint + '\n' + board).encode()).hexdigest()
     if key in cache:
         return cache[key]
 
@@ -338,14 +339,309 @@ def difficulty(number, board, known_route=''):
         if not verify_route(number, board, known_route):
             return None
         route, tier = known_route, 2
-    measured = dict(tier=tier, moves=len(route))
+    wins = []
+    for candidate in dict.fromkeys((route, known_route)):
+        if not candidate:
+            continue
+        replay = subprocess.run([str(SOLVER), 'analyze', '--level', str(number), board, candidate],
+                                cwd=ROOT, capture_output=True, text=True, timeout=10)
+        if replay.returncode == 0:
+            wins.append(dict(json.loads(replay.stdout), solution=candidate))
+    if not wins:
+        raise ValueError('The difficulty route did not pass the game engine')
+    measured = dict(min(wins, key=lambda win: (win['pushes'], win['moves'])), tier=tier)
     cache[key] = measured
     atomic(path, json.dumps(dict(list(cache.items())[-200:])) + '\n')
     return measured
 
 
+FEATURES = ('one-way passage', 'portal', 'trail', 'gate passage', 'lever', 'paint', 'pressure button', 'ice')
+PIECES = {0: 'player move', 1: 'red ball', 2: 'blue ball', 3: 'green ball', 9: 'crate',
+          44: 'cyan ball', 45: 'purple ball', 46: 'yellow ball'}
+
+
+def mechanic_name(kind):
+    if kind in (4, 5, 6, 47, 48, 49):
+        return PIECES[{4: 1, 5: 2, 6: 3, 47: 44, 48: 45, 49: 46}[kind]].replace('ball', 'pit')
+    if kind in (15, 16, 17, 50, 51, 52):
+        return PIECES[{15: 1, 16: 2, 17: 3, 50: 44, 51: 45, 52: 46}[kind]].replace('ball', 'single-use paint')
+    if kind == 13 or kind in range(131, 135): return 'pressure button (held by an object)'
+    if kind in MOSS_WALLS: return 'pressure wall (open while its matching button is held)'
+    if kind == 18: return 'crate goal'
+    return 'floor or other terrain'
+
+
+def analyze_route(number, board, route):
+    replay = subprocess.run([str(SOLVER), 'explain', '--level', str(number), board, route],
+                            cwd=ROOT, capture_output=True, text=True, timeout=10)
+    if replay.returncode:
+        raise ValueError('The source winning route could not be replayed; your level was kept')
+    analysis = json.loads(replay.stdout)
+    for event in analysis['events']:
+        event['piece_name'] = PIECES.get(event['piece'], f"piece kind {event['piece']}")
+        event['target_name'] = mechanic_name(event['target']) if event['piece'] else None
+        event['used_mechanics'] = [name for bit, name in enumerate(FEATURES) if event['features'] & (1 << bit)]
+    analysis['used_mechanics'] = [name for bit, name in enumerate(FEATURES)
+                                  if analysis['used_features'] & (1 << bit)]
+    analysis['coordinates'] = 'Landscape: x 0–19 left to right, y 0–11 top to bottom; actions 0 down, 1 left, 2 up, 3 right.'
+    analysis['interpretation'] = ('Events are observed engine actions in a verified win, not proof that every action is necessary. '
+                                  'Use their order and piece_id to identify staging, reuse and dependencies; ignore empty walking.')
+    analysis['rules'] = ('Balls disappear in matching reusable pits. Paint recolors one ball once and is consumed permanently. '
+                          'Crates cannot enter paint or pits and never change color. An object holds a pressure button; '
+                          'its matching wall stays open only while a matching button is held. A lever toggles gates; '
+                          'a pressure button does not toggle them. Kind 11 grants a permanent trail: subsequent player steps on '
+                          'plain floor 0 leave trail 11, which blocks pushed objects but allows the player. Colored/material floors '
+                          'do not grow trail, so replacing plain floor changes this mechanic. Remove every ball, collect apples '
+                          'and fill crate goals, then enter home.')
+    return analysis
+
+
+def puzzle_shape(board, flip=0):
+    """Mechanics and geometry, ignoring scenery, material palettes and ball colors."""
+    values = [int(board[i:i + 2], 16) for i in range(0, 1440, 2)]
+    shape = []
+    for y in range(1, 19):
+        for x in range(1, 11):
+            at = (19 - y if flip & 2 else y) * 12 + (11 - x if flip & 1 else x)
+            kind, tile, decor = (values[layer * 240 + at] for layer in range(3))
+            if decor in BLOCKING_DECORATIONS or tile in WALLS:
+                kind = 12
+            elif kind == 0 or kind == tile:
+                kind = tile
+            if kind in COSMETIC or kind in (59, 60, 61): kind = 0
+            elif kind in WALLS: kind = 12
+            elif kind in MOSS_WALLS: kind = 14
+            elif kind in (1, 2, 3, 44, 45, 46): kind = 1
+            elif kind in (4, 5, 6, 47, 48, 49): kind = 4
+            elif kind in (15, 16, 17, 50, 51, 52): kind = 15
+            elif kind in range(131, 135): kind = 13
+            elif kind in range(73, 76) or kind in range(85, 88): kind = 8
+            elif kind in (92, 107, 110, 113): kind = 92
+            elif kind in range(123, 127): kind = 123
+            elif kind in (93, 108, 111, 114): kind = 93
+            elif kind in (94, 109, 112, 115): kind = 94
+            elif kind in (104, 116, 118, 120): kind = 104
+            elif kind in (105, 117, 119, 121): kind = 105
+            elif kind in range(66, 70):
+                direction = kind - 66
+                if flip & 1 and direction in (0, 2): direction = 2 - direction
+                if flip & 2 and direction in (1, 3): direction = 4 - direction
+                kind = 66 + direction
+            shape.append(kind)
+    return shape
+
+
+def redesign_difference(candidate, reference):
+    shape = puzzle_shape(candidate)
+    return min(sum(a != b for a, b in zip(shape, puzzle_shape(reference, flip))) for flip in range(4))
+
+
+def redesign_context(number, original, target):
+    route = target.get('solution') if target else ''
+    route = route or existing_route(number, original)
+    if not route:
+        route = prove_proposal(number, original, prefixes=learned_routes(number, original))
+        target = difficulty(number, original, route)
+    if not target:
+        raise ValueError('Check the source puzzle before redesigning it')
+    route = target.get('solution', route)
+    source = analyze_route(number, original, route)
+    previous, previous_board = None, None
+    levels = json.loads((ROOT / 'levels/classic.json').read_text())['levels']
+    level = next((item for item in levels if item['number'] == number - 1), None)
+    if level:
+        previous_board = board_hex(level)
+        previous_route = existing_route(number - 1, previous_board)
+        if previous_route:
+            observed = analyze_route(number - 1, previous_board, previous_route)
+            previous = dict(level=number - 1,
+                metrics={key: observed[key] for key in ('moves', 'pushes', 'goals', 'mechanics')},
+                used_mechanics=observed['used_mechanics'],
+                milestones=[event for event in observed['events'] if event['features'] or not event['piece']][:20],
+                materials=dict(Counter(str(int(previous_board[i:i + 2], 16)) for i in range(480, 960, 2))),
+                meaning='Context for pacing and visual contrast, not a template to copy or a separate difficulty target.')
+        else:
+            previous = dict(level=number - 1, verified=False,
+                            meaning='No verified winning route is available; do not infer its strategy.')
+    return dict(source=source, previous_level=previous, previous_board=previous_board, target=target)
+
+
+def glm_json(instruction, context, max_tokens, feedback='', timeout=120):
+    base, key, model = glm_settings()
+    messages = [dict(role='system', content=instruction), dict(role='user', content=json.dumps(context))]
+    if feedback:
+        messages.append(dict(role='user', content='The previous proposal failed validation. Correct it relative to the supplied grids: ' + feedback))
+    payload = dict(model=model, temperature=0.5, max_tokens=max_tokens,
+                   thinking={'type': 'disabled'}, response_format={'type': 'json_object'}, messages=messages)
+    # GLM-5.3 always reasons. Asking to disable it leaves Coding Plan calls
+    # reasoning at their default depth, often exhausting a JSON-sized budget.
+    # https://docs.z.ai/guides/capabilities/thinking
+    if 'glm-5.3' in model.lower():
+        payload.update(thinking={'type': 'enabled'}, reasoning_effort='low', max_tokens=max_tokens + 2048)
+    req = urllib.request.Request(base + '/chat/completions', data=json.dumps(payload).encode(),
+                                 headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        result = json.load(response)
+    choice = result['choices'][0]
+    atomic(DRAFTS / 'glm-provider-last.json', json.dumps(dict(model=model,
+        finish_reason=choice.get('finish_reason'), usage=result.get('usage', {}))) + '\n')
+    content = (choice['message'].get('content') or '').strip()
+    if choice.get('finish_reason') == 'length':
+        raise ValueError('GLM exhausted its response budget; return a smaller step with concise edits')
+    if not content:
+        raise ValueError('GLM returned no JSON; your level was kept')
+    return json.loads(re.sub(r'^```(?:json)?\s*|\s*```$', '', content)), model
+
+
+def plan_redesign(number, context):
+    plan, _ = glm_json(
+        'Analyze the engine-verified winning route BEFORE designing a new Shovey puzzle. '
+        'Return only JSON with win_route_analysis (short text), complexity_changes (list of concrete push dependencies), '
+        'theme (short visual art direction) and previous_level_difference (short text). Do not output grids yet. '
+        'Explain the actual order of pushes, paint consumption, crate staging and button/gate reuse in the replay. '
+        'Do not claim that an observed action is necessary without evidence. Plan a more complex compact puzzle, '
+        'preserving at least the source objective, push and used-mechanic counts. Add interacting decisions, not walking or push loops. '
+        'Use the previous level only for progression and contrast; choose a different structure and coherent material/scenery palette. '
+        'This redesign is for the supplied level number, not the next one. Follow the supplied engine rules and labeled events: '
+        'piece_id tracks the same object even after a BALL changes color; crates never change color and paint never renews. '
+        'Use existing art only: stone, slate, brick, sandstone or timber walls and matching floors, grass, sand, '
+        'flowers, grass tufts, mushrooms, fallen leaves or bluebells. Decoration must frame the puzzle and keep routes legible. '
+        'No autonomous animals or invented art assets.',
+        dict(level=number, source_route_analysis=context['source'], previous_level=context['previous_level']), 1400, timeout=60)
+    if (not isinstance(plan, dict) or any(not isinstance(plan.get(key), str) or not plan[key].strip()
+            for key in ('win_route_analysis', 'theme', 'previous_level_difference')) or
+            not isinstance(plan.get('complexity_changes'), list) or not plan['complexity_changes'] or
+            any(not isinstance(change, str) or not change.strip() for change in plan['complexity_changes'])):
+        raise ValueError('GLM did not return a complete redesign plan; your level was kept')
+    atomic(DRAFTS / f'{number:03}.glm-plan.json', json.dumps(plan, indent=2) + '\n')
+    return plan
+
+
+def check_redesign(original, candidate, context, measured):
+    reason = too_easy(context['target'], measured)
+    if reason:
+        raise ValueError(reason)
+    source = context['target']
+    if not (measured['goals'] > source['goals'] or measured['mechanics'] > source['mechanics'] or
+            measured['pushes'] >= source['pushes'] + max(2, (source['pushes'] + 9) // 10)):
+        raise ValueError('Too easy: redesign needs a new objective, an actually used mechanic, or at least 10% more verified pushes')
+    for label, reference in (('source', original), ('previous level', context['previous_board'])):
+        if reference and redesign_difference(candidate, reference) < 12:
+            raise ValueError(f'Redesign repeats the {label}; change the puzzle geometry and piece arrangement, not just colors or scenery')
+    values = [int(candidate[i:i + 2], 16) for i in range(0, 1440, 2)]
+    floors = {0, 60, 61, 77, 78, *range(99, 104)}
+    if sum(values[at] == 0 and values[240 + at] in floors and values[480 + at] in {57, 58, 59, 135, 136, 137}
+           for at in range(240)) < 3:
+        raise ValueError('Redesign needs coherent non-blocking scenery on at least three clear floor cells')
+
+
+def landscape_grids(board):
+    values = [int(board[i:i + 2], 16) for i in range(0, 1440, 2)]
+    return {name: [[values[layer * 240 + 11 - y + x * 12] for x in range(20)] for y in range(12)]
+            for layer, name in enumerate(LAYERS)}
+
+
+def guided_redesign(number, original, design, instruction, context, feedback=''):
+    """Teach one bounded change at a time, retaining only engine-proven steps."""
+    if 'work' not in design:
+        # Legacy boards repeat floor kinds in cells. Give GLM clean layers;
+        # this changes no behavior and is checked with the same winning route.
+        values = [int(original[i:i + 2], 16) for i in range(0, 1440, 2)]
+        for at in range(240):
+            if values[at] == values[240 + at]: values[at] = 0
+        clean = ''.join(f'{kind:02x}' for kind in values)
+        route = design['target'].get('solution', '') or existing_route(number, original)
+        if not verify_route(number, clean, route):
+            raise ValueError('The source layers could not be normalized; your level was kept')
+        design['work'] = dict(board=clean, route=route, steps=[], deadline=time.monotonic() + 360)
+    work = design['work']
+    stages = (
+        ('strategy', 'Add a concrete push dependency from the redesign plan: staging a piece to unlock another task, '
+                     'a scarce paint decision, or a crate objective behind a controlled passage. Preserve existing challenges. '
+                     'Make the whole puzzle more complex; a loose apple or an unrelated push in open space is not a dependency.'),
+        ('structure', 'Shape compact connected rooms and working lanes around the verified push sequence. '
+                      'Use purposeful walls to remove unused open walking space and make the new dependency matter. '
+                      'Create a recognizably different layout from the source and preceding level; colors alone do not count.'),
+        ('decoration', 'Dress the verified puzzle in the planned visual theme. Keep every object and terrain mechanic fixed. '
+                       'Only change ordinary wall/floor appearances and non-blocking decoration. Use at least three clear floor cells '
+                       'for flowers, grass tufts, mushrooms, leaves or bluebells. Frame the rooms and leave objectives legible.'),
+    )
+    # A complete valid response may finish early; otherwise small steps teach
+    # GLM with actual engine feedback and avoid giant unverified grid replies.
+    start = len(work['steps'])
+    pending = stages[start:] if start < len(stages) else (
+        ('refine', 'Correct the rejected final check by strengthening the strategy or geometry. Keep the coherent scenery. '
+                   'Do not inflate the route with walking or reversible push loops.'),)
+    for stage, lesson in pending:
+        remaining = work['deadline'] - time.monotonic()
+        if remaining < 25:
+            raise ValueError('Redesign took too long; your level was kept')
+        atomic(DRAFTS / f'{number:03}.glm-status', dict(strategy='Building push sequence…',
+            structure='Shaping rooms…', decoration='Adding scenery…', refine='Refining puzzle…')[stage])
+        step_context = dict(context, **landscape_grids(work['board']), step=stage,
+            existing_solution=work['route'], current_route_analysis=analyze_route(number, work['board'], work['route']),
+            completed_steps=work['steps'], remaining_quality_issue=work.get('quality_feedback'))
+        proposal, model = glm_json(instruction +
+            '\nWork step by step on the CURRENT supplied grids. This step: ' + lesson +
+            '\nFor this step OVERRIDE the full-grid output instruction: return only compact JSON '
+            '{"edits":[{"layer":"cells|tiles|decorations","x":0,"y":0,"from":0,"to":0}],'
+            '"solution":"...","explanation":"..."}. Use at most 32 explicit layer edits, not full grids. '
+            'Each from must match the CURRENT grids. Keep the complete existing winning strategy where possible. '
+            'If it needs to change, give the adjusted complete route; the engine will check and search it. '
+            'Do not guess at rules. The next step receives the verified result and feedback.',
+            step_context, 2200, feedback, timeout=min(60, max(10, int(remaining - 20))))
+        if isinstance(proposal, dict) and 'edits' not in proposal:
+            # Full-board responses from older providers still pass through
+            # every normal final check, relative to the original board.
+            return proposal, model
+        try:
+            candidate = apply_proposal(work['board'], proposal, mode='redesign', partial=True)
+            if stage == 'decoration':
+                before = [int(work['board'][i:i + 2], 16) for i in range(0, 1440, 2)]
+                after = [int(candidate[i:i + 2], 16) for i in range(0, 1440, 2)]
+                for at, (old, new) in enumerate(zip(before, after)):
+                    if old == new: continue
+                    if at in range(240, 480) and 11 in before[:480] and (old == 0) != (new == 0):
+                        raise ValueError('Keep plain floor unchanged around a trail puzzle; material floors alter its pushing rules')
+                    if at < 240 or (at < 480 and not any(old in group and new in group
+                            for group in ({0, 60, 61, 77, 78, *range(99, 104)}, {12, 95, 96, 97, 98}))) or (
+                            at >= 480 and not (old in {0, 57, 58, 59, 135, 136, 137} and new in {0, 57, 58, 59, 135, 136, 137})):
+                        raise ValueError('The decoration step changed puzzle mechanics; keep all objects and mechanics fixed')
+            route = prove_proposal(number, candidate, proposal.get('solution', ''), work['route'], seconds=15,
+                                   prefixes=[work['route']])
+        except ValueError as error:
+            error.proposal = proposal
+            raise
+        work.update(board=candidate, route=route)
+        work['steps'].append(dict(stage=stage, explanation=str(proposal.get('explanation', ''))[:1000]))
+        atomic(DRAFTS / f'{number:03}.glm-teaching.json', json.dumps(dict(
+            source=original, board=candidate, solution=route, steps=work['steps']), indent=2) + '\n')
+        # Measure the best win found, so a padded model route earns nothing.
+        measured = difficulty(number, candidate, route)
+        try:
+            check_redesign(original, candidate, design, measured)
+        except ValueError as error:
+            work['quality_feedback'] = str(error)
+            continue
+        return dict(landscape_grids(candidate), solution=route,
+                    explanation=' '.join(step['explanation'] for step in work['steps'])), model
+    # Return the whole assembled proposal to the normal final validation. A
+    # rejected final check is fed back into a refinement step on the next try.
+    return dict(landscape_grids(work['board']), solution=work['route'],
+                explanation=' '.join(step['explanation'] for step in work['steps'])), model
+
+
 def too_easy(target, measured):
     """Why a proposal is easier than its source level, or an empty string."""
+    for name in ('goals', 'pushes', 'mechanics'):
+        if measured.get(name, 0) < target.get(name, 0):
+            return (f"Too easy: the checked win needs {measured.get(name, 0)} {name}; the source needs "
+                    f"{target[name]}. Keep at least as many required objectives and purposeful pushes. "
+                    'A long walking route or repeated moves does not make the push puzzle harder.')
+    if 'pushes' in target and 'goals' in target:
+        # Search speed depends on the heuristic and machine. Finding a hard
+        # puzzle quickly is useful, and does not make its strategy trivial.
+        return ''
     if measured['tier'] > target['tier'] or (measured['tier'] == target['tier'] and
                                              (target['tier'] == 2 or measured['moves'] >= 0.7 * target['moves'])):
         return ''
@@ -441,7 +737,7 @@ def proven_variations(number, original, route, limit=8):
     return combined[:limit]
 
 
-def modify_once(number, feedback='', choices=None, repair=False, mode='modify', target=None):
+def modify_once(number, feedback='', choices=None, repair=False, mode='modify', target=None, design=None):
     status = DRAFTS / f'{number:03}.glm-status'
     atomic(status, 'Repairing…' if repair else 'Prettifying…' if mode == 'prettify' else 'Designing…')
     original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
@@ -450,6 +746,12 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
     cells = [int(original[i:i + 2], 16) for i in range(0, 1440, 2)]
     rows = [[cells[(11 - y) + x * 12 + layer * 240] for x in range(20)] for layer in range(3) for y in range(12)]
     source_route = existing_route(number, original)
+    if not repair and mode == 'redesign' and design is None:
+        atomic(status, 'Analyzing winning route…')
+        design = redesign_context(number, original, target)
+        target = design['target']
+        atomic(status, 'Planning redesign…')
+        design['plan'] = plan_redesign(number, design)
     choices = choices or []
     task = (
         'You repair Shovey push puzzles. Make the supplied EXISTING board winnable with the smallest necessary edits. '
@@ -475,6 +777,10 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
             'Design a completely NEW Shovey level in this board, with a new layout, piece arrangement and winning strategy. '
             'The supplied board is context, not a layout to preserve. You may change inventory and move the player and home. '
             'Use compact connected rooms, purposeful pushes and at least one real puzzle objective. '
+            'Follow the supplied redesign_plan, derived from source_route_analysis, and make the strategy more complex. '
+            'Use previous_level_context for pacing and contrast, not as a layout to copy. '
+            'Create a unique visual identity with a coherent floor/wall palette and at least three non-blocking scenery cells. '
+            'Keep the working spaces legible; decorate room edges and alcoves without covering puzzle pieces. '
             'Think through a complete winning route. Keep exactly one player and one home and the existing outer border. '
             'Do not add autonomous animals. Do not merely recolor or slightly nudge the old puzzle. '
         )
@@ -523,7 +829,9 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
         'Do not add animals or autonomous objects. Preserve the outer border exactly. No scripts, tools, commands, prose outside the JSON.')
     if target:
         instruction += ('difficulty_target is how hard the engine\'s solver finds the source level. Your level must be at least as '
-                        'hard: the same or a harder tier and at least 70% of its moves. Never make it easier; easier proposals are rejected. ')
+                        'hard: keep at least its objective count, verified push count and number of actually used mechanics. '
+                        'Search tier is diagnostic, not a difficulty requirement; faster search must not reject a strategically harder puzzle. '
+                        'Long empty walks do not replace purposeful pushes or interacting objectives. Never make it easier; easier proposals are rejected. ')
     if mode == 'redesign':
         instruction += ('Instead of edits, return full cells, tiles and decorations grids, each 12 rows of 20 integer IDs in landscape order, '
                         'plus solution and explanation. Preserve the outer border from the input exactly.')
@@ -533,24 +841,19 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
             'Choose the one that most improves the push sequence, dependencies or use of space, inspired by the existing puzzle. '
             'Return only {"choice":zero-based integer,"explanation":"the concrete gameplay improvement"}. '
             'Do not reproduce grids, edits or the solution. The engine will apply and recheck the selected variation.')
-    base, key, model = glm_settings()
-    messages = [dict(role='system', content=instruction), dict(role='user', content=json.dumps(dict(
+    context = dict(
         level=number, cells=rows[:12], tiles=rows[12:24], decorations=rows[24:],
         existing_solution=source_route or None,
-        difficulty_target=dict(tier=target['tier'], meaning=DIFFICULTY[target['tier']], moves=target['moves']) if target else None,
-        verified_variations=[dict(choice=index, edits=choice['edits']) for index, choice in enumerate(choices)])))]
-    if feedback:
-        messages.append(dict(role='user', content='The previous proposal failed validation. Correct it relative to the ORIGINAL grids: ' + feedback))
-    payload = dict(model=model, temperature=0.5, max_tokens=800 if choices else 12000 if mode == 'redesign' else 6000 if mode == 'prettify' else 3500,
-                   thinking={'type': 'disabled'}, response_format={'type': 'json_object'},
-                   messages=messages)
-    req = urllib.request.Request(base + '/chat/completions', data=json.dumps(payload).encode(),
-                                 headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=120) as response:
-        result = json.load(response)
-    content = result['choices'][0]['message']['content'].strip()
-    content = re.sub(r'^```(?:json)?\s*|\s*```$', '', content)
-    proposal = json.loads(content)
+        difficulty_target=dict(target, meaning=DIFFICULTY[target['tier']]) if target else None,
+        verified_variations=[dict(choice=index, edits=choice['edits']) for index, choice in enumerate(choices)])
+    if design:
+        context.update(source_route_analysis=design['source'], previous_level_context=design['previous_level'],
+                       redesign_plan=design['plan'])
+    if design:
+        proposal, model = guided_redesign(number, original, design, instruction, context, feedback)
+    else:
+        proposal, model = glm_json(instruction, context,
+            800 if choices else 6000 if mode == 'prettify' else 3500, feedback)
     if choices and isinstance(proposal, dict) and 'choice' in proposal:
         choice = proposal['choice']
         if type(choice) is not int or not 0 <= choice < len(choices):
@@ -575,6 +878,8 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
                 reason = too_easy(target, measured) if measured else 'The engine could not measure this proposal'
                 if reason:
                     raise ValueError(reason)
+                if design:
+                    check_redesign(original, candidate, design, measured)
     except (ValueError, subprocess.TimeoutExpired) as error:
         rejected = ValueError(str(error) if isinstance(error, ValueError) else 'The route check ran out of time; simplify the variation')
         rejected.proposal = proposal
@@ -587,6 +892,12 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
     atomic(DRAFTS / f'{number:03}.glm-result', candidate)
     atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(
         model=model, mode='repair' if repair else mode, changed_coordinates=len(changed), solution_length=len(route),
+        **(dict(plan=design['plan'], source_route_analysis=design['source'],
+                previous_level_context=design['previous_level'], measured=measured,
+                teaching_steps=design.get('work', {}).get('steps', []),
+                difference_from_source=redesign_difference(candidate, original),
+                difference_from_previous=redesign_difference(candidate, design['previous_board']) if design['previous_board'] else None)
+           if design else {}),
         explanation=str(proposal.get('explanation', ''))[:1000]), indent=2) + '\n')
     atomic(status, 'Repair ready' if repair else 'Variation ready')
     atomic(DRAFTS / f'{number:03}.glm-state', 'ready')
@@ -597,11 +908,18 @@ def modify(number, repair=False, mode='modify'):
     glm_settings()  # Configuration errors cannot be corrected by another proposal.
     feedback = ''
     target = None
+    design = None
     if not repair and mode in ('modify', 'redesign'):
         source = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
         if re.fullmatch('[0-9a-f]{1440}', source):
             atomic(DRAFTS / f'{number:03}.glm-status', 'Measuring difficulty…')
             target = difficulty(number, source, existing_route(number, source))
+            if mode == 'redesign':
+                atomic(DRAFTS / f'{number:03}.glm-status', 'Analyzing winning route…')
+                design = redesign_context(number, source, target)
+                target = design['target']
+                atomic(DRAFTS / f'{number:03}.glm-status', 'Planning redesign…')
+                design['plan'] = plan_redesign(number, design)
     started = time.monotonic()
     for attempt in range(3):
         try:
@@ -610,7 +928,7 @@ def modify(number, repair=False, mode='modify'):
                 original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
                 atomic(DRAFTS / f'{number:03}.glm-status', 'Finding proven alternatives…')
                 choices = proven_variations(number, original, existing_route(number, original))
-            modify_once(number, feedback, choices, repair=repair, mode=mode, target=target)
+            modify_once(number, feedback, choices, repair=repair, mode=mode, target=target, design=design)
             return
         except ValueError as error:
             feedback = json.dumps(dict(reason=str(error), rejected_proposal=getattr(error, 'proposal', None)))

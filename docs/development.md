@@ -113,6 +113,21 @@ Prettify can also dress an unfinished draft without a new solution search;
 both the worker and editor enforce equivalent terrain and non-blocking scenery,
 and a known winning route is replayed. Scenery alone never counts as a win or approval.
 Undo restores the previous board, and failed proposals leave it intact.
+Redesigns are compared against verified wins for objectives, pushes and used
+mechanics. Redesign first replays a winning route to identify each piece's
+pushes, paint consumption, button presses, gate passages and objective order.
+GLM uses that replay to plan more involved dependencies and a coherent visual
+theme before it generates the new board. It proposes small changes for the
+push sequence, room structure and scenery in separate steps; each step must
+win before it becomes the next step's input. Engine feedback guides retries.
+The previous level provides brief
+context for pacing and visual contrast. The engine rejects easier proposals,
+near copies of either level (including mirrored layouts and cosmetic color
+changes), and boards without non-blocking scenery. An accepted redesign keeps
+the source's objective, push and used-mechanic counts and adds an objective,
+an actually used mechanic, or at least 10% more checked pushes (at least two).
+These are checks on verified routes, not a proof of minimum solution length.
+Empty walking and slow search do not count as puzzle difficulty.
 **Approve** publishes in the background. It is disabled when that approval is
 already published, and becomes available again if its update fails. A later
 unproven draft does not prevent approving the last saved winning layout.

@@ -816,16 +816,24 @@ static int Solve(const char *hex, const Options *options) {
     return solved ? 0 : 1;
 }
 
-static int Verify(const char *hex, const char *route, int level) {
+static int Verify(const char *hex, const char *route, int level, bool analyze, bool explain) {
     if (!Load(hex, level)) return 2;
+    int goals = API(Remaining)(), moves = 0, pushes = 0, crate_pushes = 0, ball_pushes = 0, features = 0;
+#if defined(SHOVEY_CLASSIC)
+    /* Keep a bounded replay, in the same landscape coordinates as GLM's grids.
+       Nothing is emitted until the complete route has actually won. */
+    struct Event { int step, action, from, to, piece, target, destination, remaining, used, identity; } events[160];
+    int event_count = 0, event_total = 0, identity[CELLS];
+    for (int at = 0; at < CELLS; at++) identity[at] = at;
+#else
+    (void)explain;
+#endif
     for (size_t step = 0; route[step]; step++) {
         if (!strchr(LETTERS, route[step])) {
             fprintf(stderr, "step %zu: '%c' is not a %s action\n", step + 1, route[step], EDITION);
             return 1;
         }
     }
-    uint8_t *debug_vector = Resize(NULL, (size_t)state_size);
-    int debug_remaining = API(Remaining)();
     for (size_t step = 0; route[step]; step++) {
         const char *letter = strchr(LETTERS, route[step]);
         if (!letter) {
@@ -835,28 +843,62 @@ static int Verify(const char *hex, const char *route, int level) {
         if (API(Won)()) {
             break; /* Gameplay and the editor ignore input after a win. */
         }
-        API(Act)((int32_t)(letter - LETTERS));
+        int action = (int)(letter - LETTERS), kind = 0, used = 0;
+#if defined(SHOVEY_CLASSIC)
+        kind = ClassicApiPushKind(action);
+        used = ClassicApiActionFeatures(action);
+        int from = classic_game.player, remaining = API(Remaining)();
+        int piece_at = action < 4 ? engine_ShoveyNeighbor(from, action) : -1;
+        int destination = kind && piece_at >= 0 ? engine_ShoveyNeighbor(piece_at, action) : -1;
+        int target = destination >= 0 ? classic_game.ground[destination] : 0;
+        int object_id = kind && piece_at >= 0 ? identity[piece_at] : -1;
+#endif
+        if (API(Act)(action)) {
+            moves++;
+            features |= used;
+            if (kind) pushes++;
+            if (kind == 9) crate_pushes++;
+            if ((kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46)) ball_pushes++;
+#if defined(SHOVEY_CLASSIC)
+            if (kind && destination >= 0) { identity[destination] = object_id; identity[piece_at] = -1; }
+            if (explain && (kind || used || API(Remaining)() != remaining || API(Won)())) {
+                event_total++;
+                if (event_count < 160) events[event_count++] = (struct Event){
+                    (int)step + 1, action, from, classic_game.player, kind, target,
+                    destination, API(Remaining)(), used, object_id};
+            }
+#endif
+        }
         if (API(Lost)()) {
             fprintf(stderr, "step %zu: Shovey lost\n", step + 1);
             return 1;
-        }
-        if (API(Remaining)() != debug_remaining) {
-            debug_remaining = API(Remaining)();
-            if (!API(Encode)(debug_vector)) return 3;
-            fprintf(stderr, "goal step %zu remaining %d objects", step + 1, debug_remaining);
-            for (int at = 0; at < CELLS; at++) {
-                int object = debug_vector[CELLS + at];
-                if (object == 9 || (object >= 1 && object <= 3)) fprintf(stderr, " %d:%d", at, object);
-            }
-            fprintf(stderr, " plates");
-            for (int y = 2; y <= 10; y++) fprintf(stderr, " %d", debug_vector[CELLS + y * 20 + 18] == 9);
-            fprintf(stderr, "\n");
         }
     }
     if (!API(Won)()) {
         fprintf(stderr, "route ends without winning (%d remaining)\n", API(Remaining)());
         return 1;
     }
+    int mechanics = 0;
+    for (int bits = features; bits; bits >>= 1) mechanics += bits & 1;
+    if (analyze) printf("{\"moves\":%d,\"pushes\":%d,\"goals\":%d,\"mechanics\":%d,\"crate_pushes\":%d,\"ball_pushes\":%d",
+        moves, pushes, goals, mechanics, crate_pushes, ball_pushes);
+#if defined(SHOVEY_CLASSIC)
+    if (analyze && explain) {
+        printf(",\"used_features\":%d,\"event_count\":%d,\"events_truncated\":%s,\"events\":[", features,
+               event_total, event_total > event_count ? "true" : "false");
+        for (int at = 0; at < event_count; at++) {
+            struct Event e = events[at];
+            printf("%s{\"step\":%d,\"action\":\"%c\",\"from\":[%d,%d],\"to\":[%d,%d],"
+                   "\"piece\":%d,\"piece_id\":%d,\"target\":%d,\"destination\":[%d,%d],\"remaining\":%d,\"features\":%d}",
+                   at ? "," : "", e.step, LETTERS[e.action], e.from / 12, 11 - e.from % 12,
+                   e.to / 12, 11 - e.to % 12, e.piece, e.identity, e.target,
+                   e.destination < 0 ? -1 : e.destination / 12, e.destination < 0 ? -1 : 11 - e.destination % 12,
+                   e.remaining, e.used);
+        }
+        printf("]");
+    }
+#endif
+    if (analyze) puts("}");
     return 0;
 }
 
@@ -864,7 +906,7 @@ static void Usage(void) {
     fprintf(stderr,
         "usage: shovey-solve-%s solve [--level N] [--seconds S] [--max-states N] [--max-mb N] [--prefix ROUTE]\n"
         "           [--bfs-share F] [--greedy-share F] [--weight W] [--only bfs|greedy|macro-bfs|chain] BOARDHEX\n"
-        "       shovey-solve-%s verify [--level N] BOARDHEX ROUTE\n"
+        "       shovey-solve-%s verify|analyze|explain [--level N] BOARDHEX ROUTE\n"
         "Route letters: %s\n", EDITION, EDITION, LETTERS);
 }
 
@@ -897,7 +939,8 @@ int main(int argc, char **argv) {
         positional[count++] = arg;
     }
     if (strcmp(mode, "solve") == 0 && count == 1) return Solve(positional[0], &options);
-    if (strcmp(mode, "verify") == 0 && count == 2) return Verify(positional[0], positional[1], options.level);
+    if ((strcmp(mode, "verify") == 0 || strcmp(mode, "analyze") == 0 || strcmp(mode, "explain") == 0) && count == 2)
+        return Verify(positional[0], positional[1], options.level, strcmp(mode, "verify") != 0, strcmp(mode, "explain") == 0);
     Usage();
     return 2;
 }
