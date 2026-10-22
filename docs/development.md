@@ -68,6 +68,12 @@ Undo restores the whole stroke. The active tab and brush are highlighted, and
 the palette scrolls with large icons. Existing boards and drafts remain readable.
 Drafts save immediately, played wins remain proven after reopening, and saved
 levels load from the current level file.
+Reset restores the level's original reference board when available, including
+every layer; Undo restores the edit you had before resetting.
+The level overview checks the live signed server release in the background.
+Purple means the current board matches it; pink means a local change needs an
+update, and gray means the server could not be verified. Similarity stays green
+below 50% and shifts smoothly toward red above 90%, including waiting levels.
 
 **GLM Modify** designs a variation of the open board, using its existing winning
 route as a reference. It can change the push sequence and find a new route;

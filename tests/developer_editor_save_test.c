@@ -67,6 +67,20 @@ int main(int argc, char **argv) {
         return 0;
     }
     assert(level_count == 2 && mapping_ok);
+    /* Every low score is green; high scores stay red even for waiting places.
+       Adjacent scores shift gently across the 50/70/90 boundaries. */
+    Color last = editor_SimilarityColor(0);
+    for (int score = 0; score <= 100; score++) {
+        Color color = editor_SimilarityColor(score);
+        if (score < 50) assert(color.g > color.r && color.g > color.b);
+        if (score >= 90) assert(color.r > 2 * color.g && color.r > 2 * color.b);
+        assert(abs((int)color.r - last.r) <= 8);
+        assert(abs((int)color.g - last.g) <= 8);
+        assert(abs((int)color.b - last.b) <= 8);
+        last = color;
+    }
+    Color waiting = editor_LevelCardColor(73, 99);
+    assert(waiting.r > 2 * waiting.g && waiting.r > 2 * waiting.b);
     /* Canonical approvals color published levels even without local markers.
        Opening the map refreshes approvals made after this process started. */
     assert(!editor_Approved(23));
@@ -121,6 +135,24 @@ int main(int argc, char **argv) {
     editor_UndoEdit();
     assert(editor_KindAt(editor_Board(1), SHOVEY_CELLS * 2 + 13) == 57);
     editor_ResetEdit();
+    /* When a reference exists, Reset copies every original layer, rather
+       than the draft that happened to be open. Undo restores that draft. */
+    uint8_t before_reset[HEX], reset_reference[HEX];
+    memcpy(before_reset, editor_Board(1).data, HEX);
+    memcpy(editor_Original(1).data, before_reset, HEX);
+    original_found[1] = true;
+    editor_SetKind(editor_Original(1), 15, 9);
+    editor_SetKind(editor_Original(1), SHOVEY_CELLS + 15, 99);
+    editor_SetKind(editor_Original(1), SHOVEY_CELLS * 2 + 15, 57);
+    memcpy(reset_reference, editor_Original(1).data, HEX);
+    editor_ResetEdit();
+    assert(memcmp(editor_Board(1).data, reset_reference, HEX) == 0);
+    editor_UndoEdit();
+    assert(memcmp(editor_Board(1).data, before_reset, HEX) == 0);
+    editor_RedoEdit();
+    assert(memcmp(editor_Board(1).data, reset_reference, HEX) == 0);
+    editor_UndoEdit();
+    original_found[1] = false;
     editor_StartCheck();
     assert(editor_Solved() && check_state != 1);
     /* Cosmetic edits reuse the existing route and save all three layers. */

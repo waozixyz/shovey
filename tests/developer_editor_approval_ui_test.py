@@ -11,7 +11,7 @@ assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
 output = ROOT / 'build/developer-editor-approval-test'
 profile = output / 'profile'
 drafts = profile / 'backup/editor-drafts'
-for folder in (drafts, profile / 'levels', profile / 'scripts', profile / 'backup/redesign'):
+for folder in (drafts, profile / 'levels', profile / 'scripts', profile / 'backup/redesign', profile / 'backup/original'):
     folder.mkdir(parents=True, exist_ok=True)
 for path in drafts.iterdir():
     path.unlink()
@@ -24,6 +24,8 @@ tiles = [kind if kind == 12 else 77 if kind == 7 else 0 for kind in pieces]
 def rows(layer):
     return [''.join(f'{kind:02x}' for kind in layer[at:at + 12]) for at in range(0, 240, 12)]
 level = dict(number=1, cells=rows(pieces), solution='2')
+(profile / 'backup/editor-publish.json').unlink(missing_ok=True)
+(profile / 'backup/original/classic-levels.zi').write_text('number == 73 { return "' + ''.join(rows(pieces)) + '" }')
 (profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
 (profile / 'levels/classic.json').write_text(json.dumps(dict(
     edition='classic', width=12, height=20, levels=[level, dict(level, number=2)]), indent=1) + '\n')
@@ -71,7 +73,7 @@ with (output / 'app.log').open('w') as log:
                 cell_height = (height - 96 - 28 - 4 * 11) / 12
                 return [image.getpixel((int(14 + (n - 1) % 15 * (cell_width + 4)),
                                         int(122 + (n - 1) // 15 * (cell_height + 4))))
-                        for n in range(1, 26)]
+                        for n in range(1, 176)]
         purple = (159, 111, 209)
         colors = map_colors()
         assert all(color == purple for color in colors[:23]), colors
@@ -124,7 +126,30 @@ with (output / 'app.log').open('w') as log:
             time.sleep(0.025)
         assert (drafts / 'worker-started').read_text() == 'approve 1'
         time.sleep(2.1)  # Let our detached disposable worker finish too.
-        print('Purple approvals refresh through 24; up-to-date approval disabled, failed updates retry, background updates passed')
+        # Server-backed colors compare the open draft, not just its approval.
+        (profile / 'backup/editor-publish.json').write_text('{}')
+        base_board = ''.join(rows(pieces) + rows(tiles)) + '00' * 240
+        server = dict(status='verified', boards=[requested] + [base_board] * 23)
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        click(100, 28)
+        time.sleep(2.3)
+        colors = map_colors()
+        assert colors[0] == purple, colors[0]
+        assert colors[72][0] > 2 * colors[72][1] and colors[72][0] > 2 * colors[72][2], colors[72]
+        assert colors[73][1] > colors[73][0] and colors[73][1] > colors[73][2], colors[73]
+        server['boards'][0] = base_board
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
+        assert map_colors()[0] == (218, 132, 167), 'Changed local board must be pink'
+        server['status'] = 'unavailable'
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
+        assert map_colors()[0] == (144, 148, 148), 'An unavailable server cannot claim a match'
+        server.update(status='verified', boards=[requested] + [base_board] * 23)
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
+        assert map_colors()[0] == purple
+        print('Approval retries and saves passed; server matches purple, changed drafts pink, unverified gray; waiting 100% red and unknown/low similarity green')
     finally:
         if windows:
             subprocess.run(['import', '-window', windows[0], str(output / 'last.png')], check=True)

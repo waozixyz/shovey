@@ -9,14 +9,17 @@ EDITOR_DEFINES ?=
 
 .PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-test web-itch
 
-.PHONY: editor editor-ui-test editor-save-test editor-glm-test
+.PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test
+editor-server-test:
+	python3 tests/editor_server_test.py
+
 editor-glm-test: solver
 	python3 tests/editor_glm_test.py
 
 editor-save-test: editor
 	python3 tests/developer_editor_save_test.py
 
-editor-ui-test: editor
+editor-ui-test: editor editor-server-test
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_ui_test.py
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \

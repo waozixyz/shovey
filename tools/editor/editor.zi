@@ -107,6 +107,10 @@ approved_boards: [PLACES * HEX]u8;
 approved_places: [PLACES]bool;
 published_boards: [PLACES * HEX]u8;
 published_places: [PLACES]bool;
+server_configured: bool;
+server_verified: bool;
+server_check_started: s64;
+server_polled: s64;
 saved_approval_ready: bool;
 glm_busy: bool;
 glm_place: s32;
@@ -632,9 +636,10 @@ RedoEdit :: () {
 }
 
 ResetEdit :: () {
-    if Same(Board(current), reset_board[:]) { return }
+    original := ifx original_found[current] then Original(current) else reset_board[:]
+    if Same(Board(current), original) { return }
     Remember()
-    Copy(Board(current), reset_board[:])
+    Copy(Board(current), original)
     Edited()
 }
 
@@ -645,8 +650,42 @@ Approved :: (place: s32) -> bool {
 ApprovalMatches :: (place: s32) -> bool { return Approved(place) && Same(Board(place), approved_boards[(place - 1) * HEX:place * HEX]) }
 
 PublishedApprovalMatches :: (place: s32) -> bool {
-    return Approved(place) && published_places[place - 1] &&
+    return (!server_configured || server_verified) && Approved(place) && published_places[place - 1] &&
         Same(approved_boards[(place - 1) * HEX:place * HEX], published_boards[(place - 1) * HEX:place * HEX])
+}
+
+LoadServerCampaign :: () {
+    server_configured = PathExists("backup/editor-publish.json")
+    server_verified = false
+    if !server_configured { return }
+    for place: cast(s32)1..PLACES { published_places[place - 1] = false }
+    text, found := ReadEntireFile("backup/editor-drafts/server-campaign.json")
+    if !found { return }
+    state := ReadString(text, FieldAt(text, 0, "status"))
+    if !state.valid || text[state.start:state.end] != "verified" { return }
+    positions: [PLACES]s32
+    count := ArrayPositions(text, FieldAt(text, 0, "boards"), positions[:])
+    if count < 1 || count > PLACES { return }
+    for index: cast(s32)0..count - 1 {
+        board := ReadString(text, positions[index])
+        if !board.valid || board.end - board.start != HEX { return }
+        candidate: [HEX]u8
+        if !ReadBoard(text[board.start:board.end], candidate[:]) { return }
+    }
+    for place: cast(s32)1..PLACES {
+        number := LevelNumber(place)
+        if !InGame(place) || number < 1 || number > count { continue }
+        board := ReadString(text, positions[number - 1])
+        published_places[place - 1] = ReadBoard(text[board.start:board.end], published_boards[(place - 1) * HEX:place * HEX])
+    }
+    server_verified = true
+}
+
+CheckServer :: (now: s64) {
+    if !PathExists("backup/editor-publish.json") || !PathExists("scripts/editor_server.py") { return }
+    if server_check_started != 0 && now - server_check_started < 30000 { return }
+    server_check_started = now
+    Shell("setsid python3 scripts/editor_server.py > backup/editor-server.log 2>&1 < /dev/null &")
 }
 
 ApprovalAvailable :: () -> bool {
@@ -665,6 +704,7 @@ LoadApprovals :: () {
         published, ready := ReadEntireFile(DraftPath(place, ".published"))
         published_places[place - 1] = ready && ReadBoard(published, published_boards[(place - 1) * HEX:place * HEX])
     }
+    LoadServerCampaign()
     // The campaign survives missing local markers and editor installations.
     // A newer local approval still takes precedence while it is publishing.
     text, found := ReadEntireFile("levels/approved.json")
@@ -699,7 +739,10 @@ LoadApprovals :: () {
 
 ToggleSelector :: () {
     selector_open = !selector_open
-    if selector_open { LoadApprovals() }
+    if selector_open {
+        LoadApprovals()
+        CheckServer(MonotonicMilliseconds())
+    }
 }
 
 ActionMessage :: (text: string) {
@@ -791,6 +834,11 @@ GLMProof :: (text: string, board: []u8) -> bool {
 PollActions :: (now: s64) {
     if now - actions_polled < 500 { return }
     actions_polled = now
+    CheckServer(now)
+    if now - server_polled >= 2000 {
+        server_polled = now
+        LoadApprovals()
+    }
     if glm_busy {
         result, ready := ReadEntireFile(DraftPath(glm_place, ".glm-result"))
         if ready {
@@ -823,6 +871,10 @@ PollActions :: (now: s64) {
     } else {
         status, found := ReadEntireFile("backup/editor-drafts/publish-status")
         if found && status != TextView(publish_message[:publish_message_length]) {
+            if status == "Published" {
+                server_check_started = 0
+                CheckServer(now)
+            }
             LoadApprovals()
             publish_message_length = 0
             AppendText(publish_message[:], *publish_message_length, status)
@@ -1500,18 +1552,29 @@ Inside :: (bounds: Rectangle, x: float32, y: float32) -> bool {
     return x >= bounds.x && y >= bounds.y && x < bounds.x + bounds.width && y < bounds.y + bounds.height
 }
 
-// The colour of a place by how alike it is to its original: calm green up to
-// 50%, then yellow, orange and red; 100% is full red. Waiting places are blue.
+// Green below 50%, then a continuous shift through yellow and orange to red.
 Lerp :: (a: s32, b: s32, part: s32, of: s32) -> u8 {
     return cast(u8)(a + (b - a) * part / of)
 }
 
 SimilarityColor :: (percent: s32) -> Color {
-    if percent < 50 { return Color.{96, 168, 120, 255} }
-    over := percent - 50
-    if over < 25 { return Color.{Lerp(236, 238, over, 25), Lerp(208, 150, over, 25), Lerp(72, 50, over, 25), 255} }
-    over -= 25
-    return Color.{Lerp(238, 214, over, 25), Lerp(150, 36, over, 25), Lerp(50, 36, over, 25), 255}
+    if percent <= 50 { return Color.{96, 168, 120, 255} }
+    if percent < 70 { return Color.{Lerp(96, 236, percent - 50, 20), Lerp(168, 208, percent - 50, 20), Lerp(120, 72, percent - 50, 20), 255} }
+    if percent < 90 { return Color.{Lerp(236, 226, percent - 70, 20), Lerp(208, 80, percent - 70, 20), Lerp(72, 60, percent - 70, 20), 255} }
+    value := ifx percent > 100 then 100 else percent
+    return Color.{Lerp(226, 214, value - 90, 10), Lerp(80, 36, value - 90, 10), Lerp(60, 36, value - 90, 10), 255}
+}
+
+LevelCardColor :: (place: s32, similarity: s32) -> Color {
+    if Approved(place) || published_places[place - 1] {
+        if !server_configured { return Color.{159, 111, 209, 255} }
+        if !server_verified { return Color.{144, 148, 148, 255} }
+        if published_places[place - 1] && Same(Board(place), published_boards[(place - 1) * HEX:place * HEX]) {
+            return Color.{159, 111, 209, 255}
+        }
+        return Color.{218, 132, 167, 255}
+    }
+    return SimilarityColor(similarity)
 }
 
 // Every place at once: a button for each, coloured by what it needs, with
@@ -1525,7 +1588,8 @@ SelectorScreen :: (area: Rectangle) {
     cell_width := (area.width - gap * cast(float32)(SELECTOR_COLUMNS - 1)) / cast(float32)SELECTOR_COLUMNS
     cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
     Caption(15, Rectangle.{area.x, area.y, area.width, legend_height},
-        "Purple: approved. Similarity: green under 50%, yellow under 75%, orange under 100%, red at 100%. Blue: waiting.", 14)
+        ifx server_configured && !server_verified then "Server unverified. Similarity: green below 50% → red above 90%." else
+        "Purple: synced. Pink: changed. Similarity: green below 50% → red above 90%.", 14)
     // Measuring a place sets the status line's numbers; keep them.
     keep_percent := similarity_percent
     keep_matches := similarity_matches
@@ -1544,9 +1608,7 @@ SelectorScreen :: (area: Rectangle) {
             AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, alike)
             AppendText(cell_bytes[index * 16:index * 16 + 16], *length, "%")
         }
-        fill := ifx alike >= 0 then SimilarityColor(alike) else Color.{96, 168, 120, 255}
-        if !InGame(place) { fill = Color.{104, 140, 196, 255} }
-        if Approved(place) { fill = Color.{159, 111, 209, 255} }
+        fill := LevelCardColor(place, alike)
         border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
         unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
                 .fill = fill, .border = border, .radius = 5.0})
