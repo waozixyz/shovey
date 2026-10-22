@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build, verify and publish the exact approved campaign through Arcade's node app."""
 import argparse
+import contextlib
 import fcntl
 import hashlib
 import importlib.util
@@ -51,6 +52,65 @@ def changelog(path, version, notes, brackets=False):
     atomic(path, first + '\n\n' + heading + '\n\n' + notes + '\n' + rest.lstrip('\n'))
 
 
+def release_publisher(arcade):
+    apps = Path(subprocess.check_output([str(arcade / 'scripts/ziran.sh'), 'pkg', 'path', 'apps'], cwd=arcade, text=True).strip())
+    spec = importlib.util.spec_from_file_location('node_release', apps / 'scripts/node_release.py')
+    publisher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(publisher)
+    return publisher
+
+
+def complete_release(config, receipt, output):
+    """Resume the exact checked artifact, even after an uncertain upload."""
+    arcade = Path(config['arcade']).resolve(strict=True)
+    store = ROOT / 'build/approved-releases'
+    release = json.loads((store / 'inbe.arcade/latest-v2.json').read_text())
+    artifact = release['artifacts'][0]
+    payload = store / 'inbe.arcade' / (artifact['sha256'] + '.zib')
+    if (release['version'] != receipt['versions']['arcade'] or artifact['sha256'] != receipt['sha256'] or
+            payload.stat().st_size != artifact['size'] or hashlib.sha256(payload.read_bytes()).hexdigest() != artifact['sha256']):
+        raise ValueError('The checked release artifact changed; no upload was attempted')
+    publisher = release_publisher(arcade)
+    origin = 'https://api.waozi.xyz'
+    # Use Apps' existing public downloader and its normal User-Agent. A
+    # server-side urllib request was denied even after a successful upload.
+    public = publisher.served_release(origin, 'inbe.arcade')
+    if public != release:
+        target, remote_store = config['ssh_target'], config['remote_store']
+        ssh = ['ssh', '-F', '/dev/null', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', target]
+        inspect_code = "import pathlib,sys; p=pathlib.Path(sys.argv[1])/'inbe.arcade/latest-v2.json'; print(p.read_text() if p.exists() else '{}')"
+        served = json.loads(subprocess.check_output([*ssh, shlex.join(['python3', '-c', inspect_code, remote_store])], text=True))
+        if served != release:
+            def upload(archive, unused_target, requested_store):
+                if requested_store != remote_store:
+                    raise ValueError('The package store changed')
+                original = shlex.join(['inbe-packages', remote_store])
+                command = shlex.join(['env', 'SSH_ORIGINAL_COMMAND=' + original, 'python3',
+                    '/opt/inbe-packages/package-release.py', '--receive-archive', '--store', remote_store,
+                    '--publishers', '/opt/inbe-packages/publishers.json'])
+                with archive.open('rb') as stream:
+                    subprocess.run([*ssh, command], stdin=stream, stdout=output, stderr=subprocess.STDOUT, check=True)
+            publisher.upload = upload
+            status('Publishing the checked Arcade update…')
+            publisher.publish_node_app(store, 'arcade', target, remote_store)
+    status('Verifying the exact published update…')
+    with contextlib.redirect_stdout(output):
+        publisher.verify_node_app(store, 'arcade', origin)
+    receipt.update(phase='published', release=release)
+    atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
+    if config.get('install_local') and not receipt.get('local_installed'):
+        built = arcade / 'build/arcade.zib'
+        if hashlib.sha256(built.read_bytes()).hexdigest() != artifact['sha256']:
+            raise ValueError('The local build changed after checking; the published release was preserved')
+        # All release gates already passed for these outputs. Installation
+        # must use them rather than silently rebuilding a different artifact.
+        subprocess.run(['make', '-o', 'all', 'install'], cwd=arcade, stdout=output, stderr=subprocess.STDOUT, check=True)
+        receipt['local_installed'] = True
+    receipt['phase'] = 'verified'
+    atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
+    status(f"Levels 1–{receipt['approved_levels']} are live on the server. Island is disabled.")
+
+
 def main(force=False):
     config = json.loads((ROOT / 'backup/editor-publish.json').read_text())
     arcade = Path(config['arcade']).resolve(strict=True)
@@ -72,6 +132,12 @@ def main(force=False):
                 approved_hash = fingerprint()
                 approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
                 prior = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
+                if prior.get('approved_sha256') == approved_hash and prior.get('phase') in ('uploading', 'published'):
+                    status('Resuming the checked update; keeping the exact release artifact…')
+                    complete_release(config, prior, output)
+                    if fingerprint() == approved_hash:
+                        return 0
+                    continue
                 if not force and prior.get('approved_sha256') == approved_hash and prior.get('phase') == 'verified':
                     status(f'Levels 1–{len(approved)} are live on the server. Island is disabled.')
                     return 0
@@ -117,54 +183,13 @@ def main(force=False):
                 receipt.update(phase='checked', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
                                checks=['approved routes', 'release boundary and saves', 'assets', 'Arcade UI', 'standalone Shovey UI', 'Inbe UI'])
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-                apps = Path(subprocess.check_output([str(arcade / 'scripts/ziran.sh'), 'pkg', 'path', 'apps'], cwd=arcade, text=True).strip())
-                spec = importlib.util.spec_from_file_location('node_release', apps / 'scripts/node_release.py')
-                publisher = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(publisher)
+                publisher = release_publisher(arcade)
                 store = ROOT / 'build/approved-releases'
-                release = publisher.stage_node_app(store, 'arcade', Path(config['key']), config['key_id'],
+                publisher.stage_node_app(store, 'arcade', Path(config['key']), config['key_id'],
                     inbe / 'apps/publishers.json', ledger_path=arcade / 'apps/versions.json', bundle_directory=arcade / 'build')
-                target, remote_store = config['ssh_target'], config['remote_store']
-                ssh = ['ssh', '-F', '/dev/null', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', target]
-                # The installed receiver is the existing Inbe signed importer.
-                # Root's deployment connection invokes that same restricted
-                # receiver without changing SSH configuration or publisher keys.
-                def upload(archive, unused_target, requested_store):
-                    if requested_store != remote_store:
-                        raise ValueError('The package store changed')
-                    original = shlex.join(['inbe-packages', remote_store])
-                    command = shlex.join(['env', 'SSH_ORIGINAL_COMMAND=' + original, 'python3',
-                        '/opt/inbe-packages/package-release.py', '--receive-archive', '--store', remote_store,
-                        '--publishers', '/opt/inbe-packages/publishers.json'])
-                    with archive.open('rb') as stream:
-                        subprocess.run([*ssh, command], stdin=stream, stdout=output, stderr=subprocess.STDOUT, check=True)
-                publisher.upload = upload
-                # Inspect first, so resuming a failed public verification never
-                # replays an upload whose result was uncertain.
-                inspect_code = "import pathlib,sys; p=pathlib.Path(sys.argv[1])/'inbe.arcade/latest-v2.json'; print(p.read_text() if p.exists() else '{}')"
-                served = json.loads(subprocess.check_output([*ssh, shlex.join(['python3', '-c', inspect_code, remote_store])], text=True))
-                if served != release:
-                    status('Publishing the checked Arcade update…')
-                    receipt['phase'] = 'uploading'
-                    atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-                    publisher.publish_node_app(store, 'arcade', target, remote_store)
-                verify_code = """import json,sys,urllib.request,hashlib
-expected=json.load(sys.stdin)
-base='https://api.waozi.xyz/api/v2/packages/inbe.arcade'
-with urllib.request.urlopen(base+'/latest?bucket=0',timeout=30) as r: actual=json.load(r)
-assert actual==expected, 'Public metadata differs'
-artifact=expected['artifacts'][0]
-with urllib.request.urlopen(base+'/'+artifact['sha256']+'.zib',timeout=60) as r: payload=r.read(artifact['size']+1)
-assert len(payload)==artifact['size'] and hashlib.sha256(payload).hexdigest()==artifact['sha256'], 'Public payload differs'
-print('Exact signed Arcade metadata and payload verified at the public Waozi endpoint')
-"""
-                subprocess.run([*ssh, shlex.join(['python3', '-c', verify_code])], input=json.dumps(release).encode(), stdout=output, stderr=subprocess.STDOUT, check=True)
-                receipt['phase'] = 'verified'
-                receipt['release'] = release
+                receipt['phase'] = 'uploading'
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-                if config.get('install_local'):
-                    run(['make', 'install'], arcade)
-                status(f'Levels 1–{len(approved)} are live on the server. Island is disabled.')
+                complete_release(config, receipt, output)
                 if fingerprint() == approved_hash:
                     return 0
 
