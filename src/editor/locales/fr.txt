@@ -631,3 +631,33 @@ Terrain
 [editor_object]
 Objet
 ---
+[editor_mossy_floor]
+Sol moussu
+---
+[editor_slate_floor]
+Sol en ardoise
+---
+[editor_slate_wall]
+Mur en ardoise
+---
+[editor_brick_floor]
+Sol en briques
+---
+[editor_brick_wall]
+Mur en briques
+---
+[editor_sandstone_floor]
+Sol en grès
+---
+[editor_sandstone_wall]
+Mur en grès
+---
+[editor_timber_floor]
+Plancher en bois
+---
+[editor_timber_wall]
+Mur en bois
+---
+[editor_mossy_wall]
+Mur moussu
+---

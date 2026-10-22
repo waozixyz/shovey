@@ -631,3 +631,33 @@ Shovey
 [editor_object]
 물건
 ---
+[editor_mossy_floor]
+이끼 바닥
+---
+[editor_slate_floor]
+점판암 바닥
+---
+[editor_slate_wall]
+점판암 벽
+---
+[editor_brick_floor]
+벽돌 바닥
+---
+[editor_brick_wall]
+벽돌 벽
+---
+[editor_sandstone_floor]
+사암 바닥
+---
+[editor_sandstone_wall]
+사암 벽
+---
+[editor_timber_floor]
+나무 바닥
+---
+[editor_timber_wall]
+나무 벽
+---
+[editor_mossy_wall]
+이끼 벽
+---

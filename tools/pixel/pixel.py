@@ -268,17 +268,25 @@ def bevel(image, box, face, depth, raised=True, light=1.28, dark=0.58):
                 px[x, y] = dark
 
 
-def wall(face=(178, 182, 181, 255)):
+STONE = (157, 171, 171, 255)
+MATERIALS = ((104, 126, 137, 255), (166, 102, 78, 255),
+             (198, 177, 128, 255), (145, 110, 76, 255))
+
+
+def wall(face=STONE):
     image = Image.new('RGBA', (SIZE, SIZE))
-    bevel(image, (0, 0, SIZE - 1, SIZE - 1), face, 4, light=1.36, dark=0.46)
+    bevel(image, (0, 0, SIZE - 1, SIZE - 1), face, 4, light=1.27, dark=0.58)
+    grain(image, 21, dark=0.94, light=1.04, share=0.18)
+    draw = ImageDraw.Draw(image)
+    draw.line((4, 5, 27, 5), fill=shade(face, 1.10))
+    draw.line((5, 5, 5, 27), fill=shade(face, 1.10))
+    draw.line((6, 27, 27, 27, 27, 6), fill=shade(face, 0.78))
     bevel(image, (10, 10, 21, 21), face, 2, raised=False, light=1.3, dark=0.55)
-    return grain(image, 21, dark=0.86, light=1.1, share=0.3)
+    return image
 
 
 def wall_variant(style):
-    faces = ((104, 126, 137, 255), (166, 102, 78, 255),
-             (198, 177, 128, 255), (145, 110, 76, 255))
-    face = faces[style]
+    face = MATERIALS[style]
     image = wall(face)
     draw = ImageDraw.Draw(image)
     seam = shade(face, 0.55)
@@ -306,6 +314,42 @@ def wall_variant(style):
             for x in (5, 26):draw.point((x, y + 1), fill=(178, 194, 191, 255))
     # Every material keeps the original wall's recessed square and bevel.
     bevel(image, (10, 10, 21, 21), face, 2, raised=False, light=1.3, dark=0.55)
+    return image
+
+
+def material_floor(style):
+    """Flat paving in the corresponding wall material, without a wall recess."""
+    if style == 4:
+        return moss(floor(), 43, 8)
+    face = shade(MATERIALS[style], 1.12)
+    image = Image.new('RGBA', (SIZE, SIZE), face)
+    grain(image, 91 + style, dark=0.94, light=1.05, share=0.2)
+    draw = ImageDraw.Draw(image)
+    joint, lip = shade(face, 0.73), shade(face, 1.09)
+    draw.line((0, 0, 31, 0), fill=lip)
+    draw.line((0, 0, 0, 31), fill=lip)
+    draw.line((0, 31, 31, 31, 31, 0), fill=joint)
+    if style == 0:
+        draw.line((16, 1, 16, 30), fill=joint)
+        draw.line((1, 16, 15, 16), fill=joint)
+        draw.line((17, 10, 30, 10), fill=joint)
+    elif style == 1:
+        mortar = (181, 158, 135, 255)
+        for y in (10, 21):
+            draw.line((1, y, 30, y), fill=mortar)
+        for x, y in ((16, 1), (8, 11), (24, 11), (16, 22)):
+            draw.line((x, y, x, min(30, y + 8)), fill=mortar)
+    elif style == 2:
+        draw.line((1, 16, 30, 16), fill=joint)
+        draw.line((1, 17, 30, 17), fill=lip)
+        draw.line((12, 1, 12, 15), fill=joint)
+        draw.line((22, 18, 22, 30), fill=joint)
+    else:
+        for x in (8, 16, 24):
+            draw.line((x, 1, x, 30), fill=joint)
+            draw.line((x + 1, 1, x + 1, 30), fill=lip)
+        for x, y in ((3, 13), (12, 24), (20, 8), (28, 19)):
+            draw.line((x, y, x, y + 3), fill=shade(face, 0.88))
     return image
 
 
@@ -821,6 +865,11 @@ def sprites():
         'tile-96': ('brick wall: warm bricks with pale mortar', wall_variant(1)),
         'tile-97': ('sandstone wall: pale carved blocks', wall_variant(2)),
         'tile-98': ('timber wall: upright planks with iron straps', wall_variant(3)),
+        'tile-99': ('slate floor: flat blue-grey stone paving', material_floor(0)),
+        'tile-100': ('brick floor: flat warm brick paving', material_floor(1)),
+        'tile-101': ('sandstone floor: flat pale sandstone paving', material_floor(2)),
+        'tile-102': ('timber floor: flat wooden floorboards', material_floor(3)),
+        'tile-103': ('mossy floor: flat stone paving with green moss', material_floor(4)),
         'shadow': ('mirror Shovey (pink)', mirror),
         'door-open': ('mossy wall lowered, leaving a moss-covered stone rim', mossy_floor()),
         'projectile': ('a flying iron shot', native('projectile')),

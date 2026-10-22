@@ -631,3 +631,33 @@ Terreno
 [editor_object]
 Objeto
 ---
+[editor_mossy_floor]
+Piso com musgo
+---
+[editor_slate_floor]
+Piso de ardósia
+---
+[editor_slate_wall]
+Parede de ardósia
+---
+[editor_brick_floor]
+Piso de tijolos
+---
+[editor_brick_wall]
+Parede de tijolos
+---
+[editor_sandstone_floor]
+Piso de arenito
+---
+[editor_sandstone_wall]
+Parede de arenito
+---
+[editor_timber_floor]
+Piso de madeira
+---
+[editor_timber_wall]
+Parede de madeira
+---
+[editor_mossy_wall]
+Parede com musgo
+---

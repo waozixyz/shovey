@@ -97,6 +97,11 @@ int main(int argc, char **argv) {
     assert(editor_Solved() && save_state == 2 && !check_wanted);
     editor_ApproveEdit();
     assert(editor_Approved(1));
+    /* The same control can retry publication without rechecking its proof. */
+    proof_length = 0;
+    check_state = 0;
+    editor_ApproveEdit();
+    assert(editor_Approved(1) && check_state == 0 && proof_length == 0);
     editor_Remember(true);
     editor_SetKind(editor_Board(1), SHOVEY_CELLS * 2 + 13, 59);
     editor_Edited();

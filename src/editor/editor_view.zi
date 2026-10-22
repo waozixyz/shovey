@@ -332,6 +332,7 @@ EditorPieceImage :: (key: u64, island: bool, kind: s32, bounds: Rectangle, label
         EditorImage(key + 1, IslandPictureFile(picture), bounds, label)
         return
     }
+    if kind >= EDIT_TILE_BRUSH && kind < EDIT_DECO_BRUSH { kind -= EDIT_TILE_BRUSH }
     floor := FloorSprite(kind)
     if kind == CLASSIC_SHOVEY { floor = 0 }
     if floor >= 0 { EditorImage(key, SpriteFile(floor), bounds, label) }

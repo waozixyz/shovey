@@ -631,3 +631,33 @@ Terreno
 [editor_object]
 Oggetto
 ---
+[editor_mossy_floor]
+Pavimento muschioso
+---
+[editor_slate_floor]
+Pavimento di ardesia
+---
+[editor_slate_wall]
+Muro di ardesia
+---
+[editor_brick_floor]
+Pavimento di mattoni
+---
+[editor_brick_wall]
+Muro di mattoni
+---
+[editor_sandstone_floor]
+Pavimento di arenaria
+---
+[editor_sandstone_wall]
+Muro di arenaria
+---
+[editor_timber_floor]
+Pavimento di legno
+---
+[editor_timber_wall]
+Parete di legno
+---
+[editor_mossy_wall]
+Muro muschioso
+---

@@ -631,3 +631,33 @@ Ground
 [editor_object]
 Object
 ---
+[editor_mossy_floor]
+Mossy floor
+---
+[editor_slate_floor]
+Slate floor
+---
+[editor_slate_wall]
+Slate wall
+---
+[editor_brick_floor]
+Brick floor
+---
+[editor_brick_wall]
+Brick wall
+---
+[editor_sandstone_floor]
+Sandstone floor
+---
+[editor_sandstone_wall]
+Sandstone wall
+---
+[editor_timber_floor]
+Timber floor
+---
+[editor_timber_wall]
+Timber wall
+---
+[editor_mossy_wall]
+Mossy wall
+---

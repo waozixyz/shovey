@@ -558,6 +558,26 @@
       "sha256": "0a86d032642479c4e68d3d50bcbcca762f682975d1c529878c1c65b0117bf225"
     },
     {
+      "path": "sprites/tile-100.png",
+      "depicts": "landscape presentation of brick floor: flat warm brick paving",
+      "sha256": "38316fb8158008c9ac3840bb12491a7d645a0c95ee14c4a28189b5f46f9ade76"
+    },
+    {
+      "path": "sprites/tile-101.png",
+      "depicts": "landscape presentation of sandstone floor: flat pale sandstone paving",
+      "sha256": "8644370fe1c48aab3036bedd178f3155513b44d081a18f11d0dc53e785c8263b"
+    },
+    {
+      "path": "sprites/tile-102.png",
+      "depicts": "landscape presentation of timber floor: flat wooden floorboards",
+      "sha256": "2cac12993eb68dd80608c7864b7a3a24d0b65e1b4b86bd412320d91dfdd42530"
+    },
+    {
+      "path": "sprites/tile-103.png",
+      "depicts": "landscape presentation of mossy floor: flat stone paving with green moss",
+      "sha256": "9d0d7407e3132ac5d1377b7c95a4488f4929ccc357195125e605b044f58803fa"
+    },
+    {
       "path": "sprites/tile-11.png",
       "depicts": "landscape presentation of trail field: a ring with a bar, drawn in deep teal",
       "sha256": "7ef8fc9bd2ce4b60b1c474b27b6d8d68277909b2935c6af36e21472187ac17e4"
@@ -565,7 +585,7 @@
     {
       "path": "sprites/tile-12.png",
       "depicts": "landscape presentation of wall: a raised grey stone block",
-      "sha256": "fc4bdf449e32b89f422dd7571fa39c0af9ab667c6e80ec6a8b7eaa3797724da8"
+      "sha256": "780618a23a8155ba2d7975fc91a9b43653e9fd311eb1a561a4e0ec153e3eeb05"
     },
     {
       "path": "sprites/tile-13.png",
@@ -575,7 +595,7 @@
     {
       "path": "sprites/tile-14.png",
       "depicts": "landscape presentation of mossy stone wall: sinks when a pressure plate is held",
-      "sha256": "5a9be22e835db3656a17c72fa0b09df17e161cc41774e912ae84f66658a67b6f"
+      "sha256": "d50d517afae9faa4c8640f198ab3c688a1dc78cc23369064e1fb0acad886b3d6"
     },
     {
       "path": "sprites/tile-15.png",
@@ -830,7 +850,7 @@
     {
       "path": "sprites/tile-63.png",
       "depicts": "landscape presentation of mossy wall (decoration, solid)",
-      "sha256": "7bd1ac049366449d3f3a1d48ad7e4406832488e8416e62f39fec562a4d2a1c86"
+      "sha256": "bff182b2fd57bb6c8cdd81e8fa54a60b9b719c67d0659833957c51d6552afd21"
     },
     {
       "path": "sprites/tile-64.png",
@@ -900,7 +920,7 @@
     {
       "path": "sprites/tile-76.png",
       "depicts": "landscape presentation of legacy wall, shown as a plain stone wall",
-      "sha256": "fc4bdf449e32b89f422dd7571fa39c0af9ab667c6e80ec6a8b7eaa3797724da8"
+      "sha256": "780618a23a8155ba2d7975fc91a9b43653e9fd311eb1a561a4e0ec153e3eeb05"
     },
     {
       "path": "sprites/tile-77.png",
@@ -990,22 +1010,27 @@
     {
       "path": "sprites/tile-95.png",
       "depicts": "landscape presentation of slate wall: dark blue-grey stone slabs",
-      "sha256": "07a5bf5099bf2680069cbff5b09f3fa12c1bb1431c16c5d3da67f3a68ab042d8"
+      "sha256": "f4d5e22b80e3761b30d5f81990615c51084e8499eabd2575a4727af995ffedb2"
     },
     {
       "path": "sprites/tile-96.png",
       "depicts": "landscape presentation of brick wall: warm bricks with pale mortar",
-      "sha256": "c8b5868ca73c07b6af279fcaad2e949bec6cefb20a525a59185d3698911b8444"
+      "sha256": "4b3c2e2cc2a7f0a1dba4898387df550ec494e9d47499dff04a9b6051e85a169f"
     },
     {
       "path": "sprites/tile-97.png",
       "depicts": "landscape presentation of sandstone wall: pale carved blocks",
-      "sha256": "94632522395ca2abbf03e227d74744da2ee52d8c5959bf2252beb80afb0bfa4b"
+      "sha256": "1d0cda13bf59b81ac193d83ea2e242b41179517228a292bd0c19d81e5eee63a8"
     },
     {
       "path": "sprites/tile-98.png",
       "depicts": "landscape presentation of timber wall: upright planks with iron straps",
-      "sha256": "8458d2429af0a0feda045af3631305e44df04a0ba93f749e034b1168087ec28a"
+      "sha256": "e38d84def53b8598f5ae261ae833b02c87342cc6b0a0c78ad86c45ddbaf3a57c"
+    },
+    {
+      "path": "sprites/tile-99.png",
+      "depicts": "landscape presentation of slate floor: flat blue-grey stone paving",
+      "sha256": "b032ead7d6ec02d673759c558a826809b88a4eca7df3f0bc74840200835ab65f"
     },
     {
       "path": "sprites/turtle-down.png",

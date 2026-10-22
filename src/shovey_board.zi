@@ -38,7 +38,8 @@ SPRITE_GATE_OPEN :: 179
 SPRITE_LEVER :: 180
 SPRITE_ABYSS :: 182
 SPRITE_WALL :: 198
-SPRITE_COUNT :: 202
+SPRITE_MATERIAL_FLOOR :: 202
+SPRITE_COUNT :: 207
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -189,6 +190,11 @@ SpritesPrepare :: () {
         BuilderPrint(*name, "tile-%", FormatInteger(cast(s64)(95 + wall), digits[:]))
         SpritePath(SPRITE_WALL + wall, BuilderFinish(name))
     }
+    for floor: cast(s32)0..4 {
+        name: Vec(u8)
+        BuilderPrint(*name, "tile-%", FormatInteger(cast(s64)(99 + floor), digits[:]))
+        SpritePath(SPRITE_MATERIAL_FLOOR + floor, BuilderFinish(name))
+    }
     for color: cast(s32)0..2 {
         portal: Vec(u8)
         BuilderPrint(*portal, "tile-%", FormatInteger(cast(s64)(85 + color), digits[:]))
@@ -267,6 +273,7 @@ FloorSprite :: (kind: s32) -> s32 {
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
 // active sensors turn, one frame every 100 milliseconds.
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
+    if ShoveyMaterialFloor(kind) { return SPRITE_MATERIAL_FLOOR + kind - 99 }
     if kind == 64 { return SPRITE_WATER + cast(s32)(now * 2.0) % 4 }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
     if kind == SHOVEY_GATE { return ifx position >= 0 && ShoveyGateOpen(game, position) then SPRITE_GATE_OPEN else SPRITE_GATE }

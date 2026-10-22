@@ -631,3 +631,33 @@ Terén
 [editor_object]
 Předmět
 ---
+[editor_mossy_floor]
+Mechová podlaha
+---
+[editor_slate_floor]
+Břidlicová podlaha
+---
+[editor_slate_wall]
+Břidlicová zeď
+---
+[editor_brick_floor]
+Cihlová podlaha
+---
+[editor_brick_wall]
+Cihlová zeď
+---
+[editor_sandstone_floor]
+Pískovcová podlaha
+---
+[editor_sandstone_wall]
+Pískovcová zeď
+---
+[editor_timber_floor]
+Dřevěná podlaha
+---
+[editor_timber_wall]
+Dřevěná stěna
+---
+[editor_mossy_wall]
+Mechová zeď
+---

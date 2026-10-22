@@ -45,7 +45,7 @@ def classic_functions(levels):
     for level in levels:
         cells(level['cells'])
         if 'tiles' in level:
-            assert all(kind in {0,4,5,6,12,14,47,48,49,*range(57,79),*range(95,99)} for kind in cells(level['tiles']))
+            assert all(kind in {0,4,5,6,12,14,47,48,49,*range(57,79),*range(95,104)} for kind in cells(level['tiles']))
         if 'decorations' in level:
             assert 'tiles' in level and all(kind in {0, 57, 58, 59, 84} for kind in cells(level['decorations']))
         data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))

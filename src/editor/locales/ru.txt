@@ -631,3 +631,33 @@ Island
 [editor_object]
 Предмет
 ---
+[editor_mossy_floor]
+Мшистый пол
+---
+[editor_slate_floor]
+Сланцевый пол
+---
+[editor_slate_wall]
+Сланцевая стена
+---
+[editor_brick_floor]
+Кирпичный пол
+---
+[editor_brick_wall]
+Кирпичная стена
+---
+[editor_sandstone_floor]
+Пол из песчаника
+---
+[editor_sandstone_wall]
+Стена из песчаника
+---
+[editor_timber_floor]
+Деревянный пол
+---
+[editor_timber_wall]
+Деревянная стена
+---
+[editor_mossy_wall]
+Мшистая стена
+---

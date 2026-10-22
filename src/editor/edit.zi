@@ -156,7 +156,7 @@ EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
 // ---------------------------------------------------------------------------
 // Pieces
 
-EDIT_CLASSIC_PIECES :: 38
+EDIT_CLASSIC_PIECES :: 48
 EDIT_ISLAND_PIECES :: 82
 edit_classic_kinds: [EDIT_CLASSIC_PIECES]s32;
 edit_classic_names: [EDIT_CLASSIC_PIECES]string;
@@ -167,21 +167,29 @@ edit_pieces_ready: bool;
 EditPiecesPrepare :: () {
     // Classic's pieces, in palette order.
     classic_kinds: [EDIT_CLASSIC_PIECES]s32 = .[
-    10, 0, 12, 7, 9, 18, 1, 2, 3, 4, 5, 6,
-    15, 16, 17, 19, 21, 13, 14, 33, 34, 8, 11, 25,
+    10, EDIT_TILE_BRUSH, EDIT_TILE_BRUSH + 12, 7, 9, 18, 1, 2, 3, 4, 5, 6,
+    15, 16, 17, 19, 21, 13, EDIT_TILE_BRUSH + 14, 33, 34, 8, 11, 25,
     26, 28, 27, 29, 30, 31, 20, 23, 35, 36, 37, 38,
-    39, 40]
+    39, 40,
+    EDIT_TILE_BRUSH + 103,
+    EDIT_TILE_BRUSH + 99, EDIT_TILE_BRUSH + 95,
+    EDIT_TILE_BRUSH + 100, EDIT_TILE_BRUSH + 96,
+    EDIT_TILE_BRUSH + 101, EDIT_TILE_BRUSH + 97,
+    EDIT_TILE_BRUSH + 102, EDIT_TILE_BRUSH + 98, 0]
     classic_names: [EDIT_CLASSIC_PIECES]string = .[
     "editor_shovey", "editor_floor", "editor_wall", "editor_home",
     "editor_crate", "editor_crate_goal", "editor_red_ball", "editor_blue_ball",
     "editor_green_ball", "editor_red_pit", "editor_blue_pit", "editor_green_pit",
     "editor_red_paint", "editor_blue_paint", "editor_green_paint", "editor_star_block",
-    "editor_apple", "editor_plate", "editor_gate", "editor_key",
+    "editor_apple", "editor_plate", "editor_mossy_wall", "editor_key",
     "editor_lock", "editor_teleporter", "editor_trail", "editor_reverse",
     "editor_ammo", "editor_target", "editor_charge", "editor_moving_block",
     "editor_fresh_path", "editor_used_path", "editor_sensor", "editor_closed_sensor",
     "editor_slide", "editor_red_block", "editor_blue_block", "editor_yellow_block",
-    "editor_block_goal", "editor_mirror_shovey"]
+    "editor_block_goal", "editor_mirror_shovey",
+    "editor_mossy_floor", "editor_slate_floor", "editor_slate_wall",
+    "editor_brick_floor", "editor_brick_wall", "editor_sandstone_floor", "editor_sandstone_wall",
+    "editor_timber_floor", "editor_timber_wall", "editor_clear"]
     // Island's terrain (kinds below 50), then objects. Sand and meadow take
     // their coast tiles by themselves; EDIT_CLEAR erases an object.
     island_kinds: [EDIT_ISLAND_PIECES]s32 = .[
@@ -236,7 +244,8 @@ EditPieceKey :: (island: bool, index: s32) -> string {
 // A piece's name key, also for kinds the palette leaves out.
 EditPieceName :: (island: bool, kind: s32) -> string {
     for index: cast(s32)0..EditPieceCount(island) - 1 {
-        if EditPieceKind(island, index) == kind { return EditPieceKey(island, index) }
+        piece := EditPieceKind(island, index)
+        if piece == kind || (!island && piece >= EDIT_TILE_BRUSH && piece < EDIT_DECO_BRUSH && piece - EDIT_TILE_BRUSH == kind) { return EditPieceKey(island, index) }
     }
     if island && CoastSand(kind) { return "editor_sand" }
     if island && CoastMeadow(kind) { return "editor_meadow" }

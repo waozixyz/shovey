@@ -26,7 +26,7 @@ pieces = ''.join(level['cells'])
 (profile / 'backup/editor-drafts/place').write_text('1')
 environment = {key: value for key, value in os.environ.items()
                if key not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
-environment |= {'YUE_DESKTOP_RECOVERY': '0', 'SDL_AUDIODRIVER': 'dummy'}
+environment |= {'YUE_DESKTOP_RECOVERY': '0', 'SDL_VIDEODRIVER': 'x11', 'SDL_AUDIODRIVER': 'dummy'}
 with (output / 'app.log').open('w') as log:
     child = subprocess.Popen([str(ROOT / 'build/private-editor/shovey-level-editor'), '1'],
                              cwd=profile, env=environment, stdout=log, stderr=subprocess.STDOUT)
@@ -40,6 +40,7 @@ with (output / 'app.log').open('w') as log:
             time.sleep(0.05)
         assert windows, 'The test editor did not map its own window'
         window = windows[0]
+        subprocess.run(['xdotool', 'windowfocus', window], check=True)
         for width, height in ((1500, 1000), (1437, 937)):
             subprocess.run(['xdotool', 'windowsize', window, str(width), str(height)], check=True)
             time.sleep(0.2)
@@ -63,7 +64,9 @@ with (output / 'app.log').open('w') as log:
                         assert green > red and green > blue, ('grass seam', x + dx, y, (red, green, blue))
         def click(x, y, button=1):
             subprocess.run(['xdotool', 'mousemove', '--window', window, str(int(x)), str(int(y)),
-                            'click', str(button)], check=True)
+                            'mousedown', str(button)], check=True)
+            time.sleep(0.08)
+            subprocess.run(['xdotool', 'mouseup', str(button)], check=True)
             time.sleep(0.15)
 
         def draft():
@@ -103,7 +106,7 @@ with (output / 'app.log').open('w') as log:
         click(palette + 170, 274)
         click(x, y)
         click(palette + 58, 106)
-        click(palette + 56, 562)
+        click(palette + 282, 658)
         click(x, y)
         cleared = draft()
         assert cleared[at * 2:at * 2 + 2] == '00'

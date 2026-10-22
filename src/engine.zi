@@ -79,7 +79,8 @@ ShoveyColorRest :: (kind: s32) -> bool {
 
 // Decorations that change nothing about play, and the solid ones that act as
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
-ShoveyDecorFloor :: (kind: s32) -> bool { return kind >= 57 && kind <= 61 }
+ShoveyMaterialFloor :: (kind: s32) -> bool { return kind >= 99 && kind <= 103 }
+ShoveyDecorFloor :: (kind: s32) -> bool { return (kind >= 57 && kind <= 61) || ShoveyMaterialFloor(kind) }
 ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || kind == SHOVEY_TREE || (kind >= 95 && kind <= 98) }
 SHOVEY_CRACKED_WALL :: 62
 SHOVEY_PIT :: 65
@@ -95,7 +96,7 @@ SHOVEY_FISH :: 89
 SHOVEY_GATE :: 92
 SHOVEY_LEVER :: 93
 SHOVEY_LEVER_ON :: 94
-SHOVEY_LAST_KIND :: 98
+SHOVEY_LAST_KIND :: 103
 ShoveyLever :: (kind: s32) -> bool { return kind == SHOVEY_LEVER || kind == SHOVEY_LEVER_ON }
 ShoveyFish :: (kind: s32) -> bool { return kind >= SHOVEY_FISH && kind <= 91 }
 ShoveyAnimal :: (kind: s32) -> bool { return kind == SHOVEY_CHICKEN || kind == SHOVEY_TURTLE || kind == SHOVEY_CRAB || ShoveyFish(kind) }
@@ -145,12 +146,12 @@ ShoveyLoad :: (game: *ShoveyGame, level: s32) -> bool {
 // 480 digits of independent floor tiles. Tiles never change puzzle rules.
 ShoveyTerrain :: (kind: s32) -> bool {
     return kind == 0 || kind == 12 || kind == 14 || ShoveyPitColor(kind) > 0 ||
-        kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 98)
+        kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 103)
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
 ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || kind == SHOVEY_TREE }
-ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 }
+ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) }
 ShoveyDefaultTile :: (kind: s32) -> s32 {
     return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else 0
 }

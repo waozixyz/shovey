@@ -1,5 +1,19 @@
 # Shovey changelog
 
+## [0.6.15] - 2026-10-22
+
+- Stone walls have cleaner bevels and a recessed center matching the other walls.
+- Add walkable moss, slate, brick, sandstone and timber floors to match every wall material.
+## [0.6.14] - 2026-10-22
+
+- Play the approved Classic campaign through level 19.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
+## [0.6.13] - 2026-10-22
+
+- Play the approved Classic campaign through level 19.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
 ## [0.6.12] - 2026-10-22
 
 - Play the approved Classic campaign through level 19.

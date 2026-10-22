@@ -10,6 +10,7 @@ PuzzleKind :: (board: []u8, at: s32, flip: s32) -> s32 {
     if kind == 71 && tile == 12 { kind = 12 }
     if board.count >= SHOVEY_CELLS * 6 && ShoveyByte(text, SHOVEY_CELLS * 4 + at * 2) == SHOVEY_TREE { kind = 12 }
     if kind == 57 || kind == 58 || kind == 59 || kind == 60 || kind == 61 || kind == 77 || kind == 78 { return 0 }
+    if kind >= 99 && kind <= 103 { return 0 }
     if kind == 62 || kind == 63 || kind == 64 || kind == 76 || (kind >= 95 && kind <= 98) { return 12 }
     if ShoveyBallColor(kind) > 0 { return 1 }
     if ShoveyPitColor(kind) > 0 { return 4 }

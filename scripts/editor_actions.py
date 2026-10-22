@@ -17,11 +17,11 @@ ROOT = Path(__file__).resolve().parents[1]
 DRAFTS = ROOT / 'backup/editor-drafts'
 SOLVER = ROOT / 'build/solver/shovey-solve-classic'
 LAYERS = ('cells', 'tiles', 'decorations')
-COSMETIC = {0, 57, 58, 59, 60, 61, 77, 78}
+COSMETIC = {0, 57, 58, 59, 60, 61, 77, 78, *range(99, 104)}
 WALLS = {12, 62, 63, 76, 95, 96, 97, 98}
 ALLOWED = (
-    ({0, *range(1, 77), *range(82, 99)} - {22, 24, 32, 41, 42, 43}),
-    {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 99)},
+    ({0, *range(1, 77), *range(82, 104)} - {22, 24, 32, 41, 42, 43}),
+    {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104)},
     {0, 57, 58, 59, 84},
 )
 
@@ -37,7 +37,7 @@ def board_hex(level):
     defaults = []
     for i in range(0, 480, 2):
         kind = int(cells[i:i + 2], 16)
-        tile = kind if kind in {0, 4, 5, 6, 12, 14, 47, 48, 49, 60, 61, 63, 64, 65, 70, 76, 77, 78, *range(95, 99)} else 77 if kind == 7 else 64 if 89 <= kind <= 91 else 12 if kind == 62 else 0
+        tile = kind if kind in {0, 4, 5, 6, 12, 14, 47, 48, 49, 60, 61, 63, 64, 65, 70, 76, 77, 78, *range(95, 104)} else 77 if kind == 7 else 64 if 89 <= kind <= 91 else 12 if kind == 62 else 0
         defaults.append(f'{tile:02x}')
     return cells + (''.join(level.get('tiles', [])) or ''.join(defaults)) + (''.join(level.get('decorations', [])) or '00' * 240)
 

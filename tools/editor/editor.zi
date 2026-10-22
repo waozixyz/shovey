@@ -510,6 +510,7 @@ OurTiles :: () -> []string {
 
 PrivateSprite :: (kind: s32) -> s32 {
     facing := BoardEngineDirection(1, boards_landscape)
+    if ShoveyMaterialFloor(kind) { return SPRITE_MATERIAL_FLOOR + kind - 99 }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
     if kind == SHOVEY_GATE { return SPRITE_GATE }
     if ShoveyLever(kind) { return SPRITE_LEVER + kind - SHOVEY_LEVER }
@@ -627,7 +628,13 @@ RunAction :: (action: string) {
 }
 
 ApproveEdit :: () {
-    if playing || (!Solved() && !Proven()) { return }
+    if playing { return }
+    if Approved(current) {
+        ActionMessage("Publishing…")
+        RunAction("update")
+        return
+    }
+    if !Solved() && !Proven() { return }
     StartSave()
     if save_state != 2 { return }
     letters := ifx Solved() then route[:route_length] else proof_route[:proof_length]
@@ -639,7 +646,7 @@ ApproveEdit :: () {
     if !WriteEntireFile(DraftPath(current, ".approved"), TextView(Board(current))) { ActionMessage("Approval could not be saved."); return }
     Copy(approved_boards[(current - 1) * HEX:current * HEX], Board(current))
     approved_places[current - 1] = true
-    ActionMessage("Approved. Preparing the server update.")
+    ActionMessage("Publishing…")
     RunAction("approve")
 }
 
@@ -1517,9 +1524,9 @@ Palette :: (area: Rectangle) {
             selected = ifx tab == 0 then 256 else 0
         }
     }
-    tile_kinds: [20]s32 = .[0,77,78,60,61,12,14,95,96,97,98,64,65,4,5,6,47,48,49,70]
-    tile_names: [20]string = .["Stone","Grass","Sand","Checker","Stripes","Wall","Mossy wall","Slate wall","Brick wall","Sandstone wall","Timber wall","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Ice"]
-    count: s32 = ifx palette_tab == 0 then 20 else PALETTE
+    tile_kinds: [25]s32 = .[0,12,103,14,99,95,100,96,101,97,102,98,77,78,60,61,64,65,4,5,6,47,48,49,70]
+    tile_names: [25]string = .["Stone floor","Stone wall","Mossy floor","Mossy wall","Slate floor","Slate wall","Brick floor","Brick wall","Sandstone floor","Sandstone wall","Timber floor","Timber wall","Grass","Sand","Checker","Stripes","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Ice"]
+    count: s32 = ifx palette_tab == 0 then 25 else PALETTE
     visible_count: s32 = 0
     for index: cast(s32)0..count - 1 {
         kind := ifx palette_tab == 0 then tile_kinds[index] else palette_kinds[index]
@@ -1643,13 +1650,9 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if Button(session, ButtonProps.{.key = 18, .id = 18, .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0},
             .label = ifx glm_busy then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy}) != 0 { ModifyGLM() }
     if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
-            .label = ifx Approved(current) then "Approved" else "Approve", .selected = Approved(current),
-            .disabled = playing || (!Solved() && !Proven())}) != 0 { ApproveEdit() }
-    if Control(20, Rectangle.{414.0, 51.0, 90.0, 30.0}, "Update") {
-        ActionMessage("Updating the approved levels…")
-        RunAction("update")
-    }
-    Caption(9, Rectangle.{516.0, 52.0, width - 528.0, 28.0},
+            .label = "Approve", .selected = Approved(current),
+            .disabled = playing || (!Approved(current) && !Solved() && !Proven())}) != 0 { ApproveEdit() }
+    Caption(9, Rectangle.{420.0, 52.0, width - 432.0, 28.0},
         ifx action_message_length > 0 then TextView(action_message[:action_message_length]) else StatusText(), 14)
 
     if selector_open {

@@ -631,3 +631,33 @@ Terreno
 [editor_object]
 Objeto
 ---
+[editor_mossy_floor]
+Suelo con musgo
+---
+[editor_slate_floor]
+Suelo de pizarra
+---
+[editor_slate_wall]
+Muro de pizarra
+---
+[editor_brick_floor]
+Suelo de ladrillo
+---
+[editor_brick_wall]
+Muro de ladrillo
+---
+[editor_sandstone_floor]
+Suelo de arenisca
+---
+[editor_sandstone_wall]
+Muro de arenisca
+---
+[editor_timber_floor]
+Suelo de madera
+---
+[editor_timber_wall]
+Muro de madera
+---
+[editor_mossy_wall]
+Muro con musgo
+---

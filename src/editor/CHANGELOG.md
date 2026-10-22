@@ -1,5 +1,14 @@
 # Shovey Editor changelog
 
+## [0.2.12] - 2026-10-22
+
+- Paint matching floors and walls in stone, moss, slate, brick, sandstone and timber.
+## [0.2.11] - 2026-10-22
+
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.10] - 2026-10-22
+
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.9] - 2026-10-22
 
 - Create Island levels from scratch and edit approved Classic story levels.

@@ -70,6 +70,19 @@ LayerChecks :: () -> s32 {
     if !EditPaint(*wall, SHOVEY_CRAB, 50) || wall.tiles[50] != 0 || wall.ground[50] != SHOVEY_CRAB { return 166 }
     unused EditPaint(*wall, EDIT_DECO_BRUSH + 57, 50)
     if !EditPaint(*wall, EDIT_TILE_BRUSH + SHOVEY_PIT, 50) || wall.ground[50] != 0 || wall.decorations[50] != 0 || wall.tiles[50] != SHOVEY_PIT { return 167 }
+    for material: cast(s32)99..103 {
+        paving := EditNewBoard(false)
+        unused EditPaint(*paving, EDIT_TILE_BRUSH + material, 55)
+        unused EditPaint(*paving, EDIT_TILE_BRUSH + material, 56)
+        unused EditPaint(*paving, 9, 56)
+        if paving.tiles[56] != cast(u8)material || paving.ground[56] != 9 { return 168 }
+        if !EditBoardRead(*copy, false, EditBoardHex(*paving)) || !EditSame(*copy, *paving) { return 169 }
+        if !ShoveyLoadData(*game, 1, EditBoardHex(*paving)) || !ShoveyMove(*game, 2) || game.player != 55 { return 170 }
+        if !ShoveyMove(*game, 2) || game.objects[57] != 9 || game.player != 56 { return 171 }
+        if !ShoveyRestore(*restored, ShoveySave(*game)) || restored.tiles[56] != material || restored.objects[57] != 9 { return 172 }
+        unused EditPaint(*paving, EDIT_TILE_BRUSH, 56)
+        if paving.tiles[56] != 0 || paving.ground[56] != 9 { return 173 }
+    }
     return 0
 }
 

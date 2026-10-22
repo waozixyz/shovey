@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
-classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 99))]
+classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 104))]
 classic += ['gate-open'] + [f'abyss-edge-{mask}' for mask in range(16)]
 classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for facing in ('left', 'up', 'right', 'down')]
 classic += [f'water-{frame}' for frame in range(4)]

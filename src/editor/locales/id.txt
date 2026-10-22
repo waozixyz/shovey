@@ -631,3 +631,33 @@ Medan
 [editor_object]
 Benda
 ---
+[editor_mossy_floor]
+Lantai berlumut
+---
+[editor_slate_floor]
+Lantai batu sabak
+---
+[editor_slate_wall]
+Dinding batu sabak
+---
+[editor_brick_floor]
+Lantai bata
+---
+[editor_brick_wall]
+Dinding bata
+---
+[editor_sandstone_floor]
+Lantai batu pasir
+---
+[editor_sandstone_wall]
+Dinding batu pasir
+---
+[editor_timber_floor]
+Lantai kayu
+---
+[editor_timber_wall]
+Dinding kayu
+---
+[editor_mossy_wall]
+Dinding berlumut
+---

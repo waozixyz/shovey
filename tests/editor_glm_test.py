@@ -35,6 +35,29 @@ def variation(x=3, y=3):
 
 
 class Variations(unittest.TestCase):
+    def test_approve_replaces_the_snapshot_and_detaches_publication(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            root = Path(directory)
+            drafts = root / 'drafts'
+            drafts.mkdir()
+            (root / 'levels').mkdir()
+            old = actions.record(1, board(), '333332')
+            other = actions.record(2, board(), '333332')
+            path = root / 'levels/approved.json'
+            path.write_text(json.dumps(dict(levels=[old, other])))
+            candidate = actions.apply_proposal(board(), variation())
+            (drafts / '001.approval-request').write_text(candidate + '\n333332')
+            (drafts / '001.approved').write_text(candidate)
+            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions.subprocess, 'Popen') as spawn:
+                actions.approve(1)
+            self.assertEqual(json.loads(path.read_text())['levels'],
+                             [actions.record(1, candidate, '333332'), other])
+            spawn.assert_called_once()
+            self.assertTrue(spawn.call_args.kwargs['start_new_session'])
+            self.assertEqual(spawn.call_args.kwargs['stdin'], actions.subprocess.DEVNULL)
+            spawn.return_value.wait.assert_not_called()
+
     def test_update_retries_approved_campaign_without_a_draft_or_approval(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
             drafts = Path(directory)
