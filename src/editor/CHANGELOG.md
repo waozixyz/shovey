@@ -1,5 +1,13 @@
 # Shovey Editor changelog
 
+## [0.2.27] - 2026-10-22
+
+- Animals and fish wander independently when testing Classic levels.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.26] - 2026-10-22
+
+- Test puzzles with several matching levers; any handle switches their shared gate state.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.25] - 2026-10-22
 
 - Test puzzles with several matching levers; any handle switches their shared gate state.

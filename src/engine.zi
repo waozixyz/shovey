@@ -581,8 +581,22 @@ ShoveyEvent :: (before: *ShoveyGame, after: *ShoveyGame) -> s32 {
 
 // Animals wander on clear floor and block both Shovey and pushed pieces.
 // Trees, hazards, objects and the player are never valid destinations.
+ShoveyAnimalMix :: (value: u32) -> u32 {
+    mixed := (value ^ (value >> 16)) * cast(u32)0x7feb352d
+    mixed = (mixed ^ (mixed >> 15)) * cast(u32)0x846ca68b
+    return mixed ^ (mixed >> 16)
+}
+
 ShoveyAnimalsTick :: (game: *ShoveyGame) -> bool {
     if game.won || game.lost { return false }
+    // Use the animal state already kept by saves, undo and solver searches.
+    // Each animal gets its own choice, including its very first step.
+    seed: u32 = 0x9e3779b9
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if ShoveyAnimal(game.ground[at]) {
+            seed = ShoveyAnimalMix(seed ^ cast(u32)(at * 137 + game.ground[at] * 17 + game.light_from[at]))
+        }
+    }
     visited: [SHOVEY_CELLS]bool
     for at: cast(s32)0..SHOVEY_CELLS - 1 { visited[at] = false }
     moved := false
@@ -591,22 +605,31 @@ ShoveyAnimalsTick :: (game: *ShoveyGame) -> bool {
         if visited[at] || !ShoveyAnimal(kind) { continue }
         aquatic := ShoveyFish(kind)
         direction := game.light_from[at]
-        if direction < 0 || direction > 3 { direction = 1 }
-        for turn: cast(s32)0..3 {
-            facing := (direction + turn) % 4
+        choices: [4]s32
+        count: s32 = 0
+        reverse: s32 = -1
+        for facing: cast(s32)0..3 {
             to := ShoveyNeighbor(at, facing)
             if to < 0 || to == game.player || game.objects[to] != 0 || visited[to] { continue }
             if aquatic {
                 if game.ground[to] != 64 || game.tiles[to] != 64 { continue }
             } else if game.ground[to] != 0 { continue }
-            game.ground[at] = ifx aquatic then 64 else 0
-            game.light_from[at] = 4
-            game.ground[to] = kind
-            game.light_from[to] = facing
-            visited[to] = true
-            moved = true
-            break
+            // Turn freely, and retrace a step only when it is the sole exit.
+            if direction >= 0 && direction <= 3 && facing == (direction + 2) % 4 { reverse = facing; continue }
+            choices[count] = facing
+            count += 1
         }
+        if count == 0 && reverse >= 0 { choices[0] = reverse; count = 1 }
+        if count == 0 { continue }
+        choice := ShoveyAnimalMix(seed ^ cast(u32)((at + 1) * 131 + kind * 7)) % cast(u32)count
+        facing := choices[cast(s32)choice]
+        to := ShoveyNeighbor(at, facing)
+        game.ground[at] = ifx aquatic then 64 else 0
+        game.light_from[at] = 4
+        game.ground[to] = kind
+        game.light_from[to] = facing
+        visited[to] = true
+        moved = true
     }
     return moved
 }

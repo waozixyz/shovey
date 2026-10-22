@@ -359,6 +359,7 @@ NatureChecks :: () -> s32 {
             walking := Floor()
             walking.ground[78] = animal
             walking.light_from[78] = direction
+            for side: cast(s32)0..3 { if side != direction { walking.ground[ShoveyNeighbor(78, side)] = 12 } }
             destination := ShoveyNeighbor(78, direction)
             if !ShoveyAnimalsTick(*walking) || walking.ground[destination] != animal || walking.light_from[destination] != direction { return 140 }
             // Turning at an obstacle records the direction actually walked.
@@ -367,6 +368,7 @@ NatureChecks :: () -> s32 {
             walking.light_from[78] = direction
             walking.ground[destination] = 12
             turn := (direction + 1) % 4
+            for side: cast(s32)0..3 { if side != turn { walking.ground[ShoveyNeighbor(78, side)] = 12 } }
             destination = ShoveyNeighbor(78, turn)
             if !ShoveyAnimalsTick(*walking) || walking.ground[destination] != animal || walking.light_from[destination] != turn { return 141 }
         }
@@ -389,6 +391,32 @@ NatureChecks :: () -> s32 {
         blocked.ground[26] = SHOVEY_TREE
         if ShoveyAnimalsTick(*blocked) && blocked.ground[14] != animal { return 129 }
         if blocked.player != 13 || blocked.objects[2] != 9 || blocked.ground[26] != SHOVEY_TREE { return 130 }
+    }
+    // The first move is not shared by every animal, and is not always up.
+    wanderers: [6]s32 = .[SHOVEY_CHICKEN, SHOVEY_TURTLE, SHOVEY_CRAB, 89, 90, 91]
+    for animal: wanderers {
+        directions: s32 = 0
+        for position: cast(s32)50..110 {
+            if position % SHOVEY_WIDTH < 2 || position % SHOVEY_WIDTH > 9 { continue }
+            wandering := Floor()
+            if ShoveyFish(animal) {
+                for at: cast(s32)0..SHOVEY_CELLS - 1 { wandering.ground[at] = 64; wandering.tiles[at] = 64 }
+            }
+            wandering.ground[position] = animal
+            wandering.light_from[position] = 4
+            if !ShoveyAnimalsTick(*wandering) { return 161 }
+            steps: s32 = 0
+            for direction: cast(s32)0..3 {
+                to := ShoveyNeighbor(position, direction)
+                if wandering.ground[to] == animal {
+                    if wandering.light_from[to] != direction { return 162 }
+                    directions |= 1 << direction
+                    steps += 1
+                }
+            }
+            if steps != 1 { return 163 }
+        }
+        if directions != 15 { return 164 }
     }
     for fish: cast(s32)89..91 {
         pool := Floor()
@@ -436,6 +464,13 @@ NatureChecks :: () -> s32 {
     restored: ShoveyGame
     if !ShoveyRestore(*restored, saved) || restored.ground[14] != SHOVEY_DOG || restored.light_from[14] != 1 { return 124 }
     if restored.decorations[27] != game.decorations[27] { return 125 }
+    // Saving and resuming preserves future wandering, too.
+    for step: cast(s32)0..19 {
+        if ShoveyAnimalsTick(*restored) != ShoveyAnimalsTick(*game) { return 165 }
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if restored.ground[at] != game.ground[at] || restored.light_from[at] != game.light_from[at] { return 166 }
+        }
+    }
     return 0
 }
 

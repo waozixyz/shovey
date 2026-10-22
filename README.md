@@ -13,7 +13,7 @@ every shipped level by replaying it through the real game rules.
 
 ## Play
 
-- **Shovey Classic**: approved stone-courtyard puzzles through level 25. Later boards stay in the developer editor while they are being edited. Push balls
+- **Shovey Classic**: approved stone-courtyard puzzles through level 26. Later boards stay in the developer editor while they are being edited. Push balls
   into matching holes, crates onto corners, coloured blocks onto marks,
   collect keys and powers, then walk home.
 - **Shovey Editor**: paint, test and share your own Classic boards. The
@@ -119,8 +119,9 @@ colored pressure button. Buttons control only their matching wall type; an open
 wall becomes its material's flat floor. Doors overlay the selected wall and open
 that cell without adding their own wall frame.
 
-Ducks, turtles and crabs wander over clear floor and block Shovey and pushed
-pieces. Goldfish, koi and minnows swim between water tiles with still sprites. Water has gentle
+Ducks, turtles and crabs choose independent directions from their first step,
+wander over clear floor and block Shovey and pushed pieces. Goldfish, koi and
+minnows also choose their own paths between water tiles with still sprites. Water has gentle
 animated ripples. Trees also block movement. Red, green and orange portals join
 cyan, purple and yellow; each color connects to matching portals. Pressure plates
 lower mossy stone walls. A separate iron gate opens and closes when Shovey pushes

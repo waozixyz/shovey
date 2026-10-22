@@ -170,11 +170,11 @@ def main(force=False):
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
                 status("Updating…")
                 changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
-                          f'- Play the approved Classic campaign through level {len(approved)}.\n- Place doors directly in any wall; opening them reveals the matching floor.\n- Use mossy walls for every material with matching colored pressure buttons.\n- Use any matching lever to switch every gate of its color.\n- Keep your progress and use the integrated level editor.', True)
+                          f'- Play the approved Classic campaign through level {len(approved)}.\n- Animals and fish choose their own directions from their first step and wander through open spaces.\n- Keep your progress and use the integrated level editor.', True)
                 changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
-                          '- Test puzzles with several matching levers; any handle switches their shared gate state.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
+                          '- Animals and fish wander independently when testing Classic levels.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
                 changelog(arcade / 'CHANGELOG.md', versions['arcade'],
-                          f'- Shovey includes approved Classic levels 1–{len(approved)} with updated artwork and portal travel.\n- Island stays unavailable while its levels are being edited.\n- Existing Shovey saves and completed levels are retained.')
+                          f'- Shovey includes approved Classic levels 1–{len(approved)}.\n- Animals and fish choose independent movement directions, including their first step.\n- Existing Shovey saves and completed levels are retained.')
                 run([arcade / 'update_version.sh'], arcade)
                 run(['python3', 'tools/levels/levels.py', 'generate'])
                 run(['python3', 'tools/pixel/pixel.py', 'build'])
