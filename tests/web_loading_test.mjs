@@ -180,6 +180,40 @@ try {
   await writeFile(join(shots, 'landscape-selector.png'), Buffer.from(screenshot.data, 'base64'));
   await writeFile(join(shots, 'receipt.json'), JSON.stringify({url: target, ...metadata, loading: 'passed', controls: 'passed', orientation: 'passed'}) + '\n');
   console.log('Web loading and orientation shell passed: ' + target);
+} catch (error) {
+  try {
+    if (socket?.readyState === WebSocket.OPEN) {
+      let id = 900000;
+      const probe = expression => new Promise(resolve => {
+        const requestId = ++id;
+        const listener = event => {
+          const reply = JSON.parse(event.data);
+          if (reply.id !== requestId) return;
+          socket.removeEventListener('message', listener);
+          resolve(reply.result?.result?.value);
+        };
+        socket.addEventListener('message', listener);
+        socket.send(JSON.stringify({id: requestId, method: 'Runtime.evaluate', params: {expression, returnByValue: true}}));
+        setTimeout(() => resolve('probe timed out'), 3000).unref();
+      });
+      const state = await probe(`(() => {
+        const fs = window.Module?.FS;
+        const listing = path => { try { return fs.readdir(path); } catch { return []; } };
+        const canvas = document.querySelector('canvas');
+        const colors = new Set();
+        if (canvas?.width) {
+          const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+          for (let at = 0; at < pixels.length; at += 388) colors.add((pixels[at] << 16) | (pixels[at + 1] << 8) | pixels[at + 2]);
+        }
+        return {status: document.querySelector('#status')?.textContent, host: document.querySelector('#zib-controls')?.textContent,
+          result: document.querySelector('#result')?.textContent, appFiles: listing('/kryon-apps'),
+          shoveyFiles: listing('/kryon-apps/shovey'), colors: colors.size, canvas: [canvas?.width, canvas?.height]};
+      })()`);
+      await writeFile(join(shots, 'failure.json'), JSON.stringify({state, diagnostics, browserErrors}));
+      console.error('Browser failure state: ' + JSON.stringify(state));
+    }
+  } catch (probeError) { console.error('Could not record browser failure: ' + probeError.message); }
+  throw error;
 } finally {
   socket?.close();
   try { process.kill(-browser.pid, 'SIGTERM'); } catch {}
