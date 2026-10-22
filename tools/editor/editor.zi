@@ -1957,7 +1957,8 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             .label = ifx glm_busy && glm_repair then "Fixing…" else "Fix it",
             .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM(true) }
     if Button(session, ButtonProps.{.key = 22, .id = 22, .bounds = Rectangle.{614.0, 51.0, 116.0, 30.0},
-            .label = "Update all", .disabled = !server_configured || playing || glm_busy || PublicationBusy()}) != 0 { UpdateAll() }
+            .label = ifx PublicationBusy() then "Updating…" else "Update all",
+            .disabled = !server_configured || playing || glm_busy || PublicationBusy()}) != 0 { UpdateAll() }
     unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{742.0, 51.0, 220.0, 30.0},
         .fill = SolutionColor(), .radius = 4.0})
     Caption(24, Rectangle.{750.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
