@@ -631,11 +631,7 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
 // ---------------------------------------------------------------------------
 // The first page: Classic or Island
 
-#if #defined(SHOVEY_RELEASE) {
-    EDITOR_EDITIONS :: 1
-} else {
-    EDITOR_EDITIONS :: 2
-}
+EDITOR_EDITIONS :: 2
 
 EditorHome :: (width: float32, top: float32, bottom: float32) {
     EditorCaption(101, Rectangle.{16.0, top + 8.0, width - 32.0, 40.0}, EditorText("editor_choose"), 15)

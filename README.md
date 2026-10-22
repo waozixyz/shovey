@@ -13,7 +13,7 @@ every shipped level by replaying it through the real game rules.
 
 ## Play
 
-- **Shovey Classic**: 157 stone-courtyard puzzles and a finale. Push balls
+- **Shovey Classic**: approved stone-courtyard puzzles through level 19. Later boards stay in the developer editor while they are being edited. Push balls
   into matching holes, crates onto corners, coloured blocks onto marks,
   collect keys and powers, then walk home.
 - **Shovey Editor**: paint, test and share your own Classic boards. The
@@ -63,8 +63,8 @@ replayed from the start and saved under ROUTES.
 ## Level editor
 
 **Shovey Editor** is the third game beside Shovey Classic and Shovey Island.
-Choose Classic or Island, then open any story level or one of your own, or
-start a new one. Tap or drag on the board to paint the chosen piece, pick
+Choose Classic or Island, then open an approved Classic story level or one of your own, or
+start a new one. Island editing is available with no published story levels yet. Tap or drag on the board to paint the chosen piece, pick
 a piece up from the board, and undo a stroke at a time; Island's shores and
 banks follow the sand, meadow and water you paint. A story level is never
 changed: the first stroke on one makes your own copy. Every change is kept

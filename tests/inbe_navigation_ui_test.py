@@ -137,7 +137,10 @@ def main():
                     driver.wait(label='Restart', role='button')
                     driver.key('left')
                 else:
-                    assert not driver.find(label='Island', role='button'), 'Island remains unpublished'
+                    driver.press(label='Island', role='button')
+                    driver.wait(label='New level', role='button')
+                    assert not driver.find(contains='Level 1', role='button'), 'Unpublished Island story level is visible'
+                    driver.press(label='Back', role='button', index=-1)
                     driver.press(label='Classic', role='button')
                     driver.press(label='New level', role='button')
                     driver.press(label='Play', role='button')
