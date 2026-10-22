@@ -249,6 +249,16 @@ SceneryShores :: (board: *EditBoard, count: *SceneryCount) {
     }
 }
 
+// Pressure buttons or the mossy walls they lower.
+ScenerySwitchedWalls :: (board: *EditBoard) -> bool {
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        kind := cast(s32)board.ground[at]
+        tile := cast(s32)board.tiles[at]
+        if ShoveyButtonColor(kind) >= 0 || ShoveyMossColor(kind) >= 0 || ShoveyButtonColor(tile) >= 0 || ShoveyMossColor(tile) >= 0 { return true }
+    }
+    return false
+}
+
 // Moss on walls, most where gardens and water are near, in runs.
 SceneryMoss :: (board: *EditBoard, level: s32, count: *SceneryCount) {
     for at: cast(s32)0..EDIT_CELLS - 1 {
@@ -353,7 +363,8 @@ SceneryDress :: (board: *EditBoard, route: string, level: s32, count: *SceneryCo
     dressed := board.*
     SceneryAnimalAreas(*dressed)
     SceneryShores(*dressed, count)
-    SceneryMoss(*dressed, level, count)
+    // Decorative moss would look like walls that a pressure button lowers.
+    if !ScenerySwitchedWalls(*dressed) { SceneryMoss(*dressed, level, count) }
     SceneryLandmarks(*dressed, scenery_path[:], level, count)
     SceneryClumps(*dressed, level, count)
     if !SceneryTrace(*dressed, route, scenery_dressed_path[:]) { return false }
