@@ -166,3 +166,12 @@
 [shovey_back]
 戻る
 ---
+[shovey_play]
+プレイ
+---
+[shovey_games]
+ゲーム
+---
+[shovey_title_art]
+ショーヴィーが晴れた庭で木箱を家へ押していく
+---

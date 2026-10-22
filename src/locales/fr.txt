@@ -166,3 +166,12 @@ Activer le son
 [shovey_back]
 Retour
 ---
+[shovey_play]
+Jouer
+---
+[shovey_games]
+Jeux
+---
+[shovey_title_art]
+Shovey pousse une caisse jusqu’à la maison dans un jardin ensoleillé
+---

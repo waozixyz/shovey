@@ -166,3 +166,12 @@
 [shovey_back]
 Назад
 ---
+[shovey_play]
+Играть
+---
+[shovey_games]
+Игры
+---
+[shovey_title_art]
+Шови толкает ящик домой через солнечный сад
+---

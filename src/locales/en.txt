@@ -166,3 +166,12 @@ Unmute
 [shovey_back]
 Back
 ---
+[shovey_play]
+Play
+---
+[shovey_games]
+Games
+---
+[shovey_title_art]
+Shovey pushes a crate home through a sunny garden
+---

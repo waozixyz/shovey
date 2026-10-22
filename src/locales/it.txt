@@ -166,3 +166,12 @@ Riattiva audio
 [shovey_back]
 Indietro
 ---
+[shovey_play]
+Gioca
+---
+[shovey_games]
+Giochi
+---
+[shovey_title_art]
+Shovey spinge una cassa verso casa in un giardino soleggiato
+---

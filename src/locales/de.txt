@@ -166,3 +166,12 @@ Ton an
 [shovey_back]
 Zurück
 ---
+[shovey_play]
+Spielen
+---
+[shovey_games]
+Spiele
+---
+[shovey_title_art]
+Shovey schiebt eine Kiste durch einen sonnigen Garten nach Hause
+---

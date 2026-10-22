@@ -1306,6 +1306,21 @@
       "path": "sprites/tile-56.png",
       "depicts": "cherry",
       "sha256": "2040ff590a279a1f22c434e40ece5091cd102265ade5e485da37ec1eadea10a1"
+    },
+    {
+      "path": "title-landscape.png",
+      "depicts": "title screen art: a glossy 3D Shovey pushes a wooden crate across a sunny garden courtyard, home behind",
+      "sha256": "40c01eb8300e4c5db52b2d75373e17cdaf7f68140c33c0a225613fc174660747"
+    },
+    {
+      "path": "title-portrait.png",
+      "depicts": "title screen art for phones: 3D Shovey pushing a crate in a garden courtyard with its cottage home",
+      "sha256": "ddcbf989eab5971157d8cdc73494ed03660bb4c7a7679543248f45be260777e3"
+    },
+    {
+      "path": "logo.png",
+      "depicts": "Shovey logo: bubbly glossy green letters with a little Shovey peeking out",
+      "sha256": "e47781aa3328f68077589f95d813e9c2e6fff10ebd62a9d003773bb2c2f7a092"
     }
   ]
 }

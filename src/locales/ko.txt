@@ -166,3 +166,12 @@
 [shovey_back]
 뒤로
 ---
+[shovey_play]
+플레이
+---
+[shovey_games]
+게임
+---
+[shovey_title_art]
+쇼비가 햇살 가득한 정원에서 상자를 집으로 밀고 있어요
+---

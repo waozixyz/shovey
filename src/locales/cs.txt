@@ -166,3 +166,12 @@ Zapnout zvuk
 [shovey_back]
 Zpět
 ---
+[shovey_play]
+Hrát
+---
+[shovey_games]
+Hry
+---
+[shovey_title_art]
+Shovey tlačí bednu domů slunnou zahradou
+---

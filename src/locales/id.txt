@@ -166,3 +166,12 @@ Nyalakan suara
 [shovey_back]
 Kembali
 ---
+[shovey_play]
+Main
+---
+[shovey_games]
+Permainan
+---
+[shovey_title_art]
+Shovey mendorong peti pulang melewati taman yang cerah
+---

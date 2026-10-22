@@ -166,3 +166,12 @@
 [shovey_back]
 返回
 ---
+[shovey_play]
+开始游戏
+---
+[shovey_games]
+游戏
+---
+[shovey_title_art]
+Shovey 推着木箱穿过阳光花园回家
+---

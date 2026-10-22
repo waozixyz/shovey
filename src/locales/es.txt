@@ -166,3 +166,12 @@ Activar sonido
 [shovey_back]
 Volver
 ---
+[shovey_play]
+Jugar
+---
+[shovey_games]
+Juegos
+---
+[shovey_title_art]
+Shovey empuja una caja hacia casa por un jardín soleado
+---

@@ -50,6 +50,8 @@ selector_open: bool;
 levels_scroll: s32;
 loaded: bool;
 help_open: bool;
+// The title screen opens the game and returns until Play.
+title_open: bool = true;
 save_failed: bool;
 help_scroll: s32;
 // Touch-first: hidden until the board is touched, then hidden again for keyboard.
@@ -244,6 +246,49 @@ ContinueGame :: () {
     Remember()
 }
 
+// The title screen: the game's art and name, then the way in.
+ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) {
+    height := bottom - top
+    portrait := height > width
+    Image(frame.session, ImageProps.{.key = cast(u64)20200,
+            .asset_path = ifx portrait then "assets/shovey/title-portrait.png" else "assets/shovey/title-landscape.png",
+            .alt_text = AppLocaleHost("shovey_title_art"), .bounds = Rectangle.{0.0, top, width, height},
+            .fit = ImageFit.ImageFitCover, .smooth = true})
+    logo_width := ifx portrait then width * 0.88 else height * 0.95
+    if logo_width > 760.0 { logo_width = 760.0 }
+    logo_height := logo_width * 0.42
+    Image(frame.session, ImageProps.{.key = cast(u64)20201, .asset_path = "assets/shovey/logo.png", .alt_text = "Shovey",
+            .bounds = Rectangle.{(width - logo_width) / 2.0, top + height * 0.05, logo_width, logo_height},
+            .fit = ImageFit.ImageFitContain, .smooth = true})
+    play_width: float32 = 260.0
+    play_y := bottom - 156.0
+    if Button(frame.session, ButtonProps.{.key = cast(u64)20202, .id = 20202,
+            .bounds = Rectangle.{(width - play_width) / 2.0, play_y, play_width, 64.0}, .label = AppLocaleHost("shovey_play"),
+            .tone = ButtonTone.ButtonToneSuccess, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
+        title_open = false
+    }
+    // Levels, help and sound, and the other games when the host has them.
+    count: s32 = ifx can_leave then 4 else 3
+    row_width := cast(float32)count * 56.0 - 12.0
+    x := (width - row_width) / 2.0
+    y := play_y + 76.0
+    if Control(20203, Rectangle.{x, y, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+        title_open = false
+        selector_open = true
+    }
+    if Control(20204, Rectangle.{x + 56.0, y, 44.0, 44.0}, AppLocaleHost("shovey_help"), false, "", ICON_HELP) {
+        title_open = false
+        help_open = true
+    }
+    if Control(20205, Rectangle.{x + 112.0, y, 44.0, 44.0}, AppLocaleHost("shovey_mute"), false, "",
+            ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
+        SoundSetMuted(!SoundMuted())
+    }
+    if can_leave && Control(20206, Rectangle.{x + 168.0, y, 44.0, 44.0}, AppLocaleHost("shovey_games"), false, "", ICON_GAMES) {
+        LeaveForGameSelection()
+    }
+}
+
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
     if !loaded {
@@ -267,6 +312,10 @@ ShoveyFrame :: () {
     bottom := cast(float32)(frame.height - frame.bottom)
     can_leave := GameSelectionAvailable()
     ShoveyDress(frame.session, width, top, bottom)
+    if title_open {
+        ShoveyTitle(width, top, bottom, can_leave)
+        return
+    }
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
