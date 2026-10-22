@@ -224,7 +224,10 @@ int main(int argc, char **argv) {
     glm_result(candidate, candidate, "0");  /* A claimed win that does not win. */
     assert(memcmp(before, editor_Board(1).data, HEX) == 0);
     assert(editor_Proven() && proof_length == 2 && proof_route[0] == '2' && proof_route[1] == '2');
+    glm_repair = true;
     glm_result(candidate, candidate, "22");
+    assert(action_message_length == 14 && memcmp(action_message, "Repair applied", 14) == 0);
+    glm_repair = false;
     assert(memcmp(candidate, editor_Board(1).data, HEX) == 0);
     assert(editor_Proven() && editor_Solved() && !check_wanted);
     editor_UndoEdit();
@@ -313,6 +316,19 @@ int main(int argc, char **argv) {
     check_state = 1;
     assert(!editor_UpdateAvailable());
     check_state = 0;
+    /* Solution state has its own message even while a publishing message exists. */
+    editor_ActionMessage((String){"Published", 9});
+    check_level = current;
+    memcpy(check_board, editor_Board(current).data, HEX);
+    check_state = 1;
+    String solution = editor_SolutionText();
+    assert(solution.length >= 8 && memcmp(solution.data, "Checking", 8) == 0);
+    check_state = 3;
+    solution = editor_SolutionText();
+    assert(solution.length == 17 && memcmp(solution.data, "No solution found", 17) == 0);
+    check_state = 0;
+    solution = editor_SolutionText();
+    assert(solution.length == 11 && memcmp(solution.data, "Not checked", 11) == 0);
     puts("Developer editor: saves, recovered wins, verified GLM results and undo/redo passed");
     return 0;
 }

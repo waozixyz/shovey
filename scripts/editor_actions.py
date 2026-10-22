@@ -3,6 +3,7 @@
 import argparse
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -94,6 +95,59 @@ def update():
                      start_new_session=True)
 
 
+def published_campaign():
+    spec = importlib.util.spec_from_file_location('editor_server', ROOT / 'scripts/editor_server.py')
+    server = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(server)
+    server.check(ROOT)
+    campaign = json.loads((DRAFTS / 'server-campaign.json').read_text())
+    if campaign.get('status') != 'verified':
+        raise ValueError('Server check unavailable. Retry.')
+    return campaign['boards']
+
+
+def update_all():
+    if not (ROOT / 'backup/editor-publish.json').is_file():
+        return
+    published = published_campaign()
+    saved = json.loads((ROOT / 'levels/classic.json').read_text())['levels']
+    path = ROOT / 'levels/approved.json'
+    before = {level['number']: level for level in json.loads(path.read_text())['levels']}
+    changes = {}
+    kept_drafts = []
+    for level in saved:
+        number = level['number']
+        if not 1 <= number <= len(published):
+            continue
+        board, route = board_hex(level), level.get('solution', '')
+        draft = DRAFTS / f'{number:03}.hex'
+        candidate = draft.read_text().strip() if draft.exists() else board
+        if candidate != board:
+            proof = DRAFTS / f'{number:03}.proof'
+            lines = proof.read_text().splitlines() if proof.exists() else []
+            if len(lines) == 2 and lines[0] == candidate and verify_route(number, candidate, lines[1]):
+                board, route = candidate, lines[1]
+            else:
+                kept_drafts.append(number)
+        if board != published[number - 1] and verify_route(number, board, route):
+            changes[number] = record(number, board, route)
+    updated = []
+    with (DRAFTS / 'approval.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        data = json.loads(path.read_text())
+        approved = {level['number']: level for level in data['levels']}
+        for number, level in changes.items():
+            if number in approved and approved[number] == before.get(number):
+                approved[number] = level
+                atomic(DRAFTS / f'{number:03}.approved', board_hex(level))
+                updated.append(number)
+        data['levels'] = [approved[number] for number in sorted(approved)]
+        atomic(path, json.dumps(data, indent=1) + '\n')
+    atomic(DRAFTS / 'update-all-summary.json', json.dumps(dict(
+        updated=sorted(updated), kept_unproven_drafts=kept_drafts), indent=2) + '\n')
+    update()
+
+
 def glm_settings():
     # Reuse Harmony's configured GLM provider; keys remain inside this process.
     settings = {}
@@ -139,7 +193,7 @@ def existing_route(number, original):
     return ''
 
 
-def apply_proposal(original, proposal):
+def apply_proposal(original, proposal, repair=False):
     """Apply small, explicit landscape-coordinate edits to the supplied board."""
     if not isinstance(proposal, dict) or not isinstance(proposal.get('edits'), list):
         raise ValueError('Return a JSON object with an edits list, not a replacement level')
@@ -150,7 +204,7 @@ def apply_proposal(original, proposal):
     touched = set()
     coordinates = set()
     for edit in proposal['edits']:
-        if not isinstance(edit, dict) or edit.get('layer') not in LAYERS[:2]:
+        if not isinstance(edit, dict) or edit.get('layer') not in (LAYERS if repair else LAYERS[:2]):
             raise ValueError('Edit cells or tiles only; keep the existing decoration')
         x, y, before, after = (edit.get(key) for key in ('x', 'y', 'from', 'to'))
         if any(type(value) is not int for value in (x, y, before, after)) or not (0 <= x < 20 and 0 <= y < 12):
@@ -165,8 +219,9 @@ def apply_proposal(original, proposal):
         touched.add(index)
         coordinates.add(at)
         updated[index] = after
-    if len(coordinates) > 40:
-        raise ValueError('GLM changed too much of the layout; use at most 40 board coordinates')
+    limit = 12 if repair else 40
+    if len(coordinates) > limit:
+        raise ValueError(f'GLM changed too much of the layout; use at most {limit} board coordinates')
     if cells[:240].count(10) != 1 or cells[:240].count(7) != 1:
         raise ValueError('The source level needs one player and one home')
     if Counter(updated[:240]) != Counter(cells[:240]):
@@ -174,8 +229,16 @@ def apply_proposal(original, proposal):
     for kind in (10, 7):
         if updated.index(kind) != cells.index(kind):
             raise ValueError('Keep the player and home in their existing cells')
-    if Counter(updated[240:480]) != Counter(cells[240:480]):
+    if not repair and Counter(updated[240:480]) != Counter(cells[240:480]):
         raise ValueError('Keep the exact terrain inventory; move existing tiles rather than adding or removing them')
+    if repair:
+        structure = WALLS | {0, 77, 78, *range(99, 104)}
+        before = Counter(kind for kind in cells[240:480] if kind not in structure)
+        after = Counter(kind for kind in updated[240:480] if kind not in structure)
+        if before != after:
+            raise ValueError('Keep all pits, water, abyss, pressure walls and other terrain mechanics')
+        if Counter(updated[480:]) != Counter(cells[480:]):
+            raise ValueError('Keep the existing decoration inventory; move a blocker rather than deleting it')
     if not any(cells[i] != updated[i] and (cells[i] not in COSMETIC or updated[i] not in COSMETIC) for i in touched):
         raise ValueError('Change the push puzzle, not just its scenery or floor colors')
     for at in coordinates:
@@ -290,9 +353,9 @@ def proven_variations(number, original, route, limit=8):
     return combined[:limit]
 
 
-def modify_once(number, feedback='', choices=None):
+def modify_once(number, feedback='', choices=None, repair=False):
     status = DRAFTS / f'{number:03}.glm-status'
-    atomic(status, 'Designing…')
+    atomic(status, 'Repairing…' if repair else 'Designing…')
     original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
     if not re.fullmatch('[0-9a-f]{1440}', original):
         raise ValueError('The source board is incomplete; your level was kept')
@@ -300,7 +363,15 @@ def modify_once(number, feedback='', choices=None):
     rows = [[cells[(11 - y) + x * 12 + layer * 240] for x in range(20)] for layer in range(3) for y in range(12)]
     source_route = existing_route(number, original)
     choices = choices or []
-    instruction = (
+    task = (
+        'You repair Shovey push puzzles. Make the supplied EXISTING board winnable with the smallest necessary edits. '
+        'Find the deadlock or blocked route, think through the required pushes, and propose a complete winning route. '
+        'Preserve the recognizable rooms and puzzle, its player and home positions, and the exact inventory and colors of all objects. '
+        'Keep every goal, colored pit, portal, paint, lever, gate, pressure wall, water and abyss. Never remove an objective to claim a win. '
+        'You may open or adjust a few ordinary walls and floor cells to provide access or pushing room, or reposition existing pieces. '
+        'You may move a blocking tree, lantern or boulder, preserving the exact decoration inventory. '
+        'Change at most 12 board coordinates; prefer the fewest changes that resolve the actual problem. Do not redesign the level. '
+    ) if repair else (
         'You design Shovey push puzzles. Improve the supplied EXISTING level with a small purposeful variation inspired by its current solution and mechanics. '
         'Think through the pushes and a winning route; use compact connected rooms and purposeful obstacles, not empty walking or random decoration. '
         'This is a variation of THIS puzzle, not a new unrelated puzzle. Preserve the exact inventory of every non-empty object kind, '
@@ -310,11 +381,15 @@ def modify_once(number, feedback='', choices=None):
         'Design the variation yourself. Avoid merely nudging one unused piece while the old solution works unchanged. '
         'If the old route still wins, change at least four coordinates with a concrete purpose in the push puzzle. '
         'Do not add goals, new mechanics, new items or extra scenery. Keep comparable difficulty. '
+    )
+    instruction = (task +
         'Return only JSON with keys edits, solution, explanation. Do NOT regenerate the grids. '
-        'edits is a list of {"layer":"cells" or "tiles","x":integer,"y":integer,"from":old ID,"to":new ID}. '
+        'edits is a list of {"layer":"cells","x":integer,"y":integer,"from":old ID,"to":new ID} objects. '
+        'layer may be cells, tiles' + (' or decorations. ' if repair else '. ') +
         'Coordinates use the supplied LANDSCAPE grids: x is column 0–19 from left, y is row 0–11 from top. '
-        'Every from value must match the input. Give each layer coordinate once. Move pieces by clearing the old cell and filling the new cell. '
-        'Preserve the exact count of EVERY kind in EACH layer, including empty cells, walls and floor types. Do not edit decorations or the outer border. '
+        'Every from value must match the input. Give each layer coordinate once. Move pieces by clearing the old cell and filling the new cell. ' +
+        ('Preserve every object and decoration count; only ordinary walls and floor counts may change. Keep the outer border. ' if repair else
+         'Preserve the exact count of EVERY kind in EACH layer, including empty cells, walls and floor types. Do not edit decorations or the outer border. ') +
         'explanation briefly describes the concrete gameplay improvement. solution is a winning action string, not a claim of solvability. '
         'In this LANDSCAPE view route digits mean 0=DOWN, 1=LEFT, 2=UP, 3=RIGHT, f=fire, t=advance time. '
         'Cells: 0 empty, 1/2/3 red/blue/green balls, 7 home, 8 paired teleporters, 9 crate, 10 player (exactly one), '
@@ -328,11 +403,13 @@ def modify_once(number, feedback='', choices=None):
         '123/124/125/126 orange/red/blue/green gates start OPEN and close when matching levers are on. Other gates start closed and open. '
         'Any matching lever toggles their shared state; all lever handles of that color switch together. '
         'Tiles: 0 paving, 12 wall, 14 mossy pressure wall, 4/5/6 red/blue/green pits, 47/48/49 cyan/purple/yellow pits, 64 water, '
-        '65 abyss, 70 ice, 77 grass, 78 sand. Decorations: 0 empty, 57 flowers, 58 grass tuft, 59 pebbles, 84 blocking tree. '
+        '65 abyss, 70 ice, 77 grass, 78 sand; 95/96/97/98 slate/brick/sandstone/timber walls; 99/100/101/102 matching floors, 103 mossy floor. '
+        'Objects 82 duck, 83 turtle and 88 crab wander and block movement; 89/90/91 fish stay on water. '
+        'Decorations: 0 empty, 57 flowers, 58 grass tuft, 84 blocking tree, 106 blocking lantern, 122 blocking boulder. '
         'A ball pushed onto matching pit disappears; pit is reusable. Paint recolors a ball and is consumed. '
         'Player must remove ALL balls, collect every apple, cover all crate goals, then enter home. '
         'Crates with no goals can stay on the board. Objects cannot be pushed into portals, home, water or walls. '
-        'Do not add animals or autonomous objects. Keep outer border walled. No scripts, tools, commands, prose outside the JSON.')
+        'Do not add animals or autonomous objects. Preserve the outer border exactly. No scripts, tools, commands, prose outside the JSON.')
     if choices:
         instruction += (
             'The supplied verified_variations are small edits of this exact board, already proven to win in the real engine. '
@@ -362,12 +439,12 @@ def modify_once(number, feedback='', choices=None):
             raise ValueError('Choose one of the supplied engine-proven variations')
         proposal = choices[choice] | {'explanation': str(proposal.get('explanation', ''))[:1000]}
     try:
-        candidate = apply_proposal(original, proposal)
-        changed = {at % 240 for at in range(480)
+        candidate = apply_proposal(original, proposal, repair=repair)
+        changed = {at % 240 for at in range(720)
                    if original[at * 2:at * 2 + 2] != candidate[at * 2:at * 2 + 2]}
-        if len(changed) < 4 and verify_route(number, candidate, source_route):
+        if not repair and len(changed) < 4 and verify_route(number, candidate, source_route):
             raise ValueError('Only one piece was nudged and the old route still wins unchanged. Design a fuller push variation or a change requiring a new route')
-        atomic(status, 'Checking variation…')
+        atomic(status, 'Checking repair…' if repair else 'Checking variation…')
         route = prove_proposal(number, candidate, proposal.get('solution', ''), source_route)
     except (ValueError, subprocess.TimeoutExpired) as error:
         rejected = ValueError(str(error) if isinstance(error, ValueError) else 'The route check ran out of time; simplify the variation')
@@ -377,13 +454,13 @@ def modify_once(number, feedback='', choices=None):
     atomic(DRAFTS / f'{number:03}.glm-explanation', str(proposal.get('explanation', ''))[:1000])
     atomic(DRAFTS / f'{number:03}.glm-result', candidate)
     atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(
-        model=model, changed_coordinates=len(changed), solution_length=len(route),
+        model=model, mode='repair' if repair else 'modify', changed_coordinates=len(changed), solution_length=len(route),
         explanation=str(proposal.get('explanation', ''))[:1000]), indent=2) + '\n')
-    atomic(status, 'Variation ready')
+    atomic(status, 'Repair ready' if repair else 'Variation ready')
     atomic(DRAFTS / f'{number:03}.glm-state', 'ready')
 
 
-def modify(number):
+def modify(number, repair=False):
     atomic(DRAFTS / f'{number:03}.glm-state', 'working')
     glm_settings()  # Configuration errors cannot be corrected by another proposal.
     feedback = ''
@@ -391,18 +468,18 @@ def modify(number):
     for attempt in range(3):
         try:
             choices = None
-            if attempt == 2:
+            if attempt == 2 and not repair:
                 original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
                 atomic(DRAFTS / f'{number:03}.glm-status', 'Finding proven alternatives…')
                 choices = proven_variations(number, original, existing_route(number, original))
-            modify_once(number, feedback, choices)
+            modify_once(number, feedback, choices, repair=repair)
             return
         except ValueError as error:
             feedback = json.dumps(dict(reason=str(error), rejected_proposal=getattr(error, 'proposal', None)))
             atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(
                 attempt=attempt + 1, seconds=round(time.monotonic() - started, 1),
                 reason=str(error), rejected_proposal=getattr(error, 'proposal', None)), indent=2) + '\n')
-    raise ValueError('No solvable variation found. Try GLM again.')
+    raise ValueError('No winnable repair found. Try Fix it again.' if repair else 'No solvable variation found. Try GLM again.')
 
 
 def failure_message(error):
@@ -421,20 +498,24 @@ def failure_message(error):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('approve', 'glm', 'update'))
+    parser.add_argument('action', choices=('approve', 'glm', 'fix', 'update', 'update-all'))
     parser.add_argument('level', type=int)
     args = parser.parse_args()
-    if not 1 <= args.level <= 174:
+    if not 1 <= args.level <= (175 if args.action in ('update', 'update-all') else 174):
         parser.error('level is outside the editor')
     try:
         if args.action == 'update':
             update()
+        elif args.action == 'update-all':
+            update_all()
+        elif args.action == 'fix':
+            modify(args.level, repair=True)
         else:
             (approve if args.action == 'approve' else modify)(args.level)
     except Exception as error:
-        message = failure_message(error) if args.action == 'glm' else 'Update failed. Retry.'
-        path = DRAFTS / (f'{args.level:03}.glm-status' if args.action == 'glm' else 'publish-status')
+        message = failure_message(error) if args.action in ('glm', 'fix') else 'Update failed. Retry.'
+        path = DRAFTS / (f'{args.level:03}.glm-status' if args.action in ('glm', 'fix') else 'publish-status')
         atomic(path, message[:220])
-        if args.action == 'glm':
+        if args.action in ('glm', 'fix'):
             atomic(DRAFTS / f'{args.level:03}.glm-state', 'error')
         raise SystemExit(1)

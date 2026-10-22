@@ -176,6 +176,27 @@ with (output / 'app.log').open('w') as log:
         (drafts / 'server-campaign.json').write_text(json.dumps(server))
         time.sleep(2.3)
         assert map_colors()[0] == purple
+        click(100, 28)
+        (drafts / 'worker-started').unlink()
+        click(670, 66)
+        for attempt in range(40):
+            if (drafts / 'worker-started').exists(): break
+            time.sleep(.025)
+        assert (drafts / 'worker-started').read_text() == 'update-all 1'
+        time.sleep(2.1)
+        (drafts / 'worker-started').unlink()
+        click(560, 66)
+        for attempt in range(40):
+            if (drafts / 'worker-started').exists(): break
+            time.sleep(.025)
+        assert (drafts / 'worker-started').read_text() == 'fix 1'
+        subprocess.run(['import', '-window', window, str(output / 'fix-status.png')], check=True)
+        with Image.open(output / 'fix-status.png').convert('RGB') as image:
+            red, green, blue = image.getpixel((746, 75))
+            assert green > red and green > blue, 'Known solution status was hidden by the GLM job'
+        click(480, 28)
+        assert (drafts / 'place').read_text().strip() == '2', 'GLM repair blocked navigation'
+        time.sleep(2.1)
         print('Approval retries and saves passed; server matches purple, changed drafts pink, unverified gray; waiting 100% red and unknown/low similarity green')
     finally:
         if windows:

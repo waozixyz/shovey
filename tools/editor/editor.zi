@@ -115,6 +115,7 @@ diff_open: bool;
 diff_label: [32]u8;
 saved_approval_ready: bool;
 glm_busy: bool;
+glm_repair: bool;
 glm_place: s32;
 glm_base: [HEX]u8;
 glm_started: s64;
@@ -165,6 +166,7 @@ secondary: SecondaryPointerFrame;
 command: [ROUTE_MAX + 2048]u8;
 title_bytes: [256]u8;
 status_bytes: [512]u8;
+solution_bytes: [96]u8;
 label_bytes: [128]u8;
 cell_bytes: [PLACES * 16]u8;
 draft_bytes: [64]u8;
@@ -845,6 +847,14 @@ UpdateEdit :: () {
     StartCheck()
 }
 
+UpdateAll :: () {
+    if !server_configured || playing || glm_busy || PublicationBusy() { return }
+    ActionMessage("Updating published levels…")
+    publish_message_length = 0
+    AppendText(publish_message[:], *publish_message_length, "Updating…")
+    RunAction("update-all")
+}
+
 QueueApproval :: (board: []u8, letters: []u8) {
     length: s32 = 0
     AppendText(proof_record[:], *length, TextView(board))
@@ -860,8 +870,9 @@ QueueApproval :: (board: []u8, letters: []u8) {
     RunAction("approve")
 }
 
-ModifyGLM :: () {
-    if playing || glm_busy { return }
+ModifyGLM :: (repair: bool = false) {
+    if playing || glm_busy || current >= PLACES { return }
+    glm_repair = repair
     Copy(glm_base[:], Board(current))
     glm_place = current
     unused RemoveFile(DraftPath(current, ".glm-result"))
@@ -871,8 +882,8 @@ ModifyGLM :: () {
     unused WriteEntireFile(DraftPath(current, ".glm-state"), "working")
     glm_busy = true
     glm_started = MonotonicMilliseconds()
-    ActionMessage("Designing…")
-    RunAction("glm")
+    ActionMessage(ifx repair then "Repairing…" else "Designing…")
+    RunAction(ifx repair then "fix" else "glm")
 }
 
 // A result and its proof must describe the same board, and its route must
@@ -913,8 +924,8 @@ PollActions :: (now: s64) {
                     for at: cast(s32)0..proof_length - 1 { proof_route[at] = proof[HEX + 1 + at] }
                     proof_level = current
                     AcceptRoute(proof_route[:], proof_length)
-                    ActionMessage("Variation applied")
-                } else { ActionMessage("Variation failed its route check. Retry.") }
+                    ActionMessage(ifx glm_repair then "Repair applied" else "Variation applied")
+                } else { ActionMessage(ifx glm_repair then "Repair failed its route check. Retry." else "Variation failed its route check. Retry.") }
             } else { ActionMessage("Level changed. Run GLM again.") }
             glm_busy = false
             unused RemoveFile(DraftPath(glm_place, ".glm-result"))
@@ -1703,7 +1714,32 @@ SolverText :: (bytes: []u8, length: *s32) {
     }
 }
 
-StatusText :: () -> string {
+SolutionText :: () -> string {
+    length: s32 = 0
+    if Solved() || Proven() {
+        AppendText(solution_bytes[:], *length, "Winnable · ")
+        AppendNumber(solution_bytes[:], *length, ifx Solved() then route_length else proof_length)
+        AppendText(solution_bytes[:], *length, " moves")
+    } else if check_state == 1 {
+        AppendText(solution_bytes[:], *length, "Checking solution…")
+    } else if check_state == 3 && Checked() {
+        AppendText(solution_bytes[:], *length, "No solution found")
+    } else if check_state == 4 {
+        AppendText(solution_bytes[:], *length, "Needs one player")
+    } else {
+        AppendText(solution_bytes[:], *length, "Not checked")
+    }
+    return TextView(solution_bytes[:length])
+}
+
+SolutionColor :: () -> Color {
+    if Solved() || Proven() { return Color.{54, 106, 65, 255} }
+    if check_state == 1 { return Color.{118, 94, 38, 255} }
+    if (check_state == 3 && Checked()) || check_state == 4 { return Color.{126, 58, 64, 255} }
+    return Color.{67, 74, 72, 255}
+}
+
+StatusText :: (show_solution: bool = true) -> string {
     length: s32 = 0
     if playing {
         if watching { AppendText(status_bytes[:], *length, "Watching the solver's route.    ") }
@@ -1713,9 +1749,10 @@ StatusText :: () -> string {
         AppendText(status_bytes[:], *length, " still to do, ")
         AppendNumber(status_bytes[:], *length, play_length)
         AppendText(status_bytes[:], *length, " moves.    ")
-        SolverText(status_bytes[:], *length)
+        if show_solution { SolverText(status_bytes[:], *length) }
         return TextView(status_bytes[:length])
     }
+    if show_solution {
     if check_state == 4 { AppendText(status_bytes[:], *length, "Put exactly one Shovey on the board.") }
     else if check_state == 1 || (check_wanted && !Checked()) {
         AppendText(status_bytes[:], *length, "Checking whether it can be won")
@@ -1738,12 +1775,13 @@ StatusText :: () -> string {
         AppendText(status_bytes[:], *length, SOLVE_SECONDS)
         AppendText(status_bytes[:], *length, ifx Proven() then " s." else " s. Play it (Tab) to prove it, or change it.")
     }
+    }
     if BestMirrorMatch(current) >= 0 {
         AppendText(status_bytes[:], *length, "    Puzzle similarity: ")
         AppendNumber(status_bytes[:], *length, similarity_percent)
         AppendText(status_bytes[:], *length, "% (layout and pieces, best mirror)")
     }
-    if Proven() {
+    if show_solution && Proven() {
         AppendText(status_bytes[:], *length, "    You won it in ")
         AppendNumber(status_bytes[:], *length, proof_length)
         AppendText(status_bytes[:], *length, " moves.")
@@ -1902,7 +1940,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if Control(16, Rectangle.{8.0, 51.0, 80.0, 30.0}, "Redo (Y)") && !playing { RedoEdit() }
     if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
     if Button(session, ButtonProps.{.key = 18, .id = 18, .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0},
-            .label = ifx glm_busy then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy}) != 0 { ModifyGLM() }
+            .label = ifx glm_busy && !glm_repair then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM() }
     update := NeedsUpdate(current)
     if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
             .label = ifx update then ifx check_state == 1 then "Checking…" else ifx PublicationBusy() then "Updating…" else "Update" else "Approve",
@@ -1915,8 +1953,16 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if Button(session, ButtonProps.{.key = 20, .id = 20, .bounds = Rectangle.{414.0, 51.0, 96.0, 30.0},
             .label = TextView(diff_label[:differences]), .selected = diff_open,
             .disabled = playing || !server_verified || !published_places[current - 1]}) != 0 { diff_open = !diff_open }
-    Caption(9, Rectangle.{522.0, 52.0, width - 534.0, 28.0},
-        ifx action_message_length > 0 then TextView(action_message[:action_message_length]) else StatusText(), 14)
+    if Button(session, ButtonProps.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
+            .label = ifx glm_busy && glm_repair then "Fixing…" else "Fix it",
+            .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM(true) }
+    if Button(session, ButtonProps.{.key = 22, .id = 22, .bounds = Rectangle.{614.0, 51.0, 116.0, 30.0},
+            .label = "Update all", .disabled = !server_configured || playing || glm_busy || PublicationBusy()}) != 0 { UpdateAll() }
+    unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{742.0, 51.0, 220.0, 30.0},
+        .fill = SolutionColor(), .radius = 4.0})
+    Caption(24, Rectangle.{750.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
+    Caption(9, Rectangle.{974.0, 52.0, width - 986.0, 28.0},
+        ifx action_message_length > 0 then TextView(action_message[:action_message_length]) else StatusText(false), 14)
 
     if selector_open {
         if now - drafts_refreshed >= 1000 {

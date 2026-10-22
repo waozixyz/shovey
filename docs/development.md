@@ -77,6 +77,15 @@ below 50% and shifts smoothly toward red above 90%, including waiting levels.
 Changed published boards show Update. Saved wins are reused; unproven edits
 start a check before publishing. Diff shows the server board above your draft,
 counts changed cells and highlights their objects, floor or decoration changes.
+Update all publishes saved, proven changes to the existing public campaign in
+one background operation. Unproven drafts and unpublished levels stay intact.
+The solution status remains visible beside the controls while actions run.
+
+**Fix it** asks the configured GLM provider to repair an unwinnable board with
+small changes. It can open pushing space or reposition existing pieces and
+blocking decoration, while keeping objectives and the player and home. A repair
+is applied only after a winning route passes the game engine; Undo restores the
+previous draft. Failed proposals leave the board intact.
 
 **GLM Modify** designs a variation of the open board, using its existing winning
 route as a reference. It can change the push sequence and find a new route;
@@ -88,7 +97,6 @@ Undo, Redo and Reset remain available. Unproven proposals leave the level intact
 already published, and becomes available again if its update fails. A later
 unproven draft does not prevent approving the last saved winning layout.
 Saved edits to approved levels publish automatically once their winning route is proven.
-Approved levels retain their purple mark while being edited.
 Each gate color also has an open starting variant, which closes when its lever
 is switched on. Mix both starting states for opposite passages on one lever.
 All levers of one color share their state, so any matching lever toggles the passages.

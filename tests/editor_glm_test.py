@@ -37,7 +37,111 @@ def variation(x=3, y=3):
                 solution='333332', explanation='Move the red ball closer so its first push starts earlier.')
 
 
+def blocked_board():
+    cells = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+    for x, y in ((1, 3), (2, 2), (2, 4), (3, 3)):
+        cells[240 + at(x, y)] = 12
+    return ''.join(f'{kind:02x}' for kind in cells)
+
+
+def repair():
+    return dict(edits=[dict(layer='tiles', x=3, y=3, **{'from': 12, 'to': 0})],
+                solution='333332', explanation='Open one wall so the player can reach the ball.')
+
+
 class Variations(unittest.TestCase):
+    def test_fix_uses_glm_and_proves_a_minimal_repair(self):
+        source = blocked_board()
+        self.assertFalse(actions.verify_route(1, source, '333332'))
+        response = dict(choices=[dict(message=dict(content=json.dumps(repair())))])
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.glm-base').write_text(source)
+            with patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions, 'existing_route', return_value=''), \
+                    patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                    patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())) as request:
+                actions.modify(1, repair=True)
+            candidate, route = (drafts / '001.glm-proof').read_text().splitlines()
+            self.assertTrue(actions.verify_route(1, candidate, route))
+            self.assertEqual((drafts / '001.glm-result').read_text(), candidate)
+            self.assertEqual((drafts / '001.glm-base').read_text(), source)
+            self.assertEqual(json.loads((drafts / '001.glm-details.json').read_text())['changed_coordinates'], 1)
+            instruction = json.loads(request.call_args.args[0].data)['messages'][0]['content']
+            self.assertIn('repair', instruction)
+            self.assertIn('smallest necessary', instruction)
+            request.assert_called_once()
+
+    def test_repairs_keep_objectives_and_modify_keeps_its_stricter_rules(self):
+        with self.assertRaises(ValueError):
+            actions.apply_proposal(blocked_board(), repair())
+        for edit in (dict(layer='cells', x=4, y=3, **{'from': 1, 'to': 0}),
+                     dict(layer='tiles', x=6, y=3, **{'from': 4, 'to': 0})):
+            with self.subTest(edit=edit), self.assertRaises(ValueError):
+                actions.apply_proposal(blocked_board(), dict(edits=[edit]), repair=True)
+
+    def test_failed_glm_repair_keeps_the_source_and_exposes_no_result(self):
+        proposal = dict(edits=[dict(layer='cells', x=4, y=3, **{'from': 1, 'to': 0})], solution='2')
+        def reply(*args, **kwargs):
+            return io.BytesIO(json.dumps(dict(choices=[dict(message=dict(content=json.dumps(proposal)))])).encode())
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.glm-base').write_text(blocked_board())
+            with patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions, 'existing_route', return_value=''), \
+                    patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                    patch.object(actions.urllib.request, 'urlopen', side_effect=reply):
+                with self.assertRaisesRegex(ValueError, 'No winnable repair'):
+                    actions.modify(1, repair=True)
+            self.assertEqual((drafts / '001.glm-base').read_text(), blocked_board())
+            self.assertFalse((drafts / '001.glm-result').exists())
+            self.assertFalse((drafts / '001.glm-proof').exists())
+
+    def test_update_all_updates_saved_published_levels_and_keeps_unproven_drafts(self):
+        candidate = actions.apply_proposal(board(), variation(4, 4))
+        route = actions.prove_proposal(1, candidate)
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            root = Path(directory)
+            drafts = root / 'backup/editor-drafts'
+            drafts.mkdir(parents=True)
+            (root / 'levels').mkdir()
+            (root / 'backup/editor-publish.json').write_text('{}')
+            originals = [actions.record(n, board(), '333332') for n in (1, 2)]
+            pending = {'4': actions.record(4, candidate, route)}
+            (root / 'levels/approved.json').write_text(json.dumps(dict(levels=originals, pending=pending)))
+            saved = [actions.record(1, candidate, route), originals[1], actions.record(3, candidate, route)]
+            (root / 'levels/classic.json').write_text(json.dumps(dict(levels=saved)))
+            (drafts / '002.hex').write_text(blocked_board())
+            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions, 'published_campaign', return_value=[board(), board()]), \
+                    patch.object(actions, 'update') as publish:
+                actions.update_all()
+            campaign = json.loads((root / 'levels/approved.json').read_text())
+            self.assertEqual(campaign['levels'], [saved[0], originals[1]])
+            self.assertEqual(campaign['pending'], pending)
+            self.assertEqual((drafts / '002.hex').read_text(), blocked_board())
+            self.assertEqual(json.loads((drafts / 'update-all-summary.json').read_text())['kept_unproven_drafts'], [2])
+            publish.assert_called_once()
+
+    def test_update_all_can_use_a_drafts_exact_winning_proof(self):
+        candidate = actions.apply_proposal(board(), variation(4, 4))
+        route = actions.prove_proposal(1, candidate)
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            root = Path(directory)
+            drafts = root / 'backup/editor-drafts'
+            drafts.mkdir(parents=True)
+            (root / 'levels').mkdir()
+            (root / 'backup/editor-publish.json').write_text('{}')
+            original = actions.record(1, board(), '333332')
+            for name in ('classic', 'approved'):
+                (root / f'levels/{name}.json').write_text(json.dumps(dict(levels=[original])))
+            (drafts / '001.hex').write_text(candidate)
+            (drafts / '001.proof').write_text(candidate + '\n' + route)
+            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions, 'published_campaign', return_value=[board()]), \
+                    patch.object(actions, 'update'):
+                actions.update_all()
+            self.assertEqual(json.loads((root / 'levels/approved.json').read_text())['levels'], [actions.record(1, candidate, route)])
     def test_publication_status_identifies_a_gap_in_the_campaign(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
             root = Path(directory)
