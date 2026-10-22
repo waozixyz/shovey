@@ -12,6 +12,6 @@
     {"from": "assets/shovey-island-landscape/player", "to": "island/player-landscape"},
     {"from": "assets/shovey-island/sounds", "to": "island/sounds"},
     {"from": "assets/shovey-island/levels", "to": "island/levels"},
-    {"from": "assets/shovey-island/levels-landscape/1.png", "to": "island/preview.png"}
+    {"from": "assets/shovey-island/preview.png", "to": "island/preview.png"}
   ]
 }

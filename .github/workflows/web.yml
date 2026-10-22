@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: shovey-web-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -55,25 +55,33 @@ jobs:
         run: |
           export CHROMIUM="$(command -v google-chrome || command -v chromium)"
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_loading_test.mjs
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: shovey-web
           path: waozixyz/shovey/build/web
+          retention-days: 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: web-browser-check
           path: waozixyz/shovey/build/web-test
+          retention-days: 1
 
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
-    permissions:
-      pages: write
-      id-token: write
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: cloudflare-pages
+      url: https://shovey.waozi.xyz
     steps:
-      - uses: actions/deploy-pages@v4
-        id: deployment
+      - uses: actions/download-artifact@v4
+        with:
+          name: shovey-web
+          path: build/web
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build/web --project-name=shovey --branch=master --commit-hash=${{ github.sha }}
