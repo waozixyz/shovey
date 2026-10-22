@@ -140,7 +140,7 @@ def main():
                     driver.press(label='Island', role='button')
                     driver.wait(label='New level', role='button')
                     assert not driver.find(contains='Level 1', role='button'), 'Unpublished Island story level is visible'
-                    driver.press(label='Back', role='button', index=-1)
+                    driver.press(key=max(driver.find(label='Back', role='button', visible=True), key=lambda node: node['y'])['key'])
                     driver.press(label='Classic', role='button')
                     driver.press(label='New level', role='button')
                     driver.press(label='Play', role='button')

@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.12] - 2026-10-22
+
+- Play the approved Classic campaign through level 19.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
 ## [0.6.11] - 2026-10-21
 
 - Use the Back button to return from play or level selection.
