@@ -1,5 +1,8 @@
 # Shovey Editor changelog
 
+## [0.2.6] - 2026-10-21
+
+- Story levels follow the approved Classic campaign; Island stays unavailable while in development.
 ## [0.2.5] - 2026-10-21
 
 - Story levels follow the approved Classic campaign; Island stays unavailable while in development.

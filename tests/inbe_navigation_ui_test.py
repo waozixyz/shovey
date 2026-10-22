@@ -1,10 +1,12 @@
 """Verify Shovey navigation in dock-based and immersive Inbe game hosts."""
 import argparse
 import contextlib
+import hashlib
 import json
 import os
 from pathlib import Path
 import sqlite3
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -19,10 +21,13 @@ def main():
     parser.add_argument('--inbe-source', type=Path, required=True)
     parser.add_argument('--bundle', type=Path, required=True,
                         help='Arcade collection built with these Shovey sources')
+    parser.add_argument('--release-metadata', type=Path,
+                        help='Load the signed installed package cache instead of a developer override')
     args = parser.parse_args()
     assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
     assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
     root = Path(__file__).resolve().parents[1]
+    approved_count = len(json.loads((root / 'levels/approved.json').read_text())['levels'])
     output = root / 'build/inbe-navigation-ui-test'
     output.mkdir(parents=True, exist_ok=True)
     sys.path.insert(0, str(args.inbe_source / 'tests'))
@@ -33,10 +38,12 @@ def main():
     def application(profile, name, bundle):
         log_path = output / (name + '.log')
         with log_path.open('w') as log:
+            environment = os.environ | driver.environment() | {'APP_DATA_ROOT': str(profile)}
+            environment.pop('INBE_NODE_APP_FILE', None)
+            if not args.release_metadata:
+                environment['INBE_NODE_APP_FILE'] = str(bundle)
             child = subprocess.Popen([str(args.binary.resolve())], cwd=args.inbe_source,
-                                     env=os.environ | driver.environment() | {
-                                         'APP_DATA_ROOT': str(profile),
-                                         'INBE_NODE_APP_FILE': str(bundle)},
+                                     env=environment,
                                      stdout=log, stderr=subprocess.STDOUT)
             driver.attach(child, log_path)
             try:
@@ -70,6 +77,16 @@ def main():
             profile = Path(directory)
             with application(profile, edition + '-bootstrap', bundle):
                 assert (profile / 'inbe.db').is_file()
+            if args.release_metadata:
+                release = json.loads(args.release_metadata.read_text())
+                artifact = release['artifacts'][0]
+                assert release['app_id'] == 'inbe.arcade'
+                assert bundle.stat().st_size == artifact['size']
+                assert hashlib.sha256(bundle.read_bytes()).hexdigest() == artifact['sha256']
+                cache = profile / 'packages'
+                cache.mkdir(exist_ok=True)
+                shutil.copyfile(bundle, cache / f'arcade.{artifact["sha256"]}.zib')
+                shutil.copyfile(args.release_metadata, cache / 'arcade.current.json')
             with sqlite3.connect(profile / 'inbe.db') as db:
                 user = db.execute("SELECT id FROM users WHERE kind='local' LIMIT 1").fetchone()[0]
                 settings = dict(language='en', language_system=0, language_setup_done=1,
@@ -101,6 +118,18 @@ def main():
                 driver.press(label='Shovey', role='button')
                 driver.press(label=title, role='button')
                 if edition == 'classic':
+                    driver.wait(label='Restart', role='button')
+                    driver.wait(label=f'Level 1 / {approved_count}', role='text')
+                    # Exercise Shovey's own action, below Inbe's return bar.
+                    back = driver.find(label='Back', role='button', visible=True)
+                    driver.press(key=max(back, key=lambda node: node['y'])['key'])
+                    driver.wait(label='Shovey Classic', role='button')
+                    driver.press(label='Shovey Classic', role='button')
+                    driver.press(label='Levels', role='button')
+                    back = driver.find(label='Back', role='button', visible=True)
+                    driver.press(key=max(back, key=lambda node: node['y'])['key'])
+                    driver.wait(label='Shovey Classic', role='button')
+                    driver.press(label='Shovey Classic', role='button')
                     driver.wait(label='Restart', role='button')
                     driver.key('left')
                 else:

@@ -175,3 +175,6 @@ Couper le son
 [shovey_unmute]
 Activer le son
 ---
+[shovey_back]
+Retour
+---

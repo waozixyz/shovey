@@ -269,7 +269,11 @@ ShoveyFrame :: () {
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
-        Caption(20103, Rectangle.{16.0, top + 12.0, width - 152.0, 44.0}, AppLocaleHost("shovey_levels"), 24)
+        if Control(20022, Rectangle.{16.0, top + 12.0, 88.0, 44.0}, AppLocaleHost("shovey_back")) {
+            LeaveForGameSelection()
+            return
+        }
+        Caption(20103, Rectangle.{112.0, top + 12.0, width - 256.0, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
         }
@@ -345,13 +349,14 @@ ShoveyFrame :: () {
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
     // Return sits at the edge, then the game's own navigation and status.
-    if Control(20022, Rectangle.{8.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_select_game"), false, "", ICON_GAMES) {
+    if Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
         LeaveForGameSelection()
+        return
     }
-    if Control(20002, Rectangle.{56.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+    if Control(20002, Rectangle.{92.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         selector_open = true
     }
-    Caption(20001, Rectangle.{108.0, top + 4.0, width - 220.0, 44.0}, HeaderText(), 14, true)
+    Caption(20001, Rectangle.{140.0, top + 4.0, width - 296.0, 44.0}, HeaderText(), 14, true)
     if Control(20016, Rectangle.{width - 156.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
         ChangeLevel(game.level)
     }

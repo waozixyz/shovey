@@ -175,3 +175,6 @@
 [shovey_unmute]
 取消静音
 ---
+[shovey_back]
+返回
+---

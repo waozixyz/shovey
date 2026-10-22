@@ -175,3 +175,6 @@ Silenciar
 [shovey_unmute]
 Ativar som
 ---
+[shovey_back]
+Voltar
+---

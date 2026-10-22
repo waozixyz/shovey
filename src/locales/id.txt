@@ -175,3 +175,6 @@ Bisukan
 [shovey_unmute]
 Nyalakan suara
 ---
+[shovey_back]
+Kembali
+---

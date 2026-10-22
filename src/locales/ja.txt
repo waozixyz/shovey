@@ -175,3 +175,6 @@
 [shovey_unmute]
 音量をオン
 ---
+[shovey_back]
+戻る
+---

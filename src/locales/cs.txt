@@ -175,3 +175,6 @@ Ztlumit zvuk
 [shovey_unmute]
 Zapnout zvuk
 ---
+[shovey_back]
+Zpět
+---

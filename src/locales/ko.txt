@@ -175,3 +175,6 @@
 [shovey_unmute]
 소리 켜기
 ---
+[shovey_back]
+뒤로
+---

@@ -175,3 +175,6 @@
 [shovey_unmute]
 Включить звук
 ---
+[shovey_back]
+Назад
+---

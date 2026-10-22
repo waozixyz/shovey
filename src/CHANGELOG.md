@@ -1,5 +1,14 @@
 # Shovey changelog
 
+## [0.6.9] - 2026-10-21
+
+- Return to the Shovey chooser with a clearly labelled Back button from the board or level selector.
+- Play the approved Classic campaign through level 19 while later levels remain in the editor.
+## [0.6.8] - 2026-10-21
+
+- Play the approved Classic campaign through level 19.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
 ## [0.6.7] - 2026-10-21
 
 - Play the approved Classic campaign through level 19.
