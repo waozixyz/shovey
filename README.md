@@ -104,6 +104,8 @@ levels load from the current level file.
 winning route. It keeps the puzzle's pieces, colors, terrain, start and home.
 A variation is applied only after its solution wins in the game engine, and
 Undo, Redo and Reset remain available. Unproven proposals leave the level intact.
+**Update** rebuilds and ships the already approved campaign, including software
+and artwork fixes; it stays available while the open level is still being edited.
 
 Chickens, turtles and crabs wander over clear floor and block Shovey and pushed
 pieces. Goldfish, koi and minnows stay still on water, with gentle

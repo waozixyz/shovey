@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build, verify and publish the exact approved campaign through Arcade's node app."""
+import argparse
 import fcntl
 import hashlib
 import importlib.util
@@ -50,7 +51,7 @@ def changelog(path, version, notes, brackets=False):
     atomic(path, first + '\n\n' + heading + '\n\n' + notes + '\n' + rest.lstrip('\n'))
 
 
-def main():
+def main(force=False):
     config = json.loads((ROOT / 'backup/editor-publish.json').read_text())
     arcade = Path(config['arcade']).resolve(strict=True)
     inbe = Path(config['inbe_source']).resolve(strict=True)
@@ -71,7 +72,7 @@ def main():
                 approved_hash = fingerprint()
                 approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
                 prior = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
-                if prior.get('approved_sha256') == approved_hash and prior.get('phase') == 'verified':
+                if not force and prior.get('approved_sha256') == approved_hash and prior.get('phase') == 'verified':
                     status(f'Levels 1–{len(approved)} are live on the server. Island is disabled.')
                     return 0
                 ledger = json.loads((arcade / 'apps/versions.json').read_text())['node_apps']
@@ -169,10 +170,13 @@ print('Exact signed Arcade metadata and payload verified at the public Waozi end
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--force', action='store_true', help='Ship updated software for the already approved campaign')
+    arguments = parser.parse_args()
     try:
-        raise SystemExit(main())
+        raise SystemExit(main(arguments.force))
     except Exception as error:
-        status('Approved, but the update stopped at a build, check or connection error. Press Approve to retry.')
+        status('The approved update failed. Press Update to retry; no new approval is needed.')
         with (ROOT / 'backup/approved-publication.log').open('a') as log:
             log.write(type(error).__name__ + ': ' + str(error) + '\n')
         raise SystemExit(1)

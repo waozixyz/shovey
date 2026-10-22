@@ -269,7 +269,8 @@ if __name__ == '__main__':
         parser.error('level is outside the editor')
     try:
         if args.action == 'update':
-            subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py')], cwd=ROOT,
+            atomic(DRAFTS / 'publish-status', 'Updating the previously approved levels…')
+            subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py'), '--force'], cwd=ROOT,
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 start_new_session=True)
         else:

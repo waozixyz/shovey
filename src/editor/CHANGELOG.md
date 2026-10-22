@@ -3,6 +3,8 @@
 ## [0.2.5] - 2026-10-21
 
 - Story levels follow the approved Classic campaign; Island stays unavailable while in development.
+- Opening Classic story levels stays stable while board images load.
+
 ## [0.2.4] - 2026-10-21
 
 - Story levels follow the approved Classic campaign; Island stays unavailable while in development.

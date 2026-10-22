@@ -11,7 +11,7 @@
     },
     {
       "commit": "49e2d859bc1db01faf7ac05624cc531fbe51913b",
-      "dependencies": {"crypto": "p08c3ae9ef02630df", "kryon": "pc76424e8106ff8a4"},
+      "dependencies": {"crypto": "p08c3ae9ef02630df", "kryon": "pa8e9fb419dbbde2a"},
       "id": "p2c4ca8cd46b96384",
       "name": "Apps",
       "ref": "master",
@@ -27,16 +27,16 @@
       "url": "https://github.com/raysan5/raylib.git"
     },
     {
-      "commit": "eea5afad88f2021cbef48d222fb9d50edc1071a2",
+      "commit": "160556441eaf1bad94d00ff503cdc2248901a858",
       "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "pc76424e8106ff8a4",
+      "id": "pa8e9fb419dbbde2a",
       "name": "kryon",
       "ref": "master",
       "url": "https://github.com/kryonlabs/kryon.git"
     }
   ],
   "root": {
-    "dependencies": {"apps": "p2c4ca8cd46b96384", "kryon": "pc76424e8106ff8a4"},
+    "dependencies": {"apps": "p2c4ca8cd46b96384", "kryon": "pa8e9fb419dbbde2a"},
     "name": "Shovey"
   },
   "toolchain": {
