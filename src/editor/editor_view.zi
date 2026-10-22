@@ -312,6 +312,9 @@ EditorNames :: () {
     editor_classic_names[SPRITE_DOOR] = EditorText("editor_door")
     editor_classic_names[SPRITE_DOOR + 1] = EditorText("editor_door")
     editor_classic_names[SPRITE_LANTERN] = EditorText("editor_lantern")
+    decorations: [8]string = .["editor_mushrooms", "editor_fallen_leaves", "editor_bluebells", "editor_lily_pads",
+        "editor_berry_bush", "editor_flower_pot", "editor_barrel", "editor_tree_stump"]
+    for decoration: cast(s32)0..7 { editor_classic_names[SPRITE_DECORATION + decoration] = EditorText(decorations[decoration]) }
     editor_classic_names[SPRITE_DOOR_OPEN] = EditorText("editor_gate")
     for number: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { editor_classic_names[number] = EditorText("editor_sensor") }
     editor_classic_names[SPRITE_SHOT] = EditorText("editor_ammo")

@@ -552,6 +552,7 @@ PrivateSprite :: (kind: s32) -> s32 {
     if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return SPRITE_MOSS_WALL + kind - SHOVEY_MOSS_WALL }
     if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_KIND { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
+    if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
     color := ShoveyGateColor(kind)
     if color >= 0 {
         open := ShoveyGateStartsOpen(kind)
