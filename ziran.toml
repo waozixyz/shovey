@@ -20,3 +20,4 @@ ref = "master"
 
 [exports]
 shovey_theme = "src/shovey_theme.zi"
+title_art = "src/title_art.zi"

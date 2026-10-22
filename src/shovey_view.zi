@@ -32,6 +32,7 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import, file "progress.zi";
 #import, file "controls.zi";
 #import, file "shovey_theme.zi";
+#import, file "title_art.zi";
 #if #defined(SHOVEY_WEB) {
     #import, file "web/host.zi";
 } else {
@@ -341,18 +342,10 @@ TitlePage :: (page: s32, offset: float32, width: float32, top: float32, height: 
     key := cast(u64)(20220 + page * 8)
     art := ifx portrait then "assets/shovey/title-portrait.png" else "assets/shovey/title-landscape.png"
     if page == 1 { art = ifx portrait then "assets/shovey/editor-portrait.png" else "assets/shovey/editor-landscape.png" }
-    Image(frame.session, ImageProps.{.key = key, .asset_path = art,
-            .alt_text = AppLocaleHost(ifx page == 0 then "shovey_title_art" else "shovey_editor_art"),
-            .bounds = Rectangle.{offset, top, width, height}, .fit = ImageFit.ImageFitCover, .smooth = true})
-    logo_width := ifx portrait then width * 0.88 else height * 0.95
-    if logo_width > 760.0 { logo_width = 760.0 }
-    logo_height := logo_width * 0.36
-    logo_y := top + height * 0.05
-    Image(frame.session, ImageProps.{.key = key + 1, .asset_path = "assets/shovey/logo.png", .alt_text = "Shovey",
-            .bounds = Rectangle.{offset + (width - logo_width) / 2.0, logo_y, logo_width, logo_height},
-            .fit = ImageFit.ImageFitContain, .smooth = true})
+    logo := TitleArtwork(frame.session, Rectangle.{offset, top, width, height}, key,
+        art, "assets/shovey/logo.png", AppLocaleHost(ifx page == 0 then "shovey_title_art" else "shovey_editor_art"))
     if page == 1 {
-        tag := Rectangle.{offset + width / 2.0 - 80.0, logo_y + logo_height + 4.0, 160.0, 40.0}
+        tag := Rectangle.{offset + width / 2.0 - 80.0, logo.y + logo.height + 4.0, 160.0, 40.0}
         // A dark tag, as the theme draws its text light.
         Fill(key + 2, tag, Color.{36, 104, 60, 240}, 20.0)
         Caption(key + 3, tag, AppLocaleHost("shovey_editor"), 22, true)
