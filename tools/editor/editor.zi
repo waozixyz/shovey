@@ -99,6 +99,10 @@ unlinked_saved_place: s32;
 // The all-levels view: every place at once, each with how alike its board is to its original.
 selector_open: bool;
 drafts_refreshed: s64;
+// The level file as last loaded, so saves by tools and other editors show.
+level_file_hash: u32;
+level_file_checked: s64;
+level_file_chunk: [65536]u8;
 
 history: [HISTORY * HEX]u8;
 history_count: s32;
@@ -1022,6 +1026,33 @@ DraftPath :: (number: s32, suffix: string = ".hex") -> string {
     AppendNumber(draft_bytes[:], *length, number)
     AppendText(draft_bytes[:], *length, suffix)
     return TextView(draft_bytes[:length])
+}
+
+LevelFileHash :: () -> u32 {
+    file := OpenRead(LEVELS_FILE)
+    if !file.valid { return 0 }
+    hash: u32 = 2166136261
+    offset: s64 = 0
+    while true {
+        count := ReadAt(file, level_file_chunk[:], offset)
+        if count <= 0 { break }
+        for at: cast(s64)0..count - 1 { hash = (hash ^ cast(u32)level_file_chunk[at]) * cast(u32)16777619 }
+        offset += count
+    }
+    CloseFile(file)
+    return hash
+}
+
+// Takes in boards another program saved, keeping this editor's drafts on top.
+FollowLevelFile :: (now: s64) {
+    if now - level_file_checked < 1000 || save_state == 1 || playing { return }
+    level_file_checked = now
+    hash := LevelFileHash()
+    if hash == 0 || hash == level_file_hash { return }
+    level_file_hash = hash
+    LoadLevels()
+    LoadDrafts()
+    for place: cast(s32)0..PLACES { similarity_cached[place] = false }
 }
 
 LoadDrafts :: () {
@@ -2036,6 +2067,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     unused Box(session, BoxProps.{.key = cast(u64)19990, .bounds = viewport, .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
     now := MonotonicMilliseconds()
     PollActions(now)
+    FollowLevelFile(now)
     PollCheck()
     ctrl := (modifiers & 2) != 0
     if key == 258 { if playing { playing = false; watching = false } else { StartPlay() } }
@@ -2272,6 +2304,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
     LoadOriginals()
     LoadUnlinked()
     LoadLevels()
+    level_file_hash = LevelFileHash()
     LoadDrafts()
     LoadOrientation()
     LoadApprovals()
