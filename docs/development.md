@@ -108,7 +108,8 @@ Undo, Redo and Reset remain available. Unproven proposals leave the level intact
 **Approve** publishes in the background. It is disabled when that approval is
 already published, and becomes available again if its update fails. A later
 unproven draft does not prevent approving the last saved winning layout.
-Saved edits to approved levels publish automatically once their winning route is proven.
+New levels require Approve before their first publication. Saved edits to levels
+already on the server publish automatically once their winning route is proven.
 Each gate color also has an open starting variant, which closes when its lever
 is switched on. Mix both starting states for opposite passages on one lever.
 All levers of one color share their state, so any matching lever toggles the passages.

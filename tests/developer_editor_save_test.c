@@ -193,6 +193,11 @@ int main(int argc, char **argv) {
     editor_StartCheck();
     assert(editor_Solved() && editor_Approved(1) && !editor_ApprovalMatches(1));
     editor_AutoSave();
+    /* A queued approval has never been published: later saves still need
+       an explicit approval, rather than silently replacing that request. */
+    assert(save_state == 2 && !editor_ApprovalMatches(1));
+    published_places[0] = true;
+    editor_AutoSave();
     assert(save_state == 2 && editor_ApprovalMatches(1));
     /* Change the route, play the new win, and save without a solver search. */
     editor_SetKind(editor_Board(1), 14, 0);
@@ -312,6 +317,9 @@ int main(int argc, char **argv) {
     assert(editor_NeedsUpdate(1) && editor_UpdateAvailable());
     assert(editor_DifferenceCount(1) == 1);  /* Count cells, not changed layers. */
     assert(editor_DifferenceAt(1, 13) && !editor_DifferenceAt(1, 14));
+    published_places[0] = false;
+    assert(!editor_NeedsUpdate(1)); /* First publication always says Approve. */
+    published_places[0] = true;
     editor_UpdateEdit();
     assert(editor_Solved() && check_state != 1);
     proof_length = 0;
@@ -321,7 +329,10 @@ int main(int argc, char **argv) {
     assert(!editor_UpdateAvailable());
     playing = false;
     check_state = 1;
-    assert(!editor_UpdateAvailable());
+    assert(editor_UpdateAvailable());
+    editor_UpdateEdit();
+    assert(editor_Solved() && check_state != 1 && !check_wanted);
+    proof_length = 0;
     check_state = 0;
     /* Solution state has its own message even while a publishing message exists. */
     editor_ActionMessage((String){"Published", 9});

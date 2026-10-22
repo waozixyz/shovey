@@ -666,7 +666,7 @@ ServerBoardMatches :: (place: s32) -> bool {
 }
 
 NeedsUpdate :: (place: s32) -> bool {
-    return server_configured && server_verified && (Approved(place) || published_places[place - 1]) && !ServerBoardMatches(place)
+    return server_configured && server_verified && published_places[place - 1] && !ServerBoardMatches(place)
 }
 
 PublicationBusy :: () -> bool {
@@ -675,7 +675,7 @@ PublicationBusy :: () -> bool {
 }
 
 UpdateAvailable :: () -> bool {
-    return NeedsUpdate(current) && !playing && !glm_busy && check_state != 1 && !PublicationBusy()
+    return NeedsUpdate(current) && !playing && !glm_busy && (!ApprovalMatches(current) || !PublicationBusy())
 }
 
 DifferenceAt :: (place: s32, at: s32) -> bool {
@@ -814,7 +814,7 @@ RunAction :: (action: string) {
 
 ApproveEdit :: () {
     if !ApprovalAvailable() { return }
-    if ApprovalMatches(current) || (Approved(current) && !Solved() && !Proven()) {
+    if ApprovalMatches(current) {
         ActionMessage("Publishing…")
         RunAction("update")
         return
@@ -839,14 +839,17 @@ ApproveEdit :: () {
 
 UpdateEdit :: () {
     if !UpdateAvailable() { return }
+    if !Solved() && !Proven() {
+        if RestoreProof() || RestoreSavedRoute() || RestoreLearnedRoute() { check_wanted = false }
+    }
     if Solved() || Proven() || ApprovalMatches(current) {
         ApproveEdit()
         return
     }
-    // A saved winning route is reused immediately. A changed, unproven draft
-    // starts its check; the existing save/approval path publishes it on a win.
-    ActionMessage("")
-    StartCheck()
+    // Saving already required a winning route. Publish that saved win rather
+    // than holding the update button behind another solver search.
+    if saved_approval_ready { ApproveEdit(); return }
+    ActionMessage("No saved win for this draft.")
 }
 
 UpdateAll :: () {
@@ -1338,7 +1341,7 @@ RestoreProof :: () -> bool {
         if !((letter >= cast(u8)48 && letter <= cast(u8)51) || letter == cast(u8)102 || letter == cast(u8)116) { return false }
         proof_route[at] = letter
     }
-    if text[0:HEX] != TextView(Board(current)) && !Wins(Board(current), LevelFor(current), proof_route[:], length) { return false }
+    if !Wins(Board(current), LevelFor(current), proof_route[:], length) { return false }
     Copy(proof_board[:], Board(current))
     proof_length = length
     proof_level = current
@@ -1364,7 +1367,7 @@ RestoreSavedRoute :: () -> bool {
     if length <= 0 || length > ROUTE_MAX { return false }
     saved := FileHolds(index, Board(current))
     letters := file_routes[start:start + length]
-    if !saved && !Wins(Board(current), LevelFor(current), letters, length) { return false }
+    if !Wins(Board(current), LevelFor(current), letters, length) { return false }
     AcceptRoute(letters, length)
     if saved {
         Copy(save_board[:], Board(current))
@@ -1626,7 +1629,8 @@ AutoSave :: () {
         if save_state == 3 && save_level == current && Same(save_board[:], Board(current)) { return }
         StartSave()
     }
-    if save_state == 2 && !playing && Approved(current) && !ApprovalMatches(current) { ApproveEdit() }
+    if save_state == 2 && !playing && published_places[current - 1] &&
+        (!server_configured || server_verified) && !ApprovalMatches(current) { ApproveEdit() }
 }
 
 // ---------------------------------------------------------------- playing
@@ -2019,7 +2023,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             .label = ifx glm_busy && !glm_repair then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM() }
     update := NeedsUpdate(current)
     if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
-            .label = ifx update then ifx check_state == 1 then "Checking…" else ifx PublicationBusy() then "Updating…" else "Update" else "Approve",
+            .label = ifx update then ifx ApprovalMatches(current) && PublicationBusy() then "Updating…" else "Update" else "Approve",
             .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
         if update { UpdateEdit() } else { ApproveEdit() }
     }
