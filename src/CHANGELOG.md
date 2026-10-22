@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.23] - 2026-10-22
+
+- Play the approved Classic campaign through level 20.
+- Keep your progress while later levels are being edited.
+- Use opposite-state colored gates and a straight lilac trail marker.
+- Replace the chicken with an upright garden duck in four views.
 ## [0.6.22] - 2026-10-22
 
 - Add initially open gates that close when their matching lever is switched on.
