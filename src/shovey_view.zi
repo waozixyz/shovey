@@ -321,16 +321,13 @@ TitleEnter :: (page: s32) {
     if page == 1 { OpenEditor() }
 }
 
-// A host that already presents this cover launches directly into play.
-// Older hosts and standalone Shovey keep their normal title screen.
-ShoveyRoute :: () {
-    title_external = LibraryAvailable()
-    title_open = !title_external
-}
-
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
     if !loaded {
+        // Library opens and explicit routes both reach this first frame.
+        // Standalone and older hosts keep their own title screen.
+        title_external = LibraryAvailable()
+        title_open = !title_external
         if !ShoveyCampaignRestore(*progress, *game, AppRecordHost("campaign")) {
             if ShoveyRestore(*game, AppRecordHost("position")) {
                 progress = ShoveyMigrateProgress(*game)
