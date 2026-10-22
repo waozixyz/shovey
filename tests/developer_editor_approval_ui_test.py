@@ -28,9 +28,10 @@ level = dict(number=1, cells=rows(pieces), solution='2')
 (profile / 'levels/classic.json').write_text(json.dumps(dict(
     edition='classic', width=12, height=20, levels=[level, dict(level, number=2)]), indent=1) + '\n')
 campaign = dict(levels=[dict(level, number=n, tiles=rows(tiles), decorations=rows([0] * 240))
-                       for n in range(1, 23)])
+                       for n in range(1, 24)])
 (profile / 'levels/approved.json').write_text(json.dumps(campaign))
 (drafts / 'publish-status').write_text('Published')
+(drafts / '001.published').write_text(''.join(rows(pieces) + rows(tiles)) + '00' * 240)
 (profile / 'scripts/editor_actions.py').write_text('''from pathlib import Path
 import sys, time
 root = Path('backup/editor-drafts')
@@ -70,19 +71,25 @@ with (output / 'app.log').open('w') as log:
                 cell_height = (height - 96 - 28 - 4 * 11) / 12
                 return [image.getpixel((int(14 + (n - 1) % 15 * (cell_width + 4)),
                                         int(122 + (n - 1) // 15 * (cell_height + 4))))
-                        for n in range(1, 25)]
+                        for n in range(1, 26)]
         purple = (159, 111, 209)
         colors = map_colors()
-        assert all(color == purple for color in colors[:22]), colors
-        assert colors[22] != purple and colors[23] != purple
-        campaign['levels'].append(dict(level, number=23, tiles=rows(tiles), decorations=rows([0] * 240)))
+        assert all(color == purple for color in colors[:23]), colors
+        assert colors[23] != purple and colors[24] != purple
+        campaign['levels'].append(dict(level, number=24, tiles=rows(tiles), decorations=rows([0] * 240)))
         (profile / 'levels/approved.json').write_text(json.dumps(campaign))
         (drafts / 'publish-status').write_text('Updating…')
         time.sleep(0.7)
         colors = map_colors()
-        assert all(color == purple for color in colors[:23]) and colors[23] != purple, colors
+        assert all(color == purple for color in colors[:24]) and colors[24] != purple, colors
         click(100, 28)
-        click(350, 66)  # Approve also republishes an approved level.
+        click(350, 66)  # Up-to-date levels have a disabled approval control.
+        time.sleep(0.2)
+        assert not (drafts / 'worker-started').exists()
+        (drafts / '001.published').unlink()
+        (drafts / 'publish-status').write_text('Update failed. Retry.')
+        time.sleep(0.7)
+        click(350, 66)  # A failed unpublished approval can still retry.
         for attempt in range(40):
             if (drafts / 'worker-started').exists():
                 break
@@ -117,7 +124,7 @@ with (output / 'app.log').open('w') as log:
             time.sleep(0.025)
         assert (drafts / 'worker-started').read_text() == 'approve 1'
         time.sleep(2.1)  # Let our detached disposable worker finish too.
-        print('Purple campaign approvals refresh through 23; background publication, navigation and automatic updates passed')
+        print('Purple approvals refresh through 24; up-to-date approval disabled, failed updates retry, background updates passed')
     finally:
         if windows:
             subprocess.run(['import', '-window', windows[0], str(output / 'last.png')], check=True)

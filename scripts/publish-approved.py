@@ -45,6 +45,15 @@ def publication_status():
     return 'Published'
 
 
+def record_published(receipt):
+    boards = receipt.get('approved_boards')
+    if boards is None and receipt['approved_sha256'] == fingerprint():
+        levels = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
+        boards = [''.join(level['cells'] + level['tiles'] + level['decorations']) for level in levels]
+    for number, board in enumerate(boards or [], 1):
+        atomic(STATE / f'{number:03}.published', board)
+
+
 def next_version(value):
     major, minor, patch = map(int, value.split('.'))
     return f'{major}.{minor}.{patch + 1}'
@@ -116,6 +125,7 @@ def complete_release(config, receipt, output):
         receipt['local_installed'] = True
     receipt['phase'] = 'verified'
     atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
+    record_published(receipt)
     status(publication_status())
 
 
@@ -147,6 +157,7 @@ def main(force=False):
                         return 0
                     continue
                 if not force and prior.get('approved_sha256') == approved_hash and prior.get('phase') == 'verified':
+                    record_published(prior)
                     status(publication_status())
                     return 0
                 ledger = json.loads((arcade / 'apps/versions.json').read_text())['node_apps']
@@ -154,7 +165,8 @@ def main(force=False):
                     versions = prior['versions']
                 else:
                     versions = {name: next_version(ledger[name]['version']) for name in ('arcade', 'shovey', 'shovey-editor')}
-                receipt = dict(approved_sha256=approved_hash, approved_levels=len(approved), versions=versions, phase='building')
+                receipt = dict(approved_sha256=approved_hash, approved_levels=len(approved), versions=versions, phase='building',
+                               approved_boards=[''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved])
                 atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
                 status("Updating…")
                 changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],

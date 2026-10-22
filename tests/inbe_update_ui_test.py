@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--previous-metadata', type=Path, required=True)
     parser.add_argument('--previous-bundle', type=Path, required=True)
     parser.add_argument('--expected-version', required=True)
+    parser.add_argument('--expected-levels', type=int, required=True)
     args = parser.parse_args()
     assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
     assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
@@ -72,12 +73,14 @@ def main():
                            (user, key, str(value)))
         with application(profile, 'upgrade'):
             driver.press(label='Apps', role='button')
+            driver.press(label='Find an app', role='text_field')
+            driver.type('Arcade')
             driver.press(label='Arcade', role='button')
             driver.press(label='Shovey', role='button')
             driver.press(label='Shovey Classic', role='button')
             driver.wait(label='Restart', role='button')
             heading = next(node['label'] for node in driver.tree() if node['label'].startswith('Level 1 / '))
-            assert int(heading.rsplit(' / ', 1)[1]) > 19, 'The fixture must start with the old campaign'
+            assert int(heading.rsplit(' / ', 1)[1]) > args.expected_levels, 'The fixture must start with the old campaign'
             driver.key('left')
             # The collection stays loaded after returning to the launcher.
             for attempt in range(8):
@@ -88,6 +91,7 @@ def main():
                 driver.press(key=min(back, key=lambda node: node['y'])['key'])
             driver.press(label='Apps', role='button')
             driver.press(label='Find an app', role='text_field')
+            driver.key('a', control=True)
             driver.type('Arcade')
             driver.wait_idle(frames=3)
             deadline = time.monotonic() + 45
@@ -109,12 +113,12 @@ def main():
             driver.press(label='Arcade', role='button')
             driver.press(label='Shovey', role='button')
             driver.press(label='Shovey Classic', role='button')
-            driver.wait(label='Level 1 / 19')
+            driver.wait(label=f'Level 1 / {args.expected_levels}')
             assert len(driver.find(label='Back', role='button', visible=True)) >= 2
             driver.press(label='Levels', role='button')
-            assert not driver.find(label='20', role='button'), 'Unapproved levels leaked into the update'
+            assert not driver.find(label=str(args.expected_levels + 1), role='button'), 'Unapproved levels leaked into the update'
             driver.press(label='Continue', role='button')
-            driver.wait(label='Level 1 / 19')
+            driver.wait(label=f'Level 1 / {args.expected_levels}')
     print('Inbe: the ordinary signed update replaces a running old Arcade campaign without restarting the host')
 
 

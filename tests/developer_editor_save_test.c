@@ -90,6 +90,23 @@ int main(int argc, char **argv) {
     boards_landscape = false; /* The following fixtures exercise portrait cells. */
     editor_Open(1);
     assert(editor_Solved() && save_state == 2 && !check_wanted);
+    /* Approval still accepts the saved win after a later unproven draft. */
+    uint8_t saved_win[HEX];
+    memcpy(saved_win, editor_SavedBoard(1).data, HEX);
+    editor_SetKind(editor_Board(1), 14, 0);
+    editor_Edited();
+    proof_length = 0; check_state = 0;
+    assert(saved_approval_ready && editor_ApprovalAvailable());
+    editor_ApproveEdit();
+    assert(editor_Approved(1));
+    assert(memcmp(approved_boards, saved_win, HEX) == 0);
+    assert(editor_KindAt(editor_Board(1), 14) == 0);
+    memcpy(editor_Board(1).data, saved_win, HEX);
+    approved_places[0] = false;
+    remove("backup/editor-drafts/001.approved");
+    remove("backup/editor-drafts/001.approval-request");
+    remove("backup/editor-drafts/001.hex");
+    editor_Open(1);
     /* Editor history survives auto-saving; reset returns to the opened board. */
     int original = editor_KindAt(editor_Board(1), SHOVEY_CELLS * 2 + 13);
     editor_Remember(true);
@@ -121,6 +138,17 @@ int main(int argc, char **argv) {
     /* The same control can retry publication without rechecking its proof. */
     proof_length = 0;
     check_state = 0;
+    memcpy(published_boards, approved_boards, HEX);
+    published_places[0] = true;
+    assert(!editor_ApprovalAvailable());
+    editor_ApproveEdit();
+    assert(!editor_ApprovalAvailable());
+    /* A failure elsewhere cannot reenable a level already up to date. */
+    memcpy(publish_message, "Update failed. Retry.", 21);
+    publish_message_length = 21;
+    assert(!editor_ApprovalAvailable());
+    published_places[0] = false;
+    assert(editor_ApprovalAvailable());
     editor_ApproveEdit();
     assert(editor_Approved(1) && check_state == 0 && proof_length == 0);
     editor_Remember(true);

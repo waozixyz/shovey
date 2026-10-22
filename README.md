@@ -13,7 +13,7 @@ every shipped level by replaying it through the real game rules.
 
 ## Play
 
-- **Shovey Classic**: approved stone-courtyard puzzles through level 23. Later boards stay in the developer editor while they are being edited. Push balls
+- **Shovey Classic**: approved stone-courtyard puzzles through level 24. Later boards stay in the developer editor while they are being edited. Push balls
   into matching holes, crates onto corners, coloured blocks onto marks,
   collect keys and powers, then walk home.
 - **Shovey Editor**: paint, test and share your own Classic boards. The
@@ -106,7 +106,9 @@ engine-checked alternatives help when a proposal cannot be solved. It keeps the
 puzzle's pieces, colors, terrain, start and home.
 A variation is applied only after its solution wins in the game engine, and
 Undo, Redo and Reset remain available. Unproven proposals leave the level intact.
-**Approve** saves approval and publishes in the background; pressing it again retries publication.
+**Approve** publishes in the background. It is disabled when that approval is
+already published, and becomes available again if its update fails. A later
+unproven draft does not prevent approving the last saved winning layout.
 Saved edits to approved levels publish automatically once their winning route is proven.
 Approved levels retain their purple mark while being edited.
 Each gate color also has an open starting variant, which closes when its lever

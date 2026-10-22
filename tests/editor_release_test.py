@@ -22,6 +22,8 @@ class Publication(unittest.TestCase):
         self.store = self.root / 'build/approved-releases/inbe.arcade'
         self.store.mkdir(parents=True)
         (self.root / 'backup').mkdir()
+        self.state = self.root / 'backup/editor-drafts'
+        self.state.mkdir()
         (self.root / 'levels').mkdir()
         (self.root / 'levels/approved.json').write_text(json.dumps(dict(levels=[{}] * 19)))
         (self.root / 'build').mkdir(exist_ok=True)
@@ -33,7 +35,7 @@ class Publication(unittest.TestCase):
         self.release = dict(version='0.6.7', artifacts=[dict(sha256=self.digest, size=len(payload))])
         (self.store / 'latest-v2.json').write_text(json.dumps(self.release))
         self.receipt = dict(versions=dict(arcade='0.6.7'), sha256=self.digest,
-                            approved_levels=19, phase='uploading')
+                            approved_levels=19, approved_boards=[], phase='uploading')
         self.publisher = Mock()
         self.publisher.served_release.return_value = self.release
         self.config = dict(arcade=str(self.root), install_local=True)
@@ -43,12 +45,14 @@ class Publication(unittest.TestCase):
 
     def complete(self, run=None):
         with patch.object(publish, 'ROOT', self.root), \
+                patch.object(publish, 'STATE', self.state), \
                 patch.object(publish, 'release_publisher', return_value=self.publisher), \
                 patch.object(publish, 'status'), \
                 patch.object(publish.subprocess, 'run', run or Mock()):
             publish.complete_release(self.config, self.receipt, io.StringIO())
 
     def test_uploaded_release_is_verified_and_installed_without_rebuilding(self):
+        self.receipt['approved_boards'] = ['00' * 720]
         run = Mock()
         self.complete(run)
         self.publisher.publish_node_app.assert_not_called()
@@ -56,6 +60,7 @@ class Publication(unittest.TestCase):
         self.assertEqual(run.call_args.args[0], ['make', '-o', 'all', 'install'])
         self.assertEqual(self.receipt['phase'], 'verified')
         self.assertTrue(self.receipt['local_installed'])
+        self.assertEqual((self.state / '001.published').read_text(), '00' * 720)
 
     def test_retry_after_verification_error_uses_same_artifact(self):
         run = Mock()
