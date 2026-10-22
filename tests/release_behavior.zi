@@ -21,13 +21,14 @@ Check :: () -> s32 {
     if !progress.completed[last - 1] || progress.unlocked != last + 1 || ShoveyContinue(*progress, *game) || ShoveySelectLevel(*progress, *game, last + 1) { return 4 }
     // A campaign from the previous full release retains its later unlocks
     // and completion marks, while this release opens the last approved board.
-    game.level = 25
-    progress.unlocked = 25
+    later := last + 5
+    game.level = later
+    progress.unlocked = later
     progress.completed[22] = true
     saved := ShoveyCampaignSave(*progress, *game)
     restored: ShoveyProgress
     position: ShoveyGame
-    if !ShoveyCampaignRestore(*restored, *position, saved) || position.level != last || restored.unlocked != 25 || !restored.completed[last - 1] || !restored.completed[22] { return 5 }
+    if !ShoveyCampaignRestore(*restored, *position, saved) || position.level != last || restored.unlocked != later || !restored.completed[last - 1] || !restored.completed[22] { return 5 }
     if ShoveyOpenLatest(*restored, *position) || position.level != last { return 6 }
     return 0
 }
