@@ -418,6 +418,26 @@ ClassicApiWalkerFree :: (action: s32) -> s32 {
 // edge count. The macro searches drop such states.
 #program_export
 ClassicApiDead :: () -> s32 {
+    balls: [6]s32
+    holes: [6]s32
+    paint: [6]s32
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        color := ShoveyBallColor(classic_game.objects[at])
+        if color > 0 { balls[color - 1] += 1 }
+        pit := ShoveyPitColor(classic_game.ground[at])
+        if pit > 0 { holes[pit - 1] += 1 }
+        painter := ShoveyPaintColor(classic_game.ground[at])
+        if painter > 0 { paint[painter - 1] += 1 }
+    }
+    // A ball without a matching pit needs a consumable paint of a color
+    // that has one. Do not spend that last paint on an already-matching ball.
+    needed: s32 = 0
+    available: s32 = 0
+    for color: cast(s32)0..5 {
+        if holes[color] == 0 { needed += balls[color] }
+        else { available += paint[color] }
+    }
+    if needed > available { return 1 }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         object := classic_game.objects[at]
         if ShoveyBallColor(object) <= 0 { continue }

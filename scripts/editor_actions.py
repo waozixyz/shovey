@@ -332,7 +332,7 @@ def prove_proposal(number, candidate, proposed_route='', source_route='', second
     for reference in references[:3]:
         for length in dict.fromkeys((len(reference), max(1, len(reference) - 16), max(1, len(reference) // 2))):
             continued = subprocess.run([str(SOLVER), 'solve', '--level', str(number),
-                '--seconds', '3', '--max-states', '500000', '--max-mb', '256', '--prefix', reference[:length], candidate],
+                '--seconds', '3', '--max-states', '500000', '--max-mb', '256', '--repair', reference[:length], candidate],
                 cwd=ROOT, capture_output=True, text=True, timeout=13)
             route = continued.stdout.strip().splitlines()[0] if continued.stdout.strip() else ''
             if continued.returncode == 0 and verify_route(number, candidate, route):

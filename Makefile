@@ -16,7 +16,7 @@ editor-server-test:
 editor-glm-test: solver
 	python3 tests/editor_glm_test.py
 
-editor-save-test: editor
+editor-save-test: editor solver
 	python3 tests/developer_editor_save_test.py
 
 editor-ui-test: editor editor-server-test

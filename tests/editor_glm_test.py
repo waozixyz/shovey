@@ -50,6 +50,28 @@ def repair():
 
 
 class Variations(unittest.TestCase):
+    def test_deadlock_rules_preserve_existing_winning_routes(self):
+        generated = ROOT / 'build/solver/classic/c'
+        output = ROOT / 'build/solver-state-test'
+        output.mkdir(exist_ok=True)
+        toolchain = Path(actions.subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
+        binary = output / 'state-test'
+        command = ['cc', '-std=c11', '-O2', '-I' + str(toolchain / 'include'), '-iquote', str(generated),
+                   str(ROOT / 'tests/solver_state_test.c')]
+        command += [str(path) for path in generated.glob('*.c')]
+        command += [str(ROOT / 'build/ziran/libziran.a'), '-lm', '-lpthread', '-o', str(binary)]
+        actions.subprocess.run(command, check=True, capture_output=True)
+        actions.subprocess.run([str(binary)], check=True, capture_output=True)
+        checked = 0
+        for level in json.loads((ROOT / 'levels/classic.json').read_text())['levels']:
+            route = level.get('solution', '')
+            candidate = actions.board_hex(level)
+            if not actions.verify_route(level['number'], candidate, route): continue
+            run = actions.subprocess.run([str(binary), candidate, route], capture_output=True, text=True)
+            self.assertEqual(run.returncode, 0, f'Level {level["number"]}: {run.stderr}')
+            checked += 1
+        self.assertGreater(checked, 100)
+
     def test_every_door_and_search_can_open_then_push_a_crate_through(self):
         for door in (104, 105, *range(116, 122)):
             cells, tiles = [0] * 240, [12] * 240

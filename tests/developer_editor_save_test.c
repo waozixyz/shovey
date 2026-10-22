@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #undef main
 
 static void load(void) {
@@ -55,6 +56,47 @@ int main(int argc, char **argv) {
         assert(shovey_board_KindSprite(&facing, SHOVEY_CHICKEN, 13, 0, true) == SPRITE_DOG + direction);
     }
     load();
+    if (argc == 2 && strcmp(argv[1], "update") == 0) {
+        editor_Open(1);
+        assert(editor_Solved() && saved_approval_ready);
+        server_configured = server_verified = true;
+        published_places[0] = approved_places[0] = true;
+        memcpy(published_boards, editor_Board(1).data, HEX);
+        memcpy(approved_boards, editor_Board(1).data, HEX);
+        /* Move home beyond the saved route. Update must check the new board
+           instead of publishing the still-valid saved older board. */
+        editor_SetKind(editor_Board(1), 14, 0);
+        editor_SetKind(editor_Board(1), 15, 7);
+        editor_Edited();
+        proof_length = check_state = 0;
+        assert(saved_approval_ready && editor_UpdateAvailable());
+        editor_UpdateEdit();
+        assert(check_state == 1 && editor_Checked());
+        assert(access("backup/editor-drafts/001.approval-request", F_OK) != 0);
+        int64_t started = check_started;
+        sleep(1);
+        editor_UpdateEdit();
+        assert(check_started == started); /* A second click keeps the search. */
+        for (int i = 0; i < 10 && check_state == 1; i++) {
+            editor_PollCheck();
+            if (check_state == 1) sleep(1);
+        }
+        assert(editor_Solved());
+        editor_AutoSave();
+        assert(save_state == 2 && editor_ApprovalMatches(1));
+        assert(memcmp(approved_boards, published_boards, HEX) != 0);
+        FILE *request = fopen("backup/editor-drafts/001.approval-request", "rb");
+        assert(request);
+        uint8_t requested[HEX];
+        assert(fread(requested, 1, HEX, request) == HEX);
+        fclose(request);
+        assert(memcmp(requested, editor_Board(1).data, HEX) == 0);
+        memcpy(publish_message, "Publishing…", strlen("Publishing…"));
+        publish_message_length = strlen("Publishing…");
+        assert(!editor_UpdateAvailable());
+        puts("Update checks the latest draft, reuses an active search and queues only its verified board");
+        return 0;
+    }
     if (argc == 3 && strcmp(argv[1], "recover") == 0) {
         editor_Open(atoi(argv[2]));
         assert(editor_Proven() || editor_Solved());

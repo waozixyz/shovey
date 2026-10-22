@@ -675,7 +675,7 @@ PublicationBusy :: () -> bool {
 }
 
 UpdateAvailable :: () -> bool {
-    return NeedsUpdate(current) && !playing && !glm_busy && (!ApprovalMatches(current) || !PublicationBusy())
+    return NeedsUpdate(current) && !playing && !glm_busy && !PublicationBusy()
 }
 
 DifferenceAt :: (place: s32, at: s32) -> bool {
@@ -846,10 +846,11 @@ UpdateEdit :: () {
         ApproveEdit()
         return
     }
-    // Saving already required a winning route. Publish that saved win rather
-    // than holding the update button behind another solver search.
-    if saved_approval_ready { ApproveEdit(); return }
-    ActionMessage("No saved win for this draft.")
+    // Update belongs to the visible draft. A saved win for an older board
+    // must not publish that older board while this draft stays unchanged.
+    if check_state != 1 || !Checked() { StartCheck() }
+    if Solved() || Proven() { ApproveEdit(); return }
+    ActionMessage(ifx check_state == 1 then "Checking solution…" else ifx check_state == 4 then "Needs one player." else "No winning route found.")
 }
 
 UpdateAll :: () {
@@ -1181,7 +1182,7 @@ StartCheck :: () {
         AppendText(command[:], *length, " --max-mb 128 --only ")
         AppendText(command[:], *length, search_names[index])
         if check_prefix_length > 0 && (index == 0 || index == 2) {
-            AppendText(command[:], *length, " --prefix ")
+            AppendText(command[:], *length, " --repair ")
             part := ifx index == 0 then check_prefix_length else ifx check_prefix_length > 16 then check_prefix_length - 16 else (check_prefix_length + 1) / 2
             AppendText(command[:], *length, TextView(check_prefix[:part]))
         }
@@ -2023,7 +2024,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             .label = ifx glm_busy && !glm_repair then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM() }
     update := NeedsUpdate(current)
     if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
-            .label = ifx update then ifx ApprovalMatches(current) && PublicationBusy() then "Updating…" else "Update" else "Approve",
+            .label = ifx update then ifx PublicationBusy() then "Updating…" else ifx check_state == 1 && Checked() && !ApprovalMatches(current) && !Solved() && !Proven() then "Checking…" else "Update" else "Approve",
             .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
         if update { UpdateEdit() } else { ApproveEdit() }
     }

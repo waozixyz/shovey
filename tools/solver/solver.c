@@ -72,6 +72,7 @@ typedef struct {
     int weight;
     const char *only;
     const char *prefix;
+    bool repair;
 } Options;
 
 typedef enum { STOP_NONE, STOP_SOLVED, STOP_EXHAUSTED, STOP_STATES, STOP_MEMORY, STOP_TIME } Stop;
@@ -715,12 +716,20 @@ static int Load(const char *hex, int level) {
 static int Solve(const char *hex, const Options *options) {
     if (!Load(hex, options->level)) return 2;
     const char *prefix = options->prefix ? options->prefix : "";
+    size_t prefix_length = 0;
     for (size_t step = 0; prefix[step]; step++) {
         const char *action = strchr(LETTERS, prefix[step]);
         if (!action) { fprintf(stderr, "invalid prefix action\n"); return 2; }
         if (API(Won)()) continue;
         API(Act)((int32_t)(action - LETTERS));
-        if (API(Lost)()) { fprintf(stderr, "prefix loses at step %zu\n", step + 1); return 1; }
+        if (API(Lost)() || (!API(Won)() && API(Dead)())) {
+            if (!options->repair) { fprintf(stderr, "prefix fails at step %zu\n", step + 1); return 1; }
+            API(Decode)(root_vector);
+            fprintf(stderr, "repair checkpoint %zu/%zu\n", prefix_length, strlen(prefix));
+            break;
+        }
+        prefix_length = step + 1;
+        Encode(root_vector);
     }
     Encode(root_vector);
     double start = Now();
@@ -755,11 +764,12 @@ static int Solve(const char *hex, const Options *options) {
     getrusage(RUSAGE_SELF, &usage);
     double seconds = Now() - start;
     bool solved = result.stop == STOP_SOLVED;
-    printf("%s%s\n", solved ? prefix : "", solved ? (result.route.text ? result.route.text : "") : "unsolved");
+    printf("%.*s%s\n", solved ? (int)prefix_length : 0, prefix,
+        solved ? (result.route.text ? result.route.text : "") : "unsolved");
     fprintf(stderr, "stats {\"edition\":\"%s\",\"solved\":%s,\"method\":\"%s\",\"length\":%zu,"
         "\"states\":%llu,\"expanded\":%llu,\"seconds\":%.3f,\"phases\":\"%s\",\"stop\":\"%s\","
         "\"max_rss_mb\":%.1f}\n",
-        EDITION, solved ? "true" : "false", method, solved ? strlen(prefix) + result.route.length : (size_t)0,
+        EDITION, solved ? "true" : "false", method, solved ? prefix_length + result.route.length : (size_t)0,
         (unsigned long long)states_seen, (unsigned long long)expanded, seconds, phases,
         StopName(result.stop), (double)usage.ru_maxrss / 1024.0);
     return solved ? 0 : 1;
@@ -838,6 +848,7 @@ int main(int argc, char **argv) {
             else if (strcmp(arg, "--weight") == 0) options.weight = atoi(value);
             else if (strcmp(arg, "--only") == 0) options.only = value;
             else if (strcmp(arg, "--prefix") == 0) options.prefix = value;
+            else if (strcmp(arg, "--repair") == 0) { options.prefix = value; options.repair = true; }
             else { Usage(); return 2; }
             continue;
         }

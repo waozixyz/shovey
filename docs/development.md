@@ -74,8 +74,10 @@ The level overview checks the live signed server release in the background.
 Purple means the current board matches it; pink means a local change needs an
 update, and gray means the server could not be verified. Similarity stays green
 below 50% and shifts smoothly toward red above 90%, including waiting levels.
-Changed published boards show Update. Saved wins are reused; unproven edits
-start a check before publishing. Diff shows the server board above your draft,
+Changed published boards show Update. Saved wins are reused only when they
+still win on the visible draft; otherwise Update starts a check and shows
+Checking. It keeps an already running check and publishes that exact draft
+after the engine verifies its win. Diff shows the server board above your draft,
 counts changed cells and highlights their objects, floor or decoration changes.
 Update all checks the latest drafts of every published level in the background,
 reuses winning routes when they still work, and searches for new routes when
