@@ -14,6 +14,7 @@ for folder in (drafts, profile / 'levels', profile / 'scripts', profile / 'backu
     folder.mkdir(parents=True, exist_ok=True)
 for path in drafts.iterdir():
     path.unlink()
+(drafts / 'orientation').write_text('portrait')
 if not (profile / 'assets').exists():
     (profile / 'assets').symlink_to(ROOT / 'assets', target_is_directory=True)
 pieces = [12] * 240

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Developer editor actions. Model proposals stay drafts until exact approval."""
+"""Editor actions. Model changes must win in the real engine."""
 import argparse
 import fcntl
 import hashlib
@@ -10,6 +10,8 @@ import re
 import shlex
 import subprocess
 import sys
+import time
+import urllib.error
 import urllib.request
 from collections import Counter
 
@@ -20,7 +22,7 @@ LAYERS = ('cells', 'tiles', 'decorations')
 COSMETIC = {0, 57, 58, 59, 60, 61, 77, 78, *range(99, 104)}
 WALLS = {12, 62, 63, 76, 95, 96, 97, 98}
 ALLOWED = (
-    ({0, *range(1, 77), *range(82, 123)} - {22, 24, 32, 41, 42, 43}),
+    ({0, *range(1, 77), *range(82, 127)} - {22, 24, 32, 41, 42, 43}),
     {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104)},
     {0, 57, 58, 59, 84, 106, 122},
 )
@@ -70,6 +72,9 @@ def approve(number):
         data['pending'] = pending
         atomic(path, json.dumps(data, indent=1) + '\n')
         atomic(DRAFTS / f'{number:03}.approved', request[0])
+    if not (ROOT / 'backup/editor-publish.json').is_file():
+        atomic(DRAFTS / 'publish-status', 'Approved')
+        return
     atomic(DRAFTS / 'publish-status', 'Updating…')
     subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py')], cwd=ROOT,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -78,6 +83,9 @@ def approve(number):
 
 def update():
     # Updating an approved campaign never depends on the open draft's proof.
+    if not (ROOT / 'backup/editor-publish.json').is_file():
+        atomic(DRAFTS / 'publish-status', 'Approved')
+        return
     atomic(DRAFTS / 'publish-status', 'Updating…')
     subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py'), '--force'], cwd=ROOT,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -100,7 +108,7 @@ def glm_settings():
     settings.update({key: value for key, value in os.environ.items() if key in ('GLM_BASE_URL', 'GLM_MODEL', 'GLM_API_KEY', 'ZAI_API_KEY')})
     key = settings.get('GLM_API_KEY') or settings.get('ZAI_API_KEY')
     if not key:
-        raise ValueError('Harmony has no configured GLM key')
+        raise ValueError('Configure a GLM API key.')
     model = settings.get('GLM_MODEL', 'glm-5.3')
     if 'glm' not in model.lower():
         raise ValueError('The configured model must be GLM')
@@ -195,7 +203,7 @@ def prove_proposal(number, candidate, proposed_route='', source_route=''):
 
 
 def proven_variations(number, original, route, limit=8):
-    """Keep the current solution and inventory while moving nearby pieces or walls."""
+    """Keep inventory and nearby geometry, proving every candidate's route."""
     if not route:
         return []
     layers = [[int(original[i:i + 2], 16) for i in range(start, start + 480, 2)]
@@ -211,7 +219,7 @@ def proven_variations(number, original, route, limit=8):
         return dict(layer=layer, x=at // 12, y=11 - at % 12, **{'from': before, 'to': after})
 
     interior = [at for at in range(240) if 0 < at % 12 < 11 and 0 < at // 12 < 19]
-    empty = [at for at in interior if cells[at] == 0 and tiles[at] in {0, 77, 78} and decorations[at] != 84]
+    empty = [at for at in interior if cells[at] == 0 and tiles[at] in {0, 77, 78, *range(99, 104)} and decorations[at] not in (84, 106, 122)]
     proposals = []
     for source in interior:
         kind = cells[source]
@@ -232,6 +240,7 @@ def proven_variations(number, original, route, limit=8):
                 proposals.append((5 + nearby, [edit('tiles', source, tiles[source], tiles[target]),
                                              edit('tiles', target, tiles[target], tiles[source])]))
     verified = []
+    alternatives = []
     seen = set()
     for _, edits in sorted(proposals, key=lambda item: item[0], reverse=True)[:160]:
         proposal = dict(edits=edits, solution=route)
@@ -246,19 +255,49 @@ def proven_variations(number, original, route, limit=8):
             verified.append(proposal)
             if len(verified) == limit:
                 break
-    return verified
+        elif len(alternatives) < 3:
+            alternatives.append((proposal, candidate))
+    # A single nudge that leaves the entire old route unchanged is rarely a
+    # useful redesign. Combine independently valid edits and replay the whole
+    # result, rather than offering GLM eight versions of the same tiny move.
+    combined = []
+    for left in range(len(verified)):
+        for right in range(left + 1, len(verified)):
+            proposal = dict(edits=verified[left]['edits'] + verified[right]['edits'], solution=route)
+            try:
+                candidate = apply_proposal(original, proposal)
+            except ValueError:
+                continue
+            if verify_route(number, candidate, route):
+                combined.append(proposal)
+                if len(combined) == limit:
+                    return combined
+    # When independent moves cannot be combined, prove a genuinely new route
+    # for a nearby change instead of falling back to the old one-square nudge.
+    if not combined:
+        for proposal, candidate in alternatives:
+            try:
+                solved = subprocess.run([str(SOLVER), 'solve', '--level', str(number),
+                    '--seconds', '3', '--max-states', '250000', '--max-mb', '128', candidate],
+                    cwd=ROOT, capture_output=True, text=True, timeout=5)
+            except subprocess.TimeoutExpired:
+                continue
+            solution = solved.stdout.strip().splitlines()[0] if solved.stdout.strip() else ''
+            if solved.returncode == 0 and verify_route(number, candidate, solution):
+                combined.append(dict(proposal, solution=solution))
+    return combined[:limit]
 
 
-def modify_once(number, feedback=''):
+def modify_once(number, feedback='', choices=None):
     status = DRAFTS / f'{number:03}.glm-status'
-    atomic(status, 'GLM is designing a variation…')
+    atomic(status, 'Designing…')
     original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
     if not re.fullmatch('[0-9a-f]{1440}', original):
         raise ValueError('The source board is incomplete; your level was kept')
     cells = [int(original[i:i + 2], 16) for i in range(0, 1440, 2)]
     rows = [[cells[(11 - y) + x * 12 + layer * 240] for x in range(20)] for layer in range(3) for y in range(12)]
     source_route = existing_route(number, original)
-    choices = proven_variations(number, original, source_route)
+    choices = choices or []
     instruction = (
         'You design Shovey push puzzles. Improve the supplied EXISTING level with a small purposeful variation inspired by its current solution and mechanics. '
         'Think through the pushes and a winning route; use compact connected rooms and purposeful obstacles, not empty walking or random decoration. '
@@ -266,6 +305,8 @@ def modify_once(number, feedback=''):
         'every colored pit, all portal pairs, paints, gates, plates and levers. Keep the player and home in their existing cells. '
         'Keep the main rooms and recognizable passage layout; change at most 40 board coordinates across the layers. '
         'Reposition a few selected crates, balls or walls to create one interesting dependency or push sequence. Prefer 2–12 changed coordinates. '
+        'Design the variation yourself. Avoid merely nudging one unused piece while the old solution works unchanged. '
+        'If the old route still wins, change at least four coordinates with a concrete purpose in the push puzzle. '
         'Do not add goals, new mechanics, new items or extra scenery. Keep comparable difficulty. '
         'Return only JSON with keys edits, solution, explanation. Do NOT regenerate the grids. '
         'edits is a list of {"layer":"cells" or "tiles","x":integer,"y":integer,"from":old ID,"to":new ID}. '
@@ -277,7 +318,9 @@ def modify_once(number, feedback=''):
         'Cells: 0 empty, 1/2/3 red/blue/green balls, 7 home, 8 paired teleporters, 9 crate, 10 player (exactly one), '
         '13 pressure plate, 14 mossy wall (opens while any object holds a plate), 15/16/17 paint red/blue/green, '
         '18 crate goal, 21 apple, 33 key, 34 lock, 44/45/46 cyan/purple/yellow balls, 50/51/52 matching paint, '
-        '73/74/75/85/86/87 portals (paired by ID), 92 lever gate, 93 lever (pushing toggles all lever gates). '
+        '73/74/75/85/86/87 portals (paired by ID), 92 grey gate, 93/94 grey lever off/on, '
+        '107 red gate with 108/109 red lever, 110 blue gate with 111/112 blue lever, 113 green gate with 114/115 green lever. '
+        '123/124/125/126 grey/red/blue/green gates start OPEN and close when matching levers are on. Other gates start closed and open. '
         'Tiles: 0 paving, 12 wall, 14 mossy pressure wall, 4/5/6 red/blue/green pits, 47/48/49 cyan/purple/yellow pits, 64 water, '
         '65 abyss, 70 ice, 77 grass, 78 sand. Decorations: 0 empty, 57 flowers, 58 grass tuft, 59 pebbles, 84 blocking tree. '
         'A ball pushed onto matching pit disappears; pit is reusable. Paint recolors a ball and is consumed. '
@@ -297,7 +340,7 @@ def modify_once(number, feedback=''):
         verified_variations=[dict(choice=index, edits=choice['edits']) for index, choice in enumerate(choices)])))]
     if feedback:
         messages.append(dict(role='user', content='The previous proposal failed validation. Correct it relative to the ORIGINAL grids: ' + feedback))
-    payload = dict(model=model, temperature=0.5, max_tokens=800 if choices else 6000,
+    payload = dict(model=model, temperature=0.5, max_tokens=800 if choices else 3500,
                    thinking={'type': 'disabled'}, response_format={'type': 'json_object'},
                    messages=messages)
     req = urllib.request.Request(base + '/chat/completions', data=json.dumps(payload).encode(),
@@ -314,7 +357,11 @@ def modify_once(number, feedback=''):
         proposal = choices[choice] | {'explanation': str(proposal.get('explanation', ''))[:1000]}
     try:
         candidate = apply_proposal(original, proposal)
-        atomic(status, 'GLM variation is being checked for a real winning route…')
+        changed = {at % 240 for at in range(480)
+                   if original[at * 2:at * 2 + 2] != candidate[at * 2:at * 2 + 2]}
+        if len(changed) < 4 and verify_route(number, candidate, source_route):
+            raise ValueError('Only one piece was nudged and the old route still wins unchanged. Design a fuller push variation or a change requiring a new route')
+        atomic(status, 'Checking variation…')
         route = prove_proposal(number, candidate, proposal.get('solution', ''), source_route)
     except (ValueError, subprocess.TimeoutExpired) as error:
         rejected = ValueError(str(error) if isinstance(error, ValueError) else 'The route check ran out of time; simplify the variation')
@@ -323,17 +370,47 @@ def modify_once(number, feedback=''):
     atomic(DRAFTS / f'{number:03}.glm-proof', candidate + '\n' + route)
     atomic(DRAFTS / f'{number:03}.glm-explanation', str(proposal.get('explanation', ''))[:1000])
     atomic(DRAFTS / f'{number:03}.glm-result', candidate)
-    atomic(status, 'GLM variation ready, with an engine-proven winning route.')
+    atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(
+        model=model, changed_coordinates=len(changed), solution_length=len(route),
+        explanation=str(proposal.get('explanation', ''))[:1000]), indent=2) + '\n')
+    atomic(status, 'Variation ready')
+    atomic(DRAFTS / f'{number:03}.glm-state', 'ready')
 
 
 def modify(number):
+    atomic(DRAFTS / f'{number:03}.glm-state', 'working')
+    glm_settings()  # Configuration errors cannot be corrected by another proposal.
     feedback = ''
+    started = time.monotonic()
     for attempt in range(3):
         try:
-            return modify_once(number, feedback)
+            choices = None
+            if attempt == 2:
+                original = (DRAFTS / f'{number:03}.glm-base').read_text().strip()
+                atomic(DRAFTS / f'{number:03}.glm-status', 'Finding proven alternatives…')
+                choices = proven_variations(number, original, existing_route(number, original))
+            modify_once(number, feedback, choices)
+            return
         except ValueError as error:
             feedback = json.dumps(dict(reason=str(error), rejected_proposal=getattr(error, 'proposal', None)))
-    raise ValueError('GLM could not prove a suitable variation; your current level was kept. Try again.')
+            atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(
+                attempt=attempt + 1, seconds=round(time.monotonic() - started, 1),
+                reason=str(error), rejected_proposal=getattr(error, 'proposal', None)), indent=2) + '\n')
+    raise ValueError('No solvable variation found. Try GLM again.')
+
+
+def failure_message(error):
+    if isinstance(error, urllib.error.HTTPError):
+        if error.code in (401, 403):
+            return 'GLM access denied. Check the provider key.'
+        if error.code == 429:
+            return 'GLM limit reached. Try again shortly.'
+        return f'GLM provider error ({error.code}). Try again.'
+    if isinstance(error, (urllib.error.URLError, TimeoutError)):
+        return 'GLM connection failed. Try again.'
+    if isinstance(error, ValueError):
+        return str(error)[:220]
+    return 'GLM request failed. Try again.'
 
 
 if __name__ == '__main__':
@@ -349,7 +426,9 @@ if __name__ == '__main__':
         else:
             (approve if args.action == 'approve' else modify)(args.level)
     except Exception as error:
-        message = str(error) if isinstance(error, ValueError) else 'The request failed; your level was kept. Retry when the connection is ready.'
+        message = failure_message(error) if args.action == 'glm' else 'Update failed. Retry.'
         path = DRAFTS / (f'{args.level:03}.glm-status' if args.action == 'glm' else 'publish-status')
         atomic(path, message[:220])
+        if args.action == 'glm':
+            atomic(DRAFTS / f'{args.level:03}.glm-state', 'error')
         raise SystemExit(1)

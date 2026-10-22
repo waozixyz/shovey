@@ -10,6 +10,8 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 toolchain=${ZIRAN_TOOLCHAIN:-"$HOME/.cache/ziran/sources/p86cd37cbd504a4ae"}
 out=${SOLVER_OUT:-"$root/build/solver"}
 lib="$root/build/ziran/libziran.a"
+set --
+if [ "${SHOVEY_ADMIN:-0}" = 1 ]; then set -- --define SHOVEY_ADMIN; fi
 
 # The engines import their boards from the generated level code.
 for file in levels.zi island_levels.zi; do
@@ -22,7 +24,7 @@ for edition in classic island; do
     work="$out/$edition"
     rm -rf "$work"
     mkdir -p "$work/c"
-    "$toolchain/build/bin/ziran" build --target=c --no-main --root "$root/tools/solver" \
+    "$toolchain/build/bin/ziran" build --target=c --no-main "$@" --root "$root/tools/solver" \
         --module-path "$toolchain/std" -o "$work/c" "$root/tools/solver/${edition}_api.zi"
     define=$(echo "SHOVEY_$edition" | tr '[:lower:]' '[:upper:]')
     includes=$(find "$work/c" -type d -printf ' -iquote %p')

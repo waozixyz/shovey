@@ -1,0 +1,63 @@
+name: Editor desktop release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the checked desktop editor download
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: editor-desktop-release
+  cancel-in-progress: false
+
+jobs:
+  editor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+      - name: Read the locked toolchain
+        id: toolchain
+        run: |
+          python3 -c 'import json,os; r=json.load(open("ziran.lock")); open(os.environ["GITHUB_OUTPUT"],"a").write("commit="+r["toolchain"]["commit"]+"\n")'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ziranlang/ziran
+          ref: ${{ steps.toolchain.outputs.commit }}
+          path: ziranlang/ziran
+      - name: Install build and private-display test dependencies
+        run: |
+          sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential pkg-config libsdl2-dev libcairo2-dev libfreetype6-dev libfontconfig-dev libpango1.0-dev python3-pil python3-numpy xvfb xauth xdotool imagemagick
+      - name: Build the locked compiler and fetch packages
+        run: |
+          make -j2 -C "$GITHUB_WORKSPACE/ziranlang/ziran"
+          "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" fetch --locked
+      - name: Build the editor without campaign or reference data
+        run: make admin-editor ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
+      - name: Check the extracted download on a private display
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER YUE_DESKTOP_RECOVERY=0 xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/admin_editor_package_test.py
+      - name: Publish the checked editor
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("build/admin-editor/package/shovey-level-editor/manifest.json"))["version"])')
+          tag="editor-v$version"
+          archive=build/admin-editor/shovey-level-editor-linux-x86_64.tar.gz
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; refusing to replace its checked download." >&2
+            exit 1
+          fi
+          gh release create "$tag" "$archive" --target "$GITHUB_SHA" --title "Shovey Level Editor $version" --notes-file docs/editor-release.md

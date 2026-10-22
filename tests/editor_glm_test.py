@@ -41,6 +41,8 @@ class Variations(unittest.TestCase):
             drafts = root / 'drafts'
             drafts.mkdir()
             (root / 'levels').mkdir()
+            (root / 'backup').mkdir()
+            (root / 'backup/editor-publish.json').write_text('{}')
             old = actions.record(1, board(), '333332')
             other = actions.record(2, board(), '333332')
             path = root / 'levels/approved.json'
@@ -96,7 +98,7 @@ class Variations(unittest.TestCase):
                     patch.object(actions, 'existing_route', return_value='333332'), \
                     patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
                     patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())):
-                actions.modify(1)
+                actions.modify_once(1, choices=actions.proven_variations(1, board(), '333332'))
             candidate, route = (drafts / '001.glm-proof').read_text().splitlines()
             self.assertEqual((drafts / '001.glm-result').read_text(), candidate)
             self.assertTrue(actions.verify_route(1, candidate, route))
@@ -132,7 +134,7 @@ class Variations(unittest.TestCase):
             actions.prove_proposal(1, candidate, '333332')
 
     def test_retry_uses_original_and_feedback_before_exposing_a_result(self):
-        responses = [variation(1, 1), variation()]
+        responses = [variation(1, 1), variation(4, 4)]
         requests = []
 
         def reply(request, **kwargs):
@@ -155,6 +157,41 @@ class Variations(unittest.TestCase):
         self.assertEqual(len(requests), 2)
         self.assertIn('rejected_proposal', requests[1]['messages'][-1]['content'])
         self.assertEqual(json.loads(requests[0]['messages'][1]['content'])['existing_solution'], '333332')
+
+    def test_design_request_is_not_restricted_to_preset_choices(self):
+        response = dict(choices=[dict(message=dict(content=json.dumps(variation(4, 4))))])
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.glm-base').write_text(board())
+            with patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions, 'existing_route', return_value='333332'), \
+                    patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                    patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())) as request:
+                actions.modify(1)
+            payload = json.loads(request.call_args.args[0].data)
+            self.assertEqual(json.loads(payload['messages'][1]['content'])['verified_variations'], [])
+            candidate, route = (drafts / '001.glm-proof').read_text().splitlines()
+            self.assertFalse(actions.verify_route(1, candidate, '333332'))
+            self.assertTrue(actions.verify_route(1, candidate, route))
+            self.assertEqual((drafts / '001.glm-state').read_text(), 'ready')
+
+    def test_single_nudge_with_unchanged_route_is_rejected(self):
+        response = dict(choices=[dict(message=dict(content=json.dumps(variation())))])
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.glm-base').write_text(board())
+            with patch.object(actions, 'DRAFTS', drafts), \
+                    patch.object(actions, 'existing_route', return_value='333332'), \
+                    patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                    patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())):
+                with self.assertRaisesRegex(ValueError, 'Only one piece was nudged'):
+                    actions.modify_once(1)
+            self.assertFalse((drafts / '001.glm-result').exists())
+
+    def test_provider_errors_have_specific_short_messages(self):
+        for code, word in ((401, 'key'), (429, 'limit'), (503, '503')):
+            error = actions.urllib.error.HTTPError('https://example.invalid', code, '', {}, None)
+            self.assertIn(word, actions.failure_message(error))
 
 
 if __name__ == '__main__':

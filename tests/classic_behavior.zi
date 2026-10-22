@@ -248,6 +248,29 @@ TileChecks :: () -> s32 {
 }
 
 NatureChecks :: () -> s32 {
+    // Matching normal and initially-open gates always move in opposite
+    // directions. Other colours stay untouched, including after save/restore.
+    for color: cast(s32)0..3 {
+        paired := Floor()
+        normal := ifx color == 0 then SHOVEY_GATE else 107 + (color - 1) * 3
+        lever := ifx color == 0 then SHOVEY_LEVER else 108 + (color - 1) * 3
+        paired.ground[14] = lever
+        paired.ground[26] = normal
+        paired.ground[27] = SHOVEY_OPEN_GATE + color
+        paired.ground[28] = SHOVEY_OPEN_GATE + (color + 1) % 4
+        if ShoveyCanEnter(*paired, 26, 10) || !ShoveyCanEnter(*paired, 27, 9) { return 160 }
+        if !ShoveyMove(*paired, 2) || !ShoveyCanEnter(*paired, 26, 9) || ShoveyCanEnter(*paired, 27, 10) { return 161 }
+        if !ShoveyGateOpen(*paired, 28) { return 162 }
+        restored_pair: ShoveyGame
+        if !ShoveyRestore(*restored_pair, ShoveySave(*paired)) || ShoveyGateOpen(*restored_pair, 27) { return 163 }
+        if !ShoveyMove(*paired, 2) || ShoveyGateOpen(*paired, 26) || !ShoveyGateOpen(*paired, 27) { return 164 }
+        // A closing gate waits for its occupant to leave.
+        paired.ground[14] = lever + 1
+        paired.objects[27] = 9
+        if !ShoveyGateOpen(*paired, 27) { return 165 }
+        paired.objects[27] = 0
+        if ShoveyGateOpen(*paired, 27) { return 166 }
+    }
     door := Floor()
     door.ground[14] = SHOVEY_DOOR
     if ShoveyCanEnter(*door, 14, 9) { return 142 }

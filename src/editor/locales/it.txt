@@ -697,3 +697,15 @@ Leva verde
 [editor_lever]
 Leva
 ---
+[editor_open_gate]
+Cancello aperto
+---
+[editor_open_red_gate]
+Cancello rosso aperto
+---
+[editor_open_blue_gate]
+Cancello blu aperto
+---
+[editor_open_green_gate]
+Cancello verde aperto
+---

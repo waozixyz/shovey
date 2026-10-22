@@ -67,6 +67,19 @@ int main(int argc, char **argv) {
         return 0;
     }
     assert(level_count == 2 && mapping_ok);
+    remove("backup/editor-drafts/orientation");
+    editor_LoadOrientation();
+    assert(boards_landscape);
+    editor_RotateBoards();
+    assert(!boards_landscape);
+    boards_landscape = true;
+    editor_LoadOrientation();
+    assert(!boards_landscape);
+    editor_RotateBoards();
+    boards_landscape = false;
+    editor_LoadOrientation();
+    assert(boards_landscape);
+    boards_landscape = false; /* The following fixtures exercise portrait cells. */
     editor_Open(1);
     assert(editor_Solved() && save_state == 2 && !check_wanted);
     /* Editor history survives auto-saving; reset returns to the opened board. */
@@ -150,6 +163,32 @@ int main(int argc, char **argv) {
     assert(memcmp(before, editor_Board(1).data, HEX) == 0);
     editor_RedoEdit();
     assert(memcmp(candidate, editor_Board(1).data, HEX) == 0);
+    /* A worker's short progress labels do not mark the request finished.
+       Completed GLM feedback survives polling an unchanged publish status. */
+    FILE *status = fopen("backup/editor-drafts/publish-status", "wb");
+    assert(status); fputs("Published", status); fclose(status);
+    editor_PollActions(actions_polled + 500);
+    glm_busy = true; glm_place = current;
+    glm_started = actions_polled;
+    status = fopen("backup/editor-drafts/001.glm-status", "wb");
+    assert(status); fputs("Checking variation…", status); fclose(status);
+    status = fopen("backup/editor-drafts/001.glm-state", "wb");
+    assert(status); fputs("working", status); fclose(status);
+    editor_PollActions(actions_polled + 500);
+    assert(glm_busy);
+    status = fopen("backup/editor-drafts/001.glm-state", "wb");
+    assert(status); fputs("error", status); fclose(status);
+    editor_PollActions(actions_polled + 500);
+    assert(!glm_busy);
+    editor_ActionMessage((String){"Variation applied", 17});
+    editor_PollActions(actions_polled + 500);
+    assert(action_message_length == 17 && memcmp(action_message, "Variation applied", 17) == 0);
+    for (int color = 0; color < 4; color++) {
+        int kind = SHOVEY_OPEN_GATE + color;
+        int sprite = color == 0 ? SPRITE_GATE_OPEN : SPRITE_COLORED_GATE + (color - 1) * 4 + 1;
+        assert(editor_PrivateSprite(kind) == sprite);
+        assert(shovey_board_KindSprite(&facing, kind, -1, 0, false) == sprite);
+    }
     puts("Developer editor: saves, recovered wins, verified GLM results and undo/redo passed");
     return 0;
 }

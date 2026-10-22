@@ -156,7 +156,7 @@ EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
 // ---------------------------------------------------------------------------
 // Pieces
 
-EDIT_CLASSIC_PIECES :: 62
+EDIT_CLASSIC_PIECES :: 66
 EDIT_ISLAND_PIECES :: 82
 edit_classic_kinds: [EDIT_CLASSIC_PIECES]s32;
 edit_classic_names: [EDIT_CLASSIC_PIECES]string;
@@ -172,7 +172,7 @@ EditPiecesPrepare :: () {
     EDIT_TILE_BRUSH + 12, EDIT_TILE_BRUSH + 14, EDIT_TILE_BRUSH + 95,
     EDIT_TILE_BRUSH + 96, EDIT_TILE_BRUSH + 97, EDIT_TILE_BRUSH + 98,
     10, 7, 9, 18, 1, 2, 3, 4, 5, 6,
-    15, 16, 17, 19, 21, 13, 92, 93, 104, 116, 118, 120, 107, 108, 110, 111, 113, 114, EDIT_DECO_BRUSH + 106, EDIT_DECO_BRUSH + 122, 33, 34, 8, 11, 25,
+    15, 16, 17, 19, 21, 13, 92, 123, 93, 104, 116, 118, 120, 107, 124, 108, 110, 125, 111, 113, 126, 114, EDIT_DECO_BRUSH + 106, EDIT_DECO_BRUSH + 122, 33, 34, 8, 11, 25,
     26, 28, 27, 29, 30, 31, 20, 23, 35, 36, 37, 38, 39, 40, 0]
     classic_names: [EDIT_CLASSIC_PIECES]string = .[
     "editor_floor", "editor_mossy_floor", "editor_slate_floor",
@@ -183,7 +183,7 @@ EditPiecesPrepare :: () {
     "editor_red_ball", "editor_blue_ball", "editor_green_ball",
     "editor_red_pit", "editor_blue_pit", "editor_green_pit",
     "editor_red_paint", "editor_blue_paint", "editor_green_paint", "editor_star_block",
-    "editor_apple", "editor_plate", "editor_gate", "editor_lever", "editor_door", "editor_red_door", "editor_blue_door", "editor_green_door", "editor_red_gate", "editor_red_lever", "editor_blue_gate", "editor_blue_lever", "editor_green_gate", "editor_green_lever", "editor_lantern", "editor_boulder", "editor_key",
+    "editor_apple", "editor_plate", "editor_gate", "editor_open_gate", "editor_lever", "editor_door", "editor_red_door", "editor_blue_door", "editor_green_door", "editor_red_gate", "editor_open_red_gate", "editor_red_lever", "editor_blue_gate", "editor_open_blue_gate", "editor_blue_lever", "editor_green_gate", "editor_open_green_gate", "editor_green_lever", "editor_lantern", "editor_boulder", "editor_key",
     "editor_lock", "editor_teleporter", "editor_trail", "editor_reverse",
     "editor_ammo", "editor_target", "editor_charge", "editor_moving_block",
     "editor_fresh_path", "editor_used_path", "editor_sensor", "editor_closed_sensor",

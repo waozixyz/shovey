@@ -124,23 +124,23 @@
     },
     {
       "path": "sprites/dog-down.png",
-      "depicts": "landscape presentation of chicken facing down",
-      "sha256": "c58a00f0033390877b1706a2ad9b2592e116bc4347950471e59933edf4d138e6"
+      "depicts": "landscape presentation of garden duck facing down",
+      "sha256": "be0127248119c8b233d2d6330782379504024333773f52da2074254a43201bb0"
     },
     {
       "path": "sprites/dog-left.png",
-      "depicts": "landscape presentation of chicken facing left",
-      "sha256": "c2734b5036ac1e18648ee899afb5848b83febf4a9d593a3cf0c5ac09fe22c010"
+      "depicts": "landscape presentation of garden duck facing left",
+      "sha256": "4807056463a5e9953dcda70472bbd26c1471198c232305beec87a1709b168562"
     },
     {
       "path": "sprites/dog-right.png",
-      "depicts": "landscape presentation of chicken facing right",
-      "sha256": "fba01386d0fdeff0973894ffe405a0def933f9cb4986ec5c1a07bdc71cefb728"
+      "depicts": "landscape presentation of garden duck facing right",
+      "sha256": "d9508a1b7888943bcc820e57fc949d0eecf3495d074f813e5351686d1b81e302"
     },
     {
       "path": "sprites/dog-up.png",
-      "depicts": "landscape presentation of chicken facing up",
-      "sha256": "98b94450f1ec6526450aa9a05952b40f7784756e2a60c37ad8fa0e66cf83eaee"
+      "depicts": "landscape presentation of garden duck facing up",
+      "sha256": "23b2a5a03d7ce958b99384562427d4927a1e0a769d796970bf34ae10970927e7"
     },
     {
       "path": "sprites/door-open.png",
@@ -624,8 +624,8 @@
     },
     {
       "path": "sprites/tile-11.png",
-      "depicts": "landscape presentation of trail field: a ring with a bar, drawn in deep teal",
-      "sha256": "7ef8fc9bd2ce4b60b1c474b27b6d8d68277909b2935c6af36e21472187ac17e4"
+      "depicts": "landscape presentation of trail field: a lilac ring with a straight horizontal bar",
+      "sha256": "730ef2d5705cb422d01257742b7a1ee2ce055737cdc0a78440a79e0b2573845a"
     },
     {
       "path": "sprites/tile-110.png",
@@ -696,6 +696,26 @@
       "path": "sprites/tile-122.png",
       "depicts": "landscape presentation of boulder: a solid faceted stone that blocks movement",
       "sha256": "b0a2b8b7222c4672c93dd1d1db5dc97d4ea3981336a80336288871c901726680"
+    },
+    {
+      "path": "sprites/tile-123.png",
+      "depicts": "landscape presentation of iron gate: starts open and closes when its lever is on",
+      "sha256": "7881ddda48a02f92be3324049594035b584021b48a0428f67065baf6a7b0c49c"
+    },
+    {
+      "path": "sprites/tile-124.png",
+      "depicts": "landscape presentation of red gate: starts open and closes when its lever is on",
+      "sha256": "ce8311e1b77e8bdc90e8659329650a7a471f0822dcf8e8eead4f54a519966851"
+    },
+    {
+      "path": "sprites/tile-125.png",
+      "depicts": "landscape presentation of blue gate: starts open and closes when its lever is on",
+      "sha256": "c438f0e518d190c1db7e64f445e1414a55e4447444bad35f08310cd2d8637a74"
+    },
+    {
+      "path": "sprites/tile-126.png",
+      "depicts": "landscape presentation of green gate: starts open and closes when its lever is on",
+      "sha256": "82a0f285aa4acf2fb213c2b9e45caec6b7fc269eea04a78fcd818db1a1faef47"
     },
     {
       "path": "sprites/tile-13.png",
@@ -1049,8 +1069,8 @@
     },
     {
       "path": "sprites/tile-82.png",
-      "depicts": "landscape presentation of chicken: a cream-white bird with an orange comb",
-      "sha256": "fba01386d0fdeff0973894ffe405a0def933f9cb4986ec5c1a07bdc71cefb728"
+      "depicts": "landscape presentation of garden duck: a cream-white duck with a brown wing and orange bill",
+      "sha256": "d9508a1b7888943bcc820e57fc949d0eecf3495d074f813e5351686d1b81e302"
     },
     {
       "path": "sprites/tile-83.png",

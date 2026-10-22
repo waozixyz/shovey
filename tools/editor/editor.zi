@@ -107,8 +107,11 @@ approved_places: [PLACES]bool;
 glm_busy: bool;
 glm_place: s32;
 glm_base: [HEX]u8;
+glm_started: s64;
 action_message: [256]u8;
 action_message_length: s32;
+publish_message: [256]u8;
+publish_message_length: s32;
 actions_polled: s64;
 stroke: bool;
 
@@ -166,22 +169,22 @@ similarity_cached: [PLACES + 1]bool;
 similarity_scores: [PLACES + 1]s32;
 
 // Palette: board kinds in the order a level is usually built.
-PALETTE :: 94
-palette_kinds: [94]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
-    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14, 92, 93, 107, 108, 110, 111, 113, 114,
+PALETTE :: 98
+palette_kinds: [98]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
+    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
     104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
     35, 36, 37, 38, 53, 54, 55, 39, 40,
     65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91];
-palette_names: [94]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
+palette_names: [98]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
     "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
     "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
     "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
-    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Gate", "Lever", "Red gate", "Red lever", "Blue gate", "Blue lever", "Green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
+    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Gate", "Open gate", "Lever", "Red gate", "Open red gate", "Red lever", "Blue gate", "Open blue gate", "Blue lever", "Green gate", "Open green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
     "Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
     "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
     "Yellow block", "Cyan block", "Purple block", "Green block", "Block goal", "Mirror Shovey",
     "Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
-    "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Chicken", "Turtle", "Crab", "Goldfish", "Koi", "Minnow"];
+    "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Duck", "Turtle", "Crab", "Goldfish", "Koi", "Minnow"];
 
 AppendText :: (bytes: []u8, length: *s32, text: string) {
     if length.* + cast(s32)text.count > cast(s32)bytes.count { return }
@@ -439,9 +442,11 @@ NextWaiting :: () -> s32 {
 }
 
 LoadOriginals :: () {
+    #if !#defined(SHOVEY_ADMIN) {
     text, found := ReadEntireFile("backup/original/classic-levels.zi")
     if found {
         for number: cast(s32)1..LEVELS_MAX { original_found[number] = FindBoard(text, number, Original(number)) }
+    }
     }
     list, listed := ReadEntireFile("backup/redesign/stuck.txt")
     if listed {
@@ -469,13 +474,16 @@ LoadOriginals :: () {
             else { if number > 0 && number <= LEVELS_MAX { focus[number] = true }; number = 0 }
         }
     }
-    original_sprites = PathExists("backup/original/sprites/tile-0.png")
+    #if !#defined(SHOVEY_ADMIN) {
+        original_sprites = PathExists("backup/original/sprites/tile-0.png")
+    }
     SpritesPrepare()
     for index: cast(s32)0..SPRITE_COUNT - 1 {
         our_portrait_tiles[index] = sprite_files[index]
         our_landscape_tiles[index] = landscape_sprite_files[index]
         original_tiles[index] = SpriteFile(index)
     }
+    #if !#defined(SHOVEY_ADMIN) {
     if original_sprites {
         digits: [24]u8
         for kind: cast(s32)0..40 {
@@ -484,6 +492,7 @@ LoadOriginals :: () {
             original_tiles[kind] = BuilderFinish(bytes)
         }
         original_tiles[SPRITE_PLAYER + 1] = "backup/original/sprites/player.png"
+    }
     }
     for kind: cast(s32)44..55 {
         digits: [24]u8
@@ -508,11 +517,25 @@ OurTiles :: () -> []string {
     return ifx boards_landscape then our_landscape_tiles[:] else our_portrait_tiles[:]
 }
 
+LoadOrientation :: () {
+    orientation, found := ReadEntireFile("backup/editor-drafts/orientation")
+    boards_landscape = !found || orientation != "portrait"
+}
+
+RotateBoards :: () {
+    boards_landscape = !boards_landscape
+    unused WriteEntireFile("backup/editor-drafts/orientation", ifx boards_landscape then "landscape" else "portrait")
+}
+
 PrivateSprite :: (kind: s32) -> s32 {
     facing := BoardEngineDirection(1, boards_landscape)
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     color := ShoveyGateColor(kind)
-    if color > 0 { return SPRITE_COLORED_GATE + (color - 1) * 4 }
+    if color >= 0 {
+        open := ShoveyGateStartsOpen(kind)
+        if color == 0 { return ifx open then SPRITE_GATE_OPEN else SPRITE_GATE }
+        return SPRITE_COLORED_GATE + (color - 1) * 4 + (ifx open then 1 else 0)
+    }
     lever_color := ShoveyLeverColor(kind)
     if lever_color > 0 { return SPRITE_COLORED_GATE + (lever_color - 1) * 4 + (ifx ShoveyLeverActive(kind) then 3 else 2) }
     if kind >= 116 && kind <= 121 { return SPRITE_COLORED_DOOR + kind - 116 }
@@ -520,7 +543,6 @@ PrivateSprite :: (kind: s32) -> s32 {
     if kind == SHOVEY_DOOR || kind == SHOVEY_DOOR_OPEN { return SPRITE_DOOR + kind - SHOVEY_DOOR }
     if ShoveyMaterialFloor(kind) { return SPRITE_MATERIAL_FLOOR + kind - 99 }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
-    if kind == SHOVEY_GATE { return SPRITE_GATE }
     if ShoveyLever(kind) { return SPRITE_LEVER + kind - SHOVEY_LEVER }
     if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
     if kind == SHOVEY_CRAB { return SPRITE_CRAB + facing }
@@ -668,8 +690,10 @@ ModifyGLM :: () {
     unused RemoveFile(DraftPath(current, ".glm-status"))
     unused RemoveFile(DraftPath(current, ".glm-proof"))
     if !WriteEntireFile(DraftPath(current, ".glm-base"), TextView(glm_base[:])) { return }
+    unused WriteEntireFile(DraftPath(current, ".glm-state"), "working")
     glm_busy = true
-    ActionMessage("GLM is designing a variation…")
+    glm_started = MonotonicMilliseconds()
+    ActionMessage("Designing…")
     RunAction("glm")
 }
 
@@ -706,21 +730,27 @@ PollActions :: (now: s64) {
                     for at: cast(s32)0..proof_length - 1 { proof_route[at] = proof[HEX + 1 + at] }
                     proof_level = current
                     AcceptRoute(proof_route[:], proof_length)
-                    ActionMessage("Proven GLM variation applied. Try, undo, reset, or approve it.")
-                } else { ActionMessage("GLM result had no winning proof; your level was kept.") }
-            } else { ActionMessage("GLM result is ready; your newer edits were kept.") }
+                    ActionMessage("Variation applied")
+                } else { ActionMessage("Variation failed its route check. Retry.") }
+            } else { ActionMessage("Level changed. Run GLM again.") }
             glm_busy = false
             unused RemoveFile(DraftPath(glm_place, ".glm-result"))
         } else {
             status, found := ReadEntireFile(DraftPath(glm_place, ".glm-status"))
             if found {
                 ActionMessage(status)
-                if !Contains(status, "designing") && !Contains(status, "being checked") { glm_busy = false }
             }
+            phase, phased := ReadEntireFile(DraftPath(glm_place, ".glm-state"))
+            if phased && phase == "error" { glm_busy = false }
+            if now - glm_started > 480000 { glm_busy = false; ActionMessage("GLM timed out. Retry.") }
         }
     } else {
         status, found := ReadEntireFile("backup/editor-drafts/publish-status")
-        if found { ActionMessage(status) }
+        if found && status != TextView(publish_message[:publish_message_length]) {
+            publish_message_length = 0
+            AppendText(publish_message[:], *publish_message_length, status)
+            ActionMessage(status)
+        }
     }
 }
 
@@ -1285,7 +1315,7 @@ StartSave :: () {
     unused RemoveFile(DraftPath(current))
     save_state = 2
     // The game's level code and the level pictures follow the file.
-    Shell("(python3 tools/levels/levels.py generate && python3 tools/levels/levels.py previews) > /dev/null 2>&1 &")
+    if PathExists("tools/levels/levels.py") { Shell("(python3 tools/levels/levels.py generate && python3 tools/levels/levels.py previews) > /dev/null 2>&1 &") }
 }
 
 // backup/redesign/stuck.txt: the places still waiting for a winnable layout.
@@ -1657,9 +1687,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     bx += 128.0
     if Control(13, Rectangle.{bx, 8.0, 136.0, 40.0}, "Next to fix (U)") { Open(NextWaiting()) }
     bx += 144.0
-    if Control(14, Rectangle.{bx, 8.0, 168.0, 40.0}, ifx boards_landscape then "Rotate both: portrait" else "Rotate both: landscape") {
-        boards_landscape = !boards_landscape
-    }
+    if Control(14, Rectangle.{bx, 8.0, 168.0, 40.0}, ifx boards_landscape then "Rotate: portrait" else "Rotate: landscape") { RotateBoards() }
     if Control(16, Rectangle.{8.0, 51.0, 80.0, 30.0}, "Redo (Y)") && !playing { RedoEdit() }
     if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
     if Button(session, ButtonProps.{.key = 18, .id = 18, .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0},
@@ -1683,6 +1711,12 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     boards_area := Rectangle.{8.0, 84.0, width - palette_width - 24.0, height - 84.0 - 8.0}
     half := (boards_area.height - 28.0) / 2.0
     has_original := original_shown >= 1 && original_shown <= LEVELS_MAX && original_found[original_shown]
+    edit_top := boards_area.y + half + 28.0
+    edit_height := half - 26.0
+    #if #defined(SHOVEY_ADMIN) {
+        edit_top = boards_area.y
+        edit_height = boards_area.height - 26.0
+    } else {
     length = 0
     if has_original {
         AppendText(label_bytes[:], *length, "Original level ")
@@ -1697,10 +1731,10 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
             boards_landscape, "Original")
     }
-    edit_top := boards_area.y + half + 28.0
+    }
     Caption(12, Rectangle.{boards_area.x, edit_top, boards_area.width, 24.0},
         ifx playing then "New level: playing" else "New level: editing", 15)
-    edit_area := Rectangle.{boards_area.x, edit_top + 26.0, boards_area.width, half - 26.0}
+    edit_area := Rectangle.{boards_area.x, edit_top + 26.0, boards_area.width, edit_height}
     if playing {
         landscape_aspect := cast(float32)SHOVEY_HEIGHT / cast(float32)SHOVEY_WIDTH
         portrait_aspect := cast(float32)SHOVEY_WIDTH / cast(float32)SHOVEY_HEIGHT
@@ -1781,6 +1815,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
     LoadUnlinked()
     LoadLevels()
     LoadDrafts()
+    LoadOrientation()
     LoadApprovals()
     if argc >= 2 && TextFromCString(argv[1]) == "--similarity" {
         digits: [24]u8

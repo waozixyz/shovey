@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
-classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 123))]
+classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 127))]
 classic += ['gate-open', 'gate-open-0', 'gate-open-1', 'gate-open-2'] + [f'abyss-edge-{mask}' for mask in range(16)]
 classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for facing in ('left', 'up', 'right', 'down')]
 classic += [f'water-{frame}' for frame in range(4)]
@@ -32,11 +32,15 @@ for path in expected:
 # Objects and decorations must reveal whichever tile is beneath them.
 for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
              28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,
-             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 123)):
+             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 127)):
     with Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png') as picture:
         assert picture.getpixel((0, 0))[3] == 0, f'{kind}: object has an attached background'
 
 paint_alpha = Image.open(ROOT / 'assets/shovey/sprites/tile-17.png').getchannel('A').tobytes()
+with Image.open(ROOT / 'assets/shovey/sprites/tile-11.png') as trail:
+    trail = trail.resize((32, 32), Image.Resampling.NEAREST)
+    assert all(trail.getpixel((x, 16))[3] == 255 for x in range(6, 26)), 'Trail bar is not horizontal'
+    assert trail.getpixel((16, 11))[3] == 0 and trail.getpixel((16, 22))[3] == 0, 'Trail center should reveal the floor'
 for kind in (15, 16, 50, 51, 52):
     assert Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png').getchannel('A').tobytes() == paint_alpha, \
         f'{kind}: paint silhouette differs from the other colors'
@@ -46,14 +50,27 @@ with Image.open(ROOT / 'assets/shovey/sprites/tile-12.png') as stone:
     assert all(b <= r and b <= g for r, g, b, a in pixels if a), 'Stone wall has a blue tint'
     assert len(set(pixels)) > 30, 'Stone wall lost its grain'
 
-# The chicken's orange comb/beak must lead the cream body in the named
-# direction. This catches a backwards source even when all rotations agree.
+# The duck has four actual views. Separate the bright orange bill from its
+# brown wing and the feet below it, then check its direction on the screen.
 for facing, dx, dy in (('left', -1, 0), ('up', 0, -1), ('right', 1, 0), ('down', 0, 1)):
-    with Image.open(ROOT / f'assets/shovey/sprites/dog-{facing}.png') as picture:
-        points = [(x, y) for y in range(128) for x in range(128)
-                  if (lambda c: c[3] > 128 and c[0] > 160 and c[0] > c[1] * 1.4 and c[1] > c[2] * 1.5)(picture.getpixel((x, y)))]
-    assert points and sum((x - 63.5) * dx + (y - 63.5) * dy for x, y in points) / len(points) > 2, \
-        f'chicken faces away from {facing}'
+    with Image.open(ROOT / f'assets/shovey/sprites/dog-{facing}.png') as image:
+        picture = image.resize((32, 32), Image.Resampling.NEAREST)
+        bounds = picture.getchannel('A').getbbox()
+        assert bounds[3] - bounds[1] >= 24, f'Duck {facing} was shrunk by stray transparent pixels'
+        points = {(x, y) for y in range(20) for x in range(32)
+                  if (lambda c: c[3] > 128 and c[0] > 225 and 80 < c[1] < 190 and c[2] < 70)(picture.getpixel((x, y)))}
+    components = []
+    while points:
+        group = {points.pop()}
+        pending = list(group)
+        while pending:
+            x, y = pending.pop()
+            for neighbor in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
+                if neighbor in points:
+                    points.remove(neighbor); group.add(neighbor); pending.append(neighbor)
+        components.append(group)
+    bill = max(components, key=len)
+    assert sum((x - 15.5) * dx + (y - 15.5) * dy for x, y in bill) / len(bill) > 0.25, f'Duck faces away from {facing}'
 
 for index, facing in enumerate(('up', 'right', 'down', 'left'), 1):
     classic_player = ROOT / f'assets/shovey/sprites/player-{facing}.png'
@@ -91,7 +108,7 @@ for folder, names in (
             assert portrait.convert('RGBA').tobytes() == landscape.convert('RGBA').tobytes(), \
                 f'{name}: fixed artwork must stay upright'
 for folder, names in (
-        ('shovey/sprites', tuple(f'{animal}-{facing}' for animal in ('player', 'dog', 'turtle', 'crab', 'fish-gold-0', 'fish-koi-0', 'fish-minnow-0') for facing in ('up', 'right', 'down', 'left'))),
+        ('shovey/sprites', tuple(f'{animal}-{facing}' for animal in ('player', 'turtle', 'crab', 'fish-gold-0', 'fish-koi-0', 'fish-minnow-0') for facing in ('up', 'right', 'down', 'left'))),
         ('shovey-island/tiles', ('2', '6', '8', '85', '117'))):
     for name in names:
         source = ROOT / 'assets' / folder / (name + '.png')
@@ -100,6 +117,13 @@ for folder, names in (
             expected_turn = portrait.transpose(Image.Transpose.ROTATE_90).convert('RGBA')
             assert expected_turn.tobytes() == landscape.convert('RGBA').tobytes(), \
                 f'{name}: directional artwork must follow the board'
+
+# Landscape maps direction to an upright, separately drawn duck view.
+facings = ('left', 'up', 'right', 'down')
+for index, facing in enumerate(facings):
+    portrait = ROOT / f'assets/shovey/sprites/dog-{facings[(index + 3) % 4]}.png'
+    landscape = ROOT / f'assets/shovey-landscape/sprites/dog-{facing}.png'
+    assert portrait.read_bytes() == landscape.read_bytes(), f'Duck {facing} was rotated instead of redrawn'
 
 listed = set()
 for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-island',

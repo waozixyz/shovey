@@ -84,6 +84,13 @@ LayerChecks :: () -> s32 {
         if paving.tiles[56] != 0 || paving.ground[56] != 9 { return 173 }
     }
     blocking: [2]s32 = .[SHOVEY_LANTERN, SHOVEY_BOULDER]
+    for color: cast(s32)0..3 {
+        initial := EditNewBoard(false)
+        kind := SHOVEY_OPEN_GATE + color
+        if !EditPaint(*initial, kind, 55) || initial.ground[55] != cast(u8)kind { return 179 }
+        if !EditBoardRead(*copy, false, EditBoardHex(*initial)) || !EditSame(*copy, *initial) { return 180 }
+        if !ShoveyLoadData(*game, 1, EditBoardHex(*initial)) || !ShoveyGateOpen(*game, 55) { return 181 }
+    }
     for obstacle: blocking {
         lit := EditNewBoard(false)
         unused EditPaint(*lit, EDIT_TILE_BRUSH + 77, 55)

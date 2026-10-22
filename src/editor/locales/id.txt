@@ -697,3 +697,15 @@ Tuas hijau
 [editor_lever]
 Tuas
 ---
+[editor_open_gate]
+Gerbang terbuka
+---
+[editor_open_red_gate]
+Gerbang merah terbuka
+---
+[editor_open_blue_gate]
+Gerbang biru terbuka
+---
+[editor_open_green_gate]
+Gerbang hijau terbuka
+---

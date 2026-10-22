@@ -299,7 +299,11 @@ FloorSprite :: (kind: s32) -> s32 {
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     color := ShoveyGateColor(kind)
-    if color > 0 { return SPRITE_COLORED_GATE + (color - 1) * 4 + (ifx position >= 0 && ShoveyGateOpen(game, position) then 1 else 0) }
+    if color >= 0 {
+        open := ifx position >= 0 then ShoveyGateOpen(game, position) else ShoveyGateStartsOpen(kind)
+        if color == 0 { return ifx open then SPRITE_GATE_OPEN else SPRITE_GATE }
+        return SPRITE_COLORED_GATE + (color - 1) * 4 + (ifx open then 1 else 0)
+    }
     lever_color := ShoveyLeverColor(kind)
     if lever_color > 0 { return SPRITE_COLORED_GATE + (lever_color - 1) * 4 + (ifx ShoveyLeverActive(kind) then 3 else 2) }
     if kind >= 116 && kind <= 121 { return SPRITE_COLORED_DOOR + kind - 116 }
@@ -308,7 +312,6 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     if ShoveyMaterialFloor(kind) { return SPRITE_MATERIAL_FLOOR + kind - 99 }
     if kind == 64 { return SPRITE_WATER + cast(s32)(now * 2.0) % 4 }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
-    if kind == SHOVEY_GATE { return ifx position >= 0 && ShoveyGateOpen(game, position) then SPRITE_GATE_OPEN else SPRITE_GATE }
     if ShoveyLever(kind) { return SPRITE_LEVER + kind - SHOVEY_LEVER }
     if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
     if kind == SHOVEY_TREE { return SPRITE_TREE }

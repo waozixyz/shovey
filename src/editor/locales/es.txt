@@ -697,3 +697,15 @@ Palanca verde
 [editor_lever]
 Palanca
 ---
+[editor_open_gate]
+Puerta abierta
+---
+[editor_open_red_gate]
+Puerta roja abierta
+---
+[editor_open_blue_gate]
+Puerta azul abierta
+---
+[editor_open_green_gate]
+Puerta verde abierta
+---

@@ -100,17 +100,19 @@ the palette scrolls with large icons. Existing boards and drafts remain readable
 Drafts save immediately, played wins remain proven after reopening, and saved
 levels load from the current level file.
 
-**GLM Modify** uses the open board and its existing winning route. With a proven
-route, GLM chooses among small changes the game engine has already checked,
-favoring a useful push sequence or dependency. It keeps the puzzle's pieces,
-colors, terrain, start and home.
+**GLM Modify** designs a variation of the open board, using its existing winning
+route as a reference. It can change the push sequence and find a new route;
+engine-checked alternatives help when a proposal cannot be solved. It keeps the
+puzzle's pieces, colors, terrain, start and home.
 A variation is applied only after its solution wins in the game engine, and
 Undo, Redo and Reset remain available. Unproven proposals leave the level intact.
 **Approve** saves approval and publishes in the background; pressing it again retries publication.
 Saved edits to approved levels publish automatically once their winning route is proven.
 Approved levels retain their purple mark while being edited.
+Each gate color also has an open starting variant, which closes when its lever
+is switched on. Mix both starting states for opposite passages on one lever.
 
-Chickens, turtles and crabs wander over clear floor and block Shovey and pushed
+Ducks, turtles and crabs wander over clear floor and block Shovey and pushed
 pieces. Goldfish, koi and minnows swim between water tiles with still sprites. Water has gentle
 animated ripples. Trees also block movement. Red, green and orange portals join
 cyan, purple and yellow; each color connects to matching portals. Pressure plates

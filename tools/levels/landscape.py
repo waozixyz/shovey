@@ -32,6 +32,11 @@ def turns_with_board(path):
 
 
 def landscape_bytes(path):
+    if path.parent.name == 'sprites' and path.stem.startswith('dog-'):
+        facings = ('left', 'up', 'right', 'down')
+        facing = path.stem.removeprefix('dog-')
+        # Map board-relative direction onto a separately drawn upright view.
+        return path.with_name('dog-' + facings[(facings.index(facing) + 3) % 4] + '.png').read_bytes()
     if not turns_with_board(path):
         return path.read_bytes()
     with Image.open(path) as image:

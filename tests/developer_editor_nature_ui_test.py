@@ -18,6 +18,7 @@ if not (profile / 'assets').exists():
     (profile / 'assets').symlink_to(ROOT / 'assets', target_is_directory=True)
 for record in (profile / 'backup/editor-drafts').iterdir():
     record.unlink()
+(profile / 'backup/editor-drafts/orientation').write_text('portrait')
 pieces = [0] * 240
 tiles = [0] * 240
 deco = [0] * 240

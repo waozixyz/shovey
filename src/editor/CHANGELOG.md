@@ -1,5 +1,18 @@
 # Shovey Editor changelog
 
+## [0.2.19] - 2026-10-22
+
+- Design engine-proven GLM variations with clearer progress and errors.
+- Add initially open gates in every color for opposite lever-controlled passages.
+- Open the desktop editor in landscape and remember its rotation.
+- Offer a desktop authoring download with a fresh puzzle and Shovey artwork.
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.18] - 2026-10-22
+
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
+## [0.2.17] - 2026-10-22
+
+- Create Classic or Island levels; story examples follow the approved Classic campaign.
 ## [0.2.16] - 2026-10-22
 
 - Replace the pebble brush with a solid boulder.

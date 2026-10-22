@@ -1,5 +1,23 @@
 # Shovey changelog
 
+## [0.6.22] - 2026-10-22
+
+- Add initially open gates that close when their matching lever is switched on.
+- Replace the chicken with a garden duck drawn separately in four directions.
+- Restore the trail marker to a lilac ring with a horizontal bar.
+- Play the approved Classic campaign through level 20.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
+## [0.6.21] - 2026-10-22
+
+- Play the approved Classic campaign through level 20.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
+## [0.6.20] - 2026-10-22
+
+- Play the approved Classic campaign through level 19.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
 ## [0.6.19] - 2026-10-22
 
 - Add solid boulders in place of the pebble brush.

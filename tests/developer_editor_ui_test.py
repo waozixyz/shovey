@@ -24,6 +24,7 @@ level = json.loads((ROOT / 'levels/classic.json').read_text())['levels'][0]
 pieces = ''.join(level['cells'])
 (profile / 'backup/editor-drafts/001.hex').write_text(pieces + '0c' + '4d' * 239 + '00' * 240)
 (profile / 'backup/editor-drafts/place').write_text('1')
+(profile / 'backup/editor-drafts/orientation').write_text('portrait')
 environment = {key: value for key, value in os.environ.items()
                if key not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
 environment |= {'YUE_DESKTOP_RECOVERY': '0', 'SDL_VIDEODRIVER': 'x11', 'SDL_AUDIODRIVER': 'dummy'}

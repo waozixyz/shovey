@@ -697,3 +697,15 @@ Levier vert
 [editor_lever]
 Levier
 ---
+[editor_open_gate]
+Portail ouvert
+---
+[editor_open_red_gate]
+Portail rouge ouvert
+---
+[editor_open_blue_gate]
+Portail bleu ouvert
+---
+[editor_open_green_gate]
+Portail vert ouvert
+---

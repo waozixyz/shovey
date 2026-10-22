@@ -697,3 +697,15 @@ Zelená páka
 [editor_lever]
 Páka
 ---
+[editor_open_gate]
+Otevřená brána
+---
+[editor_open_red_gate]
+Otevřená červená brána
+---
+[editor_open_blue_gate]
+Otevřená modrá brána
+---
+[editor_open_green_gate]
+Otevřená zelená brána
+---

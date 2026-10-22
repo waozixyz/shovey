@@ -697,3 +697,15 @@ Grüner Hebel
 [editor_lever]
 Hebel
 ---
+[editor_open_gate]
+Offenes Tor
+---
+[editor_open_red_gate]
+Offenes rotes Tor
+---
+[editor_open_blue_gate]
+Offenes blaues Tor
+---
+[editor_open_green_gate]
+Offenes grünes Tor
+---

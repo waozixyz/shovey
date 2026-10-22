@@ -838,6 +838,19 @@ def crate_sprite():
     return image
 
 
+def trail_marker():
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((4, 4, 27, 27), fill=(103, 47, 112, 255))
+    draw.ellipse((5, 5, 26, 26), fill=(206, 102, 209, 255))
+    draw.ellipse((7, 7, 24, 24), fill=(236, 157, 233, 255))
+    draw.ellipse((8, 8, 23, 23), fill=(0, 0, 0, 0))
+    draw.line((7, 15, 24, 15), fill=(242, 179, 239, 255), width=1)
+    draw.rectangle((6, 16, 25, 17), fill=(190, 78, 193, 255))
+    draw.line((7, 18, 24, 18), fill=(112, 46, 123, 255), width=1)
+    return image
+
+
 def sprites():
     green = lambda h, s, v: 60 <= h <= 180 and s > 0.2
     blue = lambda h, s, v: 170 <= h <= 230 and s > 0.25
@@ -845,7 +858,7 @@ def sprites():
     # up is turned for the other directions, as in the original.
     up = native('player')
     # The comb and beak in the kept source point up already.
-    chicken = native('chicken')
+    duck = native('duck-up')
     players = {'up': up, 'right': up.rotate(-90), 'down': up.rotate(180), 'left': up.rotate(90)}
     mirror = recolour(players['up'], green, 330)
     shot = Image.new('RGBA', (SIZE, SIZE))
@@ -865,7 +878,7 @@ def sprites():
         'tile-8': ('teleporter: a recessed opening with an inward blue-green spiral', over_floor(native('teleporter'))),
         'tile-9': ('crate: clean chestnut planks with crossed wooden braces (pushable)', crate_sprite()),
         'tile-10': ('start position, drawn as floor', floor()),
-        'tile-11': ('trail field: a ring with a bar, drawn in deep teal', over_floor(recolour(native('trail'), lambda h, s, v: s > 0.2, 188))),
+        'tile-11': ('trail field: a lilac ring with a straight horizontal bar', trail_marker()),
         'tile-12': ('wall: a raised grey stone block', wall()),
         'tile-13': ('pressure plate: a round green button recessed into the paving', pressure_plate()),
         'tile-14': ('mossy stone wall: sinks when a pressure plate is held', mossy_wall()),
@@ -917,7 +930,7 @@ def sprites():
         'tile-76': ('legacy wall, shown as a plain stone wall', wall()),
         'tile-77': ('grass floor tile, independent of objects', grass()),
         'tile-78': ('sand: pale warm grains with scattered darker and lighter flecks', sand()),
-        'tile-82': ('chicken: a cream-white bird with an orange comb', chicken),
+        'tile-82': ('garden duck: a cream-white duck with a brown wing and orange bill', duck),
         'tile-83': ('turtle: a clean jade shell with pale yellow feet', native('turtle')),
         'tile-84': ('tree: a broad jade canopy and brown trunk; blocks movement', native('tree')),
         'tile-85': ('red portal', colour_portal(0)),
@@ -941,6 +954,7 @@ def sprites():
         'tile-105': ('wooden door standing open, with a clear passage', door(True)),
         'tile-106': ('floor lantern: warm glass in a metal frame; blocks movement', lantern()),
         'tile-122': ('boulder: a solid faceted stone that blocks movement', boulder()),
+        'tile-123': ('iron gate: starts open and closes when its lever is on', gate(True)),
         'shadow': ('mirror Shovey (pink)', mirror),
         'door-open': ('mossy wall lowered, leaving a moss-covered stone rim', mossy_floor()),
         'projectile': ('a flying iron shot', native('projectile')),
@@ -953,15 +967,16 @@ def sprites():
         out[f'tile-{kind + 1}'] = (f'{name} lever: switched off', lever(colour=colour))
         out[f'tile-{kind + 2}'] = (f'{name} lever: switched on', lever(True, colour))
         out[f'gate-open-{color}'] = (f'{name} gate standing open', gate(True, colour))
+        out[f'tile-{124 + color}'] = (f'{name} gate: starts open and closes when its lever is on', gate(True, colour))
         out[f'tile-{116 + color * 2}'] = (f'{name} wooden door: opens when walked through', door(colour=colour))
         out[f'tile-{117 + color * 2}'] = (f'{name} wooden door standing open', door(True, colour))
     for facing, sprite in players.items():
         out[f'player-{facing}'] = (f'Shovey looking {facing}', sprite)
         out[f'charged-{facing}'] = (f'charged Shovey looking {facing}', glow(sprite))
     for animal in ('dog', 'turtle'):
-        up = chicken if animal == 'dog' else native(animal)
         for facing, angle in (('up', 0), ('right', -90), ('down', 180), ('left', 90)):
-            out[f'{animal}-{facing}'] = (f'{"chicken" if animal == "dog" else animal} facing {facing}', up.rotate(angle))
+            sprite = native(f'duck-{facing}') if animal == 'dog' else native(animal).rotate(angle)
+            out[f'{animal}-{facing}'] = (f'{"garden duck" if animal == "dog" else animal} facing {facing}', sprite)
     for facing, angle in (('up', 0), ('right', -90), ('down', 180), ('left', 90)):
         out[f'crab-{facing}'] = (f'crab facing {facing}', native('crab').rotate(angle))
     for frame in range(4):

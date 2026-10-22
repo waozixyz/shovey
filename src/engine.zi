@@ -88,7 +88,8 @@ SHOVEY_PIT :: 65
 SHOVEY_ICE :: 70
 SHOVEY_CRACKED_FLOOR :: 71
 SHOVEY_BOMB :: 72
-SHOVEY_CHICKEN :: 82
+SHOVEY_DUCK :: 82
+SHOVEY_CHICKEN :: SHOVEY_DUCK // Existing boards keep their stored kind.
 SHOVEY_DOG :: SHOVEY_CHICKEN // Existing boards keep their stored kind.
 SHOVEY_TURTLE :: 83
 SHOVEY_TREE :: 84
@@ -101,9 +102,12 @@ SHOVEY_DOOR :: 104
 SHOVEY_DOOR_OPEN :: 105
 SHOVEY_LANTERN :: 106
 SHOVEY_BOULDER :: 122
-SHOVEY_LAST_KIND :: 122
+SHOVEY_OPEN_GATE :: 123
+SHOVEY_LAST_KIND :: 126
+ShoveyGateStartsOpen :: (kind: s32) -> bool { return kind >= SHOVEY_OPEN_GATE && kind <= SHOVEY_LAST_KIND }
 ShoveyGateColor :: (kind: s32) -> s32 {
     if kind == SHOVEY_GATE { return 0 }
+    if ShoveyGateStartsOpen(kind) { return kind - SHOVEY_OPEN_GATE }
     if kind >= 107 && kind <= 113 && (kind - 107) % 3 == 0 { return 1 + (kind - 107) / 3 }
     return -1
 }
@@ -216,8 +220,10 @@ ShoveyDoorOpen :: (game: *ShoveyGame, position: s32) -> bool {
 ShoveyGateOpen :: (game: *ShoveyGame, position: s32) -> bool {
     if game.objects[position] != 0 || game.player == position { return true }
     color := ShoveyGateColor(game.ground[position])
-    for kind: game.ground { if ShoveyLeverColor(kind) == color && ShoveyLeverActive(kind) { return true } }
-    return false
+    if color < 0 { return false }
+    starts_open := ShoveyGateStartsOpen(game.ground[position])
+    for kind: game.ground { if ShoveyLeverColor(kind) == color && ShoveyLeverActive(kind) { return !starts_open } }
+    return starts_open
 }
 
 ShoveyRemaining :: (game: *ShoveyGame) -> s32 {

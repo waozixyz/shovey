@@ -4,6 +4,8 @@ LOCK_FLAGS := $(if $(wildcard ziran.local.toml),,--locked)
 TOOLCHAIN = $(shell $(ZIRAN) pkg path ziran $(LOCK_FLAGS))
 KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
+EDITOR_OUT ?= build/private-editor
+EDITOR_DEFINES ?=
 
 .PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-test web-itch
 
@@ -25,13 +27,19 @@ editor: levels build/ziran/libziran.a
 		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--entry editor:main -o build/private-editor/c tools/editor/editor.zi
+		$(EDITOR_DEFINES) --entry editor:main -o $(EDITOR_OUT)/c tools/editor/editor.zi
 	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
-		$$(find build/private-editor/c -type d -printf ' -iquote %p') $$(find build/private-editor/c -name '*.c') \
+		$$(find $(EDITOR_OUT)/c -type d -printf ' -iquote %p') $$(find $(EDITOR_OUT)/c -name '*.c') \
 		build/ziran/libziran.a -Wl,--gc-sections \
 		$$(pkg-config --libs sdl2 cairo freetype2 fontconfig pangocairo) -lm -lpthread \
-		-o build/private-editor/shovey-level-editor.new
-	mv build/private-editor/shovey-level-editor.new build/private-editor/shovey-level-editor
+		-o $(EDITOR_OUT)/shovey-level-editor.new
+	mv $(EDITOR_OUT)/shovey-level-editor.new $(EDITOR_OUT)/shovey-level-editor
+
+.PHONY: admin-editor
+admin-editor:
+	$(MAKE) editor EDITOR_OUT=build/admin-editor EDITOR_DEFINES='--define SHOVEY_ADMIN'
+	ZIRAN_TOOLCHAIN='$(TOOLCHAIN)' SOLVER_OUT='$(abspath build/admin-editor/solver)' SHOVEY_ADMIN=1 sh tools/solver/build.sh
+	python3 scripts/package-editor.py
 
 .PHONY: inbe-ui-test
 inbe-ui-test:
