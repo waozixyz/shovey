@@ -35,6 +35,16 @@ def variation(x=3, y=3):
 
 
 class Variations(unittest.TestCase):
+    def test_update_retries_approved_campaign_without_a_draft_or_approval(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / 'publish-status').write_text('The previous update failed')
+            with patch.object(actions, 'DRAFTS', drafts), patch.object(actions.subprocess, 'Popen') as spawn:
+                actions.update()
+            self.assertIn('--force', spawn.call_args.args[0])
+            self.assertIn('previously approved', (drafts / 'publish-status').read_text())
+            self.assertEqual(sorted(path.name for path in drafts.iterdir()), ['publish-status'])
+
     def test_preserves_inventory_and_landscape_coordinates(self):
         candidate = actions.apply_proposal(board(), variation())
         self.assertEqual(candidate[at(3, 3) * 2:at(3, 3) * 2 + 2], '01')

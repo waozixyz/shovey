@@ -76,6 +76,14 @@ def approve(number):
                      start_new_session=True)
 
 
+def update():
+    # Updating an approved campaign never depends on the open draft's proof.
+    atomic(DRAFTS / 'publish-status', 'Updating the previously approved levels…')
+    subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py'), '--force'], cwd=ROOT,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+
+
 def glm_settings():
     # Reuse Harmony's configured GLM provider; keys remain inside this process.
     settings = {}
@@ -269,10 +277,7 @@ if __name__ == '__main__':
         parser.error('level is outside the editor')
     try:
         if args.action == 'update':
-            atomic(DRAFTS / 'publish-status', 'Updating the previously approved levels…')
-            subprocess.Popen([sys.executable, str(ROOT / 'scripts/publish-approved.py'), '--force'], cwd=ROOT,
-                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                start_new_session=True)
+            update()
         else:
             (approve if args.action == 'approve' else modify)(args.level)
     except Exception as error:
