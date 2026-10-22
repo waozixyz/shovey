@@ -7,9 +7,9 @@ import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
 const root = new URL('../build/web/', import.meta.url).pathname;
-const profile = await mkdtemp(join(root, 'browser-profile-'));
-const shots = join(root, 'test-shots');
+const shots = new URL('../build/web-test/', import.meta.url).pathname;
 await mkdir(shots, {recursive: true});
+const profile = await mkdtemp(join(shots, 'browser-profile-'));
 const server = createServer(async (request, response) => {
   try {
     const name = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
@@ -23,13 +23,19 @@ const server = createServer(async (request, response) => {
     response.writeHead(404).end();
   }
 });
-await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+if (!process.env.WEB_TEST_URL) await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const target = process.env.WEB_TEST_URL || 'http://127.0.0.1:' + server.address().port + '/index.html';
+const metadata = await (await fetch(new URL('build.json', target), {cache: 'no-store'})).json();
+assert(metadata.classic_levels >= 30, 'The approved campaign is missing');
+if (process.env.WEB_TEST_REVISION) assert.equal(metadata.revision, process.env.WEB_TEST_REVISION);
+const browserEnvironment = {...process.env};
+for (const name of ['DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER', 'GDK_DISPLAY']) delete browserEnvironment[name];
 const browser = spawn(process.env.CHROMIUM || 'chromium', [
   '--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
   '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0',
   '--user-data-dir=' + profile,
-  'http://127.0.0.1:' + server.address().port + '/index.html'
-], {detached: true, stdio: ['ignore', 'ignore', 'pipe']});
+  target
+], {detached: true, env: browserEnvironment, stdio: ['ignore', 'ignore', 'pipe']});
 
 let browserErrors = '';
 let socket;
@@ -107,6 +113,7 @@ try {
   await call('Runtime.enable');
   await call('Page.enable');
   await call('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+  await call('Page.reload', {ignoreCache: true});
   await settle('!!document.querySelector(".loading-screen")', value => value);
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".loading-screen")).visibility'), 'visible');
   assert.equal(await evaluate('document.querySelector(".loading-mark").naturalWidth'), 480);
@@ -134,7 +141,10 @@ try {
   const afterMuteShot = (await call('Page.captureScreenshot', {format: 'png'})).data;
   await writeFile(join(shots, 'before-mute.png'), Buffer.from(beforeMuteShot, 'base64'));
   await writeFile(join(shots, 'after-mute.png'), Buffer.from(afterMuteShot, 'base64'));
-  assert.notEqual(afterMuteShot, beforeMuteShot, 'Mute button did not redraw');
+  if (afterMuteShot === beforeMuteShot) {
+    await writeFile(join(shots, 'diagnostics.json'), JSON.stringify({diagnostics, browserErrors, state: await evaluate(`({status: document.querySelector('#status').textContent, result: document.querySelector('#result').textContent, aborted: typeof ABORT !== 'undefined' && ABORT, files: typeof FS !== 'undefined' ? FS.readdir('/tmp/kryon-zib') : []})`)}));
+  }
+  assert(afterMuteShot !== beforeMuteShot, 'Mute button did not redraw: ' + diagnostics);
 
   await evaluate(`(() => {
     const canvas = document.querySelector('canvas');
@@ -155,11 +165,12 @@ try {
 
   const screenshot = await call('Page.captureScreenshot', {format: 'png'});
   await writeFile(join(shots, 'landscape-selector.png'), Buffer.from(screenshot.data, 'base64'));
-  console.log('Web loading and orientation shell passed');
+  await writeFile(join(shots, 'receipt.json'), JSON.stringify({url: target, ...metadata, loading: 'passed', controls: 'passed', orientation: 'passed'}) + '\n');
+  console.log('Web loading and orientation shell passed: ' + target);
 } finally {
   socket?.close();
   try { process.kill(-browser.pid, 'SIGTERM'); } catch {}
   await new Promise(resolve => browser.exitCode !== null || browser.signalCode !== null ? resolve() : browser.once('exit', resolve));
-  await new Promise(resolve => server.close(resolve));
+  if (server.listening) await new Promise(resolve => server.close(resolve));
   await rm(profile, {recursive: true, force: true, maxRetries: 10, retryDelay: 100});
 }

@@ -495,7 +495,7 @@
     {
       "path": "sprites/door-open.png",
       "depicts": "mossy wall lowered, leaving a moss-covered stone rim",
-      "sha256": "0a86d032642479c4e68d3d50bcbcca762f682975d1c529878c1c65b0117bf225"
+      "sha256": "f6255ced9845e58b0fe598b1e04ec2a7b626bd087bf65570641d4a52e567f10d"
     },
     {
       "path": "sprites/projectile.png",
@@ -618,6 +618,11 @@
       "sha256": "99a0278b27ae77e165a44509678f482433de836c34e682f5ea455c17dca4d90d"
     },
     {
+      "path": "sprites/moss-lowered-0.png",
+      "depicts": "slate wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "9c677a6c975e5766a07d6375ebbf0fca6315c65d848f337691386aa50010a4ec"
+    },
+    {
       "path": "sprites/tile-128.png",
       "depicts": "mossy brick wall: lowers onto its matching floor while its button is held",
       "sha256": "d2f74c3304a1d68597df5f830dd5c7543b7b4c4eaab0ce686200ed478f87c036"
@@ -626,6 +631,11 @@
       "path": "sprites/tile-132.png",
       "depicts": "brick pressure button: controls matching mossy brick walls",
       "sha256": "42012722e42371ba49ff40f1a7207a0104dd6f361591d6561737c827dd4a1495"
+    },
+    {
+      "path": "sprites/moss-lowered-1.png",
+      "depicts": "brick wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "304a12aa067b5c78a1f719626dd6563b31bb8cf9b7f47d8b0576bc696dee9b54"
     },
     {
       "path": "sprites/tile-129.png",
@@ -638,6 +648,11 @@
       "sha256": "cca5f63f8c4f799d882f6c4a2b68c6ebe7f2d2701287a94ac2b88115e206f82b"
     },
     {
+      "path": "sprites/moss-lowered-2.png",
+      "depicts": "sandstone wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "f1f62721f70669396fb5d6b56d4697759bd241543eda561b39a5eab8b898de53"
+    },
+    {
       "path": "sprites/tile-130.png",
       "depicts": "mossy timber wall: lowers onto its matching floor while its button is held",
       "sha256": "0bdc609d3eb6a41b5de7540a0b92f6f1b0801480c63d742d4b9b1bda6ac4d475"
@@ -646,6 +661,11 @@
       "path": "sprites/tile-134.png",
       "depicts": "timber pressure button: controls matching mossy timber walls",
       "sha256": "00dc96c8daa512d08ca22a36dbc90e9cc449c923b150540c14414b32574e3677"
+    },
+    {
+      "path": "sprites/moss-lowered-3.png",
+      "depicts": "timber wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "45f83cbab868195fd9e79332f8e645dfd8dc89ef41647f9883ef44e172cdb188"
     },
     {
       "path": "sprites/player-up.png",

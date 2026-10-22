@@ -400,9 +400,19 @@ def mossy_wall(style=-1):
     return image
 
 
-def mossy_floor():
-    """The opened gate: the mossy block sunk level with the floor."""
-    return floor()
+def mossy_floor(style=-1):
+    """A lowered wall: a flat material panel inside its recessed mossy seam."""
+    image = floor() if style < 0 else material_floor(style)
+    draw = ImageDraw.Draw(image)
+    face = (130, 139, 122, 255) if style < 0 else MATERIALS[style]
+    # A thin inner seam and inset corner marks identify the moving slab,
+    # without the raised edge and central recess of a standing wall.
+    draw.rectangle((3, 3, 28, 28), outline=shade(face, 0.49), width=1)
+    draw.line((4, 29, 29, 29, 29, 4), fill=shade(face, 1.25), width=1)
+    for x, y, dx, dy in ((6, 6, 1, 1), (25, 6, -1, 1), (6, 25, 1, -1), (25, 25, -1, -1)):
+        draw.line((x + dx * 3, y, x, y, x, y + dy * 3), fill=MOSS[0], width=1)
+        draw.point((x + dx, y + dy), fill=MOSS[2])
+    return image
 
 
 def pressure_plate(colour=None, material=None):
@@ -986,6 +996,7 @@ def sprites():
     for style, name in enumerate(('slate', 'brick', 'sandstone', 'timber')):
         out[f'tile-{127 + style}'] = (f'mossy {name} wall: lowers onto its matching floor while its button is held', mossy_wall(style))
         out[f'tile-{131 + style}'] = (f'{name} pressure button: controls matching mossy {name} walls', pressure_plate(MOSS_BUTTON_COLORS[style + 1], MATERIALS[style]))
+        out[f'moss-lowered-{style}'] = (f'{name} wall lowered into a flat slab with a recessed mossy seam', mossy_floor(style))
     for facing, sprite in players.items():
         out[f'player-{facing}'] = (f'Shovey looking {facing}', sprite)
         out[f'charged-{facing}'] = (f'charged Shovey looking {facing}', glow(sprite))

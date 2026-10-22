@@ -148,6 +148,7 @@ SpriteNames :: () {
     for kind: cast(s32)44..55 { sprite_names[SPRITE_NEW_COLOR + kind - 44] = TileName(kind) }
     for index: cast(s32)SPRITE_PLAYER..SPRITE_DOOR_OPEN - 1 { sprite_names[index] = "Shovey" }
     sprite_names[SPRITE_DOOR_OPEN] = TileName(14)
+    for material: cast(s32)0..3 { sprite_names[SPRITE_MOSS_FLOOR + material] = TileName(14) }
     for index: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { sprite_names[index] = TileName(22) }
     sprite_names[SPRITE_SHOT] = AppLocaleHost("shovey_ammo")
 }

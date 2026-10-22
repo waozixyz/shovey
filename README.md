@@ -1,5 +1,7 @@
 # Shovey
 
+[Play Shovey online](https://waozixyz.github.io/shovey/). The browser game updates automatically after the checks pass on `master`.
+
 **Push. Solve. Come home.**
 
 Shovey is a puzzle game about finding a path home. Push balls into matching

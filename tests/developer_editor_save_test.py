@@ -29,7 +29,7 @@ def rows_of(values):
 (profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
 environment = {k: v for k, v in os.environ.items()
                if k not in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS')}
-generated = ROOT / 'build/private-editor/c'
+generated = Path(os.environ.get('EDITOR_GENERATED', str(ROOT / 'build/private-editor/c')))
 toolchain = Path(subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
 command = [os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections', '-fdata-sections',
            '-Dmain=shovey_editor_main', '-I' + str(toolchain / 'include'), '-I' + str(generated)]

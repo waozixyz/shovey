@@ -316,6 +316,7 @@ EditorNames :: () {
         "editor_berry_bush", "editor_flower_pot", "editor_barrel", "editor_tree_stump"]
     for decoration: cast(s32)0..7 { editor_classic_names[SPRITE_DECORATION + decoration] = EditorText(decorations[decoration]) }
     editor_classic_names[SPRITE_DOOR_OPEN] = EditorText("editor_gate")
+    for material: cast(s32)0..3 { editor_classic_names[SPRITE_MOSS_FLOOR + material] = EditorText("editor_gate") }
     for number: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { editor_classic_names[number] = EditorText("editor_sensor") }
     editor_classic_names[SPRITE_SHOT] = EditorText("editor_ammo")
     for number: cast(s32)0..ISLAND_PICTURES - 1 {

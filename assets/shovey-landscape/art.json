@@ -145,7 +145,7 @@
     {
       "path": "sprites/door-open.png",
       "depicts": "landscape presentation of mossy wall lowered, leaving a moss-covered stone rim",
-      "sha256": "0a86d032642479c4e68d3d50bcbcca762f682975d1c529878c1c65b0117bf225"
+      "sha256": "f6255ced9845e58b0fe598b1e04ec2a7b626bd087bf65570641d4a52e567f10d"
     },
     {
       "path": "sprites/fish-gold-0-down.png",
@@ -486,6 +486,26 @@
       "path": "sprites/grass-edge-9.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
       "sha256": "9e186aeeb632180283bcd0c98d42e0e805730f27ca44b37e9e025d863d330918"
+    },
+    {
+      "path": "sprites/moss-lowered-0.png",
+      "depicts": "landscape presentation of slate wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "9c677a6c975e5766a07d6375ebbf0fca6315c65d848f337691386aa50010a4ec"
+    },
+    {
+      "path": "sprites/moss-lowered-1.png",
+      "depicts": "landscape presentation of brick wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "304a12aa067b5c78a1f719626dd6563b31bb8cf9b7f47d8b0576bc696dee9b54"
+    },
+    {
+      "path": "sprites/moss-lowered-2.png",
+      "depicts": "landscape presentation of sandstone wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "f1f62721f70669396fb5d6b56d4697759bd241543eda561b39a5eab8b898de53"
+    },
+    {
+      "path": "sprites/moss-lowered-3.png",
+      "depicts": "landscape presentation of timber wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "45f83cbab868195fd9e79332f8e645dfd8dc89ef41647f9883ef44e172cdb188"
     },
     {
       "path": "sprites/player-down.png",

@@ -20,6 +20,7 @@ classic += [f'fish-{fish}-{frame}-{facing}' for fish in ('gold', 'koi', 'minnow'
 classic += [f'grass-edge-{mask}' for mask in range(16)]
 classic += [f'{kind}-{facing}' for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
 classic += ['shadow', 'door-open', 'projectile'] + [f'sensor-{frame}' for frame in range(1, 9)]
+classic += [f'moss-lowered-{style}' for style in range(4)]
 expected = [f'assets/shovey/sprites/{name}.png' for name in classic]
 expected += [f'assets/shovey-landscape/sprites/{name}.png' for name in classic]
 expected += [f'assets/shovey-island/tiles/{kind}.png' for kind in range(125) if kind not in (50, 79)]
@@ -29,6 +30,13 @@ expected += [f'assets/shovey-island-landscape/player/{facing}.png' for facing in
 for path in expected:
     with Image.open(ROOT / path) as image:
         assert image.size == (128, 128) and image.mode == 'RGBA', path
+
+# Lowered button walls retain a visible slab seam in every material, in both
+# orientations; they must not disappear into an ordinary floor tile.
+for folder in ('shovey', 'shovey-landscape'):
+    for lowered, floor in [('door-open', 'tile-0')] + [(f'moss-lowered-{style}', f'tile-{99 + style}') for style in range(4)]:
+        with Image.open(ROOT / f'assets/{folder}/sprites/{lowered}.png') as slab, Image.open(ROOT / f'assets/{folder}/sprites/{floor}.png') as plain:
+            assert slab.tobytes() != plain.tobytes(), f'{lowered}: lowered wall looks like ordinary floor'
 # Objects and decorations must reveal whichever tile is beneath them.
 for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
              28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,

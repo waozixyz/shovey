@@ -104,11 +104,12 @@
     var loadingScreen = document.getElementById('loading-screen');
     var statusElement = document.getElementById('status');
     var progressElement = document.getElementById('progress');
+    var buildRevision = '__SHOVEY_REVISION__';
     function hideLoadingScreen() {
       window.requestAnimationFrame(function() { loadingScreen.classList.add('is-hidden'); });
     }
     var Module = {
-      locateFile: function(path) { return path === 'runtime.wasm' ? 'index.wasm' : path; },
+      locateFile: function(path) { return path === 'runtime.wasm' ? 'index.wasm?v=' + buildRevision : path; },
       setStatus: function(text) {
         if (!Module.setStatus.last) Module.setStatus.last = {time: Date.now(), text: ''};
         if (text === Module.setStatus.last.text) return;
@@ -143,7 +144,7 @@
     };
     var runtimeScript = document.createElement('script');
     runtimeScript.async = true;
-    runtimeScript.src = 'index.js';
+    runtimeScript.src = 'index.js?v=' + buildRevision;
     runtimeScript.onerror = function() { Module.setStatus('Could not download Shovey.'); };
     document.body.appendChild(runtimeScript);
   </script>

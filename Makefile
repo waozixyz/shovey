@@ -74,7 +74,7 @@ web: bundles
 	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--module-path build/game-generated/shovey --define KRYON_HOSTED_UI --define SHOVEY_WEB \
+		--module-path build/game-generated/shovey --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE \
 		--asset-dir assets=build/game-assets/shovey/assets --entry game:Main \
 		-o build/web/shovey.zib src/web/game.zi
 	$(MAKE) -C '$(KRYON)' zib-canvas ZIRAN_ROOT='$(TOOLCHAIN)' \
@@ -82,6 +82,7 @@ web: bundles
 		ZIB_CANVAS_BUNDLE='$(abspath build/web/shovey.zib)' \
 		ZIB_CANVAS_PROGRAM='$(abspath build/web/runtime.html)'
 	cp src/web/index.html build/web/index.html
+	python3 scripts/stamp-web.py
 	cp assets/shovey/preview.png build/web/loading.png
 	cp build/web/runtime.js build/web/index.js
 	cp build/web/runtime.wasm build/web/index.wasm

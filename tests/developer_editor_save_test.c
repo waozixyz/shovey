@@ -38,6 +38,9 @@ int main(int argc, char **argv) {
     /* Starting sprites face up in either presentation; recorded movement
        directions keep their existing board-relative meaning. */
     ShoveyGame facing = {0};
+    assert(shovey_board_KindSprite(&facing, 64, -1, 1792685443.5, false) == SPRITE_WATER + 3);
+    assert(shovey_board_KindSprite(&facing, 22, -1, 1792685443.5, false) == SPRITE_SENSOR + 3);
+    assert(shovey_board_KindSprite(&facing, 64, -1, 2147483648.5, false) == SPRITE_WATER + 1);
     facing.direction = 1;
     facing.light_from[13] = 4;
     assert(shovey_board_PlayerSprite(&facing, false) == SPRITE_PLAYER + 1);
@@ -384,8 +387,11 @@ int main(int argc, char **argv) {
         moss.ground[26] = wall;
         moss.ground[27] = button;
         moss.objects[27] = 9;
-        int floor_sprite = color == 0 ? 0 : SPRITE_MATERIAL_FLOOR + color - 1;
+        int floor_sprite = color == 0 ? SPRITE_DOOR_OPEN : SPRITE_MOSS_FLOOR + color - 1;
         assert(shovey_board_KindSprite(&moss, wall, 26, 0, false) == floor_sprite);
+        assert(shovey_board_KindSprite(&moss, wall, 26, 0, true) == floor_sprite);
+        moss.objects[27] = 0;
+        assert(shovey_board_KindSprite(&moss, wall, 26, 0, false) == (color == 0 ? 14 : SPRITE_MOSS_WALL + color - 1));
     }
     /* A changed board has an Update action even before its proof is ready.
        A saved, proven board updates without starting another solver run. */

@@ -1,0 +1,79 @@
+name: Play online
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shovey-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+      - name: Read the locked toolchain
+        id: toolchain
+        run: |
+          python3 -c 'import json,os; r=json.load(open("ziran.lock")); open(os.environ["GITHUB_OUTPUT"],"a").write("commit="+r["toolchain"]["commit"]+"\n")'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ziranlang/ziran
+          ref: ${{ steps.toolchain.outputs.commit }}
+          path: ziranlang/ziran
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install build dependencies
+        run: |
+          sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential pkg-config python3-pil python3-numpy
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.6'
+          actions-cache-folder: emsdk-cache
+      - name: Build the locked compiler and fetch packages
+        run: |
+          make -j2 -C "$GITHUB_WORKSPACE/ziranlang/ziran"
+          "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" fetch --locked
+      - name: Check the game and build the approved campaign
+        run: |
+          make test ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
+          make web ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
+      - name: Play in a private browser
+        run: |
+          export CHROMIUM="$(command -v google-chrome || command -v chromium)"
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_loading_test.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: waozixyz/shovey/build/web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-browser-check
+          path: waozixyz/shovey/build/web-test
+
+  deploy:
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
