@@ -3,6 +3,7 @@ ZIRAN ?= ziran
 LOCK_FLAGS := $(if $(wildcard ziran.local.toml),,--locked)
 TOOLCHAIN = $(shell $(ZIRAN) pkg path ziran $(LOCK_FLAGS))
 KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
+MINGCUTE = $(shell $(ZIRAN) pkg path mingcute $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
@@ -28,6 +29,7 @@ editor-ui-test: editor editor-server-test
 editor: levels build/ziran/libziran.a
 	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
 		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'mingcute=$(MINGCUTE)/src' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		$(EDITOR_DEFINES) --entry editor:main -o $(EDITOR_OUT)/c tools/editor/editor.zi
@@ -69,14 +71,14 @@ landscape:
 	python3 tools/levels/landscape.py --check
 
 bundles: levels landscape
-	python3 scripts/build-bundles.py --toolchain '$(TOOLCHAIN)' --kryon '$(KRYON)' --apps '$(APPS)'
+	python3 scripts/build-bundles.py --toolchain '$(TOOLCHAIN)' --kryon '$(KRYON)' --apps '$(APPS)' --mingcute '$(MINGCUTE)'
 
 web: bundles
 	rm -rf build/web
 	mkdir -p build/web
 	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
-		--module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--module-path build/game-generated/shovey --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE \
 		--asset-dir assets=build/game-assets/shovey/assets --entry game:Main \
 		-o build/web/shovey.zib src/web/game.zi
@@ -140,6 +142,7 @@ play: levels build/ziran/libziran.a
 	rm -rf build/play/c
 	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root tools/play \
 		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'mingcute=$(MINGCUTE)/src' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--entry play:main -o build/play/c tools/play/play.zi
@@ -190,6 +193,7 @@ scenery-pictures: levels build/ziran/libziran.a
 	rm -rf build/scenery/c
 	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
 		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'mingcute=$(MINGCUTE)/src' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--entry scenery_picture:main -o build/scenery/c tools/levels/scenery_picture.zi
@@ -209,6 +213,7 @@ editor-card: levels build/ziran/libziran.a
 	rm -rf build/card/c
 	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
 		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'mingcute=$(MINGCUTE)/src' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--entry editor_card:main -o build/card/c tools/pixel/editor_card.zi

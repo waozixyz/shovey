@@ -190,3 +190,6 @@ Anterior
 [shovey_page_next]
 Siguiente
 ---
+[shovey_profile]
+Perfil
+---

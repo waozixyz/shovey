@@ -190,3 +190,6 @@ Shovey 用漂浮的木箱、球和地砖搭建谜题棋盘
 [shovey_page_next]
 下一页
 ---
+[shovey_profile]
+个人资料
+---

@@ -5,7 +5,7 @@
 Each catalog.json names its entry, source, assets and locales. Hosts such as
 Arcade build the same bundles from this package's sources.
 
-    python3 scripts/build-bundles.py --toolchain DIR --kryon DIR --apps DIR
+    python3 scripts/build-bundles.py --toolchain DIR --kryon DIR --apps DIR --mingcute DIR
 """
 import argparse
 import json
@@ -46,7 +46,7 @@ def translations(descriptor):
     return blocks_by_language, code
 
 
-def build(toolchain, kryon, apps):
+def build(toolchain, kryon, apps, mingcute):
     for manifest in EDITIONS:
         descriptor = json.loads((ROOT / manifest).read_text())
         name = descriptor['name']
@@ -85,6 +85,7 @@ def build(toolchain, kryon, apps):
             '--module-path', 'std=' + str(toolchain / 'std'),
             '--module-path', str(toolchain / 'std'),
             '--module-path', 'apps=' + str(apps / 'src'),
+            '--module-path', 'mingcute=' + str(mingcute / 'src'),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir', 'assets=' + str(staged / 'assets'),
             '--entry', descriptor['entry'], '-o', str(bundle), str(ROOT / descriptor['source'])],
@@ -98,5 +99,6 @@ if __name__ == '__main__':
     parser.add_argument('--toolchain', type=Path, required=True)
     parser.add_argument('--kryon', type=Path, required=True)
     parser.add_argument('--apps', type=Path, required=True)
+    parser.add_argument('--mingcute', type=Path, required=True)
     args = parser.parse_args()
-    build(args.toolchain.resolve(), args.kryon.resolve(), args.apps.resolve())
+    build(args.toolchain.resolve(), args.kryon.resolve(), args.apps.resolve(), args.mingcute.resolve())

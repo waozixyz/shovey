@@ -1,4 +1,5 @@
 #import "session"
+ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import "joystick"
 #import "geometry"
 #import "drawing_props"
@@ -288,6 +289,10 @@ ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) 
         if offset <= -width || offset >= width { continue }
         TitlePage(page, offset, width, top, height, portrait)
     }
+    if ProfileAvailable() && Control(20400, Rectangle.{width - 60.0, top + 12.0, 44.0, 44.0},
+        AppLocaleHost("shovey_profile"), false, "", ProfileIcon.Shape) {
+        OpenProfile()
+    }
     // Turning arrows at the sides, and dots for the pages.
     middle := top + height * 0.5 - 22.0
     if title_page > 0 && Control(20211, Rectangle.{12.0, middle, 44.0, 44.0}, AppLocaleHost("shovey_page_previous"), false, "", ICON_PREVIOUS) {
@@ -318,7 +323,7 @@ ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) 
         help_open = true
     }
     if Control(20205, Rectangle.{x + 112.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_mute"), false, "",
-            ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
+        ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
         SoundSetMuted(!SoundMuted())
     }
     if title_library == 1 && Control(20206, Rectangle.{x + 168.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_games"), false, "", ICON_GAMES) {

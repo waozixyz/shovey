@@ -5,6 +5,7 @@
 #import "kryon/geometry"
 #import "kryon/drawing_props"
 #import "kryon/image_props"
+#import "kryon/image_mesh"
 #import "kryon/image_widget"
 #import "kryon/tile_map"
 #import "std/number_text"
@@ -53,6 +54,7 @@ sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
 board_layers: [SHOVEY_CELLS * 4]s32;
+abyss_sprite_indices: [16]s32;
 fall_active: bool;
 fall_started: float64;
 fall_level: s32;
@@ -92,17 +94,9 @@ PortalTravelProgress :: (game: *ShoveyGame, now: float64) -> float32 {
 
 PortalTravelMesh :: (cell: Rectangle, progress: float32) -> ImageMesh {
     scale := ifx progress < 0.5 then 1.0 - progress * 2.0 else (progress - 0.5) * 2.0
-    angle := cast(float64)progress * 12.566370614359172
-    cosine := cast(float32)Math.Cos(angle)
-    sine := cast(float32)Math.Sin(angle)
-    half := cell.width * 0.5 * scale
-    for corner: cast(s32)0..3 {
-        x := ifx corner % 2 == 0 then -half else half
-        y := ifx corner < 2 then -half else half
-        fall_points[corner] = Vector2.{cell.x + cell.width * 0.5 + x * cosine - y * sine,
-                cell.y + cell.height * 0.5 + x * sine + y * cosine}
-    }
-    return ImageMesh.{.columns = 2, .rows = 2, .points = fall_points[:]}
+    center := Vector2.{cell.x + cell.width * 0.5, cell.y + cell.height * 0.5}
+    return ImageMeshQuad(cell, Camera.{.target = center, .offset = center,
+            .zoom = scale, .rotation = progress * 720.0}, fall_points[:])
 }
 
 // The loss stays in the engine immediately; only the picture falls away.
@@ -128,17 +122,11 @@ AbyssFallMesh :: (cell: Rectangle, progress: float32) -> ImageMesh {
     cosine := cast(float32)Math.Cos(angle)
     sine := cast(float32)Math.Sin(angle)
     scale := (1.0 - progress) * (1.0 - progress)
-    half := cell.width * 0.5 * scale
     orbit := cell.width * 0.4 * progress * (1.0 - progress)
-    center := Vector2.{cell.x + cell.width * 0.5 + sine * orbit,
-            cell.y + cell.height * 0.5 + (1.0 - cosine) * orbit * 0.5}
-    for corner: cast(s32)0..3 {
-        x := ifx corner % 2 == 0 then -half else half
-        y := ifx corner < 2 then -half else half
-        fall_points[corner] = Vector2.{center.x + x * cosine - y * sine,
-                center.y + x * sine + y * cosine}
-    }
-    return ImageMesh.{.columns = 2, .rows = 2, .points = fall_points[:]}
+    center := Vector2.{cell.x + cell.width * 0.5, cell.y + cell.height * 0.5}
+    offset := Vector2.{center.x + sine * orbit, center.y + (1.0 - cosine) * orbit * 0.5}
+    return ImageMeshQuad(cell, Camera.{.target = center, .offset = offset,
+            .zoom = scale, .rotation = progress * (2.0 + progress) * 360.0}, fall_points[:])
 }
 
 SpritePathIn :: (files: []string, index: s32, folder: string, name: string) {
@@ -159,6 +147,7 @@ SpritePath :: (index: s32, name: string) {
 }
 
 SpritesPrepare :: () {
+    for index: cast(s32)0..15 { abyss_sprite_indices[index] = SPRITE_ABYSS + index }
     digits: [24]u8
     for kind: cast(s32)0..40 {
         bytes: Vec(u8)
@@ -374,7 +363,7 @@ PlayerSprite :: (game: *ShoveyGame, landscape: bool = false) -> s32 {
 // The caller chooses the same orientation used for its input mapping.
 // Uses keys from `key` to key + 4 * SHOVEY_CELLS + 1.
 ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string,
-        landscape: bool) -> TileMapResult {
+    landscape: bool) -> TileMapResult {
     if !sprites_ready { SpritesPrepare() }
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
@@ -385,7 +374,12 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         base := game.tiles[at]
         board_layers[display] = KindSprite(game, base, at, now, landscape)
         if base == SHOVEY_PIT {
-            board_layers[display] = -1
+            mask: s32 = 0
+            for direction: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, direction)
+                if neighbor < 0 || game.tiles[neighbor] != SHOVEY_PIT { mask |= 1 << direction }
+            }
+            board_layers[display] = SPRITE_ABYSS + mask
         }
         if base == 77 {
             mask: s32 = 0
@@ -401,41 +395,12 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) then ground else 0
         board_layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now, landscape)
     }
-    // Fractional cell sizes round neighbouring sprites to different pixel
-    // rows and look separated. Fit to one integer cell before drawing.
-    cell := bounds.width / cast(float32)columns
-    height_cell := bounds.height / cast(float32)rows
-    if height_cell < cell { cell = height_cell }
-    if cell > 0.0 {
-        cell = cast(float32)(cast(s32)cell)
-        bounds = Rectangle.{cast(float32)cast(s32)(bounds.x + (bounds.width - cell * cast(float32)columns) / 2.0),
-            cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
-            cell * cast(float32)columns, cell * cast(float32)rows}
-    }
     // Mobile density can put tile edges between physical pixels even with
     // integer logical cells. Match the abyss interior behind the tiles so
     // those edges cannot reveal a pale grid through a joined opening.
     grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
             .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
-            .fill = Color.{2, 4, 5, 255}, .label = "Shovey"})
-    // TileMap smooths its pictures. On mobile, filtering can wrap a bright
-    // rim onto the opposite edge of the same texture. Draw the abyss's
-    // pixel art without filtering, over the matching dark background.
-    // Objects and decorations cannot occupy abyss cells.
-    for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.tiles[at] != SHOVEY_PIT { continue }
-        mask: s32 = 0
-        for direction: cast(s32)0..3 {
-            neighbor := ShoveyNeighbor(at, direction)
-            if neighbor < 0 || game.tiles[neighbor] != SHOVEY_PIT { mask |= 1 << direction }
-        }
-        display := BoardDisplayIndex(at, landscape)
-        sprite := SPRITE_ABYSS + mask
-        files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
-        Image(session, ImageProps.{.key = key + cast(u64)(1 + display), .asset_path = files[sprite],
-                .alt_text = ifx cast(s64)sprite < names.count then names[sprite] else "Abyss",
-                .bounds = TileMapCell(grid, display), .fit = ImageFit.ImageFitContain, .smooth = false})
-    }
+            .fill = Color.{2, 4, 5, 255}, .label = "Shovey", .pixel_snap = true, .nearest_tiles = abyss_sprite_indices[:]})
     if game.player >= 0 && game.player < SHOVEY_CELLS {
         files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
         portal := PortalTravelProgress(game, now)
@@ -443,7 +408,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         cell := TileMapCell(grid, BoardDisplayIndex(position, landscape))
         fall := AbyssFallProgress(game, now)
         image := ImageProps.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(game, landscape)],
-                .alt_text = "Shovey", .bounds = cell, .fit = ImageFit.ImageFitContain, .smooth = true}
+            .alt_text = "Shovey", .bounds = cell, .fit = ImageFit.ImageFitContain, .smooth = true}
         // Fully collapsed quads have no area. Omit them instead of handing
         // the rasterizer a singular image transform at the end/midpoint.
         visible := fall < 0.97 && (portal < 0.49 || portal > 0.51)

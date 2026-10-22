@@ -97,3 +97,17 @@ LibraryAvailable :: () -> bool {
 } else {
     GameSelectionAvailable :: () -> bool { return AppSupportsHost("arcade.navigation") }
 }
+
+// Only a standalone native host offers this route. Embedded games keep the
+// outer application's existing Entity profile and never load another one.
+ProfileAvailable :: () -> bool {
+    #if #defined(SHOVEY_WEB) {
+        return false
+    } else {
+        return AppSupportsHost("entity.profile")
+    }
+}
+
+OpenProfile :: () {
+    unused AppServiceHost("entity.profile", "open")
+}

@@ -13,3 +13,10 @@ ref = "master"
 [dependencies.apps]
 git = "https://github.com/waozixyz/apps.git"
 ref = "master"
+
+[dependencies.mingcute]
+git = "https://github.com/kryonlabs/mingcute.git"
+ref = "master"
+
+[exports]
+shovey_theme = "src/shovey_theme.zi"
