@@ -87,6 +87,18 @@ int main(int argc, char **argv) {
         assert(check_state == 4 && editor_NeedsRepair());
         editor_Open(1);
         assert(check_state == 4 && !check_wanted);
+        uint8_t pretty[HEX];
+        memcpy(pretty, editor_Board(1).data, HEX);
+        editor_SetKind((Slice){pretty, HEX}, SHOVEY_CELLS * 2 + 14, 59);
+        glm_mode = 2;
+        glm_result(pretty, pretty, NULL);
+        assert(memcmp(pretty, editor_Board(1).data, HEX) == 0);
+        assert(check_state == 4 && !check_wanted && !editor_Proven());
+        editor_SetKind((Slice){pretty, HEX}, SHOVEY_CELLS + 15, 14);
+        assert(!editor_PrettifyOnly(editor_Board(1), (Slice){pretty, HEX}));
+        editor_SetKind((Slice){pretty, HEX}, SHOVEY_CELLS + 15, 0);
+        editor_SetKind((Slice){pretty, HEX}, 15, 131);
+        assert(!editor_PrettifyOnly(editor_Board(1), (Slice){pretty, HEX}));
         puts("Completed check status survives reopening only for the same board; Fix it stays hidden for verified wins");
         return 0;
     }

@@ -107,6 +107,21 @@ class Variations(unittest.TestCase):
             with self.subTest(wall=wall), self.assertRaises(ValueError):
                 actions.apply_proposal(original, dict(edits=[edit('tiles', 3, 4, wall, 12)]), mode='prettify')
 
+    def test_prettify_does_not_search_an_unfinished_puzzle(self):
+        proposal = dict(edits=[dict(layer='decorations', x=3, y=4, **{'from': 0, 'to': 57})],
+                        explanation='Flowers away from the blocked route.')
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
+            drafts = Path(directory)
+            (drafts / '001.glm-base').write_text(blocked_board())
+            response = dict(choices=[dict(message=dict(content=json.dumps(proposal)))])
+            with patch.object(actions, 'DRAFTS', drafts), patch.object(actions, 'existing_route', return_value=''), \
+                    patch.object(actions, 'prove_proposal', side_effect=AssertionError('Scenery needs no new solution')), \
+                    patch.object(actions, 'glm_settings', return_value=('https://example.invalid', 'test', 'glm-test')), \
+                    patch.object(actions.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(response).encode())):
+                actions.modify(1, mode='prettify')
+            self.assertTrue((drafts / '001.glm-result').exists())
+            self.assertFalse((drafts / '001.glm-proof').exists())
+
     def test_glm_modes_use_distinct_prompts_and_engine_checked_results(self):
         prettify = dict(edits=[dict(layer='decorations', x=3, y=4, **{'from': 0, 'to': 57})],
                         solution='333332', explanation='Flowers by the path.')

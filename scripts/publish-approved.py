@@ -199,7 +199,7 @@ def main(force=False):
                 run(['sh', 'tests/release_test.sh', toolchain])
                 run(['python3', 'tests/assets_test.py'])
                 run(['make', 'all'], arcade)
-                status('Checking…')
+                status('Updating…')
                 private = [
                     'env', '-u', 'DISPLAY', '-u', 'WAYLAND_DISPLAY', '-u', 'XAUTHORITY', '-u', 'DBUS_SESSION_BUS_ADDRESS',
                     '-u', 'SESSION_MANAGER', 'YUE_DESKTOP_RECOVERY=0', 'SDL_AUDIODRIVER=dummy',

@@ -916,6 +916,27 @@ GLMProof :: (text: string, board: []u8) -> bool {
     return Wins(board, LevelFor(current), letters[:], length)
 }
 
+// Prettify may also dress an unfinished draft. Independently restrict it to
+// equivalent ordinary floors/walls and non-blocking scenery; it cannot prove
+// or approve a board, alter a mossy wall, or change a button's logic.
+PrettyFloor :: (kind: s32) -> bool {
+    return kind == 0 || kind == 60 || kind == 61 || kind == 77 || kind == 78 || (kind >= 99 && kind <= 103)
+}
+PrettyWall :: (kind: s32) -> bool { return kind == 12 || (kind >= 95 && kind <= 98) }
+PrettyDecoration :: (kind: s32) -> bool { return kind == 0 || kind == 57 || kind == 58 || kind == 59 }
+PrettifyOnly :: (before: []u8, after: []u8) -> bool {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if KindAt(before, at) != KindAt(after, at) { return false }
+        old := KindAt(before, SHOVEY_CELLS + at)
+        next := KindAt(after, SHOVEY_CELLS + at)
+        if old != next && !((PrettyFloor(old) && PrettyFloor(next)) || (PrettyWall(old) && PrettyWall(next))) { return false }
+        old = KindAt(before, SHOVEY_CELLS * 2 + at)
+        next = KindAt(after, SHOVEY_CELLS * 2 + at)
+        if old != next && !(PrettyDecoration(old) && PrettyDecoration(next)) { return false }
+    }
+    return true
+}
+
 PollActions :: (now: s64) {
     if now - actions_polled < 500 { return }
     actions_polled = now
@@ -930,7 +951,7 @@ PollActions :: (now: s64) {
             candidate: [HEX]u8
             if ReadBoard(result, candidate[:]) && glm_place == current && !playing && Same(Board(current), glm_base[:]) {
                 proof, proven := ReadEntireFile(DraftPath(glm_place, ".glm-proof"))
-                if proven && GLMProof(proof, candidate[:]) {
+                if (glm_repair || glm_mode != 2 || PrettifyOnly(glm_base[:], candidate[:])) && proven && GLMProof(proof, candidate[:]) {
                     Remember()
                     Copy(Board(current), candidate[:])
                     Edited()
@@ -940,6 +961,20 @@ PollActions :: (now: s64) {
                     proof_level = current
                     AcceptRoute(proof_route[:], proof_length)
                     ActionMessage(ifx glm_repair then "Repair applied" else ifx glm_mode == 1 then "Redesign applied" else ifx glm_mode == 2 then "Prettify applied" else "Variation applied")
+                } else if !glm_repair && glm_mode == 2 && PrettifyOnly(glm_base[:], candidate[:]) {
+                    previous := check_state
+                    remembered := Checked() && (previous == 3 || previous == 4)
+                    Remember()
+                    Copy(Board(current), candidate[:])
+                    Edited()
+                    if remembered {
+                        Copy(check_board[:], candidate[:])
+                        check_level = current
+                        check_state = previous
+                        check_wanted = false
+                        RememberCheckStatus()
+                    }
+                    ActionMessage("Prettify applied")
                 } else { ActionMessage(ifx glm_repair then "Repair failed its route check. Retry." else "Variation failed its route check. Retry.") }
             } else { ActionMessage("Level changed. Run GLM again.") }
             glm_busy = false

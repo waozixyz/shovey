@@ -514,8 +514,8 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify'):
         if not repair and mode == 'modify' and len(changed) < 4 and verify_route(number, candidate, source_route):
             raise ValueError('Only one piece was nudged and the old route still wins unchanged. Design a fuller push variation or a change requiring a new route')
         atomic(status, 'Checking repair…' if repair else 'Checking variation…')
-        if mode == 'prettify' and source_route:
-            if not verify_route(number, candidate, source_route):
+        if mode == 'prettify':
+            if source_route and not verify_route(number, candidate, source_route):
                 raise ValueError('Prettify changed the winning route; keep all mechanics unchanged')
             route = source_route
         else:
@@ -524,7 +524,10 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify'):
         rejected = ValueError(str(error) if isinstance(error, ValueError) else 'The route check ran out of time; simplify the variation')
         rejected.proposal = proposal
         raise rejected from error
-    atomic(DRAFTS / f'{number:03}.glm-proof', candidate + '\n' + route)
+    if route:
+        atomic(DRAFTS / f'{number:03}.glm-proof', candidate + '\n' + route)
+    else:
+        (DRAFTS / f'{number:03}.glm-proof').unlink(missing_ok=True)
     atomic(DRAFTS / f'{number:03}.glm-explanation', str(proposal.get('explanation', ''))[:1000])
     atomic(DRAFTS / f'{number:03}.glm-result', candidate)
     atomic(DRAFTS / f'{number:03}.glm-details.json', json.dumps(dict(

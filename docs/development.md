@@ -108,7 +108,10 @@ strategic winning route and the same puzzle inventory. **Redesign** makes a new
 level, including its layout, pieces, start and home. **Prettify** changes ordinary
 floor and wall appearances and adds non-blocking scenery, preserving every
 object, mossy wall, button and other mechanic. It keeps the existing winning
-route. Every generated result must win in the game engine before it is applied;
+route. Modify and Redesign must win in the game engine before being applied.
+Prettify can also dress an unfinished draft without a new solution search;
+both the worker and editor enforce equivalent terrain and non-blocking scenery,
+and a known winning route is replayed. Scenery alone never counts as a win or approval.
 Undo restores the previous board, and failed proposals leave it intact.
 **Approve** publishes in the background. It is disabled when that approval is
 already published, and becomes available again if its update fails. A later
