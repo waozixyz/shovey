@@ -22,6 +22,8 @@ class Publication(unittest.TestCase):
         self.store = self.root / 'build/approved-releases/inbe.arcade'
         self.store.mkdir(parents=True)
         (self.root / 'backup').mkdir()
+        (self.root / 'levels').mkdir()
+        (self.root / 'levels/approved.json').write_text(json.dumps(dict(levels=[{}] * 19)))
         (self.root / 'build').mkdir(exist_ok=True)
         payload = b'ZIB\0checked release'
         self.digest = hashlib.sha256(payload).hexdigest()
