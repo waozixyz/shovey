@@ -645,7 +645,15 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
 EDITOR_EDITIONS :: 2
 
 EditorHome :: (width: float32, top: float32, bottom: float32) {
-    EditorCaption(101, Rectangle.{16.0, top + 8.0, width - 32.0, 40.0}, EditorText("editor_choose"), 15)
+    #if #defined(SHOVEY_WEB) {
+        if EditorControl(100, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) {
+            unused AppServiceHost("arcade.navigation", "back")
+            return
+        }
+        EditorCaption(101, Rectangle.{112.0, top + 8.0, width - 128.0, 40.0}, EditorText("editor_choose"), 15)
+    } else {
+        EditorCaption(101, Rectangle.{16.0, top + 8.0, width - 32.0, 40.0}, EditorText("editor_choose"), 15)
+    }
     portrait := width < 560.0
     editions: s32 = EDITOR_EDITIONS
     gap: float32 = 12.0
@@ -1392,6 +1400,12 @@ EditorFrame :: (language: string) {
     editor_last_now = editor_frame.now
     EditorNames()
     editor_key = AppKeyHost()
+    #if #defined(SHOVEY_WEB) {
+        if editor_key == 256 && editor_page == EDITOR_HOME {
+            unused AppServiceHost("arcade.navigation", "back")
+            return
+        }
+    }
     EditorCheckStep(elapsed)
     EditorShareStep()
     width := cast(float32)editor_frame.width

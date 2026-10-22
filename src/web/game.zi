@@ -2,6 +2,8 @@
 #import "kryon/app_context"
 #import "kryon/app_protocol"
 #import, file "../shovey_view.zi";
+#import, file "../editor/editor_view.zi";
+#import, file "../controls.zi";
 
 #program_export
 Main :: () -> s64 {
@@ -11,6 +13,9 @@ Main :: () -> s64 {
         AppDescribe("Shovey", "S1.7rr:M4 4H20V20H4ZM9 9H15V15H9Z")
         return APP_PROTOCOL
     }
-    if mode == APP_FRAME { ShoveyFrame() }
+    if mode == APP_FRAME {
+        if web_editor_open { EditorFrame("en") }
+        else { ShoveyFrame() }
+    }
     return 0
 }

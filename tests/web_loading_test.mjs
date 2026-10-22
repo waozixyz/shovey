@@ -112,10 +112,18 @@ try {
 
   await call('Runtime.enable');
   await call('Page.enable');
+  await call('Page.addScriptToEvaluateOnNewDocument', {source: `
+    window.loadingSamples = [];
+    new MutationObserver(() => {
+      const progress = document.getElementById('progress');
+      if (progress && !progress.hidden && progress.hasAttribute('value') && progress.max === 100) window.loadingSamples.push(progress.value);
+    }).observe(document, {childList: true, subtree: true, attributes: true, attributeFilter: ['value', 'hidden', 'max']});
+  `});
   await call('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
   await call('Page.reload', {ignoreCache: true});
   await settle('!!document.querySelector(".loading-screen")', value => value);
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".loading-screen")).visibility'), 'visible');
+  assert(await evaluate('!document.getElementById("progress").hidden'), 'Loading progress must stay visible');
   assert.equal(await settle('document.querySelector(".loading-mark").naturalWidth', value => value === 1200), 1200);
   assert.equal(await evaluate('document.querySelector("link[rel=canonical]").href'), 'https://shovey.waozi.xyz/');
   assert(await evaluate(`document.querySelector('meta[property="og:image"]').content.includes('https://shovey.waozi.xyz/og.png?v=')`));
@@ -135,6 +143,8 @@ try {
     return colors.size > 64;
   })()`, value => value);
   assert(ready, 'The game bundle or title artwork did not render');
+  assert.equal(await evaluate('document.title'), 'Shovey — Push. Solve. Come home.');
+  assert(await evaluate('loadingSamples.some(value => value > 0 && value < 100)'), 'No real download progress was shown');
   const initial = await canvasSignature();
   assert.equal(initial.height, 844);
   // Classic now opens on its title artwork. Enter Play before checking the game bar.
@@ -142,6 +152,34 @@ try {
   await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x: 195, y: 680, button: 'left', buttons: 0, clickCount: 1});
   assert.notEqual((await settle('Module.FS.analyzePath("/kryon-apps/shovey/campaign").exists', value => value)), false, 'Play did not open the campaign');
   await delay(500);
+  async function pressGameKey(key, code, number) {
+    await call('Input.dispatchKeyEvent', {type: 'keyDown', key, code, windowsVirtualKeyCode: number});
+    await delay(100);
+    await call('Input.dispatchKeyEvent', {type: 'keyUp', key, code, windowsVirtualKeyCode: number});
+    await delay(200);
+  }
+  const readCampaignMoves = () => evaluate('parseInt(Module.FS.readFile("/kryon-apps/shovey/campaign", {encoding: "utf8"}).slice(191, 199), 16)');
+  for (let reset = 0; reset < 3; reset++) {
+    await pressGameKey('r', 'KeyR', 82);
+    assert.equal(await readCampaignMoves(), 0, 'R did not reset the current level');
+    await pressGameKey('ArrowLeft', 'ArrowLeft', 37);
+    assert(await readCampaignMoves() > 0, 'The game froze after R reset');
+    assert.equal(await evaluate('document.querySelector("#zib-controls").textContent'), '', 'Reset caused an app frame failure');
+  }
+  for (const [width, height, density] of [[320,568,1],[1440,500,1],[844,390,2],[390,844,1]]) {
+    await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: density, mobile: width < 900});
+    const size = await settle(`(() => {
+      const canvas = document.querySelector('canvas'), bounds = canvas.getBoundingClientRect();
+      return {width: canvas.width, height: canvas.height, cssWidth: bounds.width, cssHeight: bounds.height};
+    })()`, value => value.width === width * density && value.height === height * density);
+    assert.equal(size.width, width * density);
+    assert.equal(size.height, height * density);
+    assert(Math.abs(size.width / size.height - size.cssWidth / size.cssHeight) < .002, 'Resizing stretched the canvas');
+    assert.equal(await evaluate('getComputedStyle(document.querySelector("canvas")).objectFit'), 'contain');
+    await pressGameKey('r', 'KeyR', 82);
+    assert.equal(await readCampaignMoves(), 0, 'Reset failed after resizing');
+    assert.equal(await evaluate('document.querySelector("#zib-controls").textContent'), '', 'Resizing caused an app frame failure');
+  }
   const beforeMuteShot = (await call('Page.captureScreenshot', {format: 'png'})).data;
 
   await evaluate(`(() => {
@@ -178,7 +216,53 @@ try {
 
   const screenshot = await call('Page.captureScreenshot', {format: 'png'});
   await writeFile(join(shots, 'landscape-selector.png'), Buffer.from(screenshot.data, 'base64'));
-  await writeFile(join(shots, 'receipt.json'), JSON.stringify({url: target, ...metadata, loading: 'passed', controls: 'passed', orientation: 'passed'}) + '\n');
+  await call('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+  await delay(500);
+  async function click(x, y) {
+    await call('Input.dispatchMouseEvent', {type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1});
+    await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1});
+    await delay(350);
+  }
+  const campaignBeforeEditor = await evaluate('Module.FS.readFile("/kryon-apps/shovey/campaign", {encoding: "utf8"})');
+  await click(60, 34); // Levels -> title.
+  await click(356, 422); // Existing Editor title page.
+  await delay(650);
+  await writeFile(join(shots, 'editor-title.png'), Buffer.from((await call('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
+  await click(195, 680);
+  await writeFile(join(shots, 'editor-home.png'), Buffer.from((await call('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
+  await click(195, 210); // Classic edition.
+  await click(103, 124); // New custom level.
+  assert(await settle('Module.FS.analyzePath("/kryon-apps/shovey/editor/classic-1").exists', value => value), 'The browser editor did not create its own saved level');
+  await writeFile(join(shots, 'editor-before-name.png'), Buffer.from((await call('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
+  await click(130, 624); // Name field below the board.
+  for (const character of 'Browser Garden') {
+    const code = character === ' ' ? 'Space' : 'Key' + character.toUpperCase();
+    const number = character.toUpperCase().charCodeAt(0);
+    await call('Input.dispatchKeyEvent', {type: 'keyDown', code, key: character, text: character, windowsVirtualKeyCode: number});
+    await delay(30);
+    await call('Input.dispatchKeyEvent', {type: 'keyUp', code, key: character, windowsVirtualKeyCode: number});
+  }
+  await delay(250);
+  await call('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13});
+  await call('Input.dispatchKeyEvent', {type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13});
+  assert(await settle('Module.FS.readFile("/kryon-apps/shovey/editor/classic-levels", {encoding: "utf8"}).includes("Browser Garden")', value => value), 'The browser editor did not save a typed level name');
+  await writeFile(join(shots, 'editor-custom-level.png'), Buffer.from((await call('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
+  const editing = await canvasSignature();
+  await click(334, 26); // Play the custom puzzle.
+  assert.notEqual((await canvasSignature()).sum, editing.sum, 'The custom level did not enter Play');
+  await writeFile(join(shots, 'editor-play.png'), Buffer.from((await call('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
+  await call('Input.dispatchKeyEvent', {type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40});
+  await delay(120);
+  await call('Input.dispatchKeyEvent', {type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40});
+  assert.equal(await evaluate('Module.FS.readFile("/kryon-apps/shovey/campaign", {encoding: "utf8"})'), campaignBeforeEditor, 'The editor changed the Classic campaign save');
+  await delay(3500); // The host flushes browser storage automatically.
+  await call('Page.reload', {ignoreCache: true});
+  assert(await settle('document.querySelector("#loading-screen")?.classList.contains("is-hidden")', value => value), 'The game did not reopen after saving an editor level');
+  assert(await evaluate('Module.FS.readFile("/kryon-apps/shovey/editor/classic-levels", {encoding: "utf8"}).includes("Browser Garden")'), 'Reloading lost the browser editor level');
+  assert.equal(await evaluate('Module.FS.readFile("/kryon-apps/shovey/campaign", {encoding: "utf8"})'), campaignBeforeEditor);
+  assert.equal(await evaluate('document.title'), 'Shovey — Push. Solve. Come home.');
+  assert.equal(await evaluate('document.querySelector("#zib-controls").textContent'), '', 'The game host reported an editor error');
+  await writeFile(join(shots, 'receipt.json'), JSON.stringify({url: target, ...metadata, loading: 'passed', controls: 'passed', orientation: 'passed', progress: 'passed', title: 'passed', editor: 'passed', editor_persistence: 'passed', reset: 'passed', responsive: 'passed'}) + '\n');
   console.log('Web loading and orientation shell passed: ' + target);
 } catch (error) {
   try {

@@ -69,6 +69,8 @@
       inset: 0;
       width: 100% !important;
       height: 100% !important;
+      object-fit: contain;
+      object-position: center;
       border: 0;
       background: var(--app-background);
     }
@@ -139,6 +141,9 @@
     #progress::-webkit-progress-bar { border-radius: 999px; background: var(--loading-track); }
     #progress::-webkit-progress-value { border-radius: 999px; background: var(--loading-progress); }
     #progress::-moz-progress-bar { border-radius: 999px; background: var(--loading-progress); }
+    #progress:indeterminate { animation: loading-pulse 1.2s ease-in-out infinite alternate; }
+    @keyframes loading-pulse { from { opacity: .45; } to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { #progress:indeterminate { animation: none; } }
   </style>
 </head>
 <body>
@@ -152,7 +157,7 @@
       <h1 class="loading-title" id="loading-title">Shovey</h1>
       <p class="loading-tagline">Push. Solve. Come home.</p>
       <div id="status" role="status" aria-live="polite">Loading your way home…</div>
-      <progress id="progress" value="0" max="100" aria-label="Loading Shovey" hidden></progress>
+      <progress id="progress" value="0" max="100" aria-label="Loading Shovey"></progress>
     </div>
   </div>
   <div id="zib-controls"></div>
@@ -163,7 +168,40 @@
     var statusElement = document.getElementById('status');
     var progressElement = document.getElementById('progress');
     var buildRevision = '__SHOVEY_REVISION__';
+    var pageTitle = document.title;
+    var wasmBytes = __SHOVEY_WASM_BYTES__;
     var loadingCheck;
+    function startingGame() {
+      statusElement.textContent = 'Opening Shovey…';
+      progressElement.removeAttribute('value');
+    }
+    async function instantiateGame(imports) {
+      var received = 0;
+      var response = await fetch('index.wasm?v=' + buildRevision, {credentials: 'same-origin'});
+      if (!response.ok) throw new Error('Game download returned ' + response.status);
+      function downloaded(bytes) {
+        received += bytes;
+        var percent = Math.min(100, Math.floor(received * 100 / wasmBytes));
+        progressElement.max = 100;
+        progressElement.value = percent;
+        statusElement.textContent = 'Downloading Shovey… ' + percent + '%';
+      }
+      var result;
+      if (response.body && typeof TransformStream !== 'undefined' && WebAssembly.instantiateStreaming) {
+        var stream = response.body.pipeThrough(new TransformStream({
+          transform: function(chunk, controller) { downloaded(chunk.byteLength); controller.enqueue(chunk); },
+          flush: startingGame
+        }));
+        result = await WebAssembly.instantiateStreaming(new Response(stream, {headers: {'Content-Type': 'application/wasm'}}), imports);
+      } else {
+        var bytes = await response.arrayBuffer();
+        downloaded(bytes.byteLength);
+        startingGame();
+        result = await WebAssembly.instantiate(bytes, imports);
+      }
+      startingGame();
+      return result;
+    }
     function hideLoadingScreen() {
       if (loadingCheck) return;
       function ready() {
@@ -181,6 +219,7 @@
             var colors = new Set();
             for (var at = 0; at < pixels.length; at += 388) colors.add((pixels[at] << 16) | (pixels[at + 1] << 8) | pixels[at + 2]);
             if (colors.size > 64) {
+              document.title = pageTitle;
               loadingScreen.classList.add('is-hidden');
               return;
             }
@@ -192,6 +231,10 @@
     }
     var Module = {
       locateFile: function(path) { return path === 'runtime.wasm' ? 'index.wasm?v=' + buildRevision : path; },
+      instantiateWasm: function(imports, ready) {
+        instantiateGame(imports).then(function(result) { ready(result.instance); }).catch(function(error) { Module.onAbort(error); });
+        return {};
+      },
       setStatus: function(text) {
         if (!Module.setStatus.last) Module.setStatus.last = {time: Date.now(), text: ''};
         if (text === Module.setStatus.last.text) return;
@@ -204,11 +247,9 @@
           statusElement.textContent = match[1];
           progressElement.value = parseInt(match[2], 10) * 100;
           progressElement.max = parseInt(match[4], 10) * 100;
-          progressElement.hidden = false;
         } else {
-          statusElement.textContent = text;
-          progressElement.hidden = true;
-          if (!text) hideLoadingScreen();
+          statusElement.textContent = text || 'Opening Shovey…';
+          if (!text) { startingGame(); hideLoadingScreen(); }
         }
       },
       monitorRunDependencies: function(left) {

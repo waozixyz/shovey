@@ -3,7 +3,10 @@
 #import "apps/node_types"
 WebApp :: #import "kryon/app_context";
 #import "translations"
+#import "kryon/text_input_props"
+#import "std/vec"
 
+#program_export
 ReadAppUiHost :: () -> AppUiFrame {
     area := WebApp.AppBounds()
     return AppUiFrame.{.session = WebApp.AppSession(),
@@ -14,6 +17,26 @@ ReadAppUiHost :: () -> AppUiFrame {
 AppLocaleHost :: (key: string) -> string { return GameLocaleText("en", key) }
 AppRecordHost :: (name: string) -> string { return WebApp.DocumentRead(name) }
 SaveAppRecordHost :: (name: string, text: string) -> bool { return WebApp.DocumentWrite(name, text) }
+#program_export
 AppKeyHost :: () -> s32 { return WebApp.AppKey() }
 // The standalone app host currently has no packed sound effect service.
+#program_export
 AppSoundHost :: (path: string) -> bool { unused path; return false }
+
+#program_export
+EditorLocaleHost :: (key: string) -> string { return EditorLocaleText("en", key) }
+EditorRecordPath :: (name: string) -> string {
+    path: Vec(u8)
+    BuilderPrint(*path, "editor/%", name)
+    return BuilderFinish(path)
+}
+#program_export
+EditorRecordHost :: (name: string) -> string { return WebApp.DocumentRead(EditorRecordPath(name)) }
+#program_export
+EditorSaveRecordHost :: (name: string, text: string) -> bool { return WebApp.DocumentWrite(EditorRecordPath(name), text) }
+#program_export
+SmoothFramesHost :: (frames: s32) -> bool { unused frames; return true }
+#program_export
+AppSupportsHost :: (capability: string) -> bool { return capability == "arcade.navigation" }
+#program_export
+AppFieldInputHost :: () -> TextFieldInput { return WebApp.AppFieldInput() }

@@ -74,13 +74,19 @@ bundles: levels landscape
 	python3 scripts/build-bundles.py --toolchain '$(TOOLCHAIN)' --kryon '$(KRYON)' --apps '$(APPS)' --mingcute '$(MINGCUTE)'
 
 web: bundles
+	python3 scripts/prepare-web.py
 	rm -rf build/web
 	mkdir -p build/web
 	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--module-path build/game-generated/shovey --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE \
-		--asset-dir assets=build/game-assets/shovey/assets --entry game:Main \
+		--module-path build/web-generated --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE \
+		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
+		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
+		--bind editor_view:AppKeyHost=host:AppKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
+		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:AppSupportsHost \
+		--bind editor_view:AppServiceHost=controls:AppServiceHost --bind editor_view:AppFieldInputHost=host:AppFieldInputHost \
+		--asset-dir assets=build/web-assets/assets --entry game:Main \
 		-o build/web/shovey.zib src/web/game.zi
 	$(MAKE) -C '$(KRYON)' zib-canvas ZIRAN_ROOT='$(TOOLCHAIN)' \
 		ZIB_CANVAS_DIR='$(abspath build/web-runtime)' \

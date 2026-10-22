@@ -10,17 +10,9 @@
       "url": "https://github.com/ziranlang/crypto.git"
     },
     {
-      "commit": "db5349c476bdc243c22b9c73fda4ec06d0a25ffc",
-      "dependencies": {"crypto": "p08c3ae9ef02630df", "kryon": "p4ce83c2c0fd73b15"},
-      "id": "p0c45ce9ed9a0f8cf",
-      "name": "Apps",
-      "ref": "master",
-      "url": "https://github.com/waozixyz/apps.git"
-    },
-    {
-      "commit": "cff967734891b2c58d32794f1b4ce7e6ebc5d3ae",
+      "commit": "8d55d98ee22c84b9d1884974a2213780f93b41c7",
       "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "p4ce83c2c0fd73b15",
+      "id": "p0c15c9a52d10e3b5",
       "name": "kryon",
       "ref": "master",
       "url": "https://github.com/kryonlabs/kryon.git"
@@ -41,14 +33,22 @@
       "name": "mingcute",
       "ref": "master",
       "url": "https://github.com/kryonlabs/mingcute.git"
+    },
+    {
+      "commit": "cc075b7c4f99177bdd188c19e0e351f2a955ad00",
+      "dependencies": {"crypto": "p08c3ae9ef02630df", "kryon": "p0c15c9a52d10e3b5"},
+      "id": "pfbee49e146a127df",
+      "name": "Apps",
+      "ref": "master",
+      "url": "https://github.com/waozixyz/apps.git"
     }
   ],
   "root": {
-    "dependencies": {"apps": "p0c45ce9ed9a0f8cf", "kryon": "p4ce83c2c0fd73b15", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "pfbee49e146a127df", "kryon": "p0c15c9a52d10e3b5", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {
-    "commit": "130b263f42e9332896f7bc63cfed2508d34098dc",
+    "commit": "6343e80bb187582b3b4f1eb5f030c9207ea6fac3",
     "ref": "12a15598d08b35f395fce3936a9ad9dd867673dd",
     "url": "https://github.com/ziranlang/ziran.git"
   }

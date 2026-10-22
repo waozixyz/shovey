@@ -399,6 +399,7 @@ ShoveyFrame :: () {
                         AppendText(level_preview_paths[at][:], *length, ifx landscape then "assets/shovey/levels-landscape/" else "assets/shovey/levels/")
                         AppendText(level_preview_paths[at][:], *length, label)
                         AppendText(level_preview_paths[at][:], *length, ".png")
+                        level_preview_paths[at][length] = 0
                     }
                     // Cover the centered visual label only inside the picture
                     // area, then repeat the number in the card's footer.
