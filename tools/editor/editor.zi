@@ -2092,52 +2092,59 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     }
     // The title is the button for the full list of levels.
     if Control(1, Rectangle.{8.0, 8.0, 334.0, 40.0}, TextView(title_bytes[:length])) { ToggleSelector() }
-    // One row of controls: moving between places, play and check, then the
-    // fix queue and the rotation both boards share.
-    bx: float32 = 350.0
-    if Control(2, Rectangle.{bx, 8.0, 88.0, 40.0}, "Previous") { Open(current - 1) }
-    bx += 96.0
-    if Control(3, Rectangle.{bx, 8.0, 64.0, 40.0}, "Next") { Open(current + 1) }
-    bx += 72.0
-    if Control(4, Rectangle.{bx, 8.0, 108.0, 40.0}, ifx playing then "Edit (Tab)" else "Play (Tab)") {
-        if playing { playing = false; watching = false } else { StartPlay() }
+    // The level list needs only its title, Update all and the status line;
+    // everything else acts on the open level.
+    if !selector_open {
+        // One row of controls: moving between places, play and check, then the
+        // fix queue and the rotation both boards share.
+        bx: float32 = 350.0
+        if Control(2, Rectangle.{bx, 8.0, 88.0, 40.0}, "Previous") { Open(current - 1) }
+        bx += 96.0
+        if Control(3, Rectangle.{bx, 8.0, 64.0, 40.0}, "Next") { Open(current + 1) }
+        bx += 72.0
+        if Control(4, Rectangle.{bx, 8.0, 108.0, 40.0}, ifx playing then "Edit (Tab)" else "Play (Tab)") {
+            if playing { playing = false; watching = false } else { StartPlay() }
+        }
+        bx += 116.0
+        if Control(5, Rectangle.{bx, 8.0, 104.0, 40.0}, "Check (C)") { StartCheck() }
+        bx += 112.0
+        if Control(6, Rectangle.{bx, 8.0, 112.0, 40.0}, "Watch route") { StartWatch() }
+        bx += 120.0
+        if Control(7, Rectangle.{bx, 8.0, 92.0, 40.0}, "Undo (Z)") { if playing { PlayUndo() } else { UndoEdit() } }
+        bx += 100.0
+        if Control(8, Rectangle.{bx, 8.0, 120.0, 40.0}, "Save (Ctrl+S)") { StartSave() }
+        bx += 128.0
+        if Control(13, Rectangle.{bx, 8.0, 136.0, 40.0}, "Next to fix (U)") { Open(NextWaiting()) }
+        bx += 144.0
+        if Control(14, Rectangle.{bx, 8.0, 168.0, 40.0}, ifx boards_landscape then "Rotate: portrait" else "Rotate: landscape") { RotateBoards() }
+        if Control(16, Rectangle.{8.0, 51.0, 80.0, 30.0}, "Redo (Y)") && !playing { RedoEdit() }
+        if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
+        update := NeedsUpdate(current)
+        if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
+                .label = ifx update then ifx PublicationBusy() then "Updating…" else "Update" else "Approve",
+                .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
+            if update { UpdateEdit() } else { ApproveEdit() }
+        }
+        differences: s32 = 0
+        AppendText(diff_label[:], *differences, "Diff ")
+        AppendNumber(diff_label[:], *differences, DifferenceCount(current))
+        if Button(session, ButtonProps.{.key = 20, .id = 20, .bounds = Rectangle.{414.0, 51.0, 96.0, 30.0},
+                .label = TextView(diff_label[:differences]), .selected = diff_open,
+                .disabled = playing || !server_verified || !published_places[current - 1]}) != 0 { diff_open = !diff_open }
+        if NeedsRepair() && Button(session, ButtonProps.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
+                .label = ifx glm_busy && glm_repair then "Fixing…" else "Fix it",
+                .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM(true) }
     }
-    bx += 116.0
-    if Control(5, Rectangle.{bx, 8.0, 104.0, 40.0}, "Check (C)") { StartCheck() }
-    bx += 112.0
-    if Control(6, Rectangle.{bx, 8.0, 112.0, 40.0}, "Watch route") { StartWatch() }
-    bx += 120.0
-    if Control(7, Rectangle.{bx, 8.0, 92.0, 40.0}, "Undo (Z)") { if playing { PlayUndo() } else { UndoEdit() } }
-    bx += 100.0
-    if Control(8, Rectangle.{bx, 8.0, 120.0, 40.0}, "Save (Ctrl+S)") { StartSave() }
-    bx += 128.0
-    if Control(13, Rectangle.{bx, 8.0, 136.0, 40.0}, "Next to fix (U)") { Open(NextWaiting()) }
-    bx += 144.0
-    if Control(14, Rectangle.{bx, 8.0, 168.0, 40.0}, ifx boards_landscape then "Rotate: portrait" else "Rotate: landscape") { RotateBoards() }
-    if Control(16, Rectangle.{8.0, 51.0, 80.0, 30.0}, "Redo (Y)") && !playing { RedoEdit() }
-    if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
-    update := NeedsUpdate(current)
-    if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
-            .label = ifx update then ifx PublicationBusy() then "Updating…" else "Update" else "Approve",
-            .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
-        if update { UpdateEdit() } else { ApproveEdit() }
-    }
-    differences: s32 = 0
-    AppendText(diff_label[:], *differences, "Diff ")
-    AppendNumber(diff_label[:], *differences, DifferenceCount(current))
-    if Button(session, ButtonProps.{.key = 20, .id = 20, .bounds = Rectangle.{414.0, 51.0, 96.0, 30.0},
-            .label = TextView(diff_label[:differences]), .selected = diff_open,
-            .disabled = playing || !server_verified || !published_places[current - 1]}) != 0 { diff_open = !diff_open }
-    if NeedsRepair() && Button(session, ButtonProps.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
-            .label = ifx glm_busy && glm_repair then "Fixing…" else "Fix it",
-            .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM(true) }
-    if Button(session, ButtonProps.{.key = 22, .id = 22, .bounds = Rectangle.{614.0, 51.0, 116.0, 30.0},
+    if Button(session, ButtonProps.{.key = 22, .id = 22,
+            .bounds = ifx selector_open then Rectangle.{350.0, 8.0, 120.0, 40.0} else Rectangle.{614.0, 51.0, 116.0, 30.0},
             .label = ifx PublicationBusy() then "Updating…" else "Update all",
             .disabled = !server_configured || playing || glm_busy || PublicationBusy()}) != 0 { UpdateAll() }
-    unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{742.0, 51.0, 220.0, 30.0},
-        .fill = SolutionColor(), .radius = 4.0})
-    Caption(24, Rectangle.{750.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
-    Caption(9, Rectangle.{974.0, 52.0, width - 986.0, 28.0},
+    if !selector_open {
+        unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{742.0, 51.0, 220.0, 30.0},
+            .fill = SolutionColor(), .radius = 4.0})
+        Caption(24, Rectangle.{750.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
+    }
+    Caption(9, ifx selector_open then Rectangle.{482.0, 14.0, width - 494.0, 28.0} else Rectangle.{974.0, 52.0, width - 986.0, 28.0},
         ifx action_message_length > 0 then TextView(action_message[:action_message_length]) else StatusText(false), 14)
 
     if selector_open {
@@ -2146,7 +2153,6 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             drafts_refreshed = now
         }
         SelectorScreen(Rectangle.{8.0, 88.0, width - 16.0, height - 96.0})
-        GLMMenu()
         return
     }
 
