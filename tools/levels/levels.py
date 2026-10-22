@@ -173,6 +173,10 @@ def save(image, path):
 
 def previews(cell):
     from PIL import Image
+    # Public builds have no Island story boards; keep their asset folders valid.
+    for edition in ("shovey", "shovey-island"):
+        for folder in ("levels", "levels-landscape"):
+            (ROOT / "assets" / edition / folder).mkdir(parents=True, exist_ok=True)
     size = (WIDTH * cell, HEIGHT * cell)
     turned_size = (HEIGHT * cell, WIDTH * cell)
     sprites = Sprites(ROOT / 'assets/shovey/sprites', cell)
