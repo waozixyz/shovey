@@ -111,7 +111,8 @@ LeaveForGameSelection :: () {
     unused AppServiceHost("arcade.navigation", "back")
 }
 
-GameSelectionAvailable :: () -> bool {
-    #if #defined(SHOVEY_WEB) { return false }
-    else { return AppSupportsHost("arcade.navigation") }
+#if #defined(SHOVEY_WEB) {
+    GameSelectionAvailable :: () -> bool { return false }
+} else {
+    GameSelectionAvailable :: () -> bool { return AppSupportsHost("arcade.navigation") }
 }

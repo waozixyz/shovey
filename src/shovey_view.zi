@@ -274,7 +274,7 @@ ShoveyFrame :: () {
             LeaveForGameSelection()
             return
         }
-        heading_x := ifx can_leave then 112.0 else 16.0
+        heading_x: float32 = ifx can_leave then 112.0 else 16.0
         Caption(20103, Rectangle.{heading_x, top + 12.0, width - 144.0 - heading_x, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
@@ -355,7 +355,7 @@ ShoveyFrame :: () {
         LeaveForGameSelection()
         return
     }
-    levels_x := ifx can_leave then 92.0 else 8.0
+    levels_x: float32 = ifx can_leave then 92.0 else 8.0
     if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         selector_open = true
     }
