@@ -121,14 +121,19 @@ try {
   await settle('Number(getComputedStyle(document.querySelector(".loading-screen")).opacity)', value => value === 0);
   await delay(100);
   assert(!/ABORT|RuntimeError|Could not (start|download)/.test(diagnostics), diagnostics + browserErrors);
-  const generic = await canvasSignature();
-  assert.equal(generic.height, 844);
-  let initial = generic;
-  for (let deadline = Date.now() + 30000; initial.sum === generic.sum && Date.now() < deadline;) {
-    await delay(100);
-    initial = await canvasSignature();
-  }
-  assert.notEqual(initial.sum, generic.sum, 'Embedded Shovey app never left the generic loading screen');
+  // A fully drawn title screen may be still by the time loading hides.
+  // Verify its mounted bundle and rendered image instead of requiring motion.
+  const ready = await settle(`(() => {
+    if (!Module.FS?.analyzePath('/kryon-apps/shovey/assets/shovey/catalog.json').exists) return false;
+    const canvas = document.querySelector('canvas');
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    const colors = new Set();
+    for (let at = 0; at < pixels.length; at += 97 * 4) colors.add((pixels[at] << 16) | (pixels[at + 1] << 8) | pixels[at + 2]);
+    return colors.size > 64;
+  })()`, value => value);
+  assert(ready, 'The game bundle or title artwork did not render');
+  const initial = await canvasSignature();
+  assert.equal(initial.height, 844);
   // Classic now opens on its title artwork. Enter Play before checking the game bar.
   await call('Input.dispatchMouseEvent', {type: 'mousePressed', x: 195, y: 680, button: 'left', buttons: 1, clickCount: 1});
   await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x: 195, y: 680, button: 'left', buttons: 0, clickCount: 1});
