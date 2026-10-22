@@ -6,6 +6,7 @@
 // Custom levels live in the editor's own records (see edit.zi). A story
 // level is never changed: the first stroke on one makes a custom copy.
 #import "kryon/session"
+#import "kryon/joystick"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
 #import "kryon/text_props"
