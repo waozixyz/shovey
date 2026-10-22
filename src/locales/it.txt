@@ -193,3 +193,375 @@ Successivo
 [shovey_profile]
 Profilo
 ---
+[shovey_piece_abyss]
+Abisso
+---
+[shovey_piece_ammo]
+Munizioni
+---
+[shovey_piece_apple]
+Mela
+---
+[shovey_piece_arrow_down]
+Freccia giù
+---
+[shovey_piece_arrow_left]
+Freccia sinistra
+---
+[shovey_piece_arrow_right]
+Freccia destra
+---
+[shovey_piece_arrow_up]
+Freccia su
+---
+[shovey_piece_barrel]
+Barile
+---
+[shovey_piece_berry_bush]
+Cespuglio di bacche
+---
+[shovey_piece_block_goal]
+Bersaglio del blocco colorato
+---
+[shovey_piece_blue_ball]
+Palla blu
+---
+[shovey_piece_blue_block]
+Blocco colorato blu
+---
+[shovey_piece_blue_button]
+Pulsante blu
+---
+[shovey_piece_blue_door]
+Porta blu
+---
+[shovey_piece_blue_gate]
+Cancello blu
+---
+[shovey_piece_blue_lever]
+Leva blu
+---
+[shovey_piece_blue_paint]
+Vernice blu
+---
+[shovey_piece_blue_pit]
+Buca blu
+---
+[shovey_piece_bluebells]
+Campanule
+---
+[shovey_piece_bomb_crate]
+Cassa esplosiva
+---
+[shovey_piece_boulder]
+Masso
+---
+[shovey_piece_brick_floor]
+Pavimento di mattoni
+---
+[shovey_piece_brick_wall]
+Muro di mattoni
+---
+[shovey_piece_charge]
+Caricatore
+---
+[shovey_piece_checker_floor]
+Pavimento a scacchi
+---
+[shovey_piece_cherry]
+Ciliegia
+---
+[shovey_piece_closed_sensor]
+Sensore chiuso
+---
+[shovey_piece_crab]
+Granchio
+---
+[shovey_piece_cracked_floor]
+Pavimento crepato
+---
+[shovey_piece_cracked_wall]
+Muro crepato
+---
+[shovey_piece_crate]
+Cassa
+---
+[shovey_piece_crate_goal]
+Bersaglio della cassa
+---
+[shovey_piece_cyan_ball]
+Palla ciano
+---
+[shovey_piece_cyan_block]
+Blocco ciano
+---
+[shovey_piece_cyan_paint]
+Vernice ciano
+---
+[shovey_piece_cyan_pit]
+Buca ciano
+---
+[shovey_piece_cyan_portal]
+Portale ciano
+---
+[shovey_piece_door]
+Porta
+---
+[shovey_piece_duck]
+Anatra
+---
+[shovey_piece_fallen_leaves]
+Foglie cadute
+---
+[shovey_piece_floor]
+Pavimento
+---
+[shovey_piece_flower_pot]
+Vaso di fiori
+---
+[shovey_piece_flowers]
+Fiori
+---
+[shovey_piece_fresh_path]
+Percorso del blocco
+---
+[shovey_piece_gate]
+Cancello arancione
+---
+[shovey_piece_goldfish]
+Pesce rosso
+---
+[shovey_piece_grass_tufts]
+Ciuffi d’erba
+---
+[shovey_piece_green_ball]
+Palla verde
+---
+[shovey_piece_green_block]
+Blocco verde
+---
+[shovey_piece_green_door]
+Porta verde
+---
+[shovey_piece_green_gate]
+Cancello verde
+---
+[shovey_piece_green_lever]
+Leva verde
+---
+[shovey_piece_green_paint]
+Vernice verde
+---
+[shovey_piece_green_pit]
+Buca verde
+---
+[shovey_piece_green_portal]
+Portale verde
+---
+[shovey_piece_home]
+Casa
+---
+[shovey_piece_ice]
+Ghiaccio sottile
+---
+[shovey_piece_key]
+Chiave
+---
+[shovey_piece_koi]
+Carpa koi
+---
+[shovey_piece_lantern]
+Lanterna
+---
+[shovey_piece_lever]
+Leva arancione
+---
+[shovey_piece_lily_pads]
+Ninfee
+---
+[shovey_piece_lock]
+Lucchetto
+---
+[shovey_piece_meadow]
+Prato
+---
+[shovey_piece_minnow]
+Pesciolino
+---
+[shovey_piece_mirror_shovey]
+Shovey specchio
+---
+[shovey_piece_mossy_brick_wall]
+Muro di mattoni muschioso
+---
+[shovey_piece_mossy_floor]
+Pavimento muschioso
+---
+[shovey_piece_mossy_sandstone_wall]
+Muro di arenaria muschioso
+---
+[shovey_piece_mossy_slate_wall]
+Muro di ardesia muschioso
+---
+[shovey_piece_mossy_timber_wall]
+Parete di legno muschiosa
+---
+[shovey_piece_mossy_wall]
+Muro di pietra muschioso
+---
+[shovey_piece_moving_block]
+Blocco mobile
+---
+[shovey_piece_mushrooms]
+Funghi
+---
+[shovey_piece_open_blue_gate]
+Cancello blu aperto
+---
+[shovey_piece_open_gate]
+Cancello arancione aperto
+---
+[shovey_piece_open_green_gate]
+Cancello verde aperto
+---
+[shovey_piece_open_red_gate]
+Cancello rosso aperto
+---
+[shovey_piece_orange_portal]
+Portale arancione
+---
+[shovey_piece_pebbles]
+Ciottoli
+---
+[shovey_piece_plate]
+Pulsante verde
+---
+[shovey_piece_purple_ball]
+Palla viola
+---
+[shovey_piece_purple_block]
+Blocco viola
+---
+[shovey_piece_purple_button]
+Pulsante viola
+---
+[shovey_piece_purple_paint]
+Vernice viola
+---
+[shovey_piece_purple_pit]
+Buca viola
+---
+[shovey_piece_purple_portal]
+Portale viola
+---
+[shovey_piece_red_ball]
+Palla rossa
+---
+[shovey_piece_red_block]
+Blocco colorato rosso
+---
+[shovey_piece_red_button]
+Pulsante rosso
+---
+[shovey_piece_red_door]
+Porta rossa
+---
+[shovey_piece_red_gate]
+Cancello rosso
+---
+[shovey_piece_red_lever]
+Leva rossa
+---
+[shovey_piece_red_paint]
+Vernice rossa
+---
+[shovey_piece_red_pit]
+Buca rossa
+---
+[shovey_piece_red_portal]
+Portale rosso
+---
+[shovey_piece_reverse]
+Comandi invertiti
+---
+[shovey_piece_sand]
+Sabbia
+---
+[shovey_piece_sandstone_floor]
+Pavimento di arenaria
+---
+[shovey_piece_sandstone_wall]
+Muro di arenaria
+---
+[shovey_piece_sensor]
+Sensore
+---
+[shovey_piece_shovey]
+Shovey
+---
+[shovey_piece_slate_floor]
+Pavimento di ardesia
+---
+[shovey_piece_slate_wall]
+Muro di ardesia
+---
+[shovey_piece_slide]
+Potere di scivolata
+---
+[shovey_piece_star_block]
+Blocco stella
+---
+[shovey_piece_striped_floor]
+Pavimento a strisce
+---
+[shovey_piece_target]
+Bersaglio
+---
+[shovey_piece_teleporter]
+Teletrasporto
+---
+[shovey_piece_timber_floor]
+Pavimento di legno
+---
+[shovey_piece_timber_wall]
+Parete di legno
+---
+[shovey_piece_trail]
+Segno di traccia
+---
+[shovey_piece_tree]
+Albero
+---
+[shovey_piece_tree_stump]
+Ceppo
+---
+[shovey_piece_turtle]
+Tartaruga
+---
+[shovey_piece_used_path]
+Percorso del blocco già fatto
+---
+[shovey_piece_wall]
+Muro
+---
+[shovey_piece_water]
+Acqua
+---
+[shovey_piece_yellow_ball]
+Palla gialla
+---
+[shovey_piece_yellow_block]
+Blocco colorato giallo
+---
+[shovey_piece_yellow_button]
+Pulsante giallo
+---
+[shovey_piece_yellow_paint]
+Vernice gialla
+---
+[shovey_piece_yellow_pit]
+Buca gialla
+---
+[shovey_piece_yellow_portal]
+Portale giallo
+---

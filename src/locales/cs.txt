@@ -193,3 +193,375 @@ Další
 [shovey_profile]
 Profil
 ---
+[shovey_piece_abyss]
+Propast
+---
+[shovey_piece_ammo]
+Střelivo
+---
+[shovey_piece_apple]
+Jablko
+---
+[shovey_piece_arrow_down]
+Šipka dolů
+---
+[shovey_piece_arrow_left]
+Šipka doleva
+---
+[shovey_piece_arrow_right]
+Šipka doprava
+---
+[shovey_piece_arrow_up]
+Šipka nahoru
+---
+[shovey_piece_barrel]
+Sud
+---
+[shovey_piece_berry_bush]
+Keř s bobulemi
+---
+[shovey_piece_block_goal]
+Cíl pro barevný blok
+---
+[shovey_piece_blue_ball]
+Modrá koule
+---
+[shovey_piece_blue_block]
+Modrý barevný blok
+---
+[shovey_piece_blue_button]
+Modré tlačítko
+---
+[shovey_piece_blue_door]
+Modré dveře
+---
+[shovey_piece_blue_gate]
+Modrá brána
+---
+[shovey_piece_blue_lever]
+Modrá páka
+---
+[shovey_piece_blue_paint]
+Modrá barva
+---
+[shovey_piece_blue_pit]
+Modrá jamka
+---
+[shovey_piece_bluebells]
+Zvonky
+---
+[shovey_piece_bomb_crate]
+Výbušná bedna
+---
+[shovey_piece_boulder]
+Balvan
+---
+[shovey_piece_brick_floor]
+Cihlová podlaha
+---
+[shovey_piece_brick_wall]
+Cihlová zeď
+---
+[shovey_piece_charge]
+Nabíječka
+---
+[shovey_piece_checker_floor]
+Šachovnicová podlaha
+---
+[shovey_piece_cherry]
+Třešeň
+---
+[shovey_piece_closed_sensor]
+Zavřený senzor
+---
+[shovey_piece_crab]
+Krab
+---
+[shovey_piece_cracked_floor]
+Popraskaná podlaha
+---
+[shovey_piece_cracked_wall]
+Popraskaná zeď
+---
+[shovey_piece_crate]
+Bedna
+---
+[shovey_piece_crate_goal]
+Cíl pro bednu
+---
+[shovey_piece_cyan_ball]
+Azurová koule
+---
+[shovey_piece_cyan_block]
+Azurový blok
+---
+[shovey_piece_cyan_paint]
+Azurová barva
+---
+[shovey_piece_cyan_pit]
+Azurová jáma
+---
+[shovey_piece_cyan_portal]
+Azurový portál
+---
+[shovey_piece_door]
+Dveře
+---
+[shovey_piece_duck]
+Kachna
+---
+[shovey_piece_fallen_leaves]
+Spadané listí
+---
+[shovey_piece_floor]
+Podlaha
+---
+[shovey_piece_flower_pot]
+Květináč
+---
+[shovey_piece_flowers]
+Květiny
+---
+[shovey_piece_fresh_path]
+Cesta bloku
+---
+[shovey_piece_gate]
+Oranžová brána
+---
+[shovey_piece_goldfish]
+Zlatá rybka
+---
+[shovey_piece_grass_tufts]
+Trsy trávy
+---
+[shovey_piece_green_ball]
+Zelená koule
+---
+[shovey_piece_green_block]
+Zelený blok
+---
+[shovey_piece_green_door]
+Zelené dveře
+---
+[shovey_piece_green_gate]
+Zelená brána
+---
+[shovey_piece_green_lever]
+Zelená páka
+---
+[shovey_piece_green_paint]
+Zelená barva
+---
+[shovey_piece_green_pit]
+Zelená jamka
+---
+[shovey_piece_green_portal]
+Zelený portál
+---
+[shovey_piece_home]
+Domov
+---
+[shovey_piece_ice]
+Tenký led
+---
+[shovey_piece_key]
+Klíč
+---
+[shovey_piece_koi]
+Kapr koi
+---
+[shovey_piece_lantern]
+Lucerna
+---
+[shovey_piece_lever]
+Oranžová páka
+---
+[shovey_piece_lily_pads]
+Lekníny
+---
+[shovey_piece_lock]
+Zámek
+---
+[shovey_piece_meadow]
+Louka
+---
+[shovey_piece_minnow]
+Střevle
+---
+[shovey_piece_mirror_shovey]
+Zrcadlový Shovey
+---
+[shovey_piece_mossy_brick_wall]
+Mechem porostlá cihlová zeď
+---
+[shovey_piece_mossy_floor]
+Mechová podlaha
+---
+[shovey_piece_mossy_sandstone_wall]
+Mechem porostlá pískovcová zeď
+---
+[shovey_piece_mossy_slate_wall]
+Mechem porostlá břidlicová zeď
+---
+[shovey_piece_mossy_timber_wall]
+Mechem porostlá dřevěná zeď
+---
+[shovey_piece_mossy_wall]
+Mechem porostlá kamenná zeď
+---
+[shovey_piece_moving_block]
+Putující blok
+---
+[shovey_piece_mushrooms]
+Houby
+---
+[shovey_piece_open_blue_gate]
+Otevřená modrá brána
+---
+[shovey_piece_open_gate]
+Otevřená oranžová brána
+---
+[shovey_piece_open_green_gate]
+Otevřená zelená brána
+---
+[shovey_piece_open_red_gate]
+Otevřená červená brána
+---
+[shovey_piece_orange_portal]
+Oranžový portál
+---
+[shovey_piece_pebbles]
+Oblázky
+---
+[shovey_piece_plate]
+Zelené tlačítko
+---
+[shovey_piece_purple_ball]
+Fialová koule
+---
+[shovey_piece_purple_block]
+Fialový blok
+---
+[shovey_piece_purple_button]
+Fialové tlačítko
+---
+[shovey_piece_purple_paint]
+Fialová barva
+---
+[shovey_piece_purple_pit]
+Fialová jáma
+---
+[shovey_piece_purple_portal]
+Fialový portál
+---
+[shovey_piece_red_ball]
+Červená koule
+---
+[shovey_piece_red_block]
+Červený barevný blok
+---
+[shovey_piece_red_button]
+Červené tlačítko
+---
+[shovey_piece_red_door]
+Červené dveře
+---
+[shovey_piece_red_gate]
+Červená brána
+---
+[shovey_piece_red_lever]
+Červená páka
+---
+[shovey_piece_red_paint]
+Červená barva
+---
+[shovey_piece_red_pit]
+Červená jamka
+---
+[shovey_piece_red_portal]
+Červený portál
+---
+[shovey_piece_reverse]
+Obrácené ovládání
+---
+[shovey_piece_sand]
+Písek
+---
+[shovey_piece_sandstone_floor]
+Pískovcová podlaha
+---
+[shovey_piece_sandstone_wall]
+Pískovcová zeď
+---
+[shovey_piece_sensor]
+Senzor
+---
+[shovey_piece_shovey]
+Shovey
+---
+[shovey_piece_slate_floor]
+Břidlicová podlaha
+---
+[shovey_piece_slate_wall]
+Břidlicová zeď
+---
+[shovey_piece_slide]
+Klouzání
+---
+[shovey_piece_star_block]
+Hvězdný blok
+---
+[shovey_piece_striped_floor]
+Pruhovaná podlaha
+---
+[shovey_piece_target]
+Terč
+---
+[shovey_piece_teleporter]
+Teleport
+---
+[shovey_piece_timber_floor]
+Dřevěná podlaha
+---
+[shovey_piece_timber_wall]
+Dřevěná stěna
+---
+[shovey_piece_trail]
+Stopa
+---
+[shovey_piece_tree]
+Strom
+---
+[shovey_piece_tree_stump]
+Pařez
+---
+[shovey_piece_turtle]
+Želva
+---
+[shovey_piece_used_path]
+Prošlá cesta bloku
+---
+[shovey_piece_wall]
+Zeď
+---
+[shovey_piece_water]
+Voda
+---
+[shovey_piece_yellow_ball]
+Žlutá koule
+---
+[shovey_piece_yellow_block]
+Žlutý barevný blok
+---
+[shovey_piece_yellow_button]
+Žluté tlačítko
+---
+[shovey_piece_yellow_paint]
+Žlutá barva
+---
+[shovey_piece_yellow_pit]
+Žlutá jáma
+---
+[shovey_piece_yellow_portal]
+Žlutý portál
+---

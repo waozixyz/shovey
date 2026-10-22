@@ -193,3 +193,375 @@ Berikutnya
 [shovey_profile]
 Profil
 ---
+[shovey_piece_abyss]
+Jurang
+---
+[shovey_piece_ammo]
+Amunisi
+---
+[shovey_piece_apple]
+Apel
+---
+[shovey_piece_arrow_down]
+Panah bawah
+---
+[shovey_piece_arrow_left]
+Panah kiri
+---
+[shovey_piece_arrow_right]
+Panah kanan
+---
+[shovey_piece_arrow_up]
+Panah atas
+---
+[shovey_piece_barrel]
+Tong
+---
+[shovey_piece_berry_bush]
+Semak beri
+---
+[shovey_piece_block_goal]
+Tujuan balok warna
+---
+[shovey_piece_blue_ball]
+Bola biru
+---
+[shovey_piece_blue_block]
+Balok warna biru
+---
+[shovey_piece_blue_button]
+Tombol biru
+---
+[shovey_piece_blue_door]
+Pintu biru
+---
+[shovey_piece_blue_gate]
+Gerbang biru
+---
+[shovey_piece_blue_lever]
+Tuas biru
+---
+[shovey_piece_blue_paint]
+Cat biru
+---
+[shovey_piece_blue_pit]
+Lubang biru
+---
+[shovey_piece_bluebells]
+Bunga lonceng
+---
+[shovey_piece_bomb_crate]
+Peti bom
+---
+[shovey_piece_boulder]
+Batu besar
+---
+[shovey_piece_brick_floor]
+Lantai bata
+---
+[shovey_piece_brick_wall]
+Dinding bata
+---
+[shovey_piece_charge]
+Pengisi daya
+---
+[shovey_piece_checker_floor]
+Lantai kotak-kotak
+---
+[shovey_piece_cherry]
+Ceri
+---
+[shovey_piece_closed_sensor]
+Sensor tertutup
+---
+[shovey_piece_crab]
+Kepiting
+---
+[shovey_piece_cracked_floor]
+Lantai retak
+---
+[shovey_piece_cracked_wall]
+Dinding retak
+---
+[shovey_piece_crate]
+Peti
+---
+[shovey_piece_crate_goal]
+Tujuan peti
+---
+[shovey_piece_cyan_ball]
+Bola sian
+---
+[shovey_piece_cyan_block]
+Balok sian
+---
+[shovey_piece_cyan_paint]
+Cat sian
+---
+[shovey_piece_cyan_pit]
+Lubang sian
+---
+[shovey_piece_cyan_portal]
+Portal sian
+---
+[shovey_piece_door]
+Pintu
+---
+[shovey_piece_duck]
+Bebek
+---
+[shovey_piece_fallen_leaves]
+Daun gugur
+---
+[shovey_piece_floor]
+Lantai
+---
+[shovey_piece_flower_pot]
+Pot bunga
+---
+[shovey_piece_flowers]
+Bunga
+---
+[shovey_piece_fresh_path]
+Jalur balok
+---
+[shovey_piece_gate]
+Gerbang oranye
+---
+[shovey_piece_goldfish]
+Ikan mas
+---
+[shovey_piece_grass_tufts]
+Rumpun rumput
+---
+[shovey_piece_green_ball]
+Bola hijau
+---
+[shovey_piece_green_block]
+Balok hijau
+---
+[shovey_piece_green_door]
+Pintu hijau
+---
+[shovey_piece_green_gate]
+Gerbang hijau
+---
+[shovey_piece_green_lever]
+Tuas hijau
+---
+[shovey_piece_green_paint]
+Cat hijau
+---
+[shovey_piece_green_pit]
+Lubang hijau
+---
+[shovey_piece_green_portal]
+Portal hijau
+---
+[shovey_piece_home]
+Rumah
+---
+[shovey_piece_ice]
+Es tipis
+---
+[shovey_piece_key]
+Kunci
+---
+[shovey_piece_koi]
+Koi
+---
+[shovey_piece_lantern]
+Lentera
+---
+[shovey_piece_lever]
+Tuas oranye
+---
+[shovey_piece_lily_pads]
+Daun teratai
+---
+[shovey_piece_lock]
+Gembok
+---
+[shovey_piece_meadow]
+Padang rumput
+---
+[shovey_piece_minnow]
+Ikan kecil
+---
+[shovey_piece_mirror_shovey]
+Shovey cermin
+---
+[shovey_piece_mossy_brick_wall]
+Dinding bata berlumut
+---
+[shovey_piece_mossy_floor]
+Lantai berlumut
+---
+[shovey_piece_mossy_sandstone_wall]
+Dinding batu pasir berlumut
+---
+[shovey_piece_mossy_slate_wall]
+Dinding batu sabak berlumut
+---
+[shovey_piece_mossy_timber_wall]
+Dinding kayu berlumut
+---
+[shovey_piece_mossy_wall]
+Dinding batu berlumut
+---
+[shovey_piece_moving_block]
+Balok berjalan
+---
+[shovey_piece_mushrooms]
+Jamur
+---
+[shovey_piece_open_blue_gate]
+Gerbang biru terbuka
+---
+[shovey_piece_open_gate]
+Gerbang oranye terbuka
+---
+[shovey_piece_open_green_gate]
+Gerbang hijau terbuka
+---
+[shovey_piece_open_red_gate]
+Gerbang merah terbuka
+---
+[shovey_piece_orange_portal]
+Portal jingga
+---
+[shovey_piece_pebbles]
+Kerikil
+---
+[shovey_piece_plate]
+Tombol hijau
+---
+[shovey_piece_purple_ball]
+Bola ungu
+---
+[shovey_piece_purple_block]
+Balok ungu
+---
+[shovey_piece_purple_button]
+Tombol ungu
+---
+[shovey_piece_purple_paint]
+Cat ungu
+---
+[shovey_piece_purple_pit]
+Lubang ungu
+---
+[shovey_piece_purple_portal]
+Portal ungu
+---
+[shovey_piece_red_ball]
+Bola merah
+---
+[shovey_piece_red_block]
+Balok warna merah
+---
+[shovey_piece_red_button]
+Tombol merah
+---
+[shovey_piece_red_door]
+Pintu merah
+---
+[shovey_piece_red_gate]
+Gerbang merah
+---
+[shovey_piece_red_lever]
+Tuas merah
+---
+[shovey_piece_red_paint]
+Cat merah
+---
+[shovey_piece_red_pit]
+Lubang merah
+---
+[shovey_piece_red_portal]
+Portal merah
+---
+[shovey_piece_reverse]
+Kontrol terbalik
+---
+[shovey_piece_sand]
+Pasir
+---
+[shovey_piece_sandstone_floor]
+Lantai batu pasir
+---
+[shovey_piece_sandstone_wall]
+Dinding batu pasir
+---
+[shovey_piece_sensor]
+Sensor
+---
+[shovey_piece_shovey]
+Shovey
+---
+[shovey_piece_slate_floor]
+Lantai batu sabak
+---
+[shovey_piece_slate_wall]
+Dinding batu sabak
+---
+[shovey_piece_slide]
+Kekuatan meluncur
+---
+[shovey_piece_star_block]
+Balok bintang
+---
+[shovey_piece_striped_floor]
+Lantai bergaris
+---
+[shovey_piece_target]
+Sasaran
+---
+[shovey_piece_teleporter]
+Teleporter
+---
+[shovey_piece_timber_floor]
+Lantai kayu
+---
+[shovey_piece_timber_wall]
+Dinding kayu
+---
+[shovey_piece_trail]
+Penanda jejak
+---
+[shovey_piece_tree]
+Pohon
+---
+[shovey_piece_tree_stump]
+Tunggul pohon
+---
+[shovey_piece_turtle]
+Kura-kura
+---
+[shovey_piece_used_path]
+Jalur balok yang sudah dilewati
+---
+[shovey_piece_wall]
+Dinding
+---
+[shovey_piece_water]
+Air
+---
+[shovey_piece_yellow_ball]
+Bola kuning
+---
+[shovey_piece_yellow_block]
+Balok warna kuning
+---
+[shovey_piece_yellow_button]
+Tombol kuning
+---
+[shovey_piece_yellow_paint]
+Cat kuning
+---
+[shovey_piece_yellow_pit]
+Lubang kuning
+---
+[shovey_piece_yellow_portal]
+Portal kuning
+---

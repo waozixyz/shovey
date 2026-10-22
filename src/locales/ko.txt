@@ -193,3 +193,375 @@
 [shovey_profile]
 프로필
 ---
+[shovey_piece_abyss]
+심연
+---
+[shovey_piece_ammo]
+탄알
+---
+[shovey_piece_apple]
+사과
+---
+[shovey_piece_arrow_down]
+아래쪽 화살표
+---
+[shovey_piece_arrow_left]
+왼쪽 화살표
+---
+[shovey_piece_arrow_right]
+오른쪽 화살표
+---
+[shovey_piece_arrow_up]
+위쪽 화살표
+---
+[shovey_piece_barrel]
+통
+---
+[shovey_piece_berry_bush]
+베리 덤불
+---
+[shovey_piece_block_goal]
+색 블록 목표 지점
+---
+[shovey_piece_blue_ball]
+파란 공
+---
+[shovey_piece_blue_block]
+파란 색 블록
+---
+[shovey_piece_blue_button]
+파란색 버튼
+---
+[shovey_piece_blue_door]
+파란 문
+---
+[shovey_piece_blue_gate]
+파란 철문
+---
+[shovey_piece_blue_lever]
+파란 레버
+---
+[shovey_piece_blue_paint]
+파란 물감
+---
+[shovey_piece_blue_pit]
+파란 구멍
+---
+[shovey_piece_bluebells]
+블루벨
+---
+[shovey_piece_bomb_crate]
+폭탄 상자
+---
+[shovey_piece_boulder]
+바위
+---
+[shovey_piece_brick_floor]
+벽돌 바닥
+---
+[shovey_piece_brick_wall]
+벽돌 벽
+---
+[shovey_piece_charge]
+충전기
+---
+[shovey_piece_checker_floor]
+체크무늬 바닥
+---
+[shovey_piece_cherry]
+체리
+---
+[shovey_piece_closed_sensor]
+닫힌 센서
+---
+[shovey_piece_crab]
+게
+---
+[shovey_piece_cracked_floor]
+금이 간 바닥
+---
+[shovey_piece_cracked_wall]
+금이 간 벽
+---
+[shovey_piece_crate]
+상자
+---
+[shovey_piece_crate_goal]
+상자 목표 지점
+---
+[shovey_piece_cyan_ball]
+청록색 공
+---
+[shovey_piece_cyan_block]
+청록색 블록
+---
+[shovey_piece_cyan_paint]
+청록색 페인트
+---
+[shovey_piece_cyan_pit]
+청록색 구멍
+---
+[shovey_piece_cyan_portal]
+청록색 포털
+---
+[shovey_piece_door]
+문
+---
+[shovey_piece_duck]
+오리
+---
+[shovey_piece_fallen_leaves]
+낙엽
+---
+[shovey_piece_floor]
+바닥
+---
+[shovey_piece_flower_pot]
+화분
+---
+[shovey_piece_flowers]
+꽃
+---
+[shovey_piece_fresh_path]
+블록 길
+---
+[shovey_piece_gate]
+주황색 문
+---
+[shovey_piece_goldfish]
+금붕어
+---
+[shovey_piece_grass_tufts]
+풀 뭉치
+---
+[shovey_piece_green_ball]
+초록 공
+---
+[shovey_piece_green_block]
+초록색 블록
+---
+[shovey_piece_green_door]
+초록 문
+---
+[shovey_piece_green_gate]
+초록 철문
+---
+[shovey_piece_green_lever]
+초록 레버
+---
+[shovey_piece_green_paint]
+초록 물감
+---
+[shovey_piece_green_pit]
+초록 구멍
+---
+[shovey_piece_green_portal]
+초록색 포털
+---
+[shovey_piece_home]
+집
+---
+[shovey_piece_ice]
+얇은 얼음
+---
+[shovey_piece_key]
+열쇠
+---
+[shovey_piece_koi]
+비단잉어
+---
+[shovey_piece_lantern]
+랜턴
+---
+[shovey_piece_lever]
+주황색 레버
+---
+[shovey_piece_lily_pads]
+수련 잎
+---
+[shovey_piece_lock]
+자물쇠
+---
+[shovey_piece_meadow]
+풀밭
+---
+[shovey_piece_minnow]
+작은 물고기
+---
+[shovey_piece_mirror_shovey]
+거울 Shovey
+---
+[shovey_piece_mossy_brick_wall]
+이끼 낀 벽돌 벽
+---
+[shovey_piece_mossy_floor]
+이끼 바닥
+---
+[shovey_piece_mossy_sandstone_wall]
+이끼 낀 사암 벽
+---
+[shovey_piece_mossy_slate_wall]
+이끼 낀 점판암 벽
+---
+[shovey_piece_mossy_timber_wall]
+이끼 낀 나무 벽
+---
+[shovey_piece_mossy_wall]
+이끼 낀 돌벽
+---
+[shovey_piece_moving_block]
+움직이는 블록
+---
+[shovey_piece_mushrooms]
+버섯
+---
+[shovey_piece_open_blue_gate]
+열린 파란 문
+---
+[shovey_piece_open_gate]
+열린 주황색 문
+---
+[shovey_piece_open_green_gate]
+열린 초록 문
+---
+[shovey_piece_open_red_gate]
+열린 빨간 문
+---
+[shovey_piece_orange_portal]
+주황색 포털
+---
+[shovey_piece_pebbles]
+조약돌
+---
+[shovey_piece_plate]
+초록색 버튼
+---
+[shovey_piece_purple_ball]
+보라색 공
+---
+[shovey_piece_purple_block]
+보라색 블록
+---
+[shovey_piece_purple_button]
+보라색 버튼
+---
+[shovey_piece_purple_paint]
+보라색 페인트
+---
+[shovey_piece_purple_pit]
+보라색 구멍
+---
+[shovey_piece_purple_portal]
+보라색 포털
+---
+[shovey_piece_red_ball]
+빨간 공
+---
+[shovey_piece_red_block]
+빨간 색 블록
+---
+[shovey_piece_red_button]
+빨간색 버튼
+---
+[shovey_piece_red_door]
+빨간 문
+---
+[shovey_piece_red_gate]
+빨간 철문
+---
+[shovey_piece_red_lever]
+빨간 레버
+---
+[shovey_piece_red_paint]
+빨간 물감
+---
+[shovey_piece_red_pit]
+빨간 구멍
+---
+[shovey_piece_red_portal]
+빨간색 포털
+---
+[shovey_piece_reverse]
+조작 반전
+---
+[shovey_piece_sand]
+모래
+---
+[shovey_piece_sandstone_floor]
+사암 바닥
+---
+[shovey_piece_sandstone_wall]
+사암 벽
+---
+[shovey_piece_sensor]
+센서
+---
+[shovey_piece_shovey]
+Shovey
+---
+[shovey_piece_slate_floor]
+점판암 바닥
+---
+[shovey_piece_slate_wall]
+점판암 벽
+---
+[shovey_piece_slide]
+미끄러지기 능력
+---
+[shovey_piece_star_block]
+별 블록
+---
+[shovey_piece_striped_floor]
+줄무늬 바닥
+---
+[shovey_piece_target]
+과녁
+---
+[shovey_piece_teleporter]
+순간이동기
+---
+[shovey_piece_timber_floor]
+나무 바닥
+---
+[shovey_piece_timber_wall]
+나무 벽
+---
+[shovey_piece_trail]
+발자국 표시
+---
+[shovey_piece_tree]
+나무
+---
+[shovey_piece_tree_stump]
+나무 그루터기
+---
+[shovey_piece_turtle]
+거북이
+---
+[shovey_piece_used_path]
+지나간 블록 길
+---
+[shovey_piece_wall]
+벽
+---
+[shovey_piece_water]
+물
+---
+[shovey_piece_yellow_ball]
+노란색 공
+---
+[shovey_piece_yellow_block]
+노란 색 블록
+---
+[shovey_piece_yellow_button]
+노란색 버튼
+---
+[shovey_piece_yellow_paint]
+노란색 페인트
+---
+[shovey_piece_yellow_pit]
+노란색 구멍
+---
+[shovey_piece_yellow_portal]
+노란색 포털
+---

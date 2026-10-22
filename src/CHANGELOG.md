@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.76] - 2026-10-22
+
+- Keep Levels, Help and sound at the top of the title artwork.
+- Replace the title header when opening Help and include every Classic object and terrain tile.
+
 ## [0.6.57] - 2026-10-22
 
 - Play online, see lowered button walls clearly, and keep browser animation running reliably.

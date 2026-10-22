@@ -193,3 +193,375 @@
 [shovey_profile]
 Профиль
 ---
+[shovey_piece_abyss]
+Бездна
+---
+[shovey_piece_ammo]
+Снаряды
+---
+[shovey_piece_apple]
+Яблоко
+---
+[shovey_piece_arrow_down]
+Стрелка вниз
+---
+[shovey_piece_arrow_left]
+Стрелка влево
+---
+[shovey_piece_arrow_right]
+Стрелка вправо
+---
+[shovey_piece_arrow_up]
+Стрелка вверх
+---
+[shovey_piece_barrel]
+Бочка
+---
+[shovey_piece_berry_bush]
+Ягодный куст
+---
+[shovey_piece_block_goal]
+Место для цветного блока
+---
+[shovey_piece_blue_ball]
+Синий шар
+---
+[shovey_piece_blue_block]
+Синий цветной блок
+---
+[shovey_piece_blue_button]
+Синяя кнопка
+---
+[shovey_piece_blue_door]
+Синяя дверь
+---
+[shovey_piece_blue_gate]
+Синие ворота
+---
+[shovey_piece_blue_lever]
+Синий рычаг
+---
+[shovey_piece_blue_paint]
+Синяя краска
+---
+[shovey_piece_blue_pit]
+Синяя лунка
+---
+[shovey_piece_bluebells]
+Колокольчики
+---
+[shovey_piece_bomb_crate]
+Ящик с бомбой
+---
+[shovey_piece_boulder]
+Валун
+---
+[shovey_piece_brick_floor]
+Кирпичный пол
+---
+[shovey_piece_brick_wall]
+Кирпичная стена
+---
+[shovey_piece_charge]
+Зарядное поле
+---
+[shovey_piece_checker_floor]
+Клетчатый пол
+---
+[shovey_piece_cherry]
+Вишня
+---
+[shovey_piece_closed_sensor]
+Закрытый датчик
+---
+[shovey_piece_crab]
+Краб
+---
+[shovey_piece_cracked_floor]
+Треснувший пол
+---
+[shovey_piece_cracked_wall]
+Треснувшая стена
+---
+[shovey_piece_crate]
+Ящик
+---
+[shovey_piece_crate_goal]
+Место для ящика
+---
+[shovey_piece_cyan_ball]
+Бирюзовый шар
+---
+[shovey_piece_cyan_block]
+Бирюзовый блок
+---
+[shovey_piece_cyan_paint]
+Бирюзовая краска
+---
+[shovey_piece_cyan_pit]
+Бирюзовая лунка
+---
+[shovey_piece_cyan_portal]
+Бирюзовый портал
+---
+[shovey_piece_door]
+Дверь
+---
+[shovey_piece_duck]
+Утка
+---
+[shovey_piece_fallen_leaves]
+Опавшие листья
+---
+[shovey_piece_floor]
+Пол
+---
+[shovey_piece_flower_pot]
+Цветочный горшок
+---
+[shovey_piece_flowers]
+Цветы
+---
+[shovey_piece_fresh_path]
+Путь блока
+---
+[shovey_piece_gate]
+Оранжевые ворота
+---
+[shovey_piece_goldfish]
+Золотая рыбка
+---
+[shovey_piece_grass_tufts]
+Пучки травы
+---
+[shovey_piece_green_ball]
+Зелёный шар
+---
+[shovey_piece_green_block]
+Зелёный блок
+---
+[shovey_piece_green_door]
+Зелёная дверь
+---
+[shovey_piece_green_gate]
+Зелёные ворота
+---
+[shovey_piece_green_lever]
+Зелёный рычаг
+---
+[shovey_piece_green_paint]
+Зелёная краска
+---
+[shovey_piece_green_pit]
+Зелёная лунка
+---
+[shovey_piece_green_portal]
+Зелёный портал
+---
+[shovey_piece_home]
+Дом
+---
+[shovey_piece_ice]
+Тонкий лёд
+---
+[shovey_piece_key]
+Ключ
+---
+[shovey_piece_koi]
+Карп кои
+---
+[shovey_piece_lantern]
+Фонарь
+---
+[shovey_piece_lever]
+Оранжевый рычаг
+---
+[shovey_piece_lily_pads]
+Кувшинки
+---
+[shovey_piece_lock]
+Замок
+---
+[shovey_piece_meadow]
+Луг
+---
+[shovey_piece_minnow]
+Пескарь
+---
+[shovey_piece_mirror_shovey]
+Зеркальный Пуши
+---
+[shovey_piece_mossy_brick_wall]
+Замшелая кирпичная стена
+---
+[shovey_piece_mossy_floor]
+Мшистый пол
+---
+[shovey_piece_mossy_sandstone_wall]
+Замшелая стена из песчаника
+---
+[shovey_piece_mossy_slate_wall]
+Замшелая сланцевая стена
+---
+[shovey_piece_mossy_timber_wall]
+Замшелая деревянная стена
+---
+[shovey_piece_mossy_wall]
+Замшелая каменная стена
+---
+[shovey_piece_moving_block]
+Движущийся блок
+---
+[shovey_piece_mushrooms]
+Грибы
+---
+[shovey_piece_open_blue_gate]
+Открытые синие ворота
+---
+[shovey_piece_open_gate]
+Открытые оранжевые ворота
+---
+[shovey_piece_open_green_gate]
+Открытые зелёные ворота
+---
+[shovey_piece_open_red_gate]
+Открытые красные ворота
+---
+[shovey_piece_orange_portal]
+Оранжевый портал
+---
+[shovey_piece_pebbles]
+Галька
+---
+[shovey_piece_plate]
+Зелёная кнопка
+---
+[shovey_piece_purple_ball]
+Фиолетовый шар
+---
+[shovey_piece_purple_block]
+Фиолетовый блок
+---
+[shovey_piece_purple_button]
+Фиолетовая кнопка
+---
+[shovey_piece_purple_paint]
+Фиолетовая краска
+---
+[shovey_piece_purple_pit]
+Фиолетовая лунка
+---
+[shovey_piece_purple_portal]
+Фиолетовый портал
+---
+[shovey_piece_red_ball]
+Красный шар
+---
+[shovey_piece_red_block]
+Красный цветной блок
+---
+[shovey_piece_red_button]
+Красная кнопка
+---
+[shovey_piece_red_door]
+Красная дверь
+---
+[shovey_piece_red_gate]
+Красные ворота
+---
+[shovey_piece_red_lever]
+Красный рычаг
+---
+[shovey_piece_red_paint]
+Красная краска
+---
+[shovey_piece_red_pit]
+Красная лунка
+---
+[shovey_piece_red_portal]
+Красный портал
+---
+[shovey_piece_reverse]
+Обратное управление
+---
+[shovey_piece_sand]
+Песок
+---
+[shovey_piece_sandstone_floor]
+Пол из песчаника
+---
+[shovey_piece_sandstone_wall]
+Стена из песчаника
+---
+[shovey_piece_sensor]
+Датчик
+---
+[shovey_piece_shovey]
+Пуши
+---
+[shovey_piece_slate_floor]
+Сланцевый пол
+---
+[shovey_piece_slate_wall]
+Сланцевая стена
+---
+[shovey_piece_slide]
+Скольжение
+---
+[shovey_piece_star_block]
+Звёздный блок
+---
+[shovey_piece_striped_floor]
+Полосатый пол
+---
+[shovey_piece_target]
+Мишень
+---
+[shovey_piece_teleporter]
+Телепорт
+---
+[shovey_piece_timber_floor]
+Деревянный пол
+---
+[shovey_piece_timber_wall]
+Деревянная стена
+---
+[shovey_piece_trail]
+След
+---
+[shovey_piece_tree]
+Дерево
+---
+[shovey_piece_tree_stump]
+Пень
+---
+[shovey_piece_turtle]
+Черепаха
+---
+[shovey_piece_used_path]
+Пройденный путь блока
+---
+[shovey_piece_wall]
+Стена
+---
+[shovey_piece_water]
+Вода
+---
+[shovey_piece_yellow_ball]
+Жёлтый шар
+---
+[shovey_piece_yellow_block]
+Жёлтый цветной блок
+---
+[shovey_piece_yellow_button]
+Жёлтая кнопка
+---
+[shovey_piece_yellow_paint]
+Жёлтая краска
+---
+[shovey_piece_yellow_pit]
+Жёлтая лунка
+---
+[shovey_piece_yellow_portal]
+Жёлтый портал
+---

@@ -193,3 +193,375 @@ Next
 [shovey_profile]
 Profile
 ---
+[shovey_piece_abyss]
+Abyss
+---
+[shovey_piece_ammo]
+Ammunition
+---
+[shovey_piece_apple]
+Apple
+---
+[shovey_piece_arrow_down]
+Arrow down
+---
+[shovey_piece_arrow_left]
+Arrow left
+---
+[shovey_piece_arrow_right]
+Arrow right
+---
+[shovey_piece_arrow_up]
+Arrow up
+---
+[shovey_piece_barrel]
+Barrel
+---
+[shovey_piece_berry_bush]
+Berry bush
+---
+[shovey_piece_block_goal]
+Colour block goal
+---
+[shovey_piece_blue_ball]
+Blue ball
+---
+[shovey_piece_blue_block]
+Blue colour block
+---
+[shovey_piece_blue_button]
+Blue button
+---
+[shovey_piece_blue_door]
+Blue door
+---
+[shovey_piece_blue_gate]
+Blue gate
+---
+[shovey_piece_blue_lever]
+Blue lever
+---
+[shovey_piece_blue_paint]
+Blue paint
+---
+[shovey_piece_blue_pit]
+Blue pit
+---
+[shovey_piece_bluebells]
+Bluebells
+---
+[shovey_piece_bomb_crate]
+Bomb crate
+---
+[shovey_piece_boulder]
+Boulder
+---
+[shovey_piece_brick_floor]
+Brick floor
+---
+[shovey_piece_brick_wall]
+Brick wall
+---
+[shovey_piece_charge]
+Charger
+---
+[shovey_piece_checker_floor]
+Checker floor
+---
+[shovey_piece_cherry]
+Cherry
+---
+[shovey_piece_closed_sensor]
+Closed sensor
+---
+[shovey_piece_crab]
+Crab
+---
+[shovey_piece_cracked_floor]
+Cracked floor
+---
+[shovey_piece_cracked_wall]
+Cracked wall
+---
+[shovey_piece_crate]
+Crate
+---
+[shovey_piece_crate_goal]
+Crate goal
+---
+[shovey_piece_cyan_ball]
+Cyan ball
+---
+[shovey_piece_cyan_block]
+Cyan block
+---
+[shovey_piece_cyan_paint]
+Cyan paint
+---
+[shovey_piece_cyan_pit]
+Cyan pit
+---
+[shovey_piece_cyan_portal]
+Cyan portal
+---
+[shovey_piece_door]
+Door
+---
+[shovey_piece_duck]
+Duck
+---
+[shovey_piece_fallen_leaves]
+Fallen leaves
+---
+[shovey_piece_floor]
+Floor
+---
+[shovey_piece_flower_pot]
+Flower pot
+---
+[shovey_piece_flowers]
+Flowers
+---
+[shovey_piece_fresh_path]
+Block path
+---
+[shovey_piece_gate]
+Orange gate
+---
+[shovey_piece_goldfish]
+Goldfish
+---
+[shovey_piece_grass_tufts]
+Grass tufts
+---
+[shovey_piece_green_ball]
+Green ball
+---
+[shovey_piece_green_block]
+Green block
+---
+[shovey_piece_green_door]
+Green door
+---
+[shovey_piece_green_gate]
+Green gate
+---
+[shovey_piece_green_lever]
+Green lever
+---
+[shovey_piece_green_paint]
+Green paint
+---
+[shovey_piece_green_pit]
+Green pit
+---
+[shovey_piece_green_portal]
+Green portal
+---
+[shovey_piece_home]
+Home
+---
+[shovey_piece_ice]
+Thin ice
+---
+[shovey_piece_key]
+Key
+---
+[shovey_piece_koi]
+Koi
+---
+[shovey_piece_lantern]
+Lantern
+---
+[shovey_piece_lever]
+Orange lever
+---
+[shovey_piece_lily_pads]
+Lily pads
+---
+[shovey_piece_lock]
+Lock
+---
+[shovey_piece_meadow]
+Meadow
+---
+[shovey_piece_minnow]
+Minnow
+---
+[shovey_piece_mirror_shovey]
+Mirror Shovey
+---
+[shovey_piece_mossy_brick_wall]
+Mossy brick wall
+---
+[shovey_piece_mossy_floor]
+Mossy floor
+---
+[shovey_piece_mossy_sandstone_wall]
+Mossy sandstone wall
+---
+[shovey_piece_mossy_slate_wall]
+Mossy slate wall
+---
+[shovey_piece_mossy_timber_wall]
+Mossy timber wall
+---
+[shovey_piece_mossy_wall]
+Mossy stone wall
+---
+[shovey_piece_moving_block]
+Moving block
+---
+[shovey_piece_mushrooms]
+Mushrooms
+---
+[shovey_piece_open_blue_gate]
+Open blue gate
+---
+[shovey_piece_open_gate]
+Open orange gate
+---
+[shovey_piece_open_green_gate]
+Open green gate
+---
+[shovey_piece_open_red_gate]
+Open red gate
+---
+[shovey_piece_orange_portal]
+Orange portal
+---
+[shovey_piece_pebbles]
+Pebbles
+---
+[shovey_piece_plate]
+Green button
+---
+[shovey_piece_purple_ball]
+Purple ball
+---
+[shovey_piece_purple_block]
+Purple block
+---
+[shovey_piece_purple_button]
+Purple button
+---
+[shovey_piece_purple_paint]
+Purple paint
+---
+[shovey_piece_purple_pit]
+Purple pit
+---
+[shovey_piece_purple_portal]
+Purple portal
+---
+[shovey_piece_red_ball]
+Red ball
+---
+[shovey_piece_red_block]
+Red colour block
+---
+[shovey_piece_red_button]
+Red button
+---
+[shovey_piece_red_door]
+Red door
+---
+[shovey_piece_red_gate]
+Red gate
+---
+[shovey_piece_red_lever]
+Red lever
+---
+[shovey_piece_red_paint]
+Red paint
+---
+[shovey_piece_red_pit]
+Red pit
+---
+[shovey_piece_red_portal]
+Red portal
+---
+[shovey_piece_reverse]
+Reverse controls
+---
+[shovey_piece_sand]
+Sand
+---
+[shovey_piece_sandstone_floor]
+Sandstone floor
+---
+[shovey_piece_sandstone_wall]
+Sandstone wall
+---
+[shovey_piece_sensor]
+Sensor
+---
+[shovey_piece_shovey]
+Shovey
+---
+[shovey_piece_slate_floor]
+Slate floor
+---
+[shovey_piece_slate_wall]
+Slate wall
+---
+[shovey_piece_slide]
+Sliding power
+---
+[shovey_piece_star_block]
+Star block
+---
+[shovey_piece_striped_floor]
+Striped floor
+---
+[shovey_piece_target]
+Target
+---
+[shovey_piece_teleporter]
+Teleporter
+---
+[shovey_piece_timber_floor]
+Timber floor
+---
+[shovey_piece_timber_wall]
+Timber wall
+---
+[shovey_piece_trail]
+Trail marker
+---
+[shovey_piece_tree]
+Tree
+---
+[shovey_piece_tree_stump]
+Tree stump
+---
+[shovey_piece_turtle]
+Turtle
+---
+[shovey_piece_used_path]
+Used block path
+---
+[shovey_piece_wall]
+Wall
+---
+[shovey_piece_water]
+Water
+---
+[shovey_piece_yellow_ball]
+Yellow ball
+---
+[shovey_piece_yellow_block]
+Yellow colour block
+---
+[shovey_piece_yellow_button]
+Yellow button
+---
+[shovey_piece_yellow_paint]
+Yellow paint
+---
+[shovey_piece_yellow_pit]
+Yellow pit
+---
+[shovey_piece_yellow_portal]
+Yellow portal
+---

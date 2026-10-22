@@ -93,6 +93,10 @@ OpenEditor :: () {
     unused AppServiceHost("arcade.navigation", "editor")
 }
 
+TitleToolbar :: () {
+    unused AppServiceHost("arcade.navigation", "toolbar")
+}
+
 // Whether the host has a list of games to return to.
 LibraryAvailable :: () -> bool {
     return GameSelectionAvailable() && AppServiceHost("arcade.navigation", "library") == "available"

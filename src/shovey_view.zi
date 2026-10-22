@@ -6,6 +6,7 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import "text_props"
 #import "text_align"
 #import "text_widget"
+#import "kryon/text_measure"
 #import "button_props"
 #import "image_widget"
 #import "image_props"
@@ -31,6 +32,7 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
 #import, file "controls.zi";
+#import, file "pieces.zi";
 #import, file "shovey_theme.zi";
 #import "kryon/carousel"
 #if #defined(SHOVEY_WEB) {
@@ -56,7 +58,7 @@ help_open: bool;
 title_open: bool = true;
 // Whether the host has a game library to return to: -1 until asked.
 title_library: s32 = -1;
-// The same cover browser used by Arcade, with game-owned footer actions.
+// The same cover browser used by Arcade, with game-owned header actions.
 title_carousel: CarouselState;
 title_external: bool;
 save_failed: bool;
@@ -119,34 +121,8 @@ Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, d
 }
 
 TileName :: (kind: s32) -> string {
-    if (kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46) { return AppLocaleHost("shovey_ball") }
-    if (kind >= 4 && kind <= 6) || (kind >= 47 && kind <= 49) { return AppLocaleHost("shovey_ball_goal") }
-    if kind == 7 { return AppLocaleHost("shovey_home") }
-    if kind == 8 { return AppLocaleHost("shovey_portal") }
-    if kind == 9 { return AppLocaleHost("shovey_crate") }
     if kind == 10 { return "Shovey" }
-    if kind == 11 { return AppLocaleHost("shovey_trail") }
-    if kind == 12 { return AppLocaleHost("shovey_wall") }
-    if ShoveyButtonColor(kind) >= 0 { return AppLocaleHost("shovey_plate") }
-    if ShoveyMossColor(kind) >= 0 { return AppLocaleHost("shovey_door") }
-    if (kind >= 15 && kind <= 17) || (kind >= 50 && kind <= 52) { return AppLocaleHost("shovey_paint") }
-    if kind == 18 { return AppLocaleHost("shovey_crate_goal") }
-    if kind == 19 { return AppLocaleHost("shovey_star") }
-    if kind == 20 || kind == 23 || kind == 41 || kind == 42 { return AppLocaleHost("shovey_sensor") }
-    if kind == 21 { return AppLocaleHost("shovey_apple") }
-    if kind == 56 { return AppLocaleHost("shovey_cherry") }
-    if kind == 25 { return AppLocaleHost("shovey_reverse") }
-    if kind == 26 { return AppLocaleHost("shovey_ammo") }
-    if kind == 27 { return AppLocaleHost("shovey_charge") }
-    if kind == 28 { return AppLocaleHost("shovey_target") }
-    if kind == 29 || kind == 30 || kind == 31 || kind == 43 { return AppLocaleHost("shovey_light") }
-    if kind == 33 { return AppLocaleHost("shovey_key") }
-    if kind == 34 { return AppLocaleHost("shovey_lock") }
-    if kind == 35 { return AppLocaleHost("shovey_slide") }
-    if (kind >= 36 && kind <= 38) || (kind >= 53 && kind <= 55) { return AppLocaleHost("shovey_color_block") }
-    if kind == 39 { return AppLocaleHost("shovey_color_goal") }
-    if kind == 40 { return AppLocaleHost("shovey_shadow") }
-    return AppLocaleHost("shovey_floor")
+    return AppLocaleHost(ShoveyPieceKey(kind))
 }
 
 // Each sprite number's description, for the board's pictures.
@@ -292,13 +268,13 @@ ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) 
         AppLocaleHost("shovey_profile"), false, "", ProfileIcon.Shape) {
         OpenProfile()
     }
-    row_y := bottom - 60.0
+    TitleToolbar()
+    row_y := top + 6.0
     // Classic's levels, help and sound, and the other games where the host
     // has a list; the editor page keeps only its own button.
     if title_carousel.selected != 0 { return }
     if title_library < 0 { title_library = ifx LibraryAvailable() then 1 else 0 }
-    count: s32 = ifx title_library == 1 then 4 else 3
-    x := (width - (cast(float32)count * 56.0 - 12.0)) / 2.0
+    x: float32 = 12.0
     if Control(20203, Rectangle.{x, row_y, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         title_open = false
         selector_open = true
@@ -436,6 +412,35 @@ ShoveyFrame :: () {
     key := AppKeyHost()
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
+    if help_open {
+        if Control(20022, Rectangle.{8.0, top + 6.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
+            if !ShoveyBack() { LeaveForGameSelection() }
+            return
+        }
+        Caption(20001, Rectangle.{100.0, top + 6.0, width - 160.0, 44.0}, AppLocaleHost("shovey_help"), 20)
+        if Control(20017, Rectangle.{width - 52.0, top + 6.0, 44.0, 44.0}, AppLocaleHost("shovey_close_help"), false, "", ICON_CLOSE) {
+            unused ShoveyBack()
+            return
+        }
+        instructions := AppLocaleHost("shovey_instructions")
+        intro_height := cast(float32)TextHeight(frame.session, TextProps.{.text = instructions,
+                .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .font = 16, .wrap = TextWrap.TextWrapAuto}) + 16.0
+        scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
+                .bounds = Rectangle.{16.0, top + 62.0, width - 32.0, bottom - top - 70.0},
+                .content_height = cast(s32)intro_height + SHOVEY_HELP_COUNT * 68, .scroll_offset = help_scroll})
+        help_scroll = scroll.scroll_offset
+        if scroll.opened {
+            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, intro_height}, instructions)
+            for index: cast(s32)0..SHOVEY_HELP_COUNT - 1 {
+                kind := shovey_help_kinds[index]
+                y := scroll.content.y + intro_height + cast(float32)index * 68.0
+                Tile(cast(u64)(40000 + index * 16), kind, Rectangle.{scroll.content.x, y, 40.0, 40.0})
+                Caption(cast(u64)(45000 + index), Rectangle.{scroll.content.x + 52.0, y, scroll.content.width - 68.0, 44.0}, TileName(kind))
+            }
+            End(frame.session)
+        }
+        return
+    }
     // Return sits at the edge, then the game's own navigation and status.
     if Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
         if !ShoveyBack() { LeaveForGameSelection() }
@@ -458,23 +463,6 @@ ShoveyFrame :: () {
         AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"), false, "",
         ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
         SoundSetMuted(!SoundMuted())
-    }
-    if help_open {
-        scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
-                .bounds = Rectangle.{16.0, top + 56.0, width - 32.0, bottom - top - 64.0},
-                .content_height = 2192, .scroll_offset = help_scroll})
-        help_scroll = scroll.scroll_offset
-        if scroll.opened {
-            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, 300.0}, AppLocaleHost("shovey_instructions"))
-            kinds: [27]s32 = .[10, 1, 4, 7, 8, 9, 11, 12, 13, 14, 15, 18, 19, 20, 21, 25, 26, 27, 28, 29, 33, 34, 35, 36, 39, 40, 0]
-            for index: cast(s32)0..26 {
-                y := scroll.content.y + 316.0 + cast(float32)index * 68.0
-                Tile(cast(u64)(40000 + index * 16), kinds[index], Rectangle.{scroll.content.x, y, 40.0, 40.0})
-                Caption(cast(u64)(41000 + index), Rectangle.{scroll.content.x + 52.0, y, scroll.content.width - 68.0, 44.0}, TileName(kinds[index]))
-            }
-            End(frame.session)
-        }
-        return
     }
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0

@@ -193,3 +193,375 @@ Suivant
 [shovey_profile]
 Profil
 ---
+[shovey_piece_abyss]
+Abîme
+---
+[shovey_piece_ammo]
+Munitions
+---
+[shovey_piece_apple]
+Pomme
+---
+[shovey_piece_arrow_down]
+Flèche bas
+---
+[shovey_piece_arrow_left]
+Flèche gauche
+---
+[shovey_piece_arrow_right]
+Flèche droite
+---
+[shovey_piece_arrow_up]
+Flèche haut
+---
+[shovey_piece_barrel]
+Tonneau
+---
+[shovey_piece_berry_bush]
+Buisson à baies
+---
+[shovey_piece_block_goal]
+Cible pour bloc de couleur
+---
+[shovey_piece_blue_ball]
+Boule bleue
+---
+[shovey_piece_blue_block]
+Bloc de couleur bleu
+---
+[shovey_piece_blue_button]
+Bouton bleu
+---
+[shovey_piece_blue_door]
+Porte bleue
+---
+[shovey_piece_blue_gate]
+Grille bleue
+---
+[shovey_piece_blue_lever]
+Levier bleu
+---
+[shovey_piece_blue_paint]
+Peinture bleue
+---
+[shovey_piece_blue_pit]
+Trou bleu
+---
+[shovey_piece_bluebells]
+Jacinthes des bois
+---
+[shovey_piece_bomb_crate]
+Caisse explosive
+---
+[shovey_piece_boulder]
+Rocher
+---
+[shovey_piece_brick_floor]
+Sol en briques
+---
+[shovey_piece_brick_wall]
+Mur en briques
+---
+[shovey_piece_charge]
+Chargeur
+---
+[shovey_piece_checker_floor]
+Sol en damier
+---
+[shovey_piece_cherry]
+Cerise
+---
+[shovey_piece_closed_sensor]
+Capteur fermé
+---
+[shovey_piece_crab]
+Crabe
+---
+[shovey_piece_cracked_floor]
+Sol fissuré
+---
+[shovey_piece_cracked_wall]
+Mur fissuré
+---
+[shovey_piece_crate]
+Caisse
+---
+[shovey_piece_crate_goal]
+Cible pour caisse
+---
+[shovey_piece_cyan_ball]
+Boule cyan
+---
+[shovey_piece_cyan_block]
+Bloc cyan
+---
+[shovey_piece_cyan_paint]
+Peinture cyan
+---
+[shovey_piece_cyan_pit]
+Trou cyan
+---
+[shovey_piece_cyan_portal]
+Portail cyan
+---
+[shovey_piece_door]
+Porte
+---
+[shovey_piece_duck]
+Canard
+---
+[shovey_piece_fallen_leaves]
+Feuilles mortes
+---
+[shovey_piece_floor]
+Sol
+---
+[shovey_piece_flower_pot]
+Pot de fleurs
+---
+[shovey_piece_flowers]
+Fleurs
+---
+[shovey_piece_fresh_path]
+Chemin du bloc
+---
+[shovey_piece_gate]
+Portail orange
+---
+[shovey_piece_goldfish]
+Poisson rouge
+---
+[shovey_piece_grass_tufts]
+Touffes d’herbe
+---
+[shovey_piece_green_ball]
+Boule verte
+---
+[shovey_piece_green_block]
+Bloc vert
+---
+[shovey_piece_green_door]
+Porte verte
+---
+[shovey_piece_green_gate]
+Grille verte
+---
+[shovey_piece_green_lever]
+Levier vert
+---
+[shovey_piece_green_paint]
+Peinture verte
+---
+[shovey_piece_green_pit]
+Trou vert
+---
+[shovey_piece_green_portal]
+Portail vert
+---
+[shovey_piece_home]
+Maison
+---
+[shovey_piece_ice]
+Glace fine
+---
+[shovey_piece_key]
+Clé
+---
+[shovey_piece_koi]
+Carpe koï
+---
+[shovey_piece_lantern]
+Lanterne
+---
+[shovey_piece_lever]
+Levier orange
+---
+[shovey_piece_lily_pads]
+Nénuphars
+---
+[shovey_piece_lock]
+Serrure
+---
+[shovey_piece_meadow]
+Prairie
+---
+[shovey_piece_minnow]
+Vairon
+---
+[shovey_piece_mirror_shovey]
+Shovey miroir
+---
+[shovey_piece_mossy_brick_wall]
+Mur de briques moussu
+---
+[shovey_piece_mossy_floor]
+Sol moussu
+---
+[shovey_piece_mossy_sandstone_wall]
+Mur de grès moussu
+---
+[shovey_piece_mossy_slate_wall]
+Mur d’ardoise moussu
+---
+[shovey_piece_mossy_timber_wall]
+Mur en bois moussu
+---
+[shovey_piece_mossy_wall]
+Mur de pierre moussu
+---
+[shovey_piece_moving_block]
+Bloc mobile
+---
+[shovey_piece_mushrooms]
+Champignons
+---
+[shovey_piece_open_blue_gate]
+Portail bleu ouvert
+---
+[shovey_piece_open_gate]
+Portail orange ouvert
+---
+[shovey_piece_open_green_gate]
+Portail vert ouvert
+---
+[shovey_piece_open_red_gate]
+Portail rouge ouvert
+---
+[shovey_piece_orange_portal]
+Portail orange
+---
+[shovey_piece_pebbles]
+Galets
+---
+[shovey_piece_plate]
+Bouton vert
+---
+[shovey_piece_purple_ball]
+Boule violette
+---
+[shovey_piece_purple_block]
+Bloc violet
+---
+[shovey_piece_purple_button]
+Bouton violet
+---
+[shovey_piece_purple_paint]
+Peinture violette
+---
+[shovey_piece_purple_pit]
+Trou violet
+---
+[shovey_piece_purple_portal]
+Portail violet
+---
+[shovey_piece_red_ball]
+Boule rouge
+---
+[shovey_piece_red_block]
+Bloc de couleur rouge
+---
+[shovey_piece_red_button]
+Bouton rouge
+---
+[shovey_piece_red_door]
+Porte rouge
+---
+[shovey_piece_red_gate]
+Grille rouge
+---
+[shovey_piece_red_lever]
+Levier rouge
+---
+[shovey_piece_red_paint]
+Peinture rouge
+---
+[shovey_piece_red_pit]
+Trou rouge
+---
+[shovey_piece_red_portal]
+Portail rouge
+---
+[shovey_piece_reverse]
+Commandes inversées
+---
+[shovey_piece_sand]
+Sable
+---
+[shovey_piece_sandstone_floor]
+Sol en grès
+---
+[shovey_piece_sandstone_wall]
+Mur en grès
+---
+[shovey_piece_sensor]
+Capteur
+---
+[shovey_piece_shovey]
+Shovey
+---
+[shovey_piece_slate_floor]
+Sol en ardoise
+---
+[shovey_piece_slate_wall]
+Mur en ardoise
+---
+[shovey_piece_slide]
+Glissade
+---
+[shovey_piece_star_block]
+Bloc étoilé
+---
+[shovey_piece_striped_floor]
+Sol rayé
+---
+[shovey_piece_target]
+Cible
+---
+[shovey_piece_teleporter]
+Téléporteur
+---
+[shovey_piece_timber_floor]
+Plancher en bois
+---
+[shovey_piece_timber_wall]
+Mur en bois
+---
+[shovey_piece_trail]
+Trace
+---
+[shovey_piece_tree]
+Arbre
+---
+[shovey_piece_tree_stump]
+Souche
+---
+[shovey_piece_turtle]
+Tortue
+---
+[shovey_piece_used_path]
+Chemin du bloc parcouru
+---
+[shovey_piece_wall]
+Mur
+---
+[shovey_piece_water]
+Eau
+---
+[shovey_piece_yellow_ball]
+Boule jaune
+---
+[shovey_piece_yellow_block]
+Bloc de couleur jaune
+---
+[shovey_piece_yellow_button]
+Bouton jaune
+---
+[shovey_piece_yellow_paint]
+Peinture jaune
+---
+[shovey_piece_yellow_pit]
+Trou jaune
+---
+[shovey_piece_yellow_portal]
+Portail jaune
+---
