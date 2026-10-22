@@ -733,3 +733,24 @@ Island
 [editor_purple_button]
 Фиолетовая кнопка
 ---
+[editor_mushrooms]
+Грибы
+---
+[editor_fallen_leaves]
+Опавшие листья
+---
+[editor_bluebells]
+Колокольчики
+---
+[editor_lily_pads]
+Кувшинки
+---
+[editor_berry_bush]
+Ягодный куст
+---
+[editor_flower_pot]
+Цветочный горшок
+---
+[editor_tree_stump]
+Пень
+---

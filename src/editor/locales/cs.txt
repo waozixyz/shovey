@@ -733,3 +733,24 @@ Modré tlačítko
 [editor_purple_button]
 Fialové tlačítko
 ---
+[editor_mushrooms]
+Houby
+---
+[editor_fallen_leaves]
+Spadané listí
+---
+[editor_bluebells]
+Zvonky
+---
+[editor_lily_pads]
+Lekníny
+---
+[editor_berry_bush]
+Keř s bobulemi
+---
+[editor_flower_pot]
+Květináč
+---
+[editor_tree_stump]
+Pařez
+---

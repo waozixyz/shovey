@@ -733,3 +733,24 @@ Botão amarelo
 [editor_purple_button]
 Botão roxo
 ---
+[editor_mushrooms]
+Cogumelos
+---
+[editor_fallen_leaves]
+Folhas caídas
+---
+[editor_bluebells]
+Campainhas
+---
+[editor_lily_pads]
+Vitórias-régias
+---
+[editor_berry_bush]
+Arbusto de bagas
+---
+[editor_flower_pot]
+Vaso de flores
+---
+[editor_tree_stump]
+Toco de árvore
+---

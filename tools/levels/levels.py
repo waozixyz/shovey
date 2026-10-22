@@ -50,7 +50,7 @@ def classic_functions(levels):
         if 'tiles' in level:
             assert all(kind in {0,4,5,6,12,14,47,48,49,*range(57,79),*range(95,104),*range(127,131)} for kind in cells(level['tiles']))
         if 'decorations' in level:
-            assert 'tiles' in level and all(kind in {0, 57, 58, 59, 84, 106, 122} for kind in cells(level['decorations']))
+            assert 'tiles' in level and all(kind in {0, 57, 58, 59, 84, 106, 122, *range(135, 143)} for kind in cells(level['decorations']))
         data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))
         lines.append(f'    if number == {level["number"]} {{ return "{data}" }}')
     lines += ['    return ""', '}', '', 'ShoveyLevelSolution :: (number: s32) -> string {']

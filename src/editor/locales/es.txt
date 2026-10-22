@@ -733,3 +733,24 @@ Botón amarillo
 [editor_purple_button]
 Botón morado
 ---
+[editor_mushrooms]
+Setas
+---
+[editor_fallen_leaves]
+Hojas caídas
+---
+[editor_bluebells]
+Campanillas
+---
+[editor_lily_pads]
+Nenúfares
+---
+[editor_berry_bush]
+Arbusto de bayas
+---
+[editor_flower_pot]
+Maceta
+---
+[editor_tree_stump]
+Tocón
+---

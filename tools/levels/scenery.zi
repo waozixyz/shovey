@@ -1,9 +1,9 @@
 // Dresses Classic boards with scenery that leaves their stored win intact.
 // The stored route is replayed through the real engine first and every cell
 // it uses is recorded: where Shovey stands, every cell a piece passes, shot
-// lines and animal steps. Moss, shores, flowers, tufts and pebbles never
-// change the rules, so they go anywhere, the route included; a bare trail
-// would give the solution away. Trees, lanterns and boulders block, so they
+// lines and animal steps. Moss, shores and small plants never change the
+// rules, so they go anywhere, the route included; a bare trail would give
+// the solution away. Trees, bushes, lanterns and the like block, so they
 // only take corners off the route, away from animals, where the board stays
 // joined without them. The dressed board's route is replayed again before
 // it is kept.
@@ -20,6 +20,14 @@ SCENERY_WATER :: 64
 SCENERY_GRASS :: 77
 SCENERY_SAND :: 78
 SCENERY_MOSS_FLOOR :: 103
+SCENERY_MUSHROOMS :: 135
+SCENERY_LEAVES :: 136
+SCENERY_BLUEBELLS :: 137
+SCENERY_LILY_PADS :: 138
+SCENERY_BUSH :: 139
+SCENERY_FLOWER_POT :: 140
+SCENERY_BARREL :: 141
+SCENERY_STUMP :: 142
 
 // What a dressing added, for reports.
 SceneryCount :: struct {
@@ -219,11 +227,12 @@ SceneryCanBlock :: (board: *EditBoard, path: []bool, at: s32) -> bool {
     return SceneryKeepsJoined(board, at)
 }
 
-SceneryBlocking :: (board: *EditBoard, at: s32) -> s32 {
+SceneryBlocking :: (board: *EditBoard, at: s32, level: s32) -> s32 {
     tile := SceneryTile(board, at)
-    if tile == SCENERY_GRASS { return SHOVEY_TREE }
+    roll := SceneryRoll(level, at, 12)
+    if tile == SCENERY_GRASS { return ifx roll < 450 then SHOVEY_TREE else ifx roll < 800 then SCENERY_BUSH else SCENERY_STUMP }
     if tile == SCENERY_SAND { return SHOVEY_BOULDER }
-    return SHOVEY_LANTERN
+    return ifx roll < 400 then SHOVEY_LANTERN else ifx roll < 750 then SCENERY_FLOWER_POT else SCENERY_BARREL
 }
 
 SceneryPlace :: (board: *EditBoard, at: s32, kind: s32, count: *SceneryCount) {
@@ -304,16 +313,19 @@ SceneryLandmarks :: (board: *EditBoard, path: []bool, level: s32, count: *Scener
             if roll < best_roll && SceneryCanBlock(board, path, at) { best = at; best_roll = roll }
         }
         if best < 0 { return }
-        SceneryPlace(board, best, SceneryBlocking(board, best), count)
+        SceneryPlace(board, best, SceneryBlocking(board, best, level), count)
     }
 }
 
 SceneryPlant :: (board: *EditBoard, level: s32, at: s32) -> s32 {
     tile := SceneryTile(board, at)
     roll := SceneryRoll(level, at, 2)
-    if tile == SCENERY_GRASS { return ifx roll < 600 then SCENERY_FLOWERS else SCENERY_TUFTS }
+    if tile == SCENERY_GRASS {
+        return ifx roll < 400 then SCENERY_FLOWERS else ifx roll < 600 then SCENERY_BLUEBELLS else ifx roll < 850 then SCENERY_TUFTS else SCENERY_MUSHROOMS
+    }
     if tile == SCENERY_SAND { return SCENERY_PEBBLES }
-    if tile == 0 || tile == SCENERY_MOSS_FLOOR { return SCENERY_TUFTS }
+    if tile == SCENERY_MOSS_FLOOR { return ifx roll < 600 then SCENERY_TUFTS else SCENERY_MUSHROOMS }
+    if tile == 0 { return ifx roll < 600 then SCENERY_TUFTS else SCENERY_LEAVES }
     return 0
 }
 
@@ -353,6 +365,22 @@ SceneryClumps :: (board: *EditBoard, level: s32, count: *SceneryCount) {
     }
 }
 
+// Lily pads drift on open water, a few together.
+SceneryLilies :: (board: *EditBoard, level: s32, count: *SceneryCount) {
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if SceneryTile(board, at) != SCENERY_WATER || board.decorations[at] != 0 || SceneryRoll(level, at, 13) >= 80 { continue }
+        board.decorations[at] = cast(u8)SCENERY_LILY_PADS
+        count.small += 1
+        for direction: cast(s32)0..3 {
+            next := ShoveyNeighbor(at, direction)
+            if next >= 0 && SceneryTile(board, next) == SCENERY_WATER && board.decorations[next] == 0 && SceneryRoll(level, next, 14 + direction) < 300 {
+                board.decorations[next] = cast(u8)SCENERY_LILY_PADS
+                count.small += 1
+            }
+        }
+    }
+}
+
 // Dresses a Classic board whose route wins. The board is changed only when
 // the route still wins on the dressed board. scenery_path holds the cells
 // the route uses; scenery_dressed_path the same after dressing.
@@ -367,6 +395,7 @@ SceneryDress :: (board: *EditBoard, route: string, level: s32, count: *SceneryCo
     if !ScenerySwitchedWalls(*dressed) { SceneryMoss(*dressed, level, count) }
     SceneryLandmarks(*dressed, scenery_path[:], level, count)
     SceneryClumps(*dressed, level, count)
+    SceneryLilies(*dressed, level, count)
     if !SceneryTrace(*dressed, route, scenery_dressed_path[:]) { return false }
     board.* = dressed
     return true

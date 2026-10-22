@@ -763,9 +763,49 @@
       "sha256": "00dc96c8daa512d08ca22a36dbc90e9cc449c923b150540c14414b32574e3677"
     },
     {
+      "path": "sprites/tile-135.png",
+      "depicts": "landscape presentation of mushrooms: red-orange spotted caps on the floor (decoration)",
+      "sha256": "53bc0d3db3d32dac36d5c744b2925486b7a8b975044137b04780dc3d89ed95bb"
+    },
+    {
+      "path": "sprites/tile-136.png",
+      "depicts": "landscape presentation of fallen autumn leaves on the floor (decoration)",
+      "sha256": "b8909a1891905a72c522c738ce7e84a5988c060ed49b4d86cab1a192680f5a82"
+    },
+    {
+      "path": "sprites/tile-137.png",
+      "depicts": "landscape presentation of bluebells: blue bell flowers on the floor (decoration)",
+      "sha256": "c78ca6de0b56380a37d99fc9f80960df060c78158942e2fbab805dd4d477cc69"
+    },
+    {
+      "path": "sprites/tile-138.png",
+      "depicts": "landscape presentation of lily pads with a pink lotus, floating on water (decoration)",
+      "sha256": "21e73bfcc56f7e2e3d58e59afa48be14539ba74b4c19ff8684174265f1313599"
+    },
+    {
+      "path": "sprites/tile-139.png",
+      "depicts": "landscape presentation of berry bush: a round leafy bush with red berries; blocks movement",
+      "sha256": "f8a5d900751768a0bf052d2268ba2afc8f3f74f3b1f6eec4ee62ce150c431832"
+    },
+    {
       "path": "sprites/tile-14.png",
       "depicts": "landscape presentation of mossy stone wall: sinks when a pressure plate is held",
       "sha256": "500aeda9c1847f7437d6cde0c82e1f03de35c7233579317e27633e68ee92e910"
+    },
+    {
+      "path": "sprites/tile-140.png",
+      "depicts": "landscape presentation of flower pot: terracotta pot of pink, yellow and white flowers; blocks movement",
+      "sha256": "157b6c4085773cf62db2b2c3c19a3d5bf9ef102cddf9e88fee5750ccc8948958"
+    },
+    {
+      "path": "sprites/tile-141.png",
+      "depicts": "landscape presentation of barrel: an upright wooden barrel with iron hoops; blocks movement",
+      "sha256": "70a5daeab4b946cd7e49b6fff2fc7866c62f6b467bc57951c855392703ebd985"
+    },
+    {
+      "path": "sprites/tile-142.png",
+      "depicts": "landscape presentation of tree stump: a cut stump with rings and a green sprout; blocks movement",
+      "sha256": "4e43632ce7992d571ecf187cb467548bfae433ba99fcf4738e15c3495a5d9bd2"
     },
     {
       "path": "sprites/tile-15.png",

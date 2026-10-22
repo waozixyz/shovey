@@ -733,3 +733,24 @@ Gelber Knopf
 [editor_purple_button]
 Violetter Knopf
 ---
+[editor_mushrooms]
+Pilze
+---
+[editor_fallen_leaves]
+Herbstlaub
+---
+[editor_bluebells]
+Glockenblumen
+---
+[editor_lily_pads]
+Seerosenblätter
+---
+[editor_berry_bush]
+Beerenstrauch
+---
+[editor_flower_pot]
+Blumentopf
+---
+[editor_tree_stump]
+Baumstumpf
+---

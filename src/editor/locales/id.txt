@@ -733,3 +733,24 @@ Tombol kuning
 [editor_purple_button]
 Tombol ungu
 ---
+[editor_mushrooms]
+Jamur
+---
+[editor_fallen_leaves]
+Daun gugur
+---
+[editor_bluebells]
+Bunga lonceng
+---
+[editor_lily_pads]
+Daun teratai
+---
+[editor_berry_bush]
+Semak beri
+---
+[editor_flower_pot]
+Pot bunga
+---
+[editor_tree_stump]
+Tunggul pohon
+---

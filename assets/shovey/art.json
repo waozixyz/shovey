@@ -448,6 +448,46 @@
       "sha256": "64ec7d8742a63efbcce43c2b0774a0a5f18d9f88a0b978bd7c1115a147f53287"
     },
     {
+      "path": "sprites/tile-135.png",
+      "depicts": "mushrooms: red-orange spotted caps on the floor (decoration)",
+      "sha256": "53bc0d3db3d32dac36d5c744b2925486b7a8b975044137b04780dc3d89ed95bb"
+    },
+    {
+      "path": "sprites/tile-136.png",
+      "depicts": "fallen autumn leaves on the floor (decoration)",
+      "sha256": "b8909a1891905a72c522c738ce7e84a5988c060ed49b4d86cab1a192680f5a82"
+    },
+    {
+      "path": "sprites/tile-137.png",
+      "depicts": "bluebells: blue bell flowers on the floor (decoration)",
+      "sha256": "c78ca6de0b56380a37d99fc9f80960df060c78158942e2fbab805dd4d477cc69"
+    },
+    {
+      "path": "sprites/tile-138.png",
+      "depicts": "lily pads with a pink lotus, floating on water (decoration)",
+      "sha256": "21e73bfcc56f7e2e3d58e59afa48be14539ba74b4c19ff8684174265f1313599"
+    },
+    {
+      "path": "sprites/tile-139.png",
+      "depicts": "berry bush: a round leafy bush with red berries; blocks movement",
+      "sha256": "f8a5d900751768a0bf052d2268ba2afc8f3f74f3b1f6eec4ee62ce150c431832"
+    },
+    {
+      "path": "sprites/tile-140.png",
+      "depicts": "flower pot: terracotta pot of pink, yellow and white flowers; blocks movement",
+      "sha256": "157b6c4085773cf62db2b2c3c19a3d5bf9ef102cddf9e88fee5750ccc8948958"
+    },
+    {
+      "path": "sprites/tile-141.png",
+      "depicts": "barrel: an upright wooden barrel with iron hoops; blocks movement",
+      "sha256": "70a5daeab4b946cd7e49b6fff2fc7866c62f6b467bc57951c855392703ebd985"
+    },
+    {
+      "path": "sprites/tile-142.png",
+      "depicts": "tree stump: a cut stump with rings and a green sprout; blocks movement",
+      "sha256": "4e43632ce7992d571ecf187cb467548bfae433ba99fcf4738e15c3495a5d9bd2"
+    },
+    {
       "path": "sprites/shadow.png",
       "depicts": "mirror Shovey (pink)",
       "sha256": "695ae45c5a5b87f9056a7817d03d5a292883b77fb5999dc2cea307b6a4200445"

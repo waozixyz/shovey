@@ -733,3 +733,24 @@ Yellow button
 [editor_purple_button]
 Purple button
 ---
+[editor_mushrooms]
+Mushrooms
+---
+[editor_fallen_leaves]
+Fallen leaves
+---
+[editor_bluebells]
+Bluebells
+---
+[editor_lily_pads]
+Lily pads
+---
+[editor_berry_bush]
+Berry bush
+---
+[editor_flower_pot]
+Flower pot
+---
+[editor_tree_stump]
+Tree stump
+---

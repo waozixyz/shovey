@@ -46,7 +46,8 @@ SPRITE_COLORED_DOOR :: 222
 SPRITE_BOULDER :: 228
 SPRITE_MOSS_WALL :: 229
 SPRITE_MOSS_BUTTON :: 233
-SPRITE_COUNT :: 237
+SPRITE_DECORATION :: 237
+SPRITE_COUNT :: 245
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -196,6 +197,11 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_DOOR + 1, "tile-105")
     SpritePath(SPRITE_LANTERN, "tile-106")
     SpritePath(SPRITE_BOULDER, "tile-122")
+    for kind: cast(s32)SHOVEY_MUSHROOMS..SHOVEY_STUMP {
+        name: Vec(u8)
+        BuilderPrint(*name, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS, BuilderFinish(name))
+    }
     for material: cast(s32)0..3 {
         wall: Vec(u8)
         BuilderPrint(*wall, "tile-%", FormatInteger(cast(s64)(SHOVEY_MOSS_WALL + material), digits[:]))
@@ -318,6 +324,7 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     }
     if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_KIND { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
+    if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
     color := ShoveyGateColor(kind)
     if color >= 0 {
         open := ifx position >= 0 then ShoveyGateOpen(game, position) else ShoveyGateStartsOpen(kind)

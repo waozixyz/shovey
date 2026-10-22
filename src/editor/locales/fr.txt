@@ -733,3 +733,24 @@ Bouton jaune
 [editor_purple_button]
 Bouton violet
 ---
+[editor_mushrooms]
+Champignons
+---
+[editor_fallen_leaves]
+Feuilles mortes
+---
+[editor_bluebells]
+Jacinthes des bois
+---
+[editor_lily_pads]
+Nénuphars
+---
+[editor_berry_bush]
+Buisson à baies
+---
+[editor_flower_pot]
+Pot de fleurs
+---
+[editor_tree_stump]
+Souche
+---

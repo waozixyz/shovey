@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
-classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 135))]
+classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 143))]
 classic += ['gate-open', 'gate-open-0', 'gate-open-1', 'gate-open-2'] + [f'abyss-edge-{mask}' for mask in range(16)]
 classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for facing in ('left', 'up', 'right', 'down')]
 classic += [f'water-{frame}' for frame in range(4)]
@@ -32,7 +32,7 @@ for path in expected:
 # Objects and decorations must reveal whichever tile is beneath them.
 for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
              28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,
-             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 135)):
+             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 143)):
     with Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png') as picture:
         assert picture.getpixel((0, 0))[3] == 0, f'{kind}: object has an attached background'
 

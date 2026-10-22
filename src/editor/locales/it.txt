@@ -733,3 +733,24 @@ Pulsante giallo
 [editor_purple_button]
 Pulsante viola
 ---
+[editor_mushrooms]
+Funghi
+---
+[editor_fallen_leaves]
+Foglie cadute
+---
+[editor_bluebells]
+Campanule
+---
+[editor_lily_pads]
+Ninfee
+---
+[editor_berry_bush]
+Cespuglio di bacche
+---
+[editor_flower_pot]
+Vaso di fiori
+---
+[editor_tree_stump]
+Ceppo
+---

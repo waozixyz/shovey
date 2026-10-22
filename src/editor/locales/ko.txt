@@ -733,3 +733,24 @@ Shovey
 [editor_purple_button]
 보라색 버튼
 ---
+[editor_mushrooms]
+버섯
+---
+[editor_fallen_leaves]
+낙엽
+---
+[editor_bluebells]
+블루벨
+---
+[editor_lily_pads]
+수련 잎
+---
+[editor_berry_bush]
+베리 덤불
+---
+[editor_flower_pot]
+화분
+---
+[editor_tree_stump]
+나무 그루터기
+---

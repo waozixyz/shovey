@@ -81,7 +81,7 @@ ShoveyColorRest :: (kind: s32) -> bool {
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
 ShoveyMaterialFloor :: (kind: s32) -> bool { return kind >= 99 && kind <= 103 }
 ShoveyDecorFloor :: (kind: s32) -> bool { return (kind >= 57 && kind <= 61) || ShoveyMaterialFloor(kind) }
-ShoveyBlockingDecoration :: (kind: s32) -> bool { return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN || kind == SHOVEY_BOULDER }
+ShoveyBlockingDecoration :: (kind: s32) -> bool { return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN || kind == SHOVEY_BOULDER || (kind >= SHOVEY_BUSH && kind <= SHOVEY_STUMP) }
 ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98) }
 SHOVEY_CRACKED_WALL :: 62
 SHOVEY_PIT :: 65
@@ -106,6 +106,12 @@ SHOVEY_OPEN_GATE :: 123
 SHOVEY_MOSS_WALL :: 127
 SHOVEY_MOSS_BUTTON :: 131
 SHOVEY_LAST_KIND :: 134
+// Decorations on top of tiles: mushrooms, fallen leaves, bluebells and lily
+// pads are walked over; a bush, flower pot, barrel and stump block.
+SHOVEY_MUSHROOMS :: 135
+SHOVEY_LILY_PADS :: 138
+SHOVEY_BUSH :: 139
+SHOVEY_STUMP :: 142
 ShoveyMossColor :: (kind: s32) -> s32 {
     if kind == 14 { return 0 }
     if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return kind - SHOVEY_MOSS_WALL + 1 }
@@ -191,7 +197,7 @@ ShoveyTerrain :: (kind: s32) -> bool {
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
-ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || ShoveyBlockingDecoration(kind) }
+ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || (kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_LILY_PADS) || ShoveyBlockingDecoration(kind) }
 ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) }
 ShoveyDefaultTile :: (kind: s32) -> s32 {
     return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else 0
@@ -758,7 +764,7 @@ ShoveyRestore :: (game: *ShoveyGame, text: string) -> bool {
         ground := ShoveyByte(text, 32 + at * 6)
         object := ShoveyByte(text, 34 + at * 6)
         source := ShoveyByte(text, 36 + at * 6)
-        if ground < 0 || ground > SHOVEY_LAST_KIND || object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
+        if ground < 0 || (ground > SHOVEY_LAST_KIND && !ShoveyBlockingDecoration(ground)) || object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
         if ShoveyMovable(ground) || ground == 10 || ground == 22 || ground == 24 || ground == 32 { return false }
         restored.ground[at] = ground; restored.objects[at] = object; restored.light_from[at] = source
     }

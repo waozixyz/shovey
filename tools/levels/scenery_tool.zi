@@ -122,9 +122,9 @@ main :: (argc: s32, argv: **u8) -> s32 {
         SayNumber(1, tally.shore)
         Say(1, " shore, ")
         SayNumber(1, tally.small)
-        Say(1, " flowers, tufts and pebbles, ")
+        Say(1, " small plants, ")
         SayNumber(1, tally.blocking)
-        Say(1, " trees, lanterns and boulders; the route still wins\n")
+        Say(1, " blocking pieces; the route still wins\n")
     }
     writer := EditWriter.{.bytes = level_out[:]}
     StoredWrite(*writer, *stored[0], text)
