@@ -1,0 +1,133 @@
+// Draws one Classic level before and after scenery, and the dressed board
+// with the cells its stored route uses, using the game's own board drawing.
+// Run from Shovey's root on a display; make scenery-pictures runs it on a
+// private one:
+//
+//     KRYON_CAPTURE_PATH=OUT.png build/levels/scenery-picture LEVEL [LEVELS_FILE]
+#import "std/byte_text_linux"
+#import "std/file"
+#import "cairo_raster"
+#import "desktop_runtime"
+#import "session"
+#import "geometry"
+#import "drawing_props"
+#import "text_props"
+#import "text_align"
+#import "text_widget"
+#import "image_props"
+#import "image_widget"
+#import "box_props"
+#import "box_widget"
+#import "tree"
+#import "tree_draw"
+#import "tile_map"
+#import, file "../../src/engine.zi";
+#import, file "../../src/orientation.zi";
+#import, file "../../src/shovey_board.zi";
+#import, file "../../src/editor/edit.zi";
+#import, file "edits.zi";
+#import, file "scenery.zi";
+
+CELL :: 44
+GAP :: 28
+TOP :: 56
+BOARD_WIDTH_PX :: EDIT_WIDTH * CELL
+BOARD_HEIGHT_PX :: EDIT_HEIGHT * CELL
+PICTURE_WIDTH :: GAP + 3 * (BOARD_WIDTH_PX + GAP)
+PICTURE_HEIGHT :: TOP + BOARD_HEIGHT_PX + GAP
+
+session: Session;
+before: ShoveyGame;
+after: ShoveyGame;
+names: [SPRITE_COUNT]string;
+
+Caption :: (key: u64, x: float32, text: string) {
+    Text(session, TextProps.{.key = key, .bounds = Rectangle.{x, 12.0, cast(float32)BOARD_WIDTH_PX, 32.0}, .text = text, .font = 22,
+            .wrap = TextWrap.TextWrapNone, .align = TextAlign.TextAlignCenter, .vertical_align = TextAlign.TextAlignCenter})
+}
+
+Draw :: () -> bool {
+    BeginDesktopFrame()
+    viewport := DesktopViewport()
+    if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { return false }
+    unused Box(session, BoxProps.{.key = 1, .bounds = Rectangle.{0.0, 0.0, cast(float32)PICTURE_WIDTH, cast(float32)PICTURE_HEIGHT},
+            .fill = Color.{236, 241, 238, 255}})
+    xs: [3]float32
+    for panel: cast(s32)0..2 { xs[panel] = cast(float32)(GAP + panel * (BOARD_WIDTH_PX + GAP)) }
+    Caption(2, xs[0], "Before")
+    Caption(3, xs[1], "After")
+    Caption(4, xs[2], "After, with the win path")
+    size := Rectangle.{0.0, cast(float32)TOP, cast(float32)BOARD_WIDTH_PX, cast(float32)BOARD_HEIGHT_PX}
+    unused ShoveyBoard(session, *before, Rectangle.{xs[0], size.y, size.width, size.height}, cast(u64)1000, 0.0, names[:], false)
+    unused ShoveyBoard(session, *after, Rectangle.{xs[1], size.y, size.width, size.height}, cast(u64)3000, 0.0, names[:], false)
+    grid := ShoveyBoard(session, *after, Rectangle.{xs[2], size.y, size.width, size.height}, cast(u64)5000, 0.0, names[:], false)
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        cell := TileMapCell(grid, BoardDisplayIndex(at, false))
+        if scenery_dressed_path[at] {
+            unused Box(session, BoxProps.{.key = cast(u64)(7000 + at), .bounds = Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.height - 8.0},
+                    .fill = Color.{255, 140, 40, 120}, .radius = 6.0})
+        } else if scenery_placed[at] {
+            unused Box(session, BoxProps.{.key = cast(u64)(7000 + at), .bounds = Rectangle.{cell.x + 2.0, cell.y + 2.0, cell.width - 4.0, cell.height - 4.0},
+                    .fill = Color.{40, 170, 200, 70}, .radius = 6.0})
+        }
+    }
+    if EndFrame(session) != FrameStatus.FrameOk { return false }
+    return EndDesktopFrame()
+}
+
+libc :: #system_library "libc";
+WriteError :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
+
+Fail :: (message: string) -> s32 {
+    say: [512]u8
+    length: s64 = 0
+    parts: [3]string = .["scenery-picture: ", message, "\n"]
+    for part: parts {
+        for byte: part {
+            if length < 512 { say[length] = byte; length += 1 }
+        }
+    }
+    unused WriteError(2, *say[0], cast(usize)length)
+    return 1
+}
+
+Number :: (text: string) -> s32 {
+    value: s32 = 0
+    for byte: text {
+        if byte < #char "0" || byte > #char "9" || value > 100000 { return -1 }
+        value = value * 10 + cast(s32)(byte - #char "0")
+    }
+    return ifx text.count == 0 then -1 else value
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    if argc < 2 { return Fail("usage: scenery-picture LEVEL [LEVELS_FILE]") }
+    number := Number(TextFromCString(argv[1]))
+    path := ifx argc > 2 then TextFromCString(argv[2]) else "levels/classic.json"
+    text, found := ReadEntireFile(path)
+    if !found { return Fail("cannot read the level file") }
+    if !StoredRead(*stored[0], false, text) { return Fail(ImportError()) }
+    if number < 1 || number > stored[0].count { return Fail("no such level") }
+    level := *stored[0].levels[number - 1]
+    board: EditBoard
+    if !SceneryStoredBoard(text, level, *board) || !level.has_solution { return Fail("the level has no board or route") }
+    route := text[level.solution.start:level.solution.end]
+    if !ShoveyLoadData(*before, 0, EditBoardHex(*board)) { return Fail("the engine refuses the board") }
+    count: SceneryCount
+    if !SceneryDress(*board, route, number, *count) { return Fail("the dressed route does not win") }
+    if !ShoveyLoadData(*after, 0, EditBoardHex(*board)) { return Fail("the engine refuses the dressed board") }
+    if !OpenDesktopSized(PICTURE_WIDTH, PICTURE_HEIGHT) {
+        CloseDesktop()
+        return 1
+    }
+    session = SessionOpen()
+    if !SessionValid(session) {
+        CloseDesktop()
+        return 1
+    }
+    ok := Draw() && Draw() && CaptureConfigured()
+    SessionClose(session)
+    CloseDesktop()
+    return ifx ok then 0 else 1
+}

@@ -1,0 +1,379 @@
+// Dresses Classic boards with scenery that leaves their stored win intact.
+// The stored route is replayed through the real engine first and every cell
+// it uses is recorded: where Shovey stands, every cell a piece passes, shot
+// lines and animal steps. Moss, shores, flowers, tufts and pebbles never
+// change the rules, so they go anywhere, the route included; a bare trail
+// would give the solution away. Trees, lanterns and boulders block, so they
+// only take corners off the route, away from animals, where the board stays
+// joined without them. The dressed board's route is replayed again before
+// it is kept.
+#import "std/text_buffer"
+#import, file "../../src/engine.zi";
+#import, file "../../src/editor/edit.zi";
+#import, file "edits.zi";
+
+SCENERY_FLOWERS :: 57
+SCENERY_TUFTS :: 58
+SCENERY_PEBBLES :: 59
+SCENERY_MOSS_WALL :: 63
+SCENERY_WATER :: 64
+SCENERY_GRASS :: 77
+SCENERY_SAND :: 78
+SCENERY_MOSS_FLOOR :: 103
+
+// What a dressing added, for reports.
+SceneryCount :: struct {
+    shore: s32
+    moss: s32
+    blocking: s32
+    small: s32
+}
+
+// Cells the stored route uses, before and after dressing.
+scenery_path: [EDIT_CELLS]bool;
+scenery_dressed_path: [EDIT_CELLS]bool;
+// Blocking scenery this dressing placed.
+scenery_placed: [EDIT_CELLS]bool;
+scenery_frames: [EDIT_CELLS + 2]ShoveyGame;
+scenery_seen: [EDIT_CELLS]bool;
+scenery_queue: [EDIT_CELLS]s32;
+scenery_animals: [EDIT_CELLS]bool;
+scenery_hex: [EDIT_CELLS * 6]u8;
+
+// ---------------------------------------------------------------------------
+// The route
+
+// Shovey's cell and every cell whose piece or ground differs from the
+// start: pieces that moved, animals, opened doors, filled pits.
+SceneryMark :: (path: []bool, game: *ShoveyGame, start: *ShoveyGame) {
+    if game.player >= 0 { path[game.player] = true }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.objects[at] != start.objects[at] || game.ground[at] != start.ground[at] { path[at] = true }
+    }
+}
+
+// A shot's line, up to the first wall: nothing may stop it earlier.
+SceneryShot :: (path: []bool, game: *ShoveyGame) {
+    at := ShoveyNeighbor(game.player, game.direction)
+    while at >= 0 {
+        path[at] = true
+        ground := game.ground[at]
+        if ground == 12 || ShoveySolidDecor(ground) { return }
+        at = ShoveyNeighbor(at, game.direction)
+    }
+}
+
+// Replays route on board and marks every cell it uses. True when it wins.
+SceneryTrace :: (board: *EditBoard, route: string, path: []bool) -> bool {
+    for at: cast(s32)0..EDIT_CELLS - 1 { path[at] = false }
+    game: ShoveyGame
+    if !ShoveyLoadData(*game, 0, EditBoardHex(board)) { return false }
+    start := game
+    SceneryMark(path, *game, *start)
+    for letter: route {
+        if game.won || game.lost { return false }
+        if letter >= #char "0" && letter <= #char "3" {
+            direction := cast(s32)(letter - #char "0")
+            count := ShoveyMoveFrames(*game, direction, scenery_frames[:])
+            for frame: cast(s32)0..count - 1 { SceneryMark(path, *scenery_frames[frame], *start) }
+            unused ShoveyMove(*game, direction)
+        } else if letter == #char "f" {
+            SceneryShot(path, *game)
+            unused ShoveyFire(*game)
+        } else if letter == #char "t" { unused ShoveyTick(*game) }
+        else { return false }
+        SceneryMark(path, *game, *start)
+    }
+    return game.won && !game.lost
+}
+
+// ---------------------------------------------------------------------------
+// The board
+
+SceneryTile :: (board: *EditBoard, at: s32) -> s32 { return ifx at < 0 then -1 else cast(s32)board.tiles[at] }
+
+// The cell dx across and dy down from at, or -1 off the board.
+SceneryNear :: (at: s32, dx: s32, dy: s32) -> s32 {
+    x := at % EDIT_WIDTH + dx
+    y := at / EDIT_WIDTH + dy
+    if x < 0 || x >= EDIT_WIDTH || y < 0 || y >= EDIT_HEIGHT { return -1 }
+    return y * EDIT_WIDTH + x
+}
+
+// A stable roll from 0 to 999 for one cell of one level.
+SceneryRoll :: (level: s32, at: s32, salt: s32) -> s32 {
+    value := ShoveyAnimalMix(cast(u32)(level * 7919 + at * 131 + salt * 104729) ^ cast(u32)0x5bd1e995)
+    return cast(s32)(value % cast(u32)1000)
+}
+
+// Nothing ever enters it: walls, water and blocking scenery.
+ScenerySolid :: (board: *EditBoard, at: s32) -> bool {
+    if at < 0 { return true }
+    kind := cast(s32)board.ground[at]
+    tile := cast(s32)board.tiles[at]
+    return kind == 12 || ShoveySolidDecor(kind) || ShoveyBlockingDecoration(cast(s32)board.decorations[at]) ||
+        (kind == 0 && (tile == 12 || ShoveySolidDecor(tile)))
+}
+
+// A plain wall block that can take moss.
+SceneryWall :: (board: *EditBoard, at: s32) -> bool {
+    return at >= 0 && board.ground[at] == 0 && SceneryTile(board, at) == 12
+}
+
+// Open floor with nothing on it, which scenery may cover.
+SceneryFloor :: (board: *EditBoard, at: s32) -> bool {
+    if at < 0 || board.ground[at] != 0 || board.decorations[at] != 0 { return false }
+    tile := SceneryTile(board, at)
+    return ShoveyCosmeticTile(tile) && (tile < 57 || tile > 59)
+}
+
+// Grass, water and plants around a cell, counting diagonals.
+SceneryGreen :: (board: *EditBoard, at: s32) -> s32 {
+    green: s32 = 0
+    for dy: cast(s32)0..2 {
+        for dx: cast(s32)0..2 {
+            near := SceneryNear(at, dx - 1, dy - 1)
+            if near < 0 || near == at { continue }
+            tile := SceneryTile(board, near)
+            decoration := cast(s32)board.decorations[near]
+            if tile == SCENERY_GRASS || tile == SCENERY_WATER || decoration == SCENERY_FLOWERS || decoration == SCENERY_TUFTS || decoration == SHOVEY_TREE { green += 1 }
+        }
+    }
+    return green
+}
+
+// Walls on two sides that meet: the inside of a corner or a dead end.
+SceneryCorner :: (board: *EditBoard, at: s32) -> bool {
+    for direction: cast(s32)0..3 {
+        if ScenerySolid(board, ShoveyNeighbor(at, direction)) && ScenerySolid(board, ShoveyNeighbor(at, (direction + 1) % 4)) { return true }
+    }
+    return false
+}
+
+// True when closing at leaves its open neighbours joined to one another.
+SceneryKeepsJoined :: (board: *EditBoard, at: s32) -> bool {
+    first: s32 = -1
+    for direction: cast(s32)0..3 {
+        next := ShoveyNeighbor(at, direction)
+        if next >= 0 && !ScenerySolid(board, next) { first = next; break }
+    }
+    if first < 0 { return true }
+    for cell: cast(s32)0..EDIT_CELLS - 1 { scenery_seen[cell] = false }
+    scenery_seen[at] = true
+    scenery_seen[first] = true
+    scenery_queue[0] = first
+    head: s32 = 0
+    tail: s32 = 1
+    while head < tail {
+        cell := scenery_queue[head]
+        head += 1
+        for direction: cast(s32)0..3 {
+            next := ShoveyNeighbor(cell, direction)
+            if next >= 0 && !scenery_seen[next] && !ScenerySolid(board, next) {
+                scenery_seen[next] = true
+                scenery_queue[tail] = next
+                tail += 1
+            }
+        }
+    }
+    for direction: cast(s32)0..3 {
+        next := ShoveyNeighbor(at, direction)
+        if next >= 0 && !ScenerySolid(board, next) && !scenery_seen[next] { return false }
+    }
+    return true
+}
+
+// The open areas land animals can wander, where blocking scenery would
+// change their walks.
+SceneryAnimalAreas :: (board: *EditBoard) {
+    head: s32 = 0
+    tail: s32 = 0
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        kind := cast(s32)board.ground[at]
+        scenery_animals[at] = ShoveyAnimal(kind) && !ShoveyFish(kind)
+        if scenery_animals[at] { scenery_queue[tail] = at; tail += 1 }
+    }
+    while head < tail {
+        cell := scenery_queue[head]
+        head += 1
+        for direction: cast(s32)0..3 {
+            next := ShoveyNeighbor(cell, direction)
+            if next >= 0 && !scenery_animals[next] && !ScenerySolid(board, next) {
+                scenery_animals[next] = true
+                scenery_queue[tail] = next
+                tail += 1
+            }
+        }
+    }
+}
+
+// Whether blocking scenery may stand at a cell.
+SceneryCanBlock :: (board: *EditBoard, path: []bool, at: s32) -> bool {
+    if at < 0 || !SceneryFloor(board, at) || path[at] || scenery_animals[at] { return false }
+    for dy: cast(s32)0..2 {
+        for dx: cast(s32)0..2 {
+            near := SceneryNear(at, dx - 1, dy - 1)
+            if near >= 0 && near != at && ShoveyBlockingDecoration(cast(s32)board.decorations[near]) { return false }
+        }
+    }
+    return SceneryKeepsJoined(board, at)
+}
+
+SceneryBlocking :: (board: *EditBoard, at: s32) -> s32 {
+    tile := SceneryTile(board, at)
+    if tile == SCENERY_GRASS { return SHOVEY_TREE }
+    if tile == SCENERY_SAND { return SHOVEY_BOULDER }
+    return SHOVEY_LANTERN
+}
+
+SceneryPlace :: (board: *EditBoard, at: s32, kind: s32, count: *SceneryCount) {
+    board.decorations[at] = cast(u8)kind
+    scenery_placed[at] = true
+    count.blocking += 1
+}
+
+// ---------------------------------------------------------------------------
+// Dressing
+
+// Sand where grass meets water, diagonals included.
+SceneryShores :: (board: *EditBoard, count: *SceneryCount) {
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if SceneryTile(board, at) != SCENERY_GRASS || board.ground[at] != 0 { continue }
+        shore := false
+        for dy: cast(s32)0..2 {
+            for dx: cast(s32)0..2 {
+                if SceneryTile(board, SceneryNear(at, dx - 1, dy - 1)) == SCENERY_WATER { shore = true }
+            }
+        }
+        if shore { board.tiles[at] = cast(u8)SCENERY_SAND; count.shore += 1 }
+    }
+}
+
+// Moss on walls, most where gardens and water are near, in runs.
+SceneryMoss :: (board: *EditBoard, level: s32, count: *SceneryCount) {
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if !SceneryWall(board, at) { continue }
+        green := SceneryGreen(board, at)
+        chance := 50 + (ifx green > 4 then 4 else green) * 45
+        if SceneryTile(board, ShoveyNeighbor(at, 0)) == SCENERY_MOSS_WALL || SceneryTile(board, ShoveyNeighbor(at, 1)) == SCENERY_MOSS_WALL { chance += 200 }
+        if SceneryRoll(level, at, 7) < chance { board.tiles[at] = cast(u8)SCENERY_MOSS_WALL; count.moss += 1 }
+    }
+    // Moss creeps onto the paving beside it and gathers in damp corners.
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if !SceneryFloor(board, at) || SceneryTile(board, at) != 0 { continue }
+        chance: s32 = ifx SceneryCorner(board, at) then 450 else 0
+        for direction: cast(s32)0..3 {
+            if SceneryTile(board, ShoveyNeighbor(at, direction)) == SCENERY_MOSS_WALL { chance += 250 }
+        }
+        if SceneryRoll(level, at, 8) < chance { board.tiles[at] = cast(u8)SCENERY_MOSS_FLOOR; count.moss += 1 }
+    }
+}
+
+// Lanterns beside each home, then trees, boulders or lanterns in corners.
+SceneryLandmarks :: (board: *EditBoard, path: []bool, level: s32, count: *SceneryCount) {
+    open: s32 = 0
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if SceneryFloor(board, at) { open += 1 }
+    }
+    budget := 1 + open / 40
+    if budget > 5 { budget = 5 }
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if board.ground[at] != 7 { continue }
+        left := ShoveyNeighbor(at, 0)
+        right := ShoveyNeighbor(at, 2)
+        if SceneryCanBlock(board, path, left) { SceneryPlace(board, left, SHOVEY_LANTERN, count) }
+        if SceneryCanBlock(board, path, right) { SceneryPlace(board, right, SHOVEY_LANTERN, count) }
+    }
+    // Corners in a stable order of their rolls, best first.
+    while count.blocking < budget {
+        best: s32 = -1
+        best_roll: s32 = 1000
+        for at: cast(s32)0..EDIT_CELLS - 1 {
+            if !SceneryFloor(board, at) || path[at] || scenery_animals[at] || !SceneryCorner(board, at) { continue }
+            roll := SceneryRoll(level, at, 11)
+            if roll < best_roll && SceneryCanBlock(board, path, at) { best = at; best_roll = roll }
+        }
+        if best < 0 { return }
+        SceneryPlace(board, best, SceneryBlocking(board, best), count)
+    }
+}
+
+SceneryPlant :: (board: *EditBoard, level: s32, at: s32) -> s32 {
+    tile := SceneryTile(board, at)
+    roll := SceneryRoll(level, at, 2)
+    if tile == SCENERY_GRASS { return ifx roll < 600 then SCENERY_FLOWERS else SCENERY_TUFTS }
+    if tile == SCENERY_SAND { return SCENERY_PEBBLES }
+    if tile == 0 || tile == SCENERY_MOSS_FLOOR { return SCENERY_TUFTS }
+    return 0
+}
+
+SceneryWalled :: (board: *EditBoard, at: s32) -> bool {
+    for direction: cast(s32)0..3 {
+        if ScenerySolid(board, ShoveyNeighbor(at, direction)) { return true }
+    }
+    return false
+}
+
+// Small clumps of flowers, tufts and pebbles. They grow along the foot of
+// walls; open grass gets only the odd one.
+SceneryClumps :: (board: *EditBoard, level: s32, count: *SceneryCount) {
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        if !SceneryFloor(board, at) { continue }
+        tile := SceneryTile(board, at)
+        walled := SceneryWalled(board, at)
+        chance: s32 = 0
+        if tile == SCENERY_GRASS { chance = ifx walled then 170 else 12 }
+        else if tile == SCENERY_SAND { chance = 220 }
+        else if tile == 0 || tile == SCENERY_MOSS_FLOOR { chance = ifx walled then 50 else 0 }
+        if SceneryRoll(level, at, 1) >= chance { continue }
+        kind := SceneryPlant(board, level, at)
+        if kind == 0 { continue }
+        board.decorations[at] = cast(u8)kind
+        count.small += 1
+        if !walled { continue }
+        // A clump follows the wall a cell or two.
+        for direction: cast(s32)0..3 {
+            next := ShoveyNeighbor(at, direction)
+            if next >= 0 && SceneryFloor(board, next) && SceneryTile(board, next) == tile && SceneryWalled(board, next) &&
+            SceneryRoll(level, next, 3 + direction) < 450 {
+                board.decorations[next] = cast(u8)kind
+                count.small += 1
+            }
+        }
+    }
+}
+
+// Dresses a Classic board whose route wins. The board is changed only when
+// the route still wins on the dressed board. scenery_path holds the cells
+// the route uses; scenery_dressed_path the same after dressing.
+SceneryDress :: (board: *EditBoard, route: string, level: s32, count: *SceneryCount) -> bool {
+    count.* = SceneryCount.{}
+    for at: cast(s32)0..EDIT_CELLS - 1 { scenery_placed[at] = false }
+    if board.island || !SceneryTrace(board, route, scenery_path[:]) { return false }
+    dressed := board.*
+    SceneryAnimalAreas(*dressed)
+    SceneryShores(*dressed, count)
+    SceneryMoss(*dressed, level, count)
+    SceneryLandmarks(*dressed, scenery_path[:], level, count)
+    SceneryClumps(*dressed, level, count)
+    if !SceneryTrace(*dressed, route, scenery_dressed_path[:]) { return false }
+    board.* = dressed
+    return true
+}
+
+// A stored Classic level's board, read from the spans of its level file.
+SceneryStoredBoard :: (text: string, level: *StoredLevel, board: *EditBoard) -> bool {
+    layers: s32 = ifx level.has_decorations then 3 else ifx level.has_tiles then 2 else 1
+    length: s32 = 0
+    for layer: cast(s32)0..layers - 1 {
+        for row: cast(s32)0..EDIT_HEIGHT - 1 {
+            span := level.layers[layer][row]
+            if span.end - span.start != EDIT_WIDTH * 2 { return false }
+            for at: span.start..span.end - 1 {
+                scenery_hex[length] = text[at]
+                length += 1
+            }
+        }
+    }
+    return EditBoardRead(board, false, TextView(scenery_hex[0:length]))
+}

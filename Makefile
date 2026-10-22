@@ -7,7 +7,7 @@ APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
-.PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-test web-itch
+.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool scenery-pictures editor-card web web-test web-itch
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test
 editor-server-test:
@@ -148,6 +148,38 @@ import-tool: levels build/ziran/libziran.a
 	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
 		$$(find build/levels/c -type d -printf ' -iquote %p') $$(find build/levels/c -name '*.c') \
 		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/levels/import-edits
+
+# Dresses Classic levels with scenery that keeps every stored route winning:
+#   build/levels/scenery [--levels DIR] [--no-generate] LEVEL...
+scenery-tool: levels build/ziran/libziran.a
+	rm -rf build/levels/scenery-c
+	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
+		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--entry scenery_tool:main -o build/levels/scenery-c tools/levels/scenery_tool.zi
+	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
+		$$(find build/levels/scenery-c -type d -printf ' -iquote %p') $$(find build/levels/scenery-c -name '*.c') \
+		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/levels/scenery
+
+# Before and after pictures of scenery, with the cells each route uses, drawn
+# on a private display: make scenery-pictures SCENERY_LEVELS='1 2' writes
+# build/scenery/level-NN.png.
+SCENERY_LEVELS ?= 1
+scenery-pictures: levels build/ziran/libziran.a
+	rm -rf build/scenery/c
+	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
+		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
+		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--entry scenery_picture:main -o build/scenery/c tools/levels/scenery_picture.zi
+	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
+		$$(find build/scenery/c -type d -printf ' -iquote %p') $$(find build/scenery/c -name '*.c') \
+		build/ziran/libziran.a -Wl,--gc-sections \
+		$$(pkg-config --libs sdl2 cairo freetype2 fontconfig pangocairo) -lm -lpthread -o build/scenery/scenery-picture
+	for level in $(SCENERY_LEVELS); do \
+		env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
+			KRYON_CAPTURE_PATH="$(abspath build/scenery)/level-$$(printf %02d $$level).png" \
+			xvfb-run -a -n 400 -s '-screen 0 1800x1100x24' build/scenery/scenery-picture $$level || exit 1; \
+	done
 
 # The Shovey Editor's card, drawn from both editions' pictures on a private
 # display and written to assets/shovey-editor/preview.png.

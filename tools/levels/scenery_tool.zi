@@ -1,0 +1,148 @@
+// Dresses Classic levels in the level file with scenery (scenery.zi). Each
+// named level's stored route is replayed before and after, and a level is
+// written back only when it still wins; nothing is written unless all do.
+// Dress a level once: a second dressing adds more. Run from Shovey's root:
+//
+//     make scenery-tool
+//     build/levels/scenery [--levels DIR] [--no-generate] LEVEL...
+//
+// Afterwards the level code and pictures are generated again with
+// tools/levels/levels.py, unless --no-generate.
+#import "std/byte_text_linux"
+#import "std/file"
+#import "std/number_text"
+#import "std/process_capture_linux"
+#import "std/text_buffer"
+#import, file "../../src/engine.zi";
+#import, file "../../src/editor/edit.zi";
+#import, file "edits.zi";
+#import, file "scenery.zi";
+
+libc :: #system_library "libc";
+WriteError :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
+
+level_out: [IMPORT_FILE]u8;
+output_bytes: [65536]u8;
+path_bytes: [1024]u8;
+say_bytes: [4096]u8;
+
+// Writes text to a descriptor, a buffer at a time.
+Say :: (fd: s32, text: string) {
+    at: s64 = 0
+    while at < text.count {
+        count: s64 = 0
+        while count < 4096 && at + count < text.count { say_bytes[count] = text[at + count]; count += 1 }
+        unused WriteError(fd, *say_bytes[0], cast(usize)count)
+        at += count
+    }
+}
+
+SayNumber :: (fd: s32, value: s32) {
+    digits: [24]u8
+    Say(fd, FormatInteger(cast(s64)value, digits[:]))
+}
+
+Fail :: (message: string, number: s32 = 0) -> s32 {
+    Say(2, "scenery: nothing written: ")
+    if number > 0 {
+        Say(2, "level ")
+        SayNumber(2, number)
+        Say(2, ": ")
+    }
+    Say(2, message)
+    Say(2, "\n")
+    return 1
+}
+
+Number :: (text: string) -> s32 {
+    value: s32 = 0
+    for byte: text {
+        if byte < #char "0" || byte > #char "9" || value > 100000 { return -1 }
+        value = value * 10 + cast(s32)(byte - #char "0")
+    }
+    return ifx text.count == 0 then -1 else value
+}
+
+Run :: (arguments: []string) -> bool {
+    result := CaptureOutput(arguments, output_bytes[:])
+    Say(1, TextView(output_bytes[0:result.length]))
+    return !result.error && result.code == 0
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    generate := true
+    levels := "levels"
+    numbers: [IMPORT_PLACES]s32
+    count: s32 = 0
+    at: s32 = 1
+    while at < argc {
+        argument := TextFromCString(argv[at])
+        if argument == "--no-generate" { generate = false }
+        else if argument == "--levels" && at + 1 < argc { at += 1; levels = TextFromCString(argv[at]) }
+        else if Number(argument) > 0 && count < IMPORT_PLACES { numbers[count] = Number(argument); count += 1 }
+        else {
+            Say(2, "usage: scenery [--levels DIR] [--no-generate] LEVEL...\n")
+            return 2
+        }
+        at += 1
+    }
+    if count == 0 {
+        Say(2, "usage: scenery [--levels DIR] [--no-generate] LEVEL...\n")
+        return 2
+    }
+    path_writer := EditWriter.{.bytes = path_bytes[:]}
+    EditPut(*path_writer, levels)
+    EditPut(*path_writer, "/classic.json")
+    path := TextView(path_bytes[0:path_writer.length])
+    text, found := ReadEntireFile(path)
+    if !found { return Fail("the level file cannot be read") }
+    if !StoredRead(*stored[0], false, text) { return Fail(ImportError()) }
+    for index: cast(s32)0..count - 1 {
+        number := numbers[index]
+        if number > stored[0].count { return Fail("there is no such level", number) }
+        level := *stored[0].levels[number - 1]
+        if level.fresh >= 0 { return Fail("it is named twice", number) }
+        if !level.has_solution { return Fail("it has no route to keep", number) }
+        incoming := *import_levels[index]
+        incoming.island = false
+        incoming.number = number
+        incoming.name_length = 0
+        if !SceneryStoredBoard(text, level, *incoming.level.board) { return Fail("its board cannot be read", number) }
+        route := text[level.solution.start:level.solution.end]
+        tally: SceneryCount
+        if !SceneryDress(*incoming.level.board, route, number, *tally) { return Fail("its route does not win", number) }
+        if !EditSetRoute(*incoming.level, route) { return Fail("its route is too long", number) }
+        level.fresh = index
+        Say(1, "level ")
+        SayNumber(1, number)
+        Say(1, ": ")
+        SayNumber(1, tally.moss)
+        Say(1, " moss, ")
+        SayNumber(1, tally.shore)
+        Say(1, " shore, ")
+        SayNumber(1, tally.small)
+        Say(1, " flowers, tufts and pebbles, ")
+        SayNumber(1, tally.blocking)
+        Say(1, " trees, lanterns and boulders; the route still wins\n")
+    }
+    writer := EditWriter.{.bytes = level_out[:]}
+    StoredWrite(*writer, *stored[0], text)
+    if writer.full { return Fail("the level file grew too large") }
+    // The developer editor saves into the same file; never overwrite a save
+    // made while dressing.
+    again, read := ReadEntireFile(path)
+    if !read || again != text { return Fail("the level file changed meanwhile; run again") }
+    if !WriteEntireFile(path, TextView(level_out[0:writer.length])) { return Fail("the level file cannot be written") }
+    if generate {
+        steps: [2]string = .["generate", "previews"]
+        for step: steps {
+            command: [3]string = .["python3", "tools/levels/levels.py", step]
+            if !Run(command[:]) {
+                Say(2, "scenery: tools/levels/levels.py failed; run it again by hand\n")
+                return 2
+            }
+        }
+    }
+    return 0
+}
