@@ -31,6 +31,7 @@ spec = importlib.util.spec_from_file_location('levels_tool', ROOT / 'tools/level
 levels_tool = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(levels_tool)
 classic = levels_tool.load('classic')
+published = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
 island = levels_tool.load('island')
 assert [level['number'] for level in classic] == list(range(1, len(classic) + 1))
 assert [level['number'] for level in island] == list(range(1, len(island) + 1))
@@ -49,8 +50,9 @@ for level in classic:
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
     assert (ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png').is_file()
     # The last Classic level is the finale picture, with nothing to solve.
-    if level['number'] < len(classic):
-        assert set(level['solution']) <= set('0123ft') and level['solution'], f'Classic {level["number"]}: solution'
+    # Published levels must keep a winning route; unfinished ones may wait.
+    if level['number'] <= len(published) or level.get('solution'):
+        assert set(level.get('solution', '')) <= set('0123ft') and level.get('solution'), f'Classic {level["number"]}: solution'
         checks.append(('classic', level['number'], ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', [])), level['solution']))
 
 names = [level['name'] for level in island]
