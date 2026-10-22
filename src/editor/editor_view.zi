@@ -643,14 +643,21 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
 // ---------------------------------------------------------------------------
 // The first page: Classic or Island
 
+#if #defined(SHOVEY_RELEASE) {
+    EDITOR_EDITIONS :: 1
+} else {
+    EDITOR_EDITIONS :: 2
+}
+
 EditorHome :: (width: float32, top: float32, bottom: float32) {
     EditorCaption(101, Rectangle.{16.0, top + 8.0, width - 32.0, 40.0}, EditorText("editor_choose"), 15)
     portrait := width < 560.0
+    editions: s32 = EDITOR_EDITIONS
     gap: float32 = 12.0
     card_top := top + 52.0
-    card_height := (bottom - card_top - 72.0 - gap) / (ifx portrait then 2.0 else 1.0)
-    card_width := ifx portrait then width - 32.0 else (width - 32.0 - gap) / 2.0
-    for edition: cast(s32)0..1 {
+    card_height := (bottom - card_top - 72.0 - gap) / (ifx portrait then cast(float32)editions else 1.0)
+    card_width := ifx portrait || editions == 1 then width - 32.0 else (width - 32.0 - gap) / 2.0
+    for edition: cast(s32)0..editions - 1 {
         island := edition == 1
         x: float32 = ifx portrait then 16.0 else 16.0 + cast(float32)edition * (card_width + gap)
         y: float32 = ifx portrait then card_top + cast(float32)edition * (card_height + gap) else card_top

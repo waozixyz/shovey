@@ -267,15 +267,29 @@ EditPaint :: (board: *EditBoard, kind: s32, at: s32) -> bool {
         }
         if kind >= EDIT_TILE_BRUSH {
             tile := kind - EDIT_TILE_BRUSH
+            if tile == SHOVEY_PIT {
+                if board.tiles[at] == cast(u8)tile && board.ground[at] == 0 && board.decorations[at] == 0 { return false }
+                board.tiles[at] = cast(u8)tile
+                board.ground[at] = 0
+                board.decorations[at] = 0
+                return true
+            }
+            if ShoveyFish(cast(s32)board.ground[at]) && tile != 64 { return false }
             if !ShoveyTile(tile) || board.tiles[at] == cast(u8)tile { return false }
             board.tiles[at] = cast(u8)tile
             return true
         }
         if kind < 0 || kind > SHOVEY_LAST_KIND || kind == 22 || kind == 24 || kind == 32 || kind == 41 || kind == 42 || kind == 43 { return false }
         if EditBorder(at) || at == shovey { return false }
+        if kind == 0 && board.decorations[at] != 0 {
+            board.ground[at] = 0
+            board.decorations[at] = 0
+            return true
+        }
         tile := cast(s32)board.tiles[at]
-        replaced_wall := kind != 0 && kind != 71 && (tile == CLASSIC_WALL || ShoveySolidDecor(tile))
-        if replaced_wall { board.tiles[at] = 0 }
+        replaced_wall := false
+        if ShoveyFish(kind) && tile != 64 { board.tiles[at] = 64; replaced_wall = true }
+        else if !ShoveyFish(kind) && kind != 0 && kind != 71 && (tile == CLASSIC_WALL || tile == 14 || ShoveySolidDecor(tile)) { board.tiles[at] = 0; replaced_wall = true }
         if board.ground[at] == cast(u8)kind { return replaced_wall }
         if kind == CLASSIC_SHOVEY && shovey >= 0 { board.ground[shovey] = 0 }
         board.ground[at] = cast(u8)kind

@@ -24,7 +24,7 @@ def turns_with_board(path):
     if path.parent.name == 'player':
         return True
     if path.parent.name == 'sprites':
-        return (path.stem.startswith(('player-', 'charged-', 'dog-', 'turtle-', 'grass-edge-')) or path.stem in ('shadow', 'tile-40') or
+        return (path.stem.startswith(('player-', 'charged-', 'dog-', 'turtle-', 'crab-', 'fish-', 'grass-edge-', 'abyss-edge-')) or
                 path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69'))
     kind = int(path.stem)
     return (2 <= kind <= 9 or 11 <= kind <= 12 or 14 <= kind <= 23

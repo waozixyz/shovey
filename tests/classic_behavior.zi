@@ -1,6 +1,7 @@
 #import, file "../src/engine.zi";
 #import, file "../src/orientation.zi";
 #import, file "../src/progress.zi";
+#import, file "../tools/levels/similarity.zi";
 
 // Opening the game lands on the newest unlocked puzzle; an unfinished
 // position there is kept, and a replay of an older puzzle is left behind.
@@ -247,6 +248,76 @@ TileChecks :: () -> s32 {
 }
 
 NatureChecks :: () -> s32 {
+    gate := Floor()
+    gate.ground[14] = SHOVEY_LEVER
+    gate.ground[26] = SHOVEY_GATE
+    if ShoveyCanEnter(*gate, 26, 10) { return 135 }
+    if !ShoveyMove(*gate, 2) || gate.player != 13 || gate.ground[14] != SHOVEY_LEVER_ON || !ShoveyCanEnter(*gate, 26, 10) { return 136 }
+    restored_gate: ShoveyGame
+    if !ShoveyRestore(*restored_gate, ShoveySave(*gate)) || !ShoveyGateOpen(*restored_gate, 26) { return 137 }
+    if !ShoveyMove(*gate, 2) || gate.player != 13 || ShoveyCanEnter(*gate, 26, 10) { return 138 }
+    gate.powers = SHOVEY_SLIDE
+    if !ShoveyMove(*gate, 2) || gate.ground[14] != SHOVEY_LEVER_ON || gate.player != 13 { return 139 }
+    animals: [3]s32 = .[SHOVEY_CHICKEN, SHOVEY_TURTLE, SHOVEY_CRAB]
+    pieces: [10]s32 = .[1, 2, 3, 9, 19, 28, 36, 53, SHOVEY_BOMB, 44]
+    for animal: animals {
+        for direction: cast(s32)0..3 {
+            walking := Floor()
+            walking.ground[78] = animal
+            walking.light_from[78] = direction
+            destination := ShoveyNeighbor(78, direction)
+            if !ShoveyAnimalsTick(*walking) || walking.ground[destination] != animal || walking.light_from[destination] != direction { return 140 }
+            // Turning at an obstacle records the direction actually walked.
+            walking = Floor()
+            walking.ground[78] = animal
+            walking.light_from[78] = direction
+            walking.ground[destination] = 12
+            turn := (direction + 1) % 4
+            destination = ShoveyNeighbor(78, turn)
+            if !ShoveyAnimalsTick(*walking) || walking.ground[destination] != animal || walking.light_from[destination] != turn { return 141 }
+        }
+        blocked := Floor()
+        blocked.ground[14] = animal
+        if ShoveyMove(*blocked, 2) || blocked.player != 13 || blocked.moves != 0 { return 126 }
+        for piece: pieces {
+            blocked = Floor()
+            blocked.objects[14] = piece
+            blocked.ground[15] = animal
+            if ShoveyMove(*blocked, 2) || blocked.player != 13 || blocked.objects[14] != piece || blocked.objects[15] != 0 || blocked.ground[15] != animal { return 127 }
+            // Once the animal walks away, the same push succeeds.
+            if !ShoveyTick(*blocked) || blocked.ground[15] != 0 || !ShoveyMove(*blocked, 2) || blocked.objects[15] == 0 { return 128 }
+        }
+        blocked = Floor()
+        blocked.ground[14] = animal
+        blocked.player = 13
+        blocked.objects[2] = 9
+        blocked.ground[15] = SHOVEY_TURTLE
+        blocked.ground[26] = SHOVEY_TREE
+        if ShoveyAnimalsTick(*blocked) && blocked.ground[14] != animal { return 129 }
+        if blocked.player != 13 || blocked.objects[2] != 9 || blocked.ground[26] != SHOVEY_TREE { return 130 }
+    }
+    for fish: cast(s32)89..91 {
+        pool := Floor()
+        pool.ground[26] = fish
+        pool.tiles[26] = 64
+        pool.ground[27] = 64
+        pool.tiles[27] = 64
+        pool.light_from[26] = 2
+        if ShoveyTick(*pool) || pool.ground[26] != fish || pool.ground[27] != 64 { return 131 }
+        if ShoveyCanEnter(*pool, 26, 9) { return 132 }
+    }
+    portals: [6]s32 = .[73, 74, 75, 85, 86, 87]
+    for portal: portals {
+        paired := Floor()
+        paired.ground[14] = portal
+        paired.ground[30] = portal
+        paired.ground[48] = ifx portal == 73 then 74 else 73
+        if !ShoveyMove(*paired, 2) || paired.player != 30 || paired.teleports != 1 { return 133 }
+        paired = Floor()
+        paired.objects[14] = 9
+        paired.ground[15] = portal
+        if ShoveyMove(*paired, 2) || paired.objects[14] != 9 { return 134 }
+    }
     game := Floor()
     game.ground[14] = SHOVEY_TREE
     game.decorations[14] = SHOVEY_TREE
@@ -271,6 +342,37 @@ NatureChecks :: () -> s32 {
     return 0
 }
 
+SimilaritySet :: (board: []u8, at: s32, kind: s32) {
+    alphabet := "0123456789abcdef"
+    board[at * 2] = alphabet[kind >> 4]
+    board[at * 2 + 1] = alphabet[kind & 15]
+}
+
+SimilarityChecks :: () -> s32 {
+    a: [1440]u8; b: [1440]u8
+    for at: cast(s32)0..1439 { a[at] = cast(u8)48; b[at] = cast(u8)48 }
+    SimilaritySet(a[:], 25, 10)
+    SimilaritySet(a[:], 49, 9)
+    SimilaritySet(a[:], 73, 18)
+    SimilaritySet(a[:], 97, 7)
+    for at: cast(s32)40..45 { SimilaritySet(a[:], at, 12) }
+    for at: cast(s32)0..239 {
+        mirrored := (19 - at / 12) * 12 + at % 12
+        SimilaritySet(b[:], mirrored, ShoveyByte(TextView(a[:]), at * 2))
+        SimilaritySet(b[:], 240 + at, 77)
+        SimilaritySet(b[:], 480 + at, 57)
+    }
+    if PuzzleSimilarity(a[:], b[:]) != 100 { return 140 }
+    SimilaritySet(b[:], 205, 0)
+    SimilaritySet(b[:], 206, 10)
+    score := PuzzleSimilarity(a[:], b[:])
+    if score < 70 || score >= 100 || score != PuzzleSimilarity(b[:], a[:]) { return 141 }
+    for at: cast(s32)0..1439 { b[at] = cast(u8)48 }
+    SimilaritySet(b[:], 50, SHOVEY_CRAB)
+    if PuzzleSimilarity(a[:], b[:]) >= 70 { return 142 }
+    return 0
+}
+
 #program_export
 Check :: () -> s32 {
     result := OpenChecks()
@@ -288,6 +390,8 @@ Check :: () -> s32 {
     result = TickChecks()
     if result != 0 { return result }
     result = NatureChecks()
+    if result != 0 { return result }
+    result = SimilarityChecks()
     if result != 0 { return result }
     result = BoardChecks()
     if result != 0 { return result }

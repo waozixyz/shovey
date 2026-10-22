@@ -64,6 +64,12 @@ LayerChecks :: () -> s32 {
     if !ShoveyLoadData(*game, 1, EditBoardHex(*wall)) || game.ground[50] != SHOVEY_CRACKED_FLOOR || game.tiles[50] != 77 { return 161 }
     unused EditPaint(*wall, EDIT_TILE_BRUSH + 12, 50)
     if !EditPaint(*wall, 9, 50) || wall.tiles[50] != 0 || wall.ground[50] != 9 { return 162 }
+    if !EditPaint(*wall, SHOVEY_FISH, 50) || wall.tiles[50] != 64 { return 163 }
+    if EditPaint(*wall, EDIT_TILE_BRUSH + 77, 50) { return 164 }
+    if !ShoveyLoadData(*game, 1, EditBoardHex(*wall)) || game.ground[50] != SHOVEY_FISH { return 165 }
+    if !EditPaint(*wall, SHOVEY_CRAB, 50) || wall.tiles[50] != 0 || wall.ground[50] != SHOVEY_CRAB { return 166 }
+    unused EditPaint(*wall, EDIT_DECO_BRUSH + 57, 50)
+    if !EditPaint(*wall, EDIT_TILE_BRUSH + SHOVEY_PIT, 50) || wall.ground[50] != 0 || wall.decorations[50] != 0 || wall.tiles[50] != SHOVEY_PIT { return 167 }
     return 0
 }
 

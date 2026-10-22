@@ -12,8 +12,11 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
-classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), 82, 83, 84)]
-classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle') for facing in ('left', 'up', 'right', 'down')]
+classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 99))]
+classic += ['gate-open'] + [f'abyss-edge-{mask}' for mask in range(16)]
+classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for facing in ('left', 'up', 'right', 'down')]
+classic += [f'water-{frame}' for frame in range(4)]
+classic += [f'fish-{fish}-{frame}-{facing}' for fish in ('gold', 'koi', 'minnow') for frame in range(4) for facing in ('left', 'up', 'right', 'down')]
 classic += [f'grass-edge-{mask}' for mask in range(16)]
 classic += [f'{kind}-{facing}' for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
 classic += ['shadow', 'door-open', 'projectile'] + [f'sensor-{frame}' for frame in range(1, 9)]
@@ -29,9 +32,23 @@ for path in expected:
 # Objects and decorations must reveal whichever tile is beneath them.
 for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
              28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,
-             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84):
+             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95)):
     with Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png') as picture:
         assert picture.getpixel((0, 0))[3] == 0, f'{kind}: object has an attached background'
+
+paint_alpha = Image.open(ROOT / 'assets/shovey/sprites/tile-17.png').getchannel('A').tobytes()
+for kind in (15, 16, 50, 51, 52):
+    assert Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png').getchannel('A').tobytes() == paint_alpha, \
+        f'{kind}: paint silhouette differs from the other colors'
+
+# The chicken's orange comb/beak must lead the cream body in the named
+# direction. This catches a backwards source even when all rotations agree.
+for facing, dx, dy in (('left', -1, 0), ('up', 0, -1), ('right', 1, 0), ('down', 0, 1)):
+    with Image.open(ROOT / f'assets/shovey/sprites/dog-{facing}.png') as picture:
+        points = [(x, y) for y in range(128) for x in range(128)
+                  if (lambda c: c[3] > 128 and c[0] > 160 and c[0] > c[1] * 1.4 and c[1] > c[2] * 1.5)(picture.getpixel((x, y)))]
+    assert points and sum((x - 63.5) * dx + (y - 63.5) * dy for x, y in points) / len(points) > 2, \
+        f'chicken faces away from {facing}'
 
 for index, facing in enumerate(('up', 'right', 'down', 'left'), 1):
     classic_player = ROOT / f'assets/shovey/sprites/player-{facing}.png'
@@ -69,7 +86,7 @@ for folder, names in (
             assert portrait.convert('RGBA').tobytes() == landscape.convert('RGBA').tobytes(), \
                 f'{name}: fixed artwork must stay upright'
 for folder, names in (
-        ('shovey/sprites', ('player-up', 'player-right', 'player-down', 'player-left')),
+        ('shovey/sprites', tuple(f'{animal}-{facing}' for animal in ('player', 'dog', 'turtle', 'crab', 'fish-gold-0', 'fish-koi-0', 'fish-minnow-0') for facing in ('up', 'right', 'down', 'left'))),
         ('shovey-island/tiles', ('2', '6', '8', '85', '117'))):
     for name in names:
         source = ROOT / 'assets' / folder / (name + '.png')

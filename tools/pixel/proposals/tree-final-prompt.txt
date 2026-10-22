@@ -1,0 +1,10 @@
+Generated with the built-in imagegen tool, editing tools/pixel/native/tree.png.
+
+Use case: precise-object-edit. Asset type: replacement 32x32 native sprite for Shovey Classic. Edit the attached tree sprite, keeping a single compact green broadleaf tree and transparent background, but replace the three disconnected circular blobs with a beautiful cohesive rounded leafy oak canopy. View slightly from overhead in a classic 2D top-down tile puzzle. A broad gently scalloped crown with 3 interconnected BIG foliage masses, a clearly visible warm brown forked trunk with two small roots at the bottom. Draw on an EXACT 32 by 32 virtual pixel grid and enlarge using nearest-neighbor pixels: all edges stepped in square pixels. ONLY 7 flat colors in total: dark forest-green outline and shadow, deep teal-green shade, jade green midtone, fresh green highlights upper-left, and warm brown trunk shades. Canopy roughly 26 pixels wide by 20 high, trunk roughly 6 pixels wide by 7 high; complete tree occupies 28 by 29 of 32 canvas units with 1–2 empty pixels around all sides. One coherent organic foliage silhouette, shade mostly underneath and lower right, two large gentle upper-left highlight clusters. Absolutely minimal leaf texture: NO tiny leaf speckles, NO dozens of tiny highlight strokes, NO high-resolution detailed leaf rendering. Designed to look excellent and recognizable as a tree when reduced to 24 pixels. The existing reference has invisible trunk and awkward separate circles: fix both. Transparent background including around roots. No floor, grass, shadow oval, tile base, labels, border, text, watermarks or scenery.
+
+The generated source is tree-final.png. Fit to the existing native sprite grid:
+
+convert tools/pixel/proposals/tree-final.png -channel A -threshold 50% +channel -trim +repage -filter Point -resize 30x30 -dither None -colors 12 -channel A -threshold 50% +channel -background none -gravity center -extent 32x32 tools/pixel/native/tree.png
+
+python3 tools/pixel/pixel.py build
+python3 tools/levels/landscape.py

@@ -29,7 +29,16 @@ SPRITE_DOG :: 94
 SPRITE_TURTLE :: 98
 SPRITE_TREE :: 102
 SPRITE_GRASS_EDGE :: 103
-SPRITE_COUNT :: 119
+SPRITE_PORTAL :: 119
+SPRITE_WATER :: 122
+SPRITE_CRAB :: 126
+SPRITE_FISH :: 130
+SPRITE_GATE :: 178
+SPRITE_GATE_OPEN :: 179
+SPRITE_LEVER :: 180
+SPRITE_ABYSS :: 182
+SPRITE_WALL :: 198
+SPRITE_COUNT :: 202
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -40,6 +49,51 @@ fall_level: s32;
 fall_moves: s32;
 fall_position: s32;
 fall_points: [4]Vector2;
+portal_seen: bool;
+portal_level: s32;
+portal_moves: s32;
+portal_count: s32;
+portal_previous: s32;
+portal_entry: s32;
+portal_exit: s32;
+portal_started: float64;
+portal_active: bool;
+
+PortalTravelProgress :: (game: *ShoveyGame, now: float64) -> float32 {
+    if !portal_seen || portal_level != game.level || game.moves < portal_moves || game.teleports < portal_count {
+        portal_active = false
+    } else if game.teleports > portal_count {
+        entrance := ShoveyNeighbor(portal_previous, game.direction)
+        portal_active = entrance >= 0 && (game.ground[entrance] == 8 || ShoveyColorPortal(game.ground[entrance]))
+        portal_entry = entrance
+        portal_exit = game.player
+        portal_started = now
+    } else if game.player != portal_exit { portal_active = false }
+    portal_seen = true
+    portal_level = game.level
+    portal_moves = game.moves
+    portal_count = game.teleports
+    portal_previous = game.player
+    if !portal_active { return -1.0 }
+    progress := cast(float32)((now - portal_started) / 0.16)
+    if progress >= 1.0 { portal_active = false; return -1.0 }
+    return progress
+}
+
+PortalTravelMesh :: (cell: Rectangle, progress: float32) -> ImageMesh {
+    scale := ifx progress < 0.5 then 1.0 - progress * 2.0 else (progress - 0.5) * 2.0
+    angle := cast(float64)progress * 12.566370614359172
+    cosine := cast(float32)Math.Cos(angle)
+    sine := cast(float32)Math.Sin(angle)
+    half := cell.width * 0.5 * scale
+    for corner: cast(s32)0..3 {
+        x := ifx corner % 2 == 0 then -half else half
+        y := ifx corner < 2 then -half else half
+        fall_points[corner] = Vector2.{cell.x + cell.width * 0.5 + x * cosine - y * sine,
+                cell.y + cell.height * 0.5 + x * sine + y * cosine}
+    }
+    return ImageMesh.{.columns = 2, .rows = 2, .points = fall_points[:]}
+}
 
 // The loss stays in the engine immediately; only the picture falls away.
 AbyssFallProgress :: (game: *ShoveyGame, now: float64) -> float32 {
@@ -126,10 +180,47 @@ SpritesPrepare :: () {
         SpritePath(SPRITE_TURTLE + direction, BuilderFinish(turtle))
     }
     SpritePath(SPRITE_TREE, "tile-84")
+    SpritePath(SPRITE_GATE, "tile-92")
+    SpritePath(SPRITE_GATE_OPEN, "gate-open")
+    SpritePath(SPRITE_LEVER, "tile-93")
+    SpritePath(SPRITE_LEVER + 1, "tile-94")
+    for wall: cast(s32)0..3 {
+        name: Vec(u8)
+        BuilderPrint(*name, "tile-%", FormatInteger(cast(s64)(95 + wall), digits[:]))
+        SpritePath(SPRITE_WALL + wall, BuilderFinish(name))
+    }
+    for color: cast(s32)0..2 {
+        portal: Vec(u8)
+        BuilderPrint(*portal, "tile-%", FormatInteger(cast(s64)(85 + color), digits[:]))
+        SpritePath(SPRITE_PORTAL + color, BuilderFinish(portal))
+    }
+    for frame: cast(s32)0..3 {
+        water: Vec(u8)
+        BuilderPrint(*water, "water-%", FormatInteger(cast(s64)frame, digits[:]))
+        SpritePath(SPRITE_WATER + frame, BuilderFinish(water))
+    }
+    for direction: cast(s32)0..3 {
+        crab: Vec(u8)
+        BuilderPrint(*crab, "crab-%", facings[direction])
+        SpritePath(SPRITE_CRAB + direction, BuilderFinish(crab))
+    }
+    fish_names: [3]string = .["gold", "koi", "minnow"]
+    for fish: cast(s32)0..2 {
+        for frame: cast(s32)0..3 {
+            for direction: cast(s32)0..3 {
+                name: Vec(u8)
+                BuilderPrint(*name, "fish-%-%-%", fish_names[fish], FormatInteger(cast(s64)frame, digits[:]), facings[direction])
+                SpritePath(SPRITE_FISH + fish * 16 + frame * 4 + direction, BuilderFinish(name))
+            }
+        }
+    }
     for mask: cast(s32)0..15 {
         edge: Vec(u8)
         BuilderPrint(*edge, "grass-edge-%", FormatInteger(cast(s64)mask, digits[:]))
         SpritePath(SPRITE_GRASS_EDGE + mask, BuilderFinish(edge))
+        abyss: Vec(u8)
+        BuilderPrint(*abyss, "abyss-edge-%", FormatInteger(cast(s64)mask, digits[:]))
+        SpritePath(SPRITE_ABYSS + mask, BuilderFinish(abyss))
     }
     for direction: cast(s32)0..3 {
         bytes: Vec(u8)
@@ -176,9 +267,16 @@ FloorSprite :: (kind: s32) -> s32 {
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
 // active sensors turn, one frame every 100 milliseconds.
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64) -> s32 {
+    if kind == 64 { return SPRITE_WATER + cast(s32)(now * 2.0) % 4 }
+    if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
+    if kind == SHOVEY_GATE { return ifx position >= 0 && ShoveyGateOpen(game, position) then SPRITE_GATE_OPEN else SPRITE_GATE }
+    if ShoveyLever(kind) { return SPRITE_LEVER + kind - SHOVEY_LEVER }
+    if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
     if kind == SHOVEY_TREE { return SPRITE_TREE }
     if ShoveyAnimal(kind) {
         facing := ifx position >= 0 && game.light_from[position] < 4 then game.light_from[position] else 1
+        if ShoveyFish(kind) { return SPRITE_FISH + (kind - SHOVEY_FISH) * 16 + facing }
+        if kind == SHOVEY_CRAB { return SPRITE_CRAB + facing }
         return (ifx kind == SHOVEY_DOG then SPRITE_DOG else SPRITE_TURTLE) + facing
     }
     sprite := kind
@@ -212,6 +310,14 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         display := BoardDisplayIndex(at, landscape)
         base := game.tiles[at]
         board_layers[display] = KindSprite(game, base, at, now)
+        if base == SHOVEY_PIT {
+            mask: s32 = 0
+            for direction: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, direction)
+                if neighbor < 0 || game.tiles[neighbor] != SHOVEY_PIT { mask |= 1 << direction }
+            }
+            board_layers[display] = SPRITE_ABYSS + mask
+        }
         if base == 77 {
             mask: s32 = 0
             for direction: cast(s32)0..3 {
@@ -244,13 +350,20 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             .fill = Color.{170, 174, 173, 255}, .label = "Shovey"})
     if game.player >= 0 && game.player < SHOVEY_CELLS {
         files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
-        cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+        portal := PortalTravelProgress(game, now)
+        position := ifx portal >= 0.0 && portal < 0.5 then portal_entry else game.player
+        cell := TileMapCell(grid, BoardDisplayIndex(position, landscape))
         fall := AbyssFallProgress(game, now)
         image := ImageProps.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(game)],
                 .alt_text = "Shovey", .bounds = cell, .fit = ImageFit.ImageFitContain, .smooth = true}
-        if fall >= 0.0 { image.mesh = AbyssFallMesh(cell, fall) }
-        if fall >= 1.0 { image.tint = cast(u32)0xffffff00 }
-        Image(session, image)
+        // Fully collapsed quads have no area. Omit them instead of handing
+        // the rasterizer a singular image transform at the end/midpoint.
+        visible := fall < 0.97 && (portal < 0.49 || portal > 0.51)
+        if visible {
+            if fall >= 0.0 { image.mesh = AbyssFallMesh(cell, fall) }
+            else if portal >= 0.0 { image.mesh = PortalTravelMesh(cell, portal) }
+            Image(session, image)
+        }
     }
     // A held shot shows as a small ball at Shovey's corner.
     if (game.powers & SHOVEY_AMMO) != 0 && !game.lost && game.player >= 0 && game.player < SHOVEY_CELLS {

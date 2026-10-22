@@ -92,21 +92,35 @@ The developer editor runs directly from the repository:
     make editor
     build/private-editor/shovey-level-editor
 
-Its source is `tools/editor/editor.zi`. **Tiles**, **Objects** and **Deco**
-paint independent layers: grass or sand can sit under a house, crate or
-character, with flowers, tufts or pebbles above the floor. The active
-tab and brush are highlighted, and the palette scrolls with large icons.
-Cracks are transparent objects that can sit on floors or walls; placing an
-ordinary object on a wall replaces it with stone. Right-click erases the active layer; **Undo**
-restores a complete stroke without changing the other layers. Existing boards and drafts remain readable. The editor
-keeps drafts immediately and checks winning routes before saving story levels.
-Played wins save immediately and remain proven when the editor reopens. Saved
-levels load from the current level file; decoration edits reuse a winning route
-when it still works. Flowers and grass tufts have large, clear silhouettes,
-grass blends into neighbouring paving, and dogs and turtles wander over clear
-floor during play. Trees belong to Deco and block Shovey and every pushed piece.
-Falling into the abyss spins and shrinks Shovey into the opening. Teleporters
-have an inward spiral recessed below the tile's surface.
+Its source is `tools/editor/editor.zi`. **Tiles** paints the floor; **Objects**
+holds pieces, animals, flowers, tufts, pebbles and trees. Tiles remain underneath
+objects. Right-click in Objects clears pieces and decoration together, while
+Undo restores the whole stroke. The active tab and brush are highlighted, and
+the palette scrolls with large icons. Existing boards and drafts remain readable.
+Drafts save immediately, played wins remain proven after reopening, and saved
+levels load from the current level file.
+
+**GLM Modify** proposes small edits inspired by the open board and its existing
+winning route. It keeps the puzzle's pieces, colors, terrain, start and home.
+A variation is applied only after its solution wins in the game engine, and
+Undo, Redo and Reset remain available. Unproven proposals leave the level intact.
+
+Chickens, turtles and crabs wander over clear floor and block Shovey and pushed
+pieces. Goldfish, koi and minnows stay still on water, with gentle
+animated ripples. Trees also block movement. Red, green and orange portals join
+cyan, purple and yellow; each color connects to matching portals. Pressure plates
+lower mossy stone walls. A separate iron gate opens and closes when Shovey pushes
+a lever. Stone, moss, slate, brick, sandstone and timber walls share the same
+blocking rules. Sand has visible grains; every paint color shares the same silhouette.
+Placing abyss clears objects and decoration above it. Adjacent abyss cells share
+one opening with a recessed stone lip at its boundary. Falling spins and shrinks
+Shovey into the opening. Teleporters have a recessed inward spiral.
+
+The original-board comparison measures mirrored puzzle layouts and nearby piece
+placements, ignoring cosmetic floors and color swaps. The level overview caches
+these scores. Run `build/private-editor/shovey-level-editor --similarity` to print
+them without opening a window. Tree proposals, the rabbit alternative and image
+generation prompts are kept in `tools/pixel/proposals/`.
 
 Classic's optional `tiles` and `decorations` rows are stored separately from
 `cells`; existing level numbers and untouched records are retained. Private

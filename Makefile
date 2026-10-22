@@ -7,7 +7,10 @@ APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 
 .PHONY: all levels bundles landscape previews art solver bench test play import-tool editor-card web web-test web-itch
 
-.PHONY: editor editor-ui-test editor-save-test
+.PHONY: editor editor-ui-test editor-save-test editor-glm-test
+editor-glm-test: solver
+	python3 tests/editor_glm_test.py
+
 editor-save-test: editor
 	python3 tests/developer_editor_save_test.py
 

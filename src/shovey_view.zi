@@ -26,6 +26,7 @@
 #import "widget_palette"
 #import, file "orientation.zi";
 #import, file "engine.zi";
+#import, file "levels.zi";
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
 #import, file "controls.zi";
@@ -416,7 +417,6 @@ ShoveyFrame :: () {
     sliding := slide_next < slide_count
     if !sliding && frame.now - last_tick >= 1.0 {
         changed = ShoveyTick(*game) || changed
-        changed = ShoveyAnimalsTick(*game) || changed
         last_tick = frame.now
     }
     SpriteNames()
@@ -436,7 +436,7 @@ ShoveyFrame :: () {
         status = AppLocaleHost("shovey_won")
         status_icon = "S2rr:M5 12L10 17L19 7"
     }
-    if game.level == ShoveyLevelCount() {
+    if game.level == SHOVEY_LEVEL_COUNT {
         status = AppLocaleHost("shovey_finale")
         status_icon = "S2rr:M12 4L14 10H20L15 14L17 20L12 16L7 20L9 14L4 10H10Z"
     }
@@ -447,7 +447,7 @@ ShoveyFrame :: () {
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
-    disabled := game.won || game.lost || game.level == ShoveyLevelCount()
+    disabled := game.won || game.lost || game.level == SHOVEY_LEVEL_COUNT
     // Touch: swipe anywhere under the bar to step, or tap a cell to step
     // towards it; hold either to keep walking. The stick and Fire come after, so they stay on top.
     play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}

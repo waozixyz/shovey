@@ -28,7 +28,11 @@ ShoveyGame :: struct {
     lost: bool
 }
 
-ShoveyLevelCount :: () -> s32 { return SHOVEY_LEVEL_COUNT }
+#if #defined(SHOVEY_RELEASE) {
+    ShoveyLevelCount :: () -> s32 { return SHOVEY_APPROVED_LEVEL_COUNT }
+} else {
+    ShoveyLevelCount :: () -> s32 { return SHOVEY_LEVEL_COUNT }
+}
 
 // Directions are left, up, right, down. Never wrap an edge into another row.
 ShoveyNeighbor :: (position: s32, direction: s32) -> s32 {
@@ -76,17 +80,25 @@ ShoveyColorRest :: (kind: s32) -> bool {
 // Decorations that change nothing about play, and the solid ones that act as
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
 ShoveyDecorFloor :: (kind: s32) -> bool { return kind >= 57 && kind <= 61 }
-ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || kind == SHOVEY_TREE }
+ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || kind == SHOVEY_TREE || (kind >= 95 && kind <= 98) }
 SHOVEY_CRACKED_WALL :: 62
 SHOVEY_PIT :: 65
 SHOVEY_ICE :: 70
 SHOVEY_CRACKED_FLOOR :: 71
 SHOVEY_BOMB :: 72
-SHOVEY_DOG :: 82
+SHOVEY_CHICKEN :: 82
+SHOVEY_DOG :: SHOVEY_CHICKEN // Existing boards keep their stored kind.
 SHOVEY_TURTLE :: 83
 SHOVEY_TREE :: 84
-SHOVEY_LAST_KIND :: 84
-ShoveyAnimal :: (kind: s32) -> bool { return kind == SHOVEY_DOG || kind == SHOVEY_TURTLE }
+SHOVEY_CRAB :: 88
+SHOVEY_FISH :: 89
+SHOVEY_GATE :: 92
+SHOVEY_LEVER :: 93
+SHOVEY_LEVER_ON :: 94
+SHOVEY_LAST_KIND :: 98
+ShoveyLever :: (kind: s32) -> bool { return kind == SHOVEY_LEVER || kind == SHOVEY_LEVER_ON }
+ShoveyFish :: (kind: s32) -> bool { return kind >= SHOVEY_FISH && kind <= 91 }
+ShoveyAnimal :: (kind: s32) -> bool { return kind == SHOVEY_CHICKEN || kind == SHOVEY_TURTLE || kind == SHOVEY_CRAB || ShoveyFish(kind) }
 
 // One-way arrows (66 left, 67 up, 68 right, 69 down): the direction, or -1.
 ShoveyArrow :: (kind: s32) -> s32 {
@@ -96,7 +108,7 @@ ShoveyArrow :: (kind: s32) -> s32 {
 
 // Portals of their own colour (cyan 73, purple 74, yellow 75) lead to the
 // other portal of the same colour.
-ShoveyColorPortal :: (kind: s32) -> bool { return kind >= 73 && kind <= 75 }
+ShoveyColorPortal :: (kind: s32) -> bool { return (kind >= 73 && kind <= 75) || (kind >= 85 && kind <= 87) }
 
 // The way the mover now entering a cell is going, so a one-way arrow can
 // refuse the other three. -1 means any way: estimates that do not move.
@@ -132,15 +144,15 @@ ShoveyLoad :: (game: *ShoveyGame, level: s32) -> bool {
 // Existing boards contain 480 hex digits of pieces. Layered boards append
 // 480 digits of independent floor tiles. Tiles never change puzzle rules.
 ShoveyTerrain :: (kind: s32) -> bool {
-    return kind == 0 || kind == 12 || ShoveyPitColor(kind) > 0 ||
-        kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78
+    return kind == 0 || kind == 12 || kind == 14 || ShoveyPitColor(kind) > 0 ||
+        kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 98)
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
 ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || kind == SHOVEY_TREE }
 ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 }
 ShoveyDefaultTile :: (kind: s32) -> s32 {
-    return ifx kind == 62 then 12 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else 0
+    return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else 0
 }
 
 ShoveyLoadData :: (game: *ShoveyGame, level: s32, data: string) -> bool {
@@ -150,6 +162,7 @@ ShoveyLoadData :: (game: *ShoveyGame, level: s32, data: string) -> bool {
         kind := ShoveyByte(data, position * 2)
         tile := ifx data.count >= SHOVEY_CELLS * 4 then ShoveyByte(data, SHOVEY_CELLS * 2 + position * 2) else ShoveyDefaultTile(kind)
         if kind < 0 || kind > SHOVEY_LAST_KIND || !ShoveyTile(tile) { return false }
+        if ShoveyFish(kind) && tile != 64 { return false }
         game.tiles[position] = ifx tile == 62 then 12 else ifx tile == 71 then 0 else tile
         if !ShoveyCosmeticTile(tile) { game.ground[position] = tile }
         if data.count == SHOVEY_CELLS * 6 {
@@ -181,6 +194,12 @@ ShoveyDoorOpen :: (game: *ShoveyGame, position: s32) -> bool {
     return false
 }
 
+ShoveyGateOpen :: (game: *ShoveyGame, position: s32) -> bool {
+    if game.objects[position] != 0 || game.player == position { return true }
+    for kind: game.ground { if kind == SHOVEY_LEVER_ON { return true } }
+    return false
+}
+
 ShoveyRemaining :: (game: *ShoveyGame) -> s32 {
     remaining: s32 = 0
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
@@ -196,11 +215,12 @@ ShoveyRemaining :: (game: *ShoveyGame) -> s32 {
 ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     if position < 0 || position >= SHOVEY_CELLS { return false }
     kind := game.ground[position]
-    if ShoveyAnimal(kind) { return true }
+    if ShoveyAnimal(kind) { return false }
     player := object == 10
     if kind == 0 || kind == 13 || kind == 18 || kind == 20 ||
     kind == 29 || kind == 30 || kind == 31 || kind == 41 || kind == 42 || kind == 43 { return true }
     if kind == 14 { return ShoveyDoorOpen(game, position) }
+    if kind == SHOVEY_GATE { return ShoveyGateOpen(game, position) }
     if ShoveyDecorFloor(kind) || kind == SHOVEY_ICE || kind == SHOVEY_CRACKED_FLOOR { return true }
     if kind == SHOVEY_PIT {
         return player || ShoveyBallColor(object) > 0 || object == 9 || object == SHOVEY_BOMB || ShoveyColorBlock(object)
@@ -302,6 +322,11 @@ ShoveySensor :: (game: *ShoveyGame, position: s32) {
 ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     to := ShoveyNeighbor(game.player, direction)
     if to < 0 { return false }
+    if ShoveyLever(game.ground[to]) {
+        game.ground[to] = ifx game.ground[to] == SHOVEY_LEVER then SHOVEY_LEVER_ON else SHOVEY_LEVER
+        game.moves += 1
+        return true
+    }
     if game.ground[to] == 34 && game.keys > 0 {
         game.keys -= 1
         game.ground[to] = 0
@@ -370,7 +395,7 @@ ShoveyMove :: (game: *ShoveyGame, direction: s32) -> bool {
     // Shovey stops sliding the moment he pushes something: a crate or ball
     // pushed on the ice moves one cell, then Shovey stands still.
     ahead := ShoveyNeighbor(game.player, direction)
-    pushing := ahead >= 0 && game.objects[ahead] != 0 && game.objects[ahead] != 40
+    pushing := ahead >= 0 && ((game.objects[ahead] != 0 && game.objects[ahead] != 40) || ShoveyLever(game.ground[ahead]))
     changed := ShoveyStep(game, direction)
     if changed && !pushing {
         visited: [SHOVEY_CELLS]bool
@@ -379,7 +404,7 @@ ShoveyMove :: (game: *ShoveyGame, direction: s32) -> bool {
             if !slide && game.ground[game.player] != SHOVEY_ICE { break }
             visited[game.player] = true
             next := ShoveyNeighbor(game.player, direction)
-            stop := next >= 0 && game.objects[next] != 0 && game.objects[next] != 40
+            stop := next >= 0 && ((game.objects[next] != 0 && game.objects[next] != 40) || ShoveyLever(game.ground[next]))
             if !ShoveyStep(game, direction) || stop { break }
         }
     }
@@ -397,7 +422,7 @@ ShoveyMoveFrames :: (start: *ShoveyGame, direction: s32, frames: []ShoveyGame) -
     game.direction = direction
     slide := (game.powers & SHOVEY_SLIDE) != 0
     ahead := ShoveyNeighbor(game.player, direction)
-    pushing := ahead >= 0 && game.objects[ahead] != 0 && game.objects[ahead] != 40
+    pushing := ahead >= 0 && ((game.objects[ahead] != 0 && game.objects[ahead] != 40) || ShoveyLever(game.ground[ahead]))
     count: s32 = 0
     if !ShoveyStep(*game, direction) { return 0 }
     frames[count] = game
@@ -408,7 +433,7 @@ ShoveyMoveFrames :: (start: *ShoveyGame, direction: s32, frames: []ShoveyGame) -
             if !slide && game.ground[game.player] != SHOVEY_ICE { break }
             visited[game.player] = true
             next := ShoveyNeighbor(game.player, direction)
-            stop := next >= 0 && game.objects[next] != 0 && game.objects[next] != 40
+            stop := next >= 0 && ((game.objects[next] != 0 && game.objects[next] != 40) || ShoveyLever(game.ground[next]))
             if !ShoveyStep(*game, direction) { break }
             if count < frames.count { count += 1 }
             frames[count - 1] = game
@@ -430,7 +455,7 @@ ShoveyFire :: (game: *ShoveyGame) -> bool {
         if object == 28 { game.objects[at] = 0 }
         else if ShoveyBallColor(object) > 0 || object == 9 || object == 19 ||
         ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ground == 14 ||
-        ground == 26 || ground == 33 || ground == 34 { break }
+        ground == 26 || ground == 33 || ground == 34 || ground == SHOVEY_GATE || ShoveyLever(ground) { break }
         at = ShoveyNeighbor(at, game.direction)
     }
     game.moves += 1
@@ -462,7 +487,7 @@ ShoveyCount :: (game: *ShoveyGame) -> ShoveyTally {
         object := game.objects[at]; ground := game.ground[at]
         if ShoveyBallColor(object) > 0 { tally.balls += 1 }
         if ground == 21 || ground == 56 { tally.apples += 1 }
-        if ground == 34 || (ground == 14 && !ShoveyDoorOpen(game, at)) { tally.closed += 1 }
+        if ground == 34 || (ground == 14 && !ShoveyDoorOpen(game, at)) || (ground == SHOVEY_GATE && !ShoveyGateOpen(game, at)) { tally.closed += 1 }
     }
     return tally
 }
@@ -487,12 +512,7 @@ ShoveyEvent :: (before: *ShoveyGame, after: *ShoveyGame) -> s32 {
     return SHOVEY_EVENT_NONE
 }
 
-// Each tick advances every autonomous block once, as one simultaneous step.
-// A blocked tick chooses its next direction; movement starts on the following
-// tick. Blocks that start beside each other cannot exchange or follow into a
-// cell together. Fresh path takes priority over visited path, with
-// axis-dependent turn ordering.
-// Animals wander on clear floor without changing the puzzle's goals or route.
+// Animals wander on clear floor and block both Shovey and pushed pieces.
 // Trees, hazards, objects and the player are never valid destinations.
 ShoveyAnimalsTick :: (game: *ShoveyGame) -> bool {
     if game.won || game.lost { return false }
@@ -501,13 +521,13 @@ ShoveyAnimalsTick :: (game: *ShoveyGame) -> bool {
     moved := false
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         kind := game.ground[at]
-        if visited[at] || !ShoveyAnimal(kind) { continue }
+        if visited[at] || !ShoveyAnimal(kind) || ShoveyFish(kind) { continue }
         direction := game.light_from[at]
         if direction < 0 || direction > 3 { direction = 1 }
         for turn: cast(s32)0..3 {
             facing := (direction + turn) % 4
             to := ShoveyNeighbor(at, facing)
-            if to < 0 || to == game.player || game.ground[to] != 0 || game.objects[to] != 0 || visited[to] { continue }
+            if to < 0 || to == game.player || game.objects[to] != 0 || visited[to] || game.ground[to] != 0 { continue }
             game.ground[at] = 0
             game.light_from[at] = 4
             game.ground[to] = kind
@@ -563,7 +583,7 @@ ShoveyTick :: (game: *ShoveyGame) -> bool {
         reserved[to] = true
         moved = true
     }
-    return moved
+    return ShoveyAnimalsTick(game) || moved
 }
 
 save_bytes: [2432]u8;

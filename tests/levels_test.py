@@ -36,13 +36,13 @@ for level in classic:
     board = cells(level['cells'])
     tiles = cells(level['tiles']) if 'tiles' in level else [0] * CELLS
     decorations = cells(level['decorations']) if 'decorations' in level else [0] * CELLS
-    assert all(kind in {0, *range(57, 72), 12, 4, 5, 6, 47, 48, 49, 76, 77, 78} for kind in tiles)
+    assert all(kind in {0, *range(57, 72), 12, 14, 4, 5, 6, 47, 48, 49, 76, 77, 78, *range(95, 99)} for kind in tiles)
     assert all(kind in {0, 57, 58, 59, 84} for kind in decorations)
     assert board.count(10) == 1, f'Classic {level["number"]}: one Shovey'
     assert board.count(7) >= 1, f'Classic {level["number"]}: a home'
-    assert all((kind <= 76 or kind in (82, 83)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
-    assert all(board[at] == 12 or (board[at] == 0 and tiles[at] == 12) for at in range(CELLS) if at < WIDTH or at >= CELLS - WIDTH or at % WIDTH in (0, WIDTH - 1)), \
-        f'Classic {level["number"]}: walled border'
+    assert all((kind <= 76 or kind in range(82, 99)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
+    assert all(board[at] in (12, 63, 64, 65, 76, 95, 96, 97, 98) or (board[at] in (0, 71) and tiles[at] in (12, 63, 64, 65, 76, 95, 96, 97, 98)) for at in range(CELLS) if at < WIDTH or at >= CELLS - WIDTH or at % WIDTH in (0, WIDTH - 1)), \
+        f'Classic {level["number"]}: border needs a solid tile or abyss'
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
     assert (ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png').is_file()
     # The last Classic level is the finale picture, with nothing to solve.

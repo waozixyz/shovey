@@ -1,0 +1,32 @@
+#import, file "../src/progress.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/levels.zi";
+#import, file "../src/island_levels.zi";
+
+#program_export
+Check :: () -> s32 {
+    last := cast(s32)SHOVEY_APPROVED_LEVEL_COUNT
+    if ShoveyLevelCount() != last || ShoveyLevelData(last + 1) != "" || ShoveyLevelSolution(last + 1) != "" || IslandLevelData(1) != "" { return 1 }
+    progress := ShoveyProgress.{.unlocked = last}
+    game: ShoveyGame
+    if !ShoveyLoad(*game, last) || ShoveyLoad(*game, last + 1) { return 2 }
+    for letter: ShoveyLevelSolution(last) {
+        if letter >= #char "0" && letter <= #char "3" { unused ShoveyMove(*game, cast(s32)(letter - #char "0")) }
+        else if letter == #char "f" { unused ShoveyFire(*game) }
+        else if letter == #char "t" { unused ShoveyTick(*game) }
+    }
+    if !game.won { return 3 }
+    ShoveyRecordWin(*progress, *game)
+    if !progress.completed[last - 1] || progress.unlocked != last + 1 || ShoveyContinue(*progress, *game) || ShoveySelectLevel(*progress, *game, last + 1) { return 4 }
+    // A campaign from the previous full release retains its later unlocks
+    // and completion marks, while this release opens the last approved board.
+    game.level = 25
+    progress.unlocked = 25
+    progress.completed[22] = true
+    saved := ShoveyCampaignSave(*progress, *game)
+    restored: ShoveyProgress
+    position: ShoveyGame
+    if !ShoveyCampaignRestore(*restored, *position, saved) || position.level != last || restored.unlocked != 25 || !restored.completed[last - 1] || !restored.completed[22] { return 5 }
+    if ShoveyOpenLatest(*restored, *position) || position.level != last { return 6 }
+    return 0
+}

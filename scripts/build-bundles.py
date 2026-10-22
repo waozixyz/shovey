@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+from release_assets import prepare_release_assets
 
 ROOT = Path(__file__).resolve().parents[1]
 EDITIONS = ['src/catalog.json', 'src/island/catalog.json', 'src/editor/catalog.json']
@@ -62,7 +63,10 @@ def build(toolchain, kryon, apps):
                 shutil.copytree(source, target)
             else:
                 shutil.copyfile(source, target)
-        shutil.copyfile(ROOT / manifest, resources / 'catalog.json')
+        (resources / 'catalog.json').write_text(json.dumps(
+            {key: value for key, value in descriptor.items() if key != 'build_defines'}, indent=2) + '\n')
+        if 'SHOVEY_RELEASE' in descriptor.get('build_defines', []):
+            prepare_release_assets(ROOT, resources)
         blocks, code = translations(descriptor)
         (resources / 'locales').mkdir()
         for file_name, text in blocks.items():
@@ -81,6 +85,7 @@ def build(toolchain, kryon, apps):
             '--module-path', 'std=' + str(toolchain / 'std'),
             '--module-path', str(toolchain / 'std'),
             '--module-path', 'apps=' + str(apps / 'src'),
+            *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir', 'assets=' + str(staged / 'assets'),
             '--entry', descriptor['entry'], '-o', str(bundle), str(ROOT / descriptor['source'])],
             cwd=ROOT, check=True)

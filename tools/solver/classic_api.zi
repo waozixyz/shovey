@@ -400,9 +400,13 @@ ClassicApiPlainStep :: (direction: s32) -> s32 {
     return to * 4 + (ifx (game.powers & SHOVEY_AMMO) != 0 then direction else 0)
 }
 
-// ShoveyTick never reads Shovey's cell or facing.
+// Animals avoid Shovey, so their timer tick depends on his exact cell.
 #program_export
-ClassicApiWalkerFree :: (action: s32) -> s32 { return ifx action == 5 then 1 else 0 }
+ClassicApiWalkerFree :: (action: s32) -> s32 {
+    if action != 5 { return 0 }
+    for kind: classic_base.ground { if ShoveyAnimal(kind) && !ShoveyFish(kind) { return 0 } }
+    return 1
+}
 
 // A ball against two crossing walls can never move again and never sinks, so
 // ShoveyRemaining can never reach 0. Only permanent walls (12) and the board
@@ -571,7 +575,7 @@ ClassicApiEstimate :: () -> s32 {
             sources[source_count] = holes[color][index]; source_count += 1
         }
         for index: cast(s32)0..painter_count - 1 {
-            at := painters[index]; painted := ShoveyPaintColor(game.ground[at])
+            at := painters[index]; painted := ShoveyPaintColor(game.ground[at]) - 1
             sources[source_count] = at
             starts[source_count] = 1 + ClassicApiNearest(at, holes[painted][0:hole_count[painted]])
             source_count += 1

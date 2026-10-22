@@ -53,6 +53,7 @@
 #import, file "../../src/shovey_board.zi";
 #import, file "../../src/orientation.zi";
 #import, file "../../src/levels.zi";
+#import, file "../levels/similarity.zi";
 
 sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
@@ -98,6 +99,17 @@ drafts_refreshed: s64;
 
 history: [HISTORY * HEX]u8;
 history_count: s32;
+redo_history: [HISTORY * HEX]u8;
+redo_count: s32;
+reset_board: [HEX]u8;
+approved_boards: [PLACES * HEX]u8;
+approved_places: [PLACES]bool;
+glm_busy: bool;
+glm_place: s32;
+glm_base: [HEX]u8;
+action_message: [256]u8;
+action_message_length: s32;
+actions_polled: s64;
 stroke: bool;
 
 playing: bool;
@@ -149,25 +161,27 @@ names: [1]string;
 similarity_percent: s32;
 similarity_matches: s32;
 similarity_total: s32;
+similarity_cache: [(PLACES + 1) * HEX]u8;
+similarity_cached: [PLACES + 1]bool;
+similarity_scores: [PLACES + 1]s32;
 
 // Palette: board kinds in the order a level is usually built.
-PALETTE :: 73
-palette_kinds: [73]s32 = .[10, 0, 12, 7, 9, 18, 1, 2, 3, 4, 5, 6,
-    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14,
-    33, 34, 8, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
+PALETTE :: 83
+palette_kinds: [83]s32 = .[10, 0, 12, 7, 9, 57, 58, 59, 84, 18, 1, 2, 3, 4, 5, 6,
+    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 14, 92, 93,
+    33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
     35, 36, 37, 38, 53, 54, 55, 39, 40,
-    65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 62, 57, 58, 59, 60, 61, 63, 64, 76, 82, 83];
-palette_names: [73]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Crate goal",
+    65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91];
+palette_names: [83]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Pebbles", "Tree", "Crate goal",
     "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
     "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
     "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
-    "Star", "Apple", "Cherry", "Plate", "Gate", "Key", "Lock",
-    "Teleporter", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
+    "Star", "Apple", "Cherry", "Plate", "Mossy wall", "Gate", "Lever", "Key", "Lock",
+    "Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
     "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
     "Yellow block", "Cyan block", "Purple block", "Green block", "Block goal", "Mirror Shovey",
     "Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
-    "Cyan portal", "Purple portal", "Yellow portal", "Cracked wall", "Flowers", "Grass tufts", "Pebbles",
-    "Checker floor", "Striped floor", "Mossy wall", "Water edge", "Torch wall", "Dog", "Turtle"];
+    "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Chicken", "Turtle", "Crab", "Goldfish", "Koi", "Minnow"];
 
 AppendText :: (bytes: []u8, length: *s32, text: string) {
     if length.* + cast(s32)text.count > cast(s32)bytes.count { return }
@@ -387,36 +401,22 @@ OnBorder :: (at: s32) -> bool {
     return x == 0 || y == 0 || x == SHOVEY_WIDTH - 1 || y == SHOVEY_HEIGHT - 1
 }
 
-// How alike a place's board and original `number` are over the whole map,
-// best of the four mirrorings. Empty floor in both and the border wall every
-// board shares are left out, so only the cells that make up either layout
-// count: the share of those that hold the same piece.
+// Surface changes do not disguise a near copy. Small piece relocations and
+// mirrored layouts remain similar. Cache each place's immutable comparison.
 SimilarityTo :: (place: s32, number: s32) -> s32 {
     if number < 1 || number > PLACES || !original_found[number] { return -1 }
-    best := cast(s32)-1
-    for flip: cast(s32)0..3 {
-        flip_x := (flip & 1) != 0
-        flip_y := (flip & 2) != 0
-        same: s32 = 0
-        total: s32 = 0
-        for at: cast(s32)0..SHOVEY_CELLS - 1 {
-            edited := VisibleKind(Board(place), at)
-            original := VisibleKind(Original(number), MirroredIndex(at, flip_x, flip_y))
-            if edited == 0 && original == 0 { continue }
-            if edited == 12 && original == 12 && OnBorder(at) { continue }
-            total += 1
-            if edited == original { same += 1 }
-        }
-        percent: s32 = 100
-        if total > 0 { percent = (same * 100) / total }
-        if percent > best {
-            best = percent
-            similarity_percent = percent
-            similarity_matches = same
-            similarity_total = total
-        }
+    cached := similarity_cache[place * HEX:(place + 1) * HEX]
+    if place == number && similarity_cached[place] && Same(cached, Board(place)) {
+        similarity_percent = similarity_scores[place]
+        return similarity_percent
     }
-    return best
+    similarity_percent = PuzzleSimilarity(Board(place), Original(number))
+    if place == number {
+        Copy(cached, Board(place))
+        similarity_cached[place] = true
+        similarity_scores[place] = similarity_percent
+    }
+    return similarity_percent
 }
 
 BestMirrorMatch :: (place: s32) -> s32 { return SimilarityTo(place, original_shown) }
@@ -425,7 +425,6 @@ BestMirrorMatch :: (place: s32) -> s32 { return SimilarityTo(place, original_sho
 // and, measured over the whole map, most of its pieces match that original.
 TOO_CLOSE_PERCENT :: 70
 TooClose :: (place: s32) -> bool {
-    if !focus[place] { return false }
     return SimilarityTo(place, place) >= TOO_CLOSE_PERCENT
 }
 
@@ -510,8 +509,15 @@ OurTiles :: () -> []string {
 }
 
 PrivateSprite :: (kind: s32) -> s32 {
-    if kind == SHOVEY_DOG { return SPRITE_DOG + 1 }
-    if kind == SHOVEY_TURTLE { return SPRITE_TURTLE + 1 }
+    facing := BoardEngineDirection(1, boards_landscape)
+    if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
+    if kind == SHOVEY_GATE { return SPRITE_GATE }
+    if ShoveyLever(kind) { return SPRITE_LEVER + kind - SHOVEY_LEVER }
+    if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
+    if kind == SHOVEY_CRAB { return SPRITE_CRAB + facing }
+    if ShoveyFish(kind) { return SPRITE_FISH + (kind - SHOVEY_FISH) * 16 + facing }
+    if kind == SHOVEY_DOG { return SPRITE_DOG + facing }
+    if kind == SHOVEY_TURTLE { return SPRITE_TURTLE + facing }
     if kind == SHOVEY_TREE { return SPRITE_TREE }
     if kind >= 44 && kind <= 55 { return SPRITE_NEW_COLOR + kind - 44 }
     if kind == 56 { return SPRITE_CHERRY }
@@ -524,6 +530,14 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         kind := KindAt(board, at)
         display := BoardDisplayIndex(at, landscape)
         layers[display] = PrivateSprite(KindAt(board, SHOVEY_CELLS + at))
+        if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT {
+            mask: s32 = 0
+            for direction: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, direction)
+                if neighbor < 0 || KindAt(board, SHOVEY_CELLS + neighbor) != SHOVEY_PIT { mask |= 1 << direction }
+            }
+            layers[display] = SPRITE_ABYSS + mask
+        }
         if KindAt(board, SHOVEY_CELLS + at) == 77 {
             mask: s32 = 0
             for direction: cast(s32)0..3 {
@@ -534,7 +548,7 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         }
         decoration := KindAt(board, SHOVEY_CELLS * 2 + at)
         layers[SHOVEY_CELLS + display] = ifx decoration == 0 then -1 else PrivateSprite(decoration)
-        layers[SHOVEY_CELLS * 2 + display] = ifx kind == 10 then SPRITE_PLAYER + 1 else ifx kind > 0 && kind <= SHOVEY_LAST_KIND then PrivateSprite(kind) else -1
+        layers[SHOVEY_CELLS * 2 + display] = ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, landscape) else ifx kind > 0 && kind <= SHOVEY_LAST_KIND then PrivateSprite(kind) else -1
     }
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
@@ -549,7 +563,8 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
 
 // ---------------------------------------------------------------- editing
 
-Remember :: () {
+Remember :: (clear_redo: bool = true) {
+    if clear_redo { redo_count = 0 }
     if history_count == HISTORY {
         for index: cast(s32)0..(HISTORY - 1) * HEX - 1 { history[index] = history[index + HEX] }
         history_count -= 1
@@ -560,9 +575,136 @@ Remember :: () {
 
 UndoEdit :: () {
     if history_count == 0 { return }
+    if redo_count < HISTORY {
+        Copy(redo_history[redo_count * HEX:(redo_count + 1) * HEX], Board(current))
+        redo_count += 1
+    }
     history_count -= 1
     Copy(Board(current), history[history_count * HEX:(history_count + 1) * HEX])
     Edited()
+}
+
+RedoEdit :: () {
+    if redo_count == 0 { return }
+    Remember(false)
+    redo_count -= 1
+    Copy(Board(current), redo_history[redo_count * HEX:(redo_count + 1) * HEX])
+    Edited()
+}
+
+ResetEdit :: () {
+    if Same(Board(current), reset_board[:]) { return }
+    Remember()
+    Copy(Board(current), reset_board[:])
+    Edited()
+}
+
+Approved :: (place: s32) -> bool {
+    return approved_places[place - 1] && Same(Board(place), approved_boards[(place - 1) * HEX:place * HEX])
+}
+
+LoadApprovals :: () {
+    for place: cast(s32)1..PLACES {
+        text, found := ReadEntireFile(DraftPath(place, ".approved"))
+        approved_places[place - 1] = found && ReadBoard(text, approved_boards[(place - 1) * HEX:place * HEX])
+    }
+}
+
+ActionMessage :: (text: string) {
+    action_message_length = 0
+    AppendText(action_message[:], *action_message_length, text)
+}
+
+RunAction :: (action: string) {
+    command: [512]u8
+    length: s32 = 0
+    AppendText(command[:], *length, "setsid python3 scripts/editor_actions.py ")
+    AppendText(command[:], *length, action)
+    AppendText(command[:], *length, " ")
+    AppendNumber(command[:], *length, current)
+    AppendText(command[:], *length, " > backup/editor-action.log 2>&1 < /dev/null &")
+    Shell(TextView(command[:length]))
+}
+
+ApproveEdit :: () {
+    if playing || (!Solved() && !Proven()) { return }
+    StartSave()
+    if save_state != 2 { return }
+    letters := ifx Solved() then route[:route_length] else proof_route[:proof_length]
+    length: s32 = 0
+    AppendText(proof_record[:], *length, TextView(Board(current)))
+    AppendText(proof_record[:], *length, "\n")
+    AppendText(proof_record[:], *length, TextView(letters))
+    if !WriteEntireFile(DraftPath(current, ".approval-request"), TextView(proof_record[:length])) { ActionMessage("Approval could not be saved."); return }
+    if !WriteEntireFile(DraftPath(current, ".approved"), TextView(Board(current))) { ActionMessage("Approval could not be saved."); return }
+    Copy(approved_boards[(current - 1) * HEX:current * HEX], Board(current))
+    approved_places[current - 1] = true
+    ActionMessage("Approved. Preparing the server update.")
+    RunAction("approve")
+}
+
+ModifyGLM :: () {
+    if playing || glm_busy { return }
+    Copy(glm_base[:], Board(current))
+    glm_place = current
+    unused RemoveFile(DraftPath(current, ".glm-result"))
+    unused RemoveFile(DraftPath(current, ".glm-status"))
+    unused RemoveFile(DraftPath(current, ".glm-proof"))
+    if !WriteEntireFile(DraftPath(current, ".glm-base"), TextView(glm_base[:])) { return }
+    glm_busy = true
+    ActionMessage("GLM is designing a variation…")
+    RunAction("glm")
+}
+
+// A result and its proof must describe the same board, and its route must
+// win in this editor's engine before we replace the board on screen.
+GLMProof :: (text: string, board: []u8) -> bool {
+    if text.count <= cast(s64)HEX + 1 || text.count > cast(s64)(HEX + ROUTE_MAX + 1) { return false }
+    if text[HEX] != cast(u8)10 || text[0:HEX] != TextView(board) { return false }
+    length := cast(s32)text.count - HEX - 1
+    letters: [ROUTE_MAX]u8
+    for at: cast(s32)0..length - 1 {
+        letter := text[HEX + 1 + at]
+        if !((letter >= cast(u8)48 && letter <= cast(u8)51) || letter == cast(u8)102 || letter == cast(u8)116) { return false }
+        letters[at] = letter
+    }
+    return Wins(board, LevelFor(current), letters[:], length)
+}
+
+PollActions :: (now: s64) {
+    if now - actions_polled < 500 { return }
+    actions_polled = now
+    if glm_busy {
+        result, ready := ReadEntireFile(DraftPath(glm_place, ".glm-result"))
+        if ready {
+            candidate: [HEX]u8
+            if ReadBoard(result, candidate[:]) && glm_place == current && !playing && Same(Board(current), glm_base[:]) {
+                proof, proven := ReadEntireFile(DraftPath(glm_place, ".glm-proof"))
+                if proven && GLMProof(proof, candidate[:]) {
+                    Remember()
+                    Copy(Board(current), candidate[:])
+                    Edited()
+                    Copy(proof_board[:], candidate[:])
+                    proof_length = cast(s32)proof.count - HEX - 1
+                    for at: cast(s32)0..proof_length - 1 { proof_route[at] = proof[HEX + 1 + at] }
+                    proof_level = current
+                    AcceptRoute(proof_route[:], proof_length)
+                    ActionMessage("Proven GLM variation applied. Try, undo, reset, or approve it.")
+                } else { ActionMessage("GLM result had no winning proof; your level was kept.") }
+            } else { ActionMessage("GLM result is ready; your newer edits were kept.") }
+            glm_busy = false
+            unused RemoveFile(DraftPath(glm_place, ".glm-result"))
+        } else {
+            status, found := ReadEntireFile(DraftPath(glm_place, ".glm-status"))
+            if found {
+                ActionMessage(status)
+                if !Contains(status, "designing") && !Contains(status, "being checked") { glm_busy = false }
+            }
+        }
+    } else {
+        status, found := ReadEntireFile("backup/editor-drafts/publish-status")
+        if found { ActionMessage(status) }
+    }
 }
 
 Edited :: () {
@@ -626,8 +768,8 @@ LoadUnlinked :: () {
 
 Paint :: (at: s32, kind: s32) {
     board := Board(current)
-    if palette_tab == 2 {
-        decoration := ifx kind >= 512 then kind - 512 else 0
+    if kind >= 512 {
+        decoration := kind - 512
         if !ShoveyDecoration(decoration) || KindAt(board, SHOVEY_CELLS * 2 + at) == decoration { return }
         if decoration == SHOVEY_TREE && KindAt(board, at) != 0 { return }
         SetKind(board, SHOVEY_CELLS * 2 + at, decoration)
@@ -636,15 +778,32 @@ Paint :: (at: s32, kind: s32) {
     }
     if palette_tab == 0 {
         tile := ifx kind >= 256 then kind - 256 else 0
+        if tile == SHOVEY_PIT {
+            if KindAt(board, SHOVEY_CELLS + at) == tile && KindAt(board, at) == 0 && KindAt(board, SHOVEY_CELLS * 2 + at) == 0 { return }
+            SetKind(board, SHOVEY_CELLS + at, tile)
+            SetKind(board, at, 0)
+            SetKind(board, SHOVEY_CELLS * 2 + at, 0)
+            Edited()
+            return
+        }
+        if ShoveyFish(KindAt(board, at)) && tile != 64 { return }
         if !ShoveyTile(tile) || KindAt(board, SHOVEY_CELLS + at) == tile { return }
         SetKind(board, SHOVEY_CELLS + at, tile)
+        Edited()
+        return
+    }
+    if kind == 0 {
+        if KindAt(board, at) == 0 && KindAt(board, SHOVEY_CELLS * 2 + at) == 0 { return }
+        SetKind(board, at, 0)
+        SetKind(board, SHOVEY_CELLS * 2 + at, 0)
         Edited()
         return
     }
     replaced_wall := false
     if kind != 0 && KindAt(board, SHOVEY_CELLS * 2 + at) == SHOVEY_TREE { return }
     tile := KindAt(board, SHOVEY_CELLS + at)
-    if kind != 0 && kind != 71 && (tile == 12 || ShoveySolidDecor(tile)) {
+    if ShoveyFish(kind) && tile != 64 { SetKind(board, SHOVEY_CELLS + at, 64); replaced_wall = true }
+    else if !ShoveyFish(kind) && kind != 0 && kind != 71 && (tile == 12 || tile == 14 || ShoveySolidDecor(tile)) {
         SetKind(board, SHOVEY_CELLS + at, 0)
         replaced_wall = true
     }
@@ -663,11 +822,13 @@ Open :: (place: s32) {
     current = (place - 1 + PLACES) % PLACES + 1
     playing = false
     RestoreDraft(current)
+    Copy(reset_board[:], Board(current))
     original_shown = current
     // Reopening the editor comes back to this place.
     digits: [24]u8
     unused WriteEntireFile("backup/editor-drafts/place", FormatInteger(cast(s64)current, digits[:]))
     history_count = 0
+    redo_count = 0
     playing = false
     watching = false
     check_wanted = true
@@ -1225,7 +1386,7 @@ SelectorScreen :: (area: Rectangle) {
     cell_width := (area.width - gap * cast(float32)(SELECTOR_COLUMNS - 1)) / cast(float32)SELECTOR_COLUMNS
     cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
     Caption(15, Rectangle.{area.x, area.y, area.width, legend_height},
-        "All levels, coloured by how alike each is to its original: green under 50%, then yellow, orange, and red at 100%. Blue: waiting for a winnable layout. Dark outline: open now. Click the title, Esc or L closes.", 14)
+        "Purple: approved layout. Other colours show similarity to the original: green under 50%, then yellow, orange, red at 100%. Blue: waiting. Editing an approved layout removes its purple mark until approved again.", 14)
     // Measuring a place sets the status line's numbers; keep them.
     keep_percent := similarity_percent
     keep_matches := similarity_matches
@@ -1246,6 +1407,7 @@ SelectorScreen :: (area: Rectangle) {
         }
         fill := ifx alike >= 0 then SimilarityColor(alike) else Color.{96, 168, 120, 255}
         if !InGame(place) { fill = Color.{104, 140, 196, 255} }
+        if Approved(place) { fill = Color.{159, 111, 209, 255} }
         border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
         unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
                 .fill = fill, .border = border, .radius = 5.0})
@@ -1316,13 +1478,9 @@ StatusText :: () -> string {
         AppendText(status_bytes[:], *length, ifx Proven() then " s." else " s. Play it (Tab) to prove it, or change it.")
     }
     if BestMirrorMatch(current) >= 0 {
-        AppendText(status_bytes[:], *length, "    Similarity: ")
+        AppendText(status_bytes[:], *length, "    Puzzle similarity: ")
         AppendNumber(status_bytes[:], *length, similarity_percent)
-        AppendText(status_bytes[:], *length, "% (")
-        AppendNumber(status_bytes[:], *length, similarity_matches)
-        AppendText(status_bytes[:], *length, " of ")
-        AppendNumber(status_bytes[:], *length, similarity_total)
-        AppendText(status_bytes[:], *length, " pieces match, best mirror)")
+        AppendText(status_bytes[:], *length, "% (layout and pieces, best mirror)")
     }
     if Proven() {
         AppendText(status_bytes[:], *length, "    You won it in ")
@@ -1351,23 +1509,21 @@ StatusText :: () -> string {
 }
 
 Palette :: (area: Rectangle) {
-    tabs: [3]string = .["Tiles", "Objects", "Deco"]
+    tabs: [2]string = .["Tiles", "Objects"]
     eraser := "S2rr:M5 19H19M7 15L15 7L19 11L13 17H9Z"
-    for tab: cast(s32)0..2 {
+    for tab: cast(s32)0..1 {
         if Control(69000 + tab, Rectangle.{area.x + cast(float32)tab * 120.0, area.y, 116.0, 36.0}, tabs[tab], palette_tab == tab) {
             palette_tab = tab
-            selected = ifx tab == 0 then 256 else ifx tab == 2 then 512 else 0
+            selected = ifx tab == 0 then 256 else 0
         }
     }
-    tile_kinds: [16]s32 = .[0,77,78,60,61,12,63,64,65,4,5,6,47,48,49,70]
-    tile_names: [16]string = .["Stone","Grass","Sand","Checker","Stripes","Wall","Mossy wall","Water edge","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Ice"]
-    deco_kinds: [5]s32 = .[0,57,58,59,84]
-    deco_names: [5]string = .["Erase deco","Flowers","Grass tufts","Pebbles","Tree"]
-    count: s32 = ifx palette_tab == 0 then 16 else ifx palette_tab == 2 then 5 else PALETTE
+    tile_kinds: [20]s32 = .[0,77,78,60,61,12,14,95,96,97,98,64,65,4,5,6,47,48,49,70]
+    tile_names: [20]string = .["Stone","Grass","Sand","Checker","Stripes","Wall","Mossy wall","Slate wall","Brick wall","Sandstone wall","Timber wall","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Ice"]
+    count: s32 = ifx palette_tab == 0 then 20 else PALETTE
     visible_count: s32 = 0
     for index: cast(s32)0..count - 1 {
-        kind := ifx palette_tab == 0 then tile_kinds[index] else ifx palette_tab == 2 then deco_kinds[index] else palette_kinds[index]
-        if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62 || (kind >= 57 && kind <= 59)) { continue }
+        kind := ifx palette_tab == 0 then tile_kinds[index] else palette_kinds[index]
+        if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62) { continue }
         visible_count += 1
     }
     scrolled := Scroll(session, ScrollProps.{.key = cast(u64)69500, .bounds = Rectangle.{area.x, area.y + 44.0, area.width, area.height - 44.0},
@@ -1377,15 +1533,15 @@ Palette :: (area: Rectangle) {
     row: s32 = 0
     cell_width := (area.width - 16.0) / 3.0
     for index: cast(s32)0..count - 1 {
-        kind := ifx palette_tab == 0 then tile_kinds[index] else ifx palette_tab == 2 then deco_kinds[index] else palette_kinds[index]
-        if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62 || (kind >= 57 && kind <= 59)) { continue }
-        name := ifx palette_tab == 0 then tile_names[index] else ifx palette_tab == 2 then deco_names[index] else ifx kind == 0 then "Erase object" else ifx kind == 71 then "Crack" else palette_names[index]
-        brush := kind + (ifx palette_tab == 0 then 256 else ifx palette_tab == 2 then 512 else 0)
+        kind := ifx palette_tab == 0 then tile_kinds[index] else palette_kinds[index]
+        if palette_tab == 1 && kind != 0 && (ShoveyTerrain(kind) || kind == 62) { continue }
+        name := ifx palette_tab == 0 then tile_names[index] else ifx kind == 0 then "Erase object" else ifx kind == 71 then "Crack" else palette_names[index]
+        brush := kind + (ifx palette_tab == 0 then 256 else ifx kind != 0 && ShoveyDecoration(kind) then 512 else 0)
         bounds := Rectangle.{scrolled.content.x + cast(float32)(row % 3) * cell_width,
                 scrolled.content.y + cast(float32)(row / 3) * 96.0, cell_width - 4.0, 92.0}
         row += 1
         if bounds.y + bounds.height < scrolled.viewport.y || bounds.y > scrolled.viewport.y + scrolled.viewport.height { continue }
-        sprite := ifx kind == 10 then SPRITE_PLAYER + 1 else PrivateSprite(kind)
+        sprite := ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, boards_landscape) else PrivateSprite(kind)
         picture := ifx kind == 0 && palette_tab != 0 then "" else OurTiles()[sprite]
         if Button(session, ButtonProps.{.key = cast(u64)(70000 + index), .id = 70000 + index, .class_name = 9001,
                 .bounds = bounds, .label = name, .selected = selected == brush, .fit_content = true,
@@ -1401,6 +1557,7 @@ Palette :: (area: Rectangle) {
 Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     unused Box(session, BoxProps.{.key = cast(u64)19990, .bounds = viewport, .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
     now := MonotonicMilliseconds()
+    PollActions(now)
     PollCheck()
     ctrl := (modifiers & 2) != 0
     if key == 258 { if playing { playing = false; watching = false } else { StartPlay() } }
@@ -1416,13 +1573,10 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             if key == 90 || key == 259 { PlayUndo() }
         }
         if key == 82 { StartPlay() }
-        // The moving block runs on its own timer, as in the game.
+        // Animals and moving blocks share the engine's recorded timer tick.
         if !watching && now - last_tick >= 1000 {
             last_tick = now
-            moving := false
-            unused ShoveyAnimalsTick(*play)
-            for at: cast(s32)0..SHOVEY_CELLS - 1 { if play.ground[at] == 29 { moving = true } }
-            if moving { PlayAct(5) }
+            PlayAct(5)
         }
         if watching && watch_at < route_length && now - watch_last >= 120 {
             watch_last = now
@@ -1438,7 +1592,8 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if key == 85 { Open(NextWaiting()) }
         if key == 91 && original_shown > 1 { original_shown -= 1 }
         if key == 93 && original_shown < PLACES { original_shown += 1 }
-        if key == 90 && !ctrl { UndoEdit() }
+        if key == 90 { UndoEdit() }
+        if key == 89 { RedoEdit() }
         if key == 67 { StartCheck() }
         if key == 83 && ctrl { StartSave() }
     }
@@ -1483,7 +1638,19 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if Control(14, Rectangle.{bx, 8.0, 168.0, 40.0}, ifx boards_landscape then "Rotate both: portrait" else "Rotate both: landscape") {
         boards_landscape = !boards_landscape
     }
-    Caption(9, Rectangle.{12.0, 52.0, width - 24.0, 28.0}, StatusText(), 15)
+    if Control(16, Rectangle.{8.0, 51.0, 80.0, 30.0}, "Redo (Y)") && !playing { RedoEdit() }
+    if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
+    if Button(session, ButtonProps.{.key = 18, .id = 18, .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0},
+            .label = ifx glm_busy then "GLM working…" else "GLM Modify", .disabled = playing || glm_busy}) != 0 { ModifyGLM() }
+    if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
+            .label = ifx Approved(current) then "Approved" else "Approve", .selected = Approved(current),
+            .disabled = playing || (!Solved() && !Proven())}) != 0 { ApproveEdit() }
+    if Control(20, Rectangle.{414.0, 51.0, 90.0, 30.0}, "Update") {
+        ActionMessage("Updating the approved levels…")
+        RunAction("update")
+    }
+    Caption(9, Rectangle.{516.0, 52.0, width - 528.0, 28.0},
+        ifx action_message_length > 0 then TextView(action_message[:action_message_length]) else StatusText(), 14)
 
     if selector_open {
         if now - drafts_refreshed >= 1000 {
@@ -1536,7 +1703,11 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         picking := (modifiers & 5) != 0
         if picking && pointer.pressed && grid.cell > 0.0 {
             at := BoardLogicalIndex(TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
-            if at >= 0 { selected = ifx palette_tab == 0 then 256 + KindAt(Board(current), SHOVEY_CELLS + at) else ifx palette_tab == 2 then 512 + KindAt(Board(current), SHOVEY_CELLS * 2 + at) else KindAt(Board(current), at) }
+            if at >= 0 {
+                piece := KindAt(Board(current), at)
+                decoration := KindAt(Board(current), SHOVEY_CELLS * 2 + at)
+                selected = ifx palette_tab == 0 then 256 + KindAt(Board(current), SHOVEY_CELLS + at) else ifx piece == 0 && decoration != 0 then 512 + decoration else piece
+            }
         }
         // A stroke paints every cell the pointer crosses; it is undone at once.
         if !picking && (pointer.down || secondary.down || secondary.pressed) && grid.cell > 0.0 {
@@ -1592,6 +1763,17 @@ main :: (argc: s32, argv: **u8) -> s32 {
     LoadUnlinked()
     LoadLevels()
     LoadDrafts()
+    LoadApprovals()
+    if argc >= 2 && TextFromCString(argv[1]) == "--similarity" {
+        digits: [24]u8
+        for place: cast(s32)1..PLACES {
+            Say(FormatInteger(cast(s64)place, digits[:]))
+            Say(" ")
+            Say(FormatInteger(cast(s64)SimilarityTo(place, place), digits[:]))
+            Say("%\n")
+        }
+        return 0
+    }
     selected = 256
     palette_tab = 0
     start: s32 = 1

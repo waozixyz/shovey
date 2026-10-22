@@ -275,6 +275,40 @@ def wall(face=(178, 182, 181, 255)):
     return grain(image, 21, dark=0.86, light=1.1, share=0.3)
 
 
+def wall_variant(style):
+    faces = ((104, 126, 137, 255), (166, 102, 78, 255),
+             (198, 177, 128, 255), (145, 110, 76, 255))
+    face = faces[style]
+    image = wall(face)
+    draw = ImageDraw.Draw(image)
+    seam = shade(face, 0.55)
+    if style == 0:
+        draw.line((16, 3, 16, 28), fill=seam)
+        draw.line((3, 16, 15, 16), fill=seam)
+        draw.line((17, 12, 28, 12), fill=seam)
+        draw.line((17, 13, 28, 13), fill=shade(face, 1.15))
+    elif style == 1:
+        for y in (11, 21):
+            draw.line((3, y, 28, y), fill=(204, 182, 157, 255), width=2)
+        for x, y in ((16, 3), (9, 13), (24, 13), (16, 23)):
+            draw.line((x, y, x, min(28, y + 7)), fill=(204, 182, 157, 255))
+    elif style == 2:
+        draw.line((3, 14, 28, 14), fill=seam)
+        draw.line((3, 15, 28, 15), fill=shade(face, 1.18))
+        draw.line((12, 3, 12, 13), fill=seam)
+        draw.line((22, 16, 22, 28), fill=seam)
+    else:
+        for x in (9, 17, 25):
+            draw.line((x, 3, x, 28), fill=seam)
+            draw.line((x + 1, 4, x + 1, 27), fill=shade(face, 1.16))
+        for y in (8, 23):
+            draw.rectangle((3, y, 28, y + 2), fill=(53, 65, 68, 255))
+            for x in (5, 26):draw.point((x, y + 1), fill=(178, 194, 191, 255))
+    # Every material keeps the original wall's recessed square and bevel.
+    bevel(image, (10, 10, 21, 21), face, 2, raised=False, light=1.3, dark=0.55)
+    return image
+
+
 MOSS = ((52, 118, 58, 255), (78, 150, 66, 255), (112, 178, 80, 255), (150, 204, 100, 255))
 
 
@@ -302,14 +336,63 @@ def moss(image, seed, amount):
 
 def mossy_wall():
     """The gate a button opens: the wall image with moss on top."""
-    return moss(wall(), 31, 5)
+    image = moss(wall(), 31, 11)
+    draw = ImageDraw.Draw(image)
+    for points in ([(3, 4), (12, 4), (14, 7), (14, 12)],
+                   [(27, 9), (25, 14), (27, 21), (24, 28)],
+                   [(8, 21), (11, 23), (12, 28)]):
+        draw.line(points, fill=MOSS[0], width=2)
+        for x, y in points:
+            draw.rectangle((x - 1, y - 1, x + 1, y), fill=MOSS[2])
+            draw.point((x - 1, y - 1), fill=MOSS[3])
+    image.putpixel((0, 0), (0, 0, 0, 0))
+    return image
 
 
 def mossy_floor():
     """The opened gate: the mossy block sunk level with the floor."""
-    image = floor()
-    bevel(image, (3, 3, 28, 28), shade(FLOOR, 0.9), 1, raised=False)
-    return moss(image, 33, 4)
+    return floor()
+
+
+def pressure_plate():
+    """A round green push button recessed into the paving, like the original."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((4, 4, 27, 27), fill=(47, 58, 53, 255))
+    draw.ellipse((5, 5, 26, 26), fill=(201, 208, 198, 255))
+    draw.ellipse((7, 7, 24, 24), fill=(29, 85, 37, 255))
+    draw.ellipse((8, 8, 23, 23), fill=(57, 157, 61, 255))
+    draw.arc((8, 8, 23, 23), 195, 285, fill=(149, 212, 109, 255), width=1)
+    draw.arc((8, 8, 23, 23), 15, 105, fill=(37, 115, 44, 255), width=1)
+    return image
+
+
+def gate(opened=False):
+    image = Image.new('RGBA', (SIZE, SIZE))
+    stone = (164, 176, 179, 255)
+    for box in ((1, 2, 5, 29), (26, 2, 30, 29), (4, 2, 27, 6)):
+        bevel(image, box, stone, 1, light=1.24, dark=0.58)
+    draw = ImageDraw.Draw(image)
+    for x in ((7, 9) if opened else (8, 13, 18, 23)):
+        draw.rectangle((x, 7, x + 1, 27), fill=(40, 65, 77, 255))
+        draw.line((x, 8, x, 25), fill=(117, 159, 176, 255))
+    if not opened:
+        draw.rectangle((7, 17, 24, 19), fill=(45, 73, 87, 255))
+        draw.point((16, 18), fill=(236, 181, 76, 255))
+    return image
+
+
+def lever(active=False):
+    image = Image.new('RGBA', (SIZE, SIZE))
+    bevel(image, (7, 23, 24, 29), (151, 163, 165, 255), 2)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((12, 19, 19, 26), fill=(39, 57, 65, 255))
+    x, y = (23, 7) if active else (8, 11)
+    draw.line((16, 22, x, y), fill=(30, 48, 58, 255), width=4)
+    draw.line((15, 22, x - 1, y), fill=(155, 186, 194, 255), width=2)
+    bevel(image, (x - 4, y - 2, x + 3, y + 3),
+          (100, 181, 123, 255) if active else (221, 137, 64, 255), 1)
+    return image
 
 
 def pit(colour):
@@ -542,23 +625,44 @@ def cracked_wall():
     return fracture(Image.new('RGBA', (SIZE, SIZE)))
 
 
-def water_edge():
-    image = Image.new('RGBA', (SIZE, SIZE), (74, 132, 170, 255))
-    grain(image, 53, dark=0.86, light=1.14, share=0.3)
+def sand():
+    return grain(Image.new('RGBA', (SIZE, SIZE), (218, 199, 151, 255)),
+                 78, dark=0.88, light=1.10, share=0.56)
+
+
+def water_edge(frame=0):
+    """A repeating pool surface; its quiet ripples drift without tile rims."""
+    image = Image.new('RGBA', (SIZE, SIZE), (66, 139, 171, 255))
     px = image.load()
-    for row, offset in ((7, 0), (15, 4), (23, 2)):
-        for x in range(2, SIZE - 2):
-            if (x + offset) % 8 < 4:
-                px[x, row] = (170, 214, 232, 255)
-    for i in range(SIZE):
-        px[i, 0] = px[0, i] = (52, 104, 140, 255)
-        px[i, SIZE - 1] = px[SIZE - 1, i] = (120, 176, 204, 255)
+    for y in range(SIZE):
+        for x in range(SIZE):
+            depth = math.sin(2 * math.pi * x / SIZE) * math.sin(2 * math.pi * y / SIZE)
+            px[x, y] = shade((66, 139, 171, 255), 1 + depth * 0.045)
+    for row, offset in ((6, 1), (21, 17)):
+        for dx in range(10):
+            x = (offset + dx + frame) % SIZE
+            y = (row + (1 if dx < 2 or dx > 7 else 0)) % SIZE
+            px[x, y] = (108, 178, 198, 255)
+            if 2 <= dx <= 7:
+                px[x, (y + 1) % SIZE] = (77, 151, 181, 255)
     return image
 
 
 def hole():
     """Adjacent abyss cells join into one opening, without internal rims."""
     return Image.new('RGBA', (SIZE, SIZE), (2, 4, 5, 255))
+
+
+def abyss_edge(mask):
+    image = hole()
+    px = image.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            distances = [d for side, d in enumerate((x, y, SIZE - 1 - x, SIZE - 1 - y)) if mask & (1 << side)]
+            distance = min(distances, default=SIZE)
+            if distance < 3:
+                px[x, y] = ((151, 164, 161, 255), (57, 68, 69, 255), (17, 25, 28, 255))[distance]
+    return image
 
 
 def arrow(direction):
@@ -629,8 +733,10 @@ def sprites():
     # Shovey is seen from above and looks where it goes, so one picture facing
     # up is turned for the other directions, as in the original.
     up = native('player')
+    # The comb and beak in the kept source point up already.
+    chicken = native('chicken')
     players = {'up': up, 'right': up.rotate(-90), 'down': up.rotate(180), 'left': up.rotate(90)}
-    mirror = recolour(players['down'], green, 330)
+    mirror = recolour(players['up'], green, 330)
     shot = Image.new('RGBA', (SIZE, SIZE))
     shot_draw = ImageDraw.Draw(shot)
     shot_draw.ellipse((6, 6, 25, 25), fill=(74, 85, 83, 255), outline=(35, 43, 42, 255))
@@ -650,10 +756,10 @@ def sprites():
         'tile-10': ('start position, drawn as floor', floor()),
         'tile-11': ('trail field: a ring with a bar, drawn in deep teal', over_floor(recolour(native('trail'), lambda h, s, v: s > 0.2, 188))),
         'tile-12': ('wall: a raised grey stone block', wall()),
-        'tile-13': ('pressure plate: a round orange button', over_floor(native('plate'))),
-        'tile-14': ('closed gate: a clean stone-and-iron gate without moss', native('gate-closed')),
-        'tile-15': ('red paint puddle', native('paint-red')),
-        'tile-16': ('blue paint puddle', native('paint-blue')),
+        'tile-13': ('pressure plate: a round green button recessed into the paving', pressure_plate()),
+        'tile-14': ('mossy stone wall: sinks when a pressure plate is held', mossy_wall()),
+        'tile-15': ('red paint puddle, matching the other paint silhouettes', recolour(native('paint-green'), green, 0)),
+        'tile-16': ('blue paint puddle, matching the other paint silhouettes', recolour(native('paint-green'), green, 240)),
         'tile-17': ('green paint puddle', native('paint-green')),
         'tile-18': ('crate goal: four corner brackets', crate_goal()),
         'tile-19': ('star block: a stone block with a bright star (pushable)', star_block()),
@@ -699,23 +805,54 @@ def sprites():
         'tile-75': ('yellow portal', colour_portal(48)),
         'tile-76': ('legacy wall, shown as a plain stone wall', wall()),
         'tile-77': ('grass floor tile, independent of objects', grass()),
-        'tile-78': ('sand floor tile, independent of objects', Image.new('RGBA', (SIZE, SIZE), (218, 199, 151, 255))),
-        'tile-82': ('dog: a clean tan animal with brown ears', native('dog')),
+        'tile-78': ('sand: pale warm grains with scattered darker and lighter flecks', sand()),
+        'tile-82': ('chicken: a cream-white bird with an orange comb', chicken),
         'tile-83': ('turtle: a clean jade shell with pale yellow feet', native('turtle')),
         'tile-84': ('tree: a broad jade canopy and brown trunk; blocks movement', native('tree')),
+        'tile-85': ('red portal', colour_portal(0)),
+        'tile-86': ('green portal', colour_portal(125)),
+        'tile-87': ('orange portal', colour_portal(28)),
+        'tile-88': ('crab: a bright orange shell and clear raised pincers', native('crab')),
+        'tile-92': ('iron gate: opened by pushing a lever', gate()),
+        'tile-93': ('lever: push to open the iron gates', lever()),
+        'tile-94': ('lever switched on: push again to close the iron gates', lever(True)),
+        'gate-open': ('iron gate with its bars drawn aside', gate(True)),
+        'tile-95': ('slate wall: dark blue-grey stone slabs', wall_variant(0)),
+        'tile-96': ('brick wall: warm bricks with pale mortar', wall_variant(1)),
+        'tile-97': ('sandstone wall: pale carved blocks', wall_variant(2)),
+        'tile-98': ('timber wall: upright planks with iron straps', wall_variant(3)),
         'shadow': ('mirror Shovey (pink)', mirror),
-        'door-open': ('open gate: the gate withdrawn into its frame', native('gate-open')),
+        'door-open': ('mossy wall lowered, leaving a moss-covered stone rim', mossy_floor()),
         'projectile': ('a flying iron shot', native('projectile')),
     }
     for facing, sprite in players.items():
         out[f'player-{facing}'] = (f'Shovey looking {facing}', sprite)
         out[f'charged-{facing}'] = (f'charged Shovey looking {facing}', glow(sprite))
     for animal in ('dog', 'turtle'):
-        up = native(animal)
+        up = chicken if animal == 'dog' else native(animal)
         for facing, angle in (('up', 0), ('right', -90), ('down', 180), ('left', 90)):
-            out[f'{animal}-{facing}'] = (f'{animal} facing {facing}', up.rotate(angle))
+            out[f'{animal}-{facing}'] = (f'{"chicken" if animal == "dog" else animal} facing {facing}', up.rotate(angle))
+    for facing, angle in (('up', 0), ('right', -90), ('down', 180), ('left', 90)):
+        out[f'crab-{facing}'] = (f'crab facing {facing}', native('crab').rotate(angle))
+    for frame in range(4):
+        out[f'water-{frame}'] = ('gentle seamless water ripples', water_edge(frame))
+    for fish, kind in (('gold', 89), ('koi', 90), ('minnow', 91)):
+        # The fitted fish sources face up, like the land animals.
+        def centered_fish(frame):
+            source = native(f'fish-{fish}-{frame}')
+            bounds = source.getchannel('A').point(lambda alpha: 255 if alpha > 128 else 0).getbbox()
+            sprite = source.crop(bounds)
+            sprite.thumbnail((26, 26), Image.Resampling.NEAREST)
+            image = Image.new('RGBA', (SIZE, SIZE))
+            image.alpha_composite(sprite, ((SIZE - sprite.width) // 2, (SIZE - sprite.height) // 2))
+            return image
+        out[f'tile-{kind}'] = (f'{fish} fish: rests on water', centered_fish(0))
+        for frame in range(4):
+            for facing, angle in (('up', 0), ('right', -90), ('down', 180), ('left', 90)):
+                out[f'fish-{fish}-{frame}-{facing}'] = (f'{fish} fish, frame {frame}, facing {facing}', centered_fish(frame).rotate(angle))
     for mask in range(16):
         out[f'grass-edge-{mask}'] = ('grass blending into adjacent paving with connected corners', grass_edge(mask))
+        out[f'abyss-edge-{mask}'] = ('abyss with a recessed stone lip only where it meets solid ground', abyss_edge(mask))
     for frame in range(1, 9):
         out[f'sensor-{frame}'] = (f'active sensor, frame {frame} of 8',
                                   ring((120, 186, 214, 255), 12, (240, 248, 250, 255), -90 + 45 * (frame - 1)))

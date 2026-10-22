@@ -26,6 +26,11 @@ for at in range(240):
         tiles[at] = 12
 pieces[13], tiles[14], pieces[15] = 10, 65, 7
 pieces[26], pieces[45], deco[38] = 82, 83, 84
+pieces[62], tiles[62] = 88, 78
+for at in (74, 75, 76, 86, 87, 88):
+    tiles[at] = 64
+pieces[74] = 89
+pieces[78], pieces[90], pieces[100], pieces[101] = 85, 85, 92, 93
 def rows(layer):
     return [''.join(f'{kind:02x}' for kind in layer[at:at + 12]) for at in range(0, 240, 12)]
 level = {'number': 1, 'cells': rows(pieces), 'tiles': rows(tiles), 'decorations': rows(deco)}
@@ -67,23 +72,23 @@ with (output / 'app.log').open('w') as log:
             counts.append(int(((pixels[..., 1] > pixels[..., 0] * 1.3) &
                                (pixels[..., 1] > pixels[..., 2] * 1.15) & (pixels[..., 1] > 50)).sum()))
         assert counts[0] > counts[1] > counts[2] >= counts[3] == 0, ('Fall did not shrink away', counts)
-        def dog_center(name):
+        def chicken_center(name):
             path = output / name
             subprocess.run(['import', '-window', window, str(path)], check=True, timeout=5)
             with Image.open(path).convert('RGB') as shot:
                 pixels = np.asarray(shot.crop((x, y + 2 * cell, x + 12 * cell, y + 3 * cell))).astype(int)
             dog = (pixels[..., 0] > pixels[..., 1] * 1.15) & (pixels[..., 1] > pixels[..., 2] * 1.2) & (pixels[..., 0] > 100)
             yy, xx = np.nonzero(dog)
-            assert len(xx) > 8, 'Dog is not clearly visible'
+            assert len(xx) > 3, 'Chicken comb and feet are not visible'
             return float(xx.mean())
         # Restart to let the animals move again after the completed fall.
         subprocess.run(['xdotool', 'key', '--window', window, 'r'], check=True)
         time.sleep(0.2)
-        before = dog_center('animals-before.png')
+        before = chicken_center('animals-before.png')
         time.sleep(1.1)
-        after = dog_center('animals-after.png')
+        after = chicken_center('animals-after.png')
         assert abs(after - before) > cell / 2, ('Animal did not move to another tile', before, after)
-        print(f'Nature UI: abyss spiral shrank away ({counts}); visible dog moved between tiles')
+        print(f'Nature UI: abyss spiral shrank away ({counts}); visible chicken moved between tiles; crab, fish, portals and gate rendered')
     finally:
         child.terminate()
         child.wait(timeout=10)

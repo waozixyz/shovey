@@ -22,7 +22,7 @@ if not (profile / 'assets').exists():
     (profile / 'assets').symlink_to(ROOT / 'assets', target_is_directory=True)
 level = json.loads((ROOT / 'levels/classic.json').read_text())['levels'][0]
 pieces = ''.join(level['cells'])
-(profile / 'backup/editor-drafts/001.hex').write_text(pieces + '4d' * 240 + '00' * 240)
+(profile / 'backup/editor-drafts/001.hex').write_text(pieces + '0c' + '4d' * 239 + '00' * 240)
 (profile / 'backup/editor-drafts/place').write_text('1')
 environment = {key: value for key, value in os.environ.items()
                if key not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
@@ -53,7 +53,7 @@ with (output / 'app.log').open('w') as log:
             subprocess.run(['import', '-window', window, str(shot)], check=True)
             with Image.open(shot).convert('RGB') as image:
                 for at in range(239):
-                    if at % 12 == 11 or pieces[at * 2:at * 2 + 4] != '0000':
+                    if at == 0 or at % 12 == 11 or pieces[at * 2:at * 2 + 4] != '0000':
                         continue
                     tile = tiles[at]
                     x = int(tile['x'] + tile['width'])
@@ -77,16 +77,15 @@ with (output / 'app.log').open('w') as log:
         click(palette + 56, 274)   # Crate
         click(x, y)
         assert draft()[at * 2:at * 2 + 2] == '09'
-        click(palette + 298, 106)  # Deco
-        click(palette + 170, 178)  # Flowers
+        click(palette + 170, 274)  # Flowers are in Objects beside the crate
         click(x, y)
         saved = draft()
         assert saved[at * 2:at * 2 + 2] == '09'
         assert saved[480 + at * 2:482 + at * 2] == '4d'
         assert saved[960 + at * 2:962 + at * 2] == '39'
-        click(x, y, 3)            # Deco erases decoration, preserving the tile and object
+        click(x, y, 3)            # Objects clears both objects and flowers, preserving the tile
         cleared = draft()
-        assert cleared[at * 2:at * 2 + 2] == '09'
+        assert cleared[at * 2:at * 2 + 2] == '00'
         assert cleared[480 + at * 2:482 + at * 2] == '4d'
         assert cleared[960 + at * 2:962 + at * 2] == '00'
         subprocess.run(['xdotool', 'windowfocus', window, 'key', '--window', window, 'z'], check=True)
@@ -99,7 +98,18 @@ with (output / 'app.log').open('w') as log:
         cleared = draft()
         assert cleared[at * 2:at * 2 + 2] == '00'
         assert cleared[480 + at * 2:482 + at * 2] == '4d'
-        assert cleared[960 + at * 2:962 + at * 2] == '39'
+        assert cleared[960 + at * 2:962 + at * 2] == '00'
+        # Abyss clears every overlaid object and decoration in one stroke.
+        click(palette + 170, 274)
+        click(x, y)
+        click(palette + 58, 106)
+        click(palette + 56, 562)
+        click(x, y)
+        cleared = draft()
+        assert cleared[at * 2:at * 2 + 2] == '00'
+        assert cleared[480 + at * 2:482 + at * 2] == '41'
+        assert cleared[960 + at * 2:962 + at * 2] == '00'
+        click(palette + 178, 106)
         # Objects has more icons than fit vertically
         subprocess.run(['xdotool', 'mousemove', '--window', window, str(palette + 50), '500'], check=True)
         time.sleep(0.15)

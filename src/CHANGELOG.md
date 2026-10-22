@@ -1,5 +1,15 @@
 # Shovey changelog
 
+## [0.6.7] - 2026-10-21
+
+- Play the approved Classic campaign through level 19.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
+## [0.6.6] - 2026-10-21
+
+- Play the approved Classic campaign through level 18.
+- Keep your progress while later levels are being edited.
+- Clearer animal directions, recessed green pressure buttons and quick portal travel.
 ## [0.6.5] - 2026-10-20
 
 - Friends can compare how many levels you have solved on Inner Breeze's Leaderboard.

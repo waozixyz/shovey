@@ -169,8 +169,12 @@ SolveClassicPlainStep :: (direction: s32) -> s32 {
     return to * 4 + (ifx (game.powers & SHOVEY_AMMO) != 0 then direction else 0)
 }
 
-// ShoveyTick never reads Shovey's cell or facing.
-SolveClassicWalkerFree :: (action: s32) -> bool { return action == 5 }
+// Animals avoid Shovey, so their timer tick depends on his exact cell.
+SolveClassicWalkerFree :: (action: s32) -> bool {
+    if action != 5 { return false }
+    for kind: solve_classic_base.ground { if ShoveyAnimal(kind) && !ShoveyFish(kind) { return false } }
+    return true
+}
 
 // What the loaded board says for good. Plates (ground 18) are listed with
 // the fewest pushes that bring a crate onto each from every cell, once with
@@ -570,7 +574,7 @@ SolveClassicEstimate :: () -> s32 {
             source_count += 1
         }
         for index: cast(s32)0..painter_count - 1 {
-            at := solve_classic_painters[index]; painted := ShoveyPaintColor(game.ground[at])
+            at := solve_classic_painters[index]; painted := ShoveyPaintColor(game.ground[at]) - 1
             solve_classic_sources[source_count] = at
             solve_classic_starts[source_count] = 1 + SolveClassicNearest(at, solve_classic_holes[painted][0:hole_count[painted]])
             source_count += 1

@@ -1,5 +1,11 @@
 # Shovey Editor changelog
 
+## [0.2.5] - 2026-10-21
+
+- Story levels follow the approved Classic campaign; Island stays unavailable while in development.
+## [0.2.4] - 2026-10-21
+
+- Story levels follow the approved Classic campaign; Island stays unavailable while in development.
 ## [0.2.3] - 2026-10-20
 
 - Hold a press or touch on the board to keep walking while testing a level.
