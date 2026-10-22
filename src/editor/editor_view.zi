@@ -248,43 +248,19 @@ EditorNotice :: (key: string) {
 // Points the board modules at the editor's copies of their pictures before
 // they prepare their own paths, which would name the editions' folders.
 EditorPictures :: () {
-    digits: [24]u8
-    for kind: cast(s32)0..40 {
-        bytes: Vec(u8)
-        BuilderPrint(*bytes, "assets/shovey-editor/classic/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
-        sprite_files[kind] = BuilderFinish(bytes)
-        turned_tile: Vec(u8)
-        BuilderPrint(*turned_tile, "assets/shovey-editor/classic/sprites-landscape/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
-        landscape_sprite_files[kind] = BuilderFinish(turned_tile)
+    // Prepare every current sprite, including nature, wall variants and
+    // edge overlays, then point them at the editor's own packed copies.
+    SpritesPrepare()
+    prefix := "assets/shovey/sprites/"
+    for index: cast(s32)0..SPRITE_COUNT - 1 {
+        name := sprite_files[index][prefix.count:]
+        portrait: Vec(u8)
+        BuilderPrint(*portrait, "assets/shovey-editor/classic/sprites/%", name)
+        sprite_files[index] = BuilderFinish(portrait)
+        landscape: Vec(u8)
+        BuilderPrint(*landscape, "assets/shovey-editor/classic/sprites-landscape/%", name)
+        landscape_sprite_files[index] = BuilderFinish(landscape)
     }
-    facings: [4]string = .["left", "up", "right", "down"]
-    for direction: cast(s32)0..3 {
-        player: Vec(u8)
-        BuilderPrint(*player, "assets/shovey-editor/classic/sprites/player-%.png", facings[direction])
-        sprite_files[SPRITE_PLAYER + direction] = BuilderFinish(player)
-        turned_player: Vec(u8)
-        BuilderPrint(*turned_player, "assets/shovey-editor/classic/sprites-landscape/player-%.png", facings[direction])
-        landscape_sprite_files[SPRITE_PLAYER + direction] = BuilderFinish(turned_player)
-        charged: Vec(u8)
-        BuilderPrint(*charged, "assets/shovey-editor/classic/sprites/charged-%.png", facings[direction])
-        sprite_files[SPRITE_CHARGED + direction] = BuilderFinish(charged)
-        turned_charge: Vec(u8)
-        BuilderPrint(*turned_charge, "assets/shovey-editor/classic/sprites-landscape/charged-%.png", facings[direction])
-        landscape_sprite_files[SPRITE_CHARGED + direction] = BuilderFinish(turned_charge)
-    }
-    sprite_files[SPRITE_DOOR_OPEN] = "assets/shovey-editor/classic/sprites/door-open.png"
-    landscape_sprite_files[SPRITE_DOOR_OPEN] = "assets/shovey-editor/classic/sprites-landscape/door-open.png"
-    for number: cast(s32)0..7 {
-        bytes: Vec(u8)
-        BuilderPrint(*bytes, "assets/shovey-editor/classic/sprites/sensor-%.png", FormatInteger(cast(s64)(number + 1), digits[:]))
-        sprite_files[SPRITE_SENSOR + number] = BuilderFinish(bytes)
-        turned_sensor: Vec(u8)
-        BuilderPrint(*turned_sensor, "assets/shovey-editor/classic/sprites-landscape/sensor-%.png", FormatInteger(cast(s64)(number + 1), digits[:]))
-        landscape_sprite_files[SPRITE_SENSOR + number] = BuilderFinish(turned_sensor)
-    }
-    sprite_files[SPRITE_SHOT] = "assets/shovey-editor/classic/sprites/projectile.png"
-    landscape_sprite_files[SPRITE_SHOT] = "assets/shovey-editor/classic/sprites-landscape/projectile.png"
-    sprites_ready = true
     for number: cast(s32)0..ISLAND_PICTURES - 1 {
         bytes: Vec(u8)
         if number < ISLAND_TILES { BuilderPrint(*bytes, "assets/shovey-editor/island/tiles/%.png", number) }
@@ -317,7 +293,19 @@ EditorNames :: () {
     if TextUntilNul(editor_names_language[:]) == editor_language && editor_classic_names[0].count > 0 { return }
     unused CopyCString(editor_language, editor_names_language[:])
     for kind: cast(s32)0..SPRITE_COUNT - 1 {
-        editor_classic_names[kind] = ifx kind <= 40 then EditorText(EditPieceName(false, kind)) else EditorText("editor_shovey")
+        editor_classic_names[kind] = ifx kind <= 40 then EditorText(EditPieceName(false, kind)) else EditorText("editor_object")
+    }
+    for kind: cast(s32)SPRITE_PLAYER..SPRITE_DOOR_OPEN - 1 {
+        editor_classic_names[kind] = EditorText("editor_shovey")
+    }
+    for kind: cast(s32)SPRITE_GRASS_EDGE..SPRITE_GRASS_EDGE + 15 {
+        editor_classic_names[kind] = EditorText("editor_meadow")
+    }
+    for kind: cast(s32)SPRITE_WATER..SPRITE_WATER + 3 {
+        editor_classic_names[kind] = EditorText("editor_water")
+    }
+    for kind: cast(s32)SPRITE_WALL..SPRITE_COUNT - 1 {
+        editor_classic_names[kind] = EditorText("editor_wall")
     }
     editor_classic_names[SPRITE_DOOR_OPEN] = EditorText("editor_gate")
     for number: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { editor_classic_names[number] = EditorText("editor_sensor") }
