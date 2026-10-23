@@ -132,8 +132,8 @@ LiveCheckInstall :: () -> string {
 // form), 0 when it is refused, and -1 while it needs more frames.
 ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
     document := live_check.document
-    // Boards already in this release pass without replaying, several a frame.
-    read: s32 = 0
+    // Boards already in this release pass without replaying. Reading one is
+    // slow in the browser's interpreter, so it is one level a frame.
     while !live_check.replaying {
         at := live_check.next_at
         if at >= 0 && at < cast(s32)document.count && document[at] == #char "]" {
@@ -143,8 +143,7 @@ ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
             return 1
         }
         if !LiveCheckLevel() { return 0 }
-        read += 1
-        if read >= 8 { return -1 }
+        if !live_check.replaying { return -1 }
     }
     game := *live_check.game
     done: s32 = 0
