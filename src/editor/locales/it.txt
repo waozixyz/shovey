@@ -73,6 +73,12 @@ Tabellone: tocca o trascina per dipingere
 [editor_pick]
 Preleva
 ---
+[editor_tiles]
+Piastrelle
+---
+[editor_objects]
+Oggetti
+---
 [editor_pick_hint]
 Tocca il tabellone per prelevare il suo pezzo.
 ---

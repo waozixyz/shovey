@@ -73,6 +73,12 @@ Island
 [editor_pick]
 拾う
 ---
+[editor_tiles]
+タイル
+---
+[editor_objects]
+オブジェクト
+---
 [editor_pick_hint]
 盤面をタップすると、そのマスの部品を拾えます。
 ---

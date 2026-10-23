@@ -73,6 +73,12 @@ Spielfeld: Tippen oder Ziehen zum Malen
 [editor_pick]
 Aufnehmen
 ---
+[editor_tiles]
+Kacheln
+---
+[editor_objects]
+Objekte
+---
 [editor_pick_hint]
 Tippe aufs Spielfeld, um sein Teil aufzunehmen.
 ---

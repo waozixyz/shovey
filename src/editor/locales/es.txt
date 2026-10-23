@@ -73,6 +73,12 @@ Tablero: toca o arrastra para pintar
 [editor_pick]
 Tomar
 ---
+[editor_tiles]
+Losetas
+---
+[editor_objects]
+Objetos
+---
 [editor_pick_hint]
 Toca el tablero para tomar su pieza.
 ---

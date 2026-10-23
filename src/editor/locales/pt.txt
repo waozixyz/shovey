@@ -73,6 +73,12 @@ Tabuleiro: toque ou arraste para pintar
 [editor_pick]
 Pegar
 ---
+[editor_tiles]
+Pisos
+---
+[editor_objects]
+Objetos
+---
 [editor_pick_hint]
 Toque no tabuleiro para pegar a peça dele.
 ---

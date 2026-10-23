@@ -73,6 +73,12 @@ Island
 [editor_pick]
 Взять
 ---
+[editor_tiles]
+Плитки
+---
+[editor_objects]
+Предметы
+---
 [editor_pick_hint]
 Нажми на поле, чтобы взять его деталь.
 ---

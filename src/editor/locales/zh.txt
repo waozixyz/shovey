@@ -73,6 +73,12 @@ Island
 [editor_pick]
 拾取
 ---
+[editor_tiles]
+地块
+---
+[editor_objects]
+物体
+---
 [editor_pick_hint]
 点按棋盘，拾取那里的方块。
 ---

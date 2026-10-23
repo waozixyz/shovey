@@ -73,6 +73,12 @@ Plateau : touche ou glisse pour peindre
 [editor_pick]
 Prendre
 ---
+[editor_tiles]
+Tuiles
+---
+[editor_objects]
+Objets
+---
 [editor_pick_hint]
 Touche le plateau pour prendre sa pièce.
 ---

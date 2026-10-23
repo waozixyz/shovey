@@ -140,6 +140,8 @@ editor_play_tick: float64;
 
 editor_levels_scroll: s32;
 editor_palette_scroll: s32;
+// The palette shows tiles or objects, remembered per edition.
+editor_palette_tab: [2]s32;
 editor_list_scroll: s32;
 
 editor_export_bytes: [1048576]u8;
@@ -849,6 +851,13 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
     EditorPalette(palette, summary != null)
 }
 
+// Whether a palette entry paints the floor layer: Classic's floor and wall
+// brushes, Island's terrain.
+EditorPieceIsTile :: (island: bool, kind: s32) -> bool {
+    if island { return kind < 50 && kind != EDIT_CLEAR }
+    return kind >= EDIT_TILE_BRUSH && kind < EDIT_DECO_BRUSH
+}
+
 EditorPalette :: (bounds: Rectangle, custom: bool) {
     island := editor_island
     edition := EditorEdition()
@@ -876,11 +885,32 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
                 .label = EditorText(ifx editor_delete_armed then "editor_delete_confirm" else "editor_delete"), .fit_content = true,
                 .tone = ButtonTone.ButtonToneDanger, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { EditorDelete() }
     }
+    // Tiles (floors, walls and terrain) and objects (pieces and
+    // decorations) each have their own tab.
+    tab := editor_palette_tab[edition]
+    half := (bounds.width - 6.0) / 2.0
+    tabs: [2]string = .["editor_tiles", "editor_objects"]
+    for side: cast(s32)0..1 {
+        if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(317 + side), .id = 317 + side,
+                .bounds = Rectangle.{bounds.x + cast(float32)side * (half + 6.0), bounds.y + tools_height, half, 36.0},
+                .label = EditorText(tabs[side]), .selected = tab == side,
+                .tone = ifx tab == side then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
+                .emphasis = ifx tab == side then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0 && tab != side {
+            editor_palette_tab[edition] = side
+            editor_palette_scroll = 0
+        }
+    }
+    tab = editor_palette_tab[edition]
+    tools_height += 42.0
     size: float32 = 48.0
     gap: float32 = 4.0
     columns := cast(s32)((bounds.width - 12.0 + gap) / (size + gap))
     if columns < 1 { columns = 1 }
-    count := EditPieceCount(island)
+    shown: [128]s32
+    count: s32 = 0
+    for index: cast(s32)0..EditPieceCount(island) - 1 {
+        if EditorPieceIsTile(island, EditPieceKind(island, index)) == (tab == 0) && count < 128 { shown[count] = index; count += 1 }
+    }
     rows := (count + columns - 1) / columns
     scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)316,
             .bounds = Rectangle.{bounds.x, bounds.y + tools_height, bounds.width, bounds.height - tools_height},
@@ -888,9 +918,10 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
     editor_palette_scroll = scroll.scroll_offset
     choose: s32 = -1
     if scroll.opened {
-        for index: cast(s32)0..count - 1 {
-            cell := Rectangle.{scroll.content.x + cast(float32)(index % columns) * (size + gap),
-                scroll.content.y + cast(float32)(index / columns) * (size + gap), size, size}
+        for slot: cast(s32)0..count - 1 {
+            index := shown[slot]
+            cell := Rectangle.{scroll.content.x + cast(float32)(slot % columns) * (size + gap),
+                scroll.content.y + cast(float32)(slot / columns) * (size + gap), size, size}
             if cell.y + cell.height < scroll.viewport.y || cell.y > scroll.viewport.y + scroll.viewport.height { continue }
             kind := EditPieceKind(island, index)
             name := editor_piece_names[edition][index]

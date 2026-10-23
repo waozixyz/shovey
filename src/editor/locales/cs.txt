@@ -73,6 +73,12 @@ Herní plocha: klepni nebo táhni a kresli
 [editor_pick]
 Vzít
 ---
+[editor_tiles]
+Dlaždice
+---
+[editor_objects]
+Předměty
+---
 [editor_pick_hint]
 Klepni na herní plochu a vezmi její díl.
 ---

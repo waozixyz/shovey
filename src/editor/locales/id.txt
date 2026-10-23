@@ -73,6 +73,12 @@ Papan: ketuk atau seret untuk menggambar
 [editor_pick]
 Ambil
 ---
+[editor_tiles]
+Ubin
+---
+[editor_objects]
+Objek
+---
 [editor_pick_hint]
 Ketuk papan untuk mengambil kepingnya.
 ---

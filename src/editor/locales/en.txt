@@ -73,6 +73,12 @@ Board: tap or drag to paint
 [editor_pick]
 Pick
 ---
+[editor_tiles]
+Tiles
+---
+[editor_objects]
+Objects
+---
 [editor_pick_hint]
 Tap the board to pick up its piece.
 ---

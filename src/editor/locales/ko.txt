@@ -73,6 +73,12 @@ Island
 [editor_pick]
 집기
 ---
+[editor_tiles]
+타일
+---
+[editor_objects]
+물체
+---
 [editor_pick_hint]
 판을 탭하면 그 칸의 조각을 집습니다.
 ---
