@@ -5,7 +5,7 @@
     {
       "path": "preview.png",
       "depicts": "Shovey Classic card: Shovey pushes a red ball towards its pit in a grey stone courtyard",
-      "sha256": "5b4bcf69ef1f66092e2dd0dcbfd938fc93e652b05706fbd52ffb6ca547d35428"
+      "sha256": "b1f2e5662cb96f2f5062cb0e5a8cd8ede153173ebc32ad17e26b404f3baf5924"
     },
     {
       "path": "sprites/tile-0.png",
@@ -30,17 +30,32 @@
     {
       "path": "sprites/tile-4.png",
       "depicts": "red pit: takes the red ball",
-      "sha256": "81b8149359f8b1ccfde5da30107863750c4d77fd5a93d006d48b2e761f7af929"
+      "sha256": "de23926c48af926d8b8e2140179c569cce463c58d423345b81155b7320631408"
     },
     {
       "path": "sprites/tile-5.png",
       "depicts": "blue pit: takes the blue ball",
-      "sha256": "002ce2feab0cc9963e025a7ac8a8a6b3b7456c2a19b6a30b32ab667a36802554"
+      "sha256": "28841223fe93c7c81b6f76e438a4cefac20b885c5cfe8c8b7de6f19997a007d2"
     },
     {
       "path": "sprites/tile-6.png",
       "depicts": "green pit: takes the green ball",
-      "sha256": "751c085e1aaa60366bd5285a4216d1cc54b6082eafe6af9606032f823876a128"
+      "sha256": "977fa220e37692b9df803ed3ff4c59e9236aea7ab421e1332a4602d44020a9e6"
+    },
+    {
+      "path": "sprites/tile-47.png",
+      "depicts": "cyan pit: takes the cyan ball",
+      "sha256": "3490c0100ad0dd432b2fc05ea313d26c3946911d4c92e26ba0d893a12decc9d4"
+    },
+    {
+      "path": "sprites/tile-48.png",
+      "depicts": "purple pit: takes the purple ball",
+      "sha256": "dd56613ab9a3c5110069b2a317a77d8b64008ed889852800162c9a8b4bb37b5e"
+    },
+    {
+      "path": "sprites/tile-49.png",
+      "depicts": "yellow pit: takes the yellow ball",
+      "sha256": "31fcdac7bcc03ee0a6fff9821ba0afe8b0cf1dd1f57b2f913f5c46c294e05f22"
     },
     {
       "path": "sprites/tile-7.png",
@@ -1406,21 +1421,6 @@
       "path": "sprites/tile-46.png",
       "depicts": "yellow ball (pushable)",
       "sha256": "c5f147d12acf87796385d6da93cb882ad0b430a665c096e0d1497664e52f6029"
-    },
-    {
-      "path": "sprites/tile-47.png",
-      "depicts": "cyan pit: takes the cyan ball",
-      "sha256": "49baecc1ec2f155f7e12c26ad73f9a46351f552760a325d3799cadaa73670604"
-    },
-    {
-      "path": "sprites/tile-48.png",
-      "depicts": "purple pit: takes the purple ball",
-      "sha256": "6ecf5e69f806cc1388195aa1ebb2b774d913fabd439050dff6527a669274c6c3"
-    },
-    {
-      "path": "sprites/tile-49.png",
-      "depicts": "yellow pit: takes the yellow ball",
-      "sha256": "e1246f4f2e531df243bd40cc34f1ae21040865bfbe4ae880853919d40f77fb6c"
     },
     {
       "path": "sprites/tile-50.png",

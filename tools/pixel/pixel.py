@@ -196,6 +196,28 @@ def native(name):
 # ---------------------------------------------------------------- drawn tiles
 
 
+# The original pits are flat pure colours; each keeps the original pattern
+# (the dark dithered rim top left, the white glint) with its colour and rim
+# pulled halfway towards the body and shade of the ball it takes.
+PIT_COLOURS = {
+    'red': ((255, 0, 0), (132, 0, 0), (230, 0, 0), (167, 0, 0)),
+    'blue': ((0, 0, 255), (0, 0, 132), (24, 99, 220), (7, 44, 130)),
+    'green': ((0, 255, 0), (0, 130, 0), (65, 180, 70), (34, 122, 47)),
+    'cyan': ((0, 255, 255), (0, 132, 132), (65, 176, 180), (34, 109, 122)),
+    'purple': ((170, 0, 255), (88, 0, 132), (119, 24, 220), (76, 7, 130)),
+    'yellow': ((255, 255, 0), (132, 132, 0), (230, 227, 0), (167, 165, 0)),
+}
+
+
+def pit(colour, pull=0.5):
+    pit_body, pit_rim, ball_body, ball_shade = PIT_COLOURS[colour]
+    mix = lambda a, b: tuple(round(x + (y - x) * pull) for x, y in zip(a, b)) + (255,)
+    swap = {(255, 0, 0, 255): mix(pit_body, ball_body), (132, 0, 0, 255): mix(pit_rim, ball_shade)}
+    image = native('pit-red-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)
+    image.putdata([swap.get(pixel, pixel) for pixel in image.getdata()])
+    return image
+
+
 def shade(colour, factor):
     return tuple(max(0, min(255, round(c * factor))) for c in colour[:3]) + (255,)
 
@@ -518,19 +540,6 @@ def lever(active=False, colour=None):
     if colour:
         draw.line((10, 27, 21, 27), fill=colour, width=2)
         draw.point((22, 25), fill=(239, 226, 162, 255) if active else (64, 71, 66, 255))
-    return image
-
-
-def pit(colour):
-    """A coloured pit filling nearly the whole cell, like the original's."""
-    image = Image.new('RGBA', (SIZE, SIZE))
-    bevel(image, (1, 1, 30, 30), colour, 4, raised=False)
-    px = image.load()
-    # The rim's shadow falls into the top left of the pit.
-    for y in range(5, 27):
-        for x in range(5, 27):
-            depth = min(x - 5, y - 5)
-            px[x, y] = shade(colour, 0.8 + 0.05 * min(depth, 4))
     return image
 
 
@@ -1060,9 +1069,12 @@ def sprites():
         'tile-1': ('red ball (pushable)', native('ball-red')),
         'tile-2': ('blue ball (pushable)', native('ball-blue')),
         'tile-3': ('green ball (pushable)', native('ball-green')),
-        'tile-4': ('red pit: takes the red ball', native('pit-red-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)),
-        'tile-5': ('blue pit: takes the blue ball', native('pit-blue-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)),
-        'tile-6': ('green pit: takes the green ball', native('pit-green-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)),
+        'tile-4': ('red pit: takes the red ball', pit('red')),
+        'tile-5': ('blue pit: takes the blue ball', pit('blue')),
+        'tile-6': ('green pit: takes the green ball', pit('green')),
+        'tile-47': ('cyan pit: takes the cyan ball', pit('cyan')),
+        'tile-48': ('purple pit: takes the purple ball', pit('purple')),
+        'tile-49': ('yellow pit: takes the yellow ball', pit('yellow')),
         'tile-7': ('home: a small cottage with a jade roof and a lit door, on grass', native('home')),
         'tile-8': ('teleporter: a recessed opening with an inward blue-green spiral', over_floor(native('teleporter'))),
         'tile-9': ('crate: clean chestnut planks with crossed wooden braces (pushable)', crate_sprite()),
@@ -1245,9 +1257,12 @@ def saturate(image, amount=1.18):
     return image
 
 
+PIT_TILES = ('tile-4', 'tile-5', 'tile-6', 'tile-47', 'tile-48', 'tile-49')
+
+
 def build():
     manifest = []
-    sheet = {name: (depicts, image if name in ('tile-4', 'tile-5', 'tile-6') else saturate(image)) for name, (depicts, image) in sprites().items()}
+    sheet = {name: (depicts, image if name in PIT_TILES else saturate(image)) for name, (depicts, image) in sprites().items()}
     preview = ROOT / 'assets/shovey/preview.png'
     buffer = io.BytesIO()
     card(sheet).save(buffer, 'PNG', optimize=True)
@@ -1261,10 +1276,10 @@ def build():
         path.write_bytes(buffer.getvalue())
         manifest.append({'path': f'sprites/{name}.png', 'depicts': depicts,
                          'sha256': hashlib.sha256(buffer.getvalue()).hexdigest()})
-    # The cyan, purple and yellow pieces and the cherry are kept pictures; list them.
+    # The cyan, purple and yellow balls, puddles and blocks and the cherry are
+    # kept pictures; list them.
     extra = {44: 'cyan ball (pushable)', 45: 'purple ball (pushable)', 46: 'yellow ball (pushable)',
-             47: 'cyan pit: takes the cyan ball', 48: 'purple pit: takes the purple ball',
-             49: 'yellow pit: takes the yellow ball', 50: 'cyan paint puddle', 51: 'purple paint puddle',
+             50: 'cyan paint puddle', 51: 'purple paint puddle',
              52: 'yellow paint puddle', 53: 'cyan colour block (pushable)', 54: 'purple colour block (pushable)',
              55: 'yellow colour block (pushable)', 56: 'cherry'}
     for kind, depicts in extra.items():
