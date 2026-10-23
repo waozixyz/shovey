@@ -38,7 +38,13 @@ jobs:
           node-version: 22
       - name: Install build dependencies
         run: |
-          sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential cmake ninja-build pkg-config python3-pil python3-numpy
+          if command -v cc >/dev/null && command -v c++ >/dev/null && \
+             command -v make >/dev/null && command -v cmake >/dev/null && \
+             command -v pkg-config >/dev/null && python3 -c 'import PIL, numpy'; then
+            echo 'Required build tools and image packages are already available.'
+          else
+            sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential cmake pkg-config python3-pil python3-numpy
+          fi
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: '6.0.6'
