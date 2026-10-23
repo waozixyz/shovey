@@ -10,8 +10,17 @@ ShoveyProgress :: struct {
 
 ShoveyProgressNew :: () -> ShoveyProgress { return ShoveyProgress.{.unlocked = 1} }
 
-ShoveyLevelUnlocked :: (progress: *ShoveyProgress, level: s32) -> bool {
-    return level >= 1 && level <= ShoveyLevelCount() && level <= progress.unlocked
+// A testing build (SHOVEY_UNLOCK_ALL) opens every level; saves keep counting
+// as usual.
+#if #defined(SHOVEY_UNLOCK_ALL) {
+    ShoveyLevelUnlocked :: (progress: *ShoveyProgress, level: s32) -> bool {
+        unused progress
+        return level >= 1 && level <= ShoveyLevelCount()
+    }
+} else {
+    ShoveyLevelUnlocked :: (progress: *ShoveyProgress, level: s32) -> bool {
+        return level >= 1 && level <= ShoveyLevelCount() && level <= progress.unlocked
+    }
 }
 
 ShoveyRecordWin :: (progress: *ShoveyProgress, game: *ShoveyGame) {

@@ -74,6 +74,33 @@ landscape:
 bundles: levels landscape
 	python3 scripts/build-bundles.py --toolchain '$(TOOLCHAIN)' --kryon '$(KRYON)' --apps '$(APPS)' --mingcute '$(MINGCUTE)'
 
+# The standalone desktop app, built here without Arcade: Shovey's own bundle
+# on Kryon's native player, in one folder. DESKTOP_DEFINES='--define
+# SHOVEY_UNLOCK_ALL' makes a testing copy with every level open.
+DESKTOP_DIR ?= build/desktop/shovey
+DESKTOP_DEFINES ?=
+.PHONY: desktop
+desktop: bundles
+	python3 scripts/prepare-web.py
+	$(MAKE) -C '$(KRYON)' zib-raylib
+	rm -rf '$(DESKTOP_DIR)'
+	mkdir -p '$(DESKTOP_DIR)'
+	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
+		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
+		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--module-path build/web-generated --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE $(DESKTOP_DEFINES) \
+		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
+		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
+		--bind editor_view:AppKeyHost=host:AppKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
+		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:AppSupportsHost \
+		--bind editor_view:AppServiceHost=controls:AppServiceHost --bind editor_view:AppFieldInputHost=host:AppFieldInputHost \
+		--asset-dir assets=build/web-assets/assets --entry game:Main \
+		-o '$(DESKTOP_DIR)/app.zib' src/web/game.zi
+	cp '$(KRYON)/build/zib-raylib/zib' '$(DESKTOP_DIR)/shovey'
+	cp '$(KRYON)/build/zib-raylib/kryon-font.ttf' '$(DESKTOP_DIR)/'
+	printf 'Shovey\n' > '$(DESKTOP_DIR)/app.title'
+	'$(DESKTOP_DIR)/shovey' --check '$(DESKTOP_DIR)/app.zib'
+
 web: bundles
 	python3 scripts/prepare-web.py
 	rm -rf build/web

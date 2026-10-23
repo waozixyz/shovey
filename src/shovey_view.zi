@@ -1,6 +1,7 @@
 #import "session"
 ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 FingerSwipe :: #import "mingcute/mingcute_filled_finger_swipe";
+Math :: #import "std/math";
 #import "joystick"
 #import "direction_pad"
 #import "geometry"
@@ -156,28 +157,28 @@ Choice :: (id: s32, bounds: Rectangle, label: string, chosen: bool) -> bool {
             .emphasis = ifx chosen then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
-// Swipe arrows on screen: left, up, right and down.
-SWIPE_ARROWS: [4]string = .["F:M3 12L12 4V9H21V15H12V20Z", "F:M12 3L20 12H15V21H9V12H4Z",
-    "F:M21 12L12 4V9H3V15H12V20Z", "F:M12 21L20 12H15V3H9V12H4Z"];
-
-// While a finger is down on the board: a soft ring where the touch began and
-// a big arrow the way it is sliding, both gone when the finger lifts.
-SwipeHud :: (gesture: SwipeAreaResult, grid: TileMapResult, landscape: bool) {
-    size := grid.cell * 1.6
-    if size < 56.0 { size = 56.0 }
-    if size > 104.0 { size = 104.0 }
-    Box(frame.session, BoxProps.{.key = cast(u64)20070, .bounds = Rectangle.{gesture.start_x - size / 2.0, gesture.start_y - size / 2.0, size, size},
-            .fill = Color.{255, 255, 255, 30}, .border = Color.{255, 255, 255, 120}, .radius = size / 2.0})
-    if gesture.lean < 0 { return }
-    dx: float32 = ifx gesture.lean == 0 then -1.0 else ifx gesture.lean == 2 then 1.0 else 0.0
-    dy: float32 = ifx gesture.lean == 1 then -1.0 else ifx gesture.lean == 3 then 1.0 else 0.0
-    cx := gesture.start_x + dx * size * 0.8
-    cy := gesture.start_y + dy * size * 0.8
-    shape := SWIPE_ARROWS[gesture.lean]
-    SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{cx - size / 2.0 + 2.0, cy - size / 2.0 + 3.0, size, size}, .shape = shape,
-            .color = Color.{0, 0, 0, 90}})
-    SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{cx - size / 2.0, cy - size / 2.0, size, size}, .shape = shape,
-            .color = Color.{255, 255, 255, 230}})
+// While a finger is down on the board, a small floating stick answers it: a
+// faint base where the touch began and a soft glowing ball that follows the
+// finger, kept within the base's edge. Both go when the finger lifts.
+SwipeHud :: (gesture: SwipeAreaResult, grid: TileMapResult) {
+    base := grid.cell * 1.1
+    if base < 44.0 { base = 44.0 }
+    if base > 72.0 { base = 72.0 }
+    Box(frame.session, BoxProps.{.key = cast(u64)20070, .bounds = Rectangle.{gesture.start_x - base / 2.0, gesture.start_y - base / 2.0, base, base},
+            .fill = Color.{255, 255, 255, 22}, .border = Color.{255, 255, 255, 90}, .radius = base / 2.0})
+    dx := gesture.at_x - gesture.start_x
+    dy := gesture.at_y - gesture.start_y
+    reach := base * 0.42
+    distance := cast(float32)Math.Sqrt(cast(float64)(dx * dx + dy * dy))
+    if distance > reach { dx = dx * reach / distance; dy = dy * reach / distance }
+    ball := base * 0.42
+    glow := ball * 1.7
+    cx := gesture.start_x + dx
+    cy := gesture.start_y + dy
+    Box(frame.session, BoxProps.{.key = cast(u64)20071, .bounds = Rectangle.{cx - glow / 2.0, cy - glow / 2.0, glow, glow},
+            .fill = Color.{255, 246, 210, 46}, .radius = glow / 2.0})
+    Box(frame.session, BoxProps.{.key = cast(u64)20072, .bounds = Rectangle.{cx - ball / 2.0, cy - ball / 2.0, ball, ball},
+            .fill = Color.{255, 252, 236, 200}, .border = Color.{255, 255, 255, 240}, .radius = ball / 2.0})
 }
 
 // The first time a level opens, Shovey asks how to move: swipe and tap on
@@ -844,7 +845,7 @@ ShoveyFrame :: () {
         gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
                 .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
         step = BoardEngineDirection(gesture.swiped, landscape)
-        if gesture.down && !disabled { SwipeHud(gesture, grid, landscape) }
+        if gesture.down && !disabled { SwipeHud(gesture, grid) }
         if gesture.tapped || gesture.held {
             cell := TileMapCellAt(grid, gesture.x, gesture.y)
             cell = BoardLogicalIndex(cell, landscape)
