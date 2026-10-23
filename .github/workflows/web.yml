@@ -146,7 +146,7 @@ jobs:
           root = Path('build/web')
           build = json.loads((root / 'build.json').read_text())
           assert build['revision'] == os.environ['GITHUB_SHA'], 'The web artifact belongs to another revision'
-          for name in ('index.html', 'index.js', 'index.wasm', 'runtime.data'):
+          for name in ('index.html', 'index.js', 'index.wasm', 'index.data'):
               assert (root / name).is_file(), f'Missing web asset: {name}'
           print(build['version'] + '-' + build['revision'])
           PY
