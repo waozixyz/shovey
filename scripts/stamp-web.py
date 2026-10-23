@@ -8,6 +8,9 @@ root = Path(__file__).resolve().parents[1]
 revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
 approved = json.loads((root / 'levels/approved.json').read_text())['levels']
 output = root / 'build/web'
+for asset in output.iterdir():
+    if asset.is_file() and asset.stat().st_size > 25 * 1024 * 1024:
+        raise SystemExit(f'{asset.name} exceeds the Cloudflare Pages file size limit')
 page = output / 'index.html'
 release = re.search(r'^## \[([0-9]+(?:\.[0-9]+)+)\] - (\d{4}-\d{2}-\d{2})',
                     (root / 'src/CHANGELOG.md').read_text(), re.M)

@@ -83,7 +83,7 @@ try {
   `});
   await call('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
   await call('Page.reload');
-  await wait(`Module?.profileReady && document.querySelector('#loading-screen').classList.contains('is-hidden')`);
+  await wait(`globalThis.Module?.profileReady && document.querySelector('#loading-screen').classList.contains('is-hidden')`);
   assert(await evaluate(`Module.FS.analyzePath('/tmp/test-driver').exists`), 'Driver init: ' + await evaluate('JSON.stringify({hook:globalThis.profileTestHook, pre:Module.preRun?.length})'));
   let serial = 0;
   async function tree() {
@@ -111,42 +111,53 @@ try {
   assert(profileText.includes('Dew balance'), profileText.join('|'));
   assert(!profileText.includes('Name') && !profileText.includes('Intention'));
   await textClick('Connect an account');
-  await textClick('Create account');
-  await wait(`Module.FS.analyzePath('/kryon-apps/profile/account.key').exists`);
-  await click(40, 28);
-  assert((await labels()).includes('Dew balance'));
-  if (process.env.WEB_VERIFY_NODE) {
-    let confirmed = false;
-    for (const end = Date.now() + 25000; Date.now() < end;) {
-      const text = await labels();
-      if (text.some(label => /^\d+(?:\.\d+)? Dew$/.test(label))) { confirmed = true; break; }
-      await delay(150);
-    }
-    assert(confirmed, 'The node did not confirm the inline Dew balance');
+  if (process.env.WEB_FAIL_STORAGE) {
+    await evaluate(`Module.FS.syncfs = function(populate, callback) { setTimeout(() => callback(new Error('Storage fixture refused the write')), 0); }`);
   }
-  await click(40, 28);
-  await wait('!Module.profileVisible');
-  await delay(1500);
-  await call('Page.reload');
-  await wait('Module.profileReady');
-  assert(await evaluate(`Module.FS.analyzePath('/kryon-apps/profile/account.key').exists`), 'Account was not persisted');
-  await click(352, 31);
-  await wait('Module.profileVisible');
-  profileText = await labels();
-  assert(profileText.includes('Dew balance'));
-  assert(!profileText.includes('Connect an account'), 'Persisted account was not restored');
-  await click(40, 28);
-  await wait('!Module.profileVisible');
-  await click(195, 680);
-  await wait(`Module.FS.analyzePath('/kryon-apps/shovey/campaign').exists`);
-  const campaign = await evaluate(`Module.FS.readFile('/kryon-apps/shovey/campaign', {encoding: 'utf8'})`);
-  assert(campaign.length > 0);
-  await click(114, 26);
-  assert((await labels()).some(text => text.includes('Level')));
-  await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: 2200});
-  await delay(500);
-  assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/campaign', {encoding: 'utf8'})`), campaign, 'Scrolling changed progress');
-  console.log('Web Profile, inline Dew, game identity, account creation/persistence and level navigation passed; no screenshots.');
+  await textClick('Create account');
+  let connected = false, refused = false;
+  for (const end = Date.now() + 20000; Date.now() < end;) {
+    const text = await labels();
+    if (text.includes('Account connected on this device')) { connected = true; break; }
+    if (text.some(label => /could not|couldn't|failed/i.test(label))) { refused = true; break; }
+    await delay(20);
+  }
+  if (process.env.WEB_FAIL_STORAGE) {
+    assert(refused && !connected, 'A refused storage write was reported as connected');
+    assert(!await evaluate(`Module.FS.analyzePath('/kryon-apps/profile/account.key').exists`), 'Failed account creation left a replacement key');
+    console.log('Refused browser account storage stays disconnected and removes the unsaved key; no screenshots.');
+  } else {
+    assert(connected, 'Account creation did not finish');
+    await call('Page.reload');
+    await wait('globalThis.Module?.profileReady');
+    assert(await evaluate(`Module.FS.analyzePath('/kryon-apps/profile/account.key').exists`), 'Confirmed account was lost on immediate reload');
+    await click(352, 31);
+    await wait('Module.profileVisible');
+    profileText = await labels();
+    assert(profileText.includes('Dew balance'));
+    assert(!profileText.includes('Connect an account'), 'Persisted account was not restored');
+    if (process.env.WEB_VERIFY_NODE) {
+      let confirmed = false;
+      for (const end = Date.now() + 25000; Date.now() < end;) {
+        const text = await labels();
+        if (text.some(label => /^\d+(?:\.\d+)? Dew$/.test(label))) { confirmed = true; break; }
+        await delay(150);
+      }
+      assert(confirmed, 'The node did not confirm the inline Dew balance');
+    }
+    await click(40, 28);
+    await wait('!Module.profileVisible');
+    await click(195, 680);
+    await wait(`Module.FS.analyzePath('/kryon-apps/shovey/campaign').exists`);
+    const campaign = await evaluate(`Module.FS.readFile('/kryon-apps/shovey/campaign', {encoding: 'utf8'})`);
+    assert(campaign.length > 0);
+    await click(114, 26);
+    assert((await labels()).some(text => text.includes('Level')));
+    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: 2200});
+    await delay(500);
+    assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/campaign', {encoding: 'utf8'})`), campaign, 'Scrolling changed progress');
+    console.log('Web Profile, inline Dew, game identity, account creation/persistence and level navigation passed; no screenshots.');
+  }
 } finally {
   if (socket) socket.close();
   if (browser.exitCode === null && browser.signalCode === null) {

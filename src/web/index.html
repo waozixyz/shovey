@@ -227,7 +227,11 @@
       loadingCheck = window.requestAnimationFrame(ready);
     }
     var Module = {
-      locateFile: function(path) { return path === 'runtime.wasm' ? 'index.wasm?v=' + buildRevision : path; },
+      locateFile: function(path) {
+        if (path === 'runtime.wasm') return 'index.wasm?v=' + buildRevision;
+        if (path === 'runtime.data') return 'runtime.data?v=' + buildRevision;
+        return path;
+      },
       instantiateWasm: function(imports, ready) {
         instantiateGame(imports).then(function(result) { ready(result.instance); }).catch(function(error) { Module.onAbort(error); });
         return {};
