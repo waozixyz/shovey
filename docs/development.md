@@ -254,8 +254,10 @@ PERFORMANCE_MIN_GAIN=50 node tests/canvas_performance_test.mjs BEFORE_WEB_DIR AF
 The runner opens Level 1 at 390 × 700 in fresh private headless Chromium
 profiles, warms up sixty frames, and interleaves two 180-frame samples per
 version. It checks the level and embedded asset identity, refuses external
-service requests, and saves raw timings, CPU profiles, browser versions and
-artifact hashes. Busy frame time runs from Asyncify resume to the next frame
+service requests, and saves raw timings, browser versions, and artifact and
+runner hashes. Set `PERFORMANCE_PROFILE=1` to collect diagnostic CPU profiles;
+sampling is optional because it can stall initialization or affect timings.
+Busy frame time runs from Asyncify resume to the next frame
 wait, so inverse busy time measures throughput capacity; the normal game is
 still capped at 60 FPS. Shared-host measurements do not establish a speedup
 for every level or device. Existing build directories are only read.

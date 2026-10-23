@@ -12,6 +12,8 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {createHash} from 'node:crypto';
 const [before,after,receipt]=process.argv.slice(2);
 assert(before && after && receipt, 'before-dir after-dir result.json required');
+const profiling=process.env.PERFORMANCE_PROFILE==='1';
+const runnerSha256=createHash('sha256').update(await readFile(new URL(import.meta.url))).digest('hex');
 const artifacts={};
 for(const directory of [before,after]) {
   artifacts[resolve(directory)]={};
@@ -81,12 +83,14 @@ async function sample(directory) {
   await wait('globalThis.frameTimes.length>60');
   const assets=await evaluate(`(()=>{const hashes={};for(const path of ['/app.zib','/entity.zib','/kryon-font.ttf']){const bytes=Module.FS.readFile(path);let h=2166136261;for(const x of bytes)h=Math.imul(h^x,16777619);hashes[path]={length:bytes.length,hash:h>>>0};}return hashes;})()`);
   await evaluate('globalThis.frameTimes=[]');
-  await call('Profiler.enable');await call('Profiler.start');
+  // CPU sampling is diagnostic work, not part of the frame-time benchmark.
+  // Starting V8's profiler can stall on large Wasm modules; opt in separately.
+  if(profiling){await call('Profiler.enable');await call('Profiler.start');}
   await wait('globalThis.frameTimes.length>=180');
   const times=await evaluate('globalThis.frameTimes.slice(0,180)');
-  const cpu=await call('Profiler.stop');
+  const cpu=profiling ? (await call('Profiler.stop')).profile : null;
   assert.equal(failures.length,0,JSON.stringify(failures));
-  return {times,assets,browser:await call('Browser.getVersion'),labels:tree.nodes.map(n=>n.label).filter(s=>s.startsWith('Level ')),cpu:cpu.profile};
+  return {times,assets,browser:await call('Browser.getVersion'),labels:tree.nodes.map(n=>n.label).filter(s=>s.startsWith('Level ')),cpu};
  } finally {
   socket?.close();if(browser.exitCode===null&&browser.signalCode===null){const done=new Promise(r=>browser.once('exit',r));process.kill(-browser.pid,'SIGTERM');await done;}
   server.close();await rm(profile,{recursive:true,force:true});
@@ -98,13 +102,13 @@ for(const version of ['before','after','after','before']){
  const result=await sample(resolve(version==='before'?before:after));
  if(samples.length) assert.deepEqual(result.assets,samples[0].assets,'Embedded assets changed');
  const sorted=[...result.times].sort((a,b)=>a-b);console.log(version+' median '+sorted[Math.floor(sorted.length/2)]+' ms');
- samples.push({version,...result});await writeFile(receipt,JSON.stringify({artifacts,samples,limitations:'Warm private headless Chromium at 390x700 on one shared machine. Level 1, original portable game bundle, refused external service. Busy frame time excludes RAF waits; this is throughput capacity, not observed FPS or a claim about other levels/devices.'},null,2)+'\n');
+ samples.push({version,...result});await writeFile(receipt,JSON.stringify({artifacts,runnerSha256,profiling,samples,limitations:'Warm private headless Chromium at 390x700 on one shared machine. Level 1, original portable game bundle, refused external service. Busy frame time excludes RAF waits; this is throughput capacity, not observed FPS or a claim about other levels/devices.'},null,2)+'\n');
 }
 const median=values=>values.sort((a,b)=>a-b)[Math.floor(values.length/2)];
 const measured=version=>median(samples.filter(s=>s.version===version).flatMap(s=>s.times));
 const beforeMs=measured('before'),afterMs=measured('after');
 const summary={beforeMs,afterMs,throughputGainPercent:(beforeMs/afterMs-1)*100,busyTimeReductionPercent:(1-afterMs/beforeMs)*100};
-await writeFile(receipt,JSON.stringify({artifacts,samples,summary,limitations:'Warm private headless Chromium at 390x700 on one shared machine. Level 1, same portable game bundle, refused external service. Busy frame time excludes RAF waits; this is throughput capacity, not observed FPS or a claim about other levels/devices.'},null,2)+'\n');
+await writeFile(receipt,JSON.stringify({artifacts,runnerSha256,profiling,samples,summary,limitations:'Warm private headless Chromium at 390x700 on one shared machine. Level 1, same portable game bundle, refused external service. Busy frame time excludes RAF waits; this is throughput capacity, not observed FPS or a claim about other levels/devices.'},null,2)+'\n');
 console.log(JSON.stringify(summary));
 
 if(process.env.PERFORMANCE_MIN_GAIN !== undefined) {
