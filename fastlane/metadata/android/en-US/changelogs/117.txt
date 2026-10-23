@@ -1,0 +1,3 @@
+- Play the approved Classic campaign through level 100.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.

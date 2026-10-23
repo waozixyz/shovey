@@ -1,0 +1,2 @@
+- The first lightning touch shows a glow and sparks as Shovey gains a charge.
+- Includes the approved Classic campaign through level 100.

@@ -1,0 +1,11 @@
+Push. Solve. Come home.
+
+Shovey is a puzzle game about finding a path home. Push balls into matching pits, move crates onto their marks, collect what you need and untangle the board one move at a time.
+
+Play the Classic campaign with swipe controls, an on-screen movement pad or a keyboard. Saved progress and a level chooser let you revisit unlocked puzzles. Portals, levers, gates, pressure buttons and wandering animals change the route.
+
+Make your own boards in the integrated level editor. Paint the ground, objects and decorations, undo a stroke and play your puzzle with the same rules as the campaign. Drafts save as you edit.
+
+Play locally without an account. Optional Profile and node services are available separately. No advertising or analytics SDK is included.
+
+Shovey is free and open source, made by Waozi.
