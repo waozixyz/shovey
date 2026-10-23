@@ -1,5 +1,35 @@
 # Shovey changelog
 
+## [0.6.83] - 2026-10-23
+
+- Play the approved Classic campaign through level 39.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.82] - 2026-10-23
+
+- Play the approved Classic campaign through level 38.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.81] - 2026-10-22
+
+- Play the approved Classic campaign through level 37.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.80] - 2026-10-22
+
+- Play the approved Classic campaign through level 36.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.79] - 2026-10-22
+
+- Play the approved Classic campaign through level 36.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.78] - 2026-10-22
+
+- Play the approved Classic campaign through level 35.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
 ## [0.6.77] - 2026-10-22
 
 - Use the shared Profile on the web and keep accounts saved in this browser.
@@ -11,6 +41,96 @@
 - Keep Levels, Help and sound at the top of the title artwork.
 - Replace the title header when opening Help and include every Classic object and terrain tile.
 
+## [0.6.75] - 2026-10-22
+
+- Open Classic directly when entering from Arcade’s game carousel.
+- Share the smooth cover navigation between Arcade and standalone Shovey.
+
+## [0.6.74] - 2026-10-22
+
+- Play the approved Classic campaign through level 34.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.73] - 2026-10-22
+
+- Play the approved Classic campaign through level 33.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.72] - 2026-10-22
+
+- Play the approved Classic campaign through level 33.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.71] - 2026-10-22
+
+- Play the approved Classic campaign through level 33.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.70] - 2026-10-22
+
+- Play the approved Classic campaign through level 33.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.69] - 2026-10-22
+
+- Play the approved Classic campaign through level 32.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.68] - 2026-10-22
+
+- Play the approved Classic campaign through level 32.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.67] - 2026-10-22
+
+- Play the approved Classic campaign through level 31.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.66] - 2026-10-22
+
+- Play the approved Classic campaign through level 31.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.65] - 2026-10-22
+
+- Play the approved Classic campaign through level 31.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.64] - 2026-10-22
+
+- Play the approved Classic campaign through level 31.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.63] - 2026-10-22
+
+- Play the approved Classic campaign through level 31.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.62] - 2026-10-22
+
+- Play the approved Classic campaign through level 31.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.61] - 2026-10-22
+
+- Play the approved Classic campaign through level 31.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.60] - 2026-10-22
+
+- Play the approved Classic campaign through level 30.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.59] - 2026-10-22
+
+- Play the approved Classic campaign through level 30.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.58] - 2026-10-22
+
+- Play the approved Classic campaign through level 30.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
 ## [0.6.57] - 2026-10-22
 
 - Play online, see lowered button walls clearly, and keep browser animation running reliably.
