@@ -1,5 +1,13 @@
 # Shovey Editor changelog
 
+## [0.2.103] - 2026-10-23
+
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
+## [0.2.102] - 2026-10-23
+
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.101] - 2026-10-23
 
 - Tiles and objects have their own palette tabs.
