@@ -61,6 +61,12 @@ def main():
         driver.wait(label='Levels', role='button', timeout=30)
         driver.press(label='Play', role='button')
         driver.wait(label='Restart', role='button')
+        # Newer Shovey asks how to move the first time a level opens; its
+        # question dims the board, so answer it before looking at pixels.
+        driver.wait_idle(frames=4)
+        if driver.find(label='How do you want to move?', role='text'):
+            driver.press(label='Swipe and tap')
+            driver.wait_gone(label='How do you want to move?', role='text')
 
     with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as directory:
         profile = Path(directory)
@@ -129,7 +135,14 @@ def main():
                     picture = Image.open(path).convert('RGB')
                     scale = picture.width / screen['width']
                     cell = board['width'] / columns
-                    points = []
+                    # The abyss is drawn as a cliff, with rock under its far
+                    # edge, so it is not one flat colour. A seam is a line
+                    # between two joined abyss cells that is brighter than
+                    # the abyss a quarter cell inside both of them.
+                    def brightness(x, y):
+                        return sum(picture.getpixel((round(x), round(y))))
+                    seams = 0
+                    bad = []
                     for at, is_abyss in enumerate(abyss):
                         if not is_abyss:
                             continue
@@ -141,11 +154,21 @@ def main():
                             a, b = center(at), center(neighbor)
                             x = (board['x'] - screen['x'] + (a[0] + b[0]) * cell / 2) * scale
                             y = (board['y'] - screen['y'] + (a[1] + b[1]) * cell / 2) * scale
-                            points.extend((px, py) for py in range(round(y) - 1, round(y) + 2)
-                                          for px in range(round(x) - 1, round(x) + 2))
-                    assert points, 'Level 28 needs adjacent abyss cells for this regression'
-                    bad = [(x, y, picture.getpixel((x, y))) for x, y in points
-                           if max(picture.getpixel((x, y))) > 8]
+                            # Across the seam, from inside one cell to inside the other.
+                            across = ((b[0] - a[0]) * cell * scale / 4, (b[1] - a[1]) * cell * scale / 4)
+                            seams += 1
+                            # Rock speckle varies from pixel to pixel, so a
+                            # seam is judged along a stretch of the line.
+                            line = inside = 0
+                            stretch = range(-round(cell * scale / 4), round(cell * scale / 4) + 1)
+                            for along in stretch:
+                                sx = x + (along if across[0] == 0 else 0)
+                                sy = y + (along if across[1] == 0 else 0)
+                                inside += max(brightness(sx - across[0], sy - across[1]), brightness(sx + across[0], sy + across[1]))
+                                line += max(brightness(sx + step * (across[0] != 0), sy + step * (across[1] != 0)) for step in (-1, 0, 1))
+                            if line / len(stretch) > inside / len(stretch) + 45:
+                                bad.append((round(x), round(y), line // len(stretch), inside // len(stretch)))
+                    assert seams, 'Level 28 needs adjacent abyss cells for this regression'
                     assert not bad, f'{path.name}: pale abyss seams: {bad[:5]}'
     print('Level 28: no internal abyss lines in portrait or landscape at 100%, 110%, 130% and 150% scale')
 
