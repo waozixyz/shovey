@@ -14,3 +14,6 @@ __pycache__/
 /assets/shovey/levels-landscape/
 /assets/shovey-island/levels/
 /assets/shovey-island/levels-landscape/
+
+# Video and promo working material stays local.
+/design/
