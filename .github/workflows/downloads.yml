@@ -99,8 +99,41 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  windows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: waozixyz/arcade
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+      - uses: ./waozixyz/shovey/.github/actions/arcade
+        with:
+          packages: >-
+            build-essential cmake pkg-config python3-pil python3-numpy gcc-mingw-w64-x86-64-win32
+            binutils-mingw-w64-x86-64 libz-mingw-w64-dev wine wine64 xvfb xauth unzip
+      - name: Cross-build and pack the Windows download
+        run: make shovey-windows-download
+      - name: Play the unpacked download under Wine on a private display
+        run: |
+          rm -rf build/windows-check
+          mkdir -p build/windows-check
+          unzip -q build/downloads/shovey-v*-windows-x86_64.zip -d build/windows-check
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            WINEPREFIX="$RUNNER_TEMP/wine" timeout 900s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
+            python3 tests/shovey_windows_ui_test.py --program "$PWD/build/windows-check/Shovey/shovey.exe" \
+            --inbe-source "$(./scripts/ziran.sh pkg path inbe)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shovey-windows
+          path: waozixyz/arcade/build/downloads/*.zip
+          if-no-files-found: error
+          retention-days: 7
+
   release:
-    needs: [android, linux]
+    needs: [android, linux, windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -125,10 +158,10 @@ jobs:
           apk=$(ls build/downloads/shovey-v*.apk)
           version=${apk##*/shovey-v}
           version=${version%.apk}
-          for file in "shovey-v$version.apk" "shovey-v$version-linux-x86_64.tar.gz"; do
+          for file in "shovey-v$version.apk" "shovey-v$version-linux-x86_64.tar.gz" "shovey-v$version-windows-x86_64.zip"; do
             test -f "build/downloads/$file" || { echo "Missing $file" >&2; exit 1; }
           done
-          test "$(ls build/downloads | wc -l)" = 2 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
+          test "$(ls build/downloads | wc -l)" = 3 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
           python3 scripts/android-release.py verify "build/downloads/shovey-v$version.apk" --version "$version"
           python3 - "$version" > build/release-notes.md <<'PY'
           import re, sys

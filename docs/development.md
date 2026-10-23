@@ -219,10 +219,12 @@ both ARM architectures and the embedded collection digest. The release key and
 password remain in ignored `backup/android-signing/`, and in the repository's
 `SHOVEY_ANDROID_KEYSTORE` and `SHOVEY_ANDROID_KEYSTORE_PASSWORD` secrets;
 preserve them for future updates. Only the public certificate belongs in Git.
-`make -C ../arcade shovey-linux-download` packs the Linux download.
+`make -C ../arcade shovey-linux-download` packs the Linux download, and
+`make -C ../arcade shovey-windows-download` cross-builds the Windows one with
+MinGW.
 
-The Downloads workflow builds Arcade's host against each pushed commit. It signs
-and checks the APK, plays the unpacked Linux download on a private display, and
-keeps them on the draft release of the version Arcade's ledger names. Dispatch
-the workflow with `publish` to publish that draft; a published version is never
-replaced.
+The Downloads workflow builds Arcade's hosts against each pushed commit. It signs
+and checks the APK, plays the unpacked Linux download on a private display and
+the Windows one under Wine, and keeps them on the draft release of the version
+Arcade's ledger names. Dispatch the workflow with `publish` to publish that
+draft; a published version is never replaced.
