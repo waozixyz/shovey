@@ -544,19 +544,24 @@ ShoveyMoveFrames :: (start: *ShoveyGame, direction: s32, frames: []ShoveyGame) -
     return count
 }
 
+// Whether a shot flying through this cell stops there. A shot pierces
+// targets but stops at solid objects, walls, doors and pickups; in
+// particular a star survives it. The view and the solvers ask the same.
+ShoveyShotStops :: (game: *ShoveyGame, at: s32) -> bool {
+    ground := game.ground[at]
+    object := game.objects[at]
+    if object == 28 { return false }
+    return ShoveyBallColor(object) > 0 || object == 9 || object == 19 ||
+        ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ShoveyMossColor(ground) >= 0 ||
+        ground == 26 || ground == 33 || ground == 34 || ShoveyGateColor(ground) >= 0 || ShoveyClosedDoor(ground) || ShoveyLever(ground)
+}
+
 ShoveyFire :: (game: *ShoveyGame) -> bool {
     if game.won || game.lost || game.level == ShoveyFinaleLevel() || (game.powers & SHOVEY_AMMO) == 0 { return false }
     game.powers = game.powers & ~SHOVEY_AMMO
     at := ShoveyNeighbor(game.player, game.direction)
-    while at >= 0 {
-        ground := game.ground[at]
-        object := game.objects[at]
-        // A shot pierces targets but stops at solid objects,
-        // walls, doors and pickups. In particular a star survives the shot.
-        if object == 28 { game.objects[at] = 0 }
-        else if ShoveyBallColor(object) > 0 || object == 9 || object == 19 ||
-        ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ShoveyMossColor(ground) >= 0 ||
-        ground == 26 || ground == 33 || ground == 34 || ShoveyGateColor(ground) >= 0 || ShoveyClosedDoor(ground) || ShoveyLever(ground) { break }
+    while at >= 0 && !ShoveyShotStops(game, at) {
+        if game.objects[at] == 28 { game.objects[at] = 0 }
         at = ShoveyNeighbor(at, game.direction)
     }
     game.moves += 1

@@ -83,6 +83,36 @@
       "sha256": "39806ca74fb028ee0a942731f63ed1f95b2b1627ed2e0218804220dbf17e146a"
     },
     {
+      "path": "sprites/burst-0.png",
+      "depicts": "landscape presentation of a target struck by a shot, frame 1 of 6",
+      "sha256": "5fce9a26d4b42f3adc320a29c8952370dc09276d877be3933f289ec59aa23b01"
+    },
+    {
+      "path": "sprites/burst-1.png",
+      "depicts": "landscape presentation of a target struck by a shot, frame 2 of 6",
+      "sha256": "a99330abf0a433666825682ac726e00f7e55026c0253531bf517c571e439800a"
+    },
+    {
+      "path": "sprites/burst-2.png",
+      "depicts": "landscape presentation of a target struck by a shot, frame 3 of 6",
+      "sha256": "9b08b4c31d912aa97020c6857eb53abc53a355a4d068e84acfe307d760ab0dfb"
+    },
+    {
+      "path": "sprites/burst-3.png",
+      "depicts": "landscape presentation of a target struck by a shot, frame 4 of 6",
+      "sha256": "a0f6ed7163fa7ba155fa27d105327ae20fba0445cca64db4f6efaa0dc549f0f9"
+    },
+    {
+      "path": "sprites/burst-4.png",
+      "depicts": "landscape presentation of a target struck by a shot, frame 5 of 6",
+      "sha256": "9e8af77459569b5b5562163ddcc0fefda7e68b45acdf175cf271e542c906faea"
+    },
+    {
+      "path": "sprites/burst-5.png",
+      "depicts": "landscape presentation of a target struck by a shot, frame 6 of 6",
+      "sha256": "beaa00b899ccf8fc082d03cc517d98e50186aa27dd21f08214e0ee90efabeb4a"
+    },
+    {
       "path": "sprites/charged-down.png",
       "depicts": "landscape presentation of charged Shovey looking down",
       "sha256": "091a3217cadb018a6adc1798369713b6dd9cb36dce863be9accacd0c3fd0a6b1"
@@ -146,6 +176,46 @@
       "path": "sprites/door-open.png",
       "depicts": "landscape presentation of mossy wall lowered, leaving a moss-covered stone rim",
       "sha256": "f6255ced9845e58b0fe598b1e04ec2a7b626bd087bf65570641d4a52e567f10d"
+    },
+    {
+      "path": "sprites/explosion-0.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 1 of 8",
+      "sha256": "d3ea168a4843c31aedf7563372023836d019d435b85717724a22eb7afe4c8800"
+    },
+    {
+      "path": "sprites/explosion-1.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 2 of 8",
+      "sha256": "bd7a25f0919fb7e577cbe25a8632ffcebe6583f214f38e34540558ce9b97b3fc"
+    },
+    {
+      "path": "sprites/explosion-2.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 3 of 8",
+      "sha256": "65d56e1350458358201eb52d23961aa582106faf0e05b3071acf3d1e7bdc3a15"
+    },
+    {
+      "path": "sprites/explosion-3.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 4 of 8",
+      "sha256": "7d4c01c093310aec52cf83e2a0916c88f5c621cb2584d3b273c03ebc8a4d91bc"
+    },
+    {
+      "path": "sprites/explosion-4.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 5 of 8",
+      "sha256": "13f7e02a87992789347c23cdb32556705d2160d2aeea3809598dc3d12f0ed5cc"
+    },
+    {
+      "path": "sprites/explosion-5.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 6 of 8",
+      "sha256": "5561a5a54acb20f2c0cd5c36d2b8b57233a6d5a3b5247e8c5eda0c431c79548f"
+    },
+    {
+      "path": "sprites/explosion-6.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 7 of 8",
+      "sha256": "d4c4c89f4f991b22b212da868d30981382f078709b19eb31f7c742dca02e86d0"
+    },
+    {
+      "path": "sprites/explosion-7.png",
+      "depicts": "landscape presentation of a bomb crate going off, frame 8 of 8",
+      "sha256": "b438e0b38dc15951f7fcf55d457d9881335b11d8dcc4f63e1c44578b22dc2cd1"
     },
     {
       "path": "sprites/fish-gold-0-down.png",

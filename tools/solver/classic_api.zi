@@ -637,6 +637,45 @@ ClassicApiWalkNearest :: (game: *ShoveyGame, targets: []s32) -> s32 {
 // Focus the ordered searches on routes to objectives. Spare crates off
 // these routes remain legal to move, but are more expensive search steps.
 classic_focus: [SHOVEY_CELLS]bool;
+// Targets fall to throws, and one throw clears every target in its line:
+// the rows or the columns they still need, whichever is fewer.
+ClassicApiTargetLines :: (targets: []s32) -> s32 {
+    rows: [SHOVEY_HEIGHT]bool; columns: [SHOVEY_WIDTH]bool
+    row_count: s32 = 0; column_count: s32 = 0
+    for at: targets {
+        row := at / SHOVEY_WIDTH; column := at % SHOVEY_WIDTH
+        if !rows[row] { rows[row] = true; row_count += 1 }
+        if !columns[column] { columns[column] = true; column_count += 1 }
+    }
+    return ifx row_count < column_count then row_count else column_count
+}
+
+// Where Shovey heads for targets: a shot on the floor while his hands are
+// empty, or with one in hand a cell in line with a target and nothing
+// between that stops a throw.
+ClassicApiTargetStands :: (game: *ShoveyGame, targets: []s32, out: []s32) -> s32 {
+    count: s32 = 0
+    if (game.powers & SHOVEY_AMMO) == 0 {
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.ground[at] == 26 && count < cast(s32)out.count { out[count] = at; count += 1 }
+        }
+        return count
+    }
+    seen: [SHOVEY_CELLS]bool
+    for target: targets {
+        for side: cast(s32)0..3 {
+            at := ShoveyNeighbor(target, side)
+            while at >= 0 && !ShoveyShotStops(game, at) {
+                if !seen[at] && game.objects[at] == 0 && ShoveyFloorAllows(game, at, 10) && count < cast(s32)out.count {
+                    seen[at] = true; out[count] = at; count += 1
+                }
+                at = ShoveyNeighbor(at, side)
+            }
+        }
+    }
+    return count
+}
+
 classic_focus_walk: [SHOVEY_CELLS]s32;
 classic_focus_from: [SHOVEY_CELLS]s32;
 
@@ -712,12 +751,14 @@ ClassicApiFocus :: () {
     crates: [SHOVEY_CELLS]s32; crate_count: s32 = 0
     plates: [SHOVEY_CELLS]s32; plate_count: s32 = 0
     switches: [SHOVEY_CELLS]s32; switch_count: s32 = 0
+    targets: [SHOVEY_CELLS]s32; target_count: s32 = 0
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         ground := game.ground[at]; object := game.objects[at]
         if object == 9 { crates[crate_count] = at; crate_count += 1 }
         if ground == 18 && object != 9 { plates[plate_count] = at; plate_count += 1 }
         if ground == 13 && object == 0 { switches[switch_count] = at; switch_count += 1 }
-        if ground == 21 || ground == 56 || object == 19 || object == 28 || object == 40 ||
+        if object == 28 { targets[target_count] = at; target_count += 1 }
+        if ground == 21 || ground == 56 || object == 19 || object == 40 ||
             ShoveyLever(ground) || (ground == 7 && ShoveyRemaining(game) == 0) { ClassicApiFocusWalk(at) }
         color := ShoveyBallColor(object)
         if color > 0 {
@@ -739,6 +780,11 @@ ClassicApiFocus :: () {
             }
             ClassicApiFocusPiece(game, object, at, rests[0:rest_count], starts[0:rest_count])
         }
+    }
+    if target_count > 0 {
+        stands: [SHOVEY_CELLS]s32
+        stand_count := ClassicApiTargetStands(game, targets[0:target_count], stands[:])
+        for index: cast(s32)0..stand_count - 1 { ClassicApiFocusWalk(stands[index]) }
     }
     starts: [SHOVEY_CELLS]s32
     if plate_count > 0 {
@@ -786,6 +832,7 @@ ClassicApiEstimate :: () -> s32 {
     stars: [SHOVEY_CELLS]s32; star_count: s32 = 0
     goals: [SHOVEY_CELLS]s32; goal_count: s32 = 0
     homes: [SHOVEY_CELLS]s32; home_count: s32 = 0
+    targets: [SHOVEY_CELLS]s32; target_count: s32 = 0
     colors: [6]bool
     estimate: s32 = 0
     plate_held := false
@@ -806,7 +853,8 @@ ClassicApiEstimate :: () -> s32 {
         if ground == 39 && !ShoveyColorRest(object) { rests[rest_count] = at; rest_count += 1 }
         if object == 19 { stars[star_count] = at; star_count += 1 }
         if ground == 7 { homes[home_count] = at; home_count += 1 }
-        if ground == 21 || ground == 56 || object == 28 || object == 40 { estimate += CLASSIC_GOAL; goals[goal_count] = at; goal_count += 1 }
+        if object == 28 { targets[target_count] = at; target_count += 1 }
+        if ground == 21 || ground == 56 || object == 40 { estimate += CLASSIC_GOAL; goals[goal_count] = at; goal_count += 1 }
         if object == 40 { estimate += ClassicApiDistance(at, game.player) }
         if ground == 29 || ground == 30 { estimate += 1 }
     }
@@ -883,6 +931,17 @@ ClassicApiEstimate :: () -> s32 {
                 if pushes < nearest { nearest = pushes }
             }
             estimate += CLASSIC_GOAL * 8 * CLASSIC_DOOR_ORDER + (ifx nearest >= CLASSIC_FAR then 100 else nearest)
+        }
+    }
+    // Targets: each line of them costs a goal, and Shovey walks to a shot or,
+    // holding one, to a cell he can throw from. No shot left is hopeless.
+    if target_count > 0 {
+        estimate += CLASSIC_GOAL * ClassicApiTargetLines(targets[0:target_count])
+        stands: [SHOVEY_CELLS]s32
+        stand_count := ClassicApiTargetStands(game, targets[0:target_count], stands[:])
+        if stand_count == 0 { estimate += CLASSIC_FAR }
+        for index: cast(s32)0..stand_count - 1 {
+            if goal_count < SHOVEY_CELLS { goals[goal_count] = stands[index]; goal_count += 1 }
         }
     }
     if goal_count > 0 { estimate += ClassicApiWalkNearest(game, goals[0:goal_count]) }

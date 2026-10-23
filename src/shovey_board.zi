@@ -7,6 +7,8 @@
 #import "kryon/image_props"
 #import "kryon/image_mesh"
 #import "kryon/image_widget"
+#import "kryon/box_props"
+#import "kryon/box_widget"
 #import "kryon/tile_map"
 #import "std/number_text"
 #import "std/c_string"
@@ -49,7 +51,9 @@ SPRITE_MOSS_WALL :: 229
 SPRITE_MOSS_BUTTON :: 233
 SPRITE_DECORATION :: 237
 SPRITE_MOSS_FLOOR :: 245
-SPRITE_COUNT :: 249
+SPRITE_BURST :: 249
+SPRITE_EXPLOSION :: 255
+SPRITE_COUNT :: 263
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -279,6 +283,16 @@ SpritesPrepare :: () {
         VecFree(bytes)
     }
     SpritePath(SPRITE_SHOT, "projectile")
+    for frame_number: cast(s32)0..7 {
+        if frame_number < 6 {
+            burst: Vec(u8)
+            BuilderPrint(*burst, "burst-%", FormatInteger(cast(s64)frame_number, digits[:]))
+            SpritePath(SPRITE_BURST + frame_number, BuilderFinish(burst))
+        }
+        blast: Vec(u8)
+        BuilderPrint(*blast, "explosion-%", FormatInteger(cast(s64)frame_number, digits[:]))
+        SpritePath(SPRITE_EXPLOSION + frame_number, BuilderFinish(blast))
+    }
     sprites_ready = true
 }
 
@@ -431,9 +445,91 @@ BoardGlidesClear :: () {
     for index: cast(s32)0..BOARD_GLIDES - 1 { board_glides[index] = BoardGlide.{} }
 }
 
+// Throws and blasts play over the board. The engine reports no events, so
+// the board from the frame before tells what the last move did: a shot that
+// left Shovey's hand flies along its line and every target it passed bursts
+// as it gets there; a cracked wall that became floor explodes.
+BOARD_EFFECTS :: 16
+BOARD_FLIGHT_STEP :: 0.05
+BOARD_BURST_FRAME :: 0.06
+BOARD_BLAST_FRAME :: 0.08
+BoardEffect :: struct {
+    // 1 a struck target, 2 a blast; 0 a free slot.
+    kind: s32
+    at: s32
+    start: float64
+}
+board_effects: [BOARD_EFFECTS]BoardEffect;
+board_flight_from: s32 = -1;
+board_flight_direction: s32;
+board_flight_cells: s32;
+board_flight_start: float64;
+board_seen: bool;
+board_seen_level: s32;
+board_seen_moves: s32;
+board_seen_powers: s32;
+board_seen_ground: [SHOVEY_CELLS]s32;
+board_seen_objects: [SHOVEY_CELLS]s32;
+
+BoardEffectStart :: (kind: s32, at: s32, start: float64) {
+    slot: s32 = 0
+    for index: cast(s32)0..BOARD_EFFECTS - 1 {
+        if board_effects[index].kind == 0 { slot = index; break }
+        if board_effects[index].start < board_effects[slot].start { slot = index }
+    }
+    board_effects[slot] = BoardEffect.{.kind = kind, .at = at, .start = start}
+}
+
+BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
+    if !board_seen || board_seen_level != game.level || game.moves < board_seen_moves {
+        // A new level, a restart or an undo: nothing from before plays on.
+        for index: cast(s32)0..BOARD_EFFECTS - 1 { board_effects[index].kind = 0 }
+        board_flight_from = -1
+    } else if game.moves == board_seen_moves + 1 {
+        if (board_seen_powers & SHOVEY_AMMO) != 0 && (game.powers & SHOVEY_AMMO) == 0 && game.player >= 0 {
+            // Targets never stop a shot, so the line is the same on the new board.
+            cells: s32 = 0
+            at := ShoveyNeighbor(game.player, game.direction)
+            while at >= 0 && !ShoveyShotStops(game, at) {
+                if board_seen_objects[at] == 28 { BoardEffectStart(1, at, now + cast(float64)cells * BOARD_FLIGHT_STEP) }
+                cells += 1
+                at = ShoveyNeighbor(at, game.direction)
+            }
+            board_flight_from = game.player
+            board_flight_direction = game.direction
+            board_flight_cells = cells
+            board_flight_start = now
+        }
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if board_seen_ground[at] == SHOVEY_CRACKED_WALL && game.ground[at] != SHOVEY_CRACKED_WALL { BoardEffectStart(2, at, now) }
+        }
+    }
+    board_seen = true
+    board_seen_level = game.level
+    board_seen_moves = game.moves
+    board_seen_powers = game.powers
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        board_seen_ground[at] = game.ground[at]
+        board_seen_objects[at] = game.objects[at]
+    }
+}
+
+// The cell `steps` cells along a direction from a cell, as drawn, or the
+// last one on the board.
+BoardAlong :: (grid: TileMapResult, from: s32, direction: s32, steps: s32, landscape: bool) -> Rectangle {
+    at := from
+    for step: cast(s32)0..steps - 1 {
+        next := ShoveyNeighbor(at, direction)
+        if next < 0 { break }
+        at = next
+    }
+    return TileMapCell(grid, BoardDisplayIndex(at, landscape))
+}
+
 ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string,
     landscape: bool) -> TileMapResult {
     if !sprites_ready { SpritesPrepare() }
+    BoardEffectsNotice(game, now)
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
     for at: cast(s32)0..SHOVEY_CELLS - 1 { board_gliding[at] = -1 }
@@ -530,14 +626,72 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             Image(session, image)
         }
     }
-    // A held shot shows as a small ball at Shovey's corner.
-    if (game.powers & SHOVEY_AMMO) != 0 && !game.lost && game.player >= 0 && game.player < SHOVEY_CELLS {
+    files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
+    shot_label := ifx cast(s64)SPRITE_SHOT < names.count then names[SPRITE_SHOT] else ""
+    // A held shot glows in Shovey's hands on the side he faces, bobbing a
+    // little, and dots show where a throw would fly; targets on that line
+    // are ringed.
+    if (game.powers & SHOVEY_AMMO) != 0 && !game.lost && !game.won && game.player >= 0 && game.player < SHOVEY_CELLS {
         cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
-        s := cell.width
-        Image(session, ImageProps.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = sprite_files[SPRITE_SHOT],
-                .alt_text = ifx cast(s64)SPRITE_SHOT < names.count then names[SPRITE_SHOT] else "",
-                .bounds = Rectangle.{cell.x + s * 0.58, cell.y + s * 0.58, s * 0.4, s * 0.4},
+        size := cell.width
+        ahead := ShoveyNeighbor(game.player, game.direction)
+        dx: float32 = 0.0; dy: float32 = 0.0
+        if ahead >= 0 {
+            next := TileMapCell(grid, BoardDisplayIndex(ahead, landscape))
+            dx = (next.x - cell.x) / size; dy = (next.y - cell.y) / size
+        }
+        dot: s32 = 0
+        at := ahead
+        while at >= 0 && !ShoveyShotStops(game, at) && dot < 24 {
+            spot := TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            if game.objects[at] == 28 {
+                unused Box(session, BoxProps.{.key = WidgetPartKey(key, 300 + dot), .bounds = Rectangle.{spot.x + size * 0.04, spot.y + size * 0.04,
+                        size * 0.92, size * 0.92}, .border = Color.{236, 64, 48, 230}, .radius = size * 0.46})
+            } else {
+                unused Box(session, BoxProps.{.key = WidgetPartKey(key, 300 + dot), .bounds = Rectangle.{spot.x + size * 0.43, spot.y + size * 0.43,
+                        size * 0.14, size * 0.14}, .fill = Color.{255, 226, 150, 190}, .radius = size * 0.07})
+            }
+            dot += 1
+            at = ShoveyNeighbor(at, game.direction)
+        }
+        bob := cast(float32)Math.Sin(now * 6.0) * size * 0.04
+        held := size * 0.5
+        cx := cell.x + size * 0.5 + dx * size * 0.36
+        cy := cell.y + size * 0.5 + dy * size * 0.36 + bob
+        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 298), .bounds = Rectangle.{cx - held * 0.8, cy - held * 0.8, held * 1.6, held * 1.6},
+                .fill = Color.{255, 214, 120, 96}, .radius = held * 0.8})
+        Image(session, ImageProps.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = files[SPRITE_SHOT],
+                .alt_text = shot_label, .bounds = Rectangle.{cx - held / 2.0, cy - held / 2.0, held, held},
                 .fit = ImageFit.ImageFitContain, .smooth = true})
+    }
+    // A thrown shot flies along its line.
+    if board_flight_from >= 0 {
+        progress := cast(float32)((now - board_flight_start) / (BOARD_FLIGHT_STEP * cast(float64)(board_flight_cells + 1)))
+        if progress >= 1.0 { board_flight_from = -1 }
+        else {
+            from := TileMapCell(grid, BoardDisplayIndex(board_flight_from, landscape))
+            to := BoardAlong(grid, board_flight_from, board_flight_direction, board_flight_cells, landscape)
+            size := from.width * 0.45
+            x := from.x + (to.x - from.x) * progress + (from.width - size) / 2.0
+            y := from.y + (to.y - from.y) * progress + (from.height - size) / 2.0
+            Image(session, ImageProps.{.key = WidgetPartKey(key, 299), .asset_path = files[SPRITE_SHOT], .alt_text = shot_label,
+                    .bounds = Rectangle.{x, y, size, size}, .fit = ImageFit.ImageFitContain, .smooth = true})
+        }
+    }
+    // Struck targets burst; blasts cover the wall and its neighbours.
+    for index: cast(s32)0..BOARD_EFFECTS - 1 {
+        effect := *board_effects[index]
+        if effect.kind == 0 || now < effect.start { continue }
+        frame_time := ifx effect.kind == 1 then BOARD_BURST_FRAME else BOARD_BLAST_FRAME
+        frames: s32 = ifx effect.kind == 1 then 6 else 8
+        frame := cast(s32)((now - effect.start) / frame_time)
+        if frame >= frames { effect.kind = 0; continue }
+        cell := TileMapCell(grid, BoardDisplayIndex(effect.at, landscape))
+        scale: float32 = ifx effect.kind == 1 then 1.4 else 2.4
+        size := cell.width * scale
+        Image(session, ImageProps.{.key = WidgetPartKey(key, 400 + index), .asset_path = files[(ifx effect.kind == 1 then SPRITE_BURST else SPRITE_EXPLOSION) + frame],
+                .alt_text = "", .bounds = Rectangle.{cell.x + (cell.width - size) / 2.0, cell.y + (cell.height - size) / 2.0, size, size},
+                .fit = ImageFit.ImageFitContain, .smooth = false})
     }
     return grid
 }

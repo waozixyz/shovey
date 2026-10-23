@@ -433,6 +433,8 @@ solve_classic_rests: [SHOVEY_CELLS]s32;
 solve_classic_stars: [SHOVEY_CELLS]s32;
 solve_classic_goals: [SHOVEY_CELLS]s32;
 solve_classic_homes: [SHOVEY_CELLS]s32;
+solve_classic_targets: [SHOVEY_CELLS]s32;
+solve_classic_stands: [SHOVEY_CELLS]s32;
 solve_classic_crate_used: [SHOVEY_CELLS]bool;
 solve_classic_plate_used: [SOLVE_CLASSIC_PLATES]bool;
 solve_classic_door_pieces: [SHOVEY_CELLS]s32;
@@ -519,6 +521,7 @@ SolveClassicEstimate :: () -> s32 {
     star_count: s32 = 0
     goal_count: s32 = 0
     home_count: s32 = 0
+    target_count: s32 = 0
     plate_seen: s32 = 0
     colors: [6]bool
     estimate: s32 = 0
@@ -554,7 +557,8 @@ SolveClassicEstimate :: () -> s32 {
         if ground == 39 && !ShoveyColorRest(object) { solve_classic_rests[rest_count] = at; rest_count += 1 }
         if object == 19 { solve_classic_stars[star_count] = at; star_count += 1 }
         if ground == 7 { solve_classic_homes[home_count] = at; home_count += 1 }
-        if ground == 21 || ground == 56 || object == 28 || object == 40 {
+        if object == 28 { solve_classic_targets[target_count] = at; target_count += 1 }
+        if ground == 21 || ground == 56 || object == 40 {
             estimate += SOLVE_CLASSIC_GOAL
             solve_classic_goals[goal_count] = at; goal_count += 1
         }
@@ -692,10 +696,59 @@ SolveClassicEstimate :: () -> s32 {
         }
         estimate += SOLVE_CLASSIC_GOAL * 8 + (ifx switch_pushes >= SOLVE_CLASSIC_FAR then 100 else switch_pushes)
     }
+    // Targets: each line of them costs a goal, and Shovey walks to a shot or,
+    // holding one, to a cell he can throw from. No shot left is hopeless.
+    if target_count > 0 {
+        estimate += SOLVE_CLASSIC_GOAL * SolveClassicTargetLines(solve_classic_targets[0:target_count])
+        stand_count := SolveClassicTargetStands(game, solve_classic_targets[0:target_count])
+        if stand_count == 0 { estimate += SOLVE_CLASSIC_FAR }
+        for index: cast(s32)0..stand_count - 1 {
+            if goal_count < SHOVEY_CELLS { solve_classic_goals[goal_count] = solve_classic_stands[index]; goal_count += 1 }
+        }
+    }
     if goal_count > 0 { estimate += SolveClassicNearest(game.player, solve_classic_goals[0:goal_count]) }
     else { estimate += SolveClassicNearest(game.player, solve_classic_homes[0:home_count]) }
     solve_classic_work += cast(s64)(goal_count / 8 + pairing / 4)
     return estimate
+}
+
+// Targets fall to throws, and one throw clears every target in its line:
+// the rows or the columns they still need, whichever is fewer.
+SolveClassicTargetLines :: (targets: []s32) -> s32 {
+    rows: [SHOVEY_HEIGHT]bool; columns: [SHOVEY_WIDTH]bool
+    row_count: s32 = 0; column_count: s32 = 0
+    for at: targets {
+        row := at / SHOVEY_WIDTH; column := at % SHOVEY_WIDTH
+        if !rows[row] { rows[row] = true; row_count += 1 }
+        if !columns[column] { columns[column] = true; column_count += 1 }
+    }
+    return ifx row_count < column_count then row_count else column_count
+}
+
+// Where Shovey heads for targets, into solve_classic_stands: a shot on the
+// floor while his hands are empty, or with one in hand a cell in line with a
+// target and nothing between that stops a throw.
+SolveClassicTargetStands :: (game: *ShoveyGame, targets: []s32) -> s32 {
+    count: s32 = 0
+    if (game.powers & SHOVEY_AMMO) == 0 {
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.ground[at] == 26 { solve_classic_stands[count] = at; count += 1 }
+        }
+        return count
+    }
+    seen: [SHOVEY_CELLS]bool
+    for target: targets {
+        for side: cast(s32)0..3 {
+            at := ShoveyNeighbor(target, side)
+            while at >= 0 && !ShoveyShotStops(game, at) {
+                if !seen[at] && game.objects[at] == 0 && ShoveyFloorAllows(game, at, 10) && count < SHOVEY_CELLS {
+                    seen[at] = true; solve_classic_stands[count] = at; count += 1
+                }
+                at = ShoveyNeighbor(at, side)
+            }
+        }
+    }
+    return count
 }
 
 // Guidance for the chain's door prerequisite: bring the nearest crate to any

@@ -833,6 +833,75 @@ def bomb_crate():
     return image
 
 
+def burst(frame):
+    """A target struck by a shot, frame 0 to 5: a flash, then red and cream
+    splinters flying out inside a fading ring of dust."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    if frame == 0:
+        draw.ellipse((10, 10, 21, 21), fill=(255, 246, 214, 255))
+        draw.ellipse((13, 13, 18, 18), fill=(255, 255, 255, 255))
+        return image
+    reach = 3 + frame * 2.4
+    dust = max(0, 170 - frame * 30)
+    if dust:
+        r = reach + 2
+        draw.ellipse((16 - r, 16 - r, 15 + r, 15 + r), outline=(222, 212, 192, dust), width=1)
+    rng = random.Random(500 + frame)
+    for piece in range(10):
+        angle = 2 * math.pi * piece / 10 + rng.uniform(-0.18, 0.18)
+        x = 16 + math.cos(angle) * reach
+        y = 16 + math.sin(angle) * reach + frame * 0.6
+        size = 3 if frame < 3 else 2 if frame < 5 else 1
+        colour = (206, 58, 48, 255) if piece % 2 else (240, 230, 212, 255)
+        draw.rectangle((round(x), round(y), round(x) + size - 1, round(y) + size - 1), fill=colour)
+    return image
+
+
+def explosion(frame):
+    """A bomb crate going off, frame 0 to 7: a spark, a fireball with a dark
+    red rim and flying stone chips, then billowing smoke that drifts apart."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    def disc(r, colour, cx=16, cy=16):
+        draw.ellipse((round(cx - r), round(cy - r), round(cx + r) - 1, round(cy + r) - 1), fill=colour)
+    rng = random.Random(900 + frame)
+    fire = [(4, 3), (7, 6), (10, 9), (13, 12), (10, 8), (0, 0), (0, 0), (0, 0)][frame]
+    # Smoke first, so the shrinking fireball still glows inside it.
+    if frame >= 4:
+        fade = [0, 0, 0, 0, 255, 235, 170, 90][frame]
+        spread = [0, 0, 0, 0, 10, 9, 11, 12][frame]
+        for puff in range(7):
+            angle = 2 * math.pi * puff / 7 + frame * 0.3
+            cx = 16 + math.cos(angle) * spread + rng.uniform(-1, 1)
+            cy = 16 + math.sin(angle) * spread - (frame - 4) * 1.2
+            r = [0, 0, 0, 0, 5, 6, 5, 3][frame]
+            disc(r, (118, 116, 112, fade), cx, cy)
+            disc(max(1, r - 2), (164, 160, 152, fade), cx, cy)
+        if frame <= 5:
+            for ember in range(5):
+                angle = rng.uniform(0, 2 * math.pi)
+                x, y = 16 + math.cos(angle) * rng.uniform(3, 9), 16 + math.sin(angle) * rng.uniform(3, 9)
+                draw.point((round(x), round(y)), fill=(255, 176, 60, 255))
+    if frame <= 4:
+        outer, core = fire
+        disc(outer, (150, 34, 26, 255))
+        disc(outer - 1, (228, 92, 36, 255))
+        disc(max(1, outer * 0.72), (247, 168, 52, 255))
+        disc(max(1, outer * 0.45), (255, 236, 150, 255))
+        if frame < 3: disc(max(1, outer * 0.22), (255, 255, 246, 255))
+    if 2 <= frame <= 6:
+        reach = [0, 0, 11, 13, 14.5, 15, 15.5][frame]
+        for chip in range(8):
+            angle = 2 * math.pi * chip / 8 + 0.4
+            x = 16 + math.cos(angle) * reach
+            y = 16 + math.sin(angle) * reach + (frame - 2) * 0.8
+            colour = (196, 176, 132, 255) if chip % 2 else (124, 122, 118, 255)
+            size = 2 if frame < 6 else 1
+            draw.rectangle((round(x), round(y), round(x) + size - 1, round(y) + size - 1), fill=colour)
+    return image
+
+
 def colour_portal(hue):
     return over_floor(recolour(native('teleporter'), lambda h, s, v: s > 0.12, hue))
 
@@ -1025,6 +1094,10 @@ def sprites():
     for mask in range(16):
         out[f'grass-edge-{mask}'] = ('grass blending into adjacent paving with connected corners', grass_edge(mask))
         out[f'abyss-edge-{mask}'] = ('abyss with a recessed stone lip only where it meets solid ground', abyss_edge(mask))
+    for frame in range(6):
+        out[f'burst-{frame}'] = (f'a target struck by a shot, frame {frame + 1} of 6', burst(frame))
+    for frame in range(8):
+        out[f'explosion-{frame}'] = (f'a bomb crate going off, frame {frame + 1} of 8', explosion(frame))
     for frame in range(1, 9):
         out[f'sensor-{frame}'] = (f'active sensor, frame {frame} of 8',
                                   ring((120, 186, 214, 255), 12, (240, 248, 250, 255), -90 + 45 * (frame - 1)))
