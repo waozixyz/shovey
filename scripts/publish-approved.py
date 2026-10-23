@@ -93,32 +93,40 @@ def publish_live(output):
     return True
 
 
-def publish_website(receipt, output):
-    """Commit the published campaign alone and push it, so the website's own
-    workflow rebuilds the browser game from the same approved levels."""
-    path = 'levels/approved.json'
-    head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-    committed = subprocess.run(['git', 'show', head + ':' + path], cwd=ROOT, capture_output=True, text=True).stdout
-    current = (ROOT / path).read_text()
-    if committed == current:
-        receipt['website'] = head
-        return
-    numbers = [level['number'] for level in json.loads(current)['levels']]
+def commit_paths(repository, paths, message, output):
+    """Commit these paths alone and push them. A private index keeps other
+    work in the shared checkout out of the commit."""
+    head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repository, text=True).strip()
+    changed = [path for path in paths if subprocess.run(['git', 'show', head + ':' + path], cwd=repository,
+               capture_output=True, text=True).stdout != (repository / path).read_text()]
+    if not changed:
+        return head
     index = STATE / 'website.index'
     environment = {**os.environ, 'GIT_INDEX_FILE': str(index)}
-    git = lambda *arguments: subprocess.check_output(['git', *arguments], cwd=ROOT, env=environment, text=True).strip()
+    git = lambda *arguments: subprocess.check_output(['git', *arguments], cwd=repository, env=environment, text=True).strip()
     try:
         git('read-tree', head)
-        git('update-index', '--add', '--cacheinfo', '100644,' + git('hash-object', '-w', path) + ',' + path)
-        commit = git('commit-tree', git('write-tree'), '-p', head, '-m',
-                     f'Publish the approved campaign of {len(numbers)} Classic levels on the website')
+        for path in changed:
+            git('update-index', '--add', '--cacheinfo', '100644,' + git('hash-object', '-w', path) + ',' + path)
+        commit = git('commit-tree', git('write-tree'), '-p', head, '-m', message)
     finally:
         index.unlink(missing_ok=True)
-    subprocess.run(['git', 'update-ref', 'refs/heads/master', commit, head], cwd=ROOT, check=True)
-    # Keep the shared index in step with the new commit for this one path.
-    subprocess.run(['git', 'reset', '-q', '--', path], cwd=ROOT, check=True)
-    subprocess.run(['git', 'push', 'origin', 'master'], cwd=ROOT, stdout=output, stderr=subprocess.STDOUT, check=True)
-    receipt['website'] = commit
+    subprocess.run(['git', 'update-ref', 'refs/heads/master', commit, head], cwd=repository, check=True)
+    # Keep the shared index in step with the new commit for these paths.
+    subprocess.run(['git', 'reset', '-q', '--', *changed], cwd=repository, check=True)
+    subprocess.run(['git', 'push', 'origin', 'master'], cwd=repository, stdout=output, stderr=subprocess.STDOUT, check=True)
+    return commit
+
+
+def publish_website(receipt, output, arcade):
+    """Commit the published campaign and its release records, Arcade's first,
+    so the website rebuilds the browser game from the same approved levels
+    and the download workflow builds the released version."""
+    count = len(json.loads((ROOT / 'levels/approved.json').read_text())['levels'])
+    receipt['arcade_records'] = commit_paths(arcade, ['CHANGELOG.md', 'VERSION', 'apps/versions.json'],
+        f'Record Arcade {receipt["versions"]["arcade"]} with approved Shovey Classic levels 1-{count}', output)
+    receipt['website'] = commit_paths(ROOT, ['levels/approved.json', 'src/CHANGELOG.md', 'src/editor/CHANGELOG.md'],
+        f'Publish the approved campaign of {count} Classic levels on the website', output)
 
 
 def next_version(value):
@@ -197,7 +205,7 @@ def complete_release(config, receipt, output):
     record_published(receipt)
     if receipt.get('website') is None:
         status('Updating website', 'publishing')
-        publish_website(receipt, output)
+        publish_website(receipt, output, arcade)
         atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
     status(publication_status())
 
