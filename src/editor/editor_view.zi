@@ -610,8 +610,12 @@ EditorFieldInput :: () -> TextFieldInput { return AppFieldInputHost() }
 EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: string, placeholder: string,
     max_bytes: s32) -> bool {
     edited: TextFieldResult
+    // The field shows a copy, so its result never views the bytes this edit
+    // rewrites.
+    shown: [128]u8
+    for at: cast(s32)0..field.length - 1 { shown[at] = field.bytes[at] }
     {
-        value := EditField(field.bytes[:], field.length)
+        value := EditField(shown[:], field.length)
         edited = TextField(editor_frame.session, TextFieldProps.{.key = key, .bounds = bounds, .value = value,
                 .label = label, .placeholder = placeholder, .cursor = field.cursor, .anchor = field.anchor,
                 .scroll_x = field.scroll_x, .focused = field.focused, .focus_id = cast(s32)key,

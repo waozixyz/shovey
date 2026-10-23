@@ -9,7 +9,7 @@ ENTITY = $(shell $(ZIRAN) pkg path entity $(LOCK_FLAGS))
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
-.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch
+.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zib web-zib-test
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test
 editor-server-test:
@@ -91,9 +91,9 @@ desktop: bundles
 		--module-path build/web-generated --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE $(DESKTOP_DEFINES) \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
-		--bind editor_view:AppKeyHost=host:AppKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
-		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:AppSupportsHost \
-		--bind editor_view:AppServiceHost=controls:AppServiceHost --bind editor_view:AppFieldInputHost=host:AppFieldInputHost \
+		--bind editor_view:AppKeyHost=host:GameKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
+		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
+		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
 		--asset-dir assets=build/web-assets/assets --entry game:Main \
 		-o '$(DESKTOP_DIR)/app.zib' src/web/game.zi
 	cp '$(KRYON)/build/zib-raylib/zib' '$(DESKTOP_DIR)/shovey'
@@ -101,7 +101,7 @@ desktop: bundles
 	printf 'Shovey\n' > '$(DESKTOP_DIR)/app.title'
 	'$(DESKTOP_DIR)/shovey' --check '$(DESKTOP_DIR)/app.zib'
 
-web: bundles
+web-zib: bundles
 	python3 scripts/prepare-web.py
 	rm -rf build/web
 	mkdir -p build/web
@@ -111,9 +111,9 @@ web: bundles
 		--module-path build/web-generated --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
-		--bind editor_view:AppKeyHost=host:AppKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
-		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:AppSupportsHost \
-		--bind editor_view:AppServiceHost=controls:AppServiceHost --bind editor_view:AppFieldInputHost=host:AppFieldInputHost \
+		--bind editor_view:AppKeyHost=host:GameKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
+		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
+		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
 		--asset-dir assets=build/web-assets/assets --entry game:Main \
 		-o build/web/shovey.zib src/web/game.zi
 	$(MAKE) -C '$(ENTITY)' build/entity.zib ZIRAN='$(TOOLCHAIN)/build/bin/ziran'
@@ -132,13 +132,54 @@ web: bundles
 
 web-itch: web
 
+# The browser game compiled to WebAssembly: smooth on slow phones, where
+# the interpreted ZIB lagged. Kryon's canvas runner answers the app's
+# context calls and keeps saves where the ZIB player kept them, so players
+# keep their progress. The live campaign and the Entity profile need the
+# ZIB player for now: `make web-zib` builds that edition into build/web.
+ZIRAN_BIN ?= $(TOOLCHAIN)/build/bin
+EMCC ?= $(or $(wildcard $(HOME)/emsdk/upstream/emscripten/emcc),emcc)
+web: bundles
+	python3 scripts/prepare-web.py
+	rm -rf build/web build/web-native
+	mkdir -p build/web build/web-native/ir build/web-native/c
+	'$(ZIRAN_BIN)/zi2zir' --root . --module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
+		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
+		--entry canvas_app_run:main --bind canvas_app_run:CanvasAppMain=game:Main \
+		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
+		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
+		--bind editor_view:AppKeyHost=host:GameKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
+		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
+		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
+		-o build/web-native/ir '$(KRYON)/src/backend/canvas_app_run.zi' '$(KRYON)/src/backend/canvas_raster.zi' src/web/game.zi
+	'$(ZIRAN_BIN)/zi2c' --define PLATFORM_WEB --root build/web-native/ir -o build/web-native/c $$(find build/web-native/ir -name '*.zir')
+	'$(EMCC)' -O2 -I'$(TOOLCHAIN)/include' $$(find build/web-native/c -type d -printf ' -iquote %p') \
+		$$(find build/web-native/c -name '*.c') --js-library '$(TOOLCHAIN)/web/ziran_web.js' \
+		-sEXPORTED_RUNTIME_METHODS=FS -sFORCE_FILESYSTEM=1 -lidbfs.js -sALLOW_MEMORY_GROWTH=1 \
+		-sASYNCIFY -sENVIRONMENT=web -sSTACK_SIZE=8388608 -sASYNCIFY_STACK_SIZE=1048576 \
+		--preload-file '$(KRYON)/assets/fonts/LiberationSans-Regular.ttf@/kryon-font.ttf' \
+		--preload-file build/web-assets/assets@/assets -o build/web/index.js
+	cp src/web/index.html build/web/index.html
+	python3 scripts/stamp-web.py
+	cp assets/shovey/preview.png build/web/loading.png
+	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png build/web/
+	cp assets/branding/shovey-icon.png build/web/icon.png
+	cp assets/branding/shovey-social.png build/web/og.png
+	cp src/web/manifest.webmanifest src/web/_headers build/web/
+
+
 web-test: web
-	node tests/web_profile_test.mjs
 	node tests/web_mini_test.mjs
-	node tests/web_live_campaign_test.mjs
 	node tests/web_tap_beside_board_test.mjs
 
 previews:
+# The profile and the live campaign run on the ZIB player's web edition.
+web-zib-test: web-zib
+	node tests/web_profile_test.mjs
+	node tests/web_live_campaign_test.mjs
+
 	python3 tools/levels/levels.py previews
 
 art:

@@ -91,7 +91,8 @@ try {
     await delay(400);
     assert.equal(await evaluate('window.scrollY'), 0, 'The wheel over the loading game scrolled the page');
   }
-  await wait(`${mini}?.Module?.profileReady && ${mini}.document.querySelector('#loading-screen').classList.contains('is-hidden')`);
+  // The ZIB edition waits for its profile; the compiled one has none.
+  await wait(`(${mini}?.Module?.profileReady || ${mini}?.Module?.FS?.analyzePath('/assets/shovey/catalog.json').exists) && ${mini}.document.querySelector('#loading-screen').classList.contains('is-hidden')`);
   // The embedded page's test driver lists the widgets it drew; nothing is captured.
   let serial = 0;
   async function nodes() {
@@ -112,7 +113,7 @@ try {
   assert(buttons.includes('Levels') && buttons.includes('Restart'), 'Mini lost its level controls: ' + buttons.join('|'));
   for (const hidden of ['Profile', 'Back', 'Help', 'Play', 'Mute', 'Unmute'])
     assert(!buttons.includes(hidden), 'Mini shows ' + hidden + ': ' + buttons.join('|'));
-  assert.equal(await evaluate(`${mini}.Module.profileVisible`), false);
+  assert.notEqual(await evaluate(`${mini}.Module.profileVisible`), true);
 
   // The page itself scrolls when the wheel is outside the game.
   await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 600, y: 300, deltaX: 0, deltaY: 400});

@@ -20,6 +20,9 @@ EDITIONS = ['src/catalog.json', 'src/island/catalog.json', 'src/editor/catalog.j
 # another's pictures lists copies in shared_assets.json beside its catalog.
 
 
+LOCALE_PIECE = 800
+
+
 def translations(descriptor):
     """Every translated string of one edition, as staged locale files and
     as Ziran code: older hosts only know their own locale files."""
@@ -33,16 +36,39 @@ def translations(descriptor):
                 values[lines[0][1:-1]] = '\n'.join(lines[1:]).rstrip()
         blocks_by_language[locale.name] = ''.join(blocks)
         values_by_language[locale.stem] = values
-    code = 'GameLocaleText :: (language: string, key: string) -> string {\n'
+    code = '#import "std/vec"\nGameLocaleText :: (language: string, key: string) -> string {\n'
+    # Native builds escape every non-ASCII byte of a literal, and a statement
+    # must stay under 4 KiB there: long texts are copied in once, in pieces.
+    longs = []
     for language, values in sorted(values_by_language.items(), key=lambda item: item[0] == 'en'):
         indent = '    ' if language == 'en' else '        '
         if language != 'en':
             code += '    if language == ' + json.dumps(language) + ' {\n'
         for key, value in values.items():
-            code += indent + 'if key == ' + json.dumps(key) + ' { return ' + json.dumps(value, ensure_ascii=False) + ' }\n'
+            if len(value.encode()) <= LOCALE_PIECE:
+                text = json.dumps(value, ensure_ascii=False)
+            else:
+                text = f'GameLocaleTextLong{len(longs)}()'
+                longs.append(value)
+            code += indent + 'if key == ' + json.dumps(key) + ' { return ' + text + ' }\n'
         if language != 'en':
             code += '    }\n'
     code += '    return ""\n}\n'
+    for index, value in enumerate(longs):
+        data = value.encode()
+        pieces, start = [], 0
+        while start < len(data):
+            end = min(start + LOCALE_PIECE, len(data))
+            while end < len(data) and data[end] & 0xc0 == 0x80:
+                end -= 1
+            pieces.append(data[start:end].decode())
+            start = end
+        name = f'GameLocaleTextLong{index}'
+        code += f'{name}Text: string;\n'
+        code += f'{name} :: () -> string {{\n    if {name}Text.count == 0 {{\n        built: Vec(u8)\n'
+        for piece in pieces:
+            code += f'        BuilderPrint(*built, "%", {json.dumps(piece, ensure_ascii=False)})\n'
+        code += f'        {name}Text = BuilderFinish(built)\n    }}\n    return {name}Text\n}}\n'
     return blocks_by_language, code
 
 

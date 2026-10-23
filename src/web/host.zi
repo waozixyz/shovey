@@ -17,8 +17,12 @@ ReadAppUiHost :: () -> AppUiFrame {
 AppLocaleHost :: (key: string) -> string { return GameLocaleText("en", key) }
 AppRecordHost :: (name: string) -> string { return WebApp.DocumentRead(name) }
 SaveAppRecordHost :: (name: string, text: string) -> bool { return WebApp.DocumentWrite(name, text) }
-#program_export
 AppKeyHost :: () -> s32 { return WebApp.AppKey() }
+// The editor's calls are bound to these exports by name. They differ from
+// the app context's own host calls, so a page that compiles the game in
+// answers those itself.
+#program_export
+GameKeyHost :: () -> s32 { return WebApp.AppKey() }
 // The standalone app host currently has no packed sound effect service.
 #program_export
 AppSoundHost :: (path: string) -> bool { unused path; return false }
@@ -37,6 +41,6 @@ EditorSaveRecordHost :: (name: string, text: string) -> bool { return WebApp.Doc
 #program_export
 SmoothFramesHost :: (frames: s32) -> bool { unused frames; return true }
 #program_export
-AppSupportsHost :: (capability: string) -> bool { return capability == "arcade.navigation" }
+GameSupportsHost :: (capability: string) -> bool { return capability == "arcade.navigation" }
 #program_export
-AppFieldInputHost :: () -> TextFieldInput { return WebApp.AppFieldInput() }
+GameFieldInputHost :: () -> TextFieldInput { return WebApp.AppFieldInput() }

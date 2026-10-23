@@ -16,7 +16,8 @@ release = re.search(r'^## \[([0-9]+(?:\.[0-9]+)+)\] - (\d{4}-\d{2}-\d{2})',
                     (root / 'src/CHANGELOG.md').read_text(), re.M)
 assert release, 'The game needs a numeric release and date'
 version, release_date = release.groups()
-wasm_bytes = (output / 'runtime.wasm').stat().st_size
+# The ZIB player's runtime, or the compiled game.
+wasm_bytes = (output / ('runtime.wasm' if (output / 'runtime.wasm').exists() else 'index.wasm')).stat().st_size
 page.write_text(page.read_text().replace('__SHOVEY_REVISION__', revision)
                 .replace('__SHOVEY_LEVEL_COUNT__', str(len(approved)))
                 .replace('__SHOVEY_VERSION__', version)

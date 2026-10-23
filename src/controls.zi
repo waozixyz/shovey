@@ -1,7 +1,10 @@
 #if #defined(SHOVEY_WEB) {
     WebApp :: #import "kryon/app_context";
     web_editor_open: bool;
+    // The editor's service calls are bound to this export; it differs from
+    // the app context's own AppServiceHost, which a compiled page answers.
     #program_export
+    GameServiceHost :: (name: string, request: string) -> string { return AppServiceHost(name, request) }
     AppServiceHost :: (name: string, request: string) -> string {
         if name == "arcade.navigation" {
             if request == "editor" { web_editor_open = true; return "opened" }

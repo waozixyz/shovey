@@ -226,8 +226,12 @@
           }
           var fs = Module.FS;
           var canvas = document.getElementById('canvas');
-          if (fs && fs.analyzePath('/kryon-apps/shovey/assets/shovey/catalog.json').exists && canvas.width && canvas.height) {
-            if (Module.profileReady) {
+          // The compiled game carries its pictures at /assets and opens its
+          // save folder once IndexedDB has filled it; the ZIB player unpacks
+          // pictures per app and waits for its profile.
+          var compiled = fs && fs.analyzePath('/assets/shovey/catalog.json').exists;
+          if (fs && (compiled || fs.analyzePath('/kryon-apps/shovey/assets/shovey/catalog.json').exists) && canvas.width && canvas.height) {
+            if (compiled ? fs.analyzePath('/kryon-apps/shovey').exists : Module.profileReady) {
               document.title = pageTitle;
               loadingScreen.classList.add('is-hidden');
               return;
@@ -242,6 +246,7 @@
       locateFile: function(path) {
         if (path === 'runtime.wasm') return 'index.wasm?v=' + buildRevision;
         if (path === 'runtime.data') return 'runtime.data?v=' + buildRevision;
+        if (path === 'index.data') return 'index.data?v=' + buildRevision;
         return path;
       },
       instantiateWasm: function(imports, ready) {
