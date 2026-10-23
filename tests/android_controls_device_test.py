@@ -153,8 +153,7 @@ def run(phone, apk):
     phone.press(label='Swipe and tap')
     assert not phone.find(label='How do you want to move?'), 'the question stayed open'
     assert not phone.find(label='Movement pad'), 'the pad showed after choosing swipe and tap'
-    assert phone.find(label='Walk to the house to finish the level.', role='text'), 'the first level shows no tip'
-    print('first level: asked how to move, swipe and tap chosen, its tip shows')
+    print('first level: asked how to move, swipe and tap chosen')
     # A swipe on the board steps.
     start = shovey(phone)
     phone.drag(start[0] + start[2] / 2, start[1] + start[2] / 2, -start[2] * 3, 0)

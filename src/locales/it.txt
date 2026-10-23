@@ -154,17 +154,14 @@ Shovey ombra
 [shovey_floor]
 Pavimento
 ---
-[shovey_tip_home]
-Cammina fino alla casa per finire il livello.
----
 [shovey_tip_ball]
-Spingi la palla nella buca del suo colore, poi torna a casa.
+Spingi la palla nella sua buca, poi torna a casa.
 ---
 [shovey_tip_push]
-Ogni palla va in una buca. Non si può tirare, quindi pensa a ogni spinta.
+Le palle si spingono, non si tirano.
 ---
 [shovey_tip_restart]
-Bloccato? Ricomincia rimette il livello com’era.
+Bloccato? Ricomincia rimette tutto a posto.
 ---
 [shovey_tip_lever]
 Cammina contro la leva per aprire il cancello.

@@ -154,23 +154,20 @@ Shovey sombra
 [shovey_floor]
 Suelo
 ---
-[shovey_tip_home]
-Camina hasta la casa para terminar el nivel.
----
 [shovey_tip_ball]
-Empuja la bola al agujero de su color y luego ve a casa.
+Empuja la bola a su agujero y ve a casa.
 ---
 [shovey_tip_push]
-Cada bola va a un agujero. No se pueden jalar, así que planea cada empujón.
+Las bolas solo se empujan, nunca se jalan.
 ---
 [shovey_tip_restart]
-¿Atascado? Reiniciar deja el nivel como estaba.
+¿Atascado? Reiniciar deja todo como estaba.
 ---
 [shovey_tip_lever]
 Camina contra la palanca para abrir la puerta.
 ---
 [shovey_tip_colors]
-Cada bola va al agujero de su propio color.
+Cada bola va al agujero de su color.
 ---
 [shovey_instructions]
 Usa las flechas o WASD. Empuja un objeto a la vez; no puedes tirar de ellos. Lleva las bolas a los agujeros de su color y las cajas a sus casillas marcadas. La pintura cambia el color de una bola. Recoge las manzanas y junta los bloques estrella. Completa las tareas antes de volver a casa. Las cajas mantienen abiertas las puertas de presión. Las llaves abren cerraduras. Espacio lanza un proyectil recogido hacia donde mira Shovey. Algunos objetos invierten los controles, dejan un rastro o hacen deslizar a Shovey hasta un obstáculo. Shovey cargado puede encender un circuito; evita cargarlo dos veces. Los bloques cambian de rojo a azul y amarillo con cada empujón; sus destinos requieren rojo. R reinicia y H abre esta guía.

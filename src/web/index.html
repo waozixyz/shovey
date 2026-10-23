@@ -64,7 +64,9 @@
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     }
     #zib-controls, #result { display: none; }
-    #canvas-frame { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; }
+    /* The visible viewport: 100vh is the tallest one on phones, which puts the
+       canvas's bottom under the browser's address bar. */
+    #canvas-frame { position: fixed; inset: 0; }
     canvas {
       display: block;
       position: absolute;

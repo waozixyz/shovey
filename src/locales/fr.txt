@@ -154,17 +154,14 @@ Shovey ombre
 [shovey_floor]
 Sol
 ---
-[shovey_tip_home]
-Marche jusqu’à la maison pour finir le niveau.
----
 [shovey_tip_ball]
-Pousse la boule dans le trou de sa couleur, puis rentre à la maison.
+Pousse la boule dans son trou, puis rentre.
 ---
 [shovey_tip_push]
-Chaque boule va dans un trou. On ne peut pas tirer : prévois chaque poussée.
+Les boules se poussent, mais ne se tirent pas.
 ---
 [shovey_tip_restart]
-Bloqué ? Recommencer remet le niveau comme au début.
+Bloqué ? Recommencer remet tout en place.
 ---
 [shovey_tip_lever]
 Marche contre le levier pour ouvrir le portail.

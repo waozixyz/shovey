@@ -128,10 +128,9 @@ HeaderText :: () -> string {
     return TextView(header_bytes[:length])
 }
 
-// The first levels each teach one idea; its tip shows over the board until
-// the level is won.
+// The first levels that bring something new each have a short tip, shown
+// over the board until the level is won.
 LevelTip :: (level: s32) -> string {
-    if level == 1 { return "shovey_tip_home" }
     if level == 4 { return "shovey_tip_ball" }
     if level == 5 { return "shovey_tip_push" }
     if level == 6 { return "shovey_tip_restart" }
@@ -771,12 +770,7 @@ ShoveyFrame :: () {
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
     area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
-    // A tip takes a line more over the board.
     tip := ifx mini then "" else LevelTip(game.level)
-    if tip != "" {
-        area.y += 16.0
-        area.height -= 16.0
-    }
     // With the movement pad chosen, it sits in the bottom left corner and the
     // board keeps clear of it: beside it on a wide screen, above it on a tall one.
     pad_mode := ControlsPad() && !mini
@@ -851,7 +845,8 @@ ShoveyFrame :: () {
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
     }
     if tip != "" {
-        Caption(20024, Rectangle.{16.0, status_y - 6.0, width - 32.0, 48.0}, AppLocaleHost(tip), 14, true)
+        // It shares the status line's space between the bar and the board.
+        Caption(20024, Rectangle.{16.0, status_y - 4.0, width - 32.0, 32.0}, AppLocaleHost(tip), 13, true)
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     if choosing {

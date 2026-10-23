@@ -154,17 +154,14 @@ Stínový Shovey
 [shovey_floor]
 Podlaha
 ---
-[shovey_tip_home]
-Dojdi k domu a dokončíš úroveň.
----
 [shovey_tip_ball]
-Dotlač kouli do jamky její barvy a pak jdi domů.
+Dotlač kouli do její jamky a jdi domů.
 ---
 [shovey_tip_push]
-Každá koule musí do jamky. Táhnout nejde, tak si každé strčení rozmysli.
+Koule jde jen tlačit, ne táhnout.
 ---
 [shovey_tip_restart]
-Zasekl ses? Znovu vrátí úroveň do původního stavu.
+Zasekl ses? Znovu vrátí vše zpět.
 ---
 [shovey_tip_lever]
 Vejdi do páky a brána se otevře.

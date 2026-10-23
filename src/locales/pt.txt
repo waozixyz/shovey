@@ -154,17 +154,14 @@ Shovey sombra
 [shovey_floor]
 Chão
 ---
-[shovey_tip_home]
-Caminhe até a casa para terminar o nível.
----
 [shovey_tip_ball]
-Empurre a bola para o buraco da cor dela e depois vá para casa.
+Empurre a bola para o buraco dela e vá para casa.
 ---
 [shovey_tip_push]
-Toda bola vai para um buraco. Não dá para puxar, então planeje cada empurrão.
+Bolas só podem ser empurradas, nunca puxadas.
 ---
 [shovey_tip_restart]
-Preso? Reiniciar deixa o nível como estava.
+Preso? Reiniciar deixa tudo como estava.
 ---
 [shovey_tip_lever]
 Caminhe contra a alavanca para abrir o portão.
