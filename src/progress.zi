@@ -15,7 +15,7 @@ ShoveyLevelUnlocked :: (progress: *ShoveyProgress, level: s32) -> bool {
 }
 
 ShoveyRecordWin :: (progress: *ShoveyProgress, game: *ShoveyGame) {
-    if !game.won || game.level < 1 || game.level >= SHOVEY_LEVEL_COUNT || !ShoveyLevelUnlocked(progress, game.level) { return }
+    if !game.won || game.level < 1 || game.level >= ShoveyFinaleLevel() || !ShoveyLevelUnlocked(progress, game.level) { return }
     progress.completed[game.level - 1] = true
     if game.level == progress.unlocked { progress.unlocked = game.level + 1 }
 }
@@ -58,7 +58,7 @@ campaign_bytes: [SHOVEY_CAMPAIGN_C1 + 968]u8;
 // its level still starts from that board, so a game saved before levels were
 // renumbered or edited restarts its level instead of showing another board.
 ShoveyBoardMark :: (level: s32) -> u64 {
-    data := ShoveyLevelData(level)
+    data := ShoveyLevelBoard(level)
     mark: u64 = 2166136261
     for at: cast(s64)0..data.count - 1 {
         mark = ((mark ^ cast(u64)data[at]) * 16777619) & 4294967295
@@ -95,7 +95,7 @@ ShoveyCampaignRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, text: st
     if !marked && (text.count != SHOVEY_CAMPAIGN_C1 || text[:2] != "C1") { return false }
     restored: ShoveyProgress
     restored.unlocked = ShoveyByte(text, 2)
-    if restored.unlocked < 1 || restored.unlocked > SHOVEY_LEVEL_COUNT { return false }
+    if restored.unlocked < 1 || restored.unlocked > ShoveyLevelLimit() { return false }
     for index: cast(s32)0..174 {
         byte := text[4 + index]
         if byte != #char "0" && byte != #char "1" { return false }

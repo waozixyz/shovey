@@ -27,7 +27,7 @@
     },
     {
       "commit": "9bd9185bd1ab9497a94dfa0fd93f0b750b66e5c8",
-      "dependencies": {"crypto": "p08c3ae9ef02630df", "kryon": "pd70039fc739e614a"},
+      "dependencies": {"crypto": "p08c3ae9ef02630df", "kryon": "p7c9cab047dc7384e"},
       "id": "p2a9806d4a662ec1c",
       "name": "Apps",
       "ref": "master",
@@ -41,6 +41,14 @@
       "ref": "main",
       "source": true,
       "url": "https://github.com/open-quantum-safe/liboqs.git"
+    },
+    {
+      "commit": "0e79fda4c8bc9a66729a2d8b76197c50aad51481",
+      "dependencies": {"daochi_client": "p0cff069893bdc938", "kryon": "p7c9cab047dc7384e", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
+      "id": "p4dfd63c1d7dcd8f3",
+      "name": "Entity",
+      "ref": "master",
+      "url": "https://github.com/waozixyz/entity.git"
     },
     {
       "commit": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e",
@@ -60,6 +68,14 @@
       "url": "https://github.com/ziranlang/oqs.git"
     },
     {
+      "commit": "e169a7ee6541c3fadc2ba4c2eaa2105f0bb164f7",
+      "dependencies": {"raylib": "p5a77c9c35110e925"},
+      "id": "p7c9cab047dc7384e",
+      "name": "kryon",
+      "ref": "master",
+      "url": "https://github.com/kryonlabs/kryon.git"
+    },
+    {
       "commit": "f5f0a19a5dc6c14a49adb3cd63ea79a60f6ba77b",
       "dependencies": {},
       "id": "p809b4d31a48625a3",
@@ -67,22 +83,6 @@
       "ref": "master",
       "source": true,
       "url": "https://github.com/LoupVaillant/Monocypher.git"
-    },
-    {
-      "commit": "4d9d3773fa51736f359f7727f5c9d61aea06ee63",
-      "dependencies": {"daochi_client": "p0cff069893bdc938", "kryon": "pd70039fc739e614a", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
-      "id": "pa1a38cf730077f3c",
-      "name": "Entity",
-      "ref": "master",
-      "url": "https://github.com/waozixyz/entity.git"
-    },
-    {
-      "commit": "4d32d36956088a77918988e0d2db250d2b835131",
-      "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "pd70039fc739e614a",
-      "name": "kryon",
-      "ref": "master",
-      "url": "https://github.com/kryonlabs/kryon.git"
     },
     {
       "commit": "9cc6872f75447c3a24c16764f9829d0f58751cb0",
@@ -94,7 +94,7 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "p2a9806d4a662ec1c", "entity": "pa1a38cf730077f3c", "kryon": "pd70039fc739e614a", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "p2a9806d4a662ec1c", "entity": "p4dfd63c1d7dcd8f3", "kryon": "p7c9cab047dc7384e", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {

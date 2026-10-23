@@ -36,6 +36,9 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import, file "shovey_theme.zi";
 #import "kryon/carousel"
 #import "kryon/app_mini"
+#import "kryon/app_context"
+#import "json_scan"
+#import, file "live_campaign.zi";
 #if #defined(SHOVEY_WEB) {
     #import, file "web/host.zi";
 } else {
@@ -80,6 +83,24 @@ slide_at: float64;
 header_bytes: [256]u8;
 level_preview_paths: [175][64]u8;
 level_preview_landscape: bool;
+// Whether a level still starts from the board its built-in picture shows.
+level_preview_current: [175]bool;
+// The live campaign request: the host service, its request and next poll.
+live_service: string;
+live_request: [24]u8;
+live_waiting: bool;
+live_poll_at: float64;
+live_bytes: [96]u8;
+// The cached campaign, read back from records of at most LIVE_CHUNK bytes.
+LIVE_CHUNK :: 49152
+LIVE_CHUNKS :: 6
+live_cache: [LIVE_CHUNK * LIVE_CHUNKS]u8;
+live_cache_length: s32;
+live_names: [LIVE_CHUNKS][24]u8;
+// A downloaded campaign being checked, and the mark of the last one checked.
+live_document: [LIVE_CHUNK * LIVE_CHUNKS]u8;
+live_checking: bool;
+live_mark: [24]u8;
 sprite_names: [SPRITE_COUNT]string;
 
 
@@ -223,6 +244,106 @@ ResetLevelPreviews :: (landscape: bool) {
     level_preview_landscape = landscape
 }
 
+// Hosts keep records below 64 KiB, so the cached campaign is split.
+LiveChunkName :: (index: s32) -> string {
+    length: s32 = 0
+    digits: [24]u8
+    AppendText(live_names[index][:], *length, "live-campaign-")
+    AppendText(live_names[index][:], *length, FormatInteger(cast(s64)index, digits[:]))
+    return TextView(live_names[index][:length])
+}
+
+LiveCacheRead :: () -> string {
+    live_cache_length = 0
+    for index: cast(s32)0..LIVE_CHUNKS - 1 {
+        chunk := AppRecordHost(LiveChunkName(index))
+        if chunk == "" || chunk.count > LIVE_CHUNK { break }
+        for byte: chunk { live_cache[live_cache_length] = byte; live_cache_length += 1 }
+        if chunk.count < LIVE_CHUNK { break }
+    }
+    return TextView(live_cache[:live_cache_length])
+}
+
+LiveCacheWrite :: (document: string) -> bool {
+    if document.count >= LIVE_CHUNK * LIVE_CHUNKS { return false }
+    // Full chunks, then one shorter, possibly empty, chunk that ends it.
+    at: s64 = 0
+    for index: cast(s32)0..LIVE_CHUNKS - 1 {
+        end := ifx at + LIVE_CHUNK < document.count then at + LIVE_CHUNK else document.count
+        if !SaveAppRecordHost(LiveChunkName(index), document[at:end]) { return false }
+        if end - at < LIVE_CHUNK { return true }
+        at = end
+    }
+    return true
+}
+
+// The cached live campaign replaces the built-in levels before progress is
+// restored; the node's latest is then fetched once per session.
+LiveCampaignStart :: () {
+    cached := LiveCacheRead()
+    if cached != "" { unused ShoveyLiveLoadCompact(cached) }
+    live_service = ""
+    if AppSupports("publications") { live_service = "publications" }
+    else if AppSupports("publications.read") { live_service = "publications.read" }
+    if live_service == "" { return }
+    length: s32 = 0
+    AppendText(live_bytes[:], *length, "{\"operation\":\"fetch\",\"id\":\"")
+    AppendText(live_bytes[:], *length, LIVE_CAMPAIGN_ID)
+    AppendText(live_bytes[:], *length, "\"}")
+    reply := AppService(live_service, TextView(live_bytes[:length]))
+    number_at := FieldAt(reply, 0, "request")
+    end := ValueEnd(reply, number_at, 0)
+    if number_at < 0 || end <= number_at || end - number_at >= live_request.count { return }
+    for index: cast(s32)0..end - number_at - 1 { live_request[index] = reply[number_at + index] }
+    live_request[end - number_at] = 0
+    live_waiting = true
+    live_poll_at = frame.now
+}
+
+LiveCampaignPump :: () {
+    if !live_waiting || frame.now < live_poll_at { return }
+    live_poll_at = frame.now + 0.5
+    length: s32 = 0
+    AppendText(live_bytes[:], *length, "{\"operation\":\"status\",\"request\":")
+    AppendText(live_bytes[:], *length, TextUntilNul(live_request[:]))
+    AppendText(live_bytes[:], *length, "}")
+    reply := AppService(live_service, TextView(live_bytes[:length]))
+    status: [16]u8
+    if ReadStringText(reply, FieldAt(reply, 0, "status"), status[:]) < 0 { live_waiting = false; return }
+    if TextUntilNul(status[:]) == "pending" { return }
+    live_waiting = false
+    if TextUntilNul(status[:]) != "done" { return }
+    document_at := FieldAt(reply, 0, "document")
+    end := ValueEnd(reply, document_at, 0)
+    if document_at < 0 || end <= document_at || end - document_at > live_document.count { return }
+    // A campaign already checked is not checked again.
+    mark: u64 = 2166136261
+    for at: cast(s64)document_at..end - 1 { mark = ((mark ^ cast(u64)reply[at]) * 16777619) & 4294967295 }
+    digits: [24]u8
+    mark_text := FormatInteger(cast(s64)mark, digits[:])
+    if mark_text == AppRecordHost("live-campaign-mark") { return }
+    for at: cast(s64)0..mark_text.count - 1 { live_mark[at] = mark_text[at] }
+    live_mark[mark_text.count] = 0
+    for at: cast(s64)document_at..end - 1 { live_document[at - document_at] = reply[at] }
+    live_checking = ShoveyLiveCheckStart(TextView(live_document[:end - document_at]))
+}
+
+// Checks a downloaded campaign a few moves per frame, then switches to it.
+LiveCampaignCheck :: () {
+    if !live_checking { return }
+    compact: string
+    result := ShoveyLiveCheckStep(40, *compact)
+    if result < 0 { return }
+    live_checking = false
+    if result == 0 { return }
+    if compact != LiveCacheRead() { unused LiveCacheWrite(compact) }
+    unused SaveAppRecordHost("live-campaign-mark", TextUntilNul(live_mark[:]))
+    for at: cast(s32)0..174 { level_preview_paths[at][0] = 0 }
+    // An untouched level reopens on its new board; a level in play keeps its
+    // board until it is restarted or left.
+    if !game.won && game.moves == 0 && game.level <= ShoveyLevelCount() { unused ShoveyLoad(*game, game.level) }
+}
+
 ContinueGame :: () {
     slide_count = 0
     slide_next = 0
@@ -309,6 +430,7 @@ ShoveyFrame :: () {
         title_external = LibraryAvailable()
         mini = AppMini()
         title_open = !title_external && !mini
+        LiveCampaignStart()
         if !ShoveyCampaignRestore(*progress, *game, AppRecordHost("campaign")) {
             if ShoveyRestore(*game, AppRecordHost("position")) {
                 progress = ShoveyMigrateProgress(*game)
@@ -324,6 +446,8 @@ ShoveyFrame :: () {
         last_tick = frame.now
         loaded = true
     }
+    LiveCampaignPump()
+    LiveCampaignCheck()
     width := cast(float32)frame.width
     top := cast(float32)frame.top
     bottom := cast(float32)(frame.height - frame.bottom)
@@ -376,6 +500,7 @@ ShoveyFrame :: () {
                 }
                 if unlocked {
                     if level_preview_paths[at][0] == 0 {
+                        level_preview_current[at] = ShoveyLevelBoard(number) == ShoveyLevelData(number)
                         length: s32 = 0
                         AppendText(level_preview_paths[at][:], *length, ifx landscape then "assets/shovey/levels-landscape/" else "assets/shovey/levels/")
                         AppendText(level_preview_paths[at][:], *length, label)
@@ -383,11 +508,12 @@ ShoveyFrame :: () {
                         level_preview_paths[at][length] = 0
                     }
                     // Cover the centered visual label only inside the picture
-                    // area, then repeat the number in the card's footer.
-                    Image(frame.session, ImageProps.{.key = cast(u64)(35000 + number),
+                    // area, then repeat the number in the card's footer. A
+                    // level changed since this release has no picture yet.
+                    if level_preview_current[at] { Image(frame.session, ImageProps.{.key = cast(u64)(35000 + number),
                             .asset_path = TextUntilNul(level_preview_paths[at][:]),
                             .alt_text = label, .bounds = Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height},
-                            .fit = ImageFit.ImageFitContain, .smooth = true})
+                            .fit = ImageFit.ImageFitContain, .smooth = true}) }
                 }
                 {
                     Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)
@@ -513,7 +639,7 @@ ShoveyFrame :: () {
         status = AppLocaleHost("shovey_won")
         status_icon = "S2rr:M5 12L10 17L19 7"
     }
-    if game.level == SHOVEY_LEVEL_COUNT {
+    if game.level == ShoveyFinaleLevel() {
         status = AppLocaleHost("shovey_finale")
         status_icon = "S2rr:M12 4L14 10H20L15 14L17 20L12 16L7 20L9 14L4 10H10Z"
     }
@@ -524,7 +650,7 @@ ShoveyFrame :: () {
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
-    disabled := game.won || game.lost || game.level == SHOVEY_LEVEL_COUNT
+    disabled := game.won || game.lost || game.level == ShoveyFinaleLevel()
     // Touch: swipe anywhere under the bar to step, or tap a cell to step
     // towards it; hold either to keep walking. Fire comes after, so it stays on top.
     play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}

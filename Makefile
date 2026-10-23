@@ -108,6 +108,7 @@ web-itch: web
 web-test: web
 	node tests/web_profile_test.mjs
 	node tests/web_mini_test.mjs
+	node tests/web_live_campaign_test.mjs
 
 previews:
 	python3 tools/levels/levels.py previews

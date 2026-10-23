@@ -28,10 +28,41 @@ ShoveyGame :: struct {
     lost: bool
 }
 
+// A campaign published after this release: the approved levels kept on the
+// node, each proven by its own winning route (see live_campaign.zi). While
+// one is loaded it replaces the release's built-in approved levels.
+SHOVEY_LIVE_MAX :: 170
+SHOVEY_LIVE_BOARD :: 1440
+shovey_live_count: s32;
+shovey_live_boards: [SHOVEY_LIVE_MAX * SHOVEY_LIVE_BOARD]u8;
+shovey_live_lengths: [SHOVEY_LIVE_MAX]s32;
+
 #if #defined(SHOVEY_RELEASE) {
-    ShoveyLevelCount :: () -> s32 { return SHOVEY_APPROVED_LEVEL_COUNT }
+    ShoveyLevelCount :: () -> s32 { return ifx shovey_live_count > 0 then shovey_live_count else SHOVEY_APPROVED_LEVEL_COUNT }
 } else {
     ShoveyLevelCount :: () -> s32 { return SHOVEY_LEVEL_COUNT }
+}
+
+// The closing board after the campaign's last level, where play stops.
+ShoveyFinaleLevel :: () -> s32 { return ifx shovey_live_count > 0 then shovey_live_count + 1 else SHOVEY_LEVEL_COUNT }
+
+// The highest level number a saved game may name.
+ShoveyLevelLimit :: () -> s32 {
+    finale := ShoveyFinaleLevel()
+    return ifx finale > SHOVEY_LEVEL_COUNT then finale else SHOVEY_LEVEL_COUNT
+}
+
+// A level's starting board, from the loaded live campaign when there is one.
+ShoveyLevelBoard :: (level: s32) -> string {
+    if shovey_live_count > 0 {
+        if level >= 1 && level <= shovey_live_count {
+            at := (level - 1) * SHOVEY_LIVE_BOARD
+            return TextView(shovey_live_boards[at:at + shovey_live_lengths[level - 1]])
+        }
+        if level == shovey_live_count + 1 { return ShoveyLevelData(SHOVEY_LEVEL_COUNT) }
+        return ""
+    }
+    return ShoveyLevelData(level)
 }
 
 // Directions are left, up, right, down. Never wrap an edge into another row.
@@ -186,7 +217,7 @@ ShoveyByte :: (text: string, at: s32) -> s32 {
 }
 
 ShoveyLoad :: (game: *ShoveyGame, level: s32) -> bool {
-    return ShoveyLoadData(game, level, ShoveyLevelData(level))
+    return ShoveyLoadData(game, level, ShoveyLevelBoard(level))
 }
 
 // Existing boards contain 480 hex digits of pieces. Layered boards append
@@ -458,7 +489,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
 }
 
 ShoveyMove :: (game: *ShoveyGame, direction: s32) -> bool {
-    if direction < 0 || direction > 3 || game.won || game.lost || game.level == SHOVEY_LEVEL_COUNT { return false }
+    if direction < 0 || direction > 3 || game.won || game.lost || game.level == ShoveyFinaleLevel() { return false }
     if (game.powers & SHOVEY_REVERSE) != 0 { direction = (direction + 2) % 4 }
     game.direction = direction
     slide := (game.powers & SHOVEY_SLIDE) != 0
@@ -487,7 +518,7 @@ ShoveyMove :: (game: *ShoveyGame, direction: s32) -> bool {
 ShoveyMoveFrames :: (start: *ShoveyGame, direction: s32, frames: []ShoveyGame) -> s32 {
     if frames.count < 2 { return 0 }
     game := start.*
-    if direction < 0 || direction > 3 || game.won || game.lost || game.level == SHOVEY_LEVEL_COUNT { return 0 }
+    if direction < 0 || direction > 3 || game.won || game.lost || game.level == ShoveyFinaleLevel() { return 0 }
     if (game.powers & SHOVEY_REVERSE) != 0 { direction = (direction + 2) % 4 }
     game.direction = direction
     slide := (game.powers & SHOVEY_SLIDE) != 0
@@ -514,7 +545,7 @@ ShoveyMoveFrames :: (start: *ShoveyGame, direction: s32, frames: []ShoveyGame) -
 }
 
 ShoveyFire :: (game: *ShoveyGame) -> bool {
-    if game.won || game.lost || game.level == SHOVEY_LEVEL_COUNT || (game.powers & SHOVEY_AMMO) == 0 { return false }
+    if game.won || game.lost || game.level == ShoveyFinaleLevel() || (game.powers & SHOVEY_AMMO) == 0 { return false }
     game.powers = game.powers & ~SHOVEY_AMMO
     at := ShoveyNeighbor(game.player, game.direction)
     while at >= 0 {
@@ -638,7 +669,7 @@ ShoveyAnimalsTick :: (game: *ShoveyGame) -> bool {
 }
 
 ShoveyTick :: (game: *ShoveyGame) -> bool {
-    if game.won || game.lost || game.level == SHOVEY_LEVEL_COUNT { return false }
+    if game.won || game.lost || game.level == ShoveyFinaleLevel() { return false }
     occupied: [SHOVEY_CELLS]bool
     reserved: [SHOVEY_CELLS]bool
     for at: cast(s32)0..SHOVEY_CELLS - 1 { occupied[at] = false; reserved[at] = false }
@@ -747,7 +778,7 @@ ShoveyRestore :: (game: *ShoveyGame, text: string) -> bool {
     restored.direction = ShoveyByte(text, 6)
     restored.powers = ShoveyByte(text, 8)
     restored.keys = ShoveyByte(text, 10)
-    if restored.level < 1 || restored.level > SHOVEY_LEVEL_COUNT || restored.player < 0 || restored.player >= SHOVEY_CELLS ||
+    if restored.level < 1 || restored.level > ShoveyLevelLimit() || restored.player < 0 || restored.player >= SHOVEY_CELLS ||
     restored.direction < 0 || restored.direction > 3 || restored.powers < 0 || restored.powers > 31 || restored.keys < 0 { return false }
     for index: cast(s32)0..7 {
         digit := ShoveyDigit(text[12 + index])

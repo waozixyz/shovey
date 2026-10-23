@@ -1,0 +1,177 @@
+// The campaign Shovey's publisher keeps on the node: one public publication
+// holding the approved Classic levels in the shape of levels/approved.json.
+// Approving a level replaces it there within seconds, so players get new and
+// changed levels without a new release. A downloaded campaign replaces the
+// built-in levels only after every level loads and its own route wins it
+// through this engine. The check runs a few moves per frame, so the game
+// stays smooth, and a checked campaign is kept in a compact form that loads
+// at once on the next start.
+#import "json_scan"
+#import "text_buffer"
+#import, file "engine.zi";
+
+LIVE_CAMPAIGN_ID :: "435c51fbedc3c928f54124560b46116a"
+LIVE_CAMPAIGN_ROUTE :: 8192
+// The compact form: "L1", the count as two hex digits, then each level's
+// 1440 board digits.
+LIVE_COMPACT_HEADER :: 4
+
+LiveCheck :: struct {
+    document: string
+    levels_at: s32
+    next_at: s32
+    index: s32
+    count: s32
+    // Replaying the current level's route: its letters and position.
+    replaying: bool
+    route_length: s32
+    route_at: s32
+    game: ShoveyGame
+}
+
+live_check: LiveCheck;
+live_staged: [SHOVEY_LIVE_MAX * SHOVEY_LIVE_BOARD]u8;
+live_route: [LIVE_CAMPAIGN_ROUTE]u8;
+live_row: [32]u8;
+live_compact: [LIVE_COMPACT_HEADER + SHOVEY_LIVE_MAX * SHOVEY_LIVE_BOARD]u8;
+
+// Appends a level layer of 20 rows of 24 hex digits; false when malformed.
+LiveLayer :: (document: string, level_at: s32, name: string, board: []u8, length: *s32) -> bool {
+    rows_at := FieldAt(document, level_at, name)
+    if rows_at < 0 { return false }
+    at := Space(document, rows_at)
+    if at < 0 || at >= cast(s32)document.count || document[at] != #char "[" { return false }
+    at = Space(document, at + 1)
+    for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+        if row > 0 {
+            if at < 0 || at >= cast(s32)document.count || document[at] != #char "," { return false }
+            at = Space(document, at + 1)
+        }
+        if ReadStringText(document, at, live_row[:]) != SHOVEY_WIDTH * 2 { return false }
+        for index: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
+            if ShoveyDigit(live_row[index]) < 0 { return false }
+            board[length.*] = live_row[index]
+            length.* += 1
+        }
+        at = Space(document, ValueEnd(document, at, 0))
+    }
+    return at >= 0 && at < cast(s32)document.count && document[at] == #char "]"
+}
+
+// Starts checking a downloaded campaign; false when it cannot be one.
+// The document must stay unchanged until the check ends.
+ShoveyLiveCheckStart :: (document: string) -> bool {
+    #if !#defined(SHOVEY_RELEASE) {
+        unused document
+        return false
+    }
+    live_check = LiveCheck.{.document = document}
+    levels_at := FieldAt(document, 0, "levels")
+    if levels_at < 0 { return false }
+    at := Space(document, levels_at)
+    if at < 0 || at >= cast(s32)document.count || document[at] != #char "[" { return false }
+    live_check.levels_at = levels_at
+    live_check.next_at = Space(document, at + 1)
+    return true
+}
+
+// Reads the next level and starts replaying its route; false when malformed.
+LiveCheckLevel :: () -> bool {
+    document := live_check.document
+    level_at := live_check.next_at
+    index := live_check.index
+    if index >= SHOVEY_LIVE_MAX || level_at < 0 || level_at >= cast(s32)document.count || document[level_at] != #char "{" {
+        return false
+    }
+    number := ReadNumber(document, FieldAt(document, level_at, "number"))
+    if !number.valid || cast(s32)number.value != index + 1 { return false }
+    board := live_staged[index * SHOVEY_LIVE_BOARD:(index + 1) * SHOVEY_LIVE_BOARD]
+    length: s32 = 0
+    if !LiveLayer(document, level_at, "cells", board, *length) ||
+    !LiveLayer(document, level_at, "tiles", board, *length) ||
+    !LiveLayer(document, level_at, "decorations", board, *length) { return false }
+    route_length := ReadStringText(document, FieldAt(document, level_at, "solution"), live_route[:])
+    if route_length < 1 { return false }
+    // Checked as level 1, which is never the closing board.
+    if !ShoveyLoadData(*live_check.game, 1, TextView(board[:length])) { return false }
+    live_check.route_length = route_length
+    live_check.route_at = 0
+    live_check.replaying = true
+    // The cursor moves past this level, to the next one or the array's end.
+    after := Space(document, ValueEnd(document, level_at, 0))
+    if after >= 0 && after < cast(s32)document.count && document[after] == #char "," { after = Space(document, after + 1) }
+    live_check.next_at = after
+    return true
+}
+
+// Copies the checked levels in and keeps them in the compact form.
+LiveCheckInstall :: () -> string {
+    count := live_check.count
+    for index: cast(s32)0..count * SHOVEY_LIVE_BOARD - 1 { shovey_live_boards[index] = live_staged[index] }
+    for index: cast(s32)0..count - 1 { shovey_live_lengths[index] = SHOVEY_LIVE_BOARD }
+    shovey_live_count = count
+    digits: [16]u8 = .[#char "0", #char "1", #char "2", #char "3", #char "4", #char "5", #char "6", #char "7",
+    #char "8", #char "9", #char "a", #char "b", #char "c", #char "d", #char "e", #char "f"]
+    live_compact[0] = #char "L"
+    live_compact[1] = #char "1"
+    live_compact[2] = digits[count / 16]
+    live_compact[3] = digits[count % 16]
+    for index: cast(s32)0..count * SHOVEY_LIVE_BOARD - 1 { live_compact[LIVE_COMPACT_HEADER + index] = live_staged[index] }
+    return TextView(live_compact[:LIVE_COMPACT_HEADER + count * SHOVEY_LIVE_BOARD])
+}
+
+// Advances the check by at most `moves` route letters. Returns 1 when the
+// whole campaign is proven and installed (*compact then holds its compact
+// form), 0 when it is refused, and -1 while it needs more frames.
+ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
+    document := live_check.document
+    if !live_check.replaying {
+        at := live_check.next_at
+        if at >= 0 && at < cast(s32)document.count && document[at] == #char "]" {
+            if live_check.index < 1 { return 0 }
+            live_check.count = live_check.index
+            compact.* = LiveCheckInstall()
+            return 1
+        }
+        if !LiveCheckLevel() { return 0 }
+        return -1
+    }
+    game := *live_check.game
+    done: s32 = 0
+    while live_check.route_at < live_check.route_length && done < moves {
+        letter := live_route[live_check.route_at]
+        live_check.route_at += 1
+        done += 1
+        if game.won || game.lost { return 0 }
+        if letter >= #char "0" && letter <= #char "3" { unused ShoveyMove(game, cast(s32)(letter - #char "0")) }
+        else if letter == #char "f" { unused ShoveyFire(game) }
+        else if letter == #char "t" { unused ShoveyTick(game) }
+        else { return 0 }
+    }
+    if live_check.route_at < live_check.route_length { return -1 }
+    if !game.won || game.lost { return 0 }
+    live_check.replaying = false
+    live_check.index += 1
+    return -1
+}
+
+// Loads a compact campaign kept after an earlier check.
+ShoveyLiveLoadCompact :: (text: string) -> bool {
+    #if !#defined(SHOVEY_RELEASE) {
+        unused text
+        return false
+    }
+    if text.count < LIVE_COMPACT_HEADER || text[0] != #char "L" || text[1] != #char "1" { return false }
+    high := ShoveyDigit(text[2])
+    low := ShoveyDigit(text[3])
+    if high < 0 || low < 0 { return false }
+    count := high * 16 + low
+    if count < 1 || count > SHOVEY_LIVE_MAX || text.count != LIVE_COMPACT_HEADER + count * SHOVEY_LIVE_BOARD { return false }
+    for index: cast(s32)0..count * SHOVEY_LIVE_BOARD - 1 {
+        if ShoveyDigit(text[LIVE_COMPACT_HEADER + index]) < 0 { return false }
+        shovey_live_boards[index] = text[LIVE_COMPACT_HEADER + index]
+    }
+    for index: cast(s32)0..count - 1 { shovey_live_lengths[index] = SHOVEY_LIVE_BOARD }
+    shovey_live_count = count
+    return true
+}
