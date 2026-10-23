@@ -167,6 +167,13 @@
   <div id="canvas-frame"><canvas id="canvas"></canvas></div>
   <pre id="result">pending</pre>
   <script>
+    // An embedded game keeps the wheel and touch drags to itself from the
+    // first frame, before the game's own input starts, so the page around it
+    // never scrolls while the pointer is over it.
+    if (window.parent !== window) {
+      addEventListener('wheel', function(event) { event.preventDefault(); }, {passive: false});
+      document.documentElement.style.touchAction = 'none';
+    }
     var loadingScreen = document.getElementById('loading-screen');
     var statusElement = document.getElementById('status');
     var progressElement = document.getElementById('progress');

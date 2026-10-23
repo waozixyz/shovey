@@ -83,6 +83,14 @@ try {
   await call('Page.enable');
   await call('Emulation.setDeviceMetricsOverride', {width: 800, height: 900, deviceScaleFactor: 1, mobile: false});
   await call('Page.navigate', {url: target});
+  // While the game is still loading, the wheel over it already stays inside.
+  await wait(`document.getElementById('mini').contentDocument?.getElementById('loading-screen')`);
+  {
+    const early = JSON.parse(await evaluate(`JSON.stringify(document.getElementById('mini').getBoundingClientRect())`));
+    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: early.x + early.width / 2, y: early.y + early.height / 2, deltaX: 0, deltaY: 600});
+    await delay(400);
+    assert.equal(await evaluate('window.scrollY'), 0, 'The wheel over the loading game scrolled the page');
+  }
   await wait(`${mini}?.Module?.profileReady && ${mini}.document.querySelector('#loading-screen').classList.contains('is-hidden')`);
   // The embedded page's test driver lists the widgets it drew; nothing is captured.
   let serial = 0;
