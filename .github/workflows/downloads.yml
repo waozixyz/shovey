@@ -1,8 +1,10 @@
 name: Downloads
 
-# Every push to master builds and checks the signed Android APK and the Linux
-# and Windows downloads, and keeps them on this version's draft release.
-# Publishing that draft is a separate, explicit run.
+# A push whose changelog names a version that is not released yet builds and
+# checks the signed Android APK and the Linux and Windows downloads, then
+# publishes them as that version's release, like Inner Breeze. Pushes of a
+# released version only check that nothing needs releasing. A manual run
+# rebuilds the current version's draft, or publishes it.
 on:
   push:
     branches: [master]
@@ -21,7 +23,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  due:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      release_due: ${{ steps.due.outputs.release_due }}
+      version: ${{ steps.due.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Release only a new version or a requested run
+        id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          version=$(python3 -c 'import re; print(re.search(r"^## \[([0-9.]+)\]", open("src/CHANGELOG.md").read(), re.M)[1])')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          state=$(gh release view "v$version" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
+          if [ "$EVENT" = workflow_dispatch ] || [ "$state" != false ]; then
+            echo "release_due=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_due=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Downloads::Shovey $version is already released; its downloads build again with the next changelog version"
+          fi
+
   android:
+    needs: due
+    if: needs.due.outputs.release_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     defaults:
@@ -66,6 +95,8 @@ jobs:
           retention-days: 7
 
   linux:
+    needs: due
+    if: needs.due.outputs.release_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -100,6 +131,8 @@ jobs:
           retention-days: 7
 
   windows:
+    needs: due
+    if: needs.due.outputs.release_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     defaults:
@@ -133,7 +166,7 @@ jobs:
           retention-days: 7
 
   release:
-    needs: [android, linux, windows]
+    needs: [due, android, linux, windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -142,7 +175,9 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
+      # A pushed new version publishes at once; a manual run only when asked.
+      PUBLISH: ${{ (github.event_name == 'push' || inputs.publish) && 'true' || 'false' }}
+      CHANGELOG_VERSION: ${{ needs.due.outputs.version }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -162,6 +197,7 @@ jobs:
             test -f "build/downloads/$file" || { echo "Missing $file" >&2; exit 1; }
           done
           test "$(ls build/downloads | wc -l)" = 3 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
+          test "$version" = "$CHANGELOG_VERSION" || { echo "The downloads are $version but the changelog names $CHANGELOG_VERSION" >&2; exit 1; }
           python3 scripts/android-release.py verify "build/downloads/shovey-v$version.apk" --version "$version"
           python3 - "$version" > build/release-notes.md <<'PY'
           import re, sys
