@@ -35,6 +35,7 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import, file "pieces.zi";
 #import, file "shovey_theme.zi";
 #import "kryon/carousel"
+#import "kryon/app_mini"
 #if #defined(SHOVEY_WEB) {
     #import, file "web/host.zi";
 } else {
@@ -61,6 +62,9 @@ title_library: s32 = -1;
 // The same cover browser used by Arcade, with game-owned header actions.
 title_carousel: CarouselState;
 title_external: bool;
+// An embedded mini page opens straight into a level with only its levels
+// and restart controls.
+mini: bool;
 save_failed: bool;
 help_scroll: s32;
 // Touch-first: hidden until the board is touched, then hidden again for keyboard.
@@ -233,7 +237,7 @@ ContinueGame :: () {
 // on the title screen, so the host can leave the game.
 ShoveyBack :: () -> bool {
     if title_open { return false }
-    if title_external {
+    if title_external || mini {
         if selector_open || help_open {
             selector_open = false
             help_open = false
@@ -303,7 +307,8 @@ ShoveyFrame :: () {
         // Library opens and explicit routes both reach this first frame.
         // Standalone and older hosts keep their own title screen.
         title_external = LibraryAvailable()
-        title_open = !title_external
+        mini = AppMini()
+        title_open = !title_external && !mini
         if !ShoveyCampaignRestore(*progress, *game, AppRecordHost("campaign")) {
             if ShoveyRestore(*game, AppRecordHost("position")) {
                 progress = ShoveyMigrateProgress(*game)
@@ -442,24 +447,25 @@ ShoveyFrame :: () {
         return
     }
     // Return sits at the edge, then the game's own navigation and status.
-    if Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
+    if !mini && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
         if !ShoveyBack() { LeaveForGameSelection() }
         return
     }
-    levels_x: float32 = 92.0
+    levels_x: float32 = ifx mini then 8.0 else 92.0
     if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
         selector_open = true
     }
-    Caption(20001, Rectangle.{levels_x + 48.0, top + 4.0, width - 204.0 - levels_x, 44.0}, HeaderText(), 14, true)
-    if Control(20016, Rectangle.{width - 156.0, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
+    restart_x := ifx mini then width - 52.0 else width - 156.0
+    Caption(20001, Rectangle.{levels_x + 48.0, top + 4.0, restart_x - levels_x - 48.0, 44.0}, HeaderText(), 14, true)
+    if Control(20016, Rectangle.{restart_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
         ChangeLevel(game.level)
     }
-    if Control(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
+    if !mini && Control(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
         AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
         ifx help_open then ICON_CLOSE else ICON_HELP) {
         help_open = !help_open
     }
-    if Control(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
+    if !mini && Control(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
         AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"), false, "",
         ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
         SoundSetMuted(!SoundMuted())
