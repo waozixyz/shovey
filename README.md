@@ -31,11 +31,11 @@ Use the arrow keys, swipe, or the movement pad in the corner to move; the first
 level asks which you prefer, and Help changes it later. The game bar has
 Restart, Levels, Help, sound and Back controls.
 
-![The Classic level chooser with all 90 levels open](docs/screenshots/classic.png)
+![The Classic level chooser on a phone-shaped window, with its first levels](docs/screenshots/classic.png)
 
 ## Make a puzzle
 
-Open **Shovey Editor** from the game chooser. Start a new board or make your
+Open **Shovey Editor** from the title screen. Start a new board or make your
 own copy of a story level. Ground, objects and decoration are stored in separate
 layers, so changing the floor does not require rebuilding every object.
 Paint, undo a stroke, then press **Play** to test the board with the game's
@@ -46,15 +46,6 @@ yourself proves it too. Proven puzzles can be exported, and hosts with
 collection sharing can publish them for friends or other players.
 
 ![Shovey’s integrated editor showing story level 9, with its palette on the Objects tab](docs/screenshots/editor.png)
-
-**Island editing is available.** The Island story campaign is still in development.
-
-<details>
-<summary>Game chooser</summary>
-
-![Shovey’s current game chooser](docs/screenshots/chooser.png)
-
-</details>
 
 ## Build and develop
 

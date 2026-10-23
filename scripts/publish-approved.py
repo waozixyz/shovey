@@ -254,7 +254,7 @@ def publish_campaign():
             changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
                       f'- Play the approved Classic campaign through level {len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Keep your progress and use the integrated level editor.', True)
             changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
-                      '- All objects stop at the abyss when testing Classic levels.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
+                      '- All objects stop at the abyss when testing Classic levels.\n- Create your own Classic levels; story examples follow the approved Classic campaign.', True)
             changelog(arcade / 'CHANGELOG.md', versions['arcade'],
                       f'- Shovey includes approved Classic levels 1–{len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Existing Shovey saves and completed levels are retained.')
             run([arcade / 'update_version.sh'], arcade)

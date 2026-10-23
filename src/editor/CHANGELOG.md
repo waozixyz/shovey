@@ -4,256 +4,256 @@
 
 - Tiles and objects have their own palette tabs.
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 
 ## [0.2.99] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.98] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.97] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.96] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.95] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.94] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.93] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.92] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.91] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.90] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.89] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.88] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.87] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.86] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.85] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.84] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.83] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.82] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.81] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.80] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.79] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.78] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.77] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.76] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.75] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.74] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.73] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.72] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.71] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.70] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.69] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.68] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.67] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.66] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.65] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.64] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.63] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.62] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.61] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.60] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.59] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.58] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.57] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.56] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.55] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.54] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.53] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.52] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.51] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.50] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.49] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.48] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.47] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.46] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.45] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.44] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.43] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.42] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.41] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.40] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.39] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.38] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.37] - 2026-10-22
 
 - Connected abyss openings stay dark when testing Classic boards at fractional display scales.
@@ -269,88 +269,88 @@
 ## [0.2.34] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.33] - 2026-10-22
 
 - All objects stop at the abyss when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.32] - 2026-10-22
 
 - Animals and fish wander independently when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.31] - 2026-10-22
 
 - Animals and fish wander independently when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.30] - 2026-10-22
 
 - Animals and fish wander independently when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.29] - 2026-10-22
 
 - Animals and fish wander independently when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.28] - 2026-10-22
 
 - Animals and fish wander independently when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.27] - 2026-10-22
 
 - Animals and fish wander independently when testing Classic levels.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.26] - 2026-10-22
 
 - Test puzzles with several matching levers; any handle switches their shared gate state.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.25] - 2026-10-22
 
 - Test puzzles with several matching levers; any handle switches their shared gate state.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.24] - 2026-10-22
 
 - Test puzzles with several matching levers; any handle switches their shared gate state.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.23] - 2026-10-22
 
 - Test puzzles with several matching levers; any handle switches their shared gate state.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.22] - 2026-10-22
 
 - Test puzzles with several matching levers; any handle switches their shared gate state.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.21] - 2026-10-22
 
 - Test puzzles with several matching levers; any handle switches their shared gate state.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.20] - 2026-10-22
 
 - Design engine-proven GLM variations with clearer progress and errors.
 - Add initially open gates in every color for opposite lever-controlled passages.
 - Open the desktop editor in landscape and remember its rotation.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.19] - 2026-10-22
 
 - Design engine-proven GLM variations with clearer progress and errors.
 - Add initially open gates in every color for opposite lever-controlled passages.
 - Open the desktop editor in landscape and remember its rotation.
 - Offer a desktop authoring download with a fresh puzzle and Shovey artwork.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.18] - 2026-10-22
 
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.17] - 2026-10-22
 
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.16] - 2026-10-22
 
 - Replace the pebble brush with a solid boulder.
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.15] - 2026-10-22
 
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.14] - 2026-10-22
 
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.13] - 2026-10-22
 
 - Arrange floor materials before walls.
@@ -360,10 +360,10 @@
 - Paint matching floors and walls in stone, moss, slate, brick, sandstone and timber.
 ## [0.2.11] - 2026-10-22
 
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.10] - 2026-10-22
 
-- Create Classic or Island levels; story examples follow the approved Classic campaign.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.9] - 2026-10-22
 
 - Create Island levels from scratch and edit approved Classic story levels.
