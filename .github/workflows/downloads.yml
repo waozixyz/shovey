@@ -80,7 +80,7 @@ jobs:
           packages: >-
             build-essential cmake pkg-config python3-pil python3-numpy libsdl2-dev libcairo2-dev
             libfreetype-dev libfontconfig-dev libpango1.0-dev libgtk-3-dev libcurl4-openssl-dev
-            libx11-dev xvfb xauth xdotool
+            libx11-dev xvfb xauth xdotool imagemagick
       - name: Build and pack the Linux download
         run: make shovey-linux-download
       - name: Play the unpacked download on a private display
