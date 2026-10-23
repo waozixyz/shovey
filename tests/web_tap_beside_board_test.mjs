@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
-const root = new URL('../build/web/', import.meta.url).pathname;
+const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-tap-'));
 const server = createServer(async (request, response) => {
   try {

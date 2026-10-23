@@ -9,7 +9,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
-const root = new URL('../build/web/', import.meta.url).pathname;
+const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-mini-'));
 const embed = `<!doctype html><meta charset="utf-8"><style>body{margin:0}iframe{display:block;margin:200px 20px;border:0}</style>
 <div style="height:200px"></div><iframe id="mini" src="/index.html?mini&theme=waozi" width="390" height="600"></iframe><div style="height:3000px"></div>`;

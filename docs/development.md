@@ -228,3 +228,30 @@ and checks the APK, plays the unpacked Linux download on a private display and
 the Windows one under Wine, and keeps them on the draft release of the version
 Arcade's ledger names. Dispatch the workflow with `publish` to publish that
 draft; a published version is never replaced.
+
+## Canvas performance comparison
+
+Preserve two complete browser build directories, then compare the same portable
+Shovey game through both hosts:
+
+```sh
+PERFORMANCE_MIN_GAIN=50 node tests/canvas_performance_test.mjs BEFORE_WEB_DIR AFTER_WEB_DIR build/canvas-performance.json
+```
+
+The runner opens Level 1 at 390 × 700 in fresh private headless Chromium
+profiles, warms up sixty frames, and interleaves two 180-frame samples per
+version. It checks the level and embedded asset identity, refuses external
+service requests, and saves raw timings, CPU profiles, browser versions and
+artifact hashes. Busy frame time runs from Asyncify resume to the next frame
+wait, so inverse busy time measures throughput capacity; the normal game is
+still capped at 60 FPS. Shared-host measurements do not establish a speedup
+for every level or device. Existing build directories are only read.
+
+Set `WEB_TEST_ROOT` to a preserved web build directory to run the mini embed,
+live campaign and beside-board input tests against that build without replacing
+`build/web`.
+
+For a preserved build from an older revision, `WEB_TEST_CAMPAIGN` selects the
+matching approved campaign JSON for the live campaign test. The default remains
+the current `levels/approved.json`. Keep the build and its campaign revision
+together when comparing immutable artifacts.

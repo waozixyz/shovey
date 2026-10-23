@@ -9,8 +9,8 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
-const root = new URL('../build/web/', import.meta.url).pathname;
-const approved = JSON.parse(await readFile(new URL('../levels/approved.json', import.meta.url), 'utf8'));
+const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
+const approved = JSON.parse(await readFile(process.env.WEB_TEST_CAMPAIGN || new URL('../levels/approved.json', import.meta.url), 'utf8'));
 const builtIn = approved.levels.length;
 // A campaign one level longer than this build, as the node would serve after
 // an approval; its new last level repeats level 1 with that level's route.
