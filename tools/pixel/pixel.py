@@ -821,7 +821,8 @@ def abyss_edge(mask):
         for x in range(SIZE):
             n = rng.randint(-2, 2)
             px[x, y] = (6 + n, 9 + n, 13 + n, 255)
-    strata = [(150, 122, 88), (128, 102, 74), (110, 88, 64), (138, 112, 82), (102, 82, 60), (122, 98, 72), (92, 74, 56)]
+    # Grey stone, the colour of the paving and walls around most drops.
+    strata = [(172, 172, 166), (150, 150, 144), (130, 130, 126), (158, 156, 150), (118, 118, 114), (140, 138, 134), (106, 106, 102)]
     def blend(colour, factor, x, y):
         base = px[x, y]
         return tuple(round(base[i] * (1 - factor) + colour[i] * factor) for i in range(3)) + (255,)
@@ -831,15 +832,15 @@ def abyss_edge(mask):
             light = max(0.0, 1.0 - (y - 2) / (height - 2)) ** 0.8 if y >= 2 else 1.0
             for x in range(SIZE):
                 if y == 0:
-                    colour = (96, 78, 56)           # the soil lip, under any floor
+                    colour = (196, 198, 192)        # the paving's edge
                 elif y == 1:
-                    colour = (70, 54, 38)
+                    colour = (92, 94, 92)
                 else:
                     band = strata[min(len(strata) - 1, (y - 2) // 2)]
                     seam = (y - 2) % 2 == 1 and rng.random() < 0.55
                     jitter = rng.uniform(0.92, 1.08)
                     colour = tuple(min(255, round(c * jitter * (0.78 if seam else 1.0))) for c in band)
-                    if rng.random() < 0.04: colour = (58, 46, 34)   # a crack
+                    if rng.random() < 0.04: colour = (70, 72, 70)   # a crack
                     if y == 2: colour = tuple(min(255, c + 22) for c in colour)  # lit top of the rock
                 px[x, y] = blend(colour, light, x, y)
     for side in (0, 2):
@@ -849,15 +850,15 @@ def abyss_edge(mask):
             for depth in range(4):
                 x = depth if side == 0 else SIZE - 1 - depth
                 if depth == 0:
-                    colour, factor = (118, 96, 72), 1.0
+                    colour, factor = (184, 184, 178), 1.0
                 else:
-                    colour = (84, 68, 52) if side == 0 else (100, 82, 62)
+                    colour = (104, 106, 102) if side == 0 else (124, 124, 120)
                     factor = 0.75 - depth * 0.2
                 px[x, y] = blend(colour, factor, x, y)
     if mask & 8:
         for x in range(SIZE):
-            px[x, SIZE - 1] = (150, 128, 96, 255)
-            px[x, SIZE - 2] = blend((70, 56, 42), 0.9, x, SIZE - 2)
+            px[x, SIZE - 1] = (200, 202, 196, 255)
+            px[x, SIZE - 2] = blend((84, 86, 84), 0.9, x, SIZE - 2)
             px[x, SIZE - 3] = blend((20, 16, 14), 0.6, x, SIZE - 3)
     return image
 

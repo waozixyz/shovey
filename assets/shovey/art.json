@@ -255,7 +255,7 @@
     {
       "path": "sprites/tile-65.png",
       "depicts": "abyss: a bottomless black drop that Shovey falls into",
-      "sha256": "57f65680b014445683bfd737ec496cbd5fd4d9c75b22e9c4f82ab5b550a0c812"
+      "sha256": "d4ec6e4bfc7f41fd0ca00c46066197c1b90b393303e8a5bdc27570c85530b8ff"
     },
     {
       "path": "sprites/tile-66.png",
@@ -1060,7 +1060,7 @@
     {
       "path": "sprites/abyss-edge-1.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "508349d21bb0ab7858034fed9243dbaa29b9ce0e46d71d2e91d74456c14d6c09"
+      "sha256": "d36c334f3655f825a138d7d5b001a9eeab57ccd09fd88c2d3dd1fc0d6ea525de"
     },
     {
       "path": "sprites/grass-edge-2.png",
@@ -1070,7 +1070,7 @@
     {
       "path": "sprites/abyss-edge-2.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "7cb72dc930688a4dbab7eb5b22f89e7fa75e7cc05bfcd93d10d5f5036133229f"
+      "sha256": "eaaad53e5062c70e05f8ba2ce8c4f953827ddad0e0ccf69d71a8c191375a16d6"
     },
     {
       "path": "sprites/grass-edge-3.png",
@@ -1080,7 +1080,7 @@
     {
       "path": "sprites/abyss-edge-3.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "710fd0459aaead1dcb63478343fb0901fbcc5b1a5c2c4a8dd36c3005a38e97f2"
+      "sha256": "b51bf4be7d937bd9a49248199f0bbda5719ae82aa5435cf8f608a53f8b88fc78"
     },
     {
       "path": "sprites/grass-edge-4.png",
@@ -1090,7 +1090,7 @@
     {
       "path": "sprites/abyss-edge-4.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "3ec86dba775456525a00cece743c5e7a91bbfd741ab48ebdf68bf6c1ee1aa8fd"
+      "sha256": "727e80d148f84bd3ee552b3292fd08981cd54938ceb635df02cd0252ded381ec"
     },
     {
       "path": "sprites/grass-edge-5.png",
@@ -1100,7 +1100,7 @@
     {
       "path": "sprites/abyss-edge-5.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "6d1fa4f2f27c441c6eab88649fbf2ef29c80a11723c8997c92389d47c30014a0"
+      "sha256": "9cda1cb7fda0524d6dec46e7e74db99a299cbc32410e5ef08ca79e5ef01a53e4"
     },
     {
       "path": "sprites/grass-edge-6.png",
@@ -1110,7 +1110,7 @@
     {
       "path": "sprites/abyss-edge-6.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "8aff3379898701060ca2bfb7fb63fe2bb8e329e696012f06aa6f2f11283984cc"
+      "sha256": "bda847980362f20372746f0bad37ca53689c929f39df14a238bb655a506f5f65"
     },
     {
       "path": "sprites/grass-edge-7.png",
@@ -1120,7 +1120,7 @@
     {
       "path": "sprites/abyss-edge-7.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "a92e81ef2b0568fccfcfcae1aa11aad72cb94500a368fa4d1da1fddd8c534af2"
+      "sha256": "24ee54bda9e0f6fc8caf5a07a8cdcd1247bb2fc961c7f75a81319f8bf70224c5"
     },
     {
       "path": "sprites/grass-edge-8.png",
@@ -1130,7 +1130,7 @@
     {
       "path": "sprites/abyss-edge-8.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "5250c0cd97997df35e02a7f6d29b9b298c474d2d36480e3a2c9e409d306e6b35"
+      "sha256": "63fdfb340f687b88c1899444b6b812a0a8100ea2b9c178b3192d54e7dfe9e5f7"
     },
     {
       "path": "sprites/grass-edge-9.png",
@@ -1140,7 +1140,7 @@
     {
       "path": "sprites/abyss-edge-9.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "d7e15d36235c684fe2f866a1d0d871132c2eb95e0ff13678625178ba1d0f1f42"
+      "sha256": "9a7970d376bd803fa57f7b259c154a1c4b5185d91502c143e6bf6ebff4520205"
     },
     {
       "path": "sprites/grass-edge-10.png",
@@ -1150,7 +1150,7 @@
     {
       "path": "sprites/abyss-edge-10.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "ff59246d09708c2d9715b0aef975675d3f5e786188616b37c2163a55b28e1c3c"
+      "sha256": "2046e055251cbb1be5771e4a397adb7765f0d33961f7f32333c04db78b955944"
     },
     {
       "path": "sprites/grass-edge-11.png",
@@ -1160,7 +1160,7 @@
     {
       "path": "sprites/abyss-edge-11.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "ba2ceb8ca63f675290ae31ff86987e598e371b9f4829817ab8d5275008f8db01"
+      "sha256": "b05f4402cd881cf6eb2133fdff7a5b1cf48694b72ec368a53b9140f52336bd87"
     },
     {
       "path": "sprites/grass-edge-12.png",
@@ -1170,7 +1170,7 @@
     {
       "path": "sprites/abyss-edge-12.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "91433a098f866b2d7ca33ae5fb7568add6bd2c5d2921325b3659c0115c94fbee"
+      "sha256": "871f13ae66da4eb65445ed753cb99e10a37d7ab72db3b46351a9017e4a02808e"
     },
     {
       "path": "sprites/grass-edge-13.png",
@@ -1180,7 +1180,7 @@
     {
       "path": "sprites/abyss-edge-13.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "551b6314cad5b93e0b7ea9dc27e157f958e3d5d0b6e6287a173e5b76e34e947d"
+      "sha256": "d4c21429acee5f5eba14f9f6d9b4f44ffa9e561ab0bee2471033f60d15ddc0e1"
     },
     {
       "path": "sprites/grass-edge-14.png",
@@ -1190,7 +1190,7 @@
     {
       "path": "sprites/abyss-edge-14.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "960dc961a4294b9290e76e0d71f82fec995457abc84c69f77f2e452f195ffdbf"
+      "sha256": "94ffb9c08a4ac970e75feea69f8473dc8bb0b151f8f03a4ced0cdb4525fff4b8"
     },
     {
       "path": "sprites/grass-edge-15.png",
@@ -1200,7 +1200,7 @@
     {
       "path": "sprites/abyss-edge-15.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "57f65680b014445683bfd737ec496cbd5fd4d9c75b22e9c4f82ab5b550a0c812"
+      "sha256": "d4ec6e4bfc7f41fd0ca00c46066197c1b90b393303e8a5bdc27570c85530b8ff"
     },
     {
       "path": "sprites/burst-0.png",

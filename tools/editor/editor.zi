@@ -605,11 +605,14 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         tile := KindAt(board, SHOVEY_CELLS + at)
         if ShoveyOpenDoor(kind) && ShoveyWallFloor(tile) >= 0 { tile = ShoveyWallFloor(tile) }
         layers[display] = PrivateSprite(tile)
+        // The same edges as the game draws: an abyss's go by screen
+        // direction, so its far cliff shows at the top, and grass runs up to
+        // an abyss's own lip.
         if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT {
             mask: s32 = 0
-            for direction: cast(s32)0..3 {
-                neighbor := ShoveyNeighbor(at, direction)
-                if neighbor < 0 || KindAt(board, SHOVEY_CELLS + neighbor) != SHOVEY_PIT { mask |= 1 << direction }
+            for side: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
+                if neighbor < 0 || KindAt(board, SHOVEY_CELLS + neighbor) != SHOVEY_PIT { mask |= 1 << side }
             }
             layers[display] = SPRITE_ABYSS + mask
         }
@@ -617,7 +620,9 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
             mask: s32 = 0
             for direction: cast(s32)0..3 {
                 neighbor := ShoveyNeighbor(at, direction)
-                if neighbor >= 0 && KindAt(board, SHOVEY_CELLS + neighbor) != 77 { mask |= 1 << direction }
+                if neighbor >= 0 && KindAt(board, SHOVEY_CELLS + neighbor) != 77 && KindAt(board, SHOVEY_CELLS + neighbor) != SHOVEY_PIT {
+                    mask |= 1 << direction
+                }
             }
             layers[display] = SPRITE_GRASS_EDGE + mask
         }
