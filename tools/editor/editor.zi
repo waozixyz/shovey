@@ -598,7 +598,10 @@ PrivateSprite :: (kind: s32) -> s32 {
     return kind
 }
 
+hex_abyss_open: [SHOVEY_CELLS]bool;
+
 HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string) -> TileMapResult {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { hex_abyss_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         kind := KindAt(board, at)
         display := BoardDisplayIndex(at, landscape)
@@ -628,6 +631,10 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         }
         decoration := KindAt(board, SHOVEY_CELLS * 2 + at)
         layers[SHOVEY_CELLS + display] = ifx decoration == 0 then -1 else PrivateSprite(decoration)
+        if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT && decoration == 0 {
+            corners := BoardAbyssCorners(at, landscape, hex_abyss_open)
+            if corners != 0 { layers[SHOVEY_CELLS + display] = SPRITE_ABYSS_CORNER + corners }
+        }
         layers[SHOVEY_CELLS * 2 + display] = ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, landscape) else ifx kind > 0 && kind <= SHOVEY_LAST_KIND then PrivateSprite(kind) else -1
     }
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)

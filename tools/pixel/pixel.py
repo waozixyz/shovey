@@ -863,6 +863,39 @@ def abyss_edge(mask):
     return image
 
 
+def abyss_corner(bits):
+    """What an abyss cell adds at an inner corner, over its own picture:
+    bits 0-3 mark solid ground diagonally up-left, up-right, down-left and
+    down-right (on screen) while both cells beside it are abyss. Under ground
+    up-left or up-right, the rock wall of that ground runs on down beside
+    the far cliff; under ground below, the near lip turns the corner."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    px = image.load()
+    height = 16
+    for corner, side in ((1, 0), (2, 2)):
+        if not bits & corner:
+            continue
+        for y in range(height):
+            light = max(0.0, 1.0 - y / height) ** 0.8
+            for depth in range(4):
+                x = depth if side == 0 else SIZE - 1 - depth
+                if depth == 0:
+                    colour = (184, 184, 178)
+                else:
+                    colour = (104, 106, 102) if side == 0 else (124, 124, 120)
+                alpha = round(255 * light * (1.0 if depth == 0 else 0.75 - depth * 0.2))
+                if alpha > 0:
+                    px[x, y] = colour + (alpha,)
+    for corner, left in ((4, True), (8, False)):
+        if not bits & corner:
+            continue
+        for depth in range(3):
+            x = depth if left else SIZE - 1 - depth
+            px[x, SIZE - 1] = (200, 202, 196, 255)
+            px[x, SIZE - 2] = (84, 86, 84, 230)
+    return image
+
+
 def arrow(direction):
     """A one-way arrow; direction 0 left, 1 up, 2 right, 3 down."""
     image = Image.new('RGBA', (SIZE, SIZE))
@@ -1165,6 +1198,7 @@ def sprites():
                 out[f'fish-{fish}-{frame}-{facing}'] = (f'{fish} fish, frame {frame}, facing {facing}', centered_fish(frame).rotate(angle))
     for mask in range(16):
         out[f'grass-edge-{mask}'] = ('grass blending into adjacent paving with connected corners', grass_edge(mask))
+        out[f'abyss-corner-{mask}'] = ('an abyss inner corner: rock walls running on down and the near lip turning', abyss_corner(mask))
         out[f'abyss-edge-{mask}'] = ('abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge', abyss_edge(mask))
     for frame in range(6):
         out[f'burst-{frame}'] = (f'a target struck by a shot, frame {frame + 1} of 6', burst(frame))

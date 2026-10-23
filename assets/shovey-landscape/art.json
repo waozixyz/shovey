@@ -3,6 +3,86 @@
   "method": "Objects stay upright; player facings, directional markers and shore edges turn counterclockwise with the board. No outside image is used.",
   "files": [
     {
+      "path": "sprites/abyss-corner-0.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "06ab142c3bad172a564f50931dd667c07af918ed7298107b0c41f79cd761cc8f"
+    },
+    {
+      "path": "sprites/abyss-corner-1.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "00b2eb0351608d554eada270f0a40a2fa941acb70bb3b3731e5a0fb2bb2f756d"
+    },
+    {
+      "path": "sprites/abyss-corner-10.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "dfd58d68989d8123f2403abecc2de9428dd67b0f088429c82c015014c99b1c7c"
+    },
+    {
+      "path": "sprites/abyss-corner-11.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "1ebeeb006e8d38ab9c15e177eeaf662219536bccc1a78ae77a85d05dcaf84dc3"
+    },
+    {
+      "path": "sprites/abyss-corner-12.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "ace696920dc69dd5918b5152a92e359202dd50e12963fef84095b7501aa29187"
+    },
+    {
+      "path": "sprites/abyss-corner-13.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "d914e4d8756bb088a6c08ce466c124155461c4c25699cd5776c265efb6ed250d"
+    },
+    {
+      "path": "sprites/abyss-corner-14.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "6d479a95618fff0dcbe03736bbe7ca419c3f23e7d41b85f963d309109a3c2adc"
+    },
+    {
+      "path": "sprites/abyss-corner-15.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "6b02dbfc324272a8c71f540da7573a1b9f5991810f79e684e890ea7b3c0d66e3"
+    },
+    {
+      "path": "sprites/abyss-corner-2.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "fdec5be32a11f8571ca401e6ff0054c809087a9b6d9e8314c11713187b4d86bc"
+    },
+    {
+      "path": "sprites/abyss-corner-3.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "591630b5f1b71b2e2f5a874da907539d187a84679ef1e6cc0a988582987c4bea"
+    },
+    {
+      "path": "sprites/abyss-corner-4.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "846ccd1d146de557b09f0e50c2ecd625c1caf8803866ecbcb958e6ca55854627"
+    },
+    {
+      "path": "sprites/abyss-corner-5.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "7a52c6af4ed89eda65e649783b6cfd56745edac198b32fda9cad85002e912874"
+    },
+    {
+      "path": "sprites/abyss-corner-6.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "3f10a0641f88ea946e18d304ab46bfa6988a53a748545f1b8401860a32bea224"
+    },
+    {
+      "path": "sprites/abyss-corner-7.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "f20ab6931542eb1f107cf9e66c72c080439443a704464502335cc41525a04ad7"
+    },
+    {
+      "path": "sprites/abyss-corner-8.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "1630447fbe78f357f18016d11b346f2f5e2f10d104c5ec4b08719c9c9086af1d"
+    },
+    {
+      "path": "sprites/abyss-corner-9.png",
+      "depicts": "landscape presentation of an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "663199a0cd4e856feef80f8fd2d18a78502c9cc7894d10ade15601c124913e73"
+    },
+    {
       "path": "sprites/abyss-edge-0.png",
       "depicts": "landscape presentation of abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "5de09768d768da0b9a9676a09ba9fa4d14b6576a02dea8716409cd58d3ef22ae"

@@ -53,7 +53,8 @@ SPRITE_DECORATION :: 237
 SPRITE_MOSS_FLOOR :: 245
 SPRITE_BURST :: 249
 SPRITE_EXPLOSION :: 255
-SPRITE_COUNT :: 263
+SPRITE_ABYSS_CORNER :: 263
+SPRITE_COUNT :: 279
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -264,6 +265,9 @@ SpritesPrepare :: () {
         abyss: Vec(u8)
         BuilderPrint(*abyss, "abyss-edge-%", FormatInteger(cast(s64)mask, digits[:]))
         SpritePath(SPRITE_ABYSS + mask, BuilderFinish(abyss))
+        corner: Vec(u8)
+        BuilderPrint(*corner, "abyss-corner-%", FormatInteger(cast(s64)mask, digits[:]))
+        SpritePath(SPRITE_ABYSS_CORNER + mask, BuilderFinish(corner))
     }
     for direction: cast(s32)0..3 {
         bytes: Vec(u8)
@@ -390,6 +394,28 @@ board_gliding: [SHOVEY_CELLS]s32;
 // Whether a cell is an open drop: an abyss tile, or floor that gave way.
 BoardAbyss :: (game: *ShoveyGame, at: s32) -> bool {
     return game.tiles[at] == SHOVEY_PIT || game.ground[at] == SHOVEY_PIT
+}
+
+// The inner corners of an abyss cell, on screen: bit 0 up-left, 1 up-right,
+// 2 down-left, 3 down-right, where that diagonal cell is solid ground while
+// both cells beside this one are abyss. open says which cells are abyss.
+board_abyss_open: [SHOVEY_CELLS]bool;
+
+BoardAbyssCorners :: (at: s32, landscape: bool, open: [SHOVEY_CELLS]bool) -> s32 {
+    corners: s32 = 0
+    sides: [4]s32
+    for side: cast(s32)0..3 { sides[side] = ShoveyNeighbor(at, BoardEngineDirection(side, landscape)) }
+    // Up-left, up-right, down-left, down-right: the vertical side, then the
+    // horizontal one.
+    verticals: [4]s32 = .[1, 1, 3, 3]
+    horizontals: [4]s32 = .[0, 2, 0, 2]
+    for corner: cast(s32)0..3 {
+        first := sides[verticals[corner]]; second := sides[horizontals[corner]]
+        if first < 0 || second < 0 || !open[first] || !open[second] { continue }
+        diagonal := ShoveyNeighbor(first, BoardEngineDirection(horizontals[corner], landscape))
+        if diagonal >= 0 && !open[diagonal] { corners |= 1 << corner }
+    }
+    return corners
 }
 
 // Starts an animal's glide from one cell to the next.
@@ -558,6 +584,9 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             }
         }
     }
+    if !cached {
+        for at: cast(s32)0..SHOVEY_CELLS - 1 { board_abyss_open[at] = BoardAbyss(game, at) }
+    }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         if cached { break }
         ground := game.ground[at]
@@ -575,6 +604,8 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
                 if neighbor < 0 || !BoardAbyss(game, neighbor) { mask |= 1 << side }
             }
             board_layers[display] = SPRITE_ABYSS + mask
+            corners := BoardAbyssCorners(at, landscape, board_abyss_open)
+            board_layers[SHOVEY_CELLS + display] = ifx corners != 0 then SPRITE_ABYSS_CORNER + corners else -1
         } else if base == 77 {
             // Grass runs up to an abyss's own lip; other floors get a soft edge.
             mask: s32 = 0
@@ -584,7 +615,9 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             }
             board_layers[display] = SPRITE_GRASS_EDGE + mask
         }
-        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_PIT || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+        if !BoardAbyss(game, at) {
+            board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+        }
         decoration := game.decorations[at]
         board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
         piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) && board_gliding[at] < 0 then ground else 0
