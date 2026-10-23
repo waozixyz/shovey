@@ -154,6 +154,24 @@ Schatten-Shovey
 [shovey_floor]
 Boden
 ---
+[shovey_tip_home]
+Geh zum Haus, um das Level zu schaffen.
+---
+[shovey_tip_ball]
+Schieb die Kugel in das Loch ihrer Farbe, dann geh nach Hause.
+---
+[shovey_tip_push]
+Jede Kugel muss in ein Loch. Ziehen geht nicht, also plane jeden Schub.
+---
+[shovey_tip_restart]
+Festgefahren? „Neu starten“ setzt das Level zurück.
+---
+[shovey_tip_lever]
+Lauf gegen den Hebel, um das Tor zu öffnen.
+---
+[shovey_tip_colors]
+Jede Kugel gehört in das Loch ihrer Farbe.
+---
 [shovey_instructions]
 Bewege Shovey mit den Pfeiltasten oder WASD. Schiebe immer nur einen Gegenstand; Ziehen geht nicht. Kugeln gehören in Löcher derselben Farbe, Kisten auf markierte Felder. Farbe färbt Kugeln um. Sammle Äpfel und bringe Sternsteine zusammen. Erledige die Aufgaben, bevor du nach Hause gehst. Kisten halten Drucktüren offen. Schlüssel öffnen Schlösser. Die Leertaste wirft eine eingesammelte Wurfkugel in Blickrichtung. Manche Felder kehren die Steuerung um, hinterlassen eine Spur oder lassen Shovey bis zum Hindernis gleiten. Geladener Shovey kann einen Lichtkreis starten; lade ihn nicht zweimal auf. Farbsteine wechseln beim Schieben von Rot zu Blau zu Gelb. Ihre Ziele brauchen Rot. R startet neu, H öffnet die Hilfe.
 ---

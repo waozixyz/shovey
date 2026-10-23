@@ -154,6 +154,24 @@ Stínový Shovey
 [shovey_floor]
 Podlaha
 ---
+[shovey_tip_home]
+Dojdi k domu a dokončíš úroveň.
+---
+[shovey_tip_ball]
+Dotlač kouli do jamky její barvy a pak jdi domů.
+---
+[shovey_tip_push]
+Každá koule musí do jamky. Táhnout nejde, tak si každé strčení rozmysli.
+---
+[shovey_tip_restart]
+Zasekl ses? Znovu vrátí úroveň do původního stavu.
+---
+[shovey_tip_lever]
+Vejdi do páky a brána se otevře.
+---
+[shovey_tip_colors]
+Každá koule patří do jamky své barvy.
+---
 [shovey_instructions]
 Použij šipky nebo WASD. Posouvej vždy jeden předmět; tahat nelze. Koule patří do jamek stejné barvy a bedny na označená pole. Barva přebarví kouli. Posbírej jablka a spoj hvězdné bloky. Splň úkoly před návratem domů. Bedny drží tlakové dveře otevřené. Klíče otevírají zámky. Mezerník hodí sebranou střelu ve směru pohledu Shoveyho. Některé předměty obrátí ovládání, zanechají stopu nebo způsobí klouzání až k překážce. Nabitý Shovey může rozsvítit obvod; nenabíjej ho dvakrát. Bloky při posunu mění barvu z červené na modrou a žlutou; jejich cíle potřebují červenou. R začne znovu, H otevře návod.
 ---

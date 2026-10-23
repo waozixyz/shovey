@@ -154,6 +154,24 @@ Shovey bayangan
 [shovey_floor]
 Lantai
 ---
+[shovey_tip_home]
+Berjalanlah ke rumah untuk menyelesaikan level.
+---
+[shovey_tip_ball]
+Dorong bola ke lubang yang warnanya sama, lalu pulanglah.
+---
+[shovey_tip_push]
+Setiap bola harus masuk lubang. Bola tak bisa ditarik, jadi rencanakan tiap dorongan.
+---
+[shovey_tip_restart]
+Buntu? Ulangi mengembalikan level seperti semula.
+---
+[shovey_tip_lever]
+Berjalanlah ke tuas untuk membuka gerbang.
+---
+[shovey_tip_colors]
+Setiap bola masuk ke lubang dengan warnanya sendiri.
+---
 [shovey_instructions]
 Gunakan tombol panah atau WASD. Dorong satu benda sekaligus; benda tidak bisa ditarik. Masukkan bola ke lubang dengan warna sama dan peti ke kotak bertanda. Cat mengubah warna bola. Kumpulkan apel dan pertemukan balok bintang. Selesaikan tugas sebelum pulang. Peti menahan pintu tekanan agar terbuka. Kunci membuka gembok. Spasi melempar proyektil yang diambil ke arah hadap Shovey. Beberapa benda membalik kontrol, meninggalkan jejak, atau membuat Shovey meluncur sampai terhalang. Shovey bermuatan dapat menyalakan rangkaian cahaya; jangan isi muatan dua kali. Balok berubah merah → biru → kuning setiap didorong; sasarannya membutuhkan merah. R mengulang, H membuka panduan ini.
 ---

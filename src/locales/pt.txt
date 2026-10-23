@@ -154,6 +154,24 @@ Shovey sombra
 [shovey_floor]
 Chão
 ---
+[shovey_tip_home]
+Caminhe até a casa para terminar o nível.
+---
+[shovey_tip_ball]
+Empurre a bola para o buraco da cor dela e depois vá para casa.
+---
+[shovey_tip_push]
+Toda bola vai para um buraco. Não dá para puxar, então planeje cada empurrão.
+---
+[shovey_tip_restart]
+Preso? Reiniciar deixa o nível como estava.
+---
+[shovey_tip_lever]
+Caminhe contra a alavanca para abrir o portão.
+---
+[shovey_tip_colors]
+Cada bola vai para o buraco da sua cor.
+---
 [shovey_instructions]
 Use as setas ou WASD. Empurre um objeto por vez; não é possível puxar. Coloque as bolas nos buracos da mesma cor e as caixas nos espaços marcados. A tinta muda a cor de uma bola. Recolha as maçãs e junte os blocos estrela. Termine as tarefas antes de voltar para casa. As caixas mantêm as portas de pressão abertas. Chaves abrem fechaduras. Espaço lança um projétil coletado na direção de Shovey. Alguns itens invertem os controles, deixam um rastro ou fazem Shovey deslizar até um obstáculo. Shovey carregado pode acender um circuito; evite carregá-lo duas vezes. Os blocos mudam de vermelho para azul e amarelo a cada empurrão; os destinos exigem vermelho. R reinicia e H abre este guia.
 ---

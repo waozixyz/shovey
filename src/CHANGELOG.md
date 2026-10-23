@@ -4,6 +4,7 @@
 
 - Play the approved Classic campaign through level 90.
 - Choose swipe or a movement pad before the first level.
+- The first levels show a short tip above the board.
 - Throws, bombs, pits and the open house now animate; idle pieces glow softly.
 - All objects stop at the abyss and leave it open.
 - Keep your progress and use the integrated level editor.

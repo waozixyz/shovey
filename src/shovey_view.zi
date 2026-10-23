@@ -128,6 +128,18 @@ HeaderText :: () -> string {
     return TextView(header_bytes[:length])
 }
 
+// The first levels each teach one idea; its tip shows over the board until
+// the level is won.
+LevelTip :: (level: s32) -> string {
+    if level == 1 { return "shovey_tip_home" }
+    if level == 4 { return "shovey_tip_ball" }
+    if level == 5 { return "shovey_tip_push" }
+    if level == 6 { return "shovey_tip_restart" }
+    if level == 7 { return "shovey_tip_lever" }
+    if level == 8 { return "shovey_tip_colors" }
+    return ""
+}
+
 Fill :: (key: u64, bounds: Rectangle, color: Color, radius: float32 = 0.0) {
     Box(frame.session, BoxProps.{.key = key, .bounds = bounds, .fill = color, .radius = radius})
 }
@@ -759,6 +771,12 @@ ShoveyFrame :: () {
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
     area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
+    // A tip takes a line more over the board.
+    tip := ifx mini then "" else LevelTip(game.level)
+    if tip != "" {
+        area.y += 16.0
+        area.height -= 16.0
+    }
     // With the movement pad chosen, it sits in the bottom left corner and the
     // board keeps clear of it: beside it on a wide screen, above it on a tall one.
     pad_mode := ControlsPad() && !mini
@@ -823,11 +841,17 @@ ShoveyFrame :: () {
         status = AppLocaleHost("shovey_finale")
         status_icon = "S2rr:M12 4L14 10H20L15 14L17 20L12 16L7 20L9 14L4 10H10Z"
     }
+    // On a tip level the tip says what to do, until the level is won or lost.
+    if game.won || game.lost { tip = "" }
+    if tip != "" { status_icon = "" }
     if status_icon != "" {
         unused Button(frame.session, ButtonProps.{.key = cast(u64)20021, .id = 20021,
                 .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
                 .label = status, .icon_shape = status_icon, .icon_only = true,
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
+    }
+    if tip != "" {
+        Caption(20024, Rectangle.{16.0, status_y - 6.0, width - 32.0, 48.0}, AppLocaleHost(tip), 14, true)
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     if choosing {

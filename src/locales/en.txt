@@ -154,6 +154,24 @@ Shadow Shovey
 [shovey_floor]
 Floor
 ---
+[shovey_tip_home]
+Walk to the house to finish the level.
+---
+[shovey_tip_ball]
+Push the ball into the hole of its color, then go home.
+---
+[shovey_tip_push]
+Every ball goes into a hole. Balls cannot be pulled, so plan each push.
+---
+[shovey_tip_restart]
+Stuck? Restart puts the level back as it was.
+---
+[shovey_tip_lever]
+Walk into the lever to open the gate.
+---
+[shovey_tip_colors]
+Each ball goes into the hole of its own color.
+---
 [shovey_instructions]
 Use arrow keys or WASD. Push one object at a time; objects cannot be pulled. Put balls into matching colored holes and crates on their marked squares. Paint recolors a ball. Collect the apples and bring star blocks together. Finish the tasks before going home. Crates hold pressure doors open. Keys open locks. Space throws a collected projectile in the direction Shovey faces. Some pickups reverse controls, leave a trail or make Shovey slide until blocked. Charged Shovey can light a circuit; avoid charging twice. Cycling blocks change red → blue → yellow with each push; their goals need red. R restarts, and H opens this guide.
 ---

@@ -154,6 +154,24 @@ Shovey ombre
 [shovey_floor]
 Sol
 ---
+[shovey_tip_home]
+Marche jusqu’à la maison pour finir le niveau.
+---
+[shovey_tip_ball]
+Pousse la boule dans le trou de sa couleur, puis rentre à la maison.
+---
+[shovey_tip_push]
+Chaque boule va dans un trou. On ne peut pas tirer : prévois chaque poussée.
+---
+[shovey_tip_restart]
+Bloqué ? Recommencer remet le niveau comme au début.
+---
+[shovey_tip_lever]
+Marche contre le levier pour ouvrir le portail.
+---
+[shovey_tip_colors]
+Chaque boule va dans le trou de sa couleur.
+---
 [shovey_instructions]
 Utilise les flèches ou WASD. Pousse un seul objet à la fois ; tu ne peux pas tirer. Place les boules dans les trous de même couleur et les caisses sur leurs cases. La peinture recolore une boule. Ramasse les pommes et réunis les blocs étoilés. Termine les tâches avant de rentrer. Les caisses maintiennent les portes à pression ouvertes. Les clés ouvrent les serrures. Espace lance un projectile ramassé dans la direction de Shovey. Certains objets inversent les commandes, laissent une trace ou font glisser Shovey jusqu’à un obstacle. Shovey chargé peut allumer un circuit ; évite une double charge. Les blocs changent de rouge à bleu puis jaune à chaque poussée ; leurs cibles exigent du rouge. R recommence, H ouvre ce guide.
 ---

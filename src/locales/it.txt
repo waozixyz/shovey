@@ -154,6 +154,24 @@ Shovey ombra
 [shovey_floor]
 Pavimento
 ---
+[shovey_tip_home]
+Cammina fino alla casa per finire il livello.
+---
+[shovey_tip_ball]
+Spingi la palla nella buca del suo colore, poi torna a casa.
+---
+[shovey_tip_push]
+Ogni palla va in una buca. Non si può tirare, quindi pensa a ogni spinta.
+---
+[shovey_tip_restart]
+Bloccato? Ricomincia rimette il livello com’era.
+---
+[shovey_tip_lever]
+Cammina contro la leva per aprire il cancello.
+---
+[shovey_tip_colors]
+Ogni palla va nella buca del suo colore.
+---
 [shovey_instructions]
 Usa le frecce o WASD. Spingi un oggetto alla volta; non puoi tirare. Metti le palle nelle buche dello stesso colore e le casse sulle caselle segnate. La vernice cambia il colore delle palle. Raccogli le mele e unisci i blocchi stella. Completa i compiti prima di tornare a casa. Le casse tengono aperte le porte a pressione. Le chiavi aprono le serrature. Spazio lancia un proiettile raccolto nella direzione di Shovey. Alcuni oggetti invertono i comandi, lasciano una traccia o fanno scivolare Shovey fino a un ostacolo. Shovey carico può accendere un circuito; evita di caricarlo due volte. I blocchi cambiano da rosso a blu a giallo a ogni spinta; i loro obiettivi richiedono rosso. R ricomincia, H apre questa guida.
 ---
