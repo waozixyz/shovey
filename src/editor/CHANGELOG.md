@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [0.2.104] - 2026-10-23
+
+- The first lightning touch shows a glow and sparks while testing a board.
+
 ## [0.2.103] - 2026-10-23
 
 - All objects stop at the abyss when testing Classic levels.

@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.110] - 2026-10-23
+
+- The first lightning touch shows a glow and sparks as Shovey gains a charge.
+- Includes the approved Classic campaign through level 100.
+
 ## [0.6.109] - 2026-10-23
 
 - Play the approved Classic campaign through level 100.
