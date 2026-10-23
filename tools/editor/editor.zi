@@ -41,6 +41,7 @@
 #import "box_props"
 #import "box_widget"
 #import "tree"
+#import "kryon/test_driver"
 #import "tree_draw"
 #import "tree_input"
 #import "tile_map"
@@ -2278,6 +2279,7 @@ Draw :: () -> bool {
     Screen(viewport, key, modifiers)
     finished := EndFrameRetained(session, DesktopFrameReusable())
     if finished.status != FrameStatus.FrameOk { Say("Editor frame could not finish.\n"); return false }
+    TestDriverFrame(session)
     DesktopFrameUnchanged(finished.paint_unchanged)
     drawn := EndDesktopFrame()
     if !drawn { Say("Editor raster frame could not finish.\n") }

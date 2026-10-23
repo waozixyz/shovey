@@ -35,9 +35,10 @@ try {
   const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
   socket = new WebSocket(pages.find(page => page.type === 'page').webSocketDebuggerUrl);
   await new Promise(resolve => socket.addEventListener('open', resolve, {once: true}));
-  const pending = new Map();
+  const pending = new Map(), failures = [];
   socket.addEventListener('message', event => {
     const message = JSON.parse(event.data);
+    if (message.method === 'Runtime.exceptionThrown') failures.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);
     if (pending.has(message.id)) { pending.get(message.id)(message); pending.delete(message.id); }
   });
   async function call(method, params = {}) {
@@ -61,7 +62,8 @@ try {
       if (await evaluate(expression)) return;
       await delay(100);
     }
-    throw Error('Timed out: ' + expression);
+    const state = await evaluate(`JSON.stringify({ready:globalThis.Module?.profileReady,status:document.querySelector('#status')?.textContent,result:document.querySelector('#result')?.textContent})`);
+    throw Error('Timed out: ' + expression + '; state: ' + state + '; errors: ' + failures.join('|'));
   }
   async function click(x, y) {
     await call('Input.dispatchMouseEvent', {type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1});
@@ -75,10 +77,11 @@ try {
   await call('Page.addScriptToEvaluateOnNewDocument', {source: `
     document.addEventListener('DOMContentLoaded', () => {
       globalThis.profileTestHook = true;
-      Module.preRun = [function() {
+      Module.preRun = Module.preRun || [];
+      Module.preRun.push(function() {
         ENV.KRYON_TEST_DRIVER = '/tmp/test-driver';
         Module.FS.mkdirTree('/tmp/test-driver');
-      }];
+      });
     }, {once:true});
   `});
   await call('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
