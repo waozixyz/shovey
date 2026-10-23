@@ -115,6 +115,15 @@ try {
   await wait(`Module.FS.analyzePath('/kryon-apps/profile/account.key').exists`);
   await click(40, 28);
   assert((await labels()).includes('Dew balance'));
+  if (process.env.WEB_VERIFY_NODE) {
+    let confirmed = false;
+    for (const end = Date.now() + 25000; Date.now() < end;) {
+      const text = await labels();
+      if (text.some(label => /^\d+(?:\.\d+)? Dew$/.test(label))) { confirmed = true; break; }
+      await delay(150);
+    }
+    assert(confirmed, 'The node did not confirm the inline Dew balance');
+  }
   await click(40, 28);
   await wait('!Module.profileVisible');
   await delay(1500);
