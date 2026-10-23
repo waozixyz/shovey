@@ -1,0 +1,49 @@
+name: Prepare Arcade
+description: >
+  Check out Arcade, the host that packs standalone Shovey, and the Ziran
+  toolchain it locks. Arcade builds this Shovey commit; every other package
+  stays at the commit Arcade locks. The published campaign's level code and
+  pictures are generated, as they are not in Git.
+
+inputs:
+  packages:
+    description: Ubuntu packages the job's build and checks need
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        repository: waozixyz/arcade
+        path: waozixyz/arcade
+    - name: Read Arcade's locked toolchain
+      id: toolchain
+      shell: sh
+      run: |
+        python3 -c 'import json,os; r=json.load(open("waozixyz/arcade/ziran.lock")); open(os.environ["GITHUB_OUTPUT"],"a").write("commit="+r["toolchain"]["commit"]+"\n")'
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        repository: ziranlang/ziran
+        ref: ${{ steps.toolchain.outputs.commit }}
+        path: ziranlang/ziran
+    - name: Install build dependencies
+      shell: sh
+      run: sh ziranlang/ziran/scripts/ci_packages.sh ${{ inputs.packages }}
+    - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: ~/.cache/ziran/sources
+        key: arcade-ziran-sources-${{ hashFiles('waozixyz/arcade/ziran.lock') }}
+        restore-keys: |
+          arcade-ziran-sources-
+    - name: Build the compiler and fetch Arcade's packages
+      shell: sh
+      run: |
+        make -j4 -C ziranlang/ziran
+        echo "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin" >> "$GITHUB_PATH"
+        printf '[overrides]\nshovey = "../shovey"\nziran = "../../ziranlang/ziran"\n' > waozixyz/arcade/ziran.local.toml
+        cd waozixyz/arcade
+        "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" fetch
+    - name: Generate the published campaign
+      shell: sh
+      run: make -C waozixyz/shovey levels landscape

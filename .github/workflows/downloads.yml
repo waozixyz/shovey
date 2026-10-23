@@ -1,0 +1,167 @@
+name: Downloads
+
+# Every push to master builds and checks the signed Android APK and the Linux
+# and Windows downloads, and keeps them on this version's draft release.
+# Publishing that draft is a separate, explicit run.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish this version's checked downloads
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shovey-downloads
+  cancel-in-progress: false
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+      - uses: ./waozixyz/shovey/.github/actions/arcade
+        with:
+          packages: build-essential cmake pkg-config python3-pil python3-numpy
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install the Android SDK parts the host locks
+        run: |
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdkmanager" --licenses > /dev/null
+          "$sdkmanager" --install 'ndk;28.2.13676358' 'build-tools;36.0.0' 'platforms;android-36' 'cmake;3.22.1' > /dev/null
+      - name: Build the release APK
+        run: make -C ../arcade android-shovey-release
+      - name: Sign and check the APK
+        env:
+          KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
+          PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("../arcade/build/shovey.json"))["version"])')
+          umask 077
+          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
+          printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
+          python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.apk --version "$version" \
+            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
+            --output "build/downloads/shovey-v$version.apk"
+          rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shovey-android
+          path: waozixyz/shovey/build/downloads/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: waozixyz/arcade
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+      - uses: ./waozixyz/shovey/.github/actions/arcade
+        with:
+          packages: >-
+            build-essential cmake pkg-config python3-pil python3-numpy libsdl2-dev libcairo2-dev
+            libfreetype-dev libfontconfig-dev libpango1.0-dev libgtk-3-dev libcurl4-openssl-dev
+            libx11-dev xvfb xauth xdotool
+      - name: Build and pack the Linux download
+        run: make shovey-linux-download
+      - name: Play the unpacked download on a private display
+        run: |
+          rm -rf build/linux-check
+          mkdir -p build/linux-check
+          tar -xzf build/downloads/shovey-v*-linux-x86_64.tar.gz -C build/linux-check
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 240s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
+            python3 tests/shovey_standalone_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --inbe-source "$(./scripts/ziran.sh pkg path inbe)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shovey-linux
+          path: waozixyz/arcade/build/downloads/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: [android, linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shovey-*
+          path: waozixyz/shovey/build/downloads
+          merge-multiple: true
+      - name: Check every download is this version
+        id: version
+        run: |
+          apk=$(ls build/downloads/shovey-v*.apk)
+          version=${apk##*/shovey-v}
+          version=${version%.apk}
+          for file in "shovey-v$version.apk" "shovey-v$version-linux-x86_64.tar.gz"; do
+            test -f "build/downloads/$file" || { echo "Missing $file" >&2; exit 1; }
+          done
+          test "$(ls build/downloads | wc -l)" = 2 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
+          python3 scripts/android-release.py verify "build/downloads/shovey-v$version.apk" --version "$version"
+          python3 - "$version" > build/release-notes.md <<'PY'
+          import re, sys
+          text = open('src/CHANGELOG.md').read()
+          section = re.search(r'^## \[' + re.escape(sys.argv[1]) + r'\] - .*?\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+          print(section[1].strip())
+          PY
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Keep this version's draft current, or publish it
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          state=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
+          if [ "$state" = false ]; then
+            if [ "$PUBLISH" = true ]; then
+              echo "Shovey $VERSION is already published; release a new version first." >&2
+              exit 1
+            fi
+            echo "Shovey $VERSION is already published; its downloads stay as they are."
+            exit 0
+          fi
+          if [ "$state" = missing ]; then
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Shovey $VERSION" --notes-file build/release-notes.md
+          else
+            gh release edit "$tag" --target "$GITHUB_SHA" --notes-file build/release-notes.md
+          fi
+          # The draft carries only this commit's checked downloads.
+          for asset in $(gh release view "$tag" --json assets --jq '.assets[].name'); do
+            gh release delete-asset "$tag" "$asset" --yes
+          done
+          gh release upload "$tag" build/downloads/*
+          if [ "$PUBLISH" = true ]; then
+            gh release edit "$tag" --draft=false --latest
+            echo "Published Shovey $VERSION."
+          fi

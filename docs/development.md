@@ -207,19 +207,22 @@ The editor's card is drawn from both sets by `make editor-card`
 
 `assets/*/art.json` lists each picture with what it shows.
 
-## Android downloads
+## Downloads
 
-Arcade supplies the standalone native Android host. Build its release APK with
+Arcade supplies the standalone native hosts. Build the release APK with
 `make -C ../arcade android-shovey-release`, then run:
 
     python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.apk --version VERSION
 
 The signer checks the production package, version, release certificate, alignment,
 both ARM architectures and the embedded collection digest. The release key and
-password remain in ignored `backup/android-signing/`; preserve them for future
-updates. Only the public certificate belongs in Git.
+password remain in ignored `backup/android-signing/`, and in the repository's
+`SHOVEY_ANDROID_KEYSTORE` and `SHOVEY_ANDROID_KEYSTORE_PASSWORD` secrets;
+preserve them for future updates. Only the public certificate belongs in Git.
+`make -C ../arcade shovey-linux-download` packs the Linux download.
 
-The Android download workflow prepares a draft release. Upload the checked APK
-as `shovey-vVERSION.apk`, then dispatch the workflow's publish operation with its
-exact digest. The workflow verifies the uploaded binary before publishing and
-creating its release tag. Download the public asset and verify it again.
+The Downloads workflow builds Arcade's host against each pushed commit. It signs
+and checks the APK, plays the unpacked Linux download on a private display, and
+keeps them on the draft release of the version Arcade's ledger names. Dispatch
+the workflow with `publish` to publish that draft; a published version is never
+replaced.
