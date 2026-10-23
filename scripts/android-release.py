@@ -62,9 +62,13 @@ def main():
         aligned = output.with_name('aligned-unsigned.apk')
         temporary = output.with_name('shovey.new.apk')
         subprocess.run([str(tools / 'zipalign'), '-P', '16', '-f', '4', str(apk), str(aligned)], check=True)
-        subprocess.run([str(tools / 'apksigner'), 'sign', '--ks', str(args.keystore.resolve(strict=True)),
-                        '--ks-key-alias', args.alias, '--ks-pass', 'file:' + str(args.password_file.resolve(strict=True)),
-                        '--out', str(temporary), str(aligned)], check=True)
+        try:
+            subprocess.run([str(tools / 'apksigner'), 'sign', '--ks', str(args.keystore.resolve(strict=True)),
+                            '--ks-key-alias', args.alias, '--ks-pass', 'file:' + str(args.password_file.resolve(strict=True)),
+                            '--out', str(temporary), str(aligned)], check=True)
+        finally:
+            # Only the signed APK belongs beside the output.
+            aligned.unlink(missing_ok=True)
         result = verify(temporary, args.version, tools)
         temporary.replace(output)
         result['apk'] = str(output)
