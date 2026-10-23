@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +46,46 @@ def verify(apk, version, tools):
                 payload_sha256=metadata['sha256'], bytes=apk.stat().st_size)
 
 
+def verify_bundle(bundle, version, bundletool):
+    subprocess.run(['java', '-jar', str(bundletool), 'validate', '--bundle=' + str(bundle)],
+                   check=True, stdout=subprocess.DEVNULL)
+    xml = subprocess.check_output(['java', '-jar', str(bundletool), 'dump', 'manifest',
+                                   '--bundle=' + str(bundle)], text=True)
+    manifest = ET.fromstring(xml)
+    android = '{http://schemas.android.com/apk/res/android}'
+    assert manifest.get('package') == 'xyz.waozi.shovey'
+    assert manifest.get(android + 'versionName') == version
+    assert int(manifest.find('uses-sdk').get(android + 'targetSdkVersion')) >= 36
+    signed = subprocess.check_output(['jarsigner', '-verify', str(bundle)], text=True,
+                                     env=dict(os.environ, LC_ALL='C'))
+    assert 'jar verified.' in signed, 'The Play bundle must be signed'
+    certificate = subprocess.check_output(['openssl', 'x509', '-in', str(ROOT / 'packaging/android/certificate.pem'), '-outform', 'DER'])
+    expected = hashlib.sha256(certificate).hexdigest()
+    certificates = subprocess.check_output(['keytool', '-printcert', '-jarfile', str(bundle)], text=True,
+                                          env=dict(os.environ, LC_ALL='C'))
+    found = re.findall(r'SHA256:\s*([A-Fa-f0-9:]+)', certificates)
+    assert found and {item.replace(':', '').lower() for item in found} == {expected}, 'Play bundle signer differs from Shovey release key'
+    with zipfile.ZipFile(bundle) as archive:
+        metadata = json.loads(archive.read('base/assets/arcade.json'))
+        assert metadata['version'] == version and metadata['id'] == 'arcade.shovey-player'
+        assert metadata['sha256'] == hashlib.sha256(archive.read('base/assets/arcade.zib')).hexdigest()
+        abis = {name.split('/')[2] for name in archive.namelist() if name.startswith('base/lib/') and name.endswith('.so')}
+        assert abis == {'arm64-v8a', 'armeabi-v7a'}
+        verify_root = ROOT / 'build/play-verify'
+        verify_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=verify_root) as directory:
+            for name in archive.namelist():
+                if not name.startswith('base/lib/arm64-v8a/') or not name.endswith('.so'): continue
+                library = Path(directory) / Path(name).name
+                library.write_bytes(archive.read(name))
+                headers = subprocess.check_output(['readelf', '-lW', str(library)], text=True)
+                loads = [line.split() for line in headers.splitlines() if line.strip().startswith('LOAD ')]
+                assert loads and all(int(parts[-1], 16) >= 16384 for parts in loads), 'Native library needs 16 KB page alignment'
+    return dict(version=version, version_code=int(manifest.get(android + 'versionCode')),
+                package='xyz.waozi.shovey', certificate_sha256=expected,
+                sha256=hashlib.sha256(bundle.read_bytes()).hexdigest())
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=('sign', 'verify'))
@@ -53,9 +95,26 @@ def main():
     parser.add_argument('--keystore', type=Path, default=ROOT / 'backup/android-signing/shovey-release.p12')
     parser.add_argument('--password-file', type=Path, default=ROOT / 'backup/android-signing/password')
     parser.add_argument('--alias', default='shovey')
+    parser.add_argument('--bundletool', type=Path, help='Google bundletool JAR, required for .aab files')
     args = parser.parse_args()
     tools = build_tools()
     apk = args.apk.resolve(strict=True)
+    if apk.suffix == '.aab':
+        assert args.bundletool, '--bundletool is required to verify a Play bundle'
+        output = apk
+        if args.action == 'sign':
+            output = args.output.resolve()
+            assert output.suffix == '.aab', 'Use an .aab output filename'
+            output.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(['jarsigner', '-keystore', str(args.keystore.resolve(strict=True)),
+                            '-storepass:file', str(args.password_file.resolve(strict=True)),
+                            '-signedjar', str(output), str(apk), args.alias], check=True)
+        result = verify_bundle(output, args.version, args.bundletool.resolve(strict=True))
+        records = ROOT / 'backup/android-release'
+        records.mkdir(parents=True, exist_ok=True)
+        (records / 'play-verification.json').write_text(json.dumps(result, indent=2) + '\n')
+        print(f'Shovey {args.version}: signed Play bundle, package, native alignment and embedded games verified')
+        return
     if args.action == 'sign':
         output = args.output.resolve()
         output.parent.mkdir(parents=True, exist_ok=True)

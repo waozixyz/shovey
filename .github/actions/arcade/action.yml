@@ -6,6 +6,10 @@ description: >
   pictures are generated, as they are not in Git.
 
 inputs:
+  revision:
+    description: Arcade host revision (pin a full commit for store candidates)
+    required: false
+    default: master
   packages:
     description: Ubuntu packages the job's build and checks need
     required: true
@@ -16,6 +20,7 @@ runs:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       with:
         repository: waozixyz/arcade
+        ref: ${{ inputs.revision }}
         path: waozixyz/arcade
     - name: Read Arcade's locked toolchain
       id: toolchain

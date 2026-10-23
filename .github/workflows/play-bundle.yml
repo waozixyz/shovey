@@ -1,0 +1,69 @@
+name: Google Play testing bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      arcade_revision:
+        description: Full Arcade host commit to build
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: waozixyz/shovey
+      - name: Validate the fixed host revision
+        env:
+          ARCADE_REVISION: ${{ inputs.arcade_revision }}
+        run: |
+          python3 -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}", os.environ["ARCADE_REVISION"]), "Use a full Arcade commit"'
+      - uses: ./waozixyz/shovey/.github/actions/arcade
+        with:
+          packages: build-essential cmake pkg-config python3-pil python3-numpy
+          revision: ${{ inputs.arcade_revision }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Android tools
+        run: |
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
+      - name: Build bundle
+        run: make -C ../arcade android-shovey-bundle
+      - name: Sign and verify testing candidate
+        env:
+          KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
+          PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE"
+          test -n "$PASSWORD"
+          curl --fail --show-error --location --retry 3 \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
+            --output "$RUNNER_TEMP/bundletool.jar"
+          umask 077
+          trap 'rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"' EXIT
+          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
+          printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
+          version=$(python3 -c 'import json; print(json.load(open("../arcade/build/shovey.json"))["version"])')
+          python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.aab \
+            --version "$version" --output "build/android/shovey-v$version.aab" \
+            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
+            --bundletool "$RUNNER_TEMP/bundletool.jar"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shovey-play-testing
+          path: waozixyz/shovey/build/android/*.aab
+          if-no-files-found: error
+          retention-days: 14
