@@ -592,21 +592,48 @@ def colour_goal():
 
 
 def ring(colour, dots, lit=None, angle=None):
+    """A solid ring of the colour, with a darker rim, and optionally a lit
+    bead on it at angle degrees. dots is kept for its callers' readability."""
     image = Image.new('RGBA', (SIZE, SIZE))
-    px = image.load()
-    for step in range(dots):
-        a = 2 * math.pi * step / dots
-        x, y = 16 + round(9 * math.cos(a)), 16 + round(9 * math.sin(a))
-        for dx in (-1, 0):
-            for dy in (-1, 0):
-                px[x + dx, y + dy] = colour
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((6, 6, 25, 25), outline=shade(colour, 0.7), width=1)
+    draw.ellipse((7, 7, 24, 24), outline=colour, width=2)
     if angle is not None:
         a = math.radians(angle)
-        x, y = 16 + round(9 * math.cos(a)), 16 + round(9 * math.sin(a))
-        for dx in (-2, -1, 0, 1):
-            for dy in (-2, -1, 0, 1):
-                if abs(dx + 0.5) + abs(dy + 0.5) <= 2.5:
-                    px[x + dx, y + dy] = lit
+        x, y = 16 + round(8.5 * math.cos(a)), 16 + round(8.5 * math.sin(a))
+        draw.ellipse((x - 2, y - 2, x + 1, y + 1), fill=lit)
+    return image
+
+
+def sensor(state, frame=0):
+    """A sensor, close to the original but standing on our floor: a solid red
+    ring with a white inner line and a red bead at its top. 'idle' waits;
+    'active' glows and its bead circles the ring, frame 0 to 7; 'closed' is a
+    raised stone block with a big red gem, as the original's sealed sensor."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    if state == 'closed':
+        bevel(image, (4, 4, 27, 27), (206, 207, 202, 255), 3, raised=True, light=1.22, dark=0.5)
+        grain(image, 2050, dark=0.92, light=1.05, share=0.18)
+    draw = ImageDraw.Draw(image)
+    glow = state == 'active'
+    red = (232, 70, 44, 255) if glow else (196, 40, 36, 255)
+    dark_red = (120, 18, 16, 255)
+    centre, radius = 16, (8 if state != 'closed' else 7)
+    if glow:
+        draw.ellipse((centre - radius - 2, centre - radius - 2, centre + radius + 1, centre + radius + 1), outline=(255, 170, 120, 255), width=1)
+    draw.ellipse((centre - radius, centre - radius, centre + radius - 1, centre + radius - 1), outline=dark_red, width=1)
+    draw.ellipse((centre - radius + 1, centre - radius + 1, centre + radius - 2, centre + radius - 2), outline=red, width=2)
+    draw.ellipse((centre - radius + 3, centre - radius + 3, centre + radius - 4, centre + radius - 4), outline=(250, 244, 236, 255), width=1)
+
+    def bead(x, y, r):
+        draw.ellipse((x - r, y - r, x + r - 1, y + r - 1), fill=dark_red)
+        draw.ellipse((x - r + 1, y - r + 1, x + r - 2, y + r - 2), fill=red)
+        draw.point((x - r + 2, y - r + 2), fill=(255, 214, 200, 255))
+    if state == 'closed':
+        bead(centre, centre, 5)
+    else:
+        angle = math.radians(-90 + 45 * frame)
+        bead(round(centre + math.cos(angle) * (radius - 1)), round(centre + math.sin(angle) * (radius - 1)), 3)
     return image
 
 
@@ -971,18 +998,18 @@ def sprites():
         'tile-17': ('green paint puddle', native('paint-green')),
         'tile-18': ('crate goal: four corner brackets', crate_goal()),
         'tile-19': ('star block: a stone block with a bright star (pushable)', star_block()),
-        'tile-20': ('sensor not yet visited: a grey ring with a red dot', ring((150, 158, 156, 255), 12, (206, 62, 50, 255), -90)),
+        'tile-20': ('sensor not yet visited: a stone plate with a red ring and a red bead at its top', sensor('idle')),
         'tile-21': ('apple', native('apple')),
-        'tile-22': ('active sensor', ring((120, 186, 214, 255), 12, (240, 248, 250, 255), -90)),
-        'tile-23': ('closed sensor: a raised block with a red light', over_floor(native('sensor-closed'))),
-        'tile-24': ('active sensor', ring((120, 186, 214, 255), 12, (240, 248, 250, 255), -90)),
+        'tile-22': ('active sensor: its red ring glows', sensor('active')),
+        'tile-23': ('closed sensor: a raised stone block with a red gem', sensor('closed')),
+        'tile-24': ('active sensor: its red ring glows', sensor('active')),
         'tile-25': ('reverse controls: a token with two opposite arrows', native('reverse')),
         'tile-26': ('ammunition: one iron shot', shot),
         'tile-27': ('charge: a token with a lightning bolt', native('charge')),
         'tile-28': ('target: a red and white target board (pushable)', native('target')),
         'tile-29': ('moving block: a stone puck with a blue light', over_floor(native('puck'))),
-        'tile-30': ('fresh path: a ring of blue dots', ring((63, 111, 143, 255), 10)),
-        'tile-31': ('used path: a ring of grey dots', ring((150, 158, 156, 255), 10)),
+        'tile-30': ('fresh path: a solid blue ring', ring((63, 111, 143, 255), 10)),
+        'tile-31': ('used path: a solid grey ring', ring((150, 158, 156, 255), 10)),
         'tile-32': ('moving block stopping: its light turns red', over_floor(recolour(native('puck'), blue, 4))),
         'tile-33': ('key', native('key')),
         'tile-34': ('lock: a padlock', native('lock')),
@@ -1099,8 +1126,8 @@ def sprites():
     for frame in range(8):
         out[f'explosion-{frame}'] = (f'a bomb crate going off, frame {frame + 1} of 8', explosion(frame))
     for frame in range(1, 9):
-        out[f'sensor-{frame}'] = (f'active sensor, frame {frame} of 8',
-                                  ring((120, 186, 214, 255), 12, (240, 248, 250, 255), -90 + 45 * (frame - 1)))
+        out[f'sensor-{frame}'] = (f'active sensor, its bead circling the glowing ring, frame {frame} of 8',
+                                  sensor('active', frame - 1))
     return out
 
 

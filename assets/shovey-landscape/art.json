@@ -604,43 +604,43 @@
     },
     {
       "path": "sprites/sensor-1.png",
-      "depicts": "landscape presentation of active sensor, frame 1 of 8",
-      "sha256": "6f1fbf7dc454ecad4e433abe185313e3e56b388a579000e2bb779f1c09fb595e"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 1 of 8",
+      "sha256": "48d4546647827ef2fe491d3e07a70e07f2cb15bef4cecde7dc08b7bd4ef45026"
     },
     {
       "path": "sprites/sensor-2.png",
-      "depicts": "landscape presentation of active sensor, frame 2 of 8",
-      "sha256": "ab5ddc80dd9da178805b4f8adddb8966ea40d6ac9e7d8241956089acb1650317"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 2 of 8",
+      "sha256": "ccab4000061634a9578006db4b45e731cd16bb0a4590052547b0038fb0c7764f"
     },
     {
       "path": "sprites/sensor-3.png",
-      "depicts": "landscape presentation of active sensor, frame 3 of 8",
-      "sha256": "4d35e70388b4e4a0ad3bec10ed7e2fb2811f3e390d19bb251a5dbb81d744c8d9"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 3 of 8",
+      "sha256": "6b5b4258dfdd01d35d1d98116b2157ee104e3f9ee04d0018111facbb198ea59f"
     },
     {
       "path": "sprites/sensor-4.png",
-      "depicts": "landscape presentation of active sensor, frame 4 of 8",
-      "sha256": "b60d3104073cfad14f8f7b869dab5bbc6bbbae34827aa5ac0c97c0d411d3c33c"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 4 of 8",
+      "sha256": "26b3c55e64f104d4e6f6f65742a21f459ab75327c7425f0f8159c8313405f788"
     },
     {
       "path": "sprites/sensor-5.png",
-      "depicts": "landscape presentation of active sensor, frame 5 of 8",
-      "sha256": "a9482a170c6c705b8b89bd0656295c8b10264fdebbafbcc7f60f33d2484b1bf8"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 5 of 8",
+      "sha256": "9a1ce3328b739757000a18a31d841e29500cac7eb8c84373ec64959055019112"
     },
     {
       "path": "sprites/sensor-6.png",
-      "depicts": "landscape presentation of active sensor, frame 6 of 8",
-      "sha256": "3c9b4f81afb3576d17df1916202a65b0a2f466b7a20be7e47d774909f71c7b5f"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 6 of 8",
+      "sha256": "3d881953a127a782ec1fba71bf96e1543526ef8e73e7888dd160b727959480d4"
     },
     {
       "path": "sprites/sensor-7.png",
-      "depicts": "landscape presentation of active sensor, frame 7 of 8",
-      "sha256": "691b0717be827a0eead7050d9e823e14b32abc67ece2f6acebb62495fe2eacf3"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 7 of 8",
+      "sha256": "ecdc29945ef4a8da6e1b4a8c1d06d7004638c9c5c800599107cc95f4baba5470"
     },
     {
       "path": "sprites/sensor-8.png",
-      "depicts": "landscape presentation of active sensor, frame 8 of 8",
-      "sha256": "c81a37bce4bee9f3e1799397be9d585f28c1463b972c252aaa8dc5ad7b2821c6"
+      "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 8 of 8",
+      "sha256": "cc7f1d62826b08be8c43bd45e0d55d91e7db67a47d384bec04f95673d0d96d4a"
     },
     {
       "path": "sprites/shadow.png",
@@ -929,8 +929,8 @@
     },
     {
       "path": "sprites/tile-20.png",
-      "depicts": "landscape presentation of sensor not yet visited: a grey ring with a red dot",
-      "sha256": "c44ec3d19786ac952c0797bc8e3287646ee9592c91ca95d054b564eaf0edc51c"
+      "depicts": "landscape presentation of sensor not yet visited: a stone plate with a red ring and a red bead at its top",
+      "sha256": "183a25b906c615f31276e43494e3e62e0f221b4bc812198e124c8232658615eb"
     },
     {
       "path": "sprites/tile-21.png",
@@ -939,18 +939,18 @@
     },
     {
       "path": "sprites/tile-22.png",
-      "depicts": "landscape presentation of active sensor",
-      "sha256": "6f1fbf7dc454ecad4e433abe185313e3e56b388a579000e2bb779f1c09fb595e"
+      "depicts": "landscape presentation of active sensor: its red ring glows",
+      "sha256": "48d4546647827ef2fe491d3e07a70e07f2cb15bef4cecde7dc08b7bd4ef45026"
     },
     {
       "path": "sprites/tile-23.png",
-      "depicts": "landscape presentation of closed sensor: a raised block with a red light",
-      "sha256": "da6a7a96b86eeac976fa9601710bb3f9741a660768120cfe69cfad444e472096"
+      "depicts": "landscape presentation of closed sensor: a raised stone block with a red gem",
+      "sha256": "3fa3ca54a7a401d8ea375b1bed3a10f867726c998aa94dba45b2624bd7f482be"
     },
     {
       "path": "sprites/tile-24.png",
-      "depicts": "landscape presentation of active sensor",
-      "sha256": "6f1fbf7dc454ecad4e433abe185313e3e56b388a579000e2bb779f1c09fb595e"
+      "depicts": "landscape presentation of active sensor: its red ring glows",
+      "sha256": "48d4546647827ef2fe491d3e07a70e07f2cb15bef4cecde7dc08b7bd4ef45026"
     },
     {
       "path": "sprites/tile-25.png",
@@ -984,13 +984,13 @@
     },
     {
       "path": "sprites/tile-30.png",
-      "depicts": "landscape presentation of fresh path: a ring of blue dots",
-      "sha256": "4fe4313475f687f8b064bb6a5a8eae0a926c25b6fdbac3b515acccdc0ab963d6"
+      "depicts": "landscape presentation of fresh path: a solid blue ring",
+      "sha256": "9fe1c4631806418bff3daedfa353217f65a5ae5cdd1e64fbf806baa60ff343cc"
     },
     {
       "path": "sprites/tile-31.png",
-      "depicts": "landscape presentation of used path: a ring of grey dots",
-      "sha256": "d6d4a477d3788990f6a59f9d32bf503073348832faf779ba83cf85936134aa58"
+      "depicts": "landscape presentation of used path: a solid grey ring",
+      "sha256": "12afd79a760849512f9e99bb87d97d7d869621efb078b60cd6ad8ae360ea3a82"
     },
     {
       "path": "sprites/tile-32.png",
