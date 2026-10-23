@@ -802,19 +802,63 @@ def water_edge(frame=0):
 
 
 def hole():
-    """Adjacent abyss cells join into one opening, without internal rims."""
-    return Image.new('RGBA', (SIZE, SIZE), (2, 4, 5, 255))
+    """An abyss on its own, ground on every side (the palette's picture)."""
+    return abyss_edge(15)
 
 
 def abyss_edge(mask):
-    image = hole()
+    """A drop into darkness, seen from above and a little from the front.
+    mask bits 0-3 (left, top, right, bottom on screen) mark solid ground on
+    that side. Under ground at the top, the far cliff shows: a soil lip, then
+    bands of rock fading into the dark. Ground at the sides gives a narrow
+    rock wall; ground at the bottom, the near lip with its shadow. Open sides
+    join the next abyss cell seamlessly."""
+    rng = random.Random(6500 + mask)
+    image = Image.new('RGBA', (SIZE, SIZE))
     px = image.load()
+    # The dark: near black with a cold tint and a faint grain.
     for y in range(SIZE):
         for x in range(SIZE):
-            distances = [d for side, d in enumerate((x, y, SIZE - 1 - x, SIZE - 1 - y)) if mask & (1 << side)]
-            distance = min(distances, default=SIZE)
-            if distance < 3:
-                px[x, y] = ((151, 164, 161, 255), (57, 68, 69, 255), (17, 25, 28, 255))[distance]
+            n = rng.randint(-2, 2)
+            px[x, y] = (6 + n, 9 + n, 13 + n, 255)
+    strata = [(150, 122, 88), (128, 102, 74), (110, 88, 64), (138, 112, 82), (102, 82, 60), (122, 98, 72), (92, 74, 56)]
+    def blend(colour, factor, x, y):
+        base = px[x, y]
+        return tuple(round(base[i] * (1 - factor) + colour[i] * factor) for i in range(3)) + (255,)
+    if mask & 2:
+        height = 16
+        for y in range(height):
+            light = max(0.0, 1.0 - (y - 2) / (height - 2)) ** 0.8 if y >= 2 else 1.0
+            for x in range(SIZE):
+                if y == 0:
+                    colour = (96, 78, 56)           # the soil lip, under any floor
+                elif y == 1:
+                    colour = (70, 54, 38)
+                else:
+                    band = strata[min(len(strata) - 1, (y - 2) // 2)]
+                    seam = (y - 2) % 2 == 1 and rng.random() < 0.55
+                    jitter = rng.uniform(0.92, 1.08)
+                    colour = tuple(min(255, round(c * jitter * (0.78 if seam else 1.0))) for c in band)
+                    if rng.random() < 0.04: colour = (58, 46, 34)   # a crack
+                    if y == 2: colour = tuple(min(255, c + 22) for c in colour)  # lit top of the rock
+                px[x, y] = blend(colour, light, x, y)
+    for side in (0, 2):
+        if not mask & (1 << side):
+            continue
+        for y in range(SIZE):
+            for depth in range(4):
+                x = depth if side == 0 else SIZE - 1 - depth
+                if depth == 0:
+                    colour, factor = (118, 96, 72), 1.0
+                else:
+                    colour = (84, 68, 52) if side == 0 else (100, 82, 62)
+                    factor = 0.75 - depth * 0.2
+                px[x, y] = blend(colour, factor, x, y)
+    if mask & 8:
+        for x in range(SIZE):
+            px[x, SIZE - 1] = (150, 128, 96, 255)
+            px[x, SIZE - 2] = blend((70, 56, 42), 0.9, x, SIZE - 2)
+            px[x, SIZE - 3] = blend((20, 16, 14), 0.6, x, SIZE - 3)
     return image
 
 
@@ -1120,7 +1164,7 @@ def sprites():
                 out[f'fish-{fish}-{frame}-{facing}'] = (f'{fish} fish, frame {frame}, facing {facing}', centered_fish(frame).rotate(angle))
     for mask in range(16):
         out[f'grass-edge-{mask}'] = ('grass blending into adjacent paving with connected corners', grass_edge(mask))
-        out[f'abyss-edge-{mask}'] = ('abyss with a recessed stone lip only where it meets solid ground', abyss_edge(mask))
+        out[f'abyss-edge-{mask}'] = ('abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge', abyss_edge(mask))
     for frame in range(6):
         out[f'burst-{frame}'] = (f'a target struck by a shot, frame {frame + 1} of 6', burst(frame))
     for frame in range(8):

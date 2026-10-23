@@ -24,7 +24,8 @@ def turns_with_board(path):
     if path.parent.name == 'player':
         return True
     if path.parent.name == 'sprites':
-        return (path.stem.startswith(('player-', 'charged-', 'dog-', 'turtle-', 'crab-', 'fish-', 'grass-edge-', 'abyss-edge-')) or
+        # Abyss edges are chosen by screen direction, so they stay upright.
+        return (path.stem.startswith(('player-', 'charged-', 'dog-', 'turtle-', 'crab-', 'fish-', 'grass-edge-')) or
                 path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69'))
     kind = int(path.stem)
     return (2 <= kind <= 9 or 11 <= kind <= 12 or 14 <= kind <= 23

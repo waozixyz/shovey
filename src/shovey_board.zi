@@ -387,6 +387,11 @@ BoardGlide :: struct {
 board_glides: [BOARD_GLIDES]BoardGlide;
 board_gliding: [SHOVEY_CELLS]s32;
 
+// Whether a cell is an open drop: an abyss tile, or floor that gave way.
+BoardAbyss :: (game: *ShoveyGame, at: s32) -> bool {
+    return game.tiles[at] == SHOVEY_PIT || game.ground[at] == SHOVEY_PIT
+}
+
 // Starts an animal's glide from one cell to the next.
 BoardGlideStart :: (from: s32, to: s32, now: float64) {
     slot: s32 = 0
@@ -560,23 +565,26 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         display := BoardDisplayIndex(at, landscape)
         base := game.tiles[at]
         board_layers[display] = KindSprite(game, base, at, now, landscape)
-        if base == SHOVEY_PIT {
+        // An abyss, drawn or left by cracked floor, joins its neighbours into
+        // one drop. Its edges go by screen direction, so the far cliff always
+        // shows at the top of the opening.
+        if BoardAbyss(game, at) {
             mask: s32 = 0
-            for direction: cast(s32)0..3 {
-                neighbor := ShoveyNeighbor(at, direction)
-                if neighbor < 0 || game.tiles[neighbor] != SHOVEY_PIT { mask |= 1 << direction }
+            for side: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
+                if neighbor < 0 || !BoardAbyss(game, neighbor) { mask |= 1 << side }
             }
             board_layers[display] = SPRITE_ABYSS + mask
-        }
-        if base == 77 {
+        } else if base == 77 {
+            // Grass runs up to an abyss's own lip; other floors get a soft edge.
             mask: s32 = 0
             for direction: cast(s32)0..3 {
                 neighbor := ShoveyNeighbor(at, direction)
-                if neighbor >= 0 && game.tiles[neighbor] != 77 { mask |= 1 << direction }
+                if neighbor >= 0 && game.tiles[neighbor] != 77 && !BoardAbyss(game, neighbor) { mask |= 1 << direction }
             }
             board_layers[display] = SPRITE_GRASS_EDGE + mask
         }
-        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+        board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_PIT || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
         decoration := game.decorations[at]
         board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
         piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) && board_gliding[at] < 0 then ground else 0
