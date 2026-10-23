@@ -4,16 +4,11 @@ name: Downloads
 # checks the signed Android APK and the Linux and Windows downloads, then
 # publishes them as that version's release, like Inner Breeze. Pushes of a
 # released version only check that nothing needs releasing. A manual run
-# rebuilds the current version's draft, or publishes it.
+# retries an unreleased version. No release is left as a draft.
 on:
   push:
     branches: [master]
   workflow_dispatch:
-    inputs:
-      publish:
-        description: Publish this version's checked downloads
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -36,12 +31,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          EVENT: ${{ github.event_name }}
         run: |
           version=$(python3 -c 'import re; print(re.search(r"^## \[([0-9.]+)\]", open("src/CHANGELOG.md").read(), re.M)[1])')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           state=$(gh release view "v$version" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
-          if [ "$EVENT" = workflow_dispatch ] || [ "$state" != false ]; then
+          if [ "$state" != false ]; then
             echo "release_due=true" >> "$GITHUB_OUTPUT"
           else
             echo "release_due=false" >> "$GITHUB_OUTPUT"
@@ -175,8 +169,6 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      # A pushed new version publishes at once; a manual run only when asked.
-      PUBLISH: ${{ (github.event_name == 'push' || inputs.publish) && 'true' || 'false' }}
       CHANGELOG_VERSION: ${{ needs.due.outputs.version }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -206,31 +198,26 @@ jobs:
           print(section[1].strip())
           PY
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Keep this version's draft current, or publish it
+      - name: Publish this version
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           tag="v$VERSION"
           state=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
           if [ "$state" = false ]; then
-            if [ "$PUBLISH" = true ]; then
-              echo "Shovey $VERSION is already published; release a new version first." >&2
-              exit 1
-            fi
             echo "Shovey $VERSION is already published; its downloads stay as they are."
             exit 0
           fi
+          # The downloads go up on a draft first, so the release appears
+          # only once all three are there.
           if [ "$state" = missing ]; then
             gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Shovey $VERSION" --notes-file build/release-notes.md
           else
             gh release edit "$tag" --target "$GITHUB_SHA" --notes-file build/release-notes.md
+            for asset in $(gh release view "$tag" --json assets --jq '.assets[].name'); do
+              gh release delete-asset "$tag" "$asset" --yes
+            done
           fi
-          # The draft carries only this commit's checked downloads.
-          for asset in $(gh release view "$tag" --json assets --jq '.assets[].name'); do
-            gh release delete-asset "$tag" "$asset" --yes
-          done
           gh release upload "$tag" build/downloads/*
-          if [ "$PUBLISH" = true ]; then
-            gh release edit "$tag" --draft=false --latest
-            echo "Published Shovey $VERSION."
-          fi
+          gh release edit "$tag" --draft=false --latest
+          echo "Published Shovey $VERSION."
