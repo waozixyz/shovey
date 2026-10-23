@@ -1,5 +1,13 @@
 # Shovey changelog
 
+## [0.6.107] - 2026-10-23
+
+- Play the approved Classic campaign through level 90.
+- Choose swipe or a movement pad before the first level.
+- Throws, bombs, pits and the open house now animate; idle pieces glow softly.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+
 ## [0.6.105] - 2026-10-23
 
 - Play the approved Classic campaign through level 88.
