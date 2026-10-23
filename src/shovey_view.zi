@@ -703,8 +703,9 @@ ShoveyFrame :: () {
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     disabled := game.won || game.lost || game.level == ShoveyFinaleLevel()
-    // Touch: swipe anywhere under the bar to step, or tap a cell to step
-    // towards it; hold either to keep walking. Fire comes after, so it stays on top.
+    // Touch: swipe anywhere under the bar to step, or tap a cell or the space
+    // beside the board to step towards it; hold either to keep walking. Fire
+    // comes after, so it stays on top.
     play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
     gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
             .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
@@ -715,6 +716,10 @@ ShoveyFrame :: () {
         if cell >= 0 {
             step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
                 cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
+        } else {
+            at := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+            step = BoardEngineDirection(TouchDirection(gesture.x - at.x - at.width / 2.0,
+                gesture.y - at.y - at.height / 2.0, grid.cell / 2.0), landscape)
         }
     }
     if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
