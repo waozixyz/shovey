@@ -8,7 +8,7 @@ Shovey is a puzzle game about finding a path home. Push balls into matching
 pits, move crates onto their marks, collect what you need and untangle the
 board one move at a time.
 
-![Shovey Classic level 26, with a brick courtyard, sand, water and colored balls and pits](docs/screenshots/hero.png)
+![Shovey Classic level 73: a sand yard and a brick room with colored balls and holes, crates, berry bushes and the house](docs/screenshots/hero.png)
 
 ## Play
 
@@ -45,7 +45,7 @@ The editor checks for a winning route while you build. Solving the board
 yourself proves it too. Proven puzzles can be exported, and hosts with
 collection sharing can publish them for friends or other players.
 
-![Shovey’s integrated editor showing a Classic puzzle and its piece palette](docs/screenshots/editor.png)
+![Shovey’s integrated editor showing story level 9, with its palette on the Objects tab](docs/screenshots/editor.png)
 
 **Island editing is available.** The Island story campaign is still in development.
 
