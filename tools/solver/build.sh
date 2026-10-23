@@ -40,7 +40,7 @@ from pathlib import Path
 import sys
 root, out = map(Path, sys.argv[1:])
 digest = hashlib.sha256()
-for name in ('tools/solver/solver.c', 'tools/solver/classic_api.zi', 'src/engine.zi'):
+for name in ('tools/solver/solver.c', 'tools/solver/classic_api.zi', 'src/solver/classic_deadlocks.zi', 'src/engine.zi'):
     digest.update(name.encode())
     digest.update((root / name).read_bytes())
 temporary = out / 'fingerprint.new'

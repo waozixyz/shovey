@@ -1,0 +1,47 @@
+// Conservative reachability after a trail changes the pushing floor.
+// Both solver hosts use this; the game engine remains the rule authority.
+#import, file "../engine.zi";
+
+SolveTrailWall :: (kind: s32) -> bool {
+    return kind == 12 || kind == 63 || kind == 64 || kind == SHOVEY_PIT || kind == 76 ||
+        ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98)
+}
+
+SolveTrailBallsBlocked :: (game: *ShoveyGame) -> bool {
+    if (game.powers & SHOVEY_TRAIL) == 0 { return false }
+    live: [SHOVEY_CELLS]bool
+    queue: [SHOVEY_CELLS]s32
+    count: s32 = 0
+    balls: s32 = 0
+    // Any paint or pit is an optimistic destination, irrespective of color.
+    // Doors, locks, breakable walls and other pieces are optimistically open.
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if ShoveyBallColor(game.objects[at]) > 0 { balls += 1 }
+        if ShoveyPitColor(game.ground[at]) > 0 || ShoveyPaintColor(game.ground[at]) > 0 {
+            live[at] = true
+            queue[count] = at
+            count += 1
+        }
+    }
+    if balls == 0 { return false }
+    head: s32 = 0
+    while head < count {
+        to := queue[head]
+        head += 1
+        for side: cast(s32)0..3 {
+            from := ShoveyNeighbor(to, side)
+            behind := ShoveyNeighbor(from, side)
+            if from < 0 || behind < 0 || live[from] { continue }
+            ground := game.ground[from]
+            if SolveTrailWall(ground) || ground == 7 || ground == 8 || ground == 11 || ShoveyColorPortal(ground) { continue }
+            if SolveTrailWall(game.ground[behind]) { continue }
+            live[from] = true
+            queue[count] = from
+            count += 1
+        }
+    }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if ShoveyBallColor(game.objects[at]) > 0 && !live[at] { return true }
+    }
+    return false
+}

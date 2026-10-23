@@ -67,7 +67,10 @@ objects. Right-click in Objects clears pieces and decoration together, while
 Undo restores the whole stroke. The active tab and brush are highlighted, and
 the palette scrolls with large icons. Existing boards and drafts remain readable.
 Drafts save immediately, played wins remain proven after reopening, and saved
-levels load from the current level file.
+levels load from the current level file. External draft and campaign saves
+appear within a second without reopening the editor. An active play session
+keeps its board and recorded moves; a newer version waits until returning to
+Edit, where the checks and undo history reset for that new board.
 Reset restores the level's original reference board when available, including
 every layer; Undo restores the edit you had before resetting.
 The level overview checks the live signed server release in the background.
@@ -81,6 +84,14 @@ after the engine verifies its win. Diff shows the server board above your draft,
 counts changed cells and highlights their objects, floor or decoration changes.
 Update all force-publishes the already approved campaign without checking or
 searching drafts again. Changed drafts and pending approvals stay intact.
+Update buttons keep their action labels. A single publication status belongs to
+the selected board; another level can queue while a campaign is being checked.
+Repeated requests for the same board coalesce. One worker builds the contiguous
+approved campaign, preserving requests that arrive during a build. Idle worker
+locks turn interrupted work into a retryable failure instead of a permanent
+busy state. `python3 scripts/publication_queue.py` lists the current queue;
+`--json` includes exact boards, attempts, failed steps and bounded event history.
+The queue never approves a draft or bypasses a release check.
 The solution status appears once beside the controls while actions run. Completed
 checks are remembered for the exact board and solver version; edits or a newer
 solver invalidate that result. Fix it appears only after a failed check.

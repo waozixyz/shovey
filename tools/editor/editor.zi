@@ -63,6 +63,7 @@ sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
 libc :: #system_library "libc";
 RunShell :: (command: *u8) -> s32 #foreign libc "system";
+EditorPid :: () -> s32 #foreign libc "getpid";
 
 LEVELS_MAX :: 200
 PIECES_HEX :: 480
@@ -99,11 +100,11 @@ palette_scroll: [3]s32;
 unlinked_saved_place: s32;
 // The all-levels view: every place at once, each with how alike its board is to its original.
 selector_open: bool;
-drafts_refreshed: s64;
 // The level file as last loaded, so saves by tools and other editors show.
 level_file_hash: u32;
 level_file_checked: s64;
 level_file_chunk: [65536]u8;
+level_update_pending: bool;
 
 history: [HISTORY * HEX]u8;
 history_count: s32;
@@ -132,6 +133,10 @@ action_message: [256]u8;
 action_message_length: s32;
 publish_message: [256]u8;
 publish_message_length: s32;
+publication_state: [32]u8;
+publication_state_length: s32;
+publication_board: [HEX]u8;
+publication_text: [128]u8;
 actions_polled: s64;
 stroke: bool;
 
@@ -139,6 +144,7 @@ playing: bool;
 play: ShoveyGame;
 play_route: [ROUTE_MAX]u8;
 play_length: s32;
+play_replaying: bool;
 watching: bool;
 watch_at: s32;
 watch_last: s64;
@@ -154,6 +160,12 @@ route: [ROUTE_MAX]u8;
 route_length: s32;
 check_prefix: [ROUTE_MAX]u8;
 check_prefix_length: s32;
+check_live: bool;
+check_play_length: s32;
+check_generation: s32;
+check_folder: [128]u8;
+check_folder_length: s32;
+check_request: [HEX + ROUTE_MAX + 128]u8;
 edited_at: s64;
 check_wanted: bool;
 
@@ -264,7 +276,9 @@ NormalizeTiles :: (board: []u8) {
         if decoration >= 79 && decoration <= 81 { SetKind(board, SHOVEY_CELLS * 2 + at, 0) }
         kind := KindAt(board, at)
         if kind == 62 { SetKind(board, at, 71); SetKind(board, SHOVEY_CELLS + at, 12) }
-        if kind != 0 && ShoveyTerrain(kind) {
+        // Legacy floor kinds in cells remain engine ground. Moving them to
+        // cosmetic tiles would turn them into plain ground and change trail.
+        if kind != 0 && ShoveyTerrain(kind) && !ShoveyCosmeticTile(kind) {
             SetKind(board, SHOVEY_CELLS + at, kind)
             SetKind(board, at, 0)
         }
@@ -681,9 +695,41 @@ NeedsUpdate :: (place: s32) -> bool {
     return server_configured && server_verified && published_places[place - 1] && !ServerBoardMatches(place)
 }
 
+LoadPublication :: () {
+    publication_state_length = 0
+    text, found := ReadEntireFile(DraftPath(current, ".publication"))
+    if !found { return }
+    board := ReadString(text, FieldAt(text, 0, "board"))
+    state := ReadString(text, FieldAt(text, 0, "state"))
+    if !board.valid || !state.valid || !ReadBoard(text[board.start:board.end], publication_board[:]) { return }
+    AppendText(publication_state[:], *publication_state_length, text[state.start:state.end])
+}
+
 PublicationBusy :: () -> bool {
-    status := TextView(publish_message[:publish_message_length])
-    return status == "Updating…" || status == "Checking…" || status == "Publishing…" || status == "Verifying…" || Contains(status, "Checking levels ")
+    if !Same(Board(current), publication_board[:]) { return false }
+    state := TextView(publication_state[:publication_state_length])
+    return state == "queued" || state == "waiting" || state == "building" || state == "checking" || state == "publishing" || state == "verifying"
+}
+
+PublicationText :: () -> string {
+    if !Same(Board(current), publication_board[:]) { return "" }
+    state := TextView(publication_state[:publication_state_length])
+    message: string = ""
+    if state == "queued" { message = "Queued" }
+    else if state == "waiting" { message = "Waiting for earlier approval" }
+    else if state == "building" { message = "Building" }
+    else if state == "checking" { message = "Checking release" }
+    else if state == "publishing" { message = "Publishing" }
+    else if state == "verifying" { message = "Verifying" }
+    else if state == "failed" { message = "Update failed. Retry." }
+    else if state == "published" { message = "Published" }
+    if message == "" { return "" }
+    length: s32 = 0
+    AppendText(publication_text[:], *length, "Level ")
+    AppendNumber(publication_text[:], *length, current)
+    AppendText(publication_text[:], *length, " · ")
+    AppendText(publication_text[:], *length, message)
+    return TextView(publication_text[:length])
 }
 
 UpdateAvailable :: () -> bool {
@@ -756,7 +802,6 @@ ApprovalAvailable :: () -> bool {
     if (Solved() || Proven()) && !ApprovalMatches(current) { return true }
     if !Approved(current) { return saved_approval_ready }
     if PublishedApprovalMatches(current) { return false }
-    status := TextView(publish_message[:publish_message_length])
     return !PublicationBusy()
 }
 
@@ -827,7 +872,7 @@ RunAction :: (action: string) {
 ApproveEdit :: () {
     if !ApprovalAvailable() { return }
     if ApprovalMatches(current) {
-        ActionMessage("Publishing…")
+        ActionMessage("")
         RunAction("update")
         return
     }
@@ -866,10 +911,8 @@ UpdateEdit :: () {
 }
 
 UpdateAll :: () {
-    if !server_configured || playing || glm_busy || PublicationBusy() { return }
+    if !server_configured || playing || glm_busy { return }
     ActionMessage("")
-    publish_message_length = 0
-    AppendText(publish_message[:], *publish_message_length, "Updating…")
     RunAction("update-all")
 }
 
@@ -882,9 +925,7 @@ QueueApproval :: (board: []u8, letters: []u8) {
     if !WriteEntireFile(DraftPath(current, ".approved"), TextView(board)) { ActionMessage("Approval could not be saved."); return }
     Copy(approved_boards[(current - 1) * HEX:current * HEX], board)
     approved_places[current - 1] = true
-    ActionMessage("Publishing…")
-    publish_message_length = 0
-    AppendText(publish_message[:], *publish_message_length, "Updating…")
+    ActionMessage("")
     RunAction("approve")
 }
 
@@ -946,6 +987,7 @@ PrettifyOnly :: (before: []u8, after: []u8) -> bool {
 PollActions :: (now: s64) {
     if now - actions_polled < 500 { return }
     actions_polled = now
+    LoadPublication()
     CheckServer(now)
     if now - server_polled >= 2000 {
         server_polled = now
@@ -1004,7 +1046,6 @@ PollActions :: (now: s64) {
             LoadApprovals()
             publish_message_length = 0
             AppendText(publish_message[:], *publish_message_length, status)
-            ActionMessage(status)
         }
     }
 }
@@ -1044,16 +1085,42 @@ LevelFileHash :: () -> u32 {
     return hash
 }
 
-// Takes in boards another program saved, keeping this editor's drafts on top.
+// Follow both saved levels and draft-only updates from authoring tools. A play
+// session keeps its exact board until Edit; its manual route stays attached to it.
 FollowLevelFile :: (now: s64) {
-    if now - level_file_checked < 1000 || save_state == 1 || playing { return }
+    if now - level_file_checked < 1000 || save_state == 1 || pointer.down || secondary.down { return }
     level_file_checked = now
     hash := LevelFileHash()
-    if hash == 0 || hash == level_file_hash { return }
-    level_file_hash = hash
-    LoadLevels()
+    changed := hash != 0 && hash != level_file_hash
+    previous: [HEX]u8
+    Copy(previous[:], Board(current))
+    if playing {
+        if changed {
+            text, found := ReadEntireFile(LEVELS_FILE)
+            if found && ReadLevelFile(text) {
+                index := LevelNumber(current) - 1
+                if InGame(current) && index >= 0 && index < file_count {
+                    unused ReadBoard(TextView(file_boards[index * HEX:(index + 1) * HEX]), previous[:])
+                }
+            }
+        }
+        text, found := ReadEntireFile(DraftPath(current))
+        candidate: [HEX]u8
+        if found && ReadBoard(text, candidate[:]) { Copy(previous[:], candidate[:]) }
+        level_update_pending = !Same(previous[:], Board(current))
+        return
+    }
+    if changed {
+        LoadLevels()
+        level_file_hash = hash
+        for place: cast(s32)0..PLACES { similarity_cached[place] = false }
+    }
     LoadDrafts()
-    for place: cast(s32)0..PLACES { similarity_cached[place] = false }
+    level_update_pending = false
+    if !Same(previous[:], Board(current)) {
+        Open(current)
+        ActionMessage("Level updated")
+    }
 }
 
 LoadDrafts :: () {
@@ -1069,6 +1136,7 @@ RestoreDraft :: (number: s32) {
     text, found := ReadEntireFile(DraftPath(number))
     restored: [HEX]u8
     if found && ReadBoard(text, restored[:]) { Copy(Board(number), restored[:]) }
+    else if !found { Copy(Board(number), SavedBoard(number)) }
 }
 
 LoadUnlinked :: () {
@@ -1153,7 +1221,10 @@ Open :: (place: s32) {
     StopCheck()
     check_state = 0
     current = (place - 1 + PLACES) % PLACES + 1
+    ActionMessage("")
+    LoadPublication()
     playing = false
+    level_update_pending = false
     diff_open = false
     RestoreDraft(current)
     Copy(reset_board[:], Board(current))
@@ -1209,29 +1280,44 @@ search_done: [4]bool;
 
 CheckFile :: (index: s32, suffix: string) -> string {
     length: s32 = 0
-    AppendText(path_bytes[:], *length, "build/editor/check-")
-    AppendText(path_bytes[:], *length, search_names[index])
+    AppendText(path_bytes[:], *length, TextView(check_folder[:check_folder_length]))
+    AppendText(path_bytes[:], *length, "/")
+    if index >= 0 { AppendText(path_bytes[:], *length, search_names[index]) }
     AppendText(path_bytes[:], *length, suffix)
     return TextView(path_bytes[:length])
 }
 
 StopCheck :: () {
     if check_state == 1 {
-        Shell("for f in build/editor/check-*.pid; do kill -- -$(cat $f) 2>/dev/null; done; rm -f build/editor/check-*")
+        path: [160]u8
+        length: s32 = 0
+        AppendText(path[:], *length, TextView(check_folder[:check_folder_length]))
+        AppendText(path[:], *length, "/cancel")
+        unused WriteEntireFile(TextView(path[:length]), "1")
     }
 }
 
 StartCheck :: () {
     check_wanted = false
     StopCheck()
-    if Solved() { return }
-    if Proven() {
+    live := playing && !watching && play_length > 0
+    if !live && Solved() { return }
+    if !live && Proven() {
         AcceptRoute(proof_route[:], proof_length)
         return
     }
     check_prefix_length = 0
-    if RestoreProof() || RestoreLearnedRoute() { return }
-    if RestoreSavedRoute() { return }
+    check_live = live
+    check_play_length = ifx live then play_length else -1
+    if live {
+        check_prefix_length = play_length
+        for index: cast(s32)0..play_length - 1 { check_prefix[index] = play_route[index] }
+        if RestoreProof(true) || RestoreLearnedRoute(true) || RestoreSavedRoute(true) { return }
+    } else {
+        if RestoreProof() || RestoreLearnedRoute() { return }
+        if RestoreSavedRoute() { return }
+        if LoadAttempt() { check_live = true }
+    }
     previous, has_previous := ReadEntireFile(DraftPath(current, ".proof"))
     if check_prefix_length == 0 && has_previous && previous.count > HEX + 1 && previous.count <= HEX + ROUTE_MAX + 1 && previous[HEX] == cast(u8)10 {
         valid := true
@@ -1249,33 +1335,38 @@ StartCheck :: () {
     check_level = current
     route_length = 0
     if Players(board) != 1 { check_state = 4; RememberCheckStatus(); return }
-    for index: cast(s32)0..SEARCHES - 1 {
-        search_done[index] = false
-        length: s32 = 0
-        AppendText(command[:], *length, "mkdir -p build/editor && (setsid sh -c 'nice -n 10 build/solver/shovey-solve-classic solve --level ")
-        AppendNumber(command[:], *length, LevelFor(current))
-        AppendText(command[:], *length, " --seconds ")
-        AppendText(command[:], *length, SOLVE_SECONDS)
-        AppendText(command[:], *length, " --max-mb 128 --only ")
-        AppendText(command[:], *length, search_names[index])
-        if check_prefix_length > 0 && (index == 0 || index == 2) {
-            AppendText(command[:], *length, " --repair ")
-            part := ifx index == 0 then check_prefix_length else ifx check_prefix_length > 16 then check_prefix_length - 16 else (check_prefix_length + 1) / 2
-            AppendText(command[:], *length, TextView(check_prefix[:part]))
-        }
-        AppendText(command[:], *length, " ")
-        AppendText(command[:], *length, TextView(board))
-        AppendText(command[:], *length, " > ")
-        AppendText(command[:], *length, CheckFile(index, ".tmp"))
-        AppendText(command[:], *length, " 2>&1; mv ")
-        AppendText(command[:], *length, CheckFile(index, ".tmp"))
-        AppendText(command[:], *length, " ")
-        AppendText(command[:], *length, CheckFile(index, ".out"))
-        AppendText(command[:], *length, "' & echo $! > ")
-        AppendText(command[:], *length, CheckFile(index, ".pid"))
-        AppendText(command[:], *length, ")")
-        Shell(TextView(command[:length]))
-    }
+    check_generation += 1
+    check_folder_length = 0
+    AppendText(check_folder[:], *check_folder_length, "build/editor/check-")
+    AppendNumber(check_folder[:], *check_folder_length, EditorPid())
+    AppendText(check_folder[:], *check_folder_length, "-")
+    AppendNumber(check_folder[:], *check_folder_length, check_generation)
+    length: s32 = 0
+    AppendText(command[:], *length, "mkdir -p ")
+    AppendText(command[:], *length, TextView(check_folder[:check_folder_length]))
+    Shell(TextView(command[:length]))
+    length = 0
+    AppendText(check_request[:], *length, TextView(board))
+    AppendText(check_request[:], *length, "\n")
+    AppendText(check_request[:], *length, TextView(check_prefix[:check_prefix_length]))
+    AppendText(check_request[:], *length, "\n")
+    AppendNumber(check_request[:], *length, LevelFor(current))
+    AppendText(check_request[:], *length, "\n")
+    AppendText(check_request[:], *length, SOLVE_SECONDS)
+    AppendText(check_request[:], *length, ifx check_live then "\nlive\n" else "\nrepair\n")
+    path: [160]u8
+    path_length: s32 = 0
+    AppendText(path[:], *path_length, TextView(check_folder[:check_folder_length]))
+    AppendText(path[:], *path_length, "/request")
+    if !WriteEntireFile(TextView(path[:path_length]), TextView(check_request[:length])) { check_state = 3; return }
+    for index: cast(s32)0..SEARCHES - 1 { search_done[index] = false }
+    length = 0
+    AppendText(command[:], *length, "setsid python3 scripts/editor_check.py ")
+    AppendText(command[:], *length, TextView(check_folder[:check_folder_length]))
+    AppendText(command[:], *length, " > ")
+    AppendText(command[:], *length, TextView(check_folder[:check_folder_length]))
+    AppendText(command[:], *length, "/worker.log 2>&1 < /dev/null &")
+    Shell(TextView(command[:length]))
     check_state = 1
     check_started = MonotonicMilliseconds()
 }
@@ -1329,7 +1420,7 @@ PollCheck :: () {
         }
         if search_done[index] { finished += 1 }
     }
-    if finished == SEARCHES {
+    if finished == SEARCHES || PathExists(CheckFile(-1, "finished")) || MonotonicMilliseconds() - check_started > 125000 {
         StopCheck()
         check_state = 3
         RememberCheckStatus()
@@ -1392,7 +1483,7 @@ RememberRoute :: (record: string) {
     unused WriteEntireFile(DraftPath(current, ".routes"), BuilderFinish(text))
 }
 
-RestoreLearnedRoute :: () -> bool {
+RestoreLearnedRoute :: (continuation: bool = false) -> bool {
     text, found := ReadEntireFile(DraftPath(current, ".routes"))
     if !found { return false }
     at: s64 = 0
@@ -1413,12 +1504,13 @@ RestoreLearnedRoute :: () -> bool {
             length := cast(s32)(end - start)
             for index: cast(s32)0..length - 1 { moves[index] = text[start + index] }
             if Wins(Board(current), LevelFor(current), moves[:], length) {
-                AcceptRoute(moves[:], length)
-                return true
+                if continuation {
+                    if ContinueKnownRoute(moves[:], length) { return true }
+                } else { AcceptRoute(moves[:], length); return true }
             }
             changes: s32 = 0
             for index: cast(s32)0..HEX - 1 { if text[at + index] != Board(current)[index] { changes += 1 } }
-            if changes < best {
+            if !continuation && changes < best {
                 best = changes
                 check_prefix_length = length
                 for index: cast(s32)0..length - 1 { check_prefix[index] = moves[index] }
@@ -1430,6 +1522,7 @@ RestoreLearnedRoute :: () -> bool {
 }
 
 AcceptRoute :: (letters: []u8, length: s32) {
+    changed_play := playing && !watching && !play.won && play_length > 0 && (play_length != check_play_length || TextView(play_route[:play_length]) != TextView(check_prefix[:check_prefix_length]))
     StopCheck()
     Copy(check_board[:], Board(current))
     check_level = current
@@ -1445,10 +1538,11 @@ AcceptRoute :: (letters: []u8, length: s32) {
     if found { RememberRoute(previous) }
     RememberRoute(TextView(proof_record[:record_length]))
     unused WriteEntireFile(DraftPath(current, ".proof"), TextView(proof_record[:record_length]))
+    if changed_play { check_wanted = true }
 }
 
 // A played or checked win survives switching boards and reopening the editor.
-RestoreProof :: () -> bool {
+RestoreProof :: (continuation: bool = false) -> bool {
     text, found := ReadEntireFile(DraftPath(current, ".proof"))
     if !found || text.count <= cast(s64)HEX + 1 || text.count > cast(s64)(HEX + ROUTE_MAX + 1) { return false }
     if text[HEX] != cast(u8)10 { return false }
@@ -1462,6 +1556,7 @@ RestoreProof :: () -> bool {
     Copy(proof_board[:], Board(current))
     proof_length = length
     proof_level = current
+    if continuation { return ContinueKnownRoute(proof_route[:], length) }
     AcceptRoute(proof_route[:], length)
     if InGame(current) && Same(Board(current), SavedBoard(current)) {
         save_level = current
@@ -1473,7 +1568,7 @@ RestoreProof :: () -> bool {
 
 // Saved levels keep their winning route. A changed board can reuse that
 // route when it still wins, including changes to flowers or floor artwork.
-RestoreSavedRoute :: () -> bool {
+RestoreSavedRoute :: (continuation: bool = false) -> bool {
     if !InGame(current) || !mapping_ok { return false }
     text, found := ReadEntireFile(LEVELS_FILE)
     if !found || !ReadLevelFile(text) { return false }
@@ -1485,6 +1580,7 @@ RestoreSavedRoute :: () -> bool {
     saved := FileHolds(index, Board(current))
     letters := file_routes[start:start + length]
     if !Wins(Board(current), LevelFor(current), letters, length) { return false }
+    if continuation { return ContinueKnownRoute(letters, length) }
     AcceptRoute(letters, length)
     if saved {
         Copy(save_board[:], Board(current))
@@ -1673,7 +1769,7 @@ SaveSpotMatches :: (place: s32, index: s32) -> bool {
 // place in the game gets the new board, a waiting place goes in at its place
 // and leaves the waiting list. The level code and pictures follow.
 StartSave :: () {
-    if save_state == 1 || (!Solved() && !Proven()) { return }
+    if level_update_pending || save_state == 1 || (!Solved() && !Proven()) { return }
     Copy(save_board[:], Board(current))
     save_level = current
     if InGame(current) && Same(Board(current), SavedBoard(current)) { save_state = 2; return }
@@ -1741,7 +1837,7 @@ WriteWaiting :: () {
 // A board saves itself once it is proven winnable and changed; a save that
 // failed is not repeated for the same board.
 AutoSave :: () {
-    if save_state == 1 || (!Solved() && !Proven()) { return }
+    if level_update_pending || save_state == 1 || (!Solved() && !Proven()) { return }
     if !Same(Board(current), SavedBoard(current)) {
         if save_state == 3 && save_level == current && Same(save_board[:], Board(current)) { return }
         StartSave()
@@ -1752,18 +1848,97 @@ AutoSave :: () {
 
 // ---------------------------------------------------------------- playing
 
-StartPlay :: () {
+SamePlayState :: (a: *ShoveyGame, b: *ShoveyGame) -> bool {
+    if a.player != b.player || a.powers != b.powers || a.keys != b.keys || a.won != b.won || a.lost != b.lost { return false }
+    if (a.powers & SHOVEY_AMMO) != 0 && a.direction != b.direction { return false }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if a.ground[at] != b.ground[at] || a.objects[at] != b.objects[at] || a.light_from[at] != b.light_from[at] { return false }
+    }
+    return true
+}
+
+// Rejoin a demonstrated win by engine state, even if the owner took a
+// different walk or the older recording includes blocked key presses.
+ContinueKnownRoute :: (letters: []u8, length: s32) -> bool {
+    if !playing || watching { return false }
+    candidate: ShoveyGame
+    if !ShoveyLoadData(*candidate, LevelFor(current), TextView(Board(current))) { return false }
+    for at: cast(s32)0..length {
+        if play_length + length - at <= ROUTE_MAX && SamePlayState(*candidate, *play) {
+            combined: [ROUTE_MAX]u8
+            for index: cast(s32)0..play_length - 1 { combined[index] = play_route[index] }
+            for index: at..length - 1 { combined[play_length + index - at] = letters[index] }
+            total := play_length + length - at
+            if Wins(Board(current), LevelFor(current), combined[:], total) {
+                AcceptRoute(combined[:], total)
+                return true
+            }
+        }
+        if at < length {
+            letter := letters[at]
+            if letter >= cast(u8)48 && letter <= cast(u8)51 { unused ShoveyMove(*candidate, cast(s32)(letter - cast(u8)48)) }
+            else if letter == cast(u8)102 { unused ShoveyFire(*candidate) }
+            else if letter == cast(u8)116 { unused ShoveyTick(*candidate) }
+        }
+    }
+    return false
+}
+
+// Partial play is an owner's checkpoint, never a claim that the board wins.
+RememberAttempt :: () {
+    if watching || play_replaying { return }
+    length: s32 = 0
+    AppendText(check_request[:], *length, TextView(Board(current)))
+    AppendText(check_request[:], *length, "\n")
+    AppendText(check_request[:], *length, TextView(play_route[:play_length]))
+    unused WriteEntireFile(DraftPath(current, ".attempt"), TextView(check_request[:length]))
+}
+
+LoadAttempt :: () -> bool {
+    text, found := ReadEntireFile(DraftPath(current, ".attempt"))
+    if !found || text.count <= HEX + 1 || text.count > HEX + ROUTE_MAX + 1 || text[HEX] != cast(u8)10 || text[:HEX] != TextView(Board(current)) { return false }
+    for at: cast(s64)HEX + 1..text.count - 1 {
+        letter := text[at]
+        if !((letter >= cast(u8)48 && letter <= cast(u8)51) || letter == cast(u8)102 || letter == cast(u8)116) { return false }
+    }
+    check_prefix_length = cast(s32)text.count - HEX - 1
+    for at: cast(s32)0..check_prefix_length - 1 { check_prefix[at] = text[HEX + 1 + at] }
+    return true
+}
+
+PlayChanged :: () {
+    if watching || play_replaying { return }
+    RememberAttempt()
+    if !play.won && !play.lost {
+        check_wanted = true
+        edited_at = MonotonicMilliseconds()
+    }
+}
+
+StartPlay :: (resume: bool = false, owner: bool = true) {
     playing = true
-    watching = false
+    watching = !owner
     play_length = 0
     unused ShoveyLoadData(*play, LevelFor(current), TextView(Board(current)))
+    if resume && LoadAttempt() {
+        length := check_prefix_length
+        play_replaying = true
+        for index: cast(s32)0..length - 1 {
+            action: s32 = 0
+            for candidate: cast(s32)0..5 { if LETTERS[candidate] == check_prefix[index] { action = candidate } }
+            PlayAct(action)
+        }
+        play_replaying = false
+    }
+    if owner { PlayChanged() }
     last_tick = MonotonicMilliseconds()
 }
 
 PlayAct :: (action: s32) {
     if play.won || play.lost || play_length >= ROUTE_MAX { return }
+    direction := play.direction
     accepted := ifx action <= 3 then ShoveyMove(*play, action) else ifx action == 4 then ShoveyFire(*play) else ShoveyTick(*play)
-    if action == 5 && !accepted { return }
+    if !accepted && !((play.powers & SHOVEY_AMMO) != 0 && play.direction != direction) { return }
     play_route[play_length] = LETTERS[action]
     play_length += 1
     // A win you just played is already proof; stop the searches and save it.
@@ -1774,6 +1949,8 @@ PlayAct :: (action: s32) {
         proof_level = current
         AcceptRoute(proof_route[:], proof_length)
     }
+    if action != 5 { PlayChanged() }
+    else if !watching && !play_replaying { RememberAttempt() }
 }
 
 // You won the board on screen yourself.
@@ -1788,16 +1965,19 @@ PlayUndo :: () {
     length := play_length
     play_length = 0
     unused ShoveyLoadData(*play, LevelFor(current), TextView(Board(current)))
+    play_replaying = true
     for index: cast(s32)0..length - 1 {
         action: s32 = 0
         for candidate: cast(s32)0..5 { if LETTERS[candidate] == play_route[index] { action = candidate } }
         PlayAct(action)
     }
+    play_replaying = false
+    PlayChanged()
 }
 
 StartWatch :: () {
     if check_state != 2 || !Checked() { return }
-    StartPlay()
+    StartPlay(false, false)
     watching = true
     watch_at = 0
     watch_last = 0
@@ -1913,14 +2093,25 @@ SolverText :: (bytes: []u8, length: *s32) {
 
 SolutionText :: () -> string {
     length: s32 = 0
+    if playing && !watching && !play.won {
+        if check_wanted { AppendText(solution_bytes[:], *length, "Recalculating…") }
+        else if check_state == 1 && check_live { AppendText(solution_bytes[:], *length, "Solving from your moves…") }
+        else if check_state == 3 && Checked() { AppendText(solution_bytes[:], *length, "No continuation found yet") }
+        else if Solved() && route_length >= play_length && TextView(route[:play_length]) == TextView(play_route[:play_length]) {
+            AppendText(solution_bytes[:], *length, "Route found · ")
+            AppendNumber(solution_bytes[:], *length, route_length - play_length)
+            AppendText(solution_bytes[:], *length, " more moves")
+        } else { AppendText(solution_bytes[:], *length, ifx Solved() || Proven() then "Winnable from start" else "Not checked") }
+        return TextView(solution_bytes[:length])
+    }
     if Solved() || Proven() {
         AppendText(solution_bytes[:], *length, "Winnable · ")
         AppendNumber(solution_bytes[:], *length, ifx Solved() then route_length else proof_length)
         AppendText(solution_bytes[:], *length, " moves")
     } else if check_state == 1 {
-        AppendText(solution_bytes[:], *length, "Checking solution…")
+        AppendText(solution_bytes[:], *length, ifx playing && check_live then "Solving from your moves…" else "Checking solution…")
     } else if check_state == 3 && Checked() {
-        AppendText(solution_bytes[:], *length, "No solution found")
+        AppendText(solution_bytes[:], *length, ifx playing then "No continuation found yet" else "No route found yet")
     } else if check_state == 4 {
         AppendText(solution_bytes[:], *length, "Needs one player")
     } else {
@@ -1930,6 +2121,7 @@ SolutionText :: () -> string {
 }
 
 SolutionColor :: () -> Color {
+    if playing && !watching && !play.won && (check_wanted || check_state == 1) { return Color.{118, 94, 38, 255} }
     if Solved() || Proven() { return Color.{54, 106, 65, 255} }
     if check_state == 1 { return Color.{118, 94, 38, 255} }
     if (check_state == 3 && Checked()) || check_state == 4 { return Color.{126, 58, 64, 255} }
@@ -2071,7 +2263,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     FollowLevelFile(now)
     PollCheck()
     ctrl := (modifiers & 2) != 0
-    if key == 258 { if playing { playing = false; watching = false } else { StartPlay() } }
+    if key == 258 { if playing { playing = false; watching = false; level_file_checked = 0 } else { StartPlay() } }
     if key == 76 && !playing { ToggleSelector() }
     if key == 256 { selector_open = false }
     if playing {
@@ -2083,7 +2275,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             if key == 32 { PlayAct(4) }
             if key == 90 || key == 259 { PlayUndo() }
         }
-        if key == 82 { StartPlay() }
+        if key == 82 { StartPlay(false) }
         // Animals and moving blocks share the engine's recorded timer tick.
         if !watching && now - last_tick >= 1000 {
             last_tick = now
@@ -2109,7 +2301,8 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if key == 83 && ctrl { StartSave() }
     }
     // Check again shortly after the last change.
-    if check_wanted && !pointer.down && !secondary.down && now - edited_at >= 1200 { StartCheck() }
+    delay: s64 = ifx playing then 600 else 1200
+    if check_wanted && (!playing || (!watching && !play.won)) && !pointer.down && !secondary.down && now - edited_at >= delay { StartCheck() }
     AutoSave()
 
     width := viewport.width
@@ -2136,7 +2329,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if Control(3, Rectangle.{bx, 8.0, 64.0, 40.0}, "Next") { Open(current + 1) }
         bx += 72.0
         if Control(4, Rectangle.{bx, 8.0, 108.0, 40.0}, ifx playing then "Edit (Tab)" else "Play (Tab)") {
-            if playing { playing = false; watching = false } else { StartPlay() }
+            if playing { playing = false; watching = false; level_file_checked = 0 } else { StartPlay() }
         }
         bx += 116.0
         if Control(5, Rectangle.{bx, 8.0, 104.0, 40.0}, "Check (C)") { StartCheck() }
@@ -2154,7 +2347,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
         update := NeedsUpdate(current)
         if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
-                .label = ifx update then ifx PublicationBusy() then "Updating…" else "Update" else "Approve",
+                .label = ifx update then "Update" else "Approve",
                 .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
             if update { UpdateEdit() } else { ApproveEdit() }
         }
@@ -2170,21 +2363,24 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     }
     if Button(session, ButtonProps.{.key = 22, .id = 22,
             .bounds = ifx selector_open then Rectangle.{350.0, 8.0, 120.0, 40.0} else Rectangle.{614.0, 51.0, 116.0, 30.0},
-            .label = ifx PublicationBusy() then "Updating…" else "Update all",
-            .disabled = !server_configured || playing || glm_busy || PublicationBusy()}) != 0 { UpdateAll() }
+            .label = "Update all",
+            .disabled = !server_configured || playing || glm_busy}) != 0 { UpdateAll() }
     if !selector_open {
         unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{742.0, 51.0, 220.0, 30.0},
             .fill = SolutionColor(), .radius = 4.0})
         Caption(24, Rectangle.{750.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
     }
-    Caption(9, ifx selector_open then Rectangle.{482.0, 14.0, width - 494.0, 28.0} else Rectangle.{974.0, 52.0, width - 986.0, 28.0},
-        ifx action_message_length > 0 then TextView(action_message[:action_message_length]) else StatusText(false), 14)
+    {
+    status := StatusText(false)
+    publication := PublicationText()
+    if !playing && publication != "" { status = publication }
+    if selector_open { status = TextView(publish_message[:publish_message_length]) }
+    if glm_busy || action_message_length > 0 { status = TextView(action_message[:action_message_length]) }
+    if level_update_pending { status = "New version ready · Edit to view" }
+    Caption(9, ifx selector_open then Rectangle.{482.0, 14.0, width - 494.0, 28.0} else Rectangle.{974.0, 52.0, width - 986.0, 28.0}, status, 14)
+    }
 
     if selector_open {
-        if now - drafts_refreshed >= 1000 {
-            LoadDrafts()
-            drafts_refreshed = now
-        }
         SelectorScreen(Rectangle.{8.0, 88.0, width - 16.0, height - 96.0})
         return
     }

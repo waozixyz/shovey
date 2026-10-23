@@ -14,8 +14,13 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from publication_queue import Queue
+from editor_server import remember_verified
+
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / 'backup/editor-drafts'
+ACTIVE_IDS = []
 
 
 def atomic(path, value):
@@ -24,8 +29,9 @@ def atomic(path, value):
     temporary.replace(path)
 
 
-def status(message):
-    atomic(STATE / 'publish-status', message[:240])
+def status(message, phase=None):
+    if phase:
+        Queue(ROOT).advance(ACTIVE_IDS, phase, message)
     try:
         print(message, flush=True)
     except BrokenPipeError:
@@ -64,6 +70,55 @@ def record_published(receipt):
         boards = [''.join(level['cells'] + level['tiles'] + level['decorations']) for level in levels]
     for number, board in enumerate(boards or [], 1):
         atomic(STATE / f'{number:03}.published', board)
+    Queue(ROOT).published(boards or [])
+
+
+def publish_live(output):
+    """Replace the live campaign on the node, which players load at their next
+    start. Each game checks every level's route itself before using it."""
+    record = ROOT / 'backup/campaign-publisher/publication.json'
+    key = ROOT / 'backup/campaign-publisher/account.key'
+    if not record.is_file() or not key.is_file():
+        return False
+    publication = json.loads(record.read_text())
+    entity = Path(subprocess.check_output(['ziran', 'pkg', 'path', 'entity'], cwd=ROOT, text=True).strip())
+    try:
+        subprocess.run(['make', 'publication'], cwd=entity, stdout=output, stderr=subprocess.STDOUT, check=True)
+        subprocess.run([str(entity / 'build/publication'), 'publish', str(key), publication['server'], publication['format'],
+                        publication['title'], str(ROOT / 'levels/approved.json'), publication['id']],
+                       cwd=ROOT, stdout=output, stderr=subprocess.STDOUT, check=True)
+    except subprocess.CalledProcessError as error:
+        output.write(f'Live campaign not updated: {error}\n')
+        return False
+    return True
+
+
+def publish_website(receipt, output):
+    """Commit the published campaign alone and push it, so the website's own
+    workflow rebuilds the browser game from the same approved levels."""
+    path = 'levels/approved.json'
+    head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    committed = subprocess.run(['git', 'show', head + ':' + path], cwd=ROOT, capture_output=True, text=True).stdout
+    current = (ROOT / path).read_text()
+    if committed == current:
+        receipt['website'] = head
+        return
+    numbers = [level['number'] for level in json.loads(current)['levels']]
+    index = STATE / 'website.index'
+    environment = {**os.environ, 'GIT_INDEX_FILE': str(index)}
+    git = lambda *arguments: subprocess.check_output(['git', *arguments], cwd=ROOT, env=environment, text=True).strip()
+    try:
+        git('read-tree', head)
+        git('update-index', '--add', '--cacheinfo', '100644,' + git('hash-object', '-w', path) + ',' + path)
+        commit = git('commit-tree', git('write-tree'), '-p', head, '-m',
+                     f'Publish the approved campaign of {len(numbers)} Classic levels on the website')
+    finally:
+        index.unlink(missing_ok=True)
+    subprocess.run(['git', 'update-ref', 'refs/heads/master', commit, head], cwd=ROOT, check=True)
+    # Keep the shared index in step with the new commit for this one path.
+    subprocess.run(['git', 'reset', '-q', '--', path], cwd=ROOT, check=True)
+    subprocess.run(['git', 'push', 'origin', 'master'], cwd=ROOT, stdout=output, stderr=subprocess.STDOUT, check=True)
+    receipt['website'] = commit
 
 
 def next_version(value):
@@ -120,13 +175,15 @@ def complete_release(config, receipt, output):
                 with archive.open('rb') as stream:
                     subprocess.run([*ssh, command], stdin=stream, stdout=output, stderr=subprocess.STDOUT, check=True)
             publisher.upload = upload
-            status('Publishing…')
+            status('Publishing release', 'publishing')
             publisher.publish_node_app(store, 'arcade', target, remote_store)
-    status('Verifying…')
+    status('Verifying server release', 'verifying')
     with contextlib.redirect_stdout(output):
         publisher.verify_node_app(store, 'arcade', origin)
     receipt.update(phase='published', release=release)
     atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
+    if receipt.get('approved_boards'):
+        remember_verified(ROOT, receipt)
     if config.get('install_local') and not receipt.get('local_installed'):
         built = arcade / 'build/arcade.zib'
         if hashlib.sha256(built.read_bytes()).hexdigest() != artifact['sha256']:
@@ -138,10 +195,15 @@ def complete_release(config, receipt, output):
     receipt['phase'] = 'verified'
     atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
     record_published(receipt)
+    if receipt.get('website') is None:
+        status('Updating website', 'publishing')
+        publish_website(receipt, output)
+        atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
     status(publication_status())
 
 
-def main(force=False):
+def publish_campaign():
+    global ACTIVE_IDS
     config = json.loads((ROOT / 'backup/editor-publish.json').read_text())
     arcade = Path(config['arcade']).resolve(strict=True)
     inbe = Path(config['inbe_source']).resolve(strict=True)
@@ -149,86 +211,108 @@ def main(force=False):
     toolchain = Path(subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
     log = ROOT / 'backup/approved-publication.log'
     receipt_path = ROOT / 'backup/approved-publication.json'
-    with (STATE / 'publish.lock').open('a') as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return 0  # The active worker rechecks the queue after each build.
-        with log.open('a') as output:
-            def run(command, cwd=ROOT, environment=None):
-                subprocess.run(list(map(str, command)), cwd=cwd, env=environment,
-                               stdout=output, stderr=subprocess.STDOUT, check=True)
-            while True:
-                approved_hash = fingerprint()
-                approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
-                prior = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
-                if prior.get('approved_sha256') == approved_hash and prior.get('phase') in ('uploading', 'published'):
-                    status('Updating…')
-                    complete_release(config, prior, output)
-                    if fingerprint() == approved_hash:
-                        return 0
-                    continue
-                if not force and prior.get('approved_sha256') == approved_hash and prior.get('phase') == 'verified':
-                    record_published(prior)
-                    status(publication_status())
-                    return 0
-                ledger = json.loads((arcade / 'apps/versions.json').read_text())['node_apps']
-                if prior.get('approved_sha256') == approved_hash and prior.get('phase') != 'verified':
-                    versions = prior['versions']
-                else:
-                    versions = {name: next_version(ledger[name]['version']) for name in ('arcade', 'shovey', 'shovey-editor')}
-                receipt = dict(approved_sha256=approved_hash, approved_levels=len(approved), versions=versions, phase='building',
-                               approved_boards=[''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved])
-                atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-                status("Updating…")
-                changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
-                          f'- Play the approved Classic campaign through level {len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Keep your progress and use the integrated level editor.', True)
-                changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
-                          '- All objects stop at the abyss when testing Classic levels.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
-                changelog(arcade / 'CHANGELOG.md', versions['arcade'],
-                          f'- Shovey includes approved Classic levels 1–{len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Existing Shovey saves and completed levels are retained.')
-                run([arcade / 'update_version.sh'], arcade)
-                run(['python3', 'tools/levels/levels.py', 'generate'])
-                run(['python3', 'tools/pixel/pixel.py', 'build'])
-                run(['python3', 'tools/levels/landscape.py'])
-                run(['python3', 'tools/levels/levels.py', 'previews'])
-                run(['make', 'solver'])
-                for level in approved:
-                    board = ''.join(level['cells']) + ''.join(level['tiles']) + ''.join(level['decorations'])
-                    run([ROOT / 'build/solver/shovey-solve-classic', 'verify', '--level', level['number'], board, level['solution']])
-                run(['sh', 'tests/release_test.sh', toolchain])
-                run(['python3', 'tests/assets_test.py'])
-                run(['make', 'all'], arcade)
-                status('Updating…')
-                private = [
-                    'env', '-u', 'DISPLAY', '-u', 'WAYLAND_DISPLAY', '-u', 'XAUTHORITY', '-u', 'DBUS_SESSION_BUS_ADDRESS',
-                    '-u', 'SESSION_MANAGER', 'YUE_DESKTOP_RECOVERY=0', 'SDL_AUDIODRIVER=dummy',
-                    'xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1600x1100x24']
-                run([*private, 'python3', arcade / 'tests/collection_ui_test.py', '--binary', arcade / 'build/arcade', '--inbe-source', inbe], arcade)
-                run([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade)
-                run([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
-                     '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
-                if len(approved) >= 28:
-                    run([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
-                         '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
-                if fingerprint() != approved_hash:
-                    status('Updating…')
-                    continue
-                bundle = arcade / 'build/arcade.zib'
-                receipt.update(phase='checked', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
-                               checks=['approved routes', 'release boundary and saves', 'assets', 'Arcade UI', 'standalone Shovey UI', 'Inbe UI'])
-                if len(approved) >= 28:
-                    receipt['checks'].append('level 28 abyss pixels at fractional scales')
-                atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-                publisher = release_publisher(arcade)
-                store = ROOT / 'build/approved-releases'
-                publisher.stage_node_app(store, 'arcade', Path(config['key']), config['key_id'],
-                    inbe / 'apps/publishers.json', ledger_path=arcade / 'apps/versions.json', bundle_directory=arcade / 'build')
-                receipt['phase'] = 'uploading'
-                atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-                complete_release(config, receipt, output)
+    with log.open('a') as output:
+        def run(command, cwd=ROOT, environment=None):
+            subprocess.run(list(map(str, command)), cwd=cwd, env=environment,
+                           stdout=output, stderr=subprocess.STDOUT, check=True)
+        while True:
+            approved_hash = fingerprint()
+            approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
+            boards = [''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved]
+            ACTIVE_IDS = Queue(ROOT).claim(boards)
+            if not ACTIVE_IDS:
+                return 0
+            prior = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
+            if prior.get('phase') in ('uploading', 'published'):
+                status('Resuming checked release', 'verifying')
+                complete_release(config, prior, output)
                 if fingerprint() == approved_hash:
                     return 0
+                continue
+            ledger = json.loads((arcade / 'apps/versions.json').read_text())['node_apps']
+            if prior.get('approved_sha256') == approved_hash and prior.get('phase') != 'verified':
+                versions = prior['versions']
+            else:
+                versions = {name: next_version(ledger[name]['version']) for name in ('arcade', 'shovey', 'shovey-editor')}
+            receipt = dict(approved_sha256=approved_hash, approved_levels=len(approved), versions=versions, phase='building',
+                           approved_boards=[''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved])
+            atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
+            # Players get the approved levels within seconds; the release with
+            # the same levels built in follows after its checks.
+            status('Updating live levels', 'building')
+            receipt['live'] = publish_live(output)
+            atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
+            status('Building campaign', 'building')
+            changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
+                      f'- Play the approved Classic campaign through level {len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Keep your progress and use the integrated level editor.', True)
+            changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
+                      '- All objects stop at the abyss when testing Classic levels.\n- Create Classic or Island levels; story examples follow the approved Classic campaign.', True)
+            changelog(arcade / 'CHANGELOG.md', versions['arcade'],
+                      f'- Shovey includes approved Classic levels 1–{len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Existing Shovey saves and completed levels are retained.')
+            run([arcade / 'update_version.sh'], arcade)
+            run(['python3', 'tools/levels/levels.py', 'generate'])
+            run(['python3', 'tools/pixel/pixel.py', 'build'])
+            run(['python3', 'tools/levels/landscape.py'])
+            run(['python3', 'tools/levels/levels.py', 'previews'])
+            run(['make', 'solver'])
+            status('Checking winning routes and release', 'checking')
+            for level in approved:
+                board = ''.join(level['cells']) + ''.join(level['tiles']) + ''.join(level['decorations'])
+                run([ROOT / 'build/solver/shovey-solve-classic', 'verify', '--level', level['number'], board, level['solution']])
+            run(['sh', 'tests/release_test.sh', toolchain])
+            run(['python3', 'tests/assets_test.py'])
+            run(['make', 'all'], arcade)
+            status('Checking game screens', 'checking')
+            private = [
+                'env', '-u', 'DISPLAY', '-u', 'WAYLAND_DISPLAY', '-u', 'XAUTHORITY', '-u', 'DBUS_SESSION_BUS_ADDRESS',
+                '-u', 'SESSION_MANAGER', 'YUE_DESKTOP_RECOVERY=0', 'SDL_AUDIODRIVER=dummy',
+                'xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1600x1100x24']
+            run([*private, 'python3', arcade / 'tests/collection_ui_test.py', '--binary', arcade / 'build/arcade', '--inbe-source', inbe], arcade)
+            run([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade)
+            run([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
+                 '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
+            if len(approved) >= 28:
+                run([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
+                     '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
+            if fingerprint() != approved_hash:
+                # Requests for this snapshot join the next campaign build.
+                Queue(ROOT).advance(ACTIVE_IDS, 'building', 'Campaign changed; rebuilding')
+                continue
+            bundle = arcade / 'build/arcade.zib'
+            receipt.update(phase='checked', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
+                           checks=['approved routes', 'release boundary and saves', 'assets', 'Arcade UI', 'standalone Shovey UI', 'Inbe UI'])
+            if len(approved) >= 28:
+                receipt['checks'].append('level 28 abyss pixels at fractional scales')
+            atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
+            publisher = release_publisher(arcade)
+            store = ROOT / 'build/approved-releases'
+            publisher.stage_node_app(store, 'arcade', Path(config['key']), config['key_id'],
+                inbe / 'apps/publishers.json', ledger_path=arcade / 'apps/versions.json', bundle_directory=arcade / 'build')
+            receipt['phase'] = 'uploading'
+            atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
+            complete_release(config, receipt, output)
+            if fingerprint() == approved_hash:
+                return 0
+
+
+def main(force=False):
+    global ACTIVE_IDS
+    # Requests are durable before a worker starts. Waiting workers take the
+    # same lock, then see whether the previous worker already handled them.
+    with (STATE / 'publish.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
+            if force:
+                Queue(ROOT).enqueue(approved, available=len(approved))
+            boards = [''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved]
+            ACTIVE_IDS = Queue(ROOT).claim(boards)
+            if not ACTIVE_IDS:
+                return 0
+            return publish_campaign()
+        except Exception as error:
+            Queue(ROOT).fail(ACTIVE_IDS, error)
+            raise
 
 
 if __name__ == '__main__':

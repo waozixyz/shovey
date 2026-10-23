@@ -26,7 +26,33 @@ C
     # shellcheck disable=SC2046,SC2086
     "${CC:-cc}" -std=c11 -O2 -I"$toolchain/include" $includes $(find "$work/c" -name '*.c') \
         "$lib" -Wl,--gc-sections -lm -lpthread -o "$work/test"
-    (cd "$root" && "$work/test")
+    if [ "$edition" = import ]; then
+        # Import fixtures must leave room for additions and exist in public builds.
+        mkdir -p "$work/levels" "$work/build"
+        python3 - "$root" "$work" <<'PYTEST'
+import importlib.util, json, sys
+from pathlib import Path
+root, work = map(Path, sys.argv[1:])
+spec = importlib.util.spec_from_file_location('levels_tool', root / 'tools/levels/levels.py')
+levels = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(levels)
+classic = json.loads((root / 'levels/approved.json').read_text())['levels'][:2]
+classic.append(levels.finale(3))
+def rows(values):
+    return [''.join(f'{v:02x}' for v in values[at:at+12]) for at in range(0, 240, 12)]
+terrain = [int(3 <= at % 12 <= 8 and 5 <= at // 12 <= 14) for at in range(240)]
+objects = [0] * 240
+objects[7 * 12 + 5], objects[12 * 12 + 7] = 56, 75
+island = [dict(number=n, name=name, terrain=rows(terrain), objects=rows(objects), solution='3333322')
+          for n, name in enumerate(('First Landing', 'Test Shore', 'Test Lagoon'), 1)]
+for edition, boards in (('classic', classic), ('island', island)):
+    (work / 'levels' / (edition + '.json')).write_text(json.dumps(
+        dict(edition=edition, width=12, height=20, levels=boards), indent=1, ensure_ascii=False) + '\n')
+PYTEST
+        (cd "$work" && ./test)
+    else
+        (cd "$root" && "$work/test")
+    fi
 done
 echo 'Engines: opening the newest level, progress, saves and every board load passed for both editions'
 echo 'Editor: painting, coast, undo, records, play proofs, export, shared collections and the Ziran solver passed'

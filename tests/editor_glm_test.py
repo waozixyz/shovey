@@ -56,6 +56,43 @@ PLAN = dict(win_route_analysis='The red ball needs two pushes into the reusable 
 
 
 class Variations(unittest.TestCase):
+    def test_legacy_border_survives_layer_normalization(self):
+        source = board()
+        values = list(source)
+        for x in range(20):
+            for y in range(12):
+                if x in (0, 19) or y in (0, 11):
+                    index = at(x, y) * 2
+                    values[index:index + 2] = '0c'
+        source = ''.join(values)
+        restored = actions.preserve_border(source, '00' * 240 + source[480:])
+        for layer in range(3):
+            for x, y in ((0, 5), (19, 3), (7, 0), (4, 11)):
+                index = (layer * 240 + at(x, y)) * 2
+                self.assertEqual(restored[index:index + 2], source[index:index + 2])
+        self.assertEqual(restored[at(4, 3) * 2:at(4, 3) * 2 + 2], '00')
+
+    def test_reports_all_incorrect_coordinates_for_the_next_lesson(self):
+        proposal = dict(edits=[dict(layer='tiles', x=x, y=3, **{'from': 12, 'to': 95}) for x in (3, 4)])
+        with self.assertRaises(ValueError) as rejected:
+            actions.apply_proposal(board(), proposal, mode='redesign', partial=True)
+        self.assertIn('tiles (3,3) is 0, not 12', str(rejected.exception))
+        self.assertIn('tiles (4,3) is 0, not 12', str(rejected.exception))
+
+    def test_paint_recolor_and_unused_walls_do_not_count_as_a_new_strategy(self):
+        values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
+        values[at(4, 3)], values[at(5, 3)] = 2, 15
+        for x, y in [(x, 7) for x in range(2, 11)] + [(x, 8) for x in range(2, 5)]:
+            values[240 + at(x, y)] = 95
+        for x in (3, 5, 7): values[480 + at(x, 9)] = 137
+        candidate = ''.join(f'{kind:02x}' for kind in values)
+        source = actions.analyze_route(1, board(), '333332')
+        measured = actions.analyze_route(1, candidate, '333332')
+        self.assertGreater(measured['mechanics'], source['mechanics'])
+        with self.assertRaisesRegex(ValueError, 'old winning route'):
+            actions.check_redesign(board(), candidate,
+                dict(level=1, target=dict(source, solution='333332'), previous_board=None), measured)
+
     def test_glm53_uses_supported_reasoning_and_rejects_truncated_json(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory, \
                 patch.object(actions, 'DRAFTS', Path(directory)), \
@@ -95,20 +132,27 @@ class Variations(unittest.TestCase):
             self.assertEqual(len(design['work']['steps']), 3)
             self.assertFalse((Path(directory) / '001.glm-result').exists())
 
-    def test_guided_decoration_preserves_trail_floor_rules(self):
+    def test_guided_decoration_preserves_ground_but_allows_cosmetic_tiles_with_trail(self):
         import time
         values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
         values[at(2, 4)] = 11
         source = ''.join(f'{kind:02x}' for kind in values)
-        design = dict(work=dict(board=source, route='333332', deadline=time.monotonic() + 60,
-                               steps=[dict(stage='strategy'), dict(stage='structure')]))
-        proposal = dict(edits=[dict(layer='tiles', x=3, y=4, **{'from': 0, 'to': 99})])
+        design = dict(target=dict(goals=1, pushes=2, mechanics=0), work=dict(board=source, route='02333332', deadline=time.monotonic() + 60,
+                               steps=[dict(stage='strategy', explanation='Keep the trail pickup.'),
+                                      dict(stage='structure', explanation='Keep the ground semantics.')]))
+        proposal = dict(edits=[dict(layer='cells', x=3, y=4, **{'from': 0, 'to': 99})])
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory, \
                 patch.object(actions, 'DRAFTS', Path(directory)), \
                 patch.object(actions, 'glm_json', return_value=(proposal, 'glm-test')):
-            with self.assertRaisesRegex(ValueError, 'trail puzzle'):
+            with self.assertRaisesRegex(ValueError, 'puzzle mechanics'):
                 actions.guided_redesign(1, source, design, '', {})
             self.assertEqual(design['work']['board'], source)
+            proposal['edits'][0]['layer'] = 'tiles'
+            with patch.object(actions, 'check_redesign'):
+                result, _ = actions.guided_redesign(1, source, design, '', {})
+            candidate = actions.apply_proposal(source, result, mode='redesign', partial=True)
+            self.assertTrue(actions.verify_route(1, candidate, result['solution']))
+            self.assertIn('Cosmetic floor tiles', actions.analyze_route(1, candidate, result['solution'])['rules'])
 
     def test_redesign_plan_uses_verified_source_and_previous_level(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
@@ -145,6 +189,9 @@ class Variations(unittest.TestCase):
         self.assertEqual(pushes[-1]['piece_name'], 'red ball')
         self.assertEqual(pushes[-1]['target_name'], 'red pit')
         self.assertEqual(pushes[-1]['remaining'], 0)
+        self.assertIn([2, 3], replay['used_cells'])
+        self.assertIn([3, 3], replay['used_cells'])
+        self.assertIn([6, 3], replay['used_cells'])
         with self.assertRaises(ValueError):
             actions.analyze_route(1, board(), '3')
 
@@ -156,6 +203,21 @@ class Variations(unittest.TestCase):
                 patch.object(actions, 'DRAFTS', Path(directory)):
             measured = actions.difficulty(1, board(), route)
         self.assertEqual(measured['pushes'], 2)
+
+    def test_a_better_verified_route_replaces_a_cached_push_count(self):
+        loop = '33' + '2330' + '1' + '0112' + '33332'
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory, \
+                patch.object(actions, 'DRAFTS', Path(directory)):
+            actions.difficulty(1, board(), loop)
+            path = Path(directory) / 'difficulty.json'
+            cache = json.loads(path.read_text())
+            for key in cache:
+                cache[key] = dict(actions.analyze_route(1, board(), loop), solution=loop, tier=2)
+            path.write_text(json.dumps(cache))
+            measured = actions.difficulty(1, board(), '333332')
+            self.assertEqual(measured['pushes'], 2)
+            self.assertEqual(measured['solution'], '333332')
+            self.assertEqual(actions.difficulty(1, board(), '1')['pushes'], 2)
 
     def test_redesign_checks_structure_complexity_and_scenery(self):
         values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
@@ -296,7 +358,7 @@ class Variations(unittest.TestCase):
                 if mode == 'redesign':
                     context = json.loads(json.loads(request.call_args.args[0].data)['messages'][1]['content'])
                     self.assertEqual(context['redesign_plan'], PLAN)
-                    self.assertEqual(context['source_route_analysis']['pushes'], 2)
+                    self.assertEqual(context['current_route_analysis']['pushes'], 2)
 
     def test_redesigns_easier_than_the_source_are_rejected(self):
         values = [int(board()[i:i + 2], 16) for i in range(0, 1440, 2)]
@@ -529,13 +591,22 @@ class Variations(unittest.TestCase):
 
     def test_update_retries_approved_campaign_without_a_draft_or_approval(self):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
-            drafts = Path(directory)
+            root = Path(directory)
+            drafts = root / 'backup/editor-drafts'
+            drafts.mkdir(parents=True)
+            (root / 'backup/editor-publish.json').write_text('{}')
+            (root / 'levels').mkdir()
+            approved = actions.record(1, board(), '333332')
+            (root / 'levels/approved.json').write_text(json.dumps(dict(levels=[approved])))
             (drafts / 'publish-status').write_text('The previous update failed')
-            with patch.object(actions, 'DRAFTS', drafts), patch.object(actions.subprocess, 'Popen') as spawn:
-                actions.update()
-            self.assertIn('--force', spawn.call_args.args[0])
+            with patch.object(actions, 'ROOT', root), patch.object(actions, 'DRAFTS', drafts), patch.object(actions.subprocess, 'Popen') as spawn:
+                actions.update(number=1)
+            self.assertNotIn('--force', spawn.call_args.args[0])
+            job = json.loads((drafts / '001.publication').read_text())
+            self.assertEqual(job['state'], 'queued')
+            self.assertEqual(job['board'], board())
             self.assertTrue((drafts / 'publish-status').read_text())
-            self.assertEqual(sorted(path.name for path in drafts.iterdir()), ['publish-status'])
+            self.assertFalse((drafts / '001.hex').exists())
 
     def test_preserves_inventory_and_landscape_coordinates(self):
         candidate = actions.apply_proposal(board(), variation())

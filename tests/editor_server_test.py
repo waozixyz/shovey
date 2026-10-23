@@ -1,6 +1,8 @@
 """A local publication marker must never stand in for a different server release."""
 import importlib.util
+import json
 from pathlib import Path
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +33,29 @@ class ServerCampaignTest(unittest.TestCase):
         cached = dict(release=self.release, boards=self.boards)
         pending = dict(phase='building', approved_boards=['01' * 720])
         self.assertEqual(server.campaign_boards(self.release, pending, cached), self.boards)
+
+    def test_verified_history_survives_a_new_build_and_an_older_editor_cache(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            server.remember_verified(root, self.receipt)
+            history = json.loads(server.history_path(root, self.release).read_text())
+            pending = dict(phase='building', approved_boards=['01' * 720])
+            older_cache = dict(release=self.release | dict(sequence=33), boards=['02' * 720])
+            self.assertEqual(server.campaign_boards(self.release, pending, older_cache, history), self.boards)
+            cached = json.loads((root / 'backup/editor-drafts/server-campaign.json').read_text())
+            self.assertEqual(cached['boards'], self.boards)
+
+    def test_history_requires_the_exact_public_release(self):
+        history = dict(release=self.release, boards=self.boards)
+        with self.assertRaises(ValueError):
+            server.campaign_boards(self.release | dict(sequence=35), {}, {}, history)
+
+    def test_same_verified_artifact_cannot_be_assigned_different_boards(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            server.remember_verified(root, self.receipt)
+            with self.assertRaises(ValueError):
+                server.remember_verified(root, self.receipt | dict(approved_boards=['01' * 720]))
 
     def test_unverified_local_build_cannot_claim_server_match(self):
         with self.assertRaises(ValueError):

@@ -34,11 +34,23 @@ campaign = dict(levels=[dict(level, number=n, tiles=rows(tiles), decorations=row
 (profile / 'levels/approved.json').write_text(json.dumps(campaign))
 (drafts / 'publish-status').write_text('Published')
 (drafts / '001.published').write_text(''.join(rows(pieces) + rows(tiles)) + '00' * 240)
+(drafts / '002.hex').write_text(''.join(rows(pieces) + rows(tiles)) + '00' * 240)
 (profile / 'scripts/editor_actions.py').write_text('''from pathlib import Path
-import sys, time
+import sys, time, json
 root = Path('backup/editor-drafts')
 (root / 'worker-started').write_text(' '.join(sys.argv[1:]))
+if sys.argv[1] in ('update', 'approve'):
+    number = int(sys.argv[2])
+    level = json.loads(Path('levels/approved.json').read_text())['levels'][number - 1]
+    board = ''.join(level['cells'] + level['tiles'] + level['decorations'])
+    request = root / f'{number:03}.approval-request'
+    if request.exists(): board = request.read_text().splitlines()[0]
+    job = dict(board=board, state='checking')
+    (root / f'{number:03}.publication').write_text(json.dumps(job))
 time.sleep(2)
+if sys.argv[1] in ('update', 'approve'):
+    job['state'] = 'published'
+    (root / f'{number:03}.publication').write_text(json.dumps(job))
 (root / 'worker-done').write_text('done')
 if sys.argv[1] in ('glm', 'glm-redesign', 'glm-prettify', 'fix'):
     (root / (f'{int(sys.argv[2]):03}.glm-state')).write_text('error')
@@ -104,6 +116,12 @@ with (output / 'app.log').open('w') as log:
         time.sleep(0.15)
         assert (drafts / 'place').read_text().strip() == '2'
         assert not (drafts / 'worker-done').exists()
+        # Level 1's publication cannot disable Level 2's update.
+        click(350, 66)
+        for attempt in range(40):
+            if (drafts / 'worker-started').read_text() == 'update 2': break
+            time.sleep(.025)
+        assert (drafts / 'worker-started').read_text() == 'update 2', 'Another level was globally blocked'
         subprocess.run(['import', '-window', window, str(output / 'editor.png')], check=True)
         for attempt in range(100):
             if (drafts / 'worker-done').exists():
@@ -199,8 +217,9 @@ with (output / 'app.log').open('w') as log:
         (drafts / 'worker-started').unlink()
         click(670, 66)
         time.sleep(.2)
-        assert not (drafts / 'worker-started').exists(), 'Bulk checking allowed an overlapping update'
+        assert (drafts / 'worker-started').read_text() == 'update-all 1', 'Bulk update could not enter the queue'
         time.sleep(2.1)
+        (drafts / 'worker-started').unlink()
         (drafts / 'publish-status').write_text('Published · 1 not updated')
         time.sleep(.7)
         click(560, 66)

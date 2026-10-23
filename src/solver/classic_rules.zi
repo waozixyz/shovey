@@ -15,6 +15,7 @@
 // which the searches keep beside the key. Level, move and teleport counters
 // are constant or cosmetic and stay out.
 #import, file "../engine.zi";
+#import, file "classic_deadlocks.zi";
 
 // The loaded board, the game keys are differences from, the decoded state
 // actions start from and the game an action changed.
@@ -328,6 +329,8 @@ SolveClassicPrepare :: () {
 // the plates, the board is lost. A crate frozen in place off a plate can
 // reach none.
 SolveClassicDead :: () -> bool {
+    if (solve_classic_game.powers & SHOVEY_TRAIL) != 0 { solve_classic_work += 40 }
+    if SolveTrailBallsBlocked(*solve_classic_game) { return true }
     game := *solve_classic_game
     solve_classic_work += 5
     usable: s32 = 0

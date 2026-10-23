@@ -152,6 +152,39 @@ try {
   await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x: 195, y: 680, button: 'left', buttons: 0, clickCount: 1});
   assert.notEqual((await settle('Module.FS.analyzePath("/kryon-apps/shovey/campaign").exists', value => value)), false, 'Play did not open the campaign');
   await delay(500);
+  async function campaignMoves() {
+    return evaluate(`(() => {
+      const fs = Module.FS;
+      const path = '/kryon-apps/shovey/campaign';
+      return fs.analyzePath(path).exists ? parseInt(fs.readFile(path, {encoding: 'utf8'}).slice(191, 199), 16) : 0;
+    })()`);
+  }
+  const beforeHold = await campaignMoves();
+  await call('Input.dispatchMouseEvent', {type: 'mousePressed', x: 50, y: 225, button: 'left', buttons: 1, clickCount: 1});
+  await delay(1800);
+  const duringHold = await campaignMoves();
+  await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x: 50, y: 225, button: 'left', buttons: 0, clickCount: 1});
+  assert(duringHold - beforeHold >= 3, `Holding the board did not repeat movement: ${beforeHold} -> ${duringHold}`);
+  await delay(350);
+  assert.equal(await campaignMoves(), duringHold, 'Movement continued after releasing the board');
+  async function keyEvent(type, code, key, repeat = false) {
+    await evaluate(`document.querySelector('canvas').dispatchEvent(new KeyboardEvent(${JSON.stringify(type)}, {code: ${JSON.stringify(code)}, key: ${JSON.stringify(key)}, repeat: ${repeat}, bubbles: true, cancelable: true}))`);
+  }
+  await keyEvent('keydown', 'KeyR', 'r');
+  await delay(200);
+  await keyEvent('keyup', 'KeyR', 'r');
+  const beforeKeys = await campaignMoves();
+  await keyEvent('keydown', 'ArrowLeft', 'ArrowLeft');
+  for (let at = 0; at < 5; at++) {
+    await delay(160);
+    await keyEvent('keydown', 'ArrowLeft', 'ArrowLeft', true);
+  }
+  await delay(200);
+  await keyEvent('keyup', 'ArrowLeft', 'ArrowLeft');
+  const afterKeys = await campaignMoves();
+  assert(afterKeys - beforeKeys >= 4, `Held arrow key did not repeat movement: ${beforeKeys} -> ${afterKeys}`);
+  await delay(300);
+  assert.equal(await campaignMoves(), afterKeys, 'Keyboard movement continued after release');
   async function pressGameKey(key, code, number) {
     await call('Input.dispatchKeyEvent', {type: 'keyDown', key, code, windowsVirtualKeyCode: number});
     await delay(100);
@@ -198,17 +231,29 @@ try {
   assert(afterMuteShot !== beforeMuteShot, 'Mute button did not redraw: ' + diagnostics);
 
   await evaluate(`(() => {
+    globalThis.testPreviewReads = [];
+    const original = Module.FS.open;
+    Module.FS.open = function(path, ...args) {
+      if (typeof path === 'string' && (path.includes('/levels/') || path.includes('/levels-landscape/'))) testPreviewReads.push(path);
+      return original.call(this, path, ...args);
+    };
+  })()`);
+  const beforeSelector = await canvasSignature();
+  await evaluate(`(() => {
     const canvas = document.querySelector('canvas');
     for (const type of ['mousedown', 'mouseup', 'click']) {
-      canvas.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: 114, clientY: 26, button: 0, buttons: type === 'mousedown' ? 1 : 0}));
+      canvas.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: 26, clientY: 26, button: 0, buttons: type === 'mousedown' ? 1 : 0}));
     }
   })()`);
   await delay(500);
   const portraitSelector = await canvasSignature();
-  assert.notEqual(portraitSelector.sum, initial.sum, 'Levels selector did not redraw: ' + diagnostics + browserErrors);
+  assert.notEqual(portraitSelector.sum, beforeSelector.sum, 'Levels selector did not redraw: ' + diagnostics + browserErrors);
 
+  assert(await settle('testPreviewReads.some(path => path.endsWith("/levels/1.png"))', value => value), 'Portrait selector did not load a portrait board');
+  await writeFile(join(shots, 'portrait-selector.png'), Buffer.from((await call('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
   await call('Emulation.setDeviceMetricsOverride', {width: 844, height: 390, deviceScaleFactor: 1, mobile: true});
   await delay(500);
+  assert(await settle('testPreviewReads.some(path => path.endsWith("/levels-landscape/1.png"))', value => value), 'Landscape selector did not load a landscape board');
   const landscapeSelector = await canvasSignature();
   assert.equal(landscapeSelector.height, 390);
   assert.notEqual(landscapeSelector.sum, portraitSelector.sum, 'Landscape selector reused the portrait layout');

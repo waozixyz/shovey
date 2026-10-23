@@ -168,7 +168,15 @@ def save(image, path):
     # A shared palette keeps 350 pictures small without visible banding.
     image = image.convert('RGB').quantize(colors=192, method=2, dither=1)
     path.parent.mkdir(parents=True, exist_ok=True)
-    image.save(path, optimize=True)
+    # A reader must see a complete PNG while previews are regenerated.
+    import tempfile
+    with tempfile.NamedTemporaryFile(dir=path.parent, suffix='.png', delete=False) as stream:
+        temporary = Path(stream.name)
+    try:
+        image.save(temporary, format='PNG', optimize=True)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def previews(cell):

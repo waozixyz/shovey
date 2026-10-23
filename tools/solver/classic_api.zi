@@ -14,6 +14,7 @@
 //   724       1 when won, 2 when lost
 // Level, move and teleport counters are constant or cosmetic and stay out.
 #import, file "../../src/engine.zi";
+#import, file "../../src/solver/classic_deadlocks.zi";
 
 CLASSIC_STATE_SIZE :: 725
 
@@ -452,6 +453,7 @@ ClassicApiWalkerFree :: (action: s32) -> s32 {
 // edge count. The macro searches drop such states.
 #program_export
 ClassicApiDead :: () -> s32 {
+    if SolveTrailBallsBlocked(*classic_game) { return 1 }
     balls: [6]s32
     holes: [6]s32
     paint: [6]s32

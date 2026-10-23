@@ -1,27 +1,53 @@
 #!/usr/bin/env python3
 """Check the live signed release against the exact campaign published by this editor."""
 import fcntl
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
 import re
 import time
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from publication_queue import Queue, atomic
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def campaign_boards(release, receipt, cached):
+def campaign_boards(release, receipt, cached, history=None):
     """Only reuse boards tied to this exact signed server release."""
     if receipt.get('phase') in ('published', 'verified') and receipt.get('release') == release:
         boards = receipt.get('approved_boards')
     elif cached.get('release') == release:
         boards = cached.get('boards')
+    elif history and history.get('release') == release:
+        boards = history.get('boards')
     else:
         raise ValueError('Server campaign is not in the verified publication history')
     if not isinstance(boards, list) or not 1 <= len(boards) <= 175 or any(
             not isinstance(board, str) or not re.fullmatch('[0-9a-f]{1440}', board) for board in boards):
         raise ValueError('The published campaign snapshot is incomplete')
     return boards
+
+
+def history_path(root, release):
+    digest = hashlib.sha256(json.dumps(release, sort_keys=True).encode()).hexdigest()
+    return root / 'backup/approved-publications' / (digest + '.json')
+
+
+def remember_verified(root, receipt):
+    """Called only after the publisher verifies this exact signed artifact."""
+    release = receipt['release']
+    boards = campaign_boards(release, receipt, {})
+    snapshot = dict(status='verified', checked_at=int(time.time()), release=release, boards=boards)
+    path = history_path(root, release)
+    if path.exists() and campaign_boards(release, {}, {}, read_json(path)) != boards:
+        raise ValueError('The verified release already has a different campaign snapshot')
+    atomic(path, json.dumps(snapshot, separators=(',', ':')) + '\n')
+    # The next build may start immediately; the editor need not catch the
+    # fleeting interval when approved-publication.json says "verified".
+    atomic(root / 'backup/editor-drafts/server-campaign.json', json.dumps(snapshot, separators=(',', ':')) + '\n')
 
 
 def read_json(path):
@@ -33,6 +59,7 @@ def check(root=ROOT):
     config_path = root / 'backup/editor-publish.json'
     if not config_path.exists():
         return
+    Queue(root).reconcile()
     with (state / 'server-check.lock').open('a') as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -53,7 +80,8 @@ def check(root=ROOT):
             pins = read_json(Path(config['inbe_source']) / 'apps/publishers.json')
             publisher.validate_release(release, 'inbe.arcade', pins)
             receipt = read_json(root / 'backup/approved-publication.json')
-            boards = campaign_boards(release, receipt, previous)
+            history = read_json(history_path(root, release))
+            boards = campaign_boards(release, receipt, previous, history)
             result = dict(status='verified', checked_at=int(time.time()), release=release, boards=boards)
         except Exception as error:
             # Keep the previous authenticated snapshot for a later retry, but

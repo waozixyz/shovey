@@ -1,6 +1,6 @@
 # Shovey
 
-[Play Shovey online](https://waozixyz.github.io/shovey/). The browser game updates automatically after the checks pass on `master`.
+[Play Shovey online](https://shovey.waozi.xyz/). Cloudflare Pages updates the browser game automatically after the checks pass on `master`.
 
 **Push. Solve. Come home.**
 
@@ -14,7 +14,7 @@ board one move at a time.
 
 [Download the signed Android APK](https://github.com/waozixyz/shovey/releases/latest).
 
-- **30 Classic levels**, with a checked winning route for every published puzzle.
+- **39 Classic levels**, with a checked winning route for every published puzzle.
 - **Touch and keyboard controls**, with portrait and landscape layouts.
 - **Saved progress**, restart and a level chooser for revisiting unlocked puzzles.
 - **An integrated level editor** for making and testing your own boards.

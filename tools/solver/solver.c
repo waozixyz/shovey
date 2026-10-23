@@ -750,7 +750,7 @@ static int Solve(const char *hex, const Options *options) {
         if (!action) { fprintf(stderr, "invalid prefix action\n"); return 2; }
         if (API(Won)()) continue;
         API(Act)((int32_t)(action - LETTERS));
-        if (API(Lost)() || (!API(Won)() && API(Dead)())) {
+        if (API(Lost)() || (options->repair && !API(Won)() && API(Dead)())) {
             if (!options->repair) { fprintf(stderr, "prefix fails at step %zu\n", step + 1); return 1; }
             API(Decode)(root_vector);
             fprintf(stderr, "repair checkpoint %zu/%zu\n", prefix_length, strlen(prefix));
@@ -824,6 +824,8 @@ static int Verify(const char *hex, const char *route, int level, bool analyze, b
        Nothing is emitted until the complete route has actually won. */
     struct Event { int step, action, from, to, piece, target, destination, remaining, used, identity; } events[160];
     int event_count = 0, event_total = 0, identity[CELLS];
+    bool used_cells[CELLS] = {false};
+    used_cells[classic_game.player] = true;
     for (int at = 0; at < CELLS; at++) identity[at] = at;
 #else
     (void)explain;
@@ -860,6 +862,8 @@ static int Verify(const char *hex, const char *route, int level, bool analyze, b
             if (kind == 9) crate_pushes++;
             if ((kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46)) ball_pushes++;
 #if defined(SHOVEY_CLASSIC)
+            used_cells[from] = used_cells[classic_game.player] = true;
+            if (destination >= 0) used_cells[destination] = true;
             if (kind && destination >= 0) { identity[destination] = object_id; identity[piece_at] = -1; }
             if (explain && (kind || used || API(Remaining)() != remaining || API(Won)())) {
                 event_total++;
@@ -895,6 +899,10 @@ static int Verify(const char *hex, const char *route, int level, bool analyze, b
                    e.destination < 0 ? -1 : e.destination / 12, e.destination < 0 ? -1 : 11 - e.destination % 12,
                    e.remaining, e.used);
         }
+        printf("],\"used_cells\":[");
+        int shown = 0;
+        for (int at = 0; at < CELLS; at++) if (used_cells[at])
+            printf("%s[%d,%d]", shown++ ? "," : "", at / 12, 11 - at % 12);
         printf("]");
     }
 #endif
