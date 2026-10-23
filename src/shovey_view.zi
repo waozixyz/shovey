@@ -643,6 +643,8 @@ ShoveyFrame :: () {
                 at := number - 1
                 bounds := Rectangle.{scroll.content.x + cast(float32)(at % columns) * (cell + 8.0),
                     scroll.content.y + cast(float32)(at / columns) * cast(float32)row_height, cell, preview_height + 52.0}
+                // Only the cards in view are built; slow phones paid for all of them every frame.
+                if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
                 unlocked := ShoveyLevelUnlocked(*progress, number)
                 completed := progress.completed[at]
                 digits: [24]u8
@@ -819,7 +821,7 @@ ShoveyFrame :: () {
     // No move or piece counters: the line speaks only when there is news.
     status := ""
     status_icon := ""
-    if ShoveyRemaining(*game) == 0 {
+    if BoardRemaining() == 0 {
         status = AppLocaleHost("shovey_ready")
         status_icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10"
     }

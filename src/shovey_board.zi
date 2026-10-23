@@ -544,8 +544,13 @@ BoardCacheCurrent :: (game: *ShoveyGame, landscape: bool) -> bool {
     return true
 }
 
+// Tasks left on the drawn board, counted when the board changes.
+board_remaining: s32;
+BoardRemaining :: () -> s32 { return board_remaining }
+
 BoardCacheKeep :: (game: *ShoveyGame, landscape: bool) {
     board_cache_animated_count = 0
+    board_remaining = ShoveyRemaining(game)
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         board_cache_ground[at] = game.ground[at]
         board_cache_objects[at] = game.objects[at]
@@ -593,7 +598,7 @@ BoardGuides :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u
         board_idle_level = game.level; board_idle_moves = game.moves; board_idle_since = now
     }
     breath := cast(float32)(0.5 + 0.5 * Math.Sin(now * 2.4))
-    if ShoveyRemaining(game) == 0 {
+    if board_remaining == 0 {
         if board_home_since < 0.0 { board_home_since = now }
         rise := cast(float32)((now - board_home_since) / 0.6)
         if rise > 1.0 { rise = 1.0 }

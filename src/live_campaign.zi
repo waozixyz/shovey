@@ -90,6 +90,17 @@ LiveCheckLevel :: () -> bool {
     if !LiveLayer(document, level_at, "cells", board, *length) ||
     !LiveLayer(document, level_at, "tiles", board, *length) ||
     !LiveLayer(document, level_at, "decorations", board, *length) { return false }
+    // The cursor moves past this level, to the next one or the array's end.
+    after := Space(document, ValueEnd(document, level_at, 0))
+    if after >= 0 && after < cast(s32)document.count && document[after] == #char "," { after = Space(document, after + 1) }
+    live_check.next_at = after
+    // A board the game already plays was proven, when this release was
+    // built or by an earlier check, so only new or changed boards replay
+    // their routes.
+    if TextView(board[:length]) == ShoveyLevelBoard(index + 1) {
+        live_check.index += 1
+        return true
+    }
     route_length := ReadStringText(document, FieldAt(document, level_at, "solution"), live_route[:])
     if route_length < 1 { return false }
     // Checked as level 1, which is never the closing board.
@@ -97,10 +108,6 @@ LiveCheckLevel :: () -> bool {
     live_check.route_length = route_length
     live_check.route_at = 0
     live_check.replaying = true
-    // The cursor moves past this level, to the next one or the array's end.
-    after := Space(document, ValueEnd(document, level_at, 0))
-    if after >= 0 && after < cast(s32)document.count && document[after] == #char "," { after = Space(document, after + 1) }
-    live_check.next_at = after
     return true
 }
 
@@ -125,7 +132,9 @@ LiveCheckInstall :: () -> string {
 // form), 0 when it is refused, and -1 while it needs more frames.
 ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
     document := live_check.document
-    if !live_check.replaying {
+    // Boards already in this release pass without replaying, several a frame.
+    read: s32 = 0
+    while !live_check.replaying {
         at := live_check.next_at
         if at >= 0 && at < cast(s32)document.count && document[at] == #char "]" {
             if live_check.index < 1 { return 0 }
@@ -134,7 +143,8 @@ ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
             return 1
         }
         if !LiveCheckLevel() { return 0 }
-        return -1
+        read += 1
+        if read >= 8 { return -1 }
     }
     game := *live_check.game
     done: s32 = 0
