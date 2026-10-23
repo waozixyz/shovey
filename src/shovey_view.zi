@@ -150,8 +150,13 @@ TileName :: (kind: s32) -> string {
     return AppLocaleHost(ShoveyPieceKey(kind))
 }
 
-// Each sprite number's description, for the board's pictures.
+// Each sprite number's description, for the board's pictures. The names
+// come from the host's locale, so they are read once, not every frame.
+sprite_names_ready: bool;
+
 SpriteNames :: () {
+    if sprite_names_ready { return }
+    sprite_names_ready = true
     for kind: cast(s32)0..40 { sprite_names[kind] = TileName(kind) }
     sprite_names[SPRITE_CHERRY] = TileName(56)
     for kind: cast(s32)44..55 { sprite_names[SPRITE_NEW_COLOR + kind - 44] = TileName(kind) }
@@ -195,6 +200,49 @@ ChangeLevel :: (level: s32) {
         help_open = false
         Remember()
     }
+}
+
+// Animals wander on their own: each waits its own random half second to two
+// seconds between steps and glides to the next cell, so a field of ducks
+// never moves in step. Stored routes keep the engine's shared tick.
+animal_due: [SHOVEY_CELLS]float64;
+animal_level: s32;
+animal_random: u32 = 2463534242;
+
+AnimalRoll :: () -> u32 {
+    animal_random = animal_random ^ (animal_random << 13)
+    animal_random = animal_random ^ (animal_random >> 17)
+    animal_random = animal_random ^ (animal_random << 5)
+    return animal_random
+}
+
+AnimalWait :: (shortest: float64, longest: float64) -> float64 {
+    return shortest + (longest - shortest) * cast(float64)(AnimalRoll() % 1000) / 1000.0
+}
+
+AnimalsWander :: () -> bool {
+    if game.won || game.lost || game.level == ShoveyFinaleLevel() { return false }
+    if animal_level != game.level {
+        for at: cast(s32)0..SHOVEY_CELLS - 1 { animal_due[at] = 0.0 }
+        BoardGlidesClear()
+        animal_level = game.level
+    }
+    moved: [SHOVEY_CELLS]bool
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { moved[at] = false }
+    changed := false
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if moved[at] || !ShoveyAnimal(game.ground[at]) { continue }
+        if animal_due[at] <= 0.0 { animal_due[at] = frame.now + AnimalWait(0.2, 1.6); continue }
+        if frame.now < animal_due[at] { continue }
+        to := ShoveyAnimalStep(*game, at, AnimalRoll())
+        animal_due[at] = 0.0
+        if to < 0 { continue }
+        moved[to] = true
+        animal_due[to] = frame.now + AnimalWait(0.5, 2.0)
+        BoardGlideStart(at, to, frame.now)
+        changed = true
+    }
+    return changed
 }
 
 // Moves (or throws, for direction -1) and plays what the move did.
@@ -418,7 +466,8 @@ ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) 
 }
 
 TitleEnter :: (page: s32) {
-    if page == 0 { title_open = false }
+    // Entering play keeps the campaign, so its record exists from the start.
+    if page == 0 { title_open = false; Remember() }
     if page == 1 { OpenEditor() }
 }
 
@@ -618,10 +667,13 @@ ShoveyFrame :: () {
         changed = true
     }
     sliding := slide_next < slide_count
+    // Moving blocks and animals never decide a level, so their steps are
+    // saved with the next move instead of writing the save every second.
     if !sliding && frame.now - last_tick >= 1.0 {
-        changed = ShoveyTick(*game) || changed
+        unused ShoveyBlocksTick(*game)
         last_tick = frame.now
     }
+    if !sliding { unused AnimalsWander() }
     SpriteNames()
     grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:], landscape)
     // No move or piece counters: the line speaks only when there is news.

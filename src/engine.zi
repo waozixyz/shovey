@@ -670,6 +670,13 @@ ShoveyAnimalsTick :: (game: *ShoveyGame) -> bool {
 
 ShoveyTick :: (game: *ShoveyGame) -> bool {
     if game.won || game.lost || game.level == ShoveyFinaleLevel() { return false }
+    moved := ShoveyBlocksTick(game)
+    return ShoveyAnimalsTick(game) || moved
+}
+
+// Moving blocks advance one cell along their paths.
+ShoveyBlocksTick :: (game: *ShoveyGame) -> bool {
+    if game.won || game.lost || game.level == ShoveyFinaleLevel() { return false }
     occupied: [SHOVEY_CELLS]bool
     reserved: [SHOVEY_CELLS]bool
     for at: cast(s32)0..SHOVEY_CELLS - 1 { occupied[at] = false; reserved[at] = false }
@@ -711,7 +718,40 @@ ShoveyTick :: (game: *ShoveyGame) -> bool {
         reserved[to] = true
         moved = true
     }
-    return ShoveyAnimalsTick(game) || moved
+    return moved
+}
+
+// One animal takes its own step, by the rules of ShoveyAnimalsTick: it turns
+// freely and turns back only when that is its sole way out. `roll` picks
+// among its ways. Returns the cell it moved to, or -1 when it stays.
+ShoveyAnimalStep :: (game: *ShoveyGame, at: s32, roll: u32) -> s32 {
+    if game.won || game.lost || at < 0 || at >= SHOVEY_CELLS { return -1 }
+    kind := game.ground[at]
+    if !ShoveyAnimal(kind) { return -1 }
+    aquatic := ShoveyFish(kind)
+    direction := game.light_from[at]
+    choices: [4]s32
+    count: s32 = 0
+    reverse: s32 = -1
+    for facing: cast(s32)0..3 {
+        to := ShoveyNeighbor(at, facing)
+        if to < 0 || to == game.player || game.objects[to] != 0 { continue }
+        if aquatic {
+            if game.ground[to] != 64 || game.tiles[to] != 64 { continue }
+        } else if game.ground[to] != 0 { continue }
+        if direction >= 0 && direction <= 3 && facing == (direction + 2) % 4 { reverse = facing; continue }
+        choices[count] = facing
+        count += 1
+    }
+    if count == 0 && reverse >= 0 { choices[0] = reverse; count = 1 }
+    if count == 0 { return -1 }
+    facing := choices[cast(s32)(roll % cast(u32)count)]
+    to := ShoveyNeighbor(at, facing)
+    game.ground[at] = ifx aquatic then 64 else 0
+    game.light_from[at] = 4
+    game.ground[to] = kind
+    game.light_from[to] = facing
+    return to
 }
 
 save_bytes: [2432]u8;

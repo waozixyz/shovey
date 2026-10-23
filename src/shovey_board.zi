@@ -362,12 +362,103 @@ PlayerSprite :: (game: *ShoveyGame, landscape: bool = false) -> s32 {
 // Draws the board fitted in bounds. `names` describes each sprite number.
 // The caller chooses the same orientation used for its input mapping.
 // Uses keys from `key` to key + 4 * SHOVEY_CELLS + 1.
+// Animals that step on their own glide to their new cell instead of jumping.
+BOARD_GLIDES :: 32
+BOARD_GLIDE_SECONDS :: 0.45
+BoardGlide :: struct {
+    from: s32
+    to: s32
+    start: float64
+}
+board_glides: [BOARD_GLIDES]BoardGlide;
+board_gliding: [SHOVEY_CELLS]s32;
+
+// Starts an animal's glide from one cell to the next.
+BoardGlideStart :: (from: s32, to: s32, now: float64) {
+    slot: s32 = 0
+    for index: cast(s32)0..BOARD_GLIDES - 1 {
+        if board_glides[index].start < board_glides[slot].start { slot = index }
+    }
+    board_glides[slot] = BoardGlide.{.from = from, .to = to, .start = now}
+}
+
+// The layers drawn last frame and the board they show. Most frames only the
+// water and sensors change, so the layers are rebuilt only when a cell,
+// a glide, Shovey or the orientation changed; otherwise just those
+// animated cells are refreshed. A cell's sprite can depend on other cells
+// (buttons, levers), so any change rebuilds every layer.
+board_cache_ground: [SHOVEY_CELLS]s32;
+board_cache_objects: [SHOVEY_CELLS]s32;
+board_cache_light: [SHOVEY_CELLS]s32;
+board_cache_tiles: [SHOVEY_CELLS]s32;
+board_cache_decorations: [SHOVEY_CELLS]s32;
+board_cache_gliding: [SHOVEY_CELLS]s32;
+board_cache_player: s32 = -2;
+board_cache_landscape: bool;
+board_cache_animated: [SHOVEY_CELLS]s32;
+board_cache_animated_count: s32;
+
+BoardCacheCurrent :: (game: *ShoveyGame, landscape: bool) -> bool {
+    if board_cache_player != game.player || board_cache_landscape != landscape { return false }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if board_cache_ground[at] != game.ground[at] || board_cache_objects[at] != game.objects[at] ||
+        board_cache_light[at] != game.light_from[at] || board_cache_tiles[at] != game.tiles[at] ||
+        board_cache_decorations[at] != game.decorations[at] || board_cache_gliding[at] != board_gliding[at] { return false }
+    }
+    return true
+}
+
+BoardCacheKeep :: (game: *ShoveyGame, landscape: bool) {
+    board_cache_animated_count = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        board_cache_ground[at] = game.ground[at]
+        board_cache_objects[at] = game.objects[at]
+        board_cache_light[at] = game.light_from[at]
+        board_cache_tiles[at] = game.tiles[at]
+        board_cache_decorations[at] = game.decorations[at]
+        board_cache_gliding[at] = board_gliding[at]
+        ground := game.ground[at]
+        if game.tiles[at] == 64 || ground == 22 || ground == 24 || ground == 41 || ground == 42 {
+            board_cache_animated[board_cache_animated_count] = at
+            board_cache_animated_count += 1
+        }
+    }
+    board_cache_player = game.player
+    board_cache_landscape = landscape
+}
+
+BoardGlidesClear :: () {
+    for index: cast(s32)0..BOARD_GLIDES - 1 { board_glides[index] = BoardGlide.{} }
+}
+
 ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string,
     landscape: bool) -> TileMapResult {
     if !sprites_ready { SpritesPrepare() }
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { board_gliding[at] = -1 }
+    for index: cast(s32)0..BOARD_GLIDES - 1 {
+        glide := board_glides[index]
+        if glide.start > 0.0 && now - glide.start < BOARD_GLIDE_SECONDS && glide.to >= 0 && glide.to < SHOVEY_CELLS &&
+        ShoveyAnimal(game.ground[glide.to]) && game.objects[glide.to] == 0 {
+            board_gliding[glide.to] = index
+        }
+    }
+    cached := BoardCacheCurrent(game, landscape)
+    if cached {
+        // Only water ripples and sensors move.
+        for index: cast(s32)0..board_cache_animated_count - 1 {
+            at := board_cache_animated[index]
+            display := BoardDisplayIndex(at, landscape)
+            if game.tiles[at] == 64 { board_layers[display] = KindSprite(game, 64, at, now, landscape) }
+            ground := game.ground[at]
+            if ground == 22 || ground == 24 || ground == 41 || ground == 42 {
+                board_layers[SHOVEY_CELLS + display] = KindSprite(game, ground, at, now, landscape)
+            }
+        }
+    }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if cached { break }
         ground := game.ground[at]
         object := game.objects[at]
         display := BoardDisplayIndex(at, landscape)
@@ -392,15 +483,36 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
         decoration := game.decorations[at]
         board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
-        piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) then ground else 0
+        piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) && board_gliding[at] < 0 then ground else 0
         board_layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now, landscape)
     }
+    if !cached { BoardCacheKeep(game, landscape) }
     // Mobile density can put tile edges between physical pixels even with
     // integer logical cells. Match the abyss interior behind the tiles so
     // those edges cannot reveal a pale grid through a joined opening.
     grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
             .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
             .fill = Color.{2, 4, 5, 255}, .label = "Shovey", .pixel_snap = true, .nearest_tiles = abyss_sprite_indices[:]})
+    glide_files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        index := board_gliding[at]
+        if index < 0 { continue }
+        glide := board_glides[index]
+        from_cell := TileMapCell(grid, BoardDisplayIndex(glide.from, landscape))
+        to_cell := TileMapCell(grid, BoardDisplayIndex(glide.to, landscape))
+        progress := cast(float32)((now - glide.start) / BOARD_GLIDE_SECONDS)
+        eased := progress * progress * (3.0 - 2.0 * progress)
+        // Land animals give a small hop; fish just swim.
+        hop: float32 = ifx ShoveyFish(game.ground[at]) then 0.0 else 4.0 * progress * (1.0 - progress) * to_cell.height * 0.08
+        cell := Rectangle.{from_cell.x + (to_cell.x - from_cell.x) * eased, from_cell.y + (to_cell.y - from_cell.y) * eased - hop,
+            to_cell.width, to_cell.height}
+        sprite := KindSprite(game, game.ground[at], at, now, landscape)
+        if sprite >= 0 {
+            Image(session, ImageProps.{.key = key + cast(u64)(3 + SHOVEY_CELLS * 4 + index), .asset_path = glide_files[sprite],
+                    .alt_text = ifx cast(s64)sprite < names.count then names[sprite] else "", .bounds = cell,
+                    .fit = ImageFit.ImageFitContain, .smooth = true})
+        }
+    }
     if game.player >= 0 && game.player < SHOVEY_CELLS {
         files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
         portal := PortalTravelProgress(game, now)
