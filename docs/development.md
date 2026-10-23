@@ -4,6 +4,19 @@
 
 Run the commands below from the repository root.
 
+
+## Build and test
+
+Shovey uses [Ziran](https://github.com/ziranlang/ziran) and
+[Kryon](https://github.com/kryonlabs/kryon).
+
+```sh
+make bundles    # Portable game and integrated-editor bundles
+make desktop    # Standalone desktop app in build/desktop/shovey/
+make web        # Browser build in build/web/
+make test       # Replay stored solutions and check game assets
+```
+
 ## Levels
 
 `levels/classic.json` and `levels/island.json` hold every board. Each one
