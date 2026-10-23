@@ -14,8 +14,8 @@ board one move at a time.
 
 [Download Shovey for Android, Linux or Windows](https://github.com/waozixyz/shovey/releases/latest).
 
-- **39 Classic levels**, with a checked winning route for every published puzzle.
-- **Touch and keyboard controls**, with portrait and landscape layouts.
+- **90 Classic levels**, with a checked winning route for every published puzzle.
+- **Swipe, a movement pad or the keyboard**, with portrait and landscape layouts.
 - **Saved progress**, restart and a level chooser for revisiting unlocked puzzles.
 - **An integrated level editor** for making and testing your own boards.
 
@@ -27,8 +27,9 @@ quick spinning fall.
 Shovey runs as a standalone desktop and Android game, and inside
 [Arcade](https://github.com/waozixyz/arcade) and
 [Inner Breeze](https://github.com/waozixyz/inbe).
-Use the arrow keys or swipe to move; the game bar has Restart, Levels, Help,
-sound and Back controls.
+Use the arrow keys, swipe, or the movement pad in the corner to move; the first
+level asks which you prefer, and Help changes it later. The game bar has
+Restart, Levels, Help, sound and Back controls.
 
 ![The current Classic level chooser](docs/screenshots/classic.png)
 
@@ -62,6 +63,7 @@ Shovey uses [Ziran](https://github.com/ziranlang/ziran) and
 
 ```sh
 make bundles    # Portable game and integrated-editor bundles
+make desktop    # Standalone desktop app in build/desktop/shovey/
 make web        # Browser build in build/web/
 make test       # Replay stored solutions and check game assets
 make editor     # Desktop developer editor
