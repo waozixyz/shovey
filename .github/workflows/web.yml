@@ -96,3 +96,51 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy build/web --project-name=shovey --branch=master --commit-hash=${{ github.sha }}
+
+  itch:
+    name: Publish itch.io
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: itch-io
+      url: https://waozi.itch.io/shovey
+    steps:
+      - name: Check itch.io credential
+        env:
+          BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo '::error::Set the ITCH_API_KEY repository secret to enable automatic itch.io updates.'
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: shovey-web
+          path: build/web
+      - name: Install Butler
+        run: |
+          curl --fail --show-error --location --retry 3 \
+            https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default \
+            --output "$RUNNER_TEMP/butler.zip"
+          mkdir -p "$RUNNER_TEMP/butler"
+          unzip -q "$RUNNER_TEMP/butler.zip" -d "$RUNNER_TEMP/butler"
+          chmod +x "$RUNNER_TEMP/butler/butler"
+          echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
+      - name: Publish the tested browser build
+        env:
+          BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
+        run: |
+          version=$(python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path('build/web')
+          build = json.loads((root / 'build.json').read_text())
+          assert build['revision'] == os.environ['GITHUB_SHA'], 'The web artifact belongs to another revision'
+          for name in ('index.html', 'index.js', 'index.wasm', 'runtime.data'):
+              assert (root / name).is_file(), f'Missing web asset: {name}'
+          print(build['version'] + '-' + build['revision'])
+          PY
+          )
+          butler push build/web waozi/shovey:html5 --userversion "$version"

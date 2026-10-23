@@ -1,6 +1,6 @@
 # Shovey
 
-[Play Shovey online](https://shovey.waozi.xyz/). Cloudflare Pages updates the browser game automatically after the checks pass on `master`.
+[Play Shovey online](https://shovey.waozi.xyz/) or on [itch.io](https://waozi.itch.io/shovey). GitHub Actions updates both browser builds automatically after the game and browser tests pass on `master`.
 
 **Push. Solve. Come home.**
 
