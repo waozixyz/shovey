@@ -31,7 +31,7 @@ Use the arrow keys, swipe, or the movement pad in the corner to move; the first
 level asks which you prefer, and Help changes it later. The game bar has
 Restart, Levels, Help, sound and Back controls.
 
-![The current Classic level chooser](docs/screenshots/classic.png)
+![The Classic level chooser with all 90 levels open](docs/screenshots/classic.png)
 
 ## Make a puzzle
 
