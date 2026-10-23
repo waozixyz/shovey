@@ -1,9 +1,0 @@
----
-description: Keep editor text concise and separate from implementation instructions
-alwaysApply: true
----
-
-Treat owner feedback as work requests, not UI copy. Do not turn chat instructions,
-release policies, approval boundaries or development reminders into editor labels,
-banners or help text. Use short control labels and brief, actionable status.
-Keep detailed explanations in development logs or documentation.
