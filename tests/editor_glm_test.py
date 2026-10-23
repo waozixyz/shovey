@@ -660,6 +660,15 @@ class Variations(unittest.TestCase):
             error = actions.urllib.error.HTTPError('https://example.invalid', code, '', {}, None)
             self.assertIn(word, actions.failure_message(error))
 
+    def test_connection_errors_distinguish_timeout_dns_and_tls_without_secrets(self):
+        for reason, word in ((TimeoutError('private request details'), 'timed out'),
+                             (actions.socket.gaierror(-2, 'private request details'), 'lookup'),
+                             (actions.ssl.SSLError('private request details'), 'secure')):
+            text = actions.failure_message(actions.urllib.error.URLError(reason))
+            self.assertIn(word, text)
+            self.assertNotIn('private request details', text)
+        self.assertIn('timed out', actions.failure_message(TimeoutError()))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 import re
 import shlex
+import socket
+import ssl
 import subprocess
 import sys
 import time
@@ -947,7 +949,14 @@ def failure_message(error):
         if error.code == 429:
             return 'GLM limit reached. Try again shortly.'
         return f'GLM provider error ({error.code}). Try again.'
-    if isinstance(error, (urllib.error.URLError, TimeoutError)):
+    reason = error.reason if isinstance(error, urllib.error.URLError) else error
+    if isinstance(reason, (TimeoutError, socket.timeout)):
+        return 'GLM timed out waiting for the provider. Try again.'
+    if isinstance(reason, socket.gaierror):
+        return 'GLM address lookup failed. Check the connection and try again.'
+    if isinstance(reason, ssl.SSLError):
+        return 'GLM secure connection failed. Try again.'
+    if isinstance(error, urllib.error.URLError):
         return 'GLM connection failed. Try again.'
     if isinstance(error, ValueError):
         return str(error)[:220]
