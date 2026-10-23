@@ -5,6 +5,7 @@ TOOLCHAIN = $(shell $(ZIRAN) pkg path ziran $(LOCK_FLAGS))
 KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 MINGCUTE = $(shell $(ZIRAN) pkg path mingcute $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
+ENTITY = $(shell $(ZIRAN) pkg path entity $(LOCK_FLAGS))
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
@@ -88,10 +89,9 @@ web: bundles
 		--bind editor_view:AppServiceHost=controls:AppServiceHost --bind editor_view:AppFieldInputHost=host:AppFieldInputHost \
 		--asset-dir assets=build/web-assets/assets --entry game:Main \
 		-o build/web/shovey.zib src/web/game.zi
-	$(MAKE) -C '$(KRYON)' zib-canvas ZIRAN_ROOT='$(TOOLCHAIN)' \
-		ZIB_CANVAS_DIR='$(abspath build/web-runtime)' \
-		ZIB_CANVAS_BUNDLE='$(abspath build/web/shovey.zib)' \
-		ZIB_CANVAS_PROGRAM='$(abspath build/web/runtime.html)'
+	$(MAKE) -C '$(ENTITY)' build/entity.zib ZIRAN='$(TOOLCHAIN)/build/bin/ziran'
+	ZIRAN='$(TOOLCHAIN)/build/bin/ziran' python3 '$(ENTITY)/scripts/build-web.py' \
+		--bundle build/web/shovey.zib --profile '$(ENTITY)/build/entity.zib' --output build/web/runtime.html
 	cp src/web/index.html build/web/index.html
 	python3 scripts/stamp-web.py
 	cp assets/shovey/preview.png build/web/loading.png
@@ -106,7 +106,7 @@ web: bundles
 web-itch: web
 
 web-test: web
-	node tests/web_loading_test.mjs
+	node tests/web_profile_test.mjs
 
 previews:
 	python3 tools/levels/levels.py previews

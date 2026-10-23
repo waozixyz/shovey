@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.77] - 2026-10-22
+
+- Use the shared Profile on the web and keep accounts saved in this browser.
+- Show Dew balance directly in Profile and identify players by username or public ID.
+- Restore node requests for connected standalone accounts and remove the separate Dew shortcut.
+
 ## [0.6.76] - 2026-10-22
 
 - Keep Levels, Help and sound at the top of the title artwork.

@@ -38,7 +38,7 @@ jobs:
           node-version: 22
       - name: Install build dependencies
         run: |
-          sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential pkg-config python3-pil python3-numpy
+          sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential cmake ninja-build pkg-config python3-pil python3-numpy
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: '6.0.6'
@@ -54,8 +54,7 @@ jobs:
       - name: Play in a private browser
         run: |
           export CHROMIUM="$(command -v google-chrome || command -v chromium)"
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_loading_test.mjs
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_scroll_test.mjs
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_profile_test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

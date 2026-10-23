@@ -215,10 +215,7 @@
           var fs = Module.FS;
           var canvas = document.getElementById('canvas');
           if (fs && fs.analyzePath('/kryon-apps/shovey/assets/shovey/catalog.json').exists && canvas.width && canvas.height) {
-            var pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-            var colors = new Set();
-            for (var at = 0; at < pixels.length; at += 388) colors.add((pixels[at] << 16) | (pixels[at + 1] << 8) | pixels[at + 2]);
-            if (colors.size > 64) {
+            if (Module.profileReady) {
               document.title = pageTitle;
               loadingScreen.classList.add('is-hidden');
               return;

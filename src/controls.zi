@@ -20,7 +20,7 @@
                 return ifx WebApp.DocumentWrite("sound", value) then "saved" else ""
             }
         }
-        return ""
+        return WebApp.AppService(name, request)
     }
 } else {
     host_api :: #system_library "host_api";
@@ -114,7 +114,7 @@ LibraryAvailable :: () -> bool {
 // outer application's existing Entity profile and never load another one.
 ProfileAvailable :: () -> bool {
     #if #defined(SHOVEY_WEB) {
-        return false
+        return WebApp.AppSupports("entity.profile")
     } else {
         return AppSupportsHost("entity.profile")
     }

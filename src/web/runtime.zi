@@ -1,0 +1,5 @@
+// The browser and desktop use the same shared Profile and account provider.
+#import "entity/browser_host"
+#import, file "../shovey_theme.zi";
+#program_export
+main :: () -> s32 { return BrowserMain(ShoveyPalette()) }
