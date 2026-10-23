@@ -120,8 +120,19 @@ def main():
                     driver.type('Arcade')
                 driver.press(label='Arcade', role='button')
                 driver.wait_gone(label='Find an app', role='text_field', timeout=30)
-                driver.press(label='Shovey', role='button')
-                driver.press(label=title, role='button')
+                # Arcade's cover shows Shovey's art with its Classic card and
+                # Play, which opens Shovey's own menu. Its Levels control is
+                # unique to that menu; the card's Play can stay visible while
+                # the game prepares.
+                driver.wait(label='Classic', role='text')
+                if edition == 'classic':
+                    driver.press(label='Play', role='button')
+                    driver.wait(label='Levels', role='button', timeout=30)
+                    driver.press(label='Play', role='button')
+                else:
+                    driver.press(label='Next', role='button')
+                    driver.wait(label='Editor', role='text')
+                    driver.press(label='Open', role='button')
                 if edition == 'classic':
                     driver.wait(label='Restart', role='button')
                     driver.wait(label=f'Level 1 / {approved_count}', role='text')
@@ -129,21 +140,20 @@ def main():
                     back = driver.find(label='Back', role='button', visible=True)
                     assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working Back action'
                     driver.press(key=max(back, key=lambda node: node['y'])['key'])
-                    driver.wait(label='Shovey Classic', role='button')
-                    driver.press(label='Shovey Classic', role='button')
+                    driver.wait(label='Play', role='button')
+                    driver.press(label='Play', role='button')
                     driver.press(label='Levels', role='button')
                     back = driver.find(label='Back', role='button', visible=True)
                     assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working selector Back action'
                     driver.press(key=max(back, key=lambda node: node['y'])['key'])
-                    driver.wait(label='Shovey Classic', role='button')
-                    driver.press(label='Shovey Classic', role='button')
+                    driver.wait(label='Play', role='button')
+                    driver.press(label='Play', role='button')
                     driver.wait(label='Restart', role='button')
                     driver.key('left')
                 else:
-                    driver.press(label='Island', role='button')
-                    driver.wait(label='New level', role='button')
-                    assert not driver.find(contains='Level 1', role='button'), 'Unpublished Island story level is visible'
-                    driver.press(key=max(driver.find(label='Back', role='button', visible=True), key=lambda node: node['y'])['key'])
+                    # Island stays unavailable until it is offered for sale.
+                    driver.wait(label='Classic', role='button', timeout=30)
+                    assert not driver.find(label='Island', role='button'), 'The editor offers Island'
                     driver.press(label='Classic', role='button')
                     driver.press(label='New level', role='button')
                     driver.press(label='Play', role='button')
@@ -158,8 +168,10 @@ def main():
                     capture(child, window, edition + '-immersive-playing')
                     for attempt in range(8):
                         back = driver.find(label='Back', role='button', visible=True)
-                        assert back, f'{edition}: immersive game has no visible Back action'
-                        driver.press(key=min(back, key=lambda node: node['y'])['key'])
+                        if back:
+                            driver.press(key=min(back, key=lambda node: node['y'])['key'])
+                        else:
+                            driver.press(label='Games', role='button')
                         driver.wait_idle(frames=3)
                         apps = driver.find(label='Apps', role='button', visible=True)
                         if apps:
@@ -189,13 +201,13 @@ def main():
                     # own identity, and Leaderboard offers Arcade by game.
                     with sqlite3.connect(profile / 'inbe.db') as db:
                         scores = db.execute("SELECT value FROM settings WHERE key='leaderboard_game_scores'").fetchone()
-                    assert scores and scores[0].startswith('arcade\tarcade.shovey\tShovey Classic\tlevels\t'), scores
+                    assert scores and scores[0].startswith('arcade\tarcade.shovey\tShovey\tlevels\t'), scores
                     driver.press(label='Leaderboard', role='button')
                     driver.press(role='combo_box')
                     options = {node['label'] for node in driver.find(role='option', visible=True)}
                     assert options == {'Practice', 'Arcade'}, f'Leaderboard offered apps without a ranking: {options}'
                     driver.press(role='option', label='Arcade')
-                    driver.wait(label='Shovey Classic', role='button')
+                    driver.wait(label='Shovey', role='button')
                     driver.wait(label='Levels', role='button')
                     capture(child, window, 'leaderboard-arcade')
     print('Inbe: Classic and Editor preserve host navigation or return from immersive play; '

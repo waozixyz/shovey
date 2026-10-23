@@ -640,9 +640,9 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
 }
 
 // ---------------------------------------------------------------------------
-// The first page: Classic or Island
+// The first page: Classic, and Island once it is offered for sale
 
-EDITOR_EDITIONS :: 2
+EDITOR_EDITIONS :: 1
 
 EditorHome :: (width: float32, top: float32, bottom: float32) {
     #if #defined(SHOVEY_WEB) {

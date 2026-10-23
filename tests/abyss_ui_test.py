@@ -52,8 +52,14 @@ def main():
         driver.press(label='Find an app', role='text_field')
         driver.type('Arcade')
         driver.press(label='Arcade', role='button')
-        driver.press(label='Shovey', role='button')
-        driver.press(label='Shovey Classic', role='button')
+        driver.wait_gone(label='Find an app', role='text_field', timeout=30)
+        # Arcade's cover shows Shovey's Classic card; its Play opens Shovey's
+        # own menu, whose Levels control is unique to that menu.
+        driver.wait(label='Classic', role='text')
+        driver.wait_idle(frames=12)
+        driver.press(label='Play', role='button')
+        driver.wait(label='Levels', role='button', timeout=30)
+        driver.press(label='Play', role='button')
         driver.wait(label='Restart', role='button')
 
     with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as directory:
