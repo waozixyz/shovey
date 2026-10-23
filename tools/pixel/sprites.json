@@ -26,7 +26,9 @@
     "sensor-closed": "a small square grey stone block with a glowing red lamp on top, seen from slightly above, filling about 75 percent of the canvas.",
     "trail": "a lilac painted ring mark on the ground with a short lilac line through it, seen from directly above, filling about 70 percent of the canvas.",
     "projectile": "a small dark iron ball flying to the right with a short pale motion trail, filling about 50 percent of the canvas.",
-    "player": "Shovey, a round bright green ball creature with a glossy highlight. Seen from directly above, as in a top-down game: we look down on the top of its round body, and it faces the top of the canvas. Its two big round eyes sit at the top front edge of its body and look up toward the top of the canvas, so we see them from above; no mouth or face looking at the viewer. Filling about 85 percent of the canvas. Keep the body continuous, without a dark interior circle."
+    "player": "Shovey, a round bright green ball creature with a glossy highlight. Seen from directly above, as in a top-down game: we look down on the top of its round body, and it faces the top of the canvas. Its two big round eyes sit at the top front edge of its body and look up toward the top of the canvas, so we see them from above; no mouth or face looking at the viewer. Filling about 85 percent of the canvas. Keep the body continuous, without a dark interior circle.",
+    "charge-engraved": "only a lightning bolt engraved into pale grey stone, no floor around it: a slim zig-zag groove about 27 pixels tall, dark grey on its top-left inner edges, light grey on its bottom-right inner edges, its inside slightly darker than pale grey paving, with four bright yellow spark pixels near its lower end; calm, not glowing.",
+    "reverse-arrows": "clean green four-way arrows: a plus-shaped cross whose four arms each end in an outward arrowhead, mid green with a 1-pixel dark green outline and light green highlights from the top left, about 80 percent of the canvas, with no circle, disc or token behind it."
   },
   "edited": {},
   "sizes": {
@@ -55,7 +57,9 @@
     "sensor-closed": 24,
     "trail": 24,
     "projectile": 18,
-    "player": 28
+    "player": 28,
+    "charge-engraved": 32,
+    "reverse-arrows": 32
   },
   "note": "The original Google Flow player is preserved in native/player.png. Only its dark interior ring was removed by a manual pixel edit; its shape, eyes, highlight, outline and outer shading are unchanged. The build rotates it for the other directions and adds the existing charged halo. Do not refit or redesign this kept player. Other raw pictures can be fitted with pixel.py fit."
 }

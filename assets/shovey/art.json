@@ -149,8 +149,8 @@
     },
     {
       "path": "sprites/tile-25.png",
-      "depicts": "reverse controls: a token with two opposite arrows",
-      "sha256": "477709081db5dcb56c04993da6a4aea5d0fc9570c52df244712dd7a0d11115ec"
+      "depicts": "reverse controls: clean green four-way arrows on the floor",
+      "sha256": "3ad14de320fadc308945b31ede11f98472aa403617e248b8abd9e10aec929c0e"
     },
     {
       "path": "sprites/tile-26.png",
@@ -159,8 +159,8 @@
     },
     {
       "path": "sprites/tile-27.png",
-      "depicts": "charge: a token with a lightning bolt",
-      "sha256": "3ac21ca69e25bb51bb235c71aeb980c2f904edefd474ee798dcb62922230b77c"
+      "depicts": "charge: a lightning bolt engraved into the floor, with yellow sparks",
+      "sha256": "0feb3d19384b6c2bddf0d6c7fc1b2c8919649d20d2a82576e2c06fb18817810c"
     },
     {
       "path": "sprites/tile-28.png",
