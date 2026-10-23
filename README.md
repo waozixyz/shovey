@@ -12,7 +12,7 @@ board one move at a time.
 
 ## Play
 
-[Download the signed Android APK](https://github.com/waozixyz/shovey/releases/latest).
+[Download Shovey for Android, Linux or Windows](https://github.com/waozixyz/shovey/releases/latest).
 
 - **39 Classic levels**, with a checked winning route for every published puzzle.
 - **Touch and keyboard controls**, with portrait and landscape layouts.
