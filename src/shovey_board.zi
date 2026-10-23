@@ -162,6 +162,34 @@ ShockProgress :: (game: *ShoveyGame, now: float64) -> float32 {
 
 SHOCK_BOLT :: "F:M13 1L5 13H11L8 23L19 9H13Z"
 SHOCK_SPARK :: "S2rr:M3 12L8 8L11 14L16 9L21 12"
+CHARGE_SECONDS :: 0.65
+
+// Taking the first charge lights Shovey up without the charring of a loss.
+ChargeEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32) {
+    size := cell.width
+    cx := cell.x + size * 0.5
+    cy := cell.y + size * 0.5
+    fade := 1.0 - progress
+    glow := size * (1.2 + progress * 0.6)
+    unused Box(session, BoxProps.{.key = WidgetPartKey(key, 1),
+            .bounds = Rectangle.{cx - glow / 2.0, cy - glow / 2.0, glow, glow},
+            .fill = Color.{255, 248, 180, cast(u8)(140.0 * fade * fade)},
+            .border = Color.{135, 235, 255, cast(u8)(230.0 * fade)}, .radius = glow / 2.0})
+    for spark: cast(s32)0..5 {
+        angle := cast(float64)spark * 1.047197551 + cast(float64)progress * 1.2
+        reach := size * (0.4 + progress * 0.55)
+        spark_size := size * (0.16 + fade * 0.3)
+        sx := cx + cast(float32)Math.Cos(angle) * reach
+        sy := cy + cast(float32)Math.Sin(angle) * reach
+        SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{sx - spark_size / 2.0, sy - spark_size / 2.0, spark_size, spark_size},
+                .shape = SHOCK_SPARK, .color = Color.{185, 245, 255, cast(u8)(255.0 * fade)}})
+    }
+    if progress < 0.4 {
+        bolt_size := size * 0.7
+        SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{cx - bolt_size / 2.0, cell.y - size * (0.35 + progress * 0.4), bolt_size, bolt_size},
+                .shape = SHOCK_BOLT, .color = Color.{255, 245, 145, cast(u8)(255.0 * (1.0 - progress / 0.4))}})
+    }
+}
 
 // Shovey's picture while shocked: he shakes and flickers between lit and
 // charred, then stays charred and slumps a little.
@@ -652,8 +680,8 @@ BOARD_FLIGHT_STEP :: 0.05
 BOARD_BURST_FRAME :: 0.06
 BOARD_BLAST_FRAME :: 0.08
 BoardEffect :: struct {
-    // 1 a struck target, 2 a blast, 3 a ball dropping into its pit; 0 a
-    // free slot.
+    // 1 a struck target, 2 a blast, 3 a ball dropping into its pit,
+    // 4 the first electric charge; 0 a free slot.
     kind: s32
     at: s32
     start: float64
@@ -686,7 +714,19 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
         // A new level, a restart or an undo: nothing from before plays on.
         for index: cast(s32)0..BOARD_EFFECTS - 1 { board_effects[index].kind = 0 }
         board_flight_from = -1
-    } else if game.moves == board_seen_moves + 1 {
+    } else if !game.lost && game.player >= 0 && game.moves > board_seen_moves &&
+    (board_seen_powers & SHOVEY_CHARGED) == 0 && (game.powers & SHOVEY_CHARGED) != 0 {
+        // A fast move or an animal tick may skip an intermediate frame.
+        // The power transition still identifies the first touch exactly once.
+        BoardEffectStart(4, game.player, now)
+    }
+    if game.lost {
+        // A second touch uses the fatal shock, even if the first burst is fresh.
+        for index: cast(s32)0..BOARD_EFFECTS - 1 {
+            if board_effects[index].kind == 4 { board_effects[index].kind = 0 }
+        }
+    }
+    if board_seen && board_seen_level == game.level && game.moves == board_seen_moves + 1 {
         if (board_seen_powers & SHOVEY_AMMO) != 0 && (game.powers & SHOVEY_AMMO) == 0 && game.player >= 0 {
             // Targets never stop a shot, so the line is the same on the new board.
             cells: s32 = 0
@@ -903,6 +943,13 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     for index: cast(s32)0..BOARD_EFFECTS - 1 {
         effect := *board_effects[index]
         if effect.kind == 0 || now < effect.start { continue }
+        if effect.kind == 4 {
+            progress := cast(float32)((now - effect.start) / CHARGE_SECONDS)
+            if progress >= 1.0 || game.lost { effect.kind = 0; continue }
+            cell := TileMapCell(grid, BoardDisplayIndex(effect.at, landscape))
+            ChargeEffects(session, WidgetPartKey(key, 800 + index), cell, progress)
+            continue
+        }
         if effect.kind == 3 {
             // The ball shrinks down into the hole while a ripple of the
             // pit's colour spreads.
