@@ -59,6 +59,10 @@ inbe-ui-test:
 
 all: bundles
 
+.PHONY: android-fdroid
+android-fdroid:
+	sh scripts/android-build.sh
+
 # The JSON level files are the source; the game reads the generated code.
 levels: src/levels.zi src/island_levels.zi
 

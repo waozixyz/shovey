@@ -1,0 +1,11 @@
+[package]
+name = "ShoveyAndroid"
+
+[toolchain]
+git = "https://github.com/ziranlang/ziran.git"
+ref = "6be888add06a729145dbe63554e29c1f1c26aaa3"
+
+[dependencies.host]
+git = "https://github.com/waozixyz/arcade.git"
+ref = "e54c5ef271d81244240de4ad29361167f3b1a33d"
+source = true
