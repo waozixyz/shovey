@@ -1,6 +1,7 @@
 #import "session"
 ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import "joystick"
+#import "direction_pad"
 #import "geometry"
 #import "drawing_props"
 #import "text_props"
@@ -143,6 +144,13 @@ Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, d
             .icon_shape = icon, .icon_only = icon != "",
             .fit_content = true, .tone = ButtonTone.ButtonToneNeutral,
             .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
+}
+
+// One of a set of choices; the chosen one stands out and reads as selected.
+Choice :: (id: s32, bounds: Rectangle, label: string, chosen: bool) -> bool {
+    return Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label,
+            .selected = chosen, .tone = ifx chosen then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
+            .emphasis = ifx chosen then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
 TileName :: (kind: s32) -> string {
@@ -598,22 +606,34 @@ ShoveyFrame :: () {
             return
         }
         Caption(20001, Rectangle.{100.0, top + 6.0, width - 160.0, 44.0}, AppLocaleHost("shovey_help"), 20)
+        // Closing the guide returns to the level, like H and Escape.
         if Control(20017, Rectangle.{width - 52.0, top + 6.0, 44.0, 44.0}, AppLocaleHost("shovey_close_help"), false, "", ICON_CLOSE) {
-            unused ShoveyBack()
+            help_open = false
             return
         }
         instructions := AppLocaleHost("shovey_instructions")
         intro_height := cast(float32)TextHeight(frame.session, TextProps.{.text = instructions,
                 .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .font = 16, .wrap = TextWrap.TextWrapAuto}) + 16.0
+        // The touch controls choice comes first, above the guide.
+        settings_height: float32 = 92.0
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
                 .bounds = Rectangle.{16.0, top + 62.0, width - 32.0, bottom - top - 70.0},
-                .content_height = cast(s32)intro_height + SHOVEY_HELP_COUNT * 68, .scroll_offset = help_scroll})
+                .content_height = cast(s32)(settings_height + intro_height) + SHOVEY_HELP_COUNT * 68, .scroll_offset = help_scroll})
         help_scroll = scroll.scroll_offset
         if scroll.opened {
-            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, intro_height}, instructions)
+            Caption(20030, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, 28.0}, AppLocaleHost("shovey_controls_setting"), 16)
+            choice_width := (scroll.content.width - 24.0) / 2.0
+            pad := ControlsPad()
+            if Choice(20031, Rectangle.{scroll.content.x, scroll.content.y + 34.0, choice_width, 44.0}, AppLocaleHost("shovey_controls_swipe"), !pad) {
+                ControlsSetPad(false)
+            }
+            if Choice(20032, Rectangle.{scroll.content.x + choice_width + 8.0, scroll.content.y + 34.0, choice_width, 44.0}, AppLocaleHost("shovey_controls_pad"), pad) {
+                ControlsSetPad(true)
+            }
+            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y + settings_height, scroll.content.width - 16.0, intro_height}, instructions)
             for index: cast(s32)0..SHOVEY_HELP_COUNT - 1 {
                 kind := shovey_help_kinds[index]
-                y := scroll.content.y + intro_height + cast(float32)index * 68.0
+                y := scroll.content.y + settings_height + intro_height + cast(float32)index * 68.0
                 Tile(cast(u64)(40000 + index * 16), kind, Rectangle.{scroll.content.x, y, 40.0, 40.0})
                 Caption(cast(u64)(45000 + index), Rectangle.{scroll.content.x + 52.0, y, scroll.content.width - 68.0, 44.0}, TileName(kind))
             }
@@ -648,6 +668,21 @@ ShoveyFrame :: () {
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
     area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
+    // With the movement pad chosen, it sits in the bottom left corner and the
+    // board keeps clear of it: beside it on a wide screen, above it on a tall one.
+    pad_mode := ControlsPad() && !mini
+    pad_size: float32 = 0.0
+    if pad_mode {
+        pad_size = (ifx width < bottom - top then width else bottom - top) * 0.34
+        if pad_size < 132.0 { pad_size = 132.0 }
+        if pad_size > 200.0 { pad_size = 200.0 }
+        if area.width > area.height {
+            area.x += pad_size + 12.0
+            area.width -= pad_size + 12.0
+        } else {
+            area.height -= pad_size + 12.0
+        }
+    }
     landscape := BoardLandscape(area.width, area.height)
     before_direction := game.direction
     changed := false
@@ -704,23 +739,32 @@ ShoveyFrame :: () {
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     disabled := game.won || game.lost || game.level == ShoveyFinaleLevel()
     // Touch: swipe anywhere under the bar to step, or tap a cell or the space
-    // beside the board to step towards it; hold either to keep walking. Fire
-    // comes after, so it stays on top.
-    play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
-    gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
-            .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
-    step := BoardEngineDirection(gesture.swiped, landscape)
-    if gesture.tapped || gesture.held {
-        cell := TileMapCellAt(grid, gesture.x, gesture.y)
-        cell = BoardLogicalIndex(cell, landscape)
-        if cell >= 0 {
-            step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
-                cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
-        } else {
-            at := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
-            step = BoardEngineDirection(TouchDirection(gesture.x - at.x - at.width / 2.0,
-                gesture.y - at.y - at.height / 2.0, grid.cell / 2.0), landscape)
+    // beside the board to step towards it; hold either to keep walking. With
+    // the movement pad chosen, only the pad steps. The pad and Fire come
+    // after, so they stay on top.
+    step: s32 = -1
+    if !pad_mode {
+        play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
+        gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
+                .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
+        step = BoardEngineDirection(gesture.swiped, landscape)
+        if gesture.tapped || gesture.held {
+            cell := TileMapCellAt(grid, gesture.x, gesture.y)
+            cell = BoardLogicalIndex(cell, landscape)
+            if cell >= 0 {
+                step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
+                    cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
+            } else {
+                at := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+                step = BoardEngineDirection(TouchDirection(gesture.x - at.x - at.width / 2.0,
+                    gesture.y - at.y - at.height / 2.0, grid.cell / 2.0), landscape)
+            }
         }
+    } else {
+        pad := DirectionPad(frame.session, DirectionPadProps.{.key = cast(u64)20040, .id = 20040,
+                .bounds = Rectangle.{12.0, bottom - pad_size - 12.0, pad_size, pad_size},
+                .label = AppLocaleHost("shovey_controls_pad"), .now = frame.now, .repeat_seconds = 0.16, .disabled = disabled})
+        if pad.step { step = BoardEngineDirection(pad.direction, landscape) }
     }
     if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
         if Control(20018, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, AppLocaleHost("shovey_fire"), disabled) {

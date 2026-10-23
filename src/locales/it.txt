@@ -49,6 +49,15 @@ Salvataggio non riuscito. Prova un’altra mossa.
 [shovey_controls]
 Frecce / WASD · R ricomincia · H aiuto · Spazio lancia
 ---
+[shovey_controls_setting]
+Comandi touch
+---
+[shovey_controls_swipe]
+Scorri e tocca
+---
+[shovey_controls_pad]
+Croce direzionale
+---
 [shovey_shadow_pending]
 Le regole dell’ombra in questo livello sono ancora da verificare.
 ---

@@ -49,6 +49,15 @@
 [shovey_controls]
 Стрелки / WASD · R заново · H помощь · Пробел бросить
 ---
+[shovey_controls_setting]
+Сенсорное управление
+---
+[shovey_controls_swipe]
+Свайп и касание
+---
+[shovey_controls_pad]
+Крестовина
+---
 [shovey_shadow_pending]
 Правила тени на этом уровне ещё предстоит проверить.
 ---

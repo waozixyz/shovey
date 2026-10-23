@@ -49,6 +49,15 @@ Speichern fehlgeschlagen. Versuche einen weiteren Zug.
 [shovey_controls]
 Pfeiltasten / WASD · R Neustart · H Hilfe · Leertaste werfen
 ---
+[shovey_controls_setting]
+Touch-Steuerung
+---
+[shovey_controls_swipe]
+Wischen und Tippen
+---
+[shovey_controls_pad]
+Steuerkreuz
+---
 [shovey_shadow_pending]
 Die Schattenregeln dieses Levels müssen noch geprüft werden.
 ---

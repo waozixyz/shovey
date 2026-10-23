@@ -49,6 +49,15 @@ Uložení se nezdařilo. Zkus další tah.
 [shovey_controls]
 Šipky / WASD · R znovu · H nápověda · Mezerník hodit
 ---
+[shovey_controls_setting]
+Dotykové ovládání
+---
+[shovey_controls_swipe]
+Táhnout a klepnout
+---
+[shovey_controls_pad]
+Směrový kříž
+---
 [shovey_shadow_pending]
 Pravidla stínu v této úrovni je ještě třeba ověřit.
 ---
