@@ -136,6 +136,95 @@ AbyssFallMesh :: (cell: Rectangle, progress: float32) -> ImageMesh {
             .zoom = scale, .rotation = progress * (2.0 + progress) * 360.0}, fall_points[:])
 }
 
+shock_active: bool;
+shock_started: float64;
+shock_level: s32;
+shock_moves: s32;
+SHOCK_SECONDS :: 1.3
+
+// Too much charge: the loss stays in the engine at once; the picture shows
+// a bolt striking Shovey, Shovey shaking among sparks, then charred and
+// smoking where he stood.
+ShockProgress :: (game: *ShoveyGame, now: float64) -> float32 {
+    if !game.lost || game.player < 0 || game.ground[game.player] != 27 {
+        shock_active = false
+        return -1.0
+    }
+    if !shock_active || shock_level != game.level || shock_moves != game.moves {
+        shock_started = now
+        shock_level = game.level
+        shock_moves = game.moves
+        shock_active = true
+    }
+    progress := cast(float32)((now - shock_started) / SHOCK_SECONDS)
+    return ifx progress >= 1.0 then 1.0 else ifx progress < 0.0 then 0.0 else progress
+}
+
+SHOCK_BOLT :: "F:M13 1L5 13H11L8 23L19 9H13Z"
+SHOCK_SPARK :: "S2rr:M3 12L8 8L11 14L16 9L21 12"
+
+// Shovey's picture while shocked: he shakes and flickers between lit and
+// charred, then stays charred and slumps a little.
+ShockShovey :: (image: *ImageProps, cell: Rectangle, progress: float32, now: float64) {
+    size := cell.width
+    if progress < 0.62 {
+        shake: float32 = ifx cast(s32)(now * 40.0) % 2 == 0 then 1.0 else -1.0
+        image.bounds.x += shake * size * 0.05
+        if cast(s32)(now * 16.0) % 2 == 0 { image.tint = 0x3a3a40ff }
+    } else {
+        slump := (progress - 0.62) / 0.38
+        image.tint = 0x3a3a40ff
+        image.bounds.y += size * 0.06 * slump
+        image.bounds.height -= size * 0.06 * slump
+    }
+}
+
+// The strike and its flash, sparks around Shovey, and smoke once charred.
+ShockEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32, now: float64) {
+    size := cell.width
+    cx := cell.x + size * 0.5
+    cy := cell.y + size * 0.5
+    if progress < 0.18 {
+        // The bolt comes down from two cells above, as two stacked bolts.
+        fade := 1.0 - progress / 0.18
+        bolt := Color.{255, 240, 140, cast(u8)(255.0 * fade)}
+        SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{cell.x, cell.y - size * 2.0, size, size}, .shape = SHOCK_BOLT, .color = bolt})
+        SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{cell.x, cell.y - size, size, size}, .shape = SHOCK_BOLT, .color = bolt})
+        flash := size * 1.8
+        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 700), .bounds = Rectangle.{cx - flash / 2.0, cy - flash / 2.0, flash, flash},
+                .fill = Color.{255, 250, 210, cast(u8)(200.0 * fade)}, .radius = flash / 2.0})
+    }
+    if progress < 0.7 {
+        // Sparks jump around him, a new pattern every few frames.
+        step := cast(s32)(now * 14.0)
+        for spark: cast(s32)0..3 {
+            angle := cast(float64)(step * 7 + spark * 23) * 0.9
+            reach := size * 0.42
+            sx := cx + cast(float32)Math.Cos(angle) * reach
+            sy := cy + cast(float32)Math.Sin(angle) * reach
+            spark_size := size * 0.42
+            SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{sx - spark_size / 2.0, sy - spark_size / 2.0, spark_size, spark_size},
+                    .shape = SHOCK_SPARK, .color = Color.{255, 236, 120, 235}})
+        }
+        glow := size * 1.15
+        pulse := ifx cast(s32)(now * 16.0) % 2 == 0 then 110.0 else 50.0
+        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 701), .bounds = Rectangle.{cx - glow / 2.0, cy - glow / 2.0, glow, glow},
+                .fill = Color.{255, 230, 120, cast(u8)pulse}, .radius = glow / 2.0})
+    }
+    if progress > 0.5 {
+        // Three puffs of smoke rise and fade, over and over.
+        for puff: cast(s32)0..2 {
+            rise := now * 0.8 + cast(float64)puff / 3.0
+            phase := cast(float32)(rise - cast(float64)cast(s64)rise)
+            puff_size := size * (0.18 + 0.22 * phase)
+            px := cx + size * (cast(float32)puff - 1.0) * 0.14 + size * 0.06 * cast(float32)Math.Sin(cast(float64)phase * 6.283)
+            py := cell.y + size * 0.2 - size * 0.6 * phase
+            unused Box(session, BoxProps.{.key = WidgetPartKey(key, 702 + puff), .bounds = Rectangle.{px - puff_size / 2.0, py - puff_size / 2.0, puff_size, puff_size},
+                    .fill = Color.{90, 90, 96, cast(u8)(150.0 * (1.0 - phase))}, .radius = puff_size / 2.0})
+        }
+    }
+}
+
 SpritePathIn :: (files: []string, index: s32, folder: string, name: string) {
     bytes: Vec(u8)
     BuilderPrint(*bytes, "assets/%/sprites/%.png", folder, name)
@@ -738,6 +827,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         position := ifx portal >= 0.0 && portal < 0.5 then portal_entry else game.player
         cell := TileMapCell(grid, BoardDisplayIndex(position, landscape))
         fall := AbyssFallProgress(game, now)
+        shock := ShockProgress(game, now)
         image := ImageProps.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(game, landscape)],
             .alt_text = "Shovey", .bounds = cell, .fit = ImageFit.ImageFitContain, .smooth = true}
         // Fully collapsed quads have no area. Omit them instead of handing
@@ -746,8 +836,10 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         if visible {
             if fall >= 0.0 { image.mesh = AbyssFallMesh(cell, fall) }
             else if portal >= 0.0 { image.mesh = PortalTravelMesh(cell, portal) }
+            if shock >= 0.0 { ShockShovey(*image, cell, shock, now) }
             Image(session, image)
         }
+        if shock >= 0.0 { ShockEffects(session, key, cell, shock, now) }
     }
     BoardGuides(session, game, grid, key, now, landscape)
     files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
