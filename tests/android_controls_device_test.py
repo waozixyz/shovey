@@ -54,10 +54,17 @@ class Phone:
             time.sleep(0.1)
         raise TimeoutError(f'no reply to {verb}')
 
-    def settle(self, frames=6, timeout=40):
+    def settle(self, frames=6, timeout=40, moving=1.0):
+        """Wait until the screen is still. A lit house sparkles and idle
+        pieces glow, so a level may never be still: once it has kept drawing
+        for a while, steps and screen changes have finished."""
+        start = self.command('status')
         end = time.time() + timeout
         while time.time() < end:
-            if self.command('status').get('stable_frames', 0) >= frames:
+            status = self.command('status')
+            if status.get('stable_frames', 0) >= frames:
+                return
+            if time.time() - (end - timeout) >= moving and status.get('frame', 0) - start.get('frame', 0) >= 30:
                 return
             time.sleep(0.2)
         raise TimeoutError('the screen did not settle')
@@ -116,7 +123,7 @@ def overlaps(a, b):
 
 def foreground(phone):
     text = phone.adb('shell', 'dumpsys', 'activity', 'activities')
-    match = re.search(r'mResumedActivity: ActivityRecord\{\S+ \S+ (\S+?)/(\S+) ', text)
+    match = re.search(r'(?:m|top)?ResumedActivity: ActivityRecord\{\S+ \S+ (\S+?)/(\S+) ', text)
     return (match.group(1), match.group(2)) if match else None
 
 
@@ -146,7 +153,8 @@ def run(phone, apk):
     phone.press(label='Swipe and tap')
     assert not phone.find(label='How do you want to move?'), 'the question stayed open'
     assert not phone.find(label='Movement pad'), 'the pad showed after choosing swipe and tap'
-    print('first level: asked how to move, swipe and tap chosen')
+    assert phone.find(label='Walk to the house to finish the level.', role='text'), 'the first level shows no tip'
+    print('first level: asked how to move, swipe and tap chosen, its tip shows')
     # A swipe on the board steps.
     start = shovey(phone)
     phone.drag(start[0] + start[2] / 2, start[1] + start[2] / 2, -start[2] * 3, 0)
