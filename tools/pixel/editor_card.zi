@@ -110,6 +110,7 @@ Draw :: () -> bool {
 
 #program_export
 main :: (argc: s32, argv: **u8) -> s32 {
+    board_guides = false
     ClassicCard()
     IslandCard()
     if !OpenDesktopSized(CARD_WIDTH, CARD_HEIGHT) {

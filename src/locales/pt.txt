@@ -58,6 +58,18 @@ Deslizar e tocar
 [shovey_controls_pad]
 Direcional
 ---
+[shovey_controls_choose]
+Como você quer se mover?
+---
+[shovey_controls_later]
+Você pode mudar isso a qualquer momento na Ajuda.
+---
+[shovey_controls_swipe_hint]
+Deslize no tabuleiro ou toque onde Shovey deve ir.
+---
+[shovey_controls_pad_hint]
+Setas no canto. Segure uma para continuar andando.
+---
 [shovey_shadow_pending]
 As regras da sombra neste nível ainda precisam ser verificadas.
 ---

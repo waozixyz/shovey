@@ -58,6 +58,18 @@
 [shovey_controls_pad]
 十字键
 ---
+[shovey_controls_choose]
+你想怎样移动？
+---
+[shovey_controls_later]
+随时可以在帮助中更改。
+---
+[shovey_controls_swipe_hint]
+在棋盘上滑动，或点按 Shovey 要去的地方。
+---
+[shovey_controls_pad_hint]
+角落里的方向键。按住可一直走。
+---
 [shovey_shadow_pending]
 此关的影子规则仍需核实。
 ---

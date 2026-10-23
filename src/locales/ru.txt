@@ -58,6 +58,18 @@
 [shovey_controls_pad]
 Крестовина
 ---
+[shovey_controls_choose]
+Как вы хотите двигаться?
+---
+[shovey_controls_later]
+Это можно изменить в любой момент в справке.
+---
+[shovey_controls_swipe_hint]
+Проведите по полю или коснитесь места, куда идти Shovey.
+---
+[shovey_controls_pad_hint]
+Стрелки в углу. Удерживайте, чтобы идти дальше.
+---
 [shovey_shadow_pending]
 Правила тени на этом уровне ещё предстоит проверить.
 ---

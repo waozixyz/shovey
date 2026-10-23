@@ -98,6 +98,12 @@ try {
   await click(play.x + play.width / 2, play.y + play.height / 2);
   await wait(`Module.FS.analyzePath('/kryon-apps/shovey/campaign').exists`);
   await delay(600);
+  // The first level asks how to move; this test plays with swipe and tap.
+  const choice = (await tree()).find(node => node.label === 'Swipe and tap');
+  assert(choice, 'The first level did not ask how to move');
+  await click(choice.x + choice.width / 2, choice.y + choice.height / 2);
+  await delay(600);
+  assert(!(await tree()).find(node => node.label === 'How do you want to move?'), 'The controls question stayed open');
   const campaign = () => evaluate(`Module.FS.readFile('/kryon-apps/shovey/campaign', {encoding: 'utf8'})`);
   const before = await campaign();
   // The board is centred, so the window's far edges lie beside it. A wall may

@@ -58,6 +58,18 @@ Glisser et toucher
 [shovey_controls_pad]
 Croix directionnelle
 ---
+[shovey_controls_choose]
+Comment veux-tu te déplacer ?
+---
+[shovey_controls_later]
+Tu peux changer cela à tout moment dans l’aide.
+---
+[shovey_controls_swipe_hint]
+Glisse sur le plateau ou touche l’endroit où Shovey doit aller.
+---
+[shovey_controls_pad_hint]
+Des flèches dans le coin. Garde-en une appuyée pour continuer à marcher.
+---
 [shovey_shadow_pending]
 Les règles de l’ombre restent à vérifier dans ce niveau.
 ---

@@ -58,6 +58,18 @@ Wischen und Tippen
 [shovey_controls_pad]
 Steuerkreuz
 ---
+[shovey_controls_choose]
+Wie möchtest du dich bewegen?
+---
+[shovey_controls_later]
+Du kannst das jederzeit in der Hilfe ändern.
+---
+[shovey_controls_swipe_hint]
+Wische über das Spielfeld oder tippe, wohin Shovey gehen soll.
+---
+[shovey_controls_pad_hint]
+Pfeile in der Ecke. Halte einen gedrückt, um weiterzugehen.
+---
 [shovey_shadow_pending]
 Die Schattenregeln dieses Levels müssen noch geprüft werden.
 ---

@@ -3,7 +3,7 @@
 
 Installs a debuggable Shovey under an isolated package, turns on Kryon's test
 driver in its private files, and plays through the real interface by widget
-labels: swipe is the default, Help chooses the movement pad, the board keeps
+labels: the first level asks how to move, Help chooses the movement pad, the board keeps
 clear of it, every arm steps the right way, holding repeats, the hub stops,
 the choice survives a restart and switching back removes the pad. The phone
 is left as it was: the test package is removed and the app that was in front
@@ -139,9 +139,15 @@ def run(phone, apk):
     phone.adb('logcat', '-c')
     phone.launch()
 
-    # Swipe and tap is the default: no pad, and a swipe on the board steps.
+    # The first level asks how to move, with both ways shown; choose swipe.
     phone.press(label='Play')
-    assert not phone.find(label='Movement pad'), 'the pad showed before it was chosen'
+    assert phone.find(label='How do you want to move?'), 'the first level did not ask how to move'
+    assert phone.find(label='Swipe and tap') and phone.find(label='Movement pad'), 'a way to move is missing'
+    phone.press(label='Swipe and tap')
+    assert not phone.find(label='How do you want to move?'), 'the question stayed open'
+    assert not phone.find(label='Movement pad'), 'the pad showed after choosing swipe and tap'
+    print('first level: asked how to move, swipe and tap chosen')
+    # A swipe on the board steps.
     start = shovey(phone)
     phone.drag(start[0] + start[2] / 2, start[1] + start[2] / 2, -start[2] * 3, 0)
     assert moved(start, shovey(phone))[0] < 0, 'a swipe to the left did not move Shovey'

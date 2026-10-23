@@ -58,6 +58,18 @@ Geser dan ketuk
 [shovey_controls_pad]
 Tombol arah
 ---
+[shovey_controls_choose]
+Bagaimana kamu ingin bergerak?
+---
+[shovey_controls_later]
+Kamu bisa mengubahnya kapan saja di Bantuan.
+---
+[shovey_controls_swipe_hint]
+Geser di papan, atau ketuk tempat yang dituju Shovey.
+---
+[shovey_controls_pad_hint]
+Panah di sudut. Tahan satu untuk terus berjalan.
+---
 [shovey_shadow_pending]
 Aturan bayangan di level ini masih perlu diverifikasi.
 ---

@@ -85,19 +85,34 @@ SoundSetMuted :: (muted: bool) {
 }
 
 // Touch controls: swipe and tap on the board, or the movement pad. The host
-// keeps the choice ("on" is the pad), so every edition shares it.
+// keeps the choice ("on" is the pad, "off" swipe and tap, anything else not
+// chosen yet), so every edition shares it.
 controls_pad: s32 = -1;
+controls_chosen: bool;
+
+ControlsLoad :: () {
+    if controls_pad >= 0 { return }
+    value := AppServiceHost("arcade.controls", "get")
+    controls_pad = ifx value == "on" then 1 else 0
+    controls_chosen = value == "on" || value == "off"
+}
 
 ControlsPad :: () -> bool {
-    if controls_pad < 0 {
-        controls_pad = ifx AppServiceHost("arcade.controls", "get") == "on" then 1 else 0
-    }
+    ControlsLoad()
     return controls_pad != 0
+}
+
+// Whether the player has picked their controls; until then the first level
+// asks.
+ControlsChosen :: () -> bool {
+    ControlsLoad()
+    return controls_chosen
 }
 
 ControlsSetPad :: (pad: bool) {
     unused AppServiceHost("arcade.controls", ifx pad then "set-on" else "set-off")
     controls_pad = ifx pad then 1 else 0
+    controls_chosen = true
 }
 
 LeaveForGameSelection :: () {

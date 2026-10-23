@@ -58,6 +58,18 @@ Swipe and tap
 [shovey_controls_pad]
 Movement pad
 ---
+[shovey_controls_choose]
+How do you want to move?
+---
+[shovey_controls_later]
+You can change this anytime in Help.
+---
+[shovey_controls_swipe_hint]
+Swipe on the board, or tap where Shovey should go.
+---
+[shovey_controls_pad_hint]
+Arrows in the corner. Hold one to keep walking.
+---
 [shovey_shadow_pending]
 Shadow rules still need verification in this level.
 ---

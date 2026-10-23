@@ -1,5 +1,6 @@
 #import "session"
 ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
+FingerSwipe :: #import "mingcute/mingcute_filled_finger_swipe";
 #import "joystick"
 #import "direction_pad"
 #import "geometry"
@@ -15,6 +16,8 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import "control_props"
 #import "box_props"
 #import "box_widget"
+#import "svg_icon_props"
+#import "svg_icon_widget"
 #import "press_props"
 #import "press_widget"
 #import "scroll_props"
@@ -151,6 +154,93 @@ Choice :: (id: s32, bounds: Rectangle, label: string, chosen: bool) -> bool {
     return Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label,
             .selected = chosen, .tone = ifx chosen then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
             .emphasis = ifx chosen then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
+}
+
+// Swipe arrows on screen: left, up, right and down.
+SWIPE_ARROWS: [4]string = .["F:M3 12L12 4V9H21V15H12V20Z", "F:M12 3L20 12H15V21H9V12H4Z",
+    "F:M21 12L12 4V9H3V15H12V20Z", "F:M12 21L20 12H15V3H9V12H4Z"];
+
+// While a finger is down on the board: a soft ring where the touch began and
+// a big arrow the way it is sliding, both gone when the finger lifts.
+SwipeHud :: (gesture: SwipeAreaResult, grid: TileMapResult, landscape: bool) {
+    size := grid.cell * 1.6
+    if size < 56.0 { size = 56.0 }
+    if size > 104.0 { size = 104.0 }
+    Box(frame.session, BoxProps.{.key = cast(u64)20070, .bounds = Rectangle.{gesture.start_x - size / 2.0, gesture.start_y - size / 2.0, size, size},
+            .fill = Color.{255, 255, 255, 30}, .border = Color.{255, 255, 255, 120}, .radius = size / 2.0})
+    if gesture.lean < 0 { return }
+    dx: float32 = ifx gesture.lean == 0 then -1.0 else ifx gesture.lean == 2 then 1.0 else 0.0
+    dy: float32 = ifx gesture.lean == 1 then -1.0 else ifx gesture.lean == 3 then 1.0 else 0.0
+    cx := gesture.start_x + dx * size * 0.8
+    cy := gesture.start_y + dy * size * 0.8
+    shape := SWIPE_ARROWS[gesture.lean]
+    SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{cx - size / 2.0 + 2.0, cy - size / 2.0 + 3.0, size, size}, .shape = shape,
+            .color = Color.{0, 0, 0, 90}})
+    SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{cx - size / 2.0, cy - size / 2.0, size, size}, .shape = shape,
+            .color = Color.{255, 255, 255, 230}})
+}
+
+// The first time a level opens, Shovey asks how to move: swipe and tap on
+// the left, the movement pad on the right, each shown as it plays. Help
+// changes it later. Nothing behind the question takes input meanwhile.
+ControlsChoice :: (width: float32, top: float32, bottom: float32) {
+    full := Rectangle.{0.0, top, width, bottom - top}
+    Box(frame.session, BoxProps.{.key = cast(u64)20050, .bounds = full, .fill = Color.{0, 0, 0, 160}})
+    unused Press(frame.session, PressProps.{.key = cast(u64)20051, .id = 20051, .bounds = full,
+            .label = AppLocaleHost("shovey_controls_choose"), .now = frame.now, .capture = true})
+    card_width := ifx width - 24.0 < 640.0 then width - 24.0 else 640.0
+    tile_width := (card_width - 48.0 - 14.0) / 2.0
+    tile_height := tile_width * 1.25 + 70.0
+    if tile_height > bottom - top - 150.0 { tile_height = bottom - top - 150.0 }
+    card_height := tile_height + 130.0
+    x := (width - card_width) / 2.0
+    y := top + (bottom - top - card_height) / 2.0
+    if y < top + 8.0 { y = top + 8.0 }
+    Box(frame.session, BoxProps.{.key = cast(u64)20052, .bounds = Rectangle.{x, y, card_width, card_height},
+            .fill = Color.{59, 64, 63, 255}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+    Caption(20053, Rectangle.{x + 16.0, y + 16.0, card_width - 32.0, 34.0}, AppLocaleHost("shovey_controls_choose"), 22, true)
+    Caption(20054, Rectangle.{x + 16.0, y + 50.0, card_width - 32.0, 24.0}, AppLocaleHost("shovey_controls_later"), 14, true)
+    tiles_y := y + 90.0
+    if ChoiceTile(20055, Rectangle.{x + 24.0, tiles_y, tile_width, tile_height}, false) { ControlsSetPad(false) }
+    // Each tile uses its id to id + 13, so the two stay apart.
+    if ChoiceTile(20080, Rectangle.{x + 24.0 + tile_width + 14.0, tiles_y, tile_width, tile_height}, true) { ControlsSetPad(true) }
+}
+
+// One way to move, shown as it plays: Shovey on the grass with a swipe, or
+// the movement pad itself, which can be tried right here.
+ChoiceTile :: (id: s32, bounds: Rectangle, pad: bool) -> bool {
+    press := Press(frame.session, PressProps.{.key = cast(u64)id, .id = id, .bounds = bounds,
+            .label = AppLocaleHost(ifx pad then "shovey_controls_pad" else "shovey_controls_swipe"), .now = frame.now})
+    Box(frame.session, BoxProps.{.key = cast(u64)(id + 1), .bounds = bounds, .fill = Color.{74, 80, 78, 255},
+            .border = ifx press.down then Color.{52, 185, 48, 255} else Color.{106, 112, 110, 255}, .radius = 14.0})
+    art := Rectangle.{bounds.x + 12.0, bounds.y + 12.0, bounds.width - 24.0, bounds.height - 86.0}
+    side := ifx art.width < art.height then art.width else art.height
+    square := Rectangle.{art.x + (art.width - side) / 2.0, art.y + (art.height - side) / 2.0, side, side}
+    chosen := press.clicked
+    if !pad {
+        // A patch of grass, Shovey in its middle, and a finger swiping right.
+        cell := side / 3.0
+        for row: cast(s32)0..2 {
+            for column: cast(s32)0..2 {
+                Sprite(cast(u64)(id + 2 + row * 3 + column), SPRITE_GRASS_EDGE, Rectangle.{square.x + cast(float32)column * cell,
+                        square.y + cast(float32)row * cell, cell, cell}, "")
+            }
+        }
+        Sprite(cast(u64)(id + 2 + 9), SPRITE_PLAYER + 2, Rectangle.{square.x + cell, square.y + cell, cell, cell}, "Shovey")
+        SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{square.x + side * 0.56, square.y + side * 0.46, side * 0.44, side * 0.44},
+                .shape = FingerSwipe.Shape, .color = Color.{255, 255, 255, 240}})
+        SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{square.x + side * 0.08, square.y + side * 0.02, side * 0.6, side * 0.3},
+                .shape = "S2.5rr:M3 12H19M14 7L19 12L14 17", .color = Color.{255, 236, 170, 235}})
+    } else {
+        tried := DirectionPad(frame.session, DirectionPadProps.{.key = cast(u64)(id + 2), .id = id + 2, .bounds = square,
+                .label = AppLocaleHost("shovey_controls_pad"), .now = frame.now, .repeat_seconds = 0.16})
+        chosen = chosen || tried.step
+    }
+    Caption(cast(u64)(id + 3 + 9), Rectangle.{bounds.x + 8.0, bounds.y + bounds.height - 72.0, bounds.width - 16.0, 26.0},
+        AppLocaleHost(ifx pad then "shovey_controls_pad" else "shovey_controls_swipe"), 17, true)
+    Caption(cast(u64)(id + 4 + 9), Rectangle.{bounds.x + 8.0, bounds.y + bounds.height - 44.0, bounds.width - 16.0, 38.0},
+        AppLocaleHost(ifx pad then "shovey_controls_pad_hint" else "shovey_controls_swipe_hint"), 12, true)
+    return chosen
 }
 
 TileName :: (kind: s32) -> string {
@@ -691,7 +781,9 @@ ShoveyFrame :: () {
     if key == 265 || key == 87 { keyed = 1 }
     if key == 262 || key == 68 { keyed = 2 }
     if key == 264 || key == 83 { keyed = 3 }
-    // A keyboard player does not need the on-screen stick until they touch.
+    // Until the controls are chosen the question takes every key.
+    choosing := !mini && !ControlsChosen()
+    if choosing { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyAct(BoardEngineDirection(keyed, landscape)) }
     if key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
@@ -737,6 +829,10 @@ ShoveyFrame :: () {
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
+    if choosing {
+        ControlsChoice(width, top, bottom)
+        return
+    }
     disabled := game.won || game.lost || game.level == ShoveyFinaleLevel()
     // Touch: swipe anywhere under the bar to step, or tap a cell or the space
     // beside the board to step towards it; hold either to keep walking. With
@@ -748,6 +844,7 @@ ShoveyFrame :: () {
         gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
                 .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
         step = BoardEngineDirection(gesture.swiped, landscape)
+        if gesture.down && !disabled { SwipeHud(gesture, grid, landscape) }
         if gesture.tapped || gesture.held {
             cell := TileMapCellAt(grid, gesture.x, gesture.y)
             cell = BoardLogicalIndex(cell, landscape)

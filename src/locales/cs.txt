@@ -58,6 +58,18 @@ Táhnout a klepnout
 [shovey_controls_pad]
 Směrový kříž
 ---
+[shovey_controls_choose]
+Jak se chceš pohybovat?
+---
+[shovey_controls_later]
+Kdykoli to můžeš změnit v nápovědě.
+---
+[shovey_controls_swipe_hint]
+Táhni po hrací ploše nebo klepni, kam má Shovey jít.
+---
+[shovey_controls_pad_hint]
+Šipky v rohu. Podrž jednu a Shovey půjde dál.
+---
 [shovey_shadow_pending]
 Pravidla stínu v této úrovni je ještě třeba ověřit.
 ---

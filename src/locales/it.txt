@@ -58,6 +58,18 @@ Scorri e tocca
 [shovey_controls_pad]
 Croce direzionale
 ---
+[shovey_controls_choose]
+Come vuoi muoverti?
+---
+[shovey_controls_later]
+Puoi cambiarlo quando vuoi in Aiuto.
+---
+[shovey_controls_swipe_hint]
+Scorri sul tabellone o tocca dove deve andare Shovey.
+---
+[shovey_controls_pad_hint]
+Frecce nell’angolo. Tienine premuta una per continuare a camminare.
+---
 [shovey_shadow_pending]
 Le regole dell’ombra in questo livello sono ancora da verificare.
 ---

@@ -117,6 +117,8 @@ main :: (argc: s32, argv: **u8) -> s32 {
     count: SceneryCount
     if !SceneryDress(*board, route, number, *count) { return Fail(scenery_failure) }
     if !ShoveyLoadData(*after, 0, EditBoardHex(*board)) { return Fail("the engine refuses the dressed board") }
+    // Still pictures show the board itself, without the to-do rings.
+    board_guides = false
     if !OpenDesktopSized(PICTURE_WIDTH, PICTURE_HEIGHT) {
         CloseDesktop()
         return 1

@@ -13,6 +13,14 @@ import tempfile
 import time
 
 
+
+def answer_controls(driver):
+    """Newer Shovey asks how to move the first time a level opens."""
+    driver.wait_idle(frames=4)
+    if driver.find(label='How do you want to move?', role='text'):
+        driver.press(label='Swipe and tap')
+        driver.wait_gone(label='How do you want to move?', role='text')
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
@@ -114,6 +122,7 @@ def main():
             driver.press(label='Shovey', role='button')
             driver.press(label='Shovey Classic', role='button')
             driver.wait(label=f'Level 1 / {args.expected_levels}')
+            answer_controls(driver)
             assert len(driver.find(label='Back', role='button', visible=True)) >= 2
             driver.press(label='Levels', role='button')
             assert not driver.find(label=str(args.expected_levels + 1), role='button'), 'Unapproved levels leaked into the update'

@@ -58,6 +58,18 @@ Deslizar y tocar
 [shovey_controls_pad]
 Cruceta
 ---
+[shovey_controls_choose]
+¿Cómo quieres moverte?
+---
+[shovey_controls_later]
+Puedes cambiarlo cuando quieras en Ayuda.
+---
+[shovey_controls_swipe_hint]
+Desliza sobre el tablero o toca adonde debe ir Shovey.
+---
+[shovey_controls_pad_hint]
+Flechas en la esquina. Mantén una pulsada para seguir caminando.
+---
 [shovey_shadow_pending]
 Falta verificar las reglas de la sombra en este nivel.
 ---

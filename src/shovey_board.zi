@@ -9,6 +9,8 @@
 #import "kryon/image_widget"
 #import "kryon/box_props"
 #import "kryon/box_widget"
+#import "kryon/svg_icon_props"
+#import "kryon/svg_icon_widget"
 #import "kryon/tile_map"
 #import "std/number_text"
 #import "std/c_string"
@@ -476,6 +478,77 @@ BoardGlidesClear :: () {
     for index: cast(s32)0..BOARD_GLIDES - 1 { board_glides[index] = BoardGlide.{} }
 }
 
+// Pieces still to move glow very faintly once Shovey has stood still for a
+// few seconds: balls, crates off their marks while marks are open, stars and
+// colour blocks not resting on a goal. Never pits or marks. Once everything
+// is done, home lights up warmly with sparkles rising from its door. Tools
+// that draw still pictures turn both off.
+board_guides: bool = true;
+board_idle_level: s32 = -1;
+board_idle_moves: s32;
+board_idle_since: float64;
+board_home_since: float64 = -1.0;
+BOARD_IDLE_SECONDS :: 4.0
+
+BoardPieceToMove :: (game: *ShoveyGame, at: s32, open_marks: bool, open_goals: bool) -> bool {
+    object := game.objects[at]; ground := game.ground[at]
+    if ShoveyBallColor(object) > 0 || object == 19 { return true }
+    if object == 9 { return open_marks && ground != 18 }
+    if ShoveyColorBlock(object) { return open_goals && !(ground == 39 && ShoveyColorRest(object)) }
+    return false
+}
+
+BoardGuides :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u64, now: float64, landscape: bool) {
+    if !board_guides || game.won || game.lost { return }
+    if board_idle_level != game.level || board_idle_moves != game.moves {
+        board_idle_level = game.level; board_idle_moves = game.moves; board_idle_since = now
+    }
+    breath := cast(float32)(0.5 + 0.5 * Math.Sin(now * 2.4))
+    if ShoveyRemaining(game) == 0 {
+        if board_home_since < 0.0 { board_home_since = now }
+        rise := cast(float32)((now - board_home_since) / 0.6)
+        if rise > 1.0 { rise = 1.0 }
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if game.ground[at] != 7 { continue }
+            cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            cx := cell.x + cell.width / 2.0; cy := cell.y + cell.height / 2.0
+            light := cell.width * 1.5
+            unused Box(session, BoxProps.{.key = WidgetPartKey(key, 600), .bounds = Rectangle.{cx - light / 2.0, cy - light / 2.0, light, light},
+                    .fill = Color.{255, 214, 120, cast(u8)(rise * (40.0 + 30.0 * breath))}, .radius = light / 2.0})
+            for spark: cast(s32)0..2 {
+                phase := now * 0.7 + cast(float64)spark / 3.0
+                t := cast(float32)(phase - cast(float64)cast(s64)phase)
+                sx := cx + cast(float32)Math.Sin(cast(float64)t * 6.283 + cast(float64)spark * 2.1) * cell.width * 0.22
+                sy := cy + cell.height * 0.15 - t * cell.height * 0.85
+                size := cell.width * 0.1
+                unused Box(session, BoxProps.{.key = WidgetPartKey(key, 601 + spark), .bounds = Rectangle.{sx - size / 2.0, sy - size / 2.0, size, size},
+                        .fill = Color.{255, 244, 190, cast(u8)(rise * (1.0 - t) * 230.0)}, .radius = size / 2.0})
+            }
+            break
+        }
+        return
+    }
+    board_home_since = -1.0
+    idle := cast(float32)(now - board_idle_since) - BOARD_IDLE_SECONDS
+    if idle <= 0.0 { return }
+    fade := ifx idle > 1.5 then 1.0 else idle / 1.5
+    open_marks := false; open_goals := false
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.ground[at] == 18 && game.objects[at] != 9 { open_marks = true }
+        if game.ground[at] == 39 && !ShoveyColorRest(game.objects[at]) { open_goals = true }
+    }
+    shown: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if shown >= 48 || !BoardPieceToMove(game, at, open_marks, open_goals) { continue }
+        cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
+        halo := cell.width * 1.3
+        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 500 + shown), .bounds = Rectangle.{cell.x + (cell.width - halo) / 2.0,
+                cell.y + (cell.height - halo) / 2.0, halo, halo}, .fill = Color.{255, 240, 190, cast(u8)(fade * (10.0 + 16.0 * breath))},
+                .border = Color.{255, 240, 190, cast(u8)(fade * (24.0 + 36.0 * breath))}, .radius = halo / 2.0})
+        shown += 1
+    }
+}
+
 // Throws and blasts play over the board. The engine reports no events, so
 // the board from the frame before tells what the last move did: a shot that
 // left Shovey's hand flies along its line and every target it passed bursts
@@ -485,10 +558,13 @@ BOARD_FLIGHT_STEP :: 0.05
 BOARD_BURST_FRAME :: 0.06
 BOARD_BLAST_FRAME :: 0.08
 BoardEffect :: struct {
-    // 1 a struck target, 2 a blast; 0 a free slot.
+    // 1 a struck target, 2 a blast, 3 a ball dropping into its pit; 0 a
+    // free slot.
     kind: s32
     at: s32
     start: float64
+    // The ball that dropped.
+    piece: s32
 }
 board_effects: [BOARD_EFFECTS]BoardEffect;
 board_flight_from: s32 = -1;
@@ -502,13 +578,13 @@ board_seen_powers: s32;
 board_seen_ground: [SHOVEY_CELLS]s32;
 board_seen_objects: [SHOVEY_CELLS]s32;
 
-BoardEffectStart :: (kind: s32, at: s32, start: float64) {
+BoardEffectStart :: (kind: s32, at: s32, start: float64, piece: s32 = 0) {
     slot: s32 = 0
     for index: cast(s32)0..BOARD_EFFECTS - 1 {
         if board_effects[index].kind == 0 { slot = index; break }
         if board_effects[index].start < board_effects[slot].start { slot = index }
     }
-    board_effects[slot] = BoardEffect.{.kind = kind, .at = at, .start = start}
+    board_effects[slot] = BoardEffect.{.kind = kind, .at = at, .start = start, .piece = piece}
 }
 
 BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
@@ -533,6 +609,12 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
         }
         for at: cast(s32)0..SHOVEY_CELLS - 1 {
             if board_seen_ground[at] == SHOVEY_CRACKED_WALL && game.ground[at] != SHOVEY_CRACKED_WALL { BoardEffectStart(2, at, now) }
+        }
+        // A ball pushed into its pit: Shovey stands where the ball was.
+        before := ifx game.player >= 0 then board_seen_objects[game.player] else 0
+        if ShoveyBallColor(before) > 0 {
+            pit := ShoveyNeighbor(game.player, game.direction)
+            if pit >= 0 && ShoveyPitColor(game.ground[pit]) > 0 && game.objects[pit] == 0 { BoardEffectStart(3, pit, now, before) }
         }
     }
     board_seen = true
@@ -667,6 +749,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
             Image(session, image)
         }
     }
+    BoardGuides(session, game, grid, key, now, landscape)
     files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
     shot_label := ifx cast(s64)SPRITE_SHOT < names.count then names[SPRITE_SHOT] else ""
     // A held shot glows in Shovey's hands on the side he faces, bobbing a
@@ -723,6 +806,29 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     for index: cast(s32)0..BOARD_EFFECTS - 1 {
         effect := *board_effects[index]
         if effect.kind == 0 || now < effect.start { continue }
+        if effect.kind == 3 {
+            // The ball shrinks down into the hole while a ripple of the
+            // pit's colour spreads.
+            progress := cast(float32)((now - effect.start) / 0.4)
+            if progress >= 1.0 { effect.kind = 0; continue }
+            cell := TileMapCell(grid, BoardDisplayIndex(effect.at, landscape))
+            ripple := cell.width * (0.5 + 0.55 * progress)
+            pit := ShoveyPitColor(game.ground[effect.at])
+            colours: [7]Color = .[Color.{255, 255, 255, 255}, Color.{226, 64, 52, 255}, Color.{58, 110, 226, 255}, Color.{66, 180, 78, 255},
+                Color.{64, 200, 214, 255}, Color.{168, 92, 214, 255}, Color.{240, 200, 50, 255}]
+            tint := colours[ifx pit >= 0 && pit < 7 then pit else 0]
+            tint.a = cast(u8)((1.0 - progress) * 210.0)
+            unused Box(session, BoxProps.{.key = WidgetPartKey(key, 450 + index), .bounds = Rectangle.{cell.x + (cell.width - ripple) / 2.0,
+                    cell.y + (cell.height - ripple) / 2.0, ripple, ripple}, .border = tint, .radius = ripple / 2.0})
+            size := cell.width * 0.85 * (1.0 - progress)
+            sprite := KindSprite(game, effect.piece, -1, now, landscape)
+            if sprite >= 0 && size > 1.0 {
+                Image(session, ImageProps.{.key = WidgetPartKey(key, 400 + index), .asset_path = files[sprite], .alt_text = "",
+                        .bounds = Rectangle.{cell.x + (cell.width - size) / 2.0, cell.y + (cell.height - size) / 2.0 + progress * cell.height * 0.08, size, size},
+                        .fit = ImageFit.ImageFitContain, .smooth = true})
+            }
+            continue
+        }
         frame_time := ifx effect.kind == 1 then BOARD_BURST_FRAME else BOARD_BLAST_FRAME
         frames: s32 = ifx effect.kind == 1 then 6 else 8
         frame := cast(s32)((now - effect.start) / frame_time)

@@ -15,6 +15,14 @@ import time
 from PIL import Image, ImageChops
 
 
+
+def answer_controls(driver):
+    """Newer Shovey asks how to move the first time a level opens."""
+    driver.wait_idle(frames=4)
+    if driver.find(label='How do you want to move?', role='text'):
+        driver.press(label='Swipe and tap')
+        driver.wait_gone(label='How do you want to move?', role='text')
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
@@ -136,6 +144,7 @@ def main():
                 if edition == 'classic':
                     driver.wait(label='Restart', role='button')
                     driver.wait(label=f'Level 1 / {approved_count}', role='text')
+                    answer_controls(driver)
                     # Exercise Shovey's own action, below Inbe's return bar.
                     back = driver.find(label='Back', role='button', visible=True)
                     assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working Back action'

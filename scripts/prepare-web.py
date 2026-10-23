@@ -11,6 +11,10 @@ if assets.exists():
 assets.mkdir(parents=True)
 for name in ('shovey', 'shovey-editor'):
     shutil.copytree(root / 'build/game-assets' / name / 'assets' / name, assets / name)
+# The editor offers only Classic until Island is for sale, so the browser
+# build leaves Island's pictures out; that keeps runtime.data under the
+# Cloudflare Pages file limit.
+shutil.rmtree(assets / 'shovey-editor' / 'island', ignore_errors=True)
 
 translations = runpy.run_path(str(root / 'scripts/build-bundles.py'))['translations']
 code = []

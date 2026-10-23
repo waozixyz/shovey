@@ -58,6 +58,18 @@
 [shovey_controls_pad]
 방향 패드
 ---
+[shovey_controls_choose]
+어떻게 움직일까요?
+---
+[shovey_controls_later]
+도움말에서 언제든지 바꿀 수 있어요.
+---
+[shovey_controls_swipe_hint]
+보드를 밀거나 Shovey가 갈 곳을 탭하세요.
+---
+[shovey_controls_pad_hint]
+구석의 화살표를 쓰세요. 누르고 있으면 계속 걸어요.
+---
 [shovey_shadow_pending]
 이 단계의 그림자 규칙은 아직 확인이 필요합니다.
 ---
