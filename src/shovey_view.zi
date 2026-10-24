@@ -477,9 +477,9 @@ LevelPicture :: (number: s32, picture: Rectangle, image_key: u64, board_key: u64
         level_preview_paths[at][length] = 0
     }
     if level_preview_current[at] { Image(frame.session, ImageProps.{.key = image_key,
-            .asset_path = TextUntilNul(level_preview_paths[at][:]),
-            .alt_text = label, .bounds = picture,
-            .fit = ImageFit.ImageFitContain, .smooth = true}) }
+                .asset_path = TextUntilNul(level_preview_paths[at][:]),
+                .alt_text = label, .bounds = picture,
+                .fit = ImageFit.ImageFitContain, .smooth = true}) }
     else { ShoveyBoardPreview(frame.session, number, picture, board_key, sprite_names[:], landscape) }
 }
 
@@ -653,6 +653,8 @@ ContinueGame :: () {
     slide_count = 0
     slide_next = 0
     unused ShoveyContinue(*progress, *game)
+    // Past the last level Continue opens it afresh, not its ending.
+    if game.won && game.level >= ShoveyLevelCount() { unused ShoveyLoad(*game, ShoveyLevelCount()) }
     selector_open = false
     help_open = false
     last_tick = frame.now
@@ -798,7 +800,7 @@ OnBridge :: () -> bool {
     at := game.player
     if at < 0 || game.tiles[at] == 64 { return false }
     return (OpenWater(ShoveyNeighbor(at, 0)) && OpenWater(ShoveyNeighbor(at, 2))) ||
-        (OpenWater(ShoveyNeighbor(at, 1)) && OpenWater(ShoveyNeighbor(at, 3)))
+    (OpenWater(ShoveyNeighbor(at, 1)) && OpenWater(ShoveyNeighbor(at, 3)))
 }
 
 // Finds Shovey's walk to the boat through the engine, step by step from
@@ -870,7 +872,7 @@ NeighbourBoards :: (origin: Vector2, size: Vector2, landscape: bool) {
     up := EngineVector(2, landscape)
     inland := EngineVector(1, landscape)
     steps: [8]Vector2 = .[Vector2.{0.0, 1.0}, Vector2.{0.0, -1.0}, Vector2.{1.0, 0.0}, Vector2.{1.0, 1.0},
-        Vector2.{1.0, -1.0}, Vector2.{2.0, 0.0}, Vector2.{2.0, 1.0}, Vector2.{2.0, -1.0}]
+    Vector2.{1.0, -1.0}, Vector2.{2.0, 0.0}, Vector2.{2.0, 1.0}, Vector2.{2.0, -1.0}]
     for index: cast(s32)0..7 {
         level := ifx index == 0 then SHOVEY_SECRET_UP else ifx index == 1 then SHOVEY_SECRET_DOWN else game.level - index + 1
         if level < 1 { continue }
