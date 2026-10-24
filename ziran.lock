@@ -10,6 +10,14 @@
       "url": "https://github.com/ziranlang/qrcode.git"
     },
     {
+      "commit": "ce510505c384fb2b0c4b47e216b80cae53576b77",
+      "dependencies": {"raylib": "p5a77c9c35110e925"},
+      "id": "p28a106e741584b2c",
+      "name": "kryon",
+      "ref": "master",
+      "url": "https://github.com/kryonlabs/kryon.git"
+    },
+    {
       "commit": "e1f480f382d9443c4412133b55948374c77a5c21",
       "dependencies": {},
       "id": "p4b0a50b49959e674",
@@ -36,14 +44,6 @@
       "url": "https://github.com/ziranlang/oqs.git"
     },
     {
-      "commit": "76e4f4bd3a73a0e67107fac5187a4e489013b548",
-      "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "p7c48ed6b5413bbae",
-      "name": "kryon",
-      "ref": "master",
-      "url": "https://github.com/kryonlabs/kryon.git"
-    },
-    {
       "commit": "f5f0a19a5dc6c14a49adb3cd63ea79a60f6ba77b",
       "dependencies": {},
       "id": "p809b4d31a48625a3",
@@ -54,7 +54,7 @@
     },
     {
       "commit": "f26a99b27919d0598cab6cdd3d33a2b2da333d24",
-      "dependencies": {"daochi_client": "pf64f159dfdbd5ee5", "kryon": "p7c48ed6b5413bbae", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
+      "dependencies": {"daochi_client": "pf64f159dfdbd5ee5", "kryon": "p28a106e741584b2c", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
       "id": "pb63c6249e84115e6",
       "name": "Entity",
       "ref": "master",
@@ -62,7 +62,7 @@
     },
     {
       "commit": "12e52c0599f2c6b9375202ff678f5125c10d0e6a",
-      "dependencies": {"crypto": "pf039d7a776333200", "kryon": "p7c48ed6b5413bbae"},
+      "dependencies": {"crypto": "pf039d7a776333200", "kryon": "p28a106e741584b2c"},
       "id": "pbc99e0ac3699631f",
       "name": "Apps",
       "ref": "master",
@@ -94,7 +94,7 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "pbc99e0ac3699631f", "entity": "pb63c6249e84115e6", "kryon": "p7c48ed6b5413bbae", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "pbc99e0ac3699631f", "entity": "pb63c6249e84115e6", "kryon": "p28a106e741584b2c", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {
