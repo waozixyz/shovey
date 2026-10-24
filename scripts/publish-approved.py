@@ -270,10 +270,19 @@ def publish_campaign():
             run(['python3', 'tools/levels/landscape.py'])
             run(['python3', 'tools/levels/levels.py', 'previews'])
             run(['make', 'solver'])
-            status('Checking winning routes and release', 'checking')
+            # Routes already proven for the exact same board and solver are
+            # not replayed again; only new or changed levels are.
+            proven_path = ROOT / 'backup/editor-drafts/proven-routes.json'
+            proven = set(json.loads(proven_path.read_text())) if proven_path.exists() else set()
+            solver = (ROOT / 'build/solver/fingerprint').read_text().strip() if (ROOT / 'build/solver/fingerprint').exists() else ''
             for level in approved:
                 board = ''.join(level['cells']) + ''.join(level['tiles']) + ''.join(level['decorations'])
+                proof = hashlib.sha256(f"{solver}:{level['number']}:{board}:{level['solution']}".encode()).hexdigest()
+                if proof in proven: continue
                 run([ROOT / 'build/solver/shovey-solve-classic', 'verify', '--level', level['number'], board, level['solution']])
+                proven.add(proof)
+            atomic(proven_path, json.dumps(sorted(proven)) + '\n')
+            status('Building Arcade release', 'checking')
             run(['sh', 'tests/release_test.sh', toolchain])
             run(['python3', 'tests/assets_test.py'])
             run(['make', 'all'], arcade)

@@ -713,7 +713,7 @@ LoadPublication :: () {
 // The publisher's steps in order, so the status can say how far it is.
 PUBLICATION_STEPS :: 6
 publication_steps: [6]string = .["Updating live levels", "Building campaign",
-    "Checking winning routes and release", "Checking game screens", "Publishing release", "Verifying server release"];
+    "Building Arcade release", "Checking game screens", "Publishing release", "Verifying server release"];
 
 PublicationBusy :: () -> bool {
     if !Same(Board(current), publication_board[:]) { return false }
