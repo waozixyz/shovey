@@ -61,6 +61,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     sys.path.insert(0, str(args.inbe_source / 'tests'))
     from ui_driver import UiDriver
+    from inbe_apps import open_arcade
     driver = UiDriver(output / 'driver')
 
     @contextlib.contextmanager
@@ -141,12 +142,7 @@ def main():
                               round(before_apps['y'] - origin['y']),
                               round(before_apps['x'] - origin['x'] + before_apps['width']),
                               round(before_apps['y'] - origin['y'] + before_apps['height']))
-                driver.press(label='Apps', role='button')
-                if not driver.find(label='Arcade', role='button', visible=True):
-                    driver.press(label='Find an app', role='text_field')
-                    driver.type('Arcade')
-                driver.press(label='Arcade', role='button')
-                driver.wait_gone(label='Find an app', role='text_field', timeout=30)
+                open_arcade(driver)
                 # Arcade's cover shows Shovey's art with its Classic card and
                 # Play, which opens the level directly.
                 driver.wait(label='Classic', role='text')
