@@ -275,13 +275,24 @@ def publish_campaign():
                 'env', '-u', 'DISPLAY', '-u', 'WAYLAND_DISPLAY', '-u', 'XAUTHORITY', '-u', 'DBUS_SESSION_BUS_ADDRESS',
                 '-u', 'SESSION_MANAGER', 'YUE_DESKTOP_RECOVERY=0', 'SDL_AUDIODRIVER=dummy',
                 'xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1600x1100x24']
-            run([*private, 'python3', arcade / 'tests/collection_ui_test.py', '--binary', arcade / 'build/arcade', '--inbe-source', inbe], arcade)
-            run([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade)
-            run([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
-                 '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'])
+            screens = [
+                ([*private, 'python3', arcade / 'tests/collection_ui_test.py', '--binary', arcade / 'build/arcade', '--inbe-source', inbe], arcade),
+                ([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade),
+                ([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
+                  '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'], ROOT)]
             if len(approved) >= 28:
-                run([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
-                     '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'])
+                screens.append(([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
+                                 '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'], ROOT))
+            for command, cwd in screens:
+                try:
+                    run(command, cwd)
+                except subprocess.CalledProcessError:
+                    # The screen checks read the level count from approved.json;
+                    # an approval during this build makes them expect the next
+                    # campaign, which the rebuild below checks.
+                    if fingerprint() == approved_hash:
+                        raise
+                    break
             if fingerprint() != approved_hash:
                 # Requests for this snapshot join the next campaign build.
                 Queue(ROOT).advance(ACTIVE_IDS, 'building', 'Campaign changed; rebuilding')
