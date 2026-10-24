@@ -10,6 +10,11 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 SEARCHES = ('greedy', 'macro-bfs', 'chain', 'bfs')
+# While the owner plays, a continuation search runs beside the game: two
+# searches, at the lowest priority, on the cores kept for background work,
+# so the editor stays smooth.
+LIVE_SEARCHES = ('greedy', 'chain')
+BACKGROUND = ['taskset', '-c', '2-5,10-15', 'nice', '-n', '19']
 
 
 def run(directory, root=ROOT):
@@ -37,7 +42,10 @@ def run(directory, root=ROOT):
         for index, name in enumerate(SEARCHES):
             if cancelled or (directory / 'cancel').exists():
                 break
-            command = ['nice', '-n', '10', str(root / 'build/solver/shovey-solve-classic'), 'solve', '--level', level,
+            if mode == 'live' and name not in LIVE_SEARCHES:
+                (directory / (name + '.out')).write_text('')
+                continue
+            command = BACKGROUND + [str(root / 'build/solver/shovey-solve-classic'), 'solve', '--level', level,
                        '--seconds', seconds, '--max-mb', '128', '--only', name]
             if prefix:
                 if mode == 'live':

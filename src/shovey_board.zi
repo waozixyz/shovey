@@ -934,18 +934,12 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
     BoardGuides(session, game, grid, key, now, landscape)
     files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
     shot_label := ifx cast(s64)SPRITE_SHOT < names.count then names[SPRITE_SHOT] else ""
-    // A held shot glows in Shovey's hands on the side he faces, bobbing a
-    // little, and dots show where a throw would fly; targets on that line
-    // are ringed.
+    // Shovey holds a picked-up shot at his side, and dots show where a
+    // throw would fly; targets on that line are ringed.
     if (game.powers & SHOVEY_AMMO) != 0 && !game.lost && !game.won && game.player >= 0 && game.player < SHOVEY_CELLS {
         cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
         size := cell.width
         ahead := ShoveyNeighbor(game.player, game.direction)
-        dx: float32 = 0.0; dy: float32 = 0.0
-        if ahead >= 0 {
-            next := TileMapCell(grid, BoardDisplayIndex(ahead, landscape))
-            dx = (next.x - cell.x) / size; dy = (next.y - cell.y) / size
-        }
         dot: s32 = 0
         at := ahead
         while at >= 0 && !ShoveyShotStops(game, at) && dot < 24 {
@@ -960,12 +954,10 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
             dot += 1
             at = ShoveyNeighbor(at, game.direction)
         }
-        bob := cast(float32)Math.Sin(now * 6.0) * size * 0.04
-        held := size * 0.5
-        cx := cell.x + size * 0.5 + dx * size * 0.36
-        cy := cell.y + size * 0.5 + dy * size * 0.36 + bob
-        unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 298), .bounds = Rectangle.{cx - held * 0.8, cy - held * 0.8, held * 1.6, held * 1.6},
-                .fill = Color.{255, 214, 120, 96}, .radius = held * 0.8})
+        // He holds the shot at his left side, its ball against his body.
+        held := size * 0.55
+        cx := cell.x + size * 0.08
+        cy := cell.y + size * 0.58
         Image(session, ImageProps.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = files[SPRITE_SHOT],
                 .alt_text = shot_label, .bounds = Rectangle.{cx - held / 2.0, cy - held / 2.0, held, held},
                 .fit = ImageFit.ImageFitContain, .smooth = true})

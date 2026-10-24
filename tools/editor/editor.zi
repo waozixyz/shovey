@@ -2394,7 +2394,8 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if key == 83 && ctrl { StartSave() }
     }
     // Check again shortly after the last change.
-    delay: s64 = ifx playing then 600 else 1200
+    // While playing, wait for a real pause so a check never runs move by move.
+    delay: s64 = ifx playing then 1500 else 1200
     if check_wanted && (!playing || (!watching && !play.won)) && !pointer.down && !secondary.down && now - edited_at >= delay { StartCheck() }
     AutoSave()
 
