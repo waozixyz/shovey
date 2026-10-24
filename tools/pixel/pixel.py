@@ -602,15 +602,45 @@ def colour_goal(stripe=(204, 82, 66, 255), pale=(238, 200, 190, 255)):
 
 # The big boat is 96 by 96, three cells each way; Codex drew it (prompt and
 # raw pictures in backup/boat-2026-10-24) and it was fitted with an area
-# average snapped to the model's colours. Its near side starts at this row.
-BOAT_HULL_FRONT = 75
+# average snapped to the model's colours. Its near side starts at the light
+# top edge of the near gunwale, which runs down from the stern to the bow;
+# rows above this one belong to the boat's far side and its deck.
+BOAT_NEAR_SIDE_FROM = 72
+
+
+def boat_near_edge(image):
+    """For each column, the first row of the near side of the hull: climbing
+    from the keel past the dark planks to the near gunwale's light edge, the
+    top of that edge; a column without one takes its neighbour's row."""
+    def light(x, y):
+        r, g, b, a = image.getpixel((x, y))
+        return a and (r * 3 + g * 6 + b) / 10 >= 160
+    edge = [None] * image.width
+    for x in range(image.width):
+        rows = [y for y in range(image.height) if image.getpixel((x, y))[3]]
+        if not rows:
+            continue
+        y = rows[-1]
+        while y >= BOAT_NEAR_SIDE_FROM and not light(x, y):
+            y -= 1
+        if y < BOAT_NEAR_SIDE_FROM:
+            continue
+        while y - 1 >= BOAT_NEAR_SIDE_FROM and light(x, y - 1):
+            y -= 1
+        edge[x] = y
+    known = [x for x in range(image.width) if edge[x] is not None]
+    for x in range(image.width):
+        if edge[x] is None:
+            edge[x] = edge[min(known, key=lambda k: abs(k - x))] if known else image.height
+    return edge
 
 
 def boat_hull_front(image):
     """The near side of the big boat's hull, drawn again over Shovey so he
-    sits inside the boat."""
+    sits inside the boat, cut exactly along the near gunwale."""
     front = image.copy()
-    front.paste((0, 0, 0, 0), (0, 0, front.width, BOAT_HULL_FRONT))
+    for x, y in enumerate(boat_near_edge(image)):
+        front.paste((0, 0, 0, 0), (x, 0, x + 1, y))
     return front
 
 
@@ -620,35 +650,16 @@ BOAT_WAKE_WIDTH = 128
 
 
 def boat_wake(frame):
-    """Water crashing into the big boat's bow, one of four frames: a white
-    crest climbing the stem, spray flung ahead and foam streaks along the
-    waterline that slide back frame by frame."""
+    """Foam on the water round the big boat, one of four frames: streaks
+    along its waterline that slide back frame by frame and the bow wave
+    spreading on the surface ahead."""
     image = Image.new('RGBA', (BOAT_WAKE_WIDTH, 96))
     draw = ImageDraw.Draw(image)
     white, pale, blue = (246, 252, 252, 255), (178, 224, 242, 255), (98, 166, 208, 255)
-    rise = (2, 6, 9, 5)[frame]
-    # The crest climbs the stem and curls forward over the water.
-    for row in range(14 + rise):
-        y = 93 - row
-        lean = row * row // 18
-        x0 = 82 + row // 2
-        x1 = x0 + 5 + lean // 2 + (row + frame) % 3
-        draw.line([(x0, y), (x1, y)], fill=pale if row % 5 == 4 else white)
-        draw.point((x0 - 1, y), fill=pale)
-        draw.point((x1 + 1, y), fill=blue)
-    # Spray flung ahead of the bow, higher on the bigger frames.
-    drops = ((2, 0), (6, -3), (10, 2), (5, 6), (14, -2), (9, -7), (18, 3), (13, 8), (21, -5))
-    for index, (dx, dy) in enumerate(drops):
-        x = 96 + dx + (frame * 3 + index) % 4
-        y = 80 - rise - dy + (frame + index) % 3
-        if x < BOAT_WAKE_WIDTH - 1 and 0 <= y < 95:
-            size = 2 if index % 3 == 0 else 1
-            draw.rectangle((x, y, x + size - 1, y + size - 1), fill=white if index % 2 else pale)
-    # The bow wave spreads along the water ahead.
-    draw.line([(80, 93), (110 + rise, 93)], fill=white)
-    draw.line([(78, 94), (116 + rise, 94)], fill=pale)
-    draw.line([(76, 95), (122, 95)], fill=blue)
-    # Foam streaks slipping back along the waterline.
+    reach = (0, 3, 5, 2)[frame]
+    draw.line([(80, 93), (106 + reach, 93)], fill=white)
+    draw.line([(78, 94), (112 + reach, 94)], fill=pale)
+    draw.line([(76, 95), (118 + reach, 95)], fill=blue)
     for start in range(-24, 96, 24):
         x = start + 24 - frame * 6
         draw.line([(max(0, x), 93), (min(78, x + 10), 93)], fill=white)

@@ -165,7 +165,7 @@
     {
       "path": "sprites/boat-big-hull.png",
       "depicts": "landscape presentation of the near side of the big boat's hull, drawn over Shovey when he rides in it",
-      "sha256": "cac90cf02ab0b2674b64f15fd52a2b7ce850bb833ce2c3bb2ac0b87246b8731c"
+      "sha256": "3b27260d69e55e7deea6c28b4a9228a886d713c7467f80719e31d16d9fa21d02"
     },
     {
       "path": "sprites/boat-big.png",
@@ -175,22 +175,22 @@
     {
       "path": "sprites/boat-wake-0.png",
       "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 1 of 4",
-      "sha256": "2a2eb585099b93a89d302b6c1076d7a9c256fe039db521c907b3ad2f05207a8b"
+      "sha256": "7bf95157366a6bca0882e88fa81058b989acb07d2031e6a6b205b67ed261d2cf"
     },
     {
       "path": "sprites/boat-wake-1.png",
       "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 2 of 4",
-      "sha256": "6af934aed74712db09254a8306d6e0fb2af6bae33eff9d4bc2bfa45f91c6a4a4"
+      "sha256": "f0646f7bbc884596e216d4150daf0a59d59efa4a88013b061caee528db5670eb"
     },
     {
       "path": "sprites/boat-wake-2.png",
       "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 3 of 4",
-      "sha256": "4fa0693a18556455e9e361289bc5a6ec1678d9000ee654f63a7d0ce84c82c774"
+      "sha256": "ae7eb17c9f9a7fa3545f00a749bcbb60088a51825fac63407d1871f968724aef"
     },
     {
       "path": "sprites/boat-wake-3.png",
       "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 4 of 4",
-      "sha256": "22d3695e043b178b8d0957583719a86738f705afcf9f80dbe8e92a7ec8d2ee7b"
+      "sha256": "8cca9109c3aba785bdc95729cbeb42aeabf613d8855d11d34c349ce8860f5074"
     },
     {
       "path": "sprites/burst-0.png",

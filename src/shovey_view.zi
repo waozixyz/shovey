@@ -676,9 +676,9 @@ WinPause :: () {
 // open water, the picture fades, and THE END rolls over the campaign's
 // boards until a level is chosen. A last level won at a house rests a moment
 // first.
-SAIL_SECONDS :: 6.0
+SAIL_SECONDS :: 9.0
 ENDING_REST_SECONDS :: 1.6
-ENDING_FADE_SECONDS :: 1.2
+ENDING_FADE_SECONDS :: 1.8
 ENDING_ROW_SECONDS :: 2.6
 ending_level: s32;
 ending_won_at: float64;
@@ -819,9 +819,11 @@ EndingShade :: () -> float32 {
     return ifx shade < 0.0 then 0.0 else ifx shade > 1.0 then 1.0 else shade
 }
 
-// THE END over the campaign's boards, which roll slowly upwards in a loop.
-EndingScreen :: (width: float32, top: float32, bottom: float32) {
-    area := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
+// THE END over the campaign's boards, which roll slowly upwards in a loop,
+// on the whole screen with no bar: a click, a touch or Enter goes back to
+// the title, and the game opens on the level list from then on.
+EndingScreen :: (width: float32, top: float32, bottom: float32, key: s32) {
+    area := Rectangle.{0.0, top, width, bottom - top}
     landscape := BoardLandscape(width, bottom - top)
     ResetLevelPreviews(landscape)
     SpriteNames()
@@ -835,16 +837,22 @@ EndingScreen :: (width: float32, top: float32, bottom: float32) {
     rolled := cast(float32)((frame.now - ending_at) / ENDING_ROW_SECONDS) * row_height
     first := cast(s32)(rolled / row_height)
     shown := cast(s32)(area.height / row_height) + 2
-    for slot: cast(s32)0..shown - 1 {
-        row := first + slot
-        y := area.y + gap + cast(float32)row * row_height - rolled
-        for column: cast(s32)0..columns - 1 {
-            number := (row % rows) * columns + column + 1
-            if number > count { continue }
-            part := slot * columns + column
-            LevelPicture(number, Rectangle.{gap + cast(float32)column * (card_width + gap), y, card_width, card_height},
-                cast(u64)(60000 + part), cast(u64)(61000 + part * 8), landscape)
+    // The boards roll inside a still scroll area, which keeps them on the
+    // screen.
+    clip := Scroll(frame.session, ScrollProps.{.key = cast(u64)20110, .bounds = area, .content_height = cast(s32)area.height})
+    if clip.opened {
+        for slot: cast(s32)0..shown - 1 {
+            row := first + slot
+            y := clip.content.y + gap + cast(float32)row * row_height - rolled
+            for column: cast(s32)0..columns - 1 {
+                number := (row % rows) * columns + column + 1
+                if number > count { continue }
+                part := slot * columns + column
+                LevelPicture(number, Rectangle.{clip.content.x + gap + cast(float32)column * (card_width + gap), y, card_width, card_height},
+                    cast(u64)(60000 + part), cast(u64)(61000 + part * 8), landscape)
+            }
         }
+        End(frame.session)
     }
     // A veil over the boards keeps the words clear; the first moments rise
     // out of the slate the board faded into.
@@ -855,14 +863,20 @@ EndingScreen :: (width: float32, top: float32, bottom: float32) {
     middle := area.y + area.height * 0.42
     Caption(20025, Rectangle.{16.0, middle - 44.0, width - 32.0, 72.0}, AppLocaleHost("shovey_the_end"), 52, true)
     Caption(20026, Rectangle.{24.0, middle + 36.0, width - 48.0, 64.0}, AppLocaleHost("shovey_finale"), 18, true)
-    if !mini && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
-        if !ShoveyBack() { LeaveForGameSelection() }
-        return
-    }
-    levels_x: float32 = ifx mini then 8.0 else 92.0
-    if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+    press := Press(frame.session, PressProps.{.key = cast(u64)20111, .id = 20111, .bounds = area,
+            .label = AppLocaleHost("shovey_back"), .now = frame.now})
+    if press.clicked || key == 257 || key == 32 || key == 256 {
         selector_open = true
+        LeaveForGameSelection()
     }
+}
+
+// Every level completed: the game then opens on the level list.
+ShoveyAllDone :: () -> bool {
+    for level: cast(s32)1..ShoveyLevelCount() {
+        if !progress.completed[level - 1] { return false }
+    }
+    return true
 }
 
 // How dark the board is at this moment of a level change, 0 to 1.
@@ -905,6 +919,7 @@ ShoveyFrame :: () {
         // start; an embedded mini page saves only once something changes.
         latest := ShoveyOpenLatest(*progress, *game)
         if latest || !mini { Remember() }
+        if ShoveyAllDone() { selector_open = true }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
         last_tick = frame.now
         loaded = true
@@ -1060,7 +1075,7 @@ ShoveyFrame :: () {
         return
     }
     if ending_at > 0.0 {
-        EndingScreen(width, top, bottom)
+        EndingScreen(width, top, bottom, key)
         return
     }
     // Return sits at the edge, then the game's own navigation and status.
@@ -1141,6 +1156,15 @@ ShoveyFrame :: () {
         sail_cell = grid.cell
         sail_start_x = boat_cell.x + grid.cell * 1.5
         sail_origin = Vector2.{grid.board.x, grid.board.y}
+    }
+    if board_sail > BOAT_HOP {
+        // They sail into the sunset: the light warms and a low sun shows
+        // ahead of them.
+        glow := (board_sail - BOAT_HOP) / (1.0 - BOAT_HOP)
+        sun := area.height * 0.7
+        Fill(cast(u64)20112, Rectangle.{area.x + area.width - sun * 0.45, area.y + area.height * 0.4 - sun / 2.0, sun, sun},
+            Color.{255, 206, 110, cast(u8)(glow * 190.0)}, sun / 2.0)
+        Fill(cast(u64)20113, area, Color.{255, 120, 60, cast(u8)(glow * 105.0)})
     }
     shade := LevelChangeShade()
     ending_shade := EndingShade()

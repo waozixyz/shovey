@@ -69,13 +69,13 @@ SPRITE_COUNT :: 292
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
 BOAT_DECK_X :: 0.2
-BOAT_DECK_Y :: 0.86
+BOAT_DECK_Y :: 0.9
 BOAT_RIDER :: 0.28
 // The part of the sailing he spends jumping from his cell into the boat.
 BOAT_HOP :: 0.1
 // How many cells the boat sails out to sea, and how much wider than the
 // boat the wake picture is, for the spray ahead of the bow.
-BOAT_TRAVEL :: 16.0
+BOAT_TRAVEL :: 24.0
 BOAT_WAKE_WIDE :: 1.3333334
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
