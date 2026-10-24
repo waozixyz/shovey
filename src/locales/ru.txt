@@ -601,3 +601,15 @@
 [shovey_piece_yellow_portal]
 Жёлтый портал
 ---
+[shovey_updates_question]
+Загружать новые уровни, когда они выходят?
+---
+[shovey_updates_yes]
+Загружать
+---
+[shovey_updates_no]
+Не сейчас
+---
+[shovey_updates_setting]
+Новые уровни
+---

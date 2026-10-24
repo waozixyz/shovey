@@ -601,3 +601,15 @@ Lubang kuning
 [shovey_piece_yellow_portal]
 Portal kuning
 ---
+[shovey_updates_question]
+Unduh level baru saat dirilis?
+---
+[shovey_updates_yes]
+Unduh
+---
+[shovey_updates_no]
+Nanti saja
+---
+[shovey_updates_setting]
+Level baru
+---

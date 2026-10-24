@@ -141,8 +141,9 @@ web-zx: bundles
 # The browser game compiled to WebAssembly: smooth on slow phones, where
 # the interpreted ZX lagged. Kryon's canvas runner answers the app's
 # context calls and keeps saves where the ZX player kept them, so players
-# keep their progress. The live campaign and the Entity profile need the
-# ZX player for now: `make web-zx` builds that edition into build/web.
+# keep their progress. It reads the live campaign with Entity's reader; the
+# Entity profile needs the ZX player for now: `make web-zx` builds that
+# edition into build/web.
 ZIRAN_BIN ?= $(TOOLCHAIN)/build/bin
 EMCC ?= $(or $(wildcard $(HOME)/emsdk/upstream/emscripten/emcc),emcc)
 web: bundles
@@ -152,7 +153,7 @@ web: bundles
 	'$(ZIRAN_BIN)/zi2zir' --root . --module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
+		--module-path '$(ENTITY)/src' --module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
 		--entry canvas_app_run:main --bind canvas_app_run:CanvasAppMain=game:Main \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
@@ -181,6 +182,7 @@ web-test: web
 	node tests/web_mini_test.mjs
 	node tests/web_tap_beside_board_test.mjs
 	node tests/web_copy_test.mjs
+	node tests/web_live_campaign_test.mjs
 
 # The profile and the live campaign run on the ZX player's web edition.
 web-zx-test: web-zx

@@ -601,3 +601,15 @@ Buraco amarelo
 [shovey_piece_yellow_portal]
 Portal amarelo
 ---
+[shovey_updates_question]
+Baixar novos níveis quando forem lançados?
+---
+[shovey_updates_yes]
+Baixar
+---
+[shovey_updates_no]
+Agora não
+---
+[shovey_updates_setting]
+Novos níveis
+---

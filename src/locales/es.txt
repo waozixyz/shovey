@@ -601,3 +601,15 @@ Hoyo amarillo
 [shovey_piece_yellow_portal]
 Portal amarillo
 ---
+[shovey_updates_question]
+¿Descargar niveles nuevos cuando salgan?
+---
+[shovey_updates_yes]
+Descargar
+---
+[shovey_updates_no]
+Ahora no
+---
+[shovey_updates_setting]
+Niveles nuevos
+---

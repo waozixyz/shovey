@@ -601,3 +601,15 @@ Shovey
 [shovey_piece_yellow_portal]
 黄色传送门
 ---
+[shovey_updates_question]
+有新关卡时下载吗？
+---
+[shovey_updates_yes]
+下载
+---
+[shovey_updates_no]
+以后再说
+---
+[shovey_updates_setting]
+新关卡
+---

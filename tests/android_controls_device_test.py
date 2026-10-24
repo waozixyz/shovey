@@ -152,6 +152,9 @@ def run(phone, apk):
 
     # The first level asks how to move, with both ways shown; choose swipe.
     phone.press(label='Play')
+    # An installed game first asks once whether to download new levels.
+    if phone.find(label='Download new levels when they come out?'):
+        phone.press(label='Not now')
     assert phone.find(label='How do you want to move?'), 'the first level did not ask how to move'
     assert phone.find(label='Swipe and tap') and phone.find(label='Movement pad'), 'a way to move is missing'
     phone.press(label='Swipe and tap')

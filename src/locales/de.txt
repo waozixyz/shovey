@@ -601,3 +601,15 @@ Gelbe Grube
 [shovey_piece_yellow_portal]
 Gelbes Portal
 ---
+[shovey_updates_question]
+Neue Level herunterladen, sobald sie erscheinen?
+---
+[shovey_updates_yes]
+Herunterladen
+---
+[shovey_updates_no]
+Nicht jetzt
+---
+[shovey_updates_setting]
+Neue Level
+---

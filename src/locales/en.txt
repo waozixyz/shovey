@@ -601,3 +601,15 @@ Yellow pit
 [shovey_piece_yellow_portal]
 Yellow portal
 ---
+[shovey_updates_question]
+Download new levels when they come out?
+---
+[shovey_updates_yes]
+Download
+---
+[shovey_updates_no]
+Not now
+---
+[shovey_updates_setting]
+New levels
+---

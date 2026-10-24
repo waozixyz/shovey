@@ -601,3 +601,15 @@ Voda
 [shovey_piece_yellow_portal]
 Žlutý portál
 ---
+[shovey_updates_question]
+Stahovat nové úrovně, jakmile vyjdou?
+---
+[shovey_updates_yes]
+Stáhnout
+---
+[shovey_updates_no]
+Teď ne
+---
+[shovey_updates_setting]
+Nové úrovně
+---

@@ -601,3 +601,15 @@ Shovey
 [shovey_piece_yellow_portal]
 노란색 포털
 ---
+[shovey_updates_question]
+새 단계가 나오면 내려받을까요?
+---
+[shovey_updates_yes]
+내려받기
+---
+[shovey_updates_no]
+나중에
+---
+[shovey_updates_setting]
+새 단계
+---

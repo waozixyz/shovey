@@ -38,6 +38,11 @@ Math :: #import "std/math";
 #import, file "controls.zi";
 #import, file "pieces.zi";
 #import, file "shovey_theme.zi";
+#if #defined(PLATFORM_WEB) {
+    // The compiled browser game reads the node itself; its page host offers
+    // no services.
+    #import "publications_read"
+}
 #import "kryon/app_mini"
 #import "kryon/app_context"
 #import "json_scan"
@@ -97,6 +102,12 @@ live_names: [LIVE_CHUNKS][24]u8;
 live_document: [LIVE_CHUNK * LIVE_CHUNKS]u8;
 live_checking: bool;
 live_mark: [24]u8;
+// New levels from the node: -1 unread, 0 off, 1 on, 2 not asked yet.
+level_updates: s32 = -1;
+SHOVEY_ASKS_UPDATES :: !#defined(SHOVEY_WEB)
+SHOVEY_ALWAYS_UPDATES :: #defined(SHOVEY_WEB)
+SHOVEY_READS_NODE :: #defined(PLATFORM_WEB)
+SHOVEY_ASKS_HOST :: !#defined(PLATFORM_WEB)
 sprite_names: [SPRITE_COUNT]string;
 
 
@@ -207,6 +218,29 @@ ControlsChoice :: (width: float32, top: float32, bottom: float32) {
     if ChoiceTile(20055, Rectangle.{x + 24.0, tiles_y, tile_width, tile_height}, false) { ControlsSetPad(false) }
     // Each tile uses its id to id + 13, so the two stay apart.
     if ChoiceTile(20080, Rectangle.{x + 24.0 + tile_width + 14.0, tiles_y, tile_width, tile_height}, true) { ControlsSetPad(true) }
+}
+
+// An installed game asks once, before the first move, whether to download
+// new levels from the node. Nothing behind the question takes input.
+LevelUpdatesChoice :: (width: float32, top: float32, bottom: float32) {
+    full := Rectangle.{0.0, top, width, bottom - top}
+    Box(frame.session, BoxProps.{.key = cast(u64)20090, .bounds = full, .fill = Color.{0, 0, 0, 160}})
+    unused Press(frame.session, PressProps.{.key = cast(u64)20091, .id = 20091, .bounds = full,
+            .label = AppLocaleHost("shovey_updates_question"), .now = frame.now, .capture = true})
+    card_width := ifx width - 24.0 < 480.0 then width - 24.0 else 480.0
+    card_height: float32 = 200.0
+    x := (width - card_width) / 2.0
+    y := top + (bottom - top - card_height) / 2.0
+    if y < top + 8.0 { y = top + 8.0 }
+    Box(frame.session, BoxProps.{.key = cast(u64)20092, .bounds = Rectangle.{x, y, card_width, card_height},
+            .fill = Color.{59, 64, 63, 255}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+    Caption(20093, Rectangle.{x + 16.0, y + 16.0, card_width - 32.0, 60.0}, AppLocaleHost("shovey_updates_question"), 20, true)
+    Caption(20094, Rectangle.{x + 16.0, y + 80.0, card_width - 32.0, 44.0}, AppLocaleHost("shovey_controls_later"), 14, true)
+    button_width := (card_width - 48.0 - 12.0) / 2.0
+    if Control(20095, Rectangle.{x + 24.0, y + 136.0, button_width, 44.0}, AppLocaleHost("shovey_updates_no")) { LevelUpdatesSet(false) }
+    if Choice(20096, Rectangle.{x + 36.0 + button_width, y + 136.0, button_width, 44.0}, AppLocaleHost("shovey_updates_yes"), true) {
+        LevelUpdatesSet(true)
+    }
 }
 
 // One way to move, shown as it plays: Shovey on the grass with a swipe, or
@@ -426,20 +460,60 @@ LiveCacheWrite :: (document: string) -> bool {
     return true
 }
 
+// The website always plays the node's latest levels. An installed game
+// ships its levels and asks once whether to download new ones; the answer
+// is kept and Help changes it.
+LevelUpdates :: () -> s32 {
+    #if SHOVEY_ALWAYS_UPDATES {
+        return 1
+    }
+    if level_updates < 0 {
+        value := AppRecordHost("level-updates")
+        level_updates = ifx value == "on" then 1 else ifx value == "off" then 0 else 2
+    }
+    return level_updates
+}
+
+LevelUpdatesSet :: (on: bool) {
+    was := level_updates
+    level_updates = ifx on then 1 else 0
+    unused SaveAppRecordHost("level-updates", ifx on then "on" else "off")
+    if on && was != 1 { LiveCampaignFetch() }
+}
+
+// One request to the node's publications, from the host or, in the
+// compiled browser game, straight from Entity's reader.
+LiveAsk :: (request: string) -> string {
+    #if SHOVEY_READS_NODE {
+        return PublicationsReadAnswer(request)
+    }
+    #if SHOVEY_ASKS_HOST {
+        return AppService(live_service, request)
+    }
+}
+
 // The cached live campaign replaces the built-in levels before progress is
-// restored; the node's latest is then fetched once per session.
+// restored; with updates on, the node's latest is then fetched once per
+// session.
 LiveCampaignStart :: () {
     cached := LiveCacheRead()
     if cached != "" { unused ShoveyLiveLoadCompact(cached) }
-    live_service = ""
-    if AppSupports("publications") { live_service = "publications" }
-    else if AppSupports("publications.read") { live_service = "publications.read" }
+    if LevelUpdates() == 1 { LiveCampaignFetch() }
+}
+
+LiveCampaignFetch :: () {
+    live_service = "publications.read"
+    #if SHOVEY_ASKS_HOST {
+        live_service = ""
+        if AppSupports("publications") { live_service = "publications" }
+        else if AppSupports("publications.read") { live_service = "publications.read" }
+    }
     if live_service == "" { return }
     length: s32 = 0
     AppendText(live_bytes[:], *length, "{\"operation\":\"fetch\",\"id\":\"")
     AppendText(live_bytes[:], *length, LIVE_CAMPAIGN_ID)
     AppendText(live_bytes[:], *length, "\"}")
-    reply := AppService(live_service, TextView(live_bytes[:length]))
+    reply := LiveAsk(TextView(live_bytes[:length]))
     number_at := FieldAt(reply, 0, "request")
     end := ValueEnd(reply, number_at, 0)
     if number_at < 0 || end <= number_at || end - number_at >= live_request.count { return }
@@ -456,7 +530,7 @@ LiveCampaignPump :: () {
     AppendText(live_bytes[:], *length, "{\"operation\":\"status\",\"request\":")
     AppendText(live_bytes[:], *length, TextUntilNul(live_request[:]))
     AppendText(live_bytes[:], *length, "}")
-    reply := AppService(live_service, TextView(live_bytes[:length]))
+    reply := LiveAsk(TextView(live_bytes[:length]))
     status: [16]u8
     if ReadStringText(reply, FieldAt(reply, 0, "status"), status[:]) < 0 { live_waiting = false; return }
     if TextUntilNul(status[:]) == "pending" { return }
@@ -644,8 +718,13 @@ ShoveyFrame :: () {
         instructions := AppLocaleHost("shovey_instructions")
         intro_height := cast(float32)TextHeight(frame.session, TextProps.{.text = instructions,
                 .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .font = 16, .wrap = TextWrap.TextWrapAuto}) + 16.0
-        // The touch controls choice comes first, above the guide.
-        settings_height: float32 = 92.0
+        // The touch controls choice comes first, above the guide, then
+        // whether an installed game downloads new levels.
+        updates_setting := false
+        #if SHOVEY_ASKS_UPDATES {
+            updates_setting = true
+        }
+        settings_height: float32 = ifx updates_setting then 170.0 else 92.0
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
                 .bounds = Rectangle.{16.0, top + 62.0, width - 32.0, bottom - top - 70.0},
                 .content_height = cast(s32)(settings_height + intro_height) + SHOVEY_HELP_COUNT * 68, .scroll_offset = help_scroll})
@@ -659,6 +738,16 @@ ShoveyFrame :: () {
             }
             if Choice(20032, Rectangle.{scroll.content.x + choice_width + 8.0, scroll.content.y + 34.0, choice_width, 44.0}, AppLocaleHost("shovey_controls_pad"), pad) {
                 ControlsSetPad(true)
+            }
+            if updates_setting {
+                updates := LevelUpdates() == 1
+                Caption(20033, Rectangle.{scroll.content.x, scroll.content.y + 90.0, scroll.content.width - 16.0, 28.0}, AppLocaleHost("shovey_updates_setting"), 16)
+                if Choice(20034, Rectangle.{scroll.content.x, scroll.content.y + 124.0, choice_width, 44.0}, AppLocaleHost("shovey_updates_no"), !updates) {
+                    LevelUpdatesSet(false)
+                }
+                if Choice(20035, Rectangle.{scroll.content.x + choice_width + 8.0, scroll.content.y + 124.0, choice_width, 44.0}, AppLocaleHost("shovey_updates_yes"), updates) {
+                    LevelUpdatesSet(true)
+                }
             }
             Caption(20006, Rectangle.{scroll.content.x, scroll.content.y + settings_height, scroll.content.width - 16.0, intro_height}, instructions)
             for index: cast(s32)0..SHOVEY_HELP_COUNT - 1 {
@@ -708,8 +797,9 @@ ShoveyFrame :: () {
     if key == 265 || key == 87 { keyed = 1 }
     if key == 262 || key == 68 { keyed = 2 }
     if key == 264 || key == 83 { keyed = 3 }
-    // Until the controls are chosen the question takes every key.
-    choosing := !mini && !ControlsChosen()
+    // Until the questions are answered they take every key.
+    asking_updates := !mini && LevelUpdates() == 2
+    choosing := !mini && (!ControlsChosen() || asking_updates)
     if choosing { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyAct(BoardEngineDirection(keyed, landscape)) }
     if key == 32 { changed = ShoveyAct(-1) }
@@ -763,6 +853,10 @@ ShoveyFrame :: () {
         Caption(20024, Rectangle.{16.0, status_y - 4.0, width - 32.0, 32.0}, AppLocaleHost(tip), 13, true)
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
+    if asking_updates {
+        LevelUpdatesChoice(width, top, bottom)
+        return
+    }
     if choosing {
         ControlsChoice(width, top, bottom)
         return

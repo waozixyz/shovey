@@ -601,3 +601,15 @@ Trou jaune
 [shovey_piece_yellow_portal]
 Portail jaune
 ---
+[shovey_updates_question]
+Télécharger les nouveaux niveaux dès leur sortie ?
+---
+[shovey_updates_yes]
+Télécharger
+---
+[shovey_updates_no]
+Pas maintenant
+---
+[shovey_updates_setting]
+Nouveaux niveaux
+---

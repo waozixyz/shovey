@@ -114,7 +114,8 @@ try {
   }
   async function open() {
     await call('Page.navigate', {url: target + '?mini'});
-    await wait(`globalThis.Module?.profileReady && document.querySelector('#loading-screen').classList.contains('is-hidden')`);
+    // The ZX edition waits for its profile; the compiled one has none.
+    await wait(`(globalThis.Module?.profileReady || globalThis.Module?.FS?.analyzePath('/assets/shovey/catalog.json').exists) && document.querySelector('#loading-screen').classList.contains('is-hidden')`);
   }
   await call('Runtime.enable');
   await call('Page.enable');

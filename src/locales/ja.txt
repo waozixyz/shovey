@@ -601,3 +601,15 @@ Shovey
 [shovey_piece_yellow_portal]
 黄色のポータル
 ---
+[shovey_updates_question]
+新しいレベルが出たらダウンロードしますか？
+---
+[shovey_updates_yes]
+ダウンロード
+---
+[shovey_updates_no]
+今はしない
+---
+[shovey_updates_setting]
+新しいレベル
+---

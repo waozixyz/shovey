@@ -601,3 +601,15 @@ Buca gialla
 [shovey_piece_yellow_portal]
 Portale giallo
 ---
+[shovey_updates_question]
+Scaricare i nuovi livelli quando escono?
+---
+[shovey_updates_yes]
+Scarica
+---
+[shovey_updates_no]
+Non ora
+---
+[shovey_updates_setting]
+Nuovi livelli
+---
