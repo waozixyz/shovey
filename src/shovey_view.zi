@@ -390,39 +390,29 @@ AnimalsWander :: () -> bool {
 }
 
 // The throw control: a round glass button with the shot on it, floating over
-// the board's bottom right corner, opposite where the pad rests. It glows and
-// pulses while Shovey holds a shot and stays dim until he picks one up.
-ThrowButton :: (armed: bool, width: float32, top: float32, bottom: float32) -> bool {
+// the board's bottom right corner, opposite where the pad rests, glowing and
+// pulsing while it is there.
+ThrowButton :: (width: float32, top: float32, bottom: float32) -> bool {
     short := ifx width < bottom - top then width else bottom - top
     size := short * 0.17
     if size < 64.0 { size = 64.0 }
     if size > 104.0 { size = 104.0 }
     bounds := Rectangle.{width - size - 16.0, bottom - size - 16.0, size, size}
-    if armed {
-        pulse := cast(float32)(0.5 + 0.5 * Math.Sin(frame.now * 4.0))
-        glow := size * (0.08 + 0.06 * pulse)
-        unused Box(frame.session, BoxProps.{.key = cast(u64)20060, .radius = (size + glow * 2.0) / 2.0,
-                .bounds = Rectangle.{bounds.x - glow, bounds.y - glow, size + glow * 2.0, size + glow * 2.0},
-                .fill = Color.{255, 226, 150, cast(u8)(40.0 + 50.0 * pulse)}})
-    }
+    pulse := cast(float32)(0.5 + 0.5 * Math.Sin(frame.now * 4.0))
+    glow := size * (0.08 + 0.06 * pulse)
+    unused Box(frame.session, BoxProps.{.key = cast(u64)20060, .radius = (size + glow * 2.0) / 2.0,
+            .bounds = Rectangle.{bounds.x - glow, bounds.y - glow, size + glow * 2.0, size + glow * 2.0},
+            .fill = Color.{255, 226, 150, cast(u8)(40.0 + 50.0 * pulse)}})
     unused Box(frame.session, BoxProps.{.key = cast(u64)20061, .bounds = bounds, .radius = size / 2.0,
-            .fill = ifx armed then Color.{40, 46, 45, 200} else Color.{40, 46, 45, 110},
-            .border = ifx armed then Color.{255, 226, 150, 255} else Color.{232, 236, 234, 90}})
+            .fill = Color.{40, 46, 45, 200}, .border = Color.{255, 226, 150, 255}})
     // The drawn shot sits right of and below its frame's centre.
     shot := size * 1.25
     Image(frame.session, ImageProps.{.key = cast(u64)20062, .asset_path = sprite_files[SPRITE_SHOT],
             .alt_text = AppLocaleHost("shovey_ammo"), .fit = ImageFit.ImageFitContain, .smooth = true,
-            .bounds = Rectangle.{bounds.x + (size - shot) / 2.0 - shot * 0.047, bounds.y + (size - shot) / 2.0 - shot * 0.078, shot, shot},
-            .tint = ifx armed then cast(u32)0 else cast(u32)0x9aa0a0a0})
+            .bounds = Rectangle.{bounds.x + (size - shot) / 2.0 - shot * 0.047, bounds.y + (size - shot) / 2.0 - shot * 0.078, shot, shot}})
     press := Press(frame.session, PressProps.{.key = cast(u64)20063, .id = 20063, .bounds = bounds,
-            .label = AppLocaleHost("shovey_fire"), .now = frame.now, .disabled = !armed})
+            .label = AppLocaleHost("shovey_fire"), .now = frame.now})
     return press.clicked
-}
-
-// Whether a shot still lies somewhere on the board.
-BoardHasShots :: () -> bool {
-    for at: cast(s32)0..SHOVEY_CELLS - 1 { if game.ground[at] == 26 { return true } }
-    return false
 }
 
 // Moves (or throws, for direction -1) and plays what the move did.
@@ -1013,11 +1003,9 @@ ShoveyFrame :: () {
                 .floating = true})
         if pad.step { step = BoardEngineDirection(pad.direction, landscape) }
     }
-    // In a level with shots the Fire button is always there, so players see
-    // how to throw; it works once Shovey holds a shot.
-    armed := (game.powers & SHOVEY_AMMO) != 0
-    if (armed || BoardHasShots()) && !disabled {
-        if ThrowButton(armed, width, top, bottom) { changed = ShoveyAct(-1) || changed }
+    // The throw button shows only while Shovey holds a shot.
+    if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
+        if ThrowButton(width, top, bottom) { changed = ShoveyAct(-1) || changed }
     }
     if step >= 0 { changed = ShoveyAct(step) || changed }
     if (changed || before_direction != game.direction) && slide_next >= slide_count {

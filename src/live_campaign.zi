@@ -128,6 +128,16 @@ LiveCheckInstall :: () -> string {
     return TextView(live_compact[:LIVE_COMPACT_HEADER + count * SHOVEY_LIVE_BOARD])
 }
 
+// A level this release cannot play, such as one with a piece added later,
+// ends the campaign there instead of refusing all of it: the levels before
+// it install when they are at least as many as the player has now.
+LiveCheckKeepPrefix :: (compact: *string) -> s32 {
+    if live_check.index < 1 || live_check.index < ShoveyLevelCount() { return 0 }
+    live_check.count = live_check.index
+    compact.* = LiveCheckInstall()
+    return 1
+}
+
 // Advances the check by at most `moves` route letters. Returns 1 when the
 // whole campaign is proven and installed (*compact then holds its compact
 // form), 0 when it is refused, and -1 while it needs more frames.
@@ -143,7 +153,7 @@ ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
             compact.* = LiveCheckInstall()
             return 1
         }
-        if !LiveCheckLevel() { return 0 }
+        if !LiveCheckLevel() { return LiveCheckKeepPrefix(compact) }
         if !live_check.replaying { return -1 }
     }
     game := *live_check.game
@@ -152,14 +162,14 @@ ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
         letter := live_route[live_check.route_at]
         live_check.route_at += 1
         done += 1
-        if game.won || game.lost { return 0 }
+        if game.won || game.lost { return LiveCheckKeepPrefix(compact) }
         if letter >= #char "0" && letter <= #char "3" { unused ShoveyMove(game, cast(s32)(letter - #char "0")) }
         else if letter == #char "f" { unused ShoveyFire(game) }
         else if letter == #char "t" { unused ShoveyTick(game) }
-        else { return 0 }
+        else { return LiveCheckKeepPrefix(compact) }
     }
     if live_check.route_at < live_check.route_length { return -1 }
-    if !game.won || game.lost { return 0 }
+    if !game.won || game.lost { return LiveCheckKeepPrefix(compact) }
     live_check.replaying = false
     live_check.index += 1
     return -1
