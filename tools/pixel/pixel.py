@@ -1036,6 +1036,45 @@ def crate_sprite():
     return image
 
 
+def locked_door():
+    """A lock as a door in the wall: the stone block of a wall with an arched
+    wooden door set into it, two iron bands and a brass lock plate whose
+    keyhole a key opens."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    bevel(image, (0, 0, SIZE - 1, SIZE - 1), STONE, 4, light=1.36, dark=0.46)
+    grain(image, 34, dark=0.86, light=1.1, share=0.3)
+    draw = ImageDraw.Draw(image)
+    wood = MATERIALS[3]
+    # The doorway: a dark reveal, then the door inside it with a round top.
+    draw.rectangle((6, 12, 25, 29), fill=shade(STONE, 0.42))
+    draw.ellipse((6, 4, 25, 21), fill=shade(STONE, 0.42))
+    draw.rectangle((7, 12, 24, 29), fill=wood)
+    draw.ellipse((7, 5, 24, 20), fill=wood)
+    planks = ImageDraw.Draw(image)
+    for x in (11, 15, 20):
+        planks.line((x, 6 if x == 15 else 8, x, 29), fill=shade(wood, 0.62))
+        planks.line((x + 1, 7 if x == 15 else 9, x + 1, 29), fill=shade(wood, 1.16))
+    grain(image, 340, dark=0.9, light=1.08, share=0.2)
+    # Iron bands with rivets.
+    iron, rivet = (64, 66, 70, 255), (150, 154, 160, 255)
+    for y in (11, 24):
+        draw.rectangle((7, y, 24, y + 1), fill=iron)
+        for x in (9, 22):
+            draw.point((x, y), fill=rivet)
+    # The brass lock plate and its keyhole.
+    brass, dark_brass = (222, 176, 62, 255), (138, 98, 26, 255)
+    draw.rectangle((13, 14, 19, 21), fill=dark_brass)
+    draw.rectangle((13, 14, 18, 20), fill=brass)
+    draw.point((13, 14), fill=(250, 226, 140, 255))
+    draw.rectangle((15, 16, 16, 17), fill=(30, 24, 18, 255))
+    draw.line((15, 18, 16, 18), fill=(30, 24, 18, 255))
+    draw.point((15, 19), fill=(30, 24, 18, 255))
+    draw.point((16, 19), fill=(30, 24, 18, 255))
+    # Drawn over the floor like the moss gate, which marks it the same way.
+    image.putpixel((0, 0), (0, 0, 0, 0))
+    return image
+
+
 def trail_marker():
     image = Image.new('RGBA', (SIZE, SIZE))
     draw = ImageDraw.Draw(image)
@@ -1129,7 +1168,7 @@ def sprites():
         'tile-31': ('used path: a solid grey ring', ring((150, 158, 156, 255), 10)),
         'tile-32': ('moving block stopping: its light turns red', over_floor(recolour(native('puck'), blue, 4))),
         'tile-33': ('key', native('key')),
-        'tile-34': ('lock: a padlock', native('lock')),
+        'tile-34': ('lock: a locked wooden door set into the wall, opened with a key', locked_door()),
         'tile-35': ('slide power: green chevrons spreading out from a dot', slide_chevrons()),
         'tile-36': ('red colour block (pushable)', block((228, 38, 28, 255))),
         'tile-37': ('blue colour block (pushable)', block((30, 84, 228, 255))),

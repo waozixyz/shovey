@@ -1084,8 +1084,8 @@
     },
     {
       "path": "sprites/tile-34.png",
-      "depicts": "landscape presentation of lock: a padlock",
-      "sha256": "929a8e6b2a3eccde1ee03264f76cd33094963a572c36e041408a6de5c7a56bcf"
+      "depicts": "landscape presentation of lock: a locked wooden door set into the wall, opened with a key",
+      "sha256": "152f5fdf78ca82f8c776b8db54c378049707d5b5bebb1e9eeeb6ad7d6ca5b6d5"
     },
     {
       "path": "sprites/tile-35.png",
