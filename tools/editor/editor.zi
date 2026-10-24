@@ -2521,7 +2521,10 @@ Draw :: () -> bool {
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { Say("Editor frame could not begin.\n"); return false }
     Screen(viewport, key, modifiers)
     finished := EndFrameRetained(session, DesktopFrameReusable())
-    if finished.status != FrameStatus.FrameOk { Say("Editor frame could not finish.\n"); return false }
+    if finished.status != FrameStatus.FrameOk {
+        Say("Editor frame could not finish: "); Say(FrameFailureAt(session).message); Say(".\n")
+        return false
+    }
     TestDriverFrame(session)
     DesktopFrameUnchanged(finished.paint_unchanged)
     drawn := EndDesktopFrame()
