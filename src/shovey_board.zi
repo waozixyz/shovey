@@ -824,8 +824,6 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     return ShoveyBoardPieces(session, game, grid, key, now, names, landscape)
 }
 
-// The board's four picture layers: floor, ground, decorations and pieces.
-// Animals gliding to a cell are drawn by the board itself while `glides`.
 // The floor a neighbouring cell shows, for drawing under an arrow.
 BoardArrowFloor :: (game: *ShoveyGame, at: s32) -> s32 {
     for side: cast(s32)0..3 {
@@ -837,6 +835,8 @@ BoardArrowFloor :: (game: *ShoveyGame, at: s32) -> s32 {
     return 0
 }
 
+// The board's four picture layers: floor, ground, decorations and pieces.
+// Animals gliding to a cell are drawn by the board itself while `glides`.
 BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: bool, glides: bool) {
     for at: cast(s32)0..SHOVEY_CELLS - 1 { board_abyss_open[at] = BoardAbyss(game, at) }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
