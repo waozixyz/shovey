@@ -582,6 +582,14 @@ LiveCampaignCheck :: () {
     if !game.won && game.moves == 0 && game.level <= ShoveyLevelCount() { unused ShoveyLoad(*game, game.level) }
 }
 
+// A won level stays on screen for a moment and dips to dark, and the next
+// level fades in, instead of its board replacing the last in one frame.
+WIN_HOLD_SECONDS :: 0.75
+WIN_FADE_SECONDS :: 0.3
+ENTER_FADE_SECONDS :: 0.35
+won_at: float64;
+entered_at: float64;
+
 ContinueGame :: () {
     slide_count = 0
     slide_next = 0
@@ -589,7 +597,33 @@ ContinueGame :: () {
     selector_open = false
     help_open = false
     last_tick = frame.now
+    won_at = 0.0
+    entered_at = frame.now
     Remember()
+}
+
+// The win is saved at once; the next level follows after the pause.
+WinPause :: () {
+    if won_at == 0.0 {
+        won_at = frame.now
+        Remember()
+    }
+    if frame.now - won_at >= WIN_HOLD_SECONDS { ContinueGame() }
+}
+
+// How dark the board is at this moment of a level change, 0 to 1.
+LevelChangeShade :: () -> float32 {
+    if won_at > 0.0 {
+        fading := frame.now - won_at - (WIN_HOLD_SECONDS - WIN_FADE_SECONDS)
+        if fading <= 0.0 { return 0.0 }
+        return ifx fading >= WIN_FADE_SECONDS then 1.0 else cast(float32)(fading / WIN_FADE_SECONDS)
+    }
+    if entered_at > 0.0 {
+        shown := frame.now - entered_at
+        if shown >= ENTER_FADE_SECONDS || shown < 0.0 { entered_at = 0.0; return 0.0 }
+        return 1.0 - cast(float32)(shown / ENTER_FADE_SECONDS)
+    }
+    return 0.0
 }
 
 // Back from the level list or help returns to the level; false while
@@ -718,7 +752,7 @@ ShoveyFrame :: () {
         }
         return
     }
-    if game.won && game.level < ShoveyLevelCount() { ContinueGame() }
+    if game.won && game.level < ShoveyLevelCount() { WinPause() }
     key := AppKeyHost()
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
@@ -838,6 +872,10 @@ ShoveyFrame :: () {
     if !sliding { unused AnimalsWander() }
     SpriteNames()
     grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:], landscape)
+    shade := LevelChangeShade()
+    if shade > 0.0 {
+        Fill(cast(u64)20096, area, Color.{14, 16, 18, cast(u8)(shade * 255.0)})
+    }
     // No move or piece counters: the line speaks only when there is news.
     status := ""
     status_icon := ""
@@ -922,7 +960,7 @@ ShoveyFrame :: () {
     }
     if step >= 0 { changed = ShoveyAct(step) || changed }
     if (changed || before_direction != game.direction) && slide_next >= slide_count {
-        if game.won && game.level < ShoveyLevelCount() { ContinueGame() }
+        if game.won && game.level < ShoveyLevelCount() { WinPause() }
         else { Remember() }
     }
 }
