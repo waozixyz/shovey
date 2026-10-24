@@ -1,5 +1,12 @@
 # Shovey changelog
 
+## [0.6.111] - 2026-10-23
+
+- The profile has one simple account card: create an account, import your key or link another device.
+- Import a key file or a copied key on Android, and back your key up to a file.
+- Account pages scroll, and the connection code only appears when you link a device.
+- Nodes have their own screen showing what you are connected to.
+- Text shows clearly on Android 9 and older.
 ## [0.6.110] - 2026-10-23
 
 - The first lightning touch shows a glow and sparks as Shovey gains a charge.
