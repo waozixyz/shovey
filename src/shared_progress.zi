@@ -28,7 +28,24 @@ SharedProgressSave :: (session: *SharedProgressSession, record: *Progress.GamePr
     session.dirty = true
     session.position_dirty = true
     session.poll_at = 0.0
-    return session.available
+    return session.available && SharedProgressPut(session)
+}
+
+// Saving a move is a synchronous local write, just as the old host save
+// was. Account network sync happens later; leaving the game cannot discard
+// a move waiting only in the portable VM's memory.
+SharedProgressPut :: (session: *SharedProgressSession) -> bool {
+    put: Vec(u8)
+    BuilderPrint(*put, "{\"operation\":\"put\",\"kind\":\"game-progress\",\"schema\":\"entity.game-progress.v1\",\"document\":")
+    Progress.GameProgressWrite(*session.record, *put)
+    BuilderPrint(*put, "}")
+    saved := ProgressAccountService(TextView(VecSlice(put, 0, put.count)))
+    VecFree(put)
+    if !SharedProgressStatusField(saved, "status", "done") { return false }
+    session.dirty = false
+    session.position_dirty = false
+    session.retiring = true
+    return true
 }
 
 SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GameProgressRecord, now: float64) {
@@ -67,17 +84,7 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64) -> s32 {
     if found { unused Progress.GameProgressMerge(*session.record, *remote, !session.position_dirty) }
     changed := !Progress.GameProgressSame(*before, *session.record)
     if session.dirty || !found || !Progress.GameProgressSame(*session.record, *remote) {
-        put: Vec(u8)
-        BuilderPrint(*put, "{\"operation\":\"put\",\"kind\":\"game-progress\",\"schema\":\"entity.game-progress.v1\",\"document\":")
-        Progress.GameProgressWrite(*session.record, *put)
-        BuilderPrint(*put, "}")
-        saved := ProgressAccountService(TextView(VecSlice(put, 0, put.count)))
-        VecFree(put)
-        if SharedProgressStatusField(saved, "status", "done") {
-            session.dirty = false
-            session.position_dirty = false
-            session.retiring = true
-        }
+        unused SharedProgressPut(session)
     } else if session.retiring && synced && TextUntilNul(session.owner[:]) != "" {
         // Read back first; only retire a legacy copy after account sync.
         ProgressRetireLegacy()
