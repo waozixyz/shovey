@@ -704,6 +704,9 @@ scene_cell: float32;
 scene_origin: Vector2;
 scene_size: Vector2;
 sail_start_x: float32;
+sail_start_y: float32;
+// How far the camera has zoomed out once the boat has made way.
+BOAT_ZOOM :: 0.55
 ocean_layers: [4096]s32;
 
 // Open water: no floor and nothing in it.
@@ -778,13 +781,20 @@ OceanBackdrop :: (area: Rectangle, origin: Vector2, cell: float32, landscape: bo
 // left, earlier ones above, below and at the corners. Open water lies past
 // them.
 NeighbourBoards :: (origin: Vector2, size: Vector2, landscape: bool) {
-    offsets: [5]Vector2 = .[Vector2.{-1.0, 0.0}, Vector2.{0.0, -1.0}, Vector2.{0.0, 1.0}, Vector2.{-1.0, -1.0}, Vector2.{-1.0, 1.0}]
-    for index: cast(s32)0..4 {
+    offsets: [8]Vector2 = .[Vector2.{-1.0, 0.0}, Vector2.{0.0, -1.0}, Vector2.{0.0, 1.0}, Vector2.{-1.0, -1.0}, Vector2.{-1.0, 1.0},
+        Vector2.{-2.0, 0.0}, Vector2.{-2.0, -1.0}, Vector2.{-2.0, 1.0}]
+    for index: cast(s32)0..7 {
         level := game.level - 1 - index
         if level < 1 { break }
         ShoveyBoardPreview(frame.session, level, Rectangle.{origin.x + offsets[index].x * size.x, origin.y + offsets[index].y * size.y,
                 size.x, size.y}, cast(u64)(62000 + index * 16), sprite_names[:], landscape, true)
     }
+}
+
+// 0 to 1 eased in and out, from a share of a stretch of time.
+EaseInOut :: (share: float32) -> float32 {
+    t: float32 = ifx share < 0.0 then 0.0 else ifx share > 1.0 then 1.0 else share
+    return t * t * (3.0 - 2.0 * t)
 }
 
 // Whole cells from a board edge back past the area's edge, `gap` away.
@@ -1162,30 +1172,39 @@ ShoveyFrame :: () {
     // While the ending plays the whole screen is the scene: the island the
     // last level belongs to and the open water round it. Once the boat sails
     // the camera follows it, catching up gently and keeping it in the middle.
+    // The scene is drawn as the board lay at rest, seen through a camera
+    // that eases from the middle of the screen onto the boat and zooms out
+    // gently, so more of the island shows as they sail.
     screen := Rectangle.{0.0, top, width, bottom - top}
-    camera: float32 = 0.0
+    centre := Vector2.{screen.x + screen.width / 2.0, screen.y + screen.height / 2.0}
+    focus := centre
+    zoom: float32 = 1.0
+    board_bounds := area
     if board_sail < 0.0 { sail_start_x = 0.0 }
     if board_sail >= 0.0 && sail_start_x > 0.0 {
-        camera = sail_start_x + BoardSailTravel(board_sail) * scene_cell - (screen.x + screen.width / 2.0)
-        if camera < 0.0 { camera = 0.0 }
-        follow := board_sail / 0.35
-        if follow < 1.0 { camera *= follow * follow * (3.0 - 2.0 * follow) }
+        boat := Vector2.{sail_start_x + BoardSailTravel(board_sail) * scene_cell, sail_start_y}
+        follow := EaseInOut(board_sail / 0.35)
+        focus = Vector2.{centre.x + (boat.x - centre.x) * follow, centre.y + (boat.y - centre.y) * follow}
+        zoom = 1.0 - (1.0 - BOAT_ZOOM) * EaseInOut((board_sail - BOAT_HOP) / 0.45)
     }
     if cinematic && scene_cell > 0.0 {
-        origin := Vector2.{scene_origin.x - camera, scene_origin.y}
-        OceanBackdrop(screen, origin, scene_cell, landscape)
-        NeighbourBoards(origin, scene_size, landscape)
+        origin := Vector2.{centre.x + (scene_origin.x - focus.x) * zoom, centre.y + (scene_origin.y - focus.y) * zoom}
+        size := Vector2.{scene_size.x * zoom, scene_size.y * zoom}
+        OceanBackdrop(screen, origin, scene_cell * zoom, landscape)
+        NeighbourBoards(origin, size, landscape)
+        board_bounds = Rectangle.{origin.x, origin.y, size.x, size.y}
     }
-    grid := ShoveyBoard(frame.session, *game, Rectangle.{area.x - camera, area.y, area.width, area.height}, cast(u64)22000,
-        frame.now, sprite_names[:], landscape)
-    if camera == 0.0 {
+    grid := ShoveyBoard(frame.session, *game, board_bounds, cast(u64)22000, frame.now, sprite_names[:], landscape)
+    if board_sail < 0.0 {
         scene_cell = grid.cell
         scene_origin = Vector2.{grid.board.x, grid.board.y}
         scene_size = Vector2.{grid.board.width, grid.board.height}
     }
     if board_sail >= 0.0 && sail_start_x == 0.0 && game.player >= 0 {
+        // The middle of the boat, three cells wide with its hull on its cell.
         boat_cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
         sail_start_x = boat_cell.x + grid.cell * 1.5
+        sail_start_y = boat_cell.y - grid.cell * 0.5
     }
     shade := LevelChangeShade()
     ending_shade := EndingShade()
