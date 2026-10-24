@@ -440,6 +440,17 @@ ClassicApiPlainStep :: (direction: s32) -> s32 {
     return to * 4 + (ifx (game.powers & SHOVEY_AMMO) != 0 then direction else 0)
 }
 
+// A throw from the base game that cleared no target only lost the shot,
+// which never helps while no other shot lies on the floor: a held shot only
+// keeps Shovey off shot squares.
+#program_export
+ClassicApiWastedThrow :: () -> s32 {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if classic_game.objects[at] != classic_base.objects[at] || classic_base.ground[at] == 26 { return 0 }
+    }
+    return 1
+}
+
 // Animals avoid Shovey, so their timer tick depends on his exact cell.
 #program_export
 ClassicApiWalkerFree :: (action: s32) -> s32 {
@@ -454,6 +465,17 @@ ClassicApiWalkerFree :: (action: s32) -> s32 {
 #program_export
 ClassicApiDead :: () -> s32 {
     if SolveTrailBallsBlocked(*classic_game) { return 1 }
+    // Targets fall only to throws: with targets left, no shot in hand and
+    // none on the floor, they stay.
+    if (classic_game.powers & SHOVEY_AMMO) == 0 {
+        targets := false
+        shots := false
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if classic_game.objects[at] == 28 { targets = true }
+            if classic_game.ground[at] == 26 { shots = true }
+        }
+        if targets && !shots { return 1 }
+    }
     balls: [6]s32
     holes: [6]s32
     paint: [6]s32
@@ -560,8 +582,10 @@ ClassicApiEventuallyAllows :: (game: *ShoveyGame, at: s32, piece: s32) -> bool {
     kind := game.ground[at]
     // These are state changes, not permanent walls. Only the real engine
     // decides when a move through them is legal; the estimate stays optimistic.
+    // Pickups and locks turn into floor once Shovey takes or opens them.
     return ShoveyFloorAllows(game, at, piece) || ShoveyClosedDoor(kind) ||
-        ShoveyGateColor(kind) >= 0 || ShoveyMossColor(kind) >= 0
+        ShoveyGateColor(kind) >= 0 || ShoveyMossColor(kind) >= 0 ||
+        kind == 21 || kind == 56 || kind == 25 || kind == 26 || kind == 33 || kind == 34 || kind == 35
 }
 
 ClassicApiPushField :: (game: *ShoveyGame, piece: s32, sources: []s32, starts: []s32,

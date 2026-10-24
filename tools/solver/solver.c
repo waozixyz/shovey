@@ -517,6 +517,34 @@ static int ComparePriority(const void *left, const void *right) {
     return (a > b) - (a < b);
 }
 
+#if defined(SHOVEY_CLASSIC)
+// Throws never move Shovey and only open floor, so throws from different
+// walkers of one region that clear the same targets lead to one state; a
+// throw that clears nothing only loses the shot. Each expansion keeps the
+// first throw of every outcome.
+#define THROW_ACTION 4
+#define THROWS_KEPT 16
+static uint8_t *throw_seen[THROWS_KEPT];
+static int throw_count;
+
+static bool ThrowRepeats(const uint8_t *vector) {
+    if (API(WastedThrow)()) return true;
+    for (int index = 0; index < throw_count; index++) {
+        const uint8_t *seen = throw_seen[index];
+        bool same = true;
+        for (int at = 0; at < state_size && same; at++) {
+            if (at != player_byte && at != facing_byte && seen[at] != vector[at]) same = false;
+        }
+        if (same) return true;
+    }
+    if (throw_count < THROWS_KEPT) {
+        if (!throw_seen[throw_count]) throw_seen[throw_count] = Resize(NULL, (size_t)state_size);
+        memcpy(throw_seen[throw_count++], vector, (size_t)state_size);
+    }
+    return false;
+}
+#endif
+
 // Best-first (greedy) when ordered, else breadth-first, over macro actions.
 static Result MacroSearch(const Options *options, double deadline, bool ordered, bool focused) {
     Result result = {STOP_NONE, {NULL, 0, 0}, 0};
@@ -556,6 +584,7 @@ static Result MacroSearch(const Options *options, double deadline, bool ordered,
         API(Decode)(work_vector);
 #if defined(SHOVEY_CLASSIC)
         if (ordered) API(Focus)();
+        throw_count = 0;
 #endif
         for (int index = 0; index < region_edge_count; index++) {
             Edge edge = region_edges[index];
@@ -572,6 +601,9 @@ static Result MacroSearch(const Options *options, double deadline, bool ordered,
             // A state the wrapper proves unwinnable is never stored.
             if (API(Dead)()) continue;
             Encode(next_vector);
+#if defined(SHOVEY_CLASSIC)
+            if (edge.action == THROW_ACTION && ThrowRepeats(next_vector)) continue;
+#endif
             int64_t added = AddNode(key_buffer, Compress(next_vector, key_buffer), (uint32_t)node,
                 edge.action, edge.walker, depth);
             if (added >= 0 && ordered) {
@@ -639,6 +671,7 @@ static int ChainWays(const Options *options, double deadline, int goal, Way *way
         API(Decode)(work_vector);
 #if defined(SHOVEY_CLASSIC)
         API(Focus)();
+        throw_count = 0;
 #endif
         for (int index = 0; index < region_edge_count && found < CHAIN_WAYS; index++) {
             Edge edge = region_edges[index];
@@ -652,6 +685,9 @@ static int ChainWays(const Options *options, double deadline, int goal, Way *way
             API(Act)(edge.action);
             if (API(Dead)()) continue;
             Encode(next_vector);
+#if defined(SHOVEY_CLASSIC)
+            if (edge.action == THROW_ACTION && ThrowRepeats(next_vector)) continue;
+#endif
             if (API(Progress)() < goal) {
                 ways[found].vector = Resize(NULL, (size_t)state_size);
                 memcpy(ways[found].vector, next_vector, (size_t)state_size);
