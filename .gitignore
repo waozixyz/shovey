@@ -17,3 +17,6 @@ __pycache__/
 
 # Video and promo working material stays local.
 /design/
+
+# Cloudflare Wrangler keeps its local cache here.
+/.wrangler/
