@@ -17,7 +17,7 @@ Binaries: https://github.com/waozixyz/shovey/releases/download/v%v/shovey-v%v.ap
 Builds:
   - versionName: 0.6.110
     versionCode: 118
-    commit: 61043fcc02ddf4aa007da0556132e913c17b22ad
+    commit: 46ccbcc87132c559edcf7f75b52d580d99ea6abb
     sudo:
       - apt-get update
       - apt-get install -y build-essential cmake pkg-config python3-pil python3-numpy
@@ -28,7 +28,9 @@ Builds:
 
 AllowedAPKSigningKeys: 3f687dd9aa7edd8c81b9d3ade255f0b620be7b9fd62783e5f8d7e7f7df658820
 
-AutoUpdateMode: None
-UpdateCheckMode: None
+AutoUpdateMode: Version v%v
+UpdateCheckMode: HTTP
+UpdateCheckData: 'https://raw.githubusercontent.com/waozixyz/arcade/master/apps/versions.json|"shovey":
+  *[{][^}]*"sequence": *([0-9]+)|.|"shovey": *[{][^}]*"version": *"([^"]+)"'
 CurrentVersion: 0.6.110
 CurrentVersionCode: 118

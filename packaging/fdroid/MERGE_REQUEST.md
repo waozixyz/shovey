@@ -45,7 +45,7 @@ The author is building a free puzzle adventure with interacting terrain, objects
 * [x] Metadata must be a valid YAML file.
 * [x] Metadata must use LF as line ending.
 * [x] Don't add summary/description/changelog/images or anything that should be provided in upstream repo. Please check the Changes tab to make sure there is no other unrelated files added in the MR.
-* [ ] Releases are tagged and auto update is enabled unless there is a special reason.
+* [x] Releases are tagged and auto update is enabled unless there is a special reason.
 * [x] There is an issue tracker and contact info of the author so that we can report bugs and contact the author.
 * [x] An AuthorName must be added. It doesn't need to be the real name.
 * [ ] External repos are added as git submodules instead of srclibs. Locked source dependencies are handled by the upstream build.
