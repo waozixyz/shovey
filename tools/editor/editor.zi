@@ -72,6 +72,12 @@ HISTORY :: 64
 LETTERS :: "0123ft"
 SOLVE_SECONDS :: "120"
 PLACES :: 175
+// The secret beaches beside the last level, 175a and 175b: two places after
+// the campaign's, kept in levels/secret.json, never approved, published or
+// listed in the game.
+SECRET_PLACES :: 2
+ALL_PLACES :: 177
+SECRET_FILE :: "levels/secret.json"
 
 level_count: s32;
 boards: [LEVELS_MAX * HEX]u8;
@@ -110,10 +116,10 @@ history_count: s32;
 redo_history: [HISTORY * HEX]u8;
 redo_count: s32;
 reset_board: [HEX]u8;
-approved_boards: [PLACES * HEX]u8;
-approved_places: [PLACES]bool;
-published_boards: [PLACES * HEX]u8;
-published_places: [PLACES]bool;
+approved_boards: [ALL_PLACES * HEX]u8;
+approved_places: [ALL_PLACES]bool;
+published_boards: [ALL_PLACES * HEX]u8;
+published_places: [ALL_PLACES]bool;
 server_configured: bool;
 server_verified: bool;
 server_check_started: s64;
@@ -200,7 +206,7 @@ title_bytes: [256]u8;
 status_bytes: [512]u8;
 solution_bytes: [96]u8;
 label_bytes: [128]u8;
-cell_bytes: [PLACES * 16]u8;
+cell_bytes: [ALL_PLACES * 16]u8;
 draft_bytes: [64]u8;
 layers_original: [SHOVEY_CELLS * 3]s32;
 layers_edit: [SHOVEY_CELLS * 3]s32;
@@ -359,8 +365,20 @@ FindBoard :: (text: string, number: s32, into: []u8) -> bool {
     return false
 }
 
-// A place is in the game unless it waits for a winnable layout.
-InGame :: (place: s32) -> bool { return !stuck[place] }
+// A place is in the game unless it waits for a winnable layout or is secret.
+InGame :: (place: s32) -> bool { return place <= PLACES && !stuck[place] }
+
+SecretPlace :: (place: s32) -> bool { return place > PLACES }
+
+// A place's name: its number, or 175a and 175b for the secret beaches.
+AppendPlace :: (bytes: []u8, length: *s32, place: s32) {
+    if SecretPlace(place) {
+        AppendNumber(bytes, length, PLACES)
+        AppendText(bytes, length, ifx place == PLACES + 1 then "a" else "b")
+        return
+    }
+    AppendNumber(bytes, length, place)
+}
 
 // The game's level number of a place, or the number it gets once it is in.
 LevelNumber :: (place: s32) -> s32 {
@@ -390,6 +408,104 @@ EmptyDigit :: (at: s32) -> u8 {
 
 // The game's boards fill their places in order; a waiting place starts from
 // its original board, or an empty one on a machine without originals.
+// Each secret beach's winning route, as levels/secret.json keeps it.
+secret_routes: [SECRET_PLACES * ROUTE_MAX]u8;
+secret_route_length: [SECRET_PLACES]s32;
+
+// levels/secret.json in the layout Python's json.dumps(indent=1) writes:
+// each secret beach's three layers of rows and its route. Without the file
+// the boards built into the editor stand in.
+LoadSecrets :: () {
+    text_bytes: Vec(u8)
+    found := ReadFileInto(SECRET_FILE, *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
+    layers: [3]string = .["\"cells\"", "\"tiles\"", "\"decorations\""]
+    at: s64 = 0
+    for side: cast(s32)0..SECRET_PLACES - 1 {
+        place := PLACES + 1 + side
+        board: [HEX]u8
+        ok := found
+        for layer: cast(s32)0..2 {
+            if ok { at = Find(text, layers[layer], at); ok = at >= 0 }
+            if ok { at += cast(s64)layers[layer].count }
+            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                if !ok { break }
+                quote := Find(text, "\"", at)
+                ok = quote >= 0 && quote + 1 + cast(s64)(SHOVEY_WIDTH * 2) < text.count
+                if !ok { break }
+                for digit: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
+                    board[layer * PIECES_HEX + row * SHOVEY_WIDTH * 2 + digit] = text[quote + 1 + cast(s64)digit]
+                }
+                at = quote + 2 + cast(s64)(SHOVEY_WIDTH * 2)
+            }
+        }
+        route_at: s64 = -1
+        if ok { route_at = Find(text, "\"solution\": \"", at); ok = route_at >= 0 }
+        length: s32 = 0
+        if ok {
+            from := route_at + 13
+            while from + cast(s64)length < text.count && text[from + cast(s64)length] != cast(u8)34 && length < ROUTE_MAX {
+                secret_routes[side * ROUTE_MAX + length] = text[from + cast(s64)length]
+                length += 1
+            }
+            at = from + cast(s64)length
+        }
+        if !ok || !ReadBoard(TextView(board[:]), Board(place)) {
+            unused ReadBoard(ShoveySecretData(side + 1), Board(place))
+            built := ShoveySecretSolution(side + 1)
+            length = cast(s32)built.count
+            for letter: cast(s32)0..length - 1 { secret_routes[side * ROUTE_MAX + letter] = built[letter] }
+        }
+        secret_route_length[side] = length
+        Copy(SavedBoard(place), Board(place))
+    }
+}
+
+// levels/secret.json written back: the saved board and route of each beach.
+SecretFileText :: () -> string {
+    length: s32 = 0
+    AppendText(file_text[:], *length, "{\n \"note\": \"Secret levels reached from the last level: 175a above it, 175b below it. Never listed or counted.\",\n \"levels\": [\n")
+    names: [3]string = .["cells", "tiles", "decorations"]
+    for side: cast(s32)0..SECRET_PLACES - 1 {
+        board := SavedBoard(PLACES + 1 + side)
+        AppendText(file_text[:], *length, "  {\n   \"name\": \"")
+        AppendPlace(file_text[:], *length, PLACES + 1 + side)
+        AppendText(file_text[:], *length, "\",\n")
+        for layer: cast(s32)0..2 {
+            AppendText(file_text[:], *length, "   \"")
+            AppendText(file_text[:], *length, names[layer])
+            AppendText(file_text[:], *length, "\": [\n")
+            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                from := layer * PIECES_HEX + row * SHOVEY_WIDTH * 2
+                AppendText(file_text[:], *length, "    \"")
+                AppendText(file_text[:], *length, TextView(board[from:from + SHOVEY_WIDTH * 2]))
+                AppendText(file_text[:], *length, ifx row < SHOVEY_HEIGHT - 1 then "\",\n" else "\"\n")
+            }
+            AppendText(file_text[:], *length, "   ],\n")
+        }
+        AppendText(file_text[:], *length, "   \"solution\": \"")
+        AppendText(file_text[:], *length, TextView(secret_routes[side * ROUTE_MAX:side * ROUTE_MAX + secret_route_length[side]]))
+        AppendText(file_text[:], *length, ifx side < SECRET_PLACES - 1 then "\"\n  },\n" else "\"\n  }\n")
+    }
+    AppendText(file_text[:], *length, " ]\n}\n")
+    return TextView(file_text[:length])
+}
+
+// Saves a secret beach to levels/secret.json with its winning route.
+SaveSecret :: (letters: []u8) {
+    side := current - PLACES - 1
+    if letters.count > cast(s64)ROUTE_MAX { SaveFailed("the route is too long to keep."); return }
+    for at: cast(s32)0..cast(s32)letters.count - 1 { secret_routes[side * ROUTE_MAX + at] = letters[at] }
+    secret_route_length[side] = cast(s32)letters.count
+    Copy(SavedBoard(current), Board(current))
+    if !WriteEntireFile(SECRET_FILE, SecretFileText()) { SaveFailed("levels/secret.json could not be written."); return }
+    Copy(save_board[:], Board(current))
+    save_level = current
+    unused RemoveFile(DraftPath(current))
+    save_state = 2
+    if PathExists("tools/levels/levels.py") { Shell("python3 tools/levels/levels.py generate > /dev/null 2>&1 &") }
+}
+
 LoadLevels :: () {
     text_bytes: Vec(u8)
     found := ReadFileInto(LEVELS_FILE, *text_bytes)
@@ -420,6 +536,7 @@ LoadLevels :: () {
         }
         Copy(SavedBoard(place), Board(place))
     }
+    LoadSecrets()
 }
 
 // Cells that differ from the place's own original.
@@ -829,7 +946,7 @@ CancelAvailable :: () -> bool {
 }
 
 ApprovalAvailable :: () -> bool {
-    if playing { return false }
+    if playing || SecretPlace(current) { return false }
     if (Solved() || Proven()) && !ApprovalMatches(current) { return true }
     if !Approved(current) { return saved_approval_ready }
     if PublishedApprovalMatches(current) { return false }
@@ -1180,7 +1297,7 @@ FollowLevelFile :: (now: s64) {
 LoadDrafts :: () {
     unused CreateDirectory("backup")
     unused CreateDirectory("backup/editor-drafts")
-    for number: cast(s32)1..PLACES {
+    for number: cast(s32)1..ALL_PLACES {
         RestoreDraft(number)
     }
 }
@@ -1278,7 +1395,7 @@ Paint :: (at: s32, kind: s32) {
 Open :: (place: s32) {
     StopCheck()
     check_state = 0
-    current = (place - 1 + PLACES) % PLACES + 1
+    current = (place - 1 + ALL_PLACES) % ALL_PLACES + 1
     ActionMessage("")
     LoadPublication()
     playing = false
@@ -1868,7 +1985,11 @@ StartSave :: () {
     if level_update_pending || save_state == 1 || (!Solved() && !Proven()) { return }
     Copy(save_board[:], Board(current))
     save_level = current
-    if InGame(current) && Same(Board(current), SavedBoard(current)) { save_state = 2; return }
+    if (InGame(current) || SecretPlace(current)) && Same(Board(current), SavedBoard(current)) { save_state = 2; return }
+    if SecretPlace(current) {
+        SaveSecret(ifx Solved() then route[:route_length] else proof_route[:proof_length])
+        return
+    }
     text_bytes: Vec(u8)
     found := ReadFileInto(LEVELS_FILE, *text_bytes)
     text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
@@ -2141,8 +2262,8 @@ map_hash: u32;
 map_ready: bool;
 map_path: [64]u8;
 map_path_length: s32;
-map_hashes: [PLACES * 8]u8;
-preview_wanted: [PLACES * (HEX + 5)]u8;
+map_hashes: [ALL_PLACES * 8]u8;
+preview_wanted: [ALL_PLACES * (HEX + 5)]u8;
 preview_checked_at: s64 = -100000;
 preview_requested_at: s64 = -100000;
 
@@ -2167,7 +2288,7 @@ RefreshMap :: (now: s64) {
     if now - preview_checked_at < 1000 { return }
     preview_checked_at = now
     length: s32 = 0
-    for place: cast(s32)1..PLACES { AppendHash(map_hashes[:], *length, BoardHash(Board(place))) }
+    for place: cast(s32)1..ALL_PLACES { AppendHash(map_hashes[:], *length, BoardHash(Board(place))) }
     hash := BoardHash(map_hashes[:length])
     if hash != map_hash || map_path_length == 0 {
         map_hash = hash
@@ -2182,7 +2303,7 @@ RefreshMap :: (now: s64) {
     if map_ready || now - preview_requested_at < 4000 { return }
     preview_requested_at = now
     length = 0
-    for place: cast(s32)1..PLACES {
+    for place: cast(s32)1..ALL_PLACES {
         AppendNumber(preview_wanted[:], *length, place)
         AppendText(preview_wanted[:], *length, " ")
         AppendText(preview_wanted[:], *length, TextView(Board(place)))
@@ -2199,7 +2320,7 @@ RefreshMap :: (now: s64) {
 // A click opens that place.
 SELECTOR_COLUMNS :: 15
 SelectorScreen :: (area: Rectangle) {
-    rows := (PLACES + SELECTOR_COLUMNS - 1) / SELECTOR_COLUMNS
+    rows := (ALL_PLACES + SELECTOR_COLUMNS - 1) / SELECTOR_COLUMNS
     legend_height: float32 = 28.0
     if Control(60, Rectangle.{area.x + area.width - 200.0, area.y, 96.0, legend_height - 4.0}, "Map", selector_map) { selector_map = true }
     if Control(61, Rectangle.{area.x + area.width - 100.0, area.y, 96.0, legend_height - 4.0}, "Levels", !selector_map) { selector_map = false }
@@ -2222,7 +2343,7 @@ SelectorScreen :: (area: Rectangle) {
         } else {
             Caption(15, Rectangle.{area.x, area.y, area.width - 210.0, legend_height}, "Drawing the map…", 14)
         }
-        for place: cast(s32)1..PLACES {
+        for place: cast(s32)1..ALL_PLACES {
             index := place - 1
             bounds := Rectangle.{origin_x + cast(float32)(index % SELECTOR_COLUMNS) * tile_width,
                     origin_y + cast(float32)(index / SELECTOR_COLUMNS) * tile_height, tile_width, tile_height}
@@ -2231,7 +2352,7 @@ SelectorScreen :: (area: Rectangle) {
                         .border = Color.{255, 255, 255, 230}})
             }
             length: s32 = 0
-            AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, place)
+            AppendPlace(cell_bytes[index * 16:index * 16 + 16], *length, place)
             if Button(session, ButtonProps.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
                     .label = TextView(cell_bytes[index * 16:index * 16 + length]), .invisible = true}) != 0 {
                 selector_pick = place
@@ -2244,14 +2365,14 @@ SelectorScreen :: (area: Rectangle) {
     cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
     Caption(15, Rectangle.{area.x, area.y, area.width - 210.0, legend_height},
         ifx server_configured && !server_verified then "Server unverified." else "Purple: synced. Pink: changed.", 14)
-    for place: cast(s32)1..PLACES {
+    for place: cast(s32)1..ALL_PLACES {
         index := place - 1
         column := index % SELECTOR_COLUMNS
         row := index / SELECTOR_COLUMNS
         bounds := Rectangle.{area.x + cast(float32)column * (cell_width + gap),
                 area.y + legend_height + cast(float32)row * (cell_height + gap), cell_width, cell_height}
         length: s32 = 0
-        AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, place)
+        AppendPlace(cell_bytes[index * 16:index * 16 + 16], *length, place)
         border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
         unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
                 .fill = LevelCardColor(place), .border = border, .radius = 5.0})
@@ -2497,7 +2618,10 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     width := viewport.width
     height := viewport.height
     length: s32 = 0
-    if InGame(current) {
+    if SecretPlace(current) {
+        AppendText(title_bytes[:], *length, "Secret beach ")
+        AppendPlace(title_bytes[:], *length, current)
+    } else if InGame(current) {
         AppendText(title_bytes[:], *length, "Level ")
         AppendNumber(title_bytes[:], *length, LevelNumber(current))
         AppendText(title_bytes[:], *length, " of ")
