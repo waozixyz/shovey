@@ -1,0 +1,76 @@
+#import, file "../src/controls.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+
+// A host that keeps the edition's records, like Inner Breeze, and may also
+// offer Arcade's services, like the Arcade app. Relaunching forgets what the
+// game itself remembered; the host keeps its records and services.
+service_open: bool;
+service_controls: [16]u8;
+service_sound: [16]u8;
+record_controls: [16]u8;
+record_sound: [16]u8;
+
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if !service_open { return "{\"status\":\"unavailable\"}" }
+    if name == "arcade.controls" {
+        if request == "get" { return TextUntilNul(service_controls[:]) }
+        if request == "set-on" || request == "set-off" { unused CopyCString(request[4:], service_controls[:]) }
+        return TextUntilNul(service_controls[:])
+    }
+    if name == "arcade.sound" {
+        if request == "get" { return TextUntilNul(service_sound[:]) }
+        unused CopyCString(ifx request == "mute" then "muted" else "on", service_sound[:])
+        return TextUntilNul(service_sound[:])
+    }
+    return ""
+}
+
+#program_export
+FakeRecord :: (name: string) -> string {
+    if name == "controls" { return TextUntilNul(record_controls[:]) }
+    if name == "sound" { return TextUntilNul(record_sound[:]) }
+    return ""
+}
+
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    if name == "controls" { return CopyCString(text, record_controls[:]) }
+    if name == "sound" { return CopyCString(text, record_sound[:]) }
+    return false
+}
+
+Relaunch :: () {
+    controls_pad = -1
+    controls_chosen = false
+    sound_muted = -1
+}
+
+#program_export
+Check :: () -> s32 {
+    // Inner Breeze: no Arcade services, so the edition's records keep both.
+    Relaunch()
+    if ControlsChosen() || SoundMuted() { return 1 }
+    ControlsSetPad(true)
+    Relaunch()
+    if !ControlsChosen() || !ControlsPad() { return 2 }
+    ControlsSetPad(false)
+    Relaunch()
+    if !ControlsChosen() || ControlsPad() { return 3 }
+    SoundSetMuted(true)
+    Relaunch()
+    if !SoundMuted() { return 4 }
+    // Arcade: its services answer first, so every edition shares a choice.
+    service_open = true
+    record_controls[0] = 0
+    record_sound[0] = 0
+    unused CopyCString("on", service_controls[:])
+    unused CopyCString("on", service_sound[:])
+    Relaunch()
+    if !ControlsChosen() || !ControlsPad() || SoundMuted() { return 5 }
+    ControlsSetPad(false)
+    Relaunch()
+    if ControlsPad() || TextUntilNul(service_controls[:]) != "off" || TextUntilNul(record_controls[:]) != "off" { return 6 }
+    return 42
+}

@@ -27,9 +27,17 @@
         }
         return WebApp.AppService(name, request)
     }
+    // The page's documents already keep both choices (see above).
+    ControlsRecord :: (name: string) -> string { return "" }
+    ControlsSaveRecord :: (name: string, text: string) -> bool { return false }
 } else {
     host_api :: #system_library "host_api";
     AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+    // The edition's own records, for hosts without Arcade's services.
+    AppRecordHost :: (name: string) -> string #foreign host_api;
+    SaveAppRecordHost :: (name: string, text: string) -> bool #foreign host_api;
+    ControlsRecord :: (name: string) -> string { return AppRecordHost(name) }
+    ControlsSaveRecord :: (name: string, text: string) -> bool { return SaveAppRecordHost(name, text) }
 }
 #import "std/text_buffer"
 
@@ -76,27 +84,37 @@ ICON_SOUND_OFF :: "S2rr:M4 9H7L11 5V19L7 15H4ZM15 9L20 15M20 9L15 15"
 
 sound_muted: s32 = -1;
 
+// A host with Arcade's services keeps a choice for every edition; any other
+// host, such as Inner Breeze, keeps it in the edition's own records for the
+// account. Both are written, and the service answers first.
+ChoiceRead :: (service: string, record: string) -> string {
+    value := AppServiceHost(service, "get")
+    if value == "on" || value == "off" || value == "muted" { return value }
+    return ControlsRecord(record)
+}
+
 SoundMuted :: () -> bool {
     if sound_muted < 0 {
-        sound_muted = ifx AppServiceHost("arcade.sound", "get") == "muted" then 1 else 0
+        sound_muted = ifx ChoiceRead("arcade.sound", "sound") == "muted" then 1 else 0
     }
     return sound_muted != 0
 }
 
 SoundSetMuted :: (muted: bool) {
     unused AppServiceHost("arcade.sound", ifx muted then "mute" else "unmute")
+    unused ControlsSaveRecord("sound", ifx muted then "muted" else "on")
     sound_muted = ifx muted then 1 else 0
 }
 
 // Touch controls: swipe and tap on the board, or the movement pad. The host
 // keeps the choice ("on" is the pad, "off" swipe and tap, anything else not
-// chosen yet), so every edition shares it.
+// chosen yet), so every edition shares it; see ChoiceRead.
 controls_pad: s32 = -1;
 controls_chosen: bool;
 
 ControlsLoad :: () {
     if controls_pad >= 0 { return }
-    value := AppServiceHost("arcade.controls", "get")
+    value := ChoiceRead("arcade.controls", "controls")
     controls_pad = ifx value == "on" then 1 else 0
     controls_chosen = value == "on" || value == "off"
 }
@@ -115,6 +133,7 @@ ControlsChosen :: () -> bool {
 
 ControlsSetPad :: (pad: bool) {
     unused AppServiceHost("arcade.controls", ifx pad then "set-on" else "set-off")
+    unused ControlsSaveRecord("controls", ifx pad then "on" else "off")
     controls_pad = ifx pad then 1 else 0
     controls_chosen = true
 }
