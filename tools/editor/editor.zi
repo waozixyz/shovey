@@ -161,13 +161,20 @@ route_length: s32;
 check_prefix: [ROUTE_MAX]u8;
 check_prefix_length: s32;
 check_live: bool;
-check_play_length: s32;
+check_play_length: s32 = -1;
 check_generation: s32;
 check_folder: [128]u8;
 check_folder_length: s32;
 check_request: [HEX + ROUTE_MAX + 128]u8;
 edited_at: s64;
 check_wanted: bool;
+
+// Any route the engine replayed to a win on this board, from the solver
+// or from play: the board stays winnable after a failed continuation.
+known_board: [HEX]u8;
+known_route: [ROUTE_MAX]u8;
+known_length: s32;
+known_level: s32;
 
 // A win you played is proof on its own.
 proof_board: [HEX]u8;
@@ -1434,10 +1441,21 @@ PollCheck :: () {
     }
     if finished == SEARCHES || PathExists(CheckFile(-1, "finished")) || MonotonicMilliseconds() - check_started > 125000 {
         StopCheck()
+        // No continuation from your moves is no verdict on the board: any
+        // route already found for it still counts.
+        if check_play_length >= 0 && KnownWin() {
+            for at: cast(s32)0..known_length - 1 { route[at] = known_route[at] }
+            route_length = known_length
+            check_state = 2
+            return
+        }
         check_state = 3
-        RememberCheckStatus()
+        if check_play_length < 0 { RememberCheckStatus() }
     }
 }
+
+// The board on screen has a route the engine replayed to a win.
+KnownWin :: () -> bool { return known_length > 0 && known_level == current && Same(known_board[:], Board(current)) }
 
 // The check belongs to the board on screen.
 Checked :: () -> bool { return check_level == current && Same(check_board[:], Board(current)) }
@@ -1542,6 +1560,10 @@ AcceptRoute :: (letters: []u8, length: s32) {
     route_length = length
     check_state = 2
     check_wanted = false
+    Copy(known_board[:], Board(current))
+    for at: cast(s32)0..length - 1 { known_route[at] = letters[at] }
+    known_length = length
+    known_level = current
     record_length: s32 = 0
     AppendText(proof_record[:], *record_length, TextView(Board(current)))
     AppendText(proof_record[:], *record_length, "\n")
@@ -1927,6 +1949,19 @@ PlayChanged :: () {
     }
 }
 
+// Back to editing. A check that followed your moves says nothing about the
+// board from its start, so that is checked again.
+StopPlay :: () {
+    playing = false
+    watching = false
+    level_file_checked = 0
+    if check_play_length >= 0 && check_state != 2 {
+        StopCheck()
+        check_state = 0
+        check_wanted = true
+    }
+}
+
 StartPlay :: (resume: bool = false, owner: bool = true) {
     playing = true
     watching = !owner
@@ -2275,7 +2310,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     FollowLevelFile(now)
     PollCheck()
     ctrl := (modifiers & 2) != 0
-    if key == 258 { if playing { playing = false; watching = false; level_file_checked = 0 } else { StartPlay() } }
+    if key == 258 { if playing { StopPlay() } else { StartPlay() } }
     if key == 76 && !playing { ToggleSelector() }
     if key == 256 { selector_open = false }
     if playing {
@@ -2341,7 +2376,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if Control(3, Rectangle.{bx, 8.0, 64.0, 40.0}, "Next") { Open(current + 1) }
         bx += 72.0
         if Control(4, Rectangle.{bx, 8.0, 108.0, 40.0}, ifx playing then "Edit (Tab)" else "Play (Tab)") {
-            if playing { playing = false; watching = false; level_file_checked = 0 } else { StartPlay() }
+            if playing { StopPlay() } else { StartPlay() }
         }
         bx += 116.0
         if Control(5, Rectangle.{bx, 8.0, 104.0, 40.0}, "Check (C)") { StartCheck() }
