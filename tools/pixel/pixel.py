@@ -614,6 +614,48 @@ def boat_hull_front(image):
     return front
 
 
+# The wake picture is the boat's canvas widened ahead of the bow, so the
+# spray can fly in front of it: 128 by 96, the boat on its left 96 columns.
+BOAT_WAKE_WIDTH = 128
+
+
+def boat_wake(frame):
+    """Water crashing into the big boat's bow, one of four frames: a white
+    crest climbing the stem, spray flung ahead and foam streaks along the
+    waterline that slide back frame by frame."""
+    image = Image.new('RGBA', (BOAT_WAKE_WIDTH, 96))
+    draw = ImageDraw.Draw(image)
+    white, pale, blue = (246, 252, 252, 255), (178, 224, 242, 255), (98, 166, 208, 255)
+    rise = (2, 6, 9, 5)[frame]
+    # The crest climbs the stem and curls forward over the water.
+    for row in range(14 + rise):
+        y = 93 - row
+        lean = row * row // 18
+        x0 = 82 + row // 2
+        x1 = x0 + 5 + lean // 2 + (row + frame) % 3
+        draw.line([(x0, y), (x1, y)], fill=pale if row % 5 == 4 else white)
+        draw.point((x0 - 1, y), fill=pale)
+        draw.point((x1 + 1, y), fill=blue)
+    # Spray flung ahead of the bow, higher on the bigger frames.
+    drops = ((2, 0), (6, -3), (10, 2), (5, 6), (14, -2), (9, -7), (18, 3), (13, 8), (21, -5))
+    for index, (dx, dy) in enumerate(drops):
+        x = 96 + dx + (frame * 3 + index) % 4
+        y = 80 - rise - dy + (frame + index) % 3
+        if x < BOAT_WAKE_WIDTH - 1 and 0 <= y < 95:
+            size = 2 if index % 3 == 0 else 1
+            draw.rectangle((x, y, x + size - 1, y + size - 1), fill=white if index % 2 else pale)
+    # The bow wave spreads along the water ahead.
+    draw.line([(80, 93), (110 + rise, 93)], fill=white)
+    draw.line([(78, 94), (116 + rise, 94)], fill=pale)
+    draw.line([(76, 95), (122, 95)], fill=blue)
+    # Foam streaks slipping back along the waterline.
+    for start in range(-24, 96, 24):
+        x = start + 24 - frame * 6
+        draw.line([(max(0, x), 93), (min(78, x + 10), 93)], fill=white)
+        draw.line([(max(0, x + 4), 95), (min(76, x + 12), 95)], fill=pale)
+    return image
+
+
 def shrink(image, width):
     """A big picture made small: an area average of its solid pixels,
     snapped to its own colours, centred in one cell."""
@@ -1248,6 +1290,8 @@ def sprites():
                      native('boat-big')),
         'boat-big-hull': ('the near side of the big boat\'s hull, drawn over Shovey when he rides in it',
                           boat_hull_front(native('boat-big'))),
+        **{f'boat-wake-{frame}': (f'water breaking on the big boat\'s bow and foam along its waterline, frame {frame + 1} of 4',
+                                  boat_wake(frame)) for frame in range(4)},
         'tile-149': ('floating crate: a crate pushed into water, floating low; Shovey can walk on it', floating_crate()),
         'tile-40': ('mirror Shovey (pink)', mirror),
         'tile-57': ('flowers scattered on the floor (decoration)', flowers()),

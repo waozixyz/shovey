@@ -263,6 +263,26 @@
       "sha256": "cac90cf02ab0b2674b64f15fd52a2b7ce850bb833ce2c3bb2ac0b87246b8731c"
     },
     {
+      "path": "sprites/boat-wake-0.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 1 of 4",
+      "sha256": "2a2eb585099b93a89d302b6c1076d7a9c256fe039db521c907b3ad2f05207a8b"
+    },
+    {
+      "path": "sprites/boat-wake-1.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 2 of 4",
+      "sha256": "6af934aed74712db09254a8306d6e0fb2af6bae33eff9d4bc2bfa45f91c6a4a4"
+    },
+    {
+      "path": "sprites/boat-wake-2.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 3 of 4",
+      "sha256": "4fa0693a18556455e9e361289bc5a6ec1678d9000ee654f63a7d0ce84c82c774"
+    },
+    {
+      "path": "sprites/boat-wake-3.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 4 of 4",
+      "sha256": "22d3695e043b178b8d0957583719a86738f705afcf9f80dbe8e92a7ec8d2ee7b"
+    },
+    {
       "path": "sprites/tile-149.png",
       "depicts": "floating crate: a crate pushed into water, floating low; Shovey can walk on it",
       "sha256": "6bdaf7c3b18641d0aaaffcb263b30466c4aff2d7711dc97b62f44908d3096dc1"

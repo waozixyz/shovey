@@ -173,6 +173,26 @@
       "sha256": "0330cd0e5abcd4e035a82bd171544f46e062327601fb65d703d883048f7f324d"
     },
     {
+      "path": "sprites/boat-wake-0.png",
+      "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 1 of 4",
+      "sha256": "2a2eb585099b93a89d302b6c1076d7a9c256fe039db521c907b3ad2f05207a8b"
+    },
+    {
+      "path": "sprites/boat-wake-1.png",
+      "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 2 of 4",
+      "sha256": "6af934aed74712db09254a8306d6e0fb2af6bae33eff9d4bc2bfa45f91c6a4a4"
+    },
+    {
+      "path": "sprites/boat-wake-2.png",
+      "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 3 of 4",
+      "sha256": "4fa0693a18556455e9e361289bc5a6ec1678d9000ee654f63a7d0ce84c82c774"
+    },
+    {
+      "path": "sprites/boat-wake-3.png",
+      "depicts": "landscape presentation of water breaking on the big boat's bow and foam along its waterline, frame 4 of 4",
+      "sha256": "22d3695e043b178b8d0957583719a86738f705afcf9f80dbe8e92a7ec8d2ee7b"
+    },
+    {
       "path": "sprites/burst-0.png",
       "depicts": "landscape presentation of a target struck by a shot, frame 1 of 6",
       "sha256": "5fce9a26d4b42f3adc320a29c8952370dc09276d877be3933f289ec59aa23b01"

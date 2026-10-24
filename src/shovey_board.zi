@@ -59,10 +59,12 @@ SPRITE_ABYSS_CORNER :: 263
 // Colour block goals 143 to 147, one picture each.
 SPRITE_BLOCK_GOAL :: 279
 // The boat (148) and the floating crate (149), then the boat as the board
-// shows it, three cells wide and three tall, and its hull's near side.
+// shows it, three cells wide and three tall, its hull's near side and four
+// frames of water breaking on its bow.
 SPRITE_BOAT :: 284
 SPRITE_BIG_BOAT :: 286
-SPRITE_COUNT :: 288
+SPRITE_BOAT_WAKE :: 288
+SPRITE_COUNT :: 292
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -71,6 +73,10 @@ BOAT_DECK_Y :: 0.86
 BOAT_RIDER :: 0.28
 // The part of the sailing he spends jumping from his cell into the boat.
 BOAT_HOP :: 0.1
+// How many cells the boat sails out to sea, and how much wider than the
+// boat the wake picture is, for the spray ahead of the bow.
+BOAT_TRAVEL :: 16.0
+BOAT_WAKE_WIDE :: 1.3333334
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -315,6 +321,11 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_BOAT + 1, "tile-149")
     SpritePath(SPRITE_BIG_BOAT, "boat-big")
     SpritePath(SPRITE_BIG_BOAT + 1, "boat-big-hull")
+    for frame_number: cast(s32)0..3 {
+        wake: Vec(u8)
+        BuilderPrint(*wake, "boat-wake-%", FormatInteger(cast(s64)frame_number, digits[:]))
+        SpritePath(SPRITE_BOAT_WAKE + frame_number, BuilderFinish(wake))
+    }
     for kind: cast(s32)SHOVEY_BLUE_GOAL..SHOVEY_GREEN_GOAL {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
@@ -942,6 +953,13 @@ BoardSailing :: (game: *ShoveyGame) -> bool {
     return board_sail >= 0.0 && game.player >= 0 && game.player < SHOVEY_CELLS && game.ground[game.player] == SHOVEY_BOAT
 }
 
+// How far the boat has sailed, in cells: still while Shovey jumps in, then
+// gathering way.
+BoardSailTravel :: (sail: float32) -> float32 {
+    way := (sail - BOAT_HOP) / (1.0 - BOAT_HOP)
+    return ifx way <= 0.0 then 0.0 else BOAT_TRAVEL * way * way
+}
+
 // The boat is three cells wide and three tall: its hull lies on the boat's
 // cell, where Shovey boards at the stern, and the two cells beyond it, and
 // its sail rises over the two rows above. It sails towards the right of the
@@ -956,16 +974,10 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u6
         aboard := at == game.player && BoardSailing(game)
         tint: u32 = 0
         if aboard {
-            // It gathers way, then drifts off and grows small in the
-            // distance while it rocks on the swell; at the end it fades.
-            sail := board_sail
-            far := sail * sail
-            scale := 1.0 - 0.5 * far
-            rock := cast(float32)Math.Sin(now * 2.6) * cell.height * 0.06
-            hull := Vector2.{boat.x + boat.width * 0.5 + far * cell.width * 8.0, boat.y + boat.height * 0.8 + rock - far * cell.height}
-            boat = Rectangle.{hull.x - boat.width * 0.5 * scale, hull.y - boat.height * 0.8 * scale, boat.width * scale, boat.height * scale}
-            fade := ifx sail > 0.7 then (1.0 - sail) / 0.3 else 1.0
-            tint = cast(u32)0xFFFFFF00 | cast(u32)(fade * 255.0)
+            // It sails off to the right, rocking on the swell; the game's
+            // camera follows it.
+            boat.x += BoardSailTravel(board_sail) * cell.width
+            boat.y += cast(float32)Math.Sin(now * 2.6) * cell.height * 0.06
         }
         Image(session, ImageProps.{.key = BoardOverlayKey(key, 1000 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT],
                 .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
@@ -990,6 +1002,11 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u6
                         .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
             }
         }
+        // Water breaks on the bow, faster once the boat makes way.
+        wake := cast(s32)(now / ifx aboard && board_sail > BOAT_HOP then 0.09 else 0.28) % 4
+        Image(session, ImageProps.{.key = BoardOverlayKey(key, 1030 + drawn), .asset_path = files[SPRITE_BOAT_WAKE + wake],
+                .alt_text = "", .bounds = Rectangle.{boat.x, boat.y, boat.width * BOAT_WAKE_WIDE, boat.height},
+                .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
         drawn += 1
     }
 }
