@@ -274,6 +274,12 @@
 [shovey_piece_green_block_goal]
 Место для зелёного блока
 ---
+[shovey_piece_boat]
+Лодка
+---
+[shovey_piece_floating_crate]
+Плавающий ящик
+---
 [shovey_piece_blue_ball]
 Синий шар
 ---

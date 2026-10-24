@@ -412,6 +412,12 @@ Shovey
 [editor_green_block_goal]
 초록 블록 목표 지점
 ---
+[editor_boat]
+보트
+---
+[editor_floating_crate]
+떠 있는 상자
+---
 [editor_cyan_block]
 청록색 블록
 ---

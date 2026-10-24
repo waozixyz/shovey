@@ -207,14 +207,14 @@ layers_edit: [SHOVEY_CELLS * 3]s32;
 names: [1]string;
 
 // Palette: board kinds in the order a level is usually built.
-PALETTE :: 115
-palette_kinds: [115]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
+PALETTE :: 117
+palette_kinds: [117]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
     44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 131, 132, 133, 134, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
     104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
-    35, 36, 37, 38, 53, 54, 55, 39, 143, 144, 145, 146, 147, 40,
+    35, 36, 37, 38, 53, 54, 55, 39, 143, 144, 145, 146, 147, 40, 148, 149,
     65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91,
     135, 136, 137, 138, 139, 140, 141, 142];
-palette_names: [115]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
+palette_names: [117]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
     "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
     "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
     "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
@@ -222,7 +222,7 @@ palette_names: [115]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flow
     "Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
     "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
     "Yellow block", "Cyan block", "Purple block", "Green block", "Red block goal", "Blue block goal", "Yellow block goal",
-    "Cyan block goal", "Purple block goal", "Green block goal", "Mirror Shovey",
+    "Cyan block goal", "Purple block goal", "Green block goal", "Mirror Shovey", "Boat", "Floating crate",
     "Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
     "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Duck", "Turtle", "Crab", "Goldfish", "Koi", "Minnow",
     "Mushrooms", "Fallen leaves", "Bluebells", "Lily pads", "Berry bush", "Flower pot", "Barrel", "Tree stump"];
@@ -557,6 +557,7 @@ PrivateSprite :: (kind: s32) -> s32 {
     if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return SPRITE_MOSS_WALL + kind - SHOVEY_MOSS_WALL }
     if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_BUTTON { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind >= SHOVEY_BLUE_GOAL && kind <= SHOVEY_GREEN_GOAL { return SPRITE_BLOCK_GOAL + kind - SHOVEY_BLUE_GOAL }
+    if kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE { return SPRITE_BOAT + kind - SHOVEY_BOAT }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
     color := ShoveyGateColor(kind)

@@ -969,6 +969,7 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
         'Colour blocks change colour on every push: 36 red, 37 blue, 38 yellow cycle red, blue, yellow; '
         '53 cyan, 54 purple, 55 green cycle cyan, purple, green. Block goals take only their colour: '
         '39 red (and cyan), 143 blue, 144 yellow, 145 cyan, 146 purple, 147 green. '
+        '148 boat: the way home like the house 7, set on water. A crate pushed into water (tile 64) floats there as 149, which Shovey and crates can cross. '
         'A ball pushed onto matching pit disappears; pit is reusable. Paint recolors a ball and is consumed. '
         'No object can enter or fill abyss: balls, crates, bombs and color blocks all stop at its edge. '
         'Player must remove ALL balls, collect every apple, cover all crate goals, then enter home. '

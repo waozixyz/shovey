@@ -1003,6 +1003,16 @@
       "sha256": "c8cde3d7e93b49826395fe40c5a7cd6e3e0045bcad402eca7d36f80532671cd9"
     },
     {
+      "path": "sprites/tile-148.png",
+      "depicts": "landscape presentation of boat at the shore: a wooden boat with a white sail, the way home of the last level",
+      "sha256": "9a3b37f49edeb5de040ec8fbd2a9c068fb3ebc1268642990cced71e97428d61d"
+    },
+    {
+      "path": "sprites/tile-149.png",
+      "depicts": "landscape presentation of floating crate: a crate pushed into water, floating low; Shovey can walk on it",
+      "sha256": "6bdaf7c3b18641d0aaaffcb263b30466c4aff2d7711dc97b62f44908d3096dc1"
+    },
+    {
       "path": "sprites/tile-15.png",
       "depicts": "landscape presentation of red paint puddle, matching the other paint silhouettes",
       "sha256": "3a225f623a8a87a1610e4aa39dab41455fea433887f8e14699785af7221ba96e"

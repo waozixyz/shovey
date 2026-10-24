@@ -274,6 +274,12 @@ Shovey 用漂浮的木箱、球和地砖搭建谜题棋盘
 [shovey_piece_green_block_goal]
 绿色方块目标
 ---
+[shovey_piece_boat]
+小船
+---
+[shovey_piece_floating_crate]
+漂浮的箱子
+---
 [shovey_piece_blue_ball]
 蓝球
 ---

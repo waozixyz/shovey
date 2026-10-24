@@ -412,6 +412,12 @@ Cíl pro fialový blok
 [editor_green_block_goal]
 Cíl pro zelený blok
 ---
+[editor_boat]
+Loďka
+---
+[editor_floating_crate]
+Plovoucí bedna
+---
 [editor_cyan_block]
 Azurový blok
 ---

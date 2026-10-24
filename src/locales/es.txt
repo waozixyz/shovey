@@ -274,6 +274,12 @@ Destino del bloque morado
 [shovey_piece_green_block_goal]
 Destino del bloque verde
 ---
+[shovey_piece_boat]
+Barca
+---
+[shovey_piece_floating_crate]
+Caja flotante
+---
 [shovey_piece_blue_ball]
 Bola azul
 ---

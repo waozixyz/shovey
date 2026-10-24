@@ -412,6 +412,12 @@ Ziel für violetten Farbstein
 [editor_green_block_goal]
 Ziel für grünen Farbstein
 ---
+[editor_boat]
+Boot
+---
+[editor_floating_crate]
+Treibende Kiste
+---
 [editor_cyan_block]
 Türkiser Block
 ---

@@ -412,6 +412,12 @@ Tujuan balok ungu
 [editor_green_block_goal]
 Tujuan balok hijau
 ---
+[editor_boat]
+Perahu
+---
+[editor_floating_crate]
+Peti terapung
+---
 [editor_cyan_block]
 Balok sian
 ---

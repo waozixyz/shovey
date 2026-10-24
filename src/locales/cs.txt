@@ -274,6 +274,12 @@ Cíl pro fialový blok
 [shovey_piece_green_block_goal]
 Cíl pro zelený blok
 ---
+[shovey_piece_boat]
+Loďka
+---
+[shovey_piece_floating_crate]
+Plovoucí bedna
+---
 [shovey_piece_blue_ball]
 Modrá koule
 ---

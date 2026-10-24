@@ -412,6 +412,12 @@ Destino do bloco roxo
 [editor_green_block_goal]
 Destino do bloco verde
 ---
+[editor_boat]
+Barco
+---
+[editor_floating_crate]
+Caixa flutuante
+---
 [editor_cyan_block]
 Bloco ciano
 ---

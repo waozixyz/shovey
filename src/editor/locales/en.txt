@@ -412,6 +412,12 @@ Purple block goal
 [editor_green_block_goal]
 Green block goal
 ---
+[editor_boat]
+Boat
+---
+[editor_floating_crate]
+Floating crate
+---
 [editor_cyan_block]
 Cyan block
 ---

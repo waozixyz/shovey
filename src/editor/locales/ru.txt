@@ -412,6 +412,12 @@ Island
 [editor_green_block_goal]
 Место для зелёного блока
 ---
+[editor_boat]
+Лодка
+---
+[editor_floating_crate]
+Плавающий ящик
+---
 [editor_cyan_block]
 Бирюзовый блок
 ---

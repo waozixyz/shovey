@@ -412,6 +412,12 @@ Shovey
 [editor_green_block_goal]
 绿色方块目标
 ---
+[editor_boat]
+小船
+---
+[editor_floating_crate]
+漂浮的箱子
+---
 [editor_cyan_block]
 青色方块
 ---

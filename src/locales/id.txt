@@ -274,6 +274,12 @@ Tujuan balok ungu
 [shovey_piece_green_block_goal]
 Tujuan balok hijau
 ---
+[shovey_piece_boat]
+Perahu
+---
+[shovey_piece_floating_crate]
+Peti terapung
+---
 [shovey_piece_blue_ball]
 Bola biru
 ---

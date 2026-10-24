@@ -274,6 +274,12 @@ Cible pour bloc violet
 [shovey_piece_green_block_goal]
 Cible pour bloc vert
 ---
+[shovey_piece_boat]
+Barque
+---
+[shovey_piece_floating_crate]
+Caisse flottante
+---
 [shovey_piece_blue_ball]
 Boule bleue
 ---

@@ -58,7 +58,9 @@ SPRITE_EXPLOSION :: 255
 SPRITE_ABYSS_CORNER :: 263
 // Colour block goals 143 to 147, one picture each.
 SPRITE_BLOCK_GOAL :: 279
-SPRITE_COUNT :: 284
+// The boat (148) and the floating crate (149).
+SPRITE_BOAT :: 284
+SPRITE_COUNT :: 286
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -299,6 +301,8 @@ SpritesPrepare :: () {
         VecFree(bytes)
     }
     SpritePath(SPRITE_CHERRY, "tile-56")
+    SpritePath(SPRITE_BOAT, "tile-148")
+    SpritePath(SPRITE_BOAT + 1, "tile-149")
     for kind: cast(s32)SHOVEY_BLUE_GOAL..SHOVEY_GREEN_GOAL {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
@@ -473,6 +477,7 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     }
     if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_BUTTON { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind >= SHOVEY_BLUE_GOAL && kind <= SHOVEY_GREEN_GOAL { return SPRITE_BLOCK_GOAL + kind - SHOVEY_BLUE_GOAL }
+    if kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE { return SPRITE_BOAT + kind - SHOVEY_BOAT }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
     color := ShoveyGateColor(kind)

@@ -274,6 +274,12 @@ Bersaglio del blocco viola
 [shovey_piece_green_block_goal]
 Bersaglio del blocco verde
 ---
+[shovey_piece_boat]
+Barca
+---
+[shovey_piece_floating_crate]
+Cassa galleggiante
+---
 [shovey_piece_blue_ball]
 Palla blu
 ---

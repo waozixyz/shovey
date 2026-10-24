@@ -412,6 +412,12 @@ Destino del bloque morado
 [editor_green_block_goal]
 Destino del bloque verde
 ---
+[editor_boat]
+Barca
+---
+[editor_floating_crate]
+Caja flotante
+---
 [editor_cyan_block]
 Bloque cian
 ---

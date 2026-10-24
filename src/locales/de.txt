@@ -274,6 +274,12 @@ Ziel für violetten Farbstein
 [shovey_piece_green_block_goal]
 Ziel für grünen Farbstein
 ---
+[shovey_piece_boat]
+Boot
+---
+[shovey_piece_floating_crate]
+Treibende Kiste
+---
 [shovey_piece_blue_ball]
 Blaue Kugel
 ---

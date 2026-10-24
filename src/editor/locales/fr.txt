@@ -412,6 +412,12 @@ Cible pour bloc violet
 [editor_green_block_goal]
 Cible pour bloc vert
 ---
+[editor_boat]
+Barque
+---
+[editor_floating_crate]
+Caisse flottante
+---
 [editor_cyan_block]
 Bloc cyan
 ---

@@ -192,6 +192,17 @@ ColorChecks :: () -> s32 {
     if !ShoveyMove(*game, 2) || game.objects[15] != 53 || ShoveyRemaining(*game) != 0 { return 185 }
     if !ShoveyCellKind(SHOVEY_GREEN_GOAL) || ShoveyCellKind(SHOVEY_STUMP) || ShoveyButtonColor(SHOVEY_BLUE_GOAL) >= 0 { return 186 }
 
+    // A crate pushed into water floats and carries Shovey; a boat ends the
+    // level like the house.
+    game = Floor()
+    game.objects[14] = 9
+    game.ground[15] = 64
+    if !ShoveyMove(*game, 2) || game.ground[15] != SHOVEY_FLOATING_CRATE || game.objects[15] != 0 { return 187 }
+    if !ShoveyMove(*game, 2) || game.player != 15 { return 188 }
+    game = Floor()
+    game.ground[14] = SHOVEY_BOAT
+    if !ShoveyMove(*game, 2) || !game.won { return 189 }
+
     game = Floor()
     game.objects[14] = 46
     game.ground[15] = 47

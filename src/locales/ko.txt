@@ -274,6 +274,12 @@
 [shovey_piece_green_block_goal]
 초록 블록 목표 지점
 ---
+[shovey_piece_boat]
+보트
+---
+[shovey_piece_floating_crate]
+떠 있는 상자
+---
 [shovey_piece_blue_ball]
 파란 공
 ---

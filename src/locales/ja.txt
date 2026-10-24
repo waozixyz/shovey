@@ -274,6 +274,12 @@
 [shovey_piece_green_block_goal]
 緑のブロックの目標地点
 ---
+[shovey_piece_boat]
+ボート
+---
+[shovey_piece_floating_crate]
+浮かぶ木箱
+---
 [shovey_piece_blue_ball]
 青いボール
 ---

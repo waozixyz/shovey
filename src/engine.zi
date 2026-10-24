@@ -126,8 +126,11 @@ ShoveyGoalDone :: (ground: s32, object: s32) -> bool {
 
 // A kind a board cell may start with.
 ShoveyCellKind :: (kind: s32) -> bool {
-    return (kind >= 0 && kind <= SHOVEY_LAST_BUTTON) || ShoveyColorGoal(kind)
+    return (kind >= 0 && kind <= SHOVEY_LAST_BUTTON) || ShoveyColorGoal(kind) || kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE
 }
+
+// Where a level ends: the house, or the boat.
+ShoveyHome :: (kind: s32) -> bool { return kind == 7 || kind == SHOVEY_BOAT }
 
 // Decorations that change nothing about play, and the solid ones that act as
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
@@ -162,7 +165,11 @@ SHOVEY_LAST_BUTTON :: 134
 // and green. A board cell holds a kind up to SHOVEY_LAST_BUTTON or one of these.
 SHOVEY_BLUE_GOAL :: 143
 SHOVEY_GREEN_GOAL :: 147
-SHOVEY_LAST_KIND :: 147
+// A boat at the shore takes Shovey home like the house does; a crate pushed
+// into water floats there and can be walked on.
+SHOVEY_BOAT :: 148
+SHOVEY_FLOATING_CRATE :: 149
+SHOVEY_LAST_KIND :: 149
 // Decorations on top of tiles: mushrooms, fallen leaves, bluebells and lily
 // pads are walked over; a bush, flower pot, barrel and stump block.
 SHOVEY_MUSHROOMS :: 135
@@ -257,7 +264,7 @@ ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 &&
 ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || (kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_LILY_PADS) || ShoveyBlockingDecoration(kind) }
 ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) }
 ShoveyDefaultTile :: (kind: s32) -> s32 {
-    return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else 0
+    return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else ifx kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE then 64 else 0
 }
 
 ShoveyLoadData :: (game: *ShoveyGame, level: s32, data: string) -> bool {
@@ -360,7 +367,8 @@ ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     if ShoveyPaintColor(kind) > 0 { return player || ShoveyBallColor(object) > 0 }
     if ShoveyColorGoal(kind) { return player || ShoveyColorBlock(object) }
     if kind == 26 { return player && (game.powers & SHOVEY_AMMO) == 0 }
-    if kind == 7 || kind == 8 || kind == 11 || kind == 21 || kind == 56 || kind == 25 ||
+    if kind == SHOVEY_FLOATING_CRATE { return true }
+    if kind == 7 || kind == SHOVEY_BOAT || kind == 8 || kind == 11 || kind == 21 || kind == 56 || kind == 25 ||
     kind == 27 || kind == 33 || kind == 35 { return player }
     return false
 }
@@ -379,6 +387,12 @@ ShoveyPush :: (game: *ShoveyGame, from: s32, direction: s32) -> bool {
         game.objects[from] = 0
         game.ground[to] = 0
         game.tiles[to] = 0
+        return true
+    }
+    // A crate pushed into water floats there, and Shovey can walk on it.
+    if object == 9 && to >= 0 && game.ground[to] == 64 && game.objects[to] == 0 {
+        game.objects[from] = 0
+        game.ground[to] = SHOVEY_FLOATING_CRATE
         return true
     }
     shovey_enter = direction
@@ -510,7 +524,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     if kind == 20 || kind == 41 { ShoveySensor(game, to) }
     if kind == 42 { game.ground[to] = 23 }
     if game.ground[to] == 0 && (game.powers & SHOVEY_TRAIL) != 0 { game.ground[to] = 11 }
-    if kind == 7 && ShoveyRemaining(game) == 0 { game.won = true }
+    if ShoveyHome(kind) && ShoveyRemaining(game) == 0 { game.won = true }
     return true
 }
 

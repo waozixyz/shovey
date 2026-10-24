@@ -412,6 +412,12 @@ Shovey
 [editor_green_block_goal]
 緑のブロックの目標地点
 ---
+[editor_boat]
+ボート
+---
+[editor_floating_crate]
+浮かぶ木箱
+---
 [editor_cyan_block]
 シアンのブロック
 ---

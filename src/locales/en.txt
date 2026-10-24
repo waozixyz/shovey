@@ -274,6 +274,12 @@ Purple block goal
 [shovey_piece_green_block_goal]
 Green block goal
 ---
+[shovey_piece_boat]
+Boat
+---
+[shovey_piece_floating_crate]
+Floating crate
+---
 [shovey_piece_blue_ball]
 Blue ball
 ---

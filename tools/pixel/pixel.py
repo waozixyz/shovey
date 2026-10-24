@@ -600,6 +600,35 @@ def colour_goal(stripe=(204, 82, 66, 255), pale=(238, 200, 190, 255)):
     return image
 
 
+def boat():
+    """A small wooden boat seen from above at an angle: a brown hull with a
+    lighter deck rim, a mast and a white sail; water shows round it."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    hull, rim, dark = (132, 84, 44, 255), (178, 124, 70, 255), (82, 50, 26, 255)
+    draw.polygon([(3, 20), (28, 20), (24, 28), (7, 28)], fill=dark)
+    draw.polygon([(4, 20), (27, 20), (23, 27), (8, 27)], fill=hull)
+    draw.line([(4, 20), (27, 20)], fill=rim, width=2)
+    draw.line([(15, 3), (15, 20)], fill=(70, 46, 26, 255), width=2)
+    draw.polygon([(17, 4), (17, 18), (27, 18)], fill=(244, 244, 236, 255), outline=(190, 190, 182, 255))
+    draw.polygon([(14, 6), (14, 17), (6, 17)], fill=(230, 230, 222, 255), outline=(180, 180, 172, 255))
+    draw.polygon([(16, 2), (21, 3), (16, 5)], fill=(214, 56, 44, 255))
+    return image
+
+
+def floating_crate():
+    """A crate floating low in the water: its lid and a ring of ripples."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((2, 4, 29, 29), outline=(190, 228, 240, 160), width=2)
+    draw.rectangle((7, 8, 24, 25), fill=(120, 74, 38, 255), outline=(70, 42, 20, 255))
+    draw.rectangle((9, 10, 22, 23), fill=(164, 108, 58, 255))
+    draw.line([(9, 10), (22, 23)], fill=(110, 66, 32, 255), width=2)
+    draw.line([(22, 10), (9, 23)], fill=(110, 66, 32, 255), width=2)
+    draw.rectangle((7, 24, 24, 25), fill=(80, 140, 170, 200))
+    return image
+
+
 def shadow_shovey():
     """The mirror shadow: a pink Shovey filling the whole tile, with bigger
     eyes than the original's, looking up."""
@@ -1195,6 +1224,8 @@ def sprites():
         'tile-145': ('cyan colour block goal: a cyan hatched square', colour_goal((20, 170, 180, 255), (190, 240, 242, 255))),
         'tile-146': ('purple colour block goal: a purple hatched square', colour_goal((150, 40, 200, 255), (228, 196, 245, 255))),
         'tile-147': ('green colour block goal: a green hatched square', colour_goal((40, 160, 60, 255), (196, 236, 200, 255))),
+        'tile-148': ('boat at the shore: a wooden boat with a white sail, the way home of the last level', boat()),
+        'tile-149': ('floating crate: a crate pushed into water, floating low; Shovey can walk on it', floating_crate()),
         'tile-40': ('mirror Shovey (pink)', mirror),
         'tile-57': ('flowers scattered on the floor (decoration)', flowers()),
         'tile-58': ('grass tufts on the floor (decoration)', grass_tufts()),

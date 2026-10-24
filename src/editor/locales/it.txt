@@ -412,6 +412,12 @@ Bersaglio del blocco viola
 [editor_green_block_goal]
 Bersaglio del blocco verde
 ---
+[editor_boat]
+Barca
+---
+[editor_floating_crate]
+Cassa galleggiante
+---
 [editor_cyan_block]
 Blocco ciano
 ---
