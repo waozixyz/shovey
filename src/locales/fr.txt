@@ -10,6 +10,9 @@ Tout est prêt. Rentre à la maison !
 [shovey_finale]
 Tu as terminé toutes les énigmes. Merci d'avoir joué !
 ---
+[shovey_the_end]
+FIN
+---
 [shovey_lost]
 Trop de charge ! Recommence ce niveau.
 ---

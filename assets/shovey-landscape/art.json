@@ -163,6 +163,16 @@
       "sha256": "9a7970d376bd803fa57f7b259c154a1c4b5185d91502c143e6bf6ebff4520205"
     },
     {
+      "path": "sprites/boat-big-hull.png",
+      "depicts": "landscape presentation of the near side of the big boat's hull, drawn over Shovey when he rides in it",
+      "sha256": "cac90cf02ab0b2674b64f15fd52a2b7ce850bb833ce2c3bb2ac0b87246b8731c"
+    },
+    {
+      "path": "sprites/boat-big.png",
+      "depicts": "landscape presentation of the boat as the board shows it, three cells wide: a wooden sailing boat with a red-striped sail and a pennant",
+      "sha256": "0330cd0e5abcd4e035a82bd171544f46e062327601fb65d703d883048f7f324d"
+    },
+    {
       "path": "sprites/burst-0.png",
       "depicts": "landscape presentation of a target struck by a shot, frame 1 of 6",
       "sha256": "5fce9a26d4b42f3adc320a29c8952370dc09276d877be3933f289ec59aa23b01"
@@ -1005,7 +1015,7 @@
     {
       "path": "sprites/tile-148.png",
       "depicts": "landscape presentation of boat at the shore: a wooden boat with a white sail, the way home of the last level",
-      "sha256": "9a3b37f49edeb5de040ec8fbd2a9c068fb3ebc1268642990cced71e97428d61d"
+      "sha256": "3d6dbb2ec2037c9976767aa83259c6a9eb2406958a3e8926808a87e8b0cbb486"
     },
     {
       "path": "sprites/tile-149.png",

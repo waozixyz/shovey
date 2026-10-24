@@ -10,6 +10,9 @@ Puzzle complete!
 [shovey_finale]
 You finished every puzzle. Thank you for playing!
 ---
+[shovey_the_end]
+THE END
+---
 [shovey_lost]
 Too much charge! Restart this puzzle.
 ---

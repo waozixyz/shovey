@@ -10,6 +10,9 @@
 [shovey_finale]
 你完成了所有谜题。感谢游玩！
 ---
+[shovey_the_end]
+剧终
+---
 [shovey_lost]
 电量过多！请重新开始这一关。
 ---

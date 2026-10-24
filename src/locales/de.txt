@@ -10,6 +10,9 @@ Rätsel geschafft!
 [shovey_finale]
 Du hast alle Rätsel gelöst. Danke fürs Spielen!
 ---
+[shovey_the_end]
+ENDE
+---
 [shovey_lost]
 Zu viel Ladung! Starte das Level neu.
 ---

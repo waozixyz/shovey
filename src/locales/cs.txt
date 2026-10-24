@@ -10,6 +10,9 @@ Hlavolam dokončen!
 [shovey_finale]
 Dokončil jsi všechny hádanky. Díky za hraní!
 ---
+[shovey_the_end]
+KONEC
+---
 [shovey_lost]
 Příliš mnoho náboje! Začni úroveň znovu.
 ---

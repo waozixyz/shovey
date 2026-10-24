@@ -10,6 +10,9 @@ Quebra-cabeça concluído!
 [shovey_finale]
 Você terminou todos os quebra-cabeças. Obrigado por jogar!
 ---
+[shovey_the_end]
+FIM
+---
 [shovey_lost]
 Carga demais! Reinicie este nível.
 ---

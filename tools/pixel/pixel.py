@@ -600,20 +600,39 @@ def colour_goal(stripe=(204, 82, 66, 255), pale=(238, 200, 190, 255)):
     return image
 
 
-def boat():
-    """A small wooden boat seen from above at an angle: a brown hull with a
-    lighter deck rim, a mast and a white sail; water shows round it."""
-    image = Image.new('RGBA', (SIZE, SIZE))
-    draw = ImageDraw.Draw(image)
-    hull, rim, dark = (132, 84, 44, 255), (178, 124, 70, 255), (82, 50, 26, 255)
-    draw.polygon([(3, 20), (28, 20), (24, 28), (7, 28)], fill=dark)
-    draw.polygon([(4, 20), (27, 20), (23, 27), (8, 27)], fill=hull)
-    draw.line([(4, 20), (27, 20)], fill=rim, width=2)
-    draw.line([(15, 3), (15, 20)], fill=(70, 46, 26, 255), width=2)
-    draw.polygon([(17, 4), (17, 18), (27, 18)], fill=(244, 244, 236, 255), outline=(190, 190, 182, 255))
-    draw.polygon([(14, 6), (14, 17), (6, 17)], fill=(230, 230, 222, 255), outline=(180, 180, 172, 255))
-    draw.polygon([(16, 2), (21, 3), (16, 5)], fill=(214, 56, 44, 255))
-    return image
+# The big boat is 96 by 96, three cells each way; Codex drew it (prompt and
+# raw pictures in backup/boat-2026-10-24) and it was fitted with an area
+# average snapped to the model's colours. Its near side starts at this row.
+BOAT_HULL_FRONT = 75
+
+
+def boat_hull_front(image):
+    """The near side of the big boat's hull, drawn again over Shovey so he
+    sits inside the boat."""
+    front = image.copy()
+    front.paste((0, 0, 0, 0), (0, 0, front.width, BOAT_HULL_FRONT))
+    return front
+
+
+def shrink(image, width):
+    """A big picture made small: an area average of its solid pixels,
+    snapped to its own colours, centred in one cell."""
+    pixels = np.asarray(image).astype(float)
+    solid = (pixels[..., 3] > 0).astype(np.float32)
+    ys, xs = np.nonzero(solid)
+    pixels, solid = pixels[ys.min():ys.max() + 1, xs.min():xs.max() + 1], solid[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    size = (width, max(1, round(pixels.shape[0] * width / pixels.shape[1])))
+    weight = np.asarray(Image.fromarray(solid, 'F').resize(size, Image.BOX))
+    colour = np.stack([np.asarray(Image.fromarray((pixels[..., i] * solid).astype(np.float32), 'F').resize(size, Image.BOX))
+                       for i in range(3)], -1) / np.maximum(weight, 1e-6)[..., None]
+    palette = np.unique(pixels[solid > 0][:, :3], axis=0)
+    nearest = palette[np.argmin(((colour[..., None, :] - palette[None, None]) ** 2).sum(-1), -1)]
+    rgba = np.zeros((size[1], size[0], 4), np.uint8)
+    rgba[..., :3] = nearest
+    rgba[..., 3] = np.where(weight > 0.5, 255, 0)
+    out = Image.new('RGBA', (SIZE, SIZE))
+    out.paste(Image.fromarray(rgba, 'RGBA'), ((SIZE - size[0]) // 2, (SIZE - size[1]) // 2))
+    return out
 
 
 def floating_crate():
@@ -1224,7 +1243,11 @@ def sprites():
         'tile-145': ('cyan colour block goal: a cyan hatched square', colour_goal((20, 170, 180, 255), (190, 240, 242, 255))),
         'tile-146': ('purple colour block goal: a purple hatched square', colour_goal((150, 40, 200, 255), (228, 196, 245, 255))),
         'tile-147': ('green colour block goal: a green hatched square', colour_goal((40, 160, 60, 255), (196, 236, 200, 255))),
-        'tile-148': ('boat at the shore: a wooden boat with a white sail, the way home of the last level', boat()),
+        'tile-148': ('boat at the shore: a wooden boat with a white sail, the way home of the last level', shrink(native('boat-big'), 30)),
+        'boat-big': ('the boat as the board shows it, three cells wide: a wooden sailing boat with a red-striped sail and a pennant',
+                     native('boat-big')),
+        'boat-big-hull': ('the near side of the big boat\'s hull, drawn over Shovey when he rides in it',
+                          boat_hull_front(native('boat-big'))),
         'tile-149': ('floating crate: a crate pushed into water, floating low; Shovey can walk on it', floating_crate()),
         'tile-40': ('mirror Shovey (pink)', mirror),
         'tile-57': ('flowers scattered on the floor (decoration)', flowers()),
@@ -1390,7 +1413,7 @@ def build():
     for name, (depicts, image) in sheet.items():
         path = SPRITES / f'{name}.png'
         buffer = io.BytesIO()
-        image.resize((SIZE * SCALE, SIZE * SCALE), Image.NEAREST).save(buffer, 'PNG', optimize=True)
+        image.resize((image.width * SCALE, image.height * SCALE), Image.NEAREST).save(buffer, 'PNG', optimize=True)
         path.write_bytes(buffer.getvalue())
         manifest.append({'path': f'sprites/{name}.png', 'depicts': depicts,
                          'sha256': hashlib.sha256(buffer.getvalue()).hexdigest()})

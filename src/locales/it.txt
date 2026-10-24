@@ -10,6 +10,9 @@ Rompicapo completato!
 [shovey_finale]
 Hai completato tutti i rompicapi. Grazie per aver giocato!
 ---
+[shovey_the_end]
+FINE
+---
 [shovey_lost]
 Troppa carica! Ricomincia questo livello.
 ---

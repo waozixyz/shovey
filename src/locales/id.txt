@@ -10,6 +10,9 @@ Teka-teki selesai!
 [shovey_finale]
 Kamu menyelesaikan semua teka-teki. Terima kasih sudah bermain!
 ---
+[shovey_the_end]
+TAMAT
+---
 [shovey_lost]
 Terlalu banyak muatan! Ulangi level ini.
 ---

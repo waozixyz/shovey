@@ -58,9 +58,17 @@ SPRITE_EXPLOSION :: 255
 SPRITE_ABYSS_CORNER :: 263
 // Colour block goals 143 to 147, one picture each.
 SPRITE_BLOCK_GOAL :: 279
-// The boat (148) and the floating crate (149).
+// The boat (148) and the floating crate (149), then the boat as the board
+// shows it, three cells wide and three tall, and its hull's near side.
 SPRITE_BOAT :: 284
-SPRITE_COUNT :: 286
+SPRITE_BIG_BOAT :: 286
+SPRITE_COUNT :: 288
+// Where Shovey sits on the big boat's stern deck, as parts of the picture:
+// the middle of his seat across it, how low he sits, so the near side of
+// the hull hides his bottom, and his size.
+BOAT_DECK_X :: 0.2
+BOAT_DECK_Y :: 0.86
+BOAT_RIDER :: 0.28
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -303,6 +311,8 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_CHERRY, "tile-56")
     SpritePath(SPRITE_BOAT, "tile-148")
     SpritePath(SPRITE_BOAT + 1, "tile-149")
+    SpritePath(SPRITE_BIG_BOAT, "boat-big")
+    SpritePath(SPRITE_BIG_BOAT + 1, "boat-big-hull")
     for kind: cast(s32)SHOVEY_BLUE_GOAL..SHOVEY_GREEN_GOAL {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
@@ -881,7 +891,7 @@ BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: b
             layers[display] = SPRITE_GRASS_EDGE + mask
         }
         if !BoardAbyss(game, at) {
-            layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+            layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_BOAT || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
         }
         // An arrow is painted on the floor around it, not on the black
         // behind the board.
@@ -912,6 +922,7 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
             .rows = cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT),
             .tiles = files, .names = names, .layers = board_preview_layers[:], .layer_count = 4,
             .fill = Color.{2, 4, 5, 255}, .label = "", .nearest_tiles = abyss_sprite_indices[:]})
+    BoardBoats(session, *board_preview_game, grid, WidgetPartKey(key, SHOVEY_CELLS * 4 + 1), 0.0, landscape)
     player := board_preview_game.player
     if player >= 0 && player < SHOVEY_CELLS {
         Image(session, ImageProps.{.key = WidgetPartKey(key, SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(*board_preview_game, landscape)],
@@ -920,9 +931,60 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
     }
 }
 
+// The last level's boat sailing off with Shovey aboard, 0 to 1, or below 0
+// while every boat waits at its cell. The game sets it before drawing.
+board_sail: float32 = -1.0;
+
+// Whether Shovey is drawn aboard a boat sailing off instead of on his cell.
+BoardSailing :: (game: *ShoveyGame) -> bool {
+    return board_sail >= 0.0 && game.player >= 0 && game.player < SHOVEY_CELLS && game.ground[game.player] == SHOVEY_BOAT
+}
+
+// The boat is three cells wide and three tall: its hull lies on the boat's
+// cell, where Shovey boards at the stern, and the two cells beyond it, and
+// its sail rises over the two rows above. It sails towards the right of the
+// screen, out to sea.
+BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u64, now: float64, landscape: bool) {
+    files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
+    drawn: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.ground[at] != SHOVEY_BOAT || drawn >= 8 { continue }
+        cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
+        boat := Rectangle.{cell.x, cell.y - cell.height * 2.0, cell.width * 3.0, cell.height * 3.0}
+        aboard := at == game.player && BoardSailing(game)
+        tint: u32 = 0
+        if aboard {
+            // It gathers way, then drifts off and grows small in the
+            // distance while it rocks on the swell; at the end it fades.
+            sail := board_sail
+            far := sail * sail
+            scale := 1.0 - 0.5 * far
+            rock := cast(float32)Math.Sin(now * 2.6) * cell.height * 0.06
+            hull := Vector2.{boat.x + boat.width * 0.5 + far * cell.width * 8.0, boat.y + boat.height * 0.8 + rock - far * cell.height}
+            boat = Rectangle.{hull.x - boat.width * 0.5 * scale, hull.y - boat.height * 0.8 * scale, boat.width * scale, boat.height * scale}
+            fade := ifx sail > 0.7 then (1.0 - sail) / 0.3 else 1.0
+            tint = cast(u32)0xFFFFFF00 | cast(u32)(fade * 255.0)
+        }
+        Image(session, ImageProps.{.key = BoardOverlayKey(key, 1000 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT],
+                .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
+        if aboard {
+            // Shovey rides in the stern, inside the hull.
+            size := boat.width * BOAT_RIDER
+            Image(session, ImageProps.{.key = BoardOverlayKey(key, 1001 + drawn * 3), .asset_path = files[PlayerSprite(game, landscape)],
+                    .alt_text = "Shovey", .bounds = Rectangle.{boat.x + boat.width * BOAT_DECK_X - size * 0.5,
+                    boat.y + boat.height * BOAT_DECK_Y - size, size, size},
+                    .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
+            Image(session, ImageProps.{.key = BoardOverlayKey(key, 1002 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT + 1],
+                    .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
+        }
+        drawn += 1
+    }
+}
+
 // Shovey, gliding animals, effects and guides over the board's tiles.
 ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u64, now: float64, names: []string,
     landscape: bool) -> TileMapResult {
+    BoardBoats(session, game, grid, key, now, landscape)
     glide_files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         index := board_gliding[at]
@@ -943,7 +1005,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
                     .fit = ImageFit.ImageFitContain, .smooth = true})
         }
     }
-    if game.player >= 0 && game.player < SHOVEY_CELLS {
+    if game.player >= 0 && game.player < SHOVEY_CELLS && !BoardSailing(game) {
         files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
         portal := PortalTravelProgress(game, now)
         position := ifx portal >= 0.0 && portal < 0.5 then portal_entry else game.player

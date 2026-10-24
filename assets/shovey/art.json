@@ -250,7 +250,17 @@
     {
       "path": "sprites/tile-148.png",
       "depicts": "boat at the shore: a wooden boat with a white sail, the way home of the last level",
-      "sha256": "9a3b37f49edeb5de040ec8fbd2a9c068fb3ebc1268642990cced71e97428d61d"
+      "sha256": "3d6dbb2ec2037c9976767aa83259c6a9eb2406958a3e8926808a87e8b0cbb486"
+    },
+    {
+      "path": "sprites/boat-big.png",
+      "depicts": "the boat as the board shows it, three cells wide: a wooden sailing boat with a red-striped sail and a pennant",
+      "sha256": "0330cd0e5abcd4e035a82bd171544f46e062327601fb65d703d883048f7f324d"
+    },
+    {
+      "path": "sprites/boat-big-hull.png",
+      "depicts": "the near side of the big boat's hull, drawn over Shovey when he rides in it",
+      "sha256": "cac90cf02ab0b2674b64f15fd52a2b7ce850bb833ce2c3bb2ac0b87246b8731c"
     },
     {
       "path": "sprites/tile-149.png",

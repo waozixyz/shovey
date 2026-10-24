@@ -454,6 +454,27 @@ ShoveyAct :: (direction: s32) -> bool {
     return changed
 }
 
+// A level's picture built with this release, or its board drawn small when
+// the level changed since.
+LevelPicture :: (number: s32, picture: Rectangle, image_key: u64, board_key: u64, landscape: bool) {
+    at := number - 1
+    digits: [24]u8
+    label := FormatInteger(cast(s64)number, digits[:])
+    if level_preview_paths[at][0] == 0 {
+        level_preview_current[at] = ShoveyLevelBoard(number) == ShoveyLevelData(number)
+        length: s32 = 0
+        AppendText(level_preview_paths[at][:], *length, ifx landscape then "assets/shovey/levels-landscape/" else "assets/shovey/levels/")
+        AppendText(level_preview_paths[at][:], *length, label)
+        AppendText(level_preview_paths[at][:], *length, ".png")
+        level_preview_paths[at][length] = 0
+    }
+    if level_preview_current[at] { Image(frame.session, ImageProps.{.key = image_key,
+            .asset_path = TextUntilNul(level_preview_paths[at][:]),
+            .alt_text = label, .bounds = picture,
+            .fit = ImageFit.ImageFitContain, .smooth = true}) }
+    else { ShoveyBoardPreview(frame.session, number, picture, board_key, sprite_names[:], landscape) }
+}
+
 ResetLevelPreviews :: (landscape: bool) {
     if level_preview_landscape == landscape && level_preview_paths[0][0] != 0 { return }
     for at: cast(s32)0..ShoveyLevelCount() - 1 {
@@ -649,6 +670,100 @@ WinPause :: () {
     if LevelWinContinues(LevelChangeMs(won_at)) { ContinueGame() }
 }
 
+// The campaign's end. Winning its last level aboard a boat casts off: the
+// boat sails away with Shovey (shovey_board.zi draws it), the board fades,
+// and THE END rolls over the campaign's boards until a level is chosen. A
+// last level won at a house rests a moment first.
+SAIL_SECONDS :: 5.5
+ENDING_REST_SECONDS :: 1.6
+ENDING_FADE_SECONDS :: 1.2
+ENDING_ROW_SECONDS :: 2.6
+ending_level: s32;
+ending_won_at: float64;
+ending_at: float64;
+
+// The last level a player can win: the closing board after it takes no moves.
+ShoveyLastLevel :: () -> s32 {
+    finale := ShoveyFinaleLevel() - 1
+    return ifx ShoveyLevelCount() < finale then ShoveyLevelCount() else finale
+}
+
+// Follows the win of the last level: when it was won, how far the boat has
+// sailed, and when THE END began.
+EndingPump :: () {
+    if !game.won || game.level != ShoveyLastLevel() || slide_next < slide_count {
+        ending_won_at = 0.0
+        ending_at = 0.0
+        board_sail = -1.0
+        return
+    }
+    if ending_won_at == 0.0 || ending_level != game.level {
+        ending_won_at = frame.now
+        ending_level = game.level
+        ending_at = 0.0
+    }
+    elapsed := cast(float32)(frame.now - ending_won_at)
+    aboard := game.player >= 0 && game.ground[game.player] == SHOVEY_BOAT
+    wait := ifx aboard then SAIL_SECONDS else ENDING_REST_SECONDS
+    board_sail = ifx !aboard then -1.0 else ifx elapsed >= wait then 1.0 else elapsed / wait
+    if ending_at == 0.0 && elapsed >= wait { ending_at = frame.now }
+}
+
+// How far the board has faded into the slate before THE END, 0 to 1.
+EndingShade :: () -> float32 {
+    if ending_won_at == 0.0 { return 0.0 }
+    elapsed := cast(float32)(frame.now - ending_won_at)
+    wait := ifx board_sail >= 0.0 then SAIL_SECONDS else ENDING_REST_SECONDS
+    shade := (elapsed - (wait - ENDING_FADE_SECONDS)) / ENDING_FADE_SECONDS
+    return ifx shade < 0.0 then 0.0 else ifx shade > 1.0 then 1.0 else shade
+}
+
+// THE END over the campaign's boards, which roll slowly upwards in a loop.
+EndingScreen :: (width: float32, top: float32, bottom: float32) {
+    area := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
+    landscape := BoardLandscape(width, bottom - top)
+    ResetLevelPreviews(landscape)
+    SpriteNames()
+    columns: s32 = ifx landscape then 4 else 3
+    gap: float32 = 12.0
+    card_width := (width - gap * cast(float32)(columns + 1)) / cast(float32)columns
+    card_height := card_width * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
+    row_height := card_height + gap
+    count := ShoveyLastLevel()
+    rows := (count + columns - 1) / columns
+    rolled := cast(float32)((frame.now - ending_at) / ENDING_ROW_SECONDS) * row_height
+    first := cast(s32)(rolled / row_height)
+    shown := cast(s32)(area.height / row_height) + 2
+    for slot: cast(s32)0..shown - 1 {
+        row := first + slot
+        y := area.y + gap + cast(float32)row * row_height - rolled
+        for column: cast(s32)0..columns - 1 {
+            number := (row % rows) * columns + column + 1
+            if number > count { continue }
+            part := slot * columns + column
+            LevelPicture(number, Rectangle.{gap + cast(float32)column * (card_width + gap), y, card_width, card_height},
+                cast(u64)(60000 + part), cast(u64)(61000 + part * 8), landscape)
+        }
+    }
+    // A veil over the boards keeps the words clear; the first moments rise
+    // out of the slate the board faded into.
+    veil := ColorFromPacked(cast(u32)SHOVEY_SLATE)
+    rise := cast(float32)((frame.now - ending_at) / ENDING_FADE_SECONDS)
+    veil.a = cast(u8)(ifx rise >= 1.0 then 170.0 else 255.0 - 85.0 * rise)
+    Fill(cast(u64)20098, area, veil)
+    middle := area.y + area.height * 0.42
+    Caption(20025, Rectangle.{16.0, middle - 44.0, width - 32.0, 72.0}, AppLocaleHost("shovey_the_end"), 52, true)
+    Caption(20026, Rectangle.{24.0, middle + 36.0, width - 48.0, 64.0}, AppLocaleHost("shovey_finale"), 18, true)
+    if !mini && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
+        if !ShoveyBack() { LeaveForGameSelection() }
+        return
+    }
+    levels_x: float32 = ifx mini then 8.0 else 92.0
+    if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+        selector_open = true
+    }
+}
+
 // How dark the board is at this moment of a level change, 0 to 1.
 LevelChangeShade :: () -> float32 {
     since_win := ifx won_at > 0.0 then LevelChangeMs(won_at) else -1
@@ -753,23 +868,10 @@ ShoveyFrame :: () {
                     ChangeLevel(number)
                 }
                 if unlocked {
-                    if level_preview_paths[at][0] == 0 {
-                        level_preview_current[at] = ShoveyLevelBoard(number) == ShoveyLevelData(number)
-                        length: s32 = 0
-                        AppendText(level_preview_paths[at][:], *length, ifx landscape then "assets/shovey/levels-landscape/" else "assets/shovey/levels/")
-                        AppendText(level_preview_paths[at][:], *length, label)
-                        AppendText(level_preview_paths[at][:], *length, ".png")
-                        level_preview_paths[at][length] = 0
-                    }
                     // Cover the centered visual label only inside the picture
-                    // area, then repeat the number in the card's footer. A
-                    // level changed since this release is drawn from its board.
+                    // area, then repeat the number in the card's footer.
                     picture := Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height}
-                    if level_preview_current[at] { Image(frame.session, ImageProps.{.key = cast(u64)(35000 + number),
-                            .asset_path = TextUntilNul(level_preview_paths[at][:]),
-                            .alt_text = label, .bounds = picture,
-                            .fit = ImageFit.ImageFitContain, .smooth = true}) }
-                    else { ShoveyBoardPreview(frame.session, number, picture, cast(u64)(52000 + number), sprite_names[:], landscape) }
+                    LevelPicture(number, picture, cast(u64)(35000 + number), cast(u64)(52000 + number), landscape)
                 }
                 {
                     Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)
@@ -795,7 +897,8 @@ ShoveyFrame :: () {
         }
         return
     }
-    if game.won && game.level < ShoveyLevelCount() { WinPause() }
+    if game.won && game.level < ShoveyLastLevel() { WinPause() }
+    EndingPump()
     key := AppKeyHost()
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
@@ -853,6 +956,10 @@ ShoveyFrame :: () {
             }
             End(frame.session)
         }
+        return
+    }
+    if ending_at > 0.0 {
+        EndingScreen(width, top, bottom)
         return
     }
     // Return sits at the edge, then the game's own navigation and status.
@@ -916,6 +1023,8 @@ ShoveyFrame :: () {
     SpriteNames()
     grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:], landscape)
     shade := LevelChangeShade()
+    ending_shade := EndingShade()
+    if ending_shade > shade { shade = ending_shade }
     if shade > 0.0 {
         // The won board dissolves into the slate backdrop and the next one
         // rises from it, never through black.
@@ -1009,7 +1118,7 @@ ShoveyFrame :: () {
     }
     if step >= 0 { changed = ShoveyAct(step) || changed }
     if (changed || before_direction != game.direction) && slide_next >= slide_count {
-        if game.won && game.level < ShoveyLevelCount() { WinPause() }
+        if game.won && game.level < ShoveyLastLevel() { WinPause() }
         else { Remember() }
     }
 }

@@ -10,6 +10,9 @@ Todo listo. ¡Ve a casa!
 [shovey_finale]
 Terminaste todos los puzles. ¡Gracias por jugar!
 ---
+[shovey_the_end]
+FIN
+---
 [shovey_lost]
 ¡Demasiada carga! Reinicia este nivel.
 ---

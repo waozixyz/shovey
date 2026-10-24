@@ -44,8 +44,9 @@ for level in classic:
     assert all(kind in {0, *range(57, 72), 12, 14, 4, 5, 6, 47, 48, 49, 76, 77, 78, *range(95, 104), *range(127,131)} for kind in tiles)
     assert all(kind in {0, 57, 58, 59, 84, 106, 122, *range(135, 143)} for kind in decorations)
     assert board.count(10) == 1, f'Classic {level["number"]}: one Shovey'
-    assert board.count(7) >= 1, f'Classic {level["number"]}: a home'
-    assert all((kind <= 76 or kind in range(82, 135)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
+    assert board.count(7) + board.count(148) >= 1, f'Classic {level["number"]}: a home or a boat'
+    # 143-147 are colour goals, 148 the boat and 149 a floating crate.
+    assert all((kind <= 76 or kind in range(82, 135) or kind in range(143, 150)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
     # Open garden borders are valid: the engine bounds movement at the board edge.
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
     assert (ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png').is_file()
