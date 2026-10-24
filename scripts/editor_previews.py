@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Pictures of every place for the private editor's level overview.
+"""The map of every place for the private editor's level overview.
 
     python3 scripts/editor_previews.py
 
 The editor writes backup/editor-drafts/previews/wanted.txt, one line per
 place: its number and its board as hexadecimal text. Each board is drawn in
 landscape as previews/NNN-HASH.png, where HASH is the board's 32-bit FNV-1a
-in hexadecimal, so a changed board never shows an old picture. Pictures that
-exist are kept; older pictures of the same place are removed.
+in hexadecimal; pictures that exist are kept and older ones of the same
+place removed. The boards are then joined edge to edge, 15 to a row, into
+previews/map-HASH.png, where HASH is the FNV-1a of all the boards' hashes in
+order, so a changed board never shows an old map.
 """
 import fcntl
 import sys
@@ -19,6 +21,7 @@ import levels  # noqa: E402
 
 FOLDER = ROOT / 'backup/editor-drafts/previews'
 CELL = 8
+COLUMNS = 15
 
 
 def fnv(text):
@@ -68,17 +71,31 @@ def main():
             number, _, board = line.partition(' ')
             if number.isdigit() and len(board) == 6 * levels.CELLS:
                 wanted[int(number)] = board
+        from PIL import Image
         sprites = levels.Sprites(ROOT / 'assets/shovey-landscape/sprites', CELL)
         drawn = 0
+        names = []
         for number, board in sorted(wanted.items()):
             name = f'{number:03}-{fnv(board)}.png'
+            names.append(name)
             for old in FOLDER.glob(f'{number:03}-*.png'):
                 if old.name != name:
                     old.unlink(missing_ok=True)
             if not (FOLDER / name).exists():
                 levels.save(picture(board, sprites), FOLDER / name)
                 drawn += 1
-        print(f'drew {drawn} of {len(wanted)} place pictures')
+        width, height = levels.HEIGHT * CELL, levels.WIDTH * CELL
+        rows = (len(names) + COLUMNS - 1) // COLUMNS
+        whole = Image.new('RGB', (COLUMNS * width, rows * height), (24, 28, 27))
+        for index, name in enumerate(names):
+            with Image.open(FOLDER / name) as tile:
+                whole.paste(tile.convert('RGB'), (index % COLUMNS * width, index // COLUMNS * height))
+        map_name = f"map-{fnv(''.join(name[4:12] for name in names))}.png"
+        for old in FOLDER.glob('map-*.png'):
+            if old.name != map_name:
+                old.unlink(missing_ok=True)
+        levels.save(whole, FOLDER / map_name)
+        print(f'drew {drawn} of {len(wanted)} place pictures and {map_name}')
     return 0
 
 

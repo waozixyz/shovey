@@ -832,6 +832,8 @@ LoadApprovals :: () {
 ToggleSelector :: () {
     selector_open = !selector_open
     if selector_open {
+        // The list opens on the numbered cards; Map is one click away.
+        selector_map = false
         LoadApprovals()
         CheckServer(MonotonicMilliseconds())
     }
@@ -2023,15 +2025,23 @@ LevelCardColor :: (place: s32) -> Color {
     return Color.{72, 80, 78, 255}
 }
 
-// Pictures of every place's board, drawn by scripts/editor_previews.py and
-// named after the board's FNV-1a hash, so an edited board waits for its new
-// picture instead of showing the old one.
+// The map: every place's board drawn edge to edge in one picture, so the
+// campaign reads as one world. scripts/editor_previews.py draws it from the
+// boards listed in wanted.txt and names it after their FNV-1a hashes, so an
+// edited board waits for its new map instead of showing the old one, and the
+// whole map stays one cached texture.
 PREVIEW_FOLDER :: "backup/editor-drafts/previews/"
-PREVIEW_PATH :: 48
-preview_hashes: [PLACES]u32;
-preview_ready: [PLACES]bool;
-preview_paths: [PLACES * PREVIEW_PATH]u8;
-preview_lengths: [PLACES]s32;
+MAP_TILE_WIDTH :: 160
+MAP_TILE_HEIGHT :: 96
+selector_map: bool;
+// A place clicked in the list opens at the start of the next frame, so no
+// frame mixes the list's widgets with the level's.
+selector_pick: s32;
+map_hash: u32;
+map_ready: bool;
+map_path: [64]u8;
+map_path_length: s32;
+map_hashes: [PLACES * 8]u8;
 preview_wanted: [PLACES * (HEX + 5)]u8;
 preview_checked_at: s64 = -100000;
 preview_requested_at: s64 = -100000;
@@ -2042,45 +2052,36 @@ BoardHash :: (board: []u8) -> u32 {
     return hash
 }
 
-PreviewPath :: (place: s32) -> string {
-    index := place - 1
-    return TextView(preview_paths[index * PREVIEW_PATH:index * PREVIEW_PATH + preview_lengths[index]])
+AppendHash :: (bytes: []u8, length: *s32, hash: u32) {
+    digits := "0123456789abcdef"
+    for shift: cast(s32)0..7 {
+        bytes[length.*] = digits[cast(s64)((hash >> cast(u32)((7 - shift) * 4)) & cast(u32)15)]
+        length.* += 1
+    }
 }
 
-// Once a second, find which places have their picture; when some are
-// missing, list every board for the drawing script and start it, at most
+// Once a second, see whether the map of the current boards exists; when it
+// does not, list every board for the drawing script and start it, at most
 // every few seconds.
-RefreshPreviews :: (now: s64) {
+RefreshMap :: (now: s64) {
     if now - preview_checked_at < 1000 { return }
     preview_checked_at = now
-    missing := false
-    digits := "0123456789abcdef"
-    for place: cast(s32)1..PLACES {
-        index := place - 1
-        hash := BoardHash(Board(place))
-        if hash != preview_hashes[index] || preview_lengths[index] == 0 {
-            preview_hashes[index] = hash
-            path := preview_paths[index * PREVIEW_PATH:(index + 1) * PREVIEW_PATH]
-            length: s32 = 0
-            AppendText(path, *length, PREVIEW_FOLDER)
-            if place < 100 { AppendText(path, *length, "0") }
-            if place < 10 { AppendText(path, *length, "0") }
-            AppendNumber(path, *length, place)
-            AppendText(path, *length, "-")
-            for shift: cast(s32)0..7 {
-                path[length] = digits[cast(s64)((hash >> cast(u32)((7 - shift) * 4)) & cast(u32)15)]
-                length += 1
-            }
-            AppendText(path, *length, ".png")
-            preview_lengths[index] = length
-            preview_ready[index] = false
-        }
-        if !preview_ready[index] { preview_ready[index] = PathExists(PreviewPath(place)) }
-        if !preview_ready[index] { missing = true }
-    }
-    if !missing || now - preview_requested_at < 4000 { return }
-    preview_requested_at = now
     length: s32 = 0
+    for place: cast(s32)1..PLACES { AppendHash(map_hashes[:], *length, BoardHash(Board(place))) }
+    hash := BoardHash(map_hashes[:length])
+    if hash != map_hash || map_path_length == 0 {
+        map_hash = hash
+        map_path_length = 0
+        AppendText(map_path[:], *map_path_length, PREVIEW_FOLDER)
+        AppendText(map_path[:], *map_path_length, "map-")
+        AppendHash(map_path[:], *map_path_length, hash)
+        AppendText(map_path[:], *map_path_length, ".png")
+        map_ready = false
+    }
+    if !map_ready { map_ready = PathExists(TextView(map_path[:map_path_length])) }
+    if map_ready || now - preview_requested_at < 4000 { return }
+    preview_requested_at = now
+    length = 0
     for place: cast(s32)1..PLACES {
         AppendNumber(preview_wanted[:], *length, place)
         AppendText(preview_wanted[:], *length, " ")
@@ -2093,18 +2094,55 @@ RefreshPreviews :: (now: s64) {
     }
 }
 
-// Every place at once, as a picture of its board under a strip coloured by
-// its release state and holding its number. A click opens that place.
+// Every place at once, in one of two views: the map of all boards joined edge
+// to edge, or a card per place coloured by its release state with its number.
+// A click opens that place.
 SELECTOR_COLUMNS :: 15
 SelectorScreen :: (area: Rectangle) {
-    RefreshPreviews(MonotonicMilliseconds())
     rows := (PLACES + SELECTOR_COLUMNS - 1) / SELECTOR_COLUMNS
     legend_height: float32 = 28.0
+    if Control(60, Rectangle.{area.x + area.width - 200.0, area.y, 96.0, legend_height - 4.0}, "Map", selector_map) { selector_map = true }
+    if Control(61, Rectangle.{area.x + area.width - 100.0, area.y, 96.0, legend_height - 4.0}, "Levels", !selector_map) { selector_map = false }
+    if selector_map {
+        RefreshMap(MonotonicMilliseconds())
+        // The picture's own proportions, as large as the area allows.
+        space := Rectangle.{area.x, area.y + legend_height, area.width, area.height - legend_height}
+        map_width := cast(float32)(SELECTOR_COLUMNS * MAP_TILE_WIDTH)
+        map_height := cast(float32)(rows * MAP_TILE_HEIGHT)
+        scale := space.width / map_width
+        if space.height / map_height < scale { scale = space.height / map_height }
+        tile_width := cast(float32)MAP_TILE_WIDTH * scale
+        tile_height := cast(float32)MAP_TILE_HEIGHT * scale
+        origin_x := space.x + (space.width - map_width * scale) / 2.0
+        origin_y := space.y + (space.height - map_height * scale) / 2.0
+        if map_ready {
+            Image(session, ImageProps.{.key = cast(u64)75999, .asset_path = TextView(map_path[:map_path_length]),
+                    .bounds = Rectangle.{origin_x, origin_y, map_width * scale, map_height * scale},
+                    .fit = ImageFit.ImageFitStretch})
+        } else {
+            Caption(15, Rectangle.{area.x, area.y, area.width - 210.0, legend_height}, "Drawing the map…", 14)
+        }
+        for place: cast(s32)1..PLACES {
+            index := place - 1
+            bounds := Rectangle.{origin_x + cast(float32)(index % SELECTOR_COLUMNS) * tile_width,
+                    origin_y + cast(float32)(index / SELECTOR_COLUMNS) * tile_height, tile_width, tile_height}
+            if place == current {
+                unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
+                        .border = Color.{255, 255, 255, 230}})
+            }
+            length: s32 = 0
+            AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, place)
+            if Button(session, ButtonProps.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
+                    .label = TextView(cell_bytes[index * 16:index * 16 + length]), .invisible = true}) != 0 {
+                selector_pick = place
+            }
+        }
+        return
+    }
     gap: float32 = 4.0
-    strip: float32 = 16.0
     cell_width := (area.width - gap * cast(float32)(SELECTOR_COLUMNS - 1)) / cast(float32)SELECTOR_COLUMNS
     cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
-    Caption(15, Rectangle.{area.x, area.y, area.width, legend_height},
+    Caption(15, Rectangle.{area.x, area.y, area.width - 210.0, legend_height},
         ifx server_configured && !server_verified then "Server unverified." else "Purple: synced. Pink: changed.", 14)
     for place: cast(s32)1..PLACES {
         index := place - 1
@@ -2117,20 +2155,10 @@ SelectorScreen :: (area: Rectangle) {
         border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
         unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
                 .fill = LevelCardColor(place), .border = border, .radius = 5.0})
-        if preview_ready[index] {
-            Image(session, ImageProps.{.key = cast(u64)(76000 + place), .asset_path = PreviewPath(place),
-                    .bounds = Rectangle.{bounds.x + 2.0, bounds.y + strip, bounds.width - 4.0, bounds.height - strip - 2.0},
-                    .fit = ImageFit.ImageFitContain})
-        }
-        Text(session, TextProps.{.key = cast(u64)(78000 + place),
-                .bounds = Rectangle.{bounds.x + 4.0, bounds.y, bounds.width - 8.0, strip},
-                .text = TextView(cell_bytes[index * 16:index * 16 + length]), .font = 12,
-                .align = TextAlign.TextAlignEnd, .vertical_align = TextAlign.TextAlignCenter})
         if Button(session, ButtonProps.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
                 .label = TextView(cell_bytes[index * 16:index * 16 + length]), .tone = ButtonTone.ButtonToneNeutral,
-                .emphasis = ButtonEmphasis.ButtonEmphasisGhost, .invisible = true}) != 0 {
-            Open(place)
-            selector_open = false
+                .emphasis = ButtonEmphasis.ButtonEmphasisGhost}) != 0 {
+            selector_pick = place
         }
     }
 }
@@ -2312,6 +2340,11 @@ GLMMenu :: () {
 }
 
 Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
+    if selector_pick > 0 {
+        Open(selector_pick)
+        selector_open = false
+        selector_pick = 0
+    }
     unused Box(session, BoxProps.{.key = cast(u64)19990, .bounds = viewport, .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
     now := MonotonicMilliseconds()
     PollActions(now)

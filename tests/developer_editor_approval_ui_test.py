@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import time
 from PIL import Image, ImageChops
@@ -14,7 +15,7 @@ drafts = profile / 'backup/editor-drafts'
 for folder in (drafts, profile / 'levels', profile / 'scripts', profile / 'backup/redesign', profile / 'backup/original'):
     folder.mkdir(parents=True, exist_ok=True)
 for path in drafts.iterdir():
-    path.unlink()
+    shutil.rmtree(path) if path.is_dir() else path.unlink()
 (drafts / 'orientation').write_text('portrait')
 if not (profile / 'assets').exists():
     (profile / 'assets').symlink_to(ROOT / 'assets', target_is_directory=True)
