@@ -215,23 +215,23 @@ names: [1]string;
 // Palette: board kinds in the order a level is usually built.
 PALETTE :: 117
 palette_kinds: [117]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
-    44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 131, 132, 133, 134, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
-    104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
-    35, 36, 37, 38, 53, 54, 55, 39, 143, 144, 145, 146, 147, 40, 148, 149,
-    65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91,
-    135, 136, 137, 138, 139, 140, 141, 142];
+44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 131, 132, 133, 134, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
+104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
+35, 36, 37, 38, 53, 54, 55, 39, 143, 144, 145, 146, 147, 40, 148, 149,
+65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91,
+135, 136, 137, 138, 139, 140, 141, 142];
 palette_names: [117]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
-    "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
-    "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
-    "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
-    "Star", "Apple", "Cherry", "Green button", "Blue button", "Red button", "Yellow button", "Purple button", "Mossy wall", "Orange gate", "Open orange gate", "Orange lever", "Red gate", "Open red gate", "Red lever", "Blue gate", "Open blue gate", "Blue lever", "Green gate", "Open green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
-    "Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
-    "Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
-    "Yellow block", "Cyan block", "Purple block", "Green block", "Red block goal", "Blue block goal", "Yellow block goal",
-    "Cyan block goal", "Purple block goal", "Green block goal", "Mirror Shovey", "Boat", "Floating crate",
-    "Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
-    "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Duck", "Turtle", "Crab", "Goldfish", "Koi", "Minnow",
-    "Mushrooms", "Fallen leaves", "Bluebells", "Lily pads", "Berry bush", "Flower pot", "Barrel", "Tree stump"];
+"Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
+"Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
+"Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
+"Star", "Apple", "Cherry", "Green button", "Blue button", "Red button", "Yellow button", "Purple button", "Mossy wall", "Orange gate", "Open orange gate", "Orange lever", "Red gate", "Open red gate", "Red lever", "Blue gate", "Open blue gate", "Blue lever", "Green gate", "Open green gate", "Green lever", "Door", "Red door", "Blue door", "Green door", "Lantern", "Key", "Lock",
+"Teleporter", "Cyan portal", "Purple portal", "Yellow portal", "Red portal", "Green portal", "Orange portal", "Trail", "Reverse", "Ammunition", "Target", "Charger", "Moving block",
+"Block path", "Used block path", "Sensor", "Closed sensor", "Slide", "Red block", "Blue block",
+"Yellow block", "Cyan block", "Purple block", "Green block", "Red block goal", "Blue block goal", "Yellow block goal",
+"Cyan block goal", "Purple block goal", "Green block goal", "Mirror Shovey", "Boat", "Floating crate",
+"Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
+"Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Duck", "Turtle", "Crab", "Goldfish", "Koi", "Minnow",
+"Mushrooms", "Fallen leaves", "Bluebells", "Lily pads", "Berry bush", "Flower pot", "Barrel", "Tree stump"];
 
 AppendText :: (bytes: []u8, length: *s32, text: string) {
     if length.* + cast(s32)text.count > cast(s32)bytes.count { return }
@@ -575,12 +575,12 @@ NextWaiting :: () -> s32 {
 
 LoadOriginals :: () {
     #if !#defined(SHOVEY_ADMIN) {
-    text_bytes: Vec(u8)
-    found := ReadFileInto("backup/original/classic-levels.zi", *text_bytes)
-    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
-    if found {
-        for number: cast(s32)1..LEVELS_MAX { original_found[number] = FindBoard(text, number, Original(number)) }
-    }
+        text_bytes: Vec(u8)
+        found := ReadFileInto("backup/original/classic-levels.zi", *text_bytes)
+        text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
+        if found {
+            for number: cast(s32)1..LEVELS_MAX { original_found[number] = FindBoard(text, number, Original(number)) }
+        }
     }
     list_bytes: Vec(u8)
     listed := ReadFileInto("backup/redesign/stuck.txt", *list_bytes)
@@ -622,15 +622,15 @@ LoadOriginals :: () {
         original_tiles[index] = SpriteFile(index)
     }
     #if !#defined(SHOVEY_ADMIN) {
-    if original_sprites {
-        digits: [24]u8
-        for kind: cast(s32)0..40 {
-            bytes: Vec(u8)
-            BuilderPrint(*bytes, "backup/original/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
-            original_tiles[kind] = BuilderFinish(bytes)
+        if original_sprites {
+            digits: [24]u8
+            for kind: cast(s32)0..40 {
+                bytes: Vec(u8)
+                BuilderPrint(*bytes, "backup/original/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
+                original_tiles[kind] = BuilderFinish(bytes)
+            }
+            original_tiles[SPRITE_PLAYER + 1] = "backup/original/sprites/player.png"
         }
-        original_tiles[SPRITE_PLAYER + 1] = "backup/original/sprites/player.png"
-    }
     }
     for kind: cast(s32)44..55 {
         digits: [24]u8
@@ -745,8 +745,8 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
     fitted := TileMapFit(bounds, columns, rows)
     cell := cast(float32)cast(s32)fitted.cell
     fitted.board = Rectangle.{cast(float32)cast(s32)(bounds.x + (bounds.width - cell * cast(float32)columns) / 2.0),
-            cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
-            cell * cast(float32)columns, cell * cast(float32)rows}
+        cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
+        cell * cast(float32)columns, cell * cast(float32)rows}
     return TileMap(session, TileMapProps.{.key = key, .bounds = fitted.board, .columns = columns, .rows = rows,
             .tiles = tiles, .names = names[0:0], .layers = layers, .layer_count = 3, .label = label})
 }
@@ -798,12 +798,12 @@ ApprovalMatches :: (place: s32) -> bool { return Approved(place) && Same(Board(p
 
 PublishedApprovalMatches :: (place: s32) -> bool {
     return (!server_configured || server_verified) && Approved(place) && published_places[place - 1] &&
-        Same(approved_boards[(place - 1) * HEX:place * HEX], published_boards[(place - 1) * HEX:place * HEX])
+    Same(approved_boards[(place - 1) * HEX:place * HEX], published_boards[(place - 1) * HEX:place * HEX])
 }
 
 ServerBoardMatches :: (place: s32) -> bool {
     return server_verified && published_places[place - 1] &&
-        Same(Board(place), published_boards[(place - 1) * HEX:place * HEX])
+    Same(Board(place), published_boards[(place - 1) * HEX:place * HEX])
 }
 
 NeedsUpdate :: (place: s32) -> bool {
@@ -829,7 +829,7 @@ LoadPublication :: () {
 // The publisher's steps in order, so the status can say how far it is.
 PUBLICATION_STEPS :: 6
 publication_steps: [6]string = .["Updating live levels", "Building campaign",
-    "Building Arcade release", "Checking game screens", "Publishing release", "Verifying server release"];
+"Building Arcade release", "Checking game screens", "Publishing release", "Verifying server release"];
 
 PublicationBusy :: () -> bool {
     if !Same(Board(current), publication_board[:]) { return false }
@@ -900,7 +900,7 @@ HighlightDifferences :: (grid: TileMapResult, key: u64) {
         cell := TileMapCell(grid, BoardDisplayIndex(at, boards_landscape))
         bounds := Rectangle.{cell.x + 1.0, cell.y + 1.0, cell.width - 2.0, cell.height - 2.0}
         unused Box(session, BoxProps.{.key = key + cast(u64)at, .bounds = bounds,
-            .fill = Color.{238, 102, 158, 35}, .border = Color.{248, 118, 174, 255}})
+                .fill = Color.{238, 102, 158, 35}, .border = Color.{248, 118, 174, 255}})
     }
 }
 
@@ -1378,8 +1378,8 @@ Paint :: (at: s32, kind: s32) {
     tile := KindAt(board, SHOVEY_CELLS + at)
     if ShoveyFish(kind) && tile != 64 { SetKind(board, SHOVEY_CELLS + at, 64); replaced_wall = true }
     else if !ShoveyFish(kind) && kind != 0 && kind != 71 &&
-        !((ShoveyClosedDoor(kind) || ShoveyOpenDoor(kind)) && ShoveyWallFloor(tile) >= 0) &&
-        (tile == 12 || ShoveyMossColor(tile) >= 0 || ShoveySolidDecor(tile)) {
+    !((ShoveyClosedDoor(kind) || ShoveyOpenDoor(kind)) && ShoveyWallFloor(tile) >= 0) &&
+    (tile == 12 || ShoveyMossColor(tile) >= 0 || ShoveySolidDecor(tile)) {
         SetKind(board, SHOVEY_CELLS + at, 0)
         replaced_wall = true
     }
@@ -1664,7 +1664,7 @@ SolverFingerprint :: () -> string {
 
 NeedsRepair :: () -> bool {
     return !playing && !Solved() && !Proven() &&
-        ((check_state == 3 && Checked()) || check_state == 4)
+    ((check_state == 3 && Checked()) || check_state == 4)
 }
 
 RememberRoute :: (record: string) {
@@ -1847,7 +1847,7 @@ ReadLevelFile :: (text: string) -> bool {
         }
         for cell: cast(s32)0..SHOVEY_CELLS - 1 {
             SetKind(file_boards[file_count * HEX:(file_count + 1) * HEX], SHOVEY_CELLS + cell,
-                    ShoveyDefaultTile(KindAt(file_boards[file_count * HEX:(file_count + 1) * HEX], cell)))
+                ShoveyDefaultTile(KindAt(file_boards[file_count * HEX:(file_count + 1) * HEX], cell)))
         }
         next_level := Find(text, "\"number\":", at)
         tiles := Find(text, "\"tiles\": [", at)
@@ -2062,7 +2062,7 @@ AutoSave :: () {
         StartSave()
     }
     if save_state == 2 && !playing && published_places[current - 1] &&
-        (!server_configured || server_verified) && !ApprovalMatches(current) { ApproveEdit() }
+    (!server_configured || server_verified) && !ApprovalMatches(current) { ApproveEdit() }
 }
 
 // ---------------------------------------------------------------- playing
@@ -2346,7 +2346,7 @@ SelectorScreen :: (area: Rectangle) {
         for place: cast(s32)1..ALL_PLACES {
             index := place - 1
             bounds := Rectangle.{origin_x + cast(float32)(index % SELECTOR_COLUMNS) * tile_width,
-                    origin_y + cast(float32)(index / SELECTOR_COLUMNS) * tile_height, tile_width, tile_height}
+                origin_y + cast(float32)(index / SELECTOR_COLUMNS) * tile_height, tile_width, tile_height}
             if place == current {
                 unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
                         .border = Color.{255, 255, 255, 230}})
@@ -2370,7 +2370,7 @@ SelectorScreen :: (area: Rectangle) {
         column := index % SELECTOR_COLUMNS
         row := index / SELECTOR_COLUMNS
         bounds := Rectangle.{area.x + cast(float32)column * (cell_width + gap),
-                area.y + legend_height + cast(float32)row * (cell_height + gap), cell_width, cell_height}
+            area.y + legend_height + cast(float32)row * (cell_height + gap), cell_width, cell_height}
         length: s32 = 0
         AppendPlace(cell_bytes[index * 16:index * 16 + 16], *length, place)
         border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
@@ -2454,28 +2454,28 @@ StatusText :: (show_solution: bool = true) -> string {
         return TextView(status_bytes[:length])
     }
     if show_solution {
-    if check_state == 4 { AppendText(status_bytes[:], *length, "Put exactly one Shovey on the board.") }
-    else if check_state == 1 || (check_wanted && !Checked()) {
-        AppendText(status_bytes[:], *length, "Checking whether it can be won")
-        if check_state == 1 {
-            AppendText(status_bytes[:], *length, " (")
-            AppendNumber(status_bytes[:], *length, cast(s32)((MonotonicMilliseconds() - check_started) / 1000))
-            AppendText(status_bytes[:], *length, " of ")
-            AppendText(status_bytes[:], *length, SOLVE_SECONDS)
-            AppendText(status_bytes[:], *length, " s)")
+        if check_state == 4 { AppendText(status_bytes[:], *length, "Put exactly one Shovey on the board.") }
+        else if check_state == 1 || (check_wanted && !Checked()) {
+            AppendText(status_bytes[:], *length, "Checking whether it can be won")
+            if check_state == 1 {
+                AppendText(status_bytes[:], *length, " (")
+                AppendNumber(status_bytes[:], *length, cast(s32)((MonotonicMilliseconds() - check_started) / 1000))
+                AppendText(status_bytes[:], *length, " of ")
+                AppendText(status_bytes[:], *length, SOLVE_SECONDS)
+                AppendText(status_bytes[:], *length, " s)")
+            }
+            AppendText(status_bytes[:], *length, "...")
         }
-        AppendText(status_bytes[:], *length, "...")
-    }
-    else if check_state == 2 && Checked() {
-        AppendText(status_bytes[:], *length, "Winnable: the engine replays a win in ")
-        AppendNumber(status_bytes[:], *length, route_length)
-        AppendText(status_bytes[:], *length, " moves.")
-    }
-    else if check_state == 3 && Checked() {
-        AppendText(status_bytes[:], *length, "No winning route found in ")
-        AppendText(status_bytes[:], *length, SOLVE_SECONDS)
-        AppendText(status_bytes[:], *length, ifx Proven() then " s." else " s. Play it (Tab) to prove it, or change it.")
-    }
+        else if check_state == 2 && Checked() {
+            AppendText(status_bytes[:], *length, "Winnable: the engine replays a win in ")
+            AppendNumber(status_bytes[:], *length, route_length)
+            AppendText(status_bytes[:], *length, " moves.")
+        }
+        else if check_state == 3 && Checked() {
+            AppendText(status_bytes[:], *length, "No winning route found in ")
+            AppendText(status_bytes[:], *length, SOLVE_SECONDS)
+            AppendText(status_bytes[:], *length, ifx Proven() then " s." else " s. Play it (Tab) to prove it, or change it.")
+        }
     }
     if show_solution && Proven() {
         AppendText(status_bytes[:], *length, "    You won it in ")
@@ -2532,7 +2532,7 @@ Palette :: (area: Rectangle) {
         brush := kind + (ifx palette_tab == 0 then 256 else ifx kind != 0 && ShoveyDecoration(kind) then 512 else 0)
         if palette_tab == 0 && kind == 12 { row = ((row + 2) / 3) * 3 }
         bounds := Rectangle.{scrolled.content.x + cast(float32)(row % 3) * cell_width,
-                scrolled.content.y + cast(float32)(row / 3) * 96.0, cell_width - 4.0, 92.0}
+            scrolled.content.y + cast(float32)(row / 3) * 96.0, cell_width - 4.0, 92.0}
         row += 1
         if bounds.y + bounds.height < scrolled.viewport.y || bounds.y > scrolled.viewport.y + scrolled.viewport.height { continue }
         sprite := ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, boards_landscape) else PrivateSprite(kind)
@@ -2554,8 +2554,8 @@ GLMMenu :: () {
     options[1].label = "Redesign"
     options[2].label = "Prettify"
     choice := Dropdown(session, DropdownProps.{.key = 18, .id = 18,
-        .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0}, .placeholder = "GLM", .selected_index = -1,
-        .disabled = playing || glm_busy}, options[:])
+            .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0}, .placeholder = "GLM", .selected_index = -1,
+            .disabled = playing || glm_busy}, options[:])
     glm_menu_open = choice.open
     if choice.changed { ModifyGLM(false, choice.selected_index) }
 }
@@ -2685,17 +2685,17 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             ActionMessage("Approval cancelled")
         }
         unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{886.0, 51.0, 220.0, 30.0},
-            .fill = SolutionColor(), .radius = 4.0})
+                .fill = SolutionColor(), .radius = 4.0})
         Caption(24, Rectangle.{894.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
     }
     {
-    status := StatusText(false)
-    publication := PublicationText()
-    if !playing && publication != "" { status = publication }
-    if selector_open { status = TextView(publish_message[:publish_message_length]) }
-    if glm_busy || action_message_length > 0 { status = TextView(action_message[:action_message_length]) }
-    if level_update_pending { status = "New version ready · Edit to view" }
-    Caption(9, ifx selector_open then Rectangle.{482.0, 14.0, width - 494.0, 28.0} else Rectangle.{1118.0, 52.0, width - 1130.0, 28.0}, status, 14)
+        status := StatusText(false)
+        publication := PublicationText()
+        if !playing && publication != "" { status = publication }
+        if selector_open { status = TextView(publish_message[:publish_message_length]) }
+        if glm_busy || action_message_length > 0 { status = TextView(action_message[:action_message_length]) }
+        if level_update_pending { status = "New version ready · Edit to view" }
+        Caption(9, ifx selector_open then Rectangle.{482.0, 14.0, width - 494.0, 28.0} else Rectangle.{1118.0, 52.0, width - 1130.0, 28.0}, status, 14)
     }
 
     if selector_open {
@@ -2713,27 +2713,27 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         edit_top = boards_area.y
         edit_height = boards_area.height - 26.0
     } else {
-    length = 0
-    if diff_open && server_verified && published_places[current - 1] {
-        AppendText(label_bytes[:], *length, "Server version")
-    } else if has_original {
-        AppendText(label_bytes[:], *length, "Original level ")
-        AppendNumber(label_bytes[:], *length, original_shown)
-        AppendText(label_bytes[:], *length, ifx original_sprites then "" else "  (drawn with the new pictures)")
-    } else {
-        AppendText(label_bytes[:], *length, "No original on this machine")
-    }
-    Caption(11, Rectangle.{boards_area.x, boards_area.y, boards_area.width, 24.0}, TextView(label_bytes[:length]), 15)
-    if diff_open && server_verified && published_places[current - 1] {
-        server_grid := HexBoard(published_boards[(current - 1) * HEX:current * HEX], OurTiles(), layers_original[:],
-            cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
-            boards_landscape, "Server version")
-        HighlightDifferences(server_grid, cast(u64)800000)
-    } else if has_original {
-        unused HexBoard(Original(original_shown), ifx original_sprites then original_tiles[:] else OurTiles(), layers_original[:],
-            cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
-            boards_landscape, "Original")
-    }
+        length = 0
+        if diff_open && server_verified && published_places[current - 1] {
+            AppendText(label_bytes[:], *length, "Server version")
+        } else if has_original {
+            AppendText(label_bytes[:], *length, "Original level ")
+            AppendNumber(label_bytes[:], *length, original_shown)
+            AppendText(label_bytes[:], *length, ifx original_sprites then "" else "  (drawn with the new pictures)")
+        } else {
+            AppendText(label_bytes[:], *length, "No original on this machine")
+        }
+        Caption(11, Rectangle.{boards_area.x, boards_area.y, boards_area.width, 24.0}, TextView(label_bytes[:length]), 15)
+        if diff_open && server_verified && published_places[current - 1] {
+            server_grid := HexBoard(published_boards[(current - 1) * HEX:current * HEX], OurTiles(), layers_original[:],
+                cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
+                boards_landscape, "Server version")
+            HighlightDifferences(server_grid, cast(u64)800000)
+        } else if has_original {
+            unused HexBoard(Original(original_shown), ifx original_sprites then original_tiles[:] else OurTiles(), layers_original[:],
+                cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
+                boards_landscape, "Original")
+        }
     }
     Caption(12, Rectangle.{boards_area.x, edit_top, boards_area.width, 24.0},
         ifx playing then "New level: playing" else ifx diff_open then "Your version" else "New level: editing", 15)
@@ -2749,7 +2749,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             play_width = play_height * aspect
         }
         play_bounds := Rectangle.{edit_area.x + (edit_area.width - play_width) / 2.0,
-                edit_area.y + (edit_area.height - play_height) / 2.0, play_width, play_height}
+            edit_area.y + (edit_area.height - play_height) / 2.0, play_width, play_height}
         unused ShoveyBoard(session, *play, play_bounds, cast(u64)200000, cast(float64)now / 1000.0, names[0:0], boards_landscape)
     } else {
         grid := HexBoard(Board(current), OurTiles(), layers_edit[:], cast(u64)200000, edit_area, boards_landscape, "New level")
@@ -2816,7 +2816,7 @@ Draw :: () -> bool {
     secondary = PollSecondaryPointer()
     TreePointerUpdate(session, pointer)
     BeginScrollFrame(session, Vector2.{pointer.x, pointer.y}, pointer.pressed, pointer.down, pointer.released,
-            DesktopWheelMove(), cast(float64)MonotonicMilliseconds() / 1000.0)
+        DesktopWheelMove(), cast(float64)MonotonicMilliseconds() / 1000.0)
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { Say("Editor frame could not begin.\n"); return false }
     Screen(viewport, key, modifiers)
     finished := EndFrameRetained(session, DesktopFrameReusable())
@@ -2896,7 +2896,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
     icons.selector.kind = StyleKindButton()
     icons.selector.class_name = 9001
     icons.style.fields = cast(u32)StyleField.StyleIconSize | cast(u32)StyleField.StyleFontSize |
-            cast(u32)StyleField.StylePaddingX | cast(u32)StyleField.StylePaddingY | cast(u32)StyleField.StyleGap
+    cast(u32)StyleField.StylePaddingX | cast(u32)StyleField.StylePaddingY | cast(u32)StyleField.StyleGap
     icons.style.icon_size = 64.0
     icons.style.font_size = 12.0
     icons.style.padding_x = 4.0
