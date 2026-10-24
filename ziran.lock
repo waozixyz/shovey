@@ -19,7 +19,7 @@
     },
     {
       "commit": "e726597f219fddd88997a1b8ddaf96dd1cefe57e",
-      "dependencies": {"daochi_client": "p0cff069893bdc938", "kryon": "pac3bbc70c330905a", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
+      "dependencies": {"daochi_client": "p0cff069893bdc938", "kryon": "pa251046dd78533dd", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
       "id": "p24f8c24d10ef55eb",
       "name": "Entity",
       "ref": "master",
@@ -61,16 +61,16 @@
       "url": "https://github.com/LoupVaillant/Monocypher.git"
     },
     {
-      "commit": "809a0f09d9860fcf3aa37ca4a4b9e29cfe1e116b",
+      "commit": "c38a0d7b70060367763b38084f939f8c05cf4c68",
       "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "pac3bbc70c330905a",
+      "id": "pa251046dd78533dd",
       "name": "kryon",
       "ref": "master",
       "url": "https://github.com/kryonlabs/kryon.git"
     },
     {
       "commit": "12e52c0599f2c6b9375202ff678f5125c10d0e6a",
-      "dependencies": {"crypto": "pf039d7a776333200", "kryon": "pac3bbc70c330905a"},
+      "dependencies": {"crypto": "pf039d7a776333200", "kryon": "pa251046dd78533dd"},
       "id": "pbc99e0ac3699631f",
       "name": "Apps",
       "ref": "master",
@@ -94,7 +94,7 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "pbc99e0ac3699631f", "entity": "p24f8c24d10ef55eb", "kryon": "pac3bbc70c330905a", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "pbc99e0ac3699631f", "entity": "p24f8c24d10ef55eb", "kryon": "pa251046dd78533dd", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {

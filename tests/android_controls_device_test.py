@@ -3,8 +3,8 @@
 
 Installs a debuggable Shovey under an isolated package, turns on Kryon's test
 driver in its private files, and plays through the real interface by widget
-labels: the first level asks how to move, Help chooses the movement pad, the board keeps
-clear of it, every arm steps the right way, holding repeats, the hub stops,
+labels: the first level asks how to move, Help chooses the movement pad, which floats
+over the board without moving it, every arm steps the right way, holding repeats, the hub stops,
 the choice survives a restart and switching back removes the pad. The phone
 is left as it was: the test package is removed and the app that was in front
 comes back.
@@ -158,6 +158,7 @@ def run(phone, apk):
     start = shovey(phone)
     phone.drag(start[0] + start[2] / 2, start[1] + start[2] / 2, -start[2] * 3, 0)
     assert moved(start, shovey(phone))[0] < 0, 'a swipe to the left did not move Shovey'
+    board = phone.one(key=22000)
     print('swipe and tap: default, a swipe steps')
 
     # Help offers the choice; the movement pad becomes the selected one.
@@ -172,13 +173,13 @@ def run(phone, apk):
     pad = phone.one(label='Movement pad', role='button')
     print('help: movement pad chosen, close returns to the level')
 
-    # The pad sits in the bottom left and nothing on the board lies under it.
+    # The pad floats in the bottom left; the board keeps its place and size.
     screen = phone.one(role='screen')
     assert pad['x'] < screen['width'] / 3 and pad['y'] + pad['height'] > screen['y'] + screen['height'] * 0.7, pad
-    board = [node for node in phone.command('tree')['nodes'] if node.get('kind') == 'image' and node.get('width', 0) < pad['width']
-             and node.get('label') not in ('', None)]
-    assert board and not any(overlaps(node, pad) for node in board), 'the board lies under the pad'
-    print('pad: bottom left, clear of the board')
+    assert pad['y'] + pad['height'] <= screen['y'] + screen['height'], pad
+    under = phone.one(key=22000)
+    assert all(abs(under[field] - board[field]) <= 1 for field in ('x', 'y', 'width', 'height')), f'the pad moved the board: {board} -> {under}'
+    print('pad: bottom left, over the board, which kept its place' if overlaps(pad, under) else 'pad: bottom left, the board kept its place')
 
     third = pad['width'] / 3
     arms = {'left': (pad['x'] + third / 2, pad['y'] + third * 1.5), 'up': (pad['x'] + third * 1.5, pad['y'] + third / 2),

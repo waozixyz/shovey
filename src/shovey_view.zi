@@ -699,21 +699,7 @@ ShoveyFrame :: () {
     status_y := top + 52.0
     area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
     tip := ifx mini then "" else LevelTip(game.level)
-    // With the movement pad chosen, it sits in the bottom left corner and the
-    // board keeps clear of it: beside it on a wide screen, above it on a tall one.
     pad_mode := ControlsPad() && !mini
-    pad_size: float32 = 0.0
-    if pad_mode {
-        pad_size = (ifx width < bottom - top then width else bottom - top) * 0.34
-        if pad_size < 132.0 { pad_size = 132.0 }
-        if pad_size > 200.0 { pad_size = 200.0 }
-        if area.width > area.height {
-            area.x += pad_size + 12.0
-            area.width -= pad_size + 12.0
-        } else {
-            area.height -= pad_size + 12.0
-        }
-    }
     landscape := BoardLandscape(area.width, area.height)
     before_direction := game.direction
     changed := false
@@ -806,9 +792,15 @@ ShoveyFrame :: () {
             }
         }
     } else {
+        // The pad floats over the board's bottom left corner, where a thumb
+        // rests; the board keeps its place and shows through the pad.
+        pad_size := (ifx width < bottom - top then width else bottom - top) * 0.34
+        if pad_size < 132.0 { pad_size = 132.0 }
+        if pad_size > 200.0 { pad_size = 200.0 }
         pad := DirectionPad(frame.session, DirectionPadProps.{.key = cast(u64)20040, .id = 20040,
                 .bounds = Rectangle.{12.0, bottom - pad_size - 12.0, pad_size, pad_size},
-                .label = AppLocaleHost("shovey_controls_pad"), .now = frame.now, .repeat_seconds = 0.16, .disabled = disabled})
+                .label = AppLocaleHost("shovey_controls_pad"), .now = frame.now, .repeat_seconds = 0.16, .disabled = disabled,
+                .floating = true})
         if pad.step { step = BoardEngineDirection(pad.direction, landscape) }
     }
     if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
