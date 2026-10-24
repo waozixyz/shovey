@@ -168,9 +168,14 @@ def save(image, path):
     # A shared palette keeps 350 pictures small without visible banding.
     image = image.convert('RGB').quantize(colors=192, method=2, dither=1)
     path.parent.mkdir(parents=True, exist_ok=True)
-    # A reader must see a complete PNG while previews are regenerated.
+    # A reader must see a complete PNG while previews are regenerated, and no
+    # half-written file beside them: release checks list and copy these
+    # folders while builds run. The temporary lives in build/, on the same
+    # disk, so replacing it is still atomic.
     import tempfile
-    with tempfile.NamedTemporaryFile(dir=path.parent, suffix='.png', delete=False) as stream:
+    staging = ROOT / 'build/preview-staging'
+    staging.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=staging, suffix='.png', delete=False) as stream:
         temporary = Path(stream.name)
     try:
         image.save(temporary, format='PNG', optimize=True)

@@ -135,7 +135,10 @@ publish_message_length: s32;
 publication_state: [32]u8;
 publication_state_length: s32;
 publication_board: [HEX]u8;
-publication_text: [128]u8;
+publication_text: [160]u8;
+publication_step: [64]u8;
+publication_step_length: s32;
+publication_live: bool;
 actions_polled: s64;
 stroke: bool;
 
@@ -701,7 +704,16 @@ LoadPublication :: () {
     state := ReadString(text, FieldAt(text, 0, "state"))
     if !board.valid || !state.valid || !ReadBoard(text[board.start:board.end], publication_board[:]) { return }
     AppendText(publication_state[:], *publication_state_length, text[state.start:state.end])
+    publication_step_length = 0
+    step := ReadString(text, FieldAt(text, 0, "step"))
+    if step.valid && step.end - step.start < 64 { AppendText(publication_step[:], *publication_step_length, text[step.start:step.end]) }
+    publication_live = FieldAt(text, 0, "live") >= 0
 }
+
+// The publisher's steps in order, so the status can say how far it is.
+PUBLICATION_STEPS :: 6
+publication_steps: [PUBLICATION_STEPS]string = .["Updating live levels", "Building campaign",
+    "Checking winning routes and release", "Checking game screens", "Publishing release", "Verifying server release"];
 
 PublicationBusy :: () -> bool {
     if !Same(Board(current), publication_board[:]) { return false }
@@ -726,7 +738,22 @@ PublicationText :: () -> string {
     AppendText(publication_text[:], *length, "Level ")
     AppendNumber(publication_text[:], *length, current)
     AppendText(publication_text[:], *length, " · ")
-    AppendText(publication_text[:], *length, message)
+    // Players load a live level at once; the release with it built in follows.
+    if publication_live && state != "published" { AppendText(publication_text[:], *length, "live · ") }
+    step := TextView(publication_step[:publication_step_length])
+    index: s32 = -1
+    for at: cast(s32)0..PUBLICATION_STEPS - 1 { if step == publication_steps[at] { index = at } }
+    if index >= 0 && state != "published" {
+        if state == "failed" { AppendText(publication_text[:], *length, "release failed at ") }
+        AppendNumber(publication_text[:], *length, index + 1)
+        AppendText(publication_text[:], *length, "/")
+        AppendNumber(publication_text[:], *length, PUBLICATION_STEPS)
+        AppendText(publication_text[:], *length, " ")
+        AppendText(publication_text[:], *length, step)
+        if state == "failed" { AppendText(publication_text[:], *length, ". Retry.") }
+    } else {
+        AppendText(publication_text[:], *length, message)
+    }
     return TextView(publication_text[:length])
 }
 
