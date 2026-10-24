@@ -773,7 +773,7 @@ OceanBackdrop :: (area: Rectangle, origin: Vector2, cell: float32, landscape: bo
     unused TileMap(frame.session, TileMapProps.{.key = cast(u64)20099,
             .bounds = Rectangle.{first.x, first.y, cast(float32)columns * cell, cast(float32)rows * cell},
             .columns = columns, .rows = rows, .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:],
-            .names = sprite_names[:], .layers = ocean_layers[:columns * rows], .layer_count = 1, .label = "", .pixel_snap = true})
+            .names = sprite_names[:], .layers = ocean_layers[:columns * rows], .layer_count = 1, .label = "", .pixel_snap = board_pixel_snap})
 }
 
 // The levels before the last joined round its board while the ending
@@ -849,6 +849,7 @@ EndingShade :: () -> float32 {
 // the title, and the game opens on the level list from then on.
 EndingScreen :: (width: float32, top: float32, bottom: float32, key: s32) {
     area := Rectangle.{0.0, top, width, bottom - top}
+    board_pixel_snap = true
     landscape := BoardLandscape(width, bottom - top)
     ResetLevelPreviews(landscape)
     SpriteNames()
@@ -1187,6 +1188,7 @@ ShoveyFrame :: () {
         focus = Vector2.{centre.x + (boat.x - centre.x) * follow, centre.y + (boat.y - centre.y) * follow}
         zoom = 1.0 - (1.0 - BOAT_ZOOM) * EaseInOut((board_sail - BOAT_HOP) / 0.45)
     }
+    board_pixel_snap = board_sail < 0.0
     if cinematic && scene_cell > 0.0 {
         origin := Vector2.{centre.x + (scene_origin.x - focus.x) * zoom, centre.y + (scene_origin.y - focus.y) * zoom}
         size := Vector2.{scene_size.x * zoom, scene_size.y * zoom}

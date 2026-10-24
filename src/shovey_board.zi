@@ -857,7 +857,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     // those edges cannot reveal a pale grid through a joined opening.
     grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
             .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
-            .fill = Color.{2, 4, 5, 255}, .label = "Shovey", .pixel_snap = true, .nearest_tiles = abyss_sprite_indices[:]})
+            .fill = Color.{2, 4, 5, 255}, .label = "Shovey", .pixel_snap = board_pixel_snap, .nearest_tiles = abyss_sprite_indices[:]})
     return ShoveyBoardPieces(session, game, grid, key, now, names, landscape)
 }
 
@@ -937,7 +937,7 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
             .columns = cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH),
             .rows = cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT),
             .tiles = files, .names = names, .layers = board_preview_layers[:], .layer_count = 4,
-            .fill = Color.{2, 4, 5, 255}, .label = "", .pixel_snap = scenery, .nearest_tiles = abyss_sprite_indices[:]})
+            .fill = Color.{2, 4, 5, 255}, .label = "", .pixel_snap = scenery && board_pixel_snap, .nearest_tiles = abyss_sprite_indices[:]})
     BoardBoats(session, *board_preview_game, grid, WidgetPartKey(key, SHOVEY_CELLS * 4 + 1), 0.0, landscape)
     player := board_preview_game.player
     if !scenery && player >= 0 && player < SHOVEY_CELLS {
@@ -946,6 +946,11 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
                 .fit = ImageFit.ImageFitContain, .smooth = true})
     }
 }
+
+// Board cells snap to whole pixels, except while the ending's camera moves:
+// then the board and the scene round it share one exact grid, which would
+// shimmer if each map rounded its own cells.
+board_pixel_snap: bool = true;
 
 // The last level's boat sailing off with Shovey aboard, 0 to 1, or below 0
 // while every boat waits at its cell. The game sets it before drawing.
