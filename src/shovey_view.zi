@@ -714,7 +714,7 @@ scene_size: Vector2;
 sail_start_x: float32;
 sail_start_y: float32;
 // How far the camera has zoomed out once the boat has made way.
-BOAT_ZOOM :: 0.55
+BOAT_ZOOM :: 0.7
 ocean_layers: [4096]s32;
 
 // The secret levels: off the top edge of the last level's beach lies 175a,
