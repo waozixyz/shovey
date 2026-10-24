@@ -162,6 +162,14 @@ ShockProgress :: (game: *ShoveyGame, now: float64) -> float32 {
 
 SHOCK_BOLT :: "F:M13 1L5 13H11L8 23L19 9H13Z"
 SHOCK_SPARK :: "S2rr:M3 12L8 8L11 14L16 9L21 12"
+// The board's tile map keys each cell of its four layers with WidgetPartKey
+// parts 0 to SHOVEY_CELLS * 4 - 1, and the preview's player takes the next
+// part; the effects over the board come after them, so no effect ever
+// shares a key with a cell (a shared key makes Kryon refuse the frame).
+BoardOverlayKey :: (key: u64, part: s32) -> u64 {
+    return WidgetPartKey(key, SHOVEY_CELLS * 5 + part)
+}
+
 CHARGE_SECONDS :: 0.65
 
 // Taking the first charge lights Shovey up without the charring of a loss.
@@ -219,7 +227,7 @@ ShockEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32,
         SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{cell.x, cell.y - size * 2.0, size, size}, .shape = SHOCK_BOLT, .color = bolt})
         SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{cell.x, cell.y - size, size, size}, .shape = SHOCK_BOLT, .color = bolt})
         flash := size * 1.8
-        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 700), .bounds = Rectangle.{cx - flash / 2.0, cy - flash / 2.0, flash, flash},
+        unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 700), .bounds = Rectangle.{cx - flash / 2.0, cy - flash / 2.0, flash, flash},
                 .fill = Color.{255, 250, 210, cast(u8)(200.0 * fade)}, .radius = flash / 2.0})
     }
     if progress < 0.7 {
@@ -236,7 +244,7 @@ ShockEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32,
         }
         glow := size * 1.15
         pulse := ifx cast(s32)(now * 16.0) % 2 == 0 then 110.0 else 50.0
-        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 701), .bounds = Rectangle.{cx - glow / 2.0, cy - glow / 2.0, glow, glow},
+        unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 701), .bounds = Rectangle.{cx - glow / 2.0, cy - glow / 2.0, glow, glow},
                 .fill = Color.{255, 230, 120, cast(u8)pulse}, .radius = glow / 2.0})
     }
     if progress > 0.5 {
@@ -247,7 +255,7 @@ ShockEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32,
             puff_size := size * (0.18 + 0.22 * phase)
             px := cx + size * (cast(float32)puff - 1.0) * 0.14 + size * 0.06 * cast(float32)Math.Sin(cast(float64)phase * 6.283)
             py := cell.y + size * 0.2 - size * 0.6 * phase
-            unused Box(session, BoxProps.{.key = WidgetPartKey(key, 702 + puff), .bounds = Rectangle.{px - puff_size / 2.0, py - puff_size / 2.0, puff_size, puff_size},
+            unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 702 + puff), .bounds = Rectangle.{px - puff_size / 2.0, py - puff_size / 2.0, puff_size, puff_size},
                     .fill = Color.{90, 90, 96, cast(u8)(150.0 * (1.0 - phase))}, .radius = puff_size / 2.0})
         }
     }
@@ -637,7 +645,7 @@ BoardGuides :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u
             cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
             cx := cell.x + cell.width / 2.0; cy := cell.y + cell.height / 2.0
             light := cell.width * 1.5
-            unused Box(session, BoxProps.{.key = WidgetPartKey(key, 600), .bounds = Rectangle.{cx - light / 2.0, cy - light / 2.0, light, light},
+            unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 600), .bounds = Rectangle.{cx - light / 2.0, cy - light / 2.0, light, light},
                     .fill = Color.{255, 214, 120, cast(u8)(rise * (40.0 + 30.0 * breath))}, .radius = light / 2.0})
             for spark: cast(s32)0..2 {
                 phase := now * 0.7 + cast(float64)spark / 3.0
@@ -645,7 +653,7 @@ BoardGuides :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u
                 sx := cx + cast(float32)Math.Sin(cast(float64)t * 6.283 + cast(float64)spark * 2.1) * cell.width * 0.22
                 sy := cy + cell.height * 0.15 - t * cell.height * 0.85
                 size := cell.width * 0.1
-                unused Box(session, BoxProps.{.key = WidgetPartKey(key, 601 + spark), .bounds = Rectangle.{sx - size / 2.0, sy - size / 2.0, size, size},
+                unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 601 + spark), .bounds = Rectangle.{sx - size / 2.0, sy - size / 2.0, size, size},
                         .fill = Color.{255, 244, 190, cast(u8)(rise * (1.0 - t) * 230.0)}, .radius = size / 2.0})
             }
             break
@@ -666,7 +674,7 @@ BoardGuides :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u
         if shown >= 48 || !BoardPieceToMove(game, at, open_marks, open_goals) { continue }
         cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
         halo := cell.width * 1.3
-        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 500 + shown), .bounds = Rectangle.{cell.x + (cell.width - halo) / 2.0,
+        unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 500 + shown), .bounds = Rectangle.{cell.x + (cell.width - halo) / 2.0,
                 cell.y + (cell.height - halo) / 2.0, halo, halo}, .fill = Color.{255, 240, 190, cast(u8)(fade * (10.0 + 16.0 * breath))},
                 .border = Color.{255, 240, 190, cast(u8)(fade * (24.0 + 36.0 * breath))}, .radius = halo / 2.0})
         shown += 1
@@ -943,10 +951,10 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
         while at >= 0 && !ShoveyShotStops(game, at) && dot < 24 {
             spot := TileMapCell(grid, BoardDisplayIndex(at, landscape))
             if game.objects[at] == 28 {
-                unused Box(session, BoxProps.{.key = WidgetPartKey(key, 300 + dot), .bounds = Rectangle.{spot.x + size * 0.04, spot.y + size * 0.04,
+                unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 300 + dot), .bounds = Rectangle.{spot.x + size * 0.04, spot.y + size * 0.04,
                         size * 0.92, size * 0.92}, .border = Color.{236, 64, 48, 230}, .radius = size * 0.46})
             } else {
-                unused Box(session, BoxProps.{.key = WidgetPartKey(key, 300 + dot), .bounds = Rectangle.{spot.x + size * 0.43, spot.y + size * 0.43,
+                unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 300 + dot), .bounds = Rectangle.{spot.x + size * 0.43, spot.y + size * 0.43,
                         size * 0.14, size * 0.14}, .fill = Color.{255, 226, 150, 190}, .radius = size * 0.07})
             }
             dot += 1
@@ -956,7 +964,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
         held := size * 0.5
         cx := cell.x + size * 0.5 + dx * size * 0.36
         cy := cell.y + size * 0.5 + dy * size * 0.36 + bob
-        unused Box(session, BoxProps.{.key = WidgetPartKey(key, 298), .bounds = Rectangle.{cx - held * 0.8, cy - held * 0.8, held * 1.6, held * 1.6},
+        unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 298), .bounds = Rectangle.{cx - held * 0.8, cy - held * 0.8, held * 1.6, held * 1.6},
                 .fill = Color.{255, 214, 120, 96}, .radius = held * 0.8})
         Image(session, ImageProps.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = files[SPRITE_SHOT],
                 .alt_text = shot_label, .bounds = Rectangle.{cx - held / 2.0, cy - held / 2.0, held, held},
@@ -972,7 +980,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
             size := from.width * 0.45
             x := from.x + (to.x - from.x) * progress + (from.width - size) / 2.0
             y := from.y + (to.y - from.y) * progress + (from.height - size) / 2.0
-            Image(session, ImageProps.{.key = WidgetPartKey(key, 299), .asset_path = files[SPRITE_SHOT], .alt_text = shot_label,
+            Image(session, ImageProps.{.key = BoardOverlayKey(key, 299), .asset_path = files[SPRITE_SHOT], .alt_text = shot_label,
                     .bounds = Rectangle.{x, y, size, size}, .fit = ImageFit.ImageFitContain, .smooth = true})
         }
     }
@@ -984,7 +992,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
             progress := cast(float32)((now - effect.start) / CHARGE_SECONDS)
             if progress >= 1.0 || game.lost { effect.kind = 0; continue }
             cell := TileMapCell(grid, BoardDisplayIndex(effect.at, landscape))
-            ChargeEffects(session, WidgetPartKey(key, 800 + index), cell, progress)
+            ChargeEffects(session, BoardOverlayKey(key, 800 + index), cell, progress)
             continue
         }
         if effect.kind == 3 {
@@ -999,12 +1007,12 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
                 Color.{64, 200, 214, 255}, Color.{168, 92, 214, 255}, Color.{240, 200, 50, 255}]
             tint := colours[ifx pit >= 0 && pit < 7 then pit else 0]
             tint.a = cast(u8)((1.0 - progress) * 210.0)
-            unused Box(session, BoxProps.{.key = WidgetPartKey(key, 450 + index), .bounds = Rectangle.{cell.x + (cell.width - ripple) / 2.0,
+            unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 450 + index), .bounds = Rectangle.{cell.x + (cell.width - ripple) / 2.0,
                     cell.y + (cell.height - ripple) / 2.0, ripple, ripple}, .border = tint, .radius = ripple / 2.0})
             size := cell.width * 0.85 * (1.0 - progress)
             sprite := KindSprite(game, effect.piece, -1, now, landscape)
             if sprite >= 0 && size > 1.0 {
-                Image(session, ImageProps.{.key = WidgetPartKey(key, 400 + index), .asset_path = files[sprite], .alt_text = "",
+                Image(session, ImageProps.{.key = BoardOverlayKey(key, 400 + index), .asset_path = files[sprite], .alt_text = "",
                         .bounds = Rectangle.{cell.x + (cell.width - size) / 2.0, cell.y + (cell.height - size) / 2.0 + progress * cell.height * 0.08, size, size},
                         .fit = ImageFit.ImageFitContain, .smooth = true})
             }
@@ -1017,7 +1025,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
         cell := TileMapCell(grid, BoardDisplayIndex(effect.at, landscape))
         scale: float32 = ifx effect.kind == 1 then 1.4 else 2.4
         size := cell.width * scale
-        Image(session, ImageProps.{.key = WidgetPartKey(key, 400 + index), .asset_path = files[(ifx effect.kind == 1 then SPRITE_BURST else SPRITE_EXPLOSION) + frame],
+        Image(session, ImageProps.{.key = BoardOverlayKey(key, 400 + index), .asset_path = files[(ifx effect.kind == 1 then SPRITE_BURST else SPRITE_EXPLOSION) + frame],
                 .alt_text = "", .bounds = Rectangle.{cell.x + (cell.width - size) / 2.0, cell.y + (cell.height - size) / 2.0, size, size},
                 .fit = ImageFit.ImageFitContain, .smooth = false})
     }
