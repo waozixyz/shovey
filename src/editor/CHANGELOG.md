@@ -1,5 +1,13 @@
 # Shovey Editor changelog
 
+## [0.2.130] - 2026-10-24
+
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
+## [0.2.129] - 2026-10-24
+
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.128] - 2026-10-24
 
 - All objects stop at the abyss when testing Classic levels.
