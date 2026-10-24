@@ -30,6 +30,7 @@ Math :: #import "std/math";
 #import "apps/node_types"
 #import "tile_map"
 #import "widget_palette"
+#import, file "level_change.zi";
 #import, file "orientation.zi";
 #import, file "engine.zi";
 #import, file "levels.zi";
@@ -583,10 +584,8 @@ LiveCampaignCheck :: () {
 }
 
 // A won level stays on screen for a moment and dips to dark, and the next
-// level fades in, instead of its board replacing the last in one frame.
-WIN_HOLD_SECONDS :: 0.75
-WIN_FADE_SECONDS :: 0.3
-ENTER_FADE_SECONDS :: 0.35
+// level fades in (level_change.zi), instead of its board replacing the last
+// in one frame. These hold when each part began, or 0.
 won_at: float64;
 entered_at: float64;
 
@@ -602,28 +601,29 @@ ContinueGame :: () {
     Remember()
 }
 
+// Milliseconds since a moment of a level change, within a minute.
+LevelChangeMs :: (since: float64) -> s32 {
+    elapsed := frame.now - since
+    if elapsed <= 0.0 { return 0 }
+    if elapsed >= 60.0 { return 60000 }
+    return cast(s32)(elapsed * 1000.0)
+}
+
 // The win is saved at once; the next level follows after the pause.
 WinPause :: () {
     if won_at == 0.0 {
         won_at = frame.now
         Remember()
     }
-    if frame.now - won_at >= WIN_HOLD_SECONDS { ContinueGame() }
+    if LevelWinContinues(LevelChangeMs(won_at)) { ContinueGame() }
 }
 
 // How dark the board is at this moment of a level change, 0 to 1.
 LevelChangeShade :: () -> float32 {
-    if won_at > 0.0 {
-        fading := frame.now - won_at - (WIN_HOLD_SECONDS - WIN_FADE_SECONDS)
-        if fading <= 0.0 { return 0.0 }
-        return ifx fading >= WIN_FADE_SECONDS then 1.0 else cast(float32)(fading / WIN_FADE_SECONDS)
-    }
-    if entered_at > 0.0 {
-        shown := frame.now - entered_at
-        if shown >= ENTER_FADE_SECONDS || shown < 0.0 { entered_at = 0.0; return 0.0 }
-        return 1.0 - cast(float32)(shown / ENTER_FADE_SECONDS)
-    }
-    return 0.0
+    since_win := ifx won_at > 0.0 then LevelChangeMs(won_at) else -1
+    since_enter := ifx entered_at > 0.0 then LevelChangeMs(entered_at) else -1
+    if since_enter >= LEVEL_ENTER_FADE_MS { entered_at = 0.0 }
+    return cast(float32)LevelChangeShadeAt(since_win, since_enter) / cast(float32)LEVEL_SHADE_FULL
 }
 
 // Back from the level list or help returns to the level; false while

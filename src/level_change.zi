@@ -1,0 +1,27 @@
+// How a won level hands over to the next: the won board stays on screen,
+// dips to dark over the end of the pause, and the next board fades in.
+// Times are milliseconds since the win and since the next level appeared.
+LEVEL_WIN_HOLD_MS :: 750
+LEVEL_WIN_FADE_MS :: 300
+LEVEL_ENTER_FADE_MS :: 350
+LEVEL_SHADE_FULL :: 1000
+
+// Whether the pause after a win is over and the next level may appear.
+LevelWinContinues :: (since_win: s32) -> bool {
+    return since_win >= LEVEL_WIN_HOLD_MS
+}
+
+// How dark the board is, 0 to LEVEL_SHADE_FULL; a time below 0 means that
+// part of the change is not under way.
+LevelChangeShadeAt :: (since_win: s32, since_enter: s32) -> s32 {
+    if since_win >= 0 {
+        fading := since_win - (LEVEL_WIN_HOLD_MS - LEVEL_WIN_FADE_MS)
+        if fading <= 0 { return 0 }
+        if fading >= LEVEL_WIN_FADE_MS { return LEVEL_SHADE_FULL }
+        return fading * LEVEL_SHADE_FULL / LEVEL_WIN_FADE_MS
+    }
+    if since_enter >= 0 && since_enter < LEVEL_ENTER_FADE_MS {
+        return LEVEL_SHADE_FULL - since_enter * LEVEL_SHADE_FULL / LEVEL_ENTER_FADE_MS
+    }
+    return 0
+}

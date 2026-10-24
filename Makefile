@@ -219,7 +219,17 @@ public-test: solver
 	python3 tests/levels_test.py
 	python3 tests/assets_test.py
 
-test: solver
+# Laws state policy independently of its implementation; `ziran check`
+# proves each over its whole listed domain.
+LAW_MODULES := $(wildcard src/*_laws.zi)
+.PHONY: laws
+laws:
+	@for module in $(LAW_MODULES); do \
+		'$(TOOLCHAIN)/build/bin/ziran' check --root src --module-path '$(TOOLCHAIN)/std' $$module > /dev/null || exit 1; \
+	done
+	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
+
+test: solver laws
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
