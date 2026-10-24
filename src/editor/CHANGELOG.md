@@ -1,5 +1,17 @@
 # Shovey Editor changelog
 
+## [0.2.107] - 2026-10-23
+
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
+## [0.2.106] - 2026-10-23
+
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
+## [0.2.105] - 2026-10-23
+
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.104] - 2026-10-23
 
 - The first lightning touch shows a glow and sparks while testing a board.
