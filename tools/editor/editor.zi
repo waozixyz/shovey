@@ -386,7 +386,9 @@ EmptyDigit :: (at: s32) -> u8 {
 // The game's boards fill their places in order; a waiting place starts from
 // its original board, or an empty one on a machine without originals.
 LoadLevels :: () {
-    text, found := ReadEntireFile(LEVELS_FILE)
+    text_bytes: Vec(u8)
+    found := ReadFileInto(LEVELS_FILE, *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     live := found && ReadLevelFile(text)
     level_count = ifx live then file_count else ShoveyLevelCount()
     in_game: s32 = 0
@@ -454,12 +456,16 @@ NextWaiting :: () -> s32 {
 
 LoadOriginals :: () {
     #if !#defined(SHOVEY_ADMIN) {
-    text, found := ReadEntireFile("backup/original/classic-levels.zi")
+    text_bytes: Vec(u8)
+    found := ReadFileInto("backup/original/classic-levels.zi", *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if found {
         for number: cast(s32)1..LEVELS_MAX { original_found[number] = FindBoard(text, number, Original(number)) }
     }
     }
-    list, listed := ReadEntireFile("backup/redesign/stuck.txt")
+    list_bytes: Vec(u8)
+    listed := ReadFileInto("backup/redesign/stuck.txt", *list_bytes)
+    list := TextView(VecSlice(list_bytes, 0, list_bytes.count))
     if listed {
         at: s64 = 0
         while at < list.count {
@@ -476,7 +482,9 @@ LoadOriginals :: () {
             at += 1
         }
     }
-    focused, has_focus := ReadEntireFile("backup/editor-drafts/focus.txt")
+    focused_bytes: Vec(u8)
+    has_focus := ReadFileInto("backup/editor-drafts/focus.txt", *focused_bytes)
+    focused := TextView(VecSlice(focused_bytes, 0, focused_bytes.count))
     if has_focus {
         number: s32 = 0
         for at: cast(s64)0..focused.count - 1 {
@@ -529,7 +537,9 @@ OurTiles :: () -> []string {
 }
 
 LoadOrientation :: () {
-    orientation, found := ReadEntireFile("backup/editor-drafts/orientation")
+    orientation_bytes: Vec(u8)
+    found := ReadFileInto("backup/editor-drafts/orientation", *orientation_bytes)
+    orientation := TextView(VecSlice(orientation_bytes, 0, orientation_bytes.count))
     boards_landscape = !found || orientation != "portrait"
 }
 
@@ -681,7 +691,9 @@ NeedsUpdate :: (place: s32) -> bool {
 
 LoadPublication :: () {
     publication_state_length = 0
-    text, found := ReadEntireFile(DraftPath(current, ".publication"))
+    text_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(current, ".publication"), *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found { return }
     board := ReadString(text, FieldAt(text, 0, "board"))
     state := ReadString(text, FieldAt(text, 0, "state"))
@@ -752,7 +764,9 @@ LoadServerCampaign :: () {
     server_verified = false
     if !server_configured { return }
     for place: cast(s32)1..PLACES { published_places[place - 1] = false }
-    text, found := ReadEntireFile("backup/editor-drafts/server-campaign.json")
+    text_bytes: Vec(u8)
+    found := ReadFileInto("backup/editor-drafts/server-campaign.json", *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found { return }
     state := ReadString(text, FieldAt(text, 0, "status"))
     if !state.valid || text[state.start:state.end] != "verified" { return }
@@ -796,15 +810,21 @@ ApprovalAvailable :: () -> bool {
 
 LoadApprovals :: () {
     for place: cast(s32)1..PLACES {
-        text, found := ReadEntireFile(DraftPath(place, ".approved"))
+        text_bytes: Vec(u8)
+        found := ReadFileInto(DraftPath(place, ".approved"), *text_bytes)
+        text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
         approved_places[place - 1] = found && ReadBoard(text, approved_boards[(place - 1) * HEX:place * HEX])
-        published, ready := ReadEntireFile(DraftPath(place, ".published"))
+        published_bytes: Vec(u8)
+        ready := ReadFileInto(DraftPath(place, ".published"), *published_bytes)
+        published := TextView(VecSlice(published_bytes, 0, published_bytes.count))
         published_places[place - 1] = ready && ReadBoard(published, published_boards[(place - 1) * HEX:place * HEX])
     }
     LoadServerCampaign()
     // The campaign survives missing local markers and editor installations.
     // A newer local approval still takes precedence while it is publishing.
-    text, found := ReadEntireFile("levels/approved.json")
+    text_bytes: Vec(u8)
+    found := ReadFileInto("levels/approved.json", *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found { return }
     positions: [PLACES]s32
     count := ArrayPositions(text, FieldAt(text, 0, "levels"), positions[:])
@@ -869,7 +889,9 @@ ApproveEdit :: () {
     }
     if !Solved() && !Proven() {
         // A later draft must not discard approval of the last saved win.
-        text, found := ReadEntireFile(LEVELS_FILE)
+        text_bytes: Vec(u8)
+        found := ReadFileInto(LEVELS_FILE, *text_bytes)
+        text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
         if !found || !ReadLevelFile(text) { return }
         index := LevelNumber(current) - 1
         if index < 0 || index >= file_count || !FileHolds(index, SavedBoard(current)) { return }
@@ -985,11 +1007,15 @@ PollActions :: (now: s64) {
         LoadApprovals()
     }
     if glm_busy {
-        result, ready := ReadEntireFile(DraftPath(glm_place, ".glm-result"))
+        result_bytes: Vec(u8)
+        ready := ReadFileInto(DraftPath(glm_place, ".glm-result"), *result_bytes)
+        result := TextView(VecSlice(result_bytes, 0, result_bytes.count))
         if ready {
             candidate: [HEX]u8
             if ReadBoard(result, candidate[:]) && glm_place == current && !playing && Same(Board(current), glm_base[:]) {
-                proof, proven := ReadEntireFile(DraftPath(glm_place, ".glm-proof"))
+                proof_bytes: Vec(u8)
+                proven := ReadFileInto(DraftPath(glm_place, ".glm-proof"), *proof_bytes)
+                proof := TextView(VecSlice(proof_bytes, 0, proof_bytes.count))
                 if (glm_repair || glm_mode != 2 || PrettifyOnly(glm_base[:], candidate[:])) && proven && GLMProof(proof, candidate[:]) {
                     Remember()
                     Copy(Board(current), candidate[:])
@@ -1019,16 +1045,22 @@ PollActions :: (now: s64) {
             glm_busy = false
             unused RemoveFile(DraftPath(glm_place, ".glm-result"))
         } else {
-            status, found := ReadEntireFile(DraftPath(glm_place, ".glm-status"))
+            status_bytes: Vec(u8)
+            found := ReadFileInto(DraftPath(glm_place, ".glm-status"), *status_bytes)
+            status := TextView(VecSlice(status_bytes, 0, status_bytes.count))
             if found {
                 ActionMessage(status)
             }
-            phase, phased := ReadEntireFile(DraftPath(glm_place, ".glm-state"))
+            phase_bytes: Vec(u8)
+            phased := ReadFileInto(DraftPath(glm_place, ".glm-state"), *phase_bytes)
+            phase := TextView(VecSlice(phase_bytes, 0, phase_bytes.count))
             if phased && phase == "error" { glm_busy = false }
             if now - glm_started > 480000 { glm_busy = false; ActionMessage("GLM timed out. Retry.") }
         }
     } else {
-        status, found := ReadEntireFile("backup/editor-drafts/publish-status")
+        status_bytes: Vec(u8)
+        found := ReadFileInto("backup/editor-drafts/publish-status", *status_bytes)
+        status := TextView(VecSlice(status_bytes, 0, status_bytes.count))
         if found && status != TextView(publish_message[:publish_message_length]) {
             if status == "Published" || Contains(status, "Published · ") {
                 server_check_started = 0
@@ -1087,7 +1119,9 @@ FollowLevelFile :: (now: s64) {
     Copy(previous[:], Board(current))
     if playing {
         if changed {
-            text, found := ReadEntireFile(LEVELS_FILE)
+            text_bytes: Vec(u8)
+            found := ReadFileInto(LEVELS_FILE, *text_bytes)
+            text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
             if found && ReadLevelFile(text) {
                 index := LevelNumber(current) - 1
                 if InGame(current) && index >= 0 && index < file_count {
@@ -1095,7 +1129,9 @@ FollowLevelFile :: (now: s64) {
                 }
             }
         }
-        text, found := ReadEntireFile(DraftPath(current))
+        text_bytes: Vec(u8)
+        found := ReadFileInto(DraftPath(current), *text_bytes)
+        text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
         candidate: [HEX]u8
         if found && ReadBoard(text, candidate[:]) { Copy(previous[:], candidate[:]) }
         level_update_pending = !Same(previous[:], Board(current))
@@ -1123,7 +1159,9 @@ LoadDrafts :: () {
 
 RestoreDraft :: (number: s32) {
     if number == current && playing { return }
-    text, found := ReadEntireFile(DraftPath(number))
+    text_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(number), *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     restored: [HEX]u8
     if found && ReadBoard(text, restored[:]) { Copy(Board(number), restored[:]) }
     else if !found { Copy(Board(number), SavedBoard(number)) }
@@ -1132,7 +1170,9 @@ RestoreDraft :: (number: s32) {
 LoadUnlinked :: () {
     unlinked_count = 0
     for place: cast(s32)1..PLACES { unlinked_before[place] = 0 }
-    text, found := ReadEntireFile("backup/editor-drafts/unlinked.txt")
+    text_bytes: Vec(u8)
+    found := ReadFileInto("backup/editor-drafts/unlinked.txt", *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found { return }
     at: s64 = 0
     while at < text.count {
@@ -1233,7 +1273,9 @@ Open :: (place: s32) {
     if !RestoreProof() && !RestoreLearnedRoute() && !RestoreSavedRoute() { unused RestoreCheckStatus() }
     saved_approval_ready = false
     if InGame(current) && mapping_ok {
-        text, found := ReadEntireFile(LEVELS_FILE)
+        text_bytes: Vec(u8)
+        found := ReadFileInto(LEVELS_FILE, *text_bytes)
+        text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
         if found && ReadLevelFile(text) {
             index := LevelNumber(current) - 1
             saved_approval_ready = index >= 0 && index < file_count && file_route_length[index] > 0 && FileHolds(index, SavedBoard(current))
@@ -1308,7 +1350,9 @@ StartCheck :: () {
         if RestoreSavedRoute() { return }
         if LoadAttempt() { check_live = true }
     }
-    previous, has_previous := ReadEntireFile(DraftPath(current, ".proof"))
+    previous_bytes: Vec(u8)
+    has_previous := ReadFileInto(DraftPath(current, ".proof"), *previous_bytes)
+    previous := TextView(VecSlice(previous_bytes, 0, previous_bytes.count))
     if check_prefix_length == 0 && has_previous && previous.count > HEX + 1 && previous.count <= HEX + ROUTE_MAX + 1 && previous[HEX] == cast(u8)10 {
         valid := true
         for at: cast(s64)HEX + 1..previous.count - 1 {
@@ -1399,7 +1443,9 @@ PollCheck :: () {
     finished: s32 = 0
     for index: cast(s32)0..SEARCHES - 1 {
         if !search_done[index] && PathExists(CheckFile(index, ".out")) {
-            text, found := ReadEntireFile(CheckFile(index, ".out"))
+            text_bytes: Vec(u8)
+            found := ReadFileInto(CheckFile(index, ".out"), *text_bytes)
+            text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
             search_done[index] = true
             // Only a route the engine replays to a win counts.
             if found && ReadRoute(text) && Wins(check_board[:], LevelFor(check_level), route[:], route_length) {
@@ -1446,7 +1492,9 @@ RememberCheckStatus :: () {
 }
 
 RestoreCheckStatus :: () -> bool {
-    text, found := ReadEntireFile(DraftPath(current, ".check"))
+    text_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(current, ".check"), *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found || text.count < HEX + 4 || text[HEX] != cast(u8)10 || text[HEX + 2] != cast(u8)10 || text[:HEX] != TextView(Board(current)) { return false }
     if text[HEX + 3:] != SolverFingerprint() { return false }
     state := cast(s32)text[HEX + 1] - 48
@@ -1459,9 +1507,14 @@ RestoreCheckStatus :: () -> bool {
     return true
 }
 
+solver_fingerprint: [80]u8;
+
+// The built solver's fingerprint, kept in solver_fingerprint, or "local".
 SolverFingerprint :: () -> string {
-    text, found := ReadEntireFile("build/solver/fingerprint")
-    return ifx found then text else "local"
+    bytes: Vec(u8)
+    if !ReadFileInto("build/solver/fingerprint", *bytes) || bytes.count > 80 { return "local" }
+    for at: cast(s64)0..bytes.count - 1 { solver_fingerprint[at] = bytes[at] }
+    return TextView(solver_fingerprint[:bytes.count])
 }
 
 NeedsRepair :: () -> bool {
@@ -1471,7 +1524,9 @@ NeedsRepair :: () -> bool {
 
 RememberRoute :: (record: string) {
     if record.count <= HEX + 1 || record.count > HEX + ROUTE_MAX + 1 || record[HEX] != cast(u8)10 { return }
-    old, found := ReadEntireFile(DraftPath(current, ".routes"))
+    old_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(current, ".routes"), *old_bytes)
+    old := TextView(VecSlice(old_bytes, 0, old_bytes.count))
     if found && Contains(old, record) { return }
     end: s64 = 0
     lines: s32 = 0
@@ -1485,7 +1540,9 @@ RememberRoute :: (record: string) {
 }
 
 RestoreLearnedRoute :: (continuation: bool = false) -> bool {
-    text, found := ReadEntireFile(DraftPath(current, ".routes"))
+    text_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(current, ".routes"), *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found { return false }
     at: s64 = 0
     best: s32 = HEX + 1
@@ -1539,7 +1596,9 @@ AcceptRoute :: (letters: []u8, length: s32) {
     AppendText(proof_record[:], *record_length, TextView(Board(current)))
     AppendText(proof_record[:], *record_length, "\n")
     AppendText(proof_record[:], *record_length, TextView(route[:route_length]))
-    previous, found := ReadEntireFile(DraftPath(current, ".proof"))
+    previous_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(current, ".proof"), *previous_bytes)
+    previous := TextView(VecSlice(previous_bytes, 0, previous_bytes.count))
     if found { RememberRoute(previous) }
     RememberRoute(TextView(proof_record[:record_length]))
     unused WriteEntireFile(DraftPath(current, ".proof"), TextView(proof_record[:record_length]))
@@ -1548,7 +1607,9 @@ AcceptRoute :: (letters: []u8, length: s32) {
 
 // A played or checked win survives switching boards and reopening the editor.
 RestoreProof :: (continuation: bool = false) -> bool {
-    text, found := ReadEntireFile(DraftPath(current, ".proof"))
+    text_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(current, ".proof"), *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found || text.count <= cast(s64)HEX + 1 || text.count > cast(s64)(HEX + ROUTE_MAX + 1) { return false }
     if text[HEX] != cast(u8)10 { return false }
     length := cast(s32)text.count - HEX - 1
@@ -1575,7 +1636,9 @@ RestoreProof :: (continuation: bool = false) -> bool {
 // route when it still wins, including changes to flowers or floor artwork.
 RestoreSavedRoute :: (continuation: bool = false) -> bool {
     if !InGame(current) || !mapping_ok { return false }
-    text, found := ReadEntireFile(LEVELS_FILE)
+    text_bytes: Vec(u8)
+    found := ReadFileInto(LEVELS_FILE, *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found || !ReadLevelFile(text) { return false }
     index := LevelNumber(current) - 1
     if index < 0 || index >= file_count { return false }
@@ -1778,7 +1841,9 @@ StartSave :: () {
     Copy(save_board[:], Board(current))
     save_level = current
     if InGame(current) && Same(Board(current), SavedBoard(current)) { save_state = 2; return }
-    text, found := ReadEntireFile(LEVELS_FILE)
+    text_bytes: Vec(u8)
+    found := ReadFileInto(LEVELS_FILE, *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found || !ReadLevelFile(text) { SaveFailed("levels/classic.json could not be read."); return }
     // Only a file this editor writes back unchanged is safe to rewrite.
     if LevelFileText() != text { SaveFailed("levels/classic.json is not in the layout the editor writes."); return }
@@ -1900,7 +1965,9 @@ RememberAttempt :: () {
 }
 
 LoadAttempt :: () -> bool {
-    text, found := ReadEntireFile(DraftPath(current, ".attempt"))
+    text_bytes: Vec(u8)
+    found := ReadFileInto(DraftPath(current, ".attempt"), *text_bytes)
+    text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
     if !found || text.count <= HEX + 1 || text.count > HEX + ROUTE_MAX + 1 || text[HEX] != cast(u8)10 || text[:HEX] != TextView(Board(current)) { return false }
     for at: cast(s64)HEX + 1..text.count - 1 {
         letter := text[at]
@@ -2621,7 +2688,9 @@ Say :: (text: string) {
 main :: (argc: s32, argv: **u8) -> s32 {
     // --check-file: can the level file be read and written back unchanged?
     if argc >= 2 && TextFromCString(argv[1]) == "--check-file" {
-        text, found := ReadEntireFile(ifx argc >= 3 then TextFromCString(argv[2]) else LEVELS_FILE)
+        text_bytes: Vec(u8)
+        found := ReadFileInto(ifx argc >= 3 then TextFromCString(argv[2]) else LEVELS_FILE, *text_bytes)
+        text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
         if !found || !ReadLevelFile(text) { Say("levels/classic.json could not be read\n"); return 1 }
         if LevelFileText() != text { Say("levels/classic.json would not be written back unchanged\n"); return 1 }
         Say("levels/classic.json reads and writes back unchanged\n")
@@ -2637,7 +2706,9 @@ main :: (argc: s32, argv: **u8) -> s32 {
     selected = 256
     palette_tab = 0
     start: s32 = 1
-    last, remembered := ReadEntireFile("backup/editor-drafts/place")
+    last_bytes: Vec(u8)
+    remembered := ReadFileInto("backup/editor-drafts/place", *last_bytes)
+    last := TextView(VecSlice(last_bytes, 0, last_bytes.count))
     if remembered {
         number: s32 = 0
         for at: cast(s64)0..last.count - 1 {
