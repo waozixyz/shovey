@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as temporary:
     for path in (drafts, profile / 'backup/redesign', profile / 'levels', profile / 'scripts', profile / 'build/solver'):
         path.mkdir(parents=True, exist_ok=True)
     (profile / 'assets').symlink_to(ROOT / 'assets', target_is_directory=True)
-    (profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
+    (profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(3, 176)))
     (drafts / 'orientation').write_text('portrait')
     # A corridor with the ball, its pit and home, and an open row below it
     # where Shovey can wander off the route.

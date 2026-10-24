@@ -8,8 +8,7 @@
 // collection; without it, or with "-", standard input is read. Every level's
 // route is replayed through the engines first, and nothing is written unless
 // all of them win. A level copied from a story level replaces that level;
-// --append adds every level after the story instead (Classic keeps its
-// finale last). Afterwards the level code and pictures are generated again
+// --append adds every level after the story instead. Afterwards the level code and pictures are generated again
 // with tools/levels/levels.py, unless --no-generate.
 #import "std/byte_text_linux"
 #import "std/c_string"

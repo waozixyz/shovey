@@ -43,7 +43,7 @@ def main():
     starter = dict(edition='classic', width=12, height=20, levels=levels.editor_starter_levels())
     (payload / 'levels/classic.json').write_text(json.dumps(starter, indent=1) + '\n')
     (payload / 'levels/approved.json').write_text(json.dumps(dict(levels=[]), indent=1) + '\n')
-    (payload / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
+    (payload / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(3, 176)))
     (payload / 'run.sh').write_text('#!/bin/sh\ncd -- "$(dirname -- "$0")" || exit 1\nexec ./bin/shovey-level-editor "$@"\n')
     (payload / 'run.sh').chmod(0o755)
     shutil.copyfile(ROOT / 'LICENSE', payload / 'LICENSE')

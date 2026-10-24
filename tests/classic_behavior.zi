@@ -58,8 +58,8 @@ BoardChecks :: () -> s32 {
         copy: ShoveyGame
         if !ShoveyRestore(*copy, saved) || ShoveySave(*copy) != saved { return 31 }
     }
-    // The finale is a picture: Shovey cannot move there.
-    if !ShoveyLoad(*game, ShoveyLevelCount()) || ShoveyMove(*game, 0) || ShoveyMove(*game, 2) { return 32 }
+    // No board follows the last level.
+    if ShoveyLoad(*game, ShoveyLevelCount() + 1) { return 32 }
     return 0
 }
 

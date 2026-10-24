@@ -36,8 +36,7 @@ root, work = map(Path, sys.argv[1:])
 spec = importlib.util.spec_from_file_location('levels_tool', root / 'tools/levels/levels.py')
 levels = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(levels)
-classic = json.loads((root / 'levels/approved.json').read_text())['levels'][:2]
-classic.append(levels.finale(3))
+classic = json.loads((root / 'levels/approved.json').read_text())['levels'][:3]
 def rows(values):
     return [''.join(f'{v:02x}' for v in values[at:at+12]) for at in range(0, 240, 12)]
 terrain = [int(3 <= at % 12 <= 8 and 5 <= at // 12 <= 14) for at in range(240)]

@@ -43,8 +43,9 @@ shovey_live_lengths: [SHOVEY_LIVE_MAX]s32;
     ShoveyLevelCount :: () -> s32 { return SHOVEY_LEVEL_COUNT }
 }
 
-// The closing board after the campaign's last level, where play stops.
-ShoveyFinaleLevel :: () -> s32 { return ifx shovey_live_count > 0 then shovey_live_count + 1 else SHOVEY_LEVEL_COUNT }
+// The level after the campaign's last, which has no board: the last level
+// is played like any other and the end sequence follows it.
+ShoveyFinaleLevel :: () -> s32 { return ifx shovey_live_count > 0 then shovey_live_count + 1 else SHOVEY_LEVEL_COUNT + 1 }
 
 // The highest level number a saved game may name.
 ShoveyLevelLimit :: () -> s32 {
@@ -59,7 +60,6 @@ ShoveyLevelBoard :: (level: s32) -> string {
             at := (level - 1) * SHOVEY_LIVE_BOARD
             return TextView(shovey_live_boards[at:at + shovey_live_lengths[level - 1]])
         }
-        if level == shovey_live_count + 1 { return ShoveyLevelData(SHOVEY_LEVEL_COUNT) }
         return ""
     }
     return ShoveyLevelData(level)

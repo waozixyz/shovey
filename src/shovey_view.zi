@@ -682,16 +682,10 @@ ending_level: s32;
 ending_won_at: float64;
 ending_at: float64;
 
-// The last level a player can win: the closing board after it takes no moves.
-ShoveyLastLevel :: () -> s32 {
-    finale := ShoveyFinaleLevel() - 1
-    return ifx ShoveyLevelCount() < finale then ShoveyLevelCount() else finale
-}
-
 // Follows the win of the last level: when it was won, how far the boat has
 // sailed, and when THE END began.
 EndingPump :: () {
-    if !game.won || game.level != ShoveyLastLevel() || slide_next < slide_count {
+    if !game.won || game.level != ShoveyLevelCount() || slide_next < slide_count {
         ending_won_at = 0.0
         ending_at = 0.0
         board_sail = -1.0
@@ -729,7 +723,7 @@ EndingScreen :: (width: float32, top: float32, bottom: float32) {
     card_width := (width - gap * cast(float32)(columns + 1)) / cast(float32)columns
     card_height := card_width * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
     row_height := card_height + gap
-    count := ShoveyLastLevel()
+    count := ShoveyLevelCount()
     rows := (count + columns - 1) / columns
     rolled := cast(float32)((frame.now - ending_at) / ENDING_ROW_SECONDS) * row_height
     first := cast(s32)(rolled / row_height)
@@ -897,7 +891,7 @@ ShoveyFrame :: () {
         }
         return
     }
-    if game.won && game.level < ShoveyLastLevel() { WinPause() }
+    if game.won && game.level < ShoveyLevelCount() { WinPause() }
     EndingPump()
     key := AppKeyHost()
     if key == 72 { help_open = !help_open }
@@ -1118,7 +1112,7 @@ ShoveyFrame :: () {
     }
     if step >= 0 { changed = ShoveyAct(step) || changed }
     if (changed || before_direction != game.direction) && slide_next >= slide_count {
-        if game.won && game.level < ShoveyLastLevel() { WinPause() }
+        if game.won && game.level < ShoveyLevelCount() { WinPause() }
         else { Remember() }
     }
 }

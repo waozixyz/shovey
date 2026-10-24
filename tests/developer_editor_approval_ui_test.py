@@ -27,7 +27,7 @@ def rows(layer):
 level = dict(number=1, cells=rows(pieces), solution='2')
 (profile / 'backup/editor-publish.json').unlink(missing_ok=True)
 (profile / 'backup/original/classic-levels.zi').write_text('number == 73 { return "' + ''.join(rows(pieces)) + '" }')
-(profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
+(profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(3, 176)))
 (profile / 'levels/classic.json').write_text(json.dumps(dict(
     edition='classic', width=12, height=20, levels=[level, dict(level, number=2)]), indent=1) + '\n')
 campaign = dict(levels=[dict(level, number=n, tiles=rows(tiles), decorations=rows([0] * 240))

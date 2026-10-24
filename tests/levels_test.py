@@ -50,7 +50,6 @@ for level in classic:
     # Open garden borders are valid: the engine bounds movement at the board edge.
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
     assert (ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png').is_file()
-    # The last Classic level is the finale picture, with nothing to solve.
     # Published levels must keep a winning route; unfinished ones may wait.
     if level['number'] <= len(published) or level.get('solution'):
         assert set(level.get('solution', '')) <= set('0123ft') and level.get('solution'), f'Classic {level["number"]}: solution'

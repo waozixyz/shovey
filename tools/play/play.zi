@@ -187,7 +187,7 @@ Remaining :: () -> s32 {
 }
 
 // Loads the board and plays the recorded route from the start. Classic
-// boards load as level 1: the level number only marks the finale picture.
+// boards load as level 1: no level number changes the rules.
 Replay :: () -> bool {
     loaded := ifx Edition() == 0 then ShoveyLoadData(*classic, 1, Board()) else IslandLoadData(*island, Number(), Board())
     if !loaded { return false }

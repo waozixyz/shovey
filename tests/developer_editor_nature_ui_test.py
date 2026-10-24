@@ -38,7 +38,7 @@ level = {'number': 1, 'cells': rows(pieces), 'tiles': rows(tiles), 'decorations'
 (profile / 'levels/classic.json').write_text(json.dumps(
     {'edition': 'classic', 'width': 12, 'height': 20,
      'levels': [level, dict(level, number=2)]}, indent=1) + '\n')
-(profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
+(profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(3, 176)))
 environment = {k: v for k, v in os.environ.items()
                if k not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
 environment.update(SDL_VIDEODRIVER='x11', SDL_AUDIODRIVER='dummy', YUE_DESKTOP_RECOVERY='0')

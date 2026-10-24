@@ -26,7 +26,7 @@ def rows_of(values):
 (profile / 'levels/approved.json').write_text(json.dumps(dict(levels=[
     dict(number=n, cells=rows, tiles=rows_of(tiles), decorations=rows_of([0] * 240))
     for n in (21, 22, 23)])))
-(profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(2, 175)))
+(profile / 'backup/redesign/stuck.txt').write_text(''.join(f'classic {n}\n' for n in range(3, 176)))
 environment = {k: v for k, v in os.environ.items()
                if k not in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS')}
 generated = Path(os.environ.get('EDITOR_GENERATED', str(ROOT / 'build/private-editor/c')))

@@ -1124,7 +1124,7 @@ if __name__ == '__main__':
     parser.add_argument('action', choices=('approve', 'cancel', 'glm', 'glm-redesign', 'glm-prettify', 'fix', 'update', 'update-all'))
     parser.add_argument('level', type=int)
     args = parser.parse_args()
-    if not 1 <= args.level <= (175 if args.action in ('update', 'update-all') else 174):
+    if not 1 <= args.level <= 175:
         parser.error('level is outside the editor')
     try:
         if args.action == 'update':

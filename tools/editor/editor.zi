@@ -359,13 +359,11 @@ FindBoard :: (text: string, number: s32, into: []u8) -> bool {
     return false
 }
 
-// A place is in the game unless it waits for a winnable layout; the last
-// place is the finale picture.
-InGame :: (place: s32) -> bool { return place == PLACES || !stuck[place] }
+// A place is in the game unless it waits for a winnable layout.
+InGame :: (place: s32) -> bool { return !stuck[place] }
 
 // The game's level number of a place, or the number it gets once it is in.
 LevelNumber :: (place: s32) -> s32 {
-    if place == PLACES { return level_count }
     number: s32 = 1
     for other: cast(s32)1..place {
         number += unlinked_before[other]
@@ -374,8 +372,11 @@ LevelNumber :: (place: s32) -> s32 {
     return number
 }
 
-// The engine's level for a board: only the finale picture is special.
-LevelFor :: (place: s32) -> s32 { return ifx place == PLACES then level_count else 1 }
+// The engine's level for a board: no level number is special.
+LevelFor :: (place: s32) -> s32 {
+    unused place
+    return 1
+}
 
 // Hex digit `at` of a board with a wall around plain floor.
 EmptyDigit :: (at: s32) -> u8 {
@@ -396,21 +397,18 @@ LoadLevels :: () {
     live := found && ReadLevelFile(text)
     level_count = ifx live then file_count else ShoveyLevelCount()
     in_game: s32 = 0
-    for place: cast(s32)1..PLACES - 1 { if !stuck[place] { in_game += 1 } }
-    linked_count := level_count - unlinked_count - 1
+    for place: cast(s32)1..PLACES { if !stuck[place] { in_game += 1 } }
+    linked_count := level_count - unlinked_count
     // Without the list of waiting places, the game's levels fill the first places.
     mapping_ok = in_game == linked_count
     if in_game != linked_count {
-        for place: cast(s32)1..PLACES - 1 { stuck[place] = place >= linked_count }
+        for place: cast(s32)1..PLACES { stuck[place] = place > linked_count }
     }
     number: s32 = 0
     for place: cast(s32)1..PLACES {
         number += unlinked_before[place]
         data := ""
-        if place == PLACES {
-            data = ifx live then TextView(file_boards[(level_count - 1) * HEX:level_count * HEX]) else ShoveyLevelData(level_count)
-        }
-        else if !stuck[place] {
+        if !stuck[place] {
             number += 1
             data = ifx live then TextView(file_boards[(number - 1) * HEX:number * HEX]) else ShoveyLevelData(number)
         }
@@ -973,7 +971,7 @@ QueueApproval :: (board: []u8, letters: []u8) {
 }
 
 ModifyGLM :: (repair: bool = false, mode: s32 = 0) {
-    if playing || glm_busy || current >= PLACES { return }
+    if playing || glm_busy { return }
     if repair && !NeedsRepair() { return }
     glm_repair = repair
     glm_mode = mode
@@ -1548,7 +1546,7 @@ SolverFingerprint :: () -> string {
 }
 
 NeedsRepair :: () -> bool {
-    return !playing && current < PLACES && !Solved() && !Proven() &&
+    return !playing && !Solved() && !Proven() &&
         ((check_state == 3 && Checked()) || check_state == 4)
 }
 
@@ -1691,7 +1689,7 @@ RestoreSavedRoute :: (continuation: bool = false) -> bool {
 // ---------------------------------------------------------------- saving
 
 // levels/classic.json, read and written in its current portrait layout: every
-// level's board and winning route (the finale picture has none). Comparison
+// level's board and winning route. Comparison
 // mode turns that board for display, but never changes the stored orientation.
 LEVELS_FILE :: "levels/classic.json"
 ROUTES_SIZE :: 400000
@@ -1924,7 +1922,7 @@ StartSave :: () {
 // backup/redesign/stuck.txt: the places still waiting for a winnable layout.
 WriteWaiting :: () {
     length: s32 = 0
-    for place: cast(s32)1..PLACES - 1 {
+    for place: cast(s32)1..PLACES {
         if stuck[place] {
             AppendText(file_text[:], *length, "classic ")
             AppendNumber(file_text[:], *length, place)
@@ -2436,7 +2434,7 @@ GLMMenu :: () {
     options[2].label = "Prettify"
     choice := Dropdown(session, DropdownProps.{.key = 18, .id = 18,
         .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0}, .placeholder = "GLM", .selected_index = -1,
-        .disabled = playing || glm_busy || current >= PLACES}, options[:])
+        .disabled = playing || glm_busy}, options[:])
     glm_menu_open = choice.open
     if choice.changed { ModifyGLM(false, choice.selected_index) }
 }
@@ -2550,7 +2548,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
                 .disabled = playing || !server_verified || !published_places[current - 1]}) != 0 { diff_open = !diff_open }
         if NeedsRepair() && Button(session, ButtonProps.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
                 .label = ifx glm_busy && glm_repair then "Fixing…" else "Fix it",
-                .disabled = playing || glm_busy || current >= PLACES}) != 0 { ModifyGLM(true) }
+                .disabled = playing || glm_busy}) != 0 { ModifyGLM(true) }
     }
     if Button(session, ButtonProps.{.key = 22, .id = 22,
             .bounds = ifx selector_open then Rectangle.{350.0, 8.0, 120.0, 40.0} else Rectangle.{614.0, 51.0, 116.0, 30.0},

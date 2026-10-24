@@ -6,7 +6,7 @@
 // writes. tools/levels/import_edits.zi is the command around it.
 //
 // A level that names a story "number" replaces that level; any other is
-// added after the story, before Classic's finale. Every level must be proven
+// added after the story. Every level must be proven
 // by its route, or nothing is merged.
 #import "std/json_scan"
 #import "std/text_buffer"
@@ -344,13 +344,11 @@ ImportNames :: (file: *StoredFile, text: string) {
 // Merges the imported levels of one edition into its file. False, with
 // ImportError, when a number is not a story level or the places run out.
 ImportMerge :: (file: *StoredFile, text: string, append: bool) -> bool {
-    // Classic's last board is the finale picture, which has no solution.
-    finale := !file.island && file.count > 0 && !file.levels[file.count - 1].has_solution
     for index: cast(s32)0..import_count - 1 {
         incoming := *import_levels[index]
         if incoming.island != file.island { continue }
         if incoming.number > 0 && !append {
-            if incoming.number > file.count || (finale && incoming.number == file.count) {
+            if incoming.number > file.count {
                 return ImportFail("its number is not a story level", index)
             }
             if file.island { incoming.name_length = ImportStoredName(text, file, incoming.number - 1, incoming.name[:]) }
@@ -358,10 +356,7 @@ ImportMerge :: (file: *StoredFile, text: string, append: bool) -> bool {
             continue
         }
         if file.count >= IMPORT_PLACES { return ImportFail("the saves have no more places", index) }
-        at := ifx finale then file.count - 1 else file.count
-        moved := file.count
-        while moved > at { file.levels[moved] = file.levels[moved - 1]; moved -= 1 }
-        file.levels[at] = StoredLevel.{.fresh = index}
+        file.levels[file.count] = StoredLevel.{.fresh = index}
         file.count += 1
     }
     if file.island { ImportNames(file, text) }
