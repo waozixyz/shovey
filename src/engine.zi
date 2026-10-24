@@ -108,6 +108,27 @@ ShoveyColorRest :: (kind: s32) -> bool {
     return kind == 36 || kind == 53
 }
 
+// The block a colour goal takes: each colour has its own goal, and the red
+// goal (39) also keeps taking the cyan block. -1 for any other kind.
+ShoveyGoalBlock :: (kind: s32) -> s32 {
+    if kind == 39 { return 36 }
+    if kind == SHOVEY_BLUE_GOAL { return 37 }
+    if kind == SHOVEY_BLUE_GOAL + 1 { return 38 }
+    if kind == SHOVEY_BLUE_GOAL + 2 { return 53 }
+    if kind == SHOVEY_BLUE_GOAL + 3 { return 54 }
+    if kind == SHOVEY_GREEN_GOAL { return 55 }
+    return -1
+}
+ShoveyColorGoal :: (kind: s32) -> bool { return ShoveyGoalBlock(kind) >= 0 }
+ShoveyGoalDone :: (ground: s32, object: s32) -> bool {
+    return ifx ground == 39 then ShoveyColorRest(object) else object == ShoveyGoalBlock(ground)
+}
+
+// A kind a board cell may start with.
+ShoveyCellKind :: (kind: s32) -> bool {
+    return (kind >= 0 && kind <= SHOVEY_LAST_BUTTON) || ShoveyColorGoal(kind)
+}
+
 // Decorations that change nothing about play, and the solid ones that act as
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
 ShoveyMaterialFloor :: (kind: s32) -> bool { return kind >= 99 && kind <= 103 }
@@ -136,7 +157,12 @@ SHOVEY_BOULDER :: 122
 SHOVEY_OPEN_GATE :: 123
 SHOVEY_MOSS_WALL :: 127
 SHOVEY_MOSS_BUTTON :: 131
-SHOVEY_LAST_KIND :: 134
+SHOVEY_LAST_BUTTON :: 134
+// Colour block goals besides the red one (39): blue, yellow, cyan, purple
+// and green. A board cell holds a kind up to SHOVEY_LAST_BUTTON or one of these.
+SHOVEY_BLUE_GOAL :: 143
+SHOVEY_GREEN_GOAL :: 147
+SHOVEY_LAST_KIND :: 147
 // Decorations on top of tiles: mushrooms, fallen leaves, bluebells and lily
 // pads are walked over; a bush, flower pot, barrel and stump block.
 SHOVEY_MUSHROOMS :: 135
@@ -150,7 +176,7 @@ ShoveyMossColor :: (kind: s32) -> s32 {
 }
 ShoveyButtonColor :: (kind: s32) -> s32 {
     if kind == 13 { return 0 }
-    if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_KIND { return kind - SHOVEY_MOSS_BUTTON + 1 }
+    if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_BUTTON { return kind - SHOVEY_MOSS_BUTTON + 1 }
     return -1
 }
 ShoveyMossFloor :: (kind: s32) -> s32 { return ifx kind == 14 then 0 else 99 + kind - SHOVEY_MOSS_WALL }
@@ -240,7 +266,7 @@ ShoveyLoadData :: (game: *ShoveyGame, level: s32, data: string) -> bool {
     for position: cast(s32)0..SHOVEY_CELLS - 1 {
         kind := ShoveyByte(data, position * 2)
         tile := ifx data.count >= SHOVEY_CELLS * 4 then ShoveyByte(data, SHOVEY_CELLS * 2 + position * 2) else ShoveyDefaultTile(kind)
-        if kind < 0 || kind > SHOVEY_LAST_KIND || !ShoveyTile(tile) { return false }
+        if !ShoveyCellKind(kind) || !ShoveyTile(tile) { return false }
         if ShoveyFish(kind) && tile != 64 { return false }
         game.tiles[position] = ifx tile == 62 then 12 else ifx tile == 71 then 0 else tile
         if !ShoveyCosmeticTile(tile) { game.ground[position] = tile }
@@ -306,7 +332,7 @@ ShoveyRemaining :: (game: *ShoveyGame) -> s32 {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         object := game.objects[at]; ground := game.ground[at]
         if ShoveyBallColor(object) > 0 || object == 19 || object == 28 || object == 40 || ground == 21 || ground == 56 ||
-        (ground == 18 && object != 9) || (ground == 39 && !ShoveyColorRest(object)) || ground == 29 || ground == 30 {
+        (ground == 18 && object != 9) || (ShoveyColorGoal(ground) && !ShoveyGoalDone(ground, object)) || ground == 29 || ground == 30 {
             remaining += 1
         }
     }
@@ -332,7 +358,7 @@ ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     pit := ShoveyPitColor(kind)
     if pit > 0 { return player || ShoveyBallColor(object) == pit }
     if ShoveyPaintColor(kind) > 0 { return player || ShoveyBallColor(object) > 0 }
-    if kind == 39 { return player || ShoveyColorBlock(object) }
+    if ShoveyColorGoal(kind) { return player || ShoveyColorBlock(object) }
     if kind == 26 { return player && (game.powers & SHOVEY_AMMO) == 0 }
     if kind == 7 || kind == 8 || kind == 11 || kind == 21 || kind == 56 || kind == 25 ||
     kind == 27 || kind == 33 || kind == 35 { return player }
@@ -840,7 +866,7 @@ ShoveyRestore :: (game: *ShoveyGame, text: string) -> bool {
         ground := ShoveyByte(text, 32 + at * 6)
         object := ShoveyByte(text, 34 + at * 6)
         source := ShoveyByte(text, 36 + at * 6)
-        if ground < 0 || (ground > SHOVEY_LAST_KIND && !ShoveyBlockingDecoration(ground)) || object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
+        if ground < 0 || (!ShoveyCellKind(ground) && !ShoveyBlockingDecoration(ground)) || object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
         if ShoveyMovable(ground) || ground == 10 || ground == 22 || ground == 24 || ground == 32 { return false }
         restored.ground[at] = ground; restored.objects[at] = object; restored.light_from[at] = source
     }

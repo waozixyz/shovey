@@ -71,7 +71,7 @@ ClassicApiPermanentWall :: (ground: s32) -> bool {
 }
 
 ClassicApiCrateWall :: (ground: s32) -> bool {
-    return ClassicApiPermanentWall(ground) || (ground >= 4 && ground <= 8) || ground == 39
+    return ClassicApiPermanentWall(ground) || (ground >= 4 && ground <= 8) || ShoveyColorGoal(ground)
 }
 
 // A crate reaches a place by pushes exactly when pulling it back from that
@@ -800,7 +800,7 @@ ClassicApiFocus :: () {
         if ShoveyColorBlock(object) {
             rests: [SHOVEY_CELLS]s32; starts: [SHOVEY_CELLS]s32; rest_count: s32 = 0
             for to: cast(s32)0..SHOVEY_CELLS - 1 {
-                if game.ground[to] == 39 { rests[rest_count] = to; rest_count += 1 }
+                if ShoveyColorGoal(game.ground[to]) { rests[rest_count] = to; rest_count += 1 }
             }
             ClassicApiFocusPiece(game, object, at, rests[0:rest_count], starts[0:rest_count])
         }
@@ -873,8 +873,8 @@ ClassicApiEstimate :: () -> s32 {
         if ShoveyPaintColor(ground) > 0 { painters[painter_count] = at; painter_count += 1 }
         if object == 9 && ground != 18 { crates[crate_count] = at; crate_count += 1 }
         if ground == 18 && object != 9 { plates[plate_count] = at; plate_count += 1 }
-        if ShoveyColorBlock(object) && ground != 39 { rings[ring_count] = at; ring_count += 1 }
-        if ground == 39 && !ShoveyColorRest(object) { rests[rest_count] = at; rest_count += 1 }
+        if ShoveyColorBlock(object) && !ShoveyColorGoal(ground) { rings[ring_count] = at; ring_count += 1 }
+        if ShoveyColorGoal(ground) && !ShoveyGoalDone(ground, object) { rests[rest_count] = at; rest_count += 1 }
         if object == 19 { stars[star_count] = at; star_count += 1 }
         if ground == 7 { homes[home_count] = at; home_count += 1 }
         if object == 28 { targets[target_count] = at; target_count += 1 }

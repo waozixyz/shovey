@@ -223,9 +223,34 @@
       "sha256": "0a09c6d79961285f18e623273d9db7833e2418cb5a7d5aae595cb0eb275a2efa"
     },
     {
+      "path": "sprites/tile-143.png",
+      "depicts": "blue colour block goal: a blue hatched square",
+      "sha256": "d3dc9bc848b6dd691e033364035fd7238cfe78a5cbd47f2e4729c69bb8b489df"
+    },
+    {
+      "path": "sprites/tile-144.png",
+      "depicts": "yellow colour block goal: a yellow hatched square",
+      "sha256": "43b8a178df7180cd35536cd84ff924cb08fd8610bf9168d852af54ea0217e317"
+    },
+    {
+      "path": "sprites/tile-145.png",
+      "depicts": "cyan colour block goal: a cyan hatched square",
+      "sha256": "2b731a79c43213cced8bd2e06b1361e2595ccb31a71fd5cc98bcd4d73f9af65a"
+    },
+    {
+      "path": "sprites/tile-146.png",
+      "depicts": "purple colour block goal: a purple hatched square",
+      "sha256": "662f568b9d53bbe7a181b540cbb623925b8a396caa53f5034d8304313ee3f1c3"
+    },
+    {
+      "path": "sprites/tile-147.png",
+      "depicts": "green colour block goal: a green hatched square",
+      "sha256": "c8cde3d7e93b49826395fe40c5a7cd6e3e0045bcad402eca7d36f80532671cd9"
+    },
+    {
       "path": "sprites/tile-40.png",
       "depicts": "mirror Shovey (pink)",
-      "sha256": "695ae45c5a5b87f9056a7817d03d5a292883b77fb5999dc2cea307b6a4200445"
+      "sha256": "cbb03af227e8fd74a0c476763d5d836981cf5aa7197c54935eb4b109fc568944"
     },
     {
       "path": "sprites/tile-57.png",
@@ -505,7 +530,7 @@
     {
       "path": "sprites/shadow.png",
       "depicts": "mirror Shovey (pink)",
-      "sha256": "695ae45c5a5b87f9056a7817d03d5a292883b77fb5999dc2cea307b6a4200445"
+      "sha256": "cbb03af227e8fd74a0c476763d5d836981cf5aa7197c54935eb4b109fc568944"
     },
     {
       "path": "sprites/door-open.png",
@@ -1449,7 +1474,7 @@
     },
     {
       "path": "sprites/tile-55.png",
-      "depicts": "yellow colour block (pushable)",
+      "depicts": "green colour block (pushable)",
       "sha256": "df9eda100a30c4a61b6bc4f0481ba6c85b19c47d40fc42aa5bc700bbe43eccc1"
     },
     {

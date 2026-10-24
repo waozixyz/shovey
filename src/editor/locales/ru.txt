@@ -395,7 +395,31 @@ Island
 Жёлтый цветной блок
 ---
 [editor_block_goal]
-Место для цветного блока
+Место для красного блока
+---
+[editor_blue_block_goal]
+Место для синего блока
+---
+[editor_yellow_block_goal]
+Место для жёлтого блока
+---
+[editor_cyan_block_goal]
+Место для бирюзового блока
+---
+[editor_purple_block_goal]
+Место для фиолетового блока
+---
+[editor_green_block_goal]
+Место для зелёного блока
+---
+[editor_cyan_block]
+Бирюзовый блок
+---
+[editor_purple_block]
+Фиолетовый блок
+---
+[editor_green_block]
+Зелёный блок
 ---
 [editor_mirror_shovey]
 Зеркальный Пуши

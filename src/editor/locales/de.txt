@@ -395,7 +395,31 @@ Blauer Farbstein
 Gelber Farbstein
 ---
 [editor_block_goal]
-Farbstein-Ziel
+Ziel für roten Farbstein
+---
+[editor_blue_block_goal]
+Ziel für blauen Farbstein
+---
+[editor_yellow_block_goal]
+Ziel für gelben Farbstein
+---
+[editor_cyan_block_goal]
+Ziel für türkisen Farbstein
+---
+[editor_purple_block_goal]
+Ziel für violetten Farbstein
+---
+[editor_green_block_goal]
+Ziel für grünen Farbstein
+---
+[editor_cyan_block]
+Türkiser Block
+---
+[editor_purple_block]
+Violetter Block
+---
+[editor_green_block]
+Grüner Block
 ---
 [editor_mirror_shovey]
 Spiegel-Shovey

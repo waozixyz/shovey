@@ -257,7 +257,22 @@
 Ягодный куст
 ---
 [shovey_piece_block_goal]
-Место для цветного блока
+Место для красного блока
+---
+[shovey_piece_blue_block_goal]
+Место для синего блока
+---
+[shovey_piece_yellow_block_goal]
+Место для жёлтого блока
+---
+[shovey_piece_cyan_block_goal]
+Место для бирюзового блока
+---
+[shovey_piece_purple_block_goal]
+Место для фиолетового блока
+---
+[shovey_piece_green_block_goal]
+Место для зелёного блока
 ---
 [shovey_piece_blue_ball]
 Синий шар

@@ -395,7 +395,31 @@ Modrý barevný blok
 Žlutý barevný blok
 ---
 [editor_block_goal]
-Cíl pro barevný blok
+Cíl pro červený blok
+---
+[editor_blue_block_goal]
+Cíl pro modrý blok
+---
+[editor_yellow_block_goal]
+Cíl pro žlutý blok
+---
+[editor_cyan_block_goal]
+Cíl pro azurový blok
+---
+[editor_purple_block_goal]
+Cíl pro fialový blok
+---
+[editor_green_block_goal]
+Cíl pro zelený blok
+---
+[editor_cyan_block]
+Azurový blok
+---
+[editor_purple_block]
+Fialový blok
+---
+[editor_green_block]
+Zelený blok
 ---
 [editor_mirror_shovey]
 Zrcadlový Shovey

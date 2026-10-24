@@ -395,7 +395,31 @@ Blue colour block
 Yellow colour block
 ---
 [editor_block_goal]
-Colour block goal
+Red block goal
+---
+[editor_blue_block_goal]
+Blue block goal
+---
+[editor_yellow_block_goal]
+Yellow block goal
+---
+[editor_cyan_block_goal]
+Cyan block goal
+---
+[editor_purple_block_goal]
+Purple block goal
+---
+[editor_green_block_goal]
+Green block goal
+---
+[editor_cyan_block]
+Cyan block
+---
+[editor_purple_block]
+Purple block
+---
+[editor_green_block]
+Green block
 ---
 [editor_mirror_shovey]
 Mirror Shovey

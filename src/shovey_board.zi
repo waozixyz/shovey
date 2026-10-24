@@ -56,7 +56,9 @@ SPRITE_MOSS_FLOOR :: 245
 SPRITE_BURST :: 249
 SPRITE_EXPLOSION :: 255
 SPRITE_ABYSS_CORNER :: 263
-SPRITE_COUNT :: 279
+// Colour block goals 143 to 147, one picture each.
+SPRITE_BLOCK_GOAL :: 279
+SPRITE_COUNT :: 284
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -297,6 +299,12 @@ SpritesPrepare :: () {
         VecFree(bytes)
     }
     SpritePath(SPRITE_CHERRY, "tile-56")
+    for kind: cast(s32)SHOVEY_BLUE_GOAL..SHOVEY_GREEN_GOAL {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(SPRITE_BLOCK_GOAL + kind - SHOVEY_BLUE_GOAL, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
     for kind: cast(s32)57..78 {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
@@ -463,7 +471,8 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
         if position >= 0 && ShoveyDoorOpen(game, position) { return ifx moss == 0 then SPRITE_DOOR_OPEN else SPRITE_MOSS_FLOOR + moss - 1 }
         return ifx moss == 0 then 14 else SPRITE_MOSS_WALL + moss - 1
     }
-    if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_KIND { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
+    if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_BUTTON { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
+    if kind >= SHOVEY_BLUE_GOAL && kind <= SHOVEY_GREEN_GOAL { return SPRITE_BLOCK_GOAL + kind - SHOVEY_BLUE_GOAL }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
     color := ShoveyGateColor(kind)
@@ -627,7 +636,7 @@ BoardPieceToMove :: (game: *ShoveyGame, at: s32, open_marks: bool, open_goals: b
     object := game.objects[at]; ground := game.ground[at]
     if ShoveyBallColor(object) > 0 || object == 19 { return true }
     if object == 9 { return open_marks && ground != 18 }
-    if ShoveyColorBlock(object) { return open_goals && !(ground == 39 && ShoveyColorRest(object)) }
+    if ShoveyColorBlock(object) { return open_goals && !(ShoveyColorGoal(ground) && ShoveyGoalDone(ground, object)) }
     return false
 }
 
@@ -668,7 +677,7 @@ BoardGuides :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u
     open_marks := false; open_goals := false
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         if game.ground[at] == 18 && game.objects[at] != 9 { open_marks = true }
-        if game.ground[at] == 39 && !ShoveyColorRest(game.objects[at]) { open_goals = true }
+        if ShoveyColorGoal(game.ground[at]) && !ShoveyGoalDone(game.ground[at], game.objects[at]) { open_goals = true }
     }
     shown: s32 = 0
     for at: cast(s32)0..SHOVEY_CELLS - 1 {

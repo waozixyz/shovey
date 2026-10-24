@@ -209,7 +209,7 @@ SolveClassicLasting :: (ground: s32, piece: s32, shut: bool) -> bool {
     if ground == 7 || ground == 8 || ground == 11 || ground == 27 { return true }
     pit := ShoveyPitColor(ground)
     if pit > 0 { return ShoveyBallColor(piece) != pit }
-    if ground == 39 { return !ShoveyColorBlock(piece) }
+    if ShoveyColorGoal(ground) { return !ShoveyColorBlock(piece) }
     return false
 }
 
@@ -553,8 +553,8 @@ SolveClassicEstimate :: () -> s32 {
             }
             plate_seen += 1
         }
-        if ShoveyColorBlock(object) && ground != 39 { solve_classic_rings[ring_count] = at; ring_count += 1 }
-        if ground == 39 && !ShoveyColorRest(object) { solve_classic_rests[rest_count] = at; rest_count += 1 }
+        if ShoveyColorBlock(object) && !ShoveyColorGoal(ground) { solve_classic_rings[ring_count] = at; ring_count += 1 }
+        if ShoveyColorGoal(ground) && !ShoveyGoalDone(ground, object) { solve_classic_rests[rest_count] = at; rest_count += 1 }
         if object == 19 { solve_classic_stars[star_count] = at; star_count += 1 }
         if ground == 7 { solve_classic_homes[home_count] = at; home_count += 1 }
         if object == 28 { solve_classic_targets[target_count] = at; target_count += 1 }

@@ -257,7 +257,22 @@ Tonneau
 Buisson à baies
 ---
 [shovey_piece_block_goal]
-Cible pour bloc de couleur
+Cible pour bloc rouge
+---
+[shovey_piece_blue_block_goal]
+Cible pour bloc bleu
+---
+[shovey_piece_yellow_block_goal]
+Cible pour bloc jaune
+---
+[shovey_piece_cyan_block_goal]
+Cible pour bloc cyan
+---
+[shovey_piece_purple_block_goal]
+Cible pour bloc violet
+---
+[shovey_piece_green_block_goal]
+Cible pour bloc vert
 ---
 [shovey_piece_blue_ball]
 Boule bleue

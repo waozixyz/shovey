@@ -395,7 +395,31 @@ Blocco colorato blu
 Blocco colorato giallo
 ---
 [editor_block_goal]
-Bersaglio del blocco colorato
+Bersaglio del blocco rosso
+---
+[editor_blue_block_goal]
+Bersaglio del blocco blu
+---
+[editor_yellow_block_goal]
+Bersaglio del blocco giallo
+---
+[editor_cyan_block_goal]
+Bersaglio del blocco ciano
+---
+[editor_purple_block_goal]
+Bersaglio del blocco viola
+---
+[editor_green_block_goal]
+Bersaglio del blocco verde
+---
+[editor_cyan_block]
+Blocco ciano
+---
+[editor_purple_block]
+Blocco viola
+---
+[editor_green_block]
+Blocco verde
 ---
 [editor_mirror_shovey]
 Shovey specchio

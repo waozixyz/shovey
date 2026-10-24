@@ -257,7 +257,22 @@ Barrel
 Berry bush
 ---
 [shovey_piece_block_goal]
-Colour block goal
+Red block goal
+---
+[shovey_piece_blue_block_goal]
+Blue block goal
+---
+[shovey_piece_yellow_block_goal]
+Yellow block goal
+---
+[shovey_piece_cyan_block_goal]
+Cyan block goal
+---
+[shovey_piece_purple_block_goal]
+Purple block goal
+---
+[shovey_piece_green_block_goal]
+Green block goal
 ---
 [shovey_piece_blue_ball]
 Blue ball

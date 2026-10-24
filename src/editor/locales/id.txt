@@ -395,7 +395,31 @@ Balok warna biru
 Balok warna kuning
 ---
 [editor_block_goal]
-Tujuan balok warna
+Tujuan balok merah
+---
+[editor_blue_block_goal]
+Tujuan balok biru
+---
+[editor_yellow_block_goal]
+Tujuan balok kuning
+---
+[editor_cyan_block_goal]
+Tujuan balok sian
+---
+[editor_purple_block_goal]
+Tujuan balok ungu
+---
+[editor_green_block_goal]
+Tujuan balok hijau
+---
+[editor_cyan_block]
+Balok sian
+---
+[editor_purple_block]
+Balok ungu
+---
+[editor_green_block]
+Balok hijau
 ---
 [editor_mirror_shovey]
 Shovey cermin

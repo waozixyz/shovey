@@ -257,7 +257,22 @@ Sud
 Keř s bobulemi
 ---
 [shovey_piece_block_goal]
-Cíl pro barevný blok
+Cíl pro červený blok
+---
+[shovey_piece_blue_block_goal]
+Cíl pro modrý blok
+---
+[shovey_piece_yellow_block_goal]
+Cíl pro žlutý blok
+---
+[shovey_piece_cyan_block_goal]
+Cíl pro azurový blok
+---
+[shovey_piece_purple_block_goal]
+Cíl pro fialový blok
+---
+[shovey_piece_green_block_goal]
+Cíl pro zelený blok
 ---
 [shovey_piece_blue_ball]
 Modrá koule

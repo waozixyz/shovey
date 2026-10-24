@@ -257,7 +257,22 @@ Barile
 Cespuglio di bacche
 ---
 [shovey_piece_block_goal]
-Bersaglio del blocco colorato
+Bersaglio del blocco rosso
+---
+[shovey_piece_blue_block_goal]
+Bersaglio del blocco blu
+---
+[shovey_piece_yellow_block_goal]
+Bersaglio del blocco giallo
+---
+[shovey_piece_cyan_block_goal]
+Bersaglio del blocco ciano
+---
+[shovey_piece_purple_block_goal]
+Bersaglio del blocco viola
+---
+[shovey_piece_green_block_goal]
+Bersaglio del blocco verde
 ---
 [shovey_piece_blue_ball]
 Palla blu

@@ -257,7 +257,22 @@ Tong
 Semak beri
 ---
 [shovey_piece_block_goal]
-Tujuan balok warna
+Tujuan balok merah
+---
+[shovey_piece_blue_block_goal]
+Tujuan balok biru
+---
+[shovey_piece_yellow_block_goal]
+Tujuan balok kuning
+---
+[shovey_piece_cyan_block_goal]
+Tujuan balok sian
+---
+[shovey_piece_purple_block_goal]
+Tujuan balok ungu
+---
+[shovey_piece_green_block_goal]
+Tujuan balok hijau
 ---
 [shovey_piece_blue_ball]
 Bola biru

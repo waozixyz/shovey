@@ -395,7 +395,31 @@ Bloque de color azul
 Bloque de color amarillo
 ---
 [editor_block_goal]
-Destino del bloque de color
+Destino del bloque rojo
+---
+[editor_blue_block_goal]
+Destino del bloque azul
+---
+[editor_yellow_block_goal]
+Destino del bloque amarillo
+---
+[editor_cyan_block_goal]
+Destino del bloque cian
+---
+[editor_purple_block_goal]
+Destino del bloque morado
+---
+[editor_green_block_goal]
+Destino del bloque verde
+---
+[editor_cyan_block]
+Bloque cian
+---
+[editor_purple_block]
+Bloque morado
+---
+[editor_green_block]
+Bloque verde
 ---
 [editor_mirror_shovey]
 Shovey espejo

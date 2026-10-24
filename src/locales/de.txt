@@ -257,7 +257,22 @@ Fass
 Beerenstrauch
 ---
 [shovey_piece_block_goal]
-Farbstein-Ziel
+Ziel für roten Farbstein
+---
+[shovey_piece_blue_block_goal]
+Ziel für blauen Farbstein
+---
+[shovey_piece_yellow_block_goal]
+Ziel für gelben Farbstein
+---
+[shovey_piece_cyan_block_goal]
+Ziel für türkisen Farbstein
+---
+[shovey_piece_purple_block_goal]
+Ziel für violetten Farbstein
+---
+[shovey_piece_green_block_goal]
+Ziel für grünen Farbstein
 ---
 [shovey_piece_blue_ball]
 Blaue Kugel

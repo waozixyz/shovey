@@ -590,13 +590,29 @@ def crate_goal():
     return image
 
 
-def colour_goal():
+def colour_goal(stripe=(204, 82, 66, 255), pale=(238, 200, 190, 255)):
+    """A colour block goal: a square hatched in the colour of the block it takes."""
     image = Image.new('RGBA', (SIZE, SIZE))
     px = image.load()
-    red, pale = (204, 82, 66, 255), (238, 200, 190, 255)
     for y in range(6, 26):
         for x in range(6, 26):
-            px[x, y] = red if (x + y) % 6 < 2 else pale
+            px[x, y] = stripe if (x + y) % 6 < 2 else pale
+    return image
+
+
+def shadow_shovey():
+    """The mirror shadow: a pink Shovey filling the whole tile, with bigger
+    eyes than the original's, looking up."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((0, 0, 31, 31), fill=(128, 22, 92, 255))
+    draw.ellipse((1, 1, 30, 30), fill=(226, 66, 158, 255))
+    draw.ellipse((5, 17, 11, 23), fill=(255, 150, 212, 255))
+    for cx in (10, 21):
+        draw.ellipse((cx - 6, 4, cx + 6, 17), fill=(24, 12, 30, 255))
+        draw.ellipse((cx - 5, 5, cx + 5, 16), fill=(255, 255, 255, 255))
+        draw.ellipse((cx - 2, 6, cx + 2, 11), fill=(24, 12, 30, 255))
+        draw.point((cx - 1, 7), fill=(255, 255, 255, 255))
     return image
 
 
@@ -1121,7 +1137,7 @@ def sprites():
     # The comb and beak in the kept source point up already.
     duck = native('duck-up')
     players = {'up': up, 'right': up.rotate(-90), 'down': up.rotate(180), 'left': up.rotate(90)}
-    mirror = recolour(players['up'], green, 330)
+    mirror = shadow_shovey()
     # A small shot lying on the floor, about the size of the original's,
     # with its shadow to the lower right.
     shot = Image.new('RGBA', (SIZE, SIZE))
@@ -1174,6 +1190,11 @@ def sprites():
         'tile-37': ('blue colour block (pushable)', block((30, 84, 228, 255))),
         'tile-38': ('yellow colour block (pushable)', block((242, 206, 36, 255))),
         'tile-39': ('colour block goal: a red hatched square', colour_goal()),
+        'tile-143': ('blue colour block goal: a blue hatched square', colour_goal((40, 80, 200, 255), (196, 210, 245, 255))),
+        'tile-144': ('yellow colour block goal: a yellow hatched square', colour_goal((214, 172, 20, 255), (248, 236, 180, 255))),
+        'tile-145': ('cyan colour block goal: a cyan hatched square', colour_goal((20, 170, 180, 255), (190, 240, 242, 255))),
+        'tile-146': ('purple colour block goal: a purple hatched square', colour_goal((150, 40, 200, 255), (228, 196, 245, 255))),
+        'tile-147': ('green colour block goal: a green hatched square', colour_goal((40, 160, 60, 255), (196, 236, 200, 255))),
         'tile-40': ('mirror Shovey (pink)', mirror),
         'tile-57': ('flowers scattered on the floor (decoration)', flowers()),
         'tile-58': ('grass tufts on the floor (decoration)', grass_tufts()),
@@ -1347,7 +1368,7 @@ def build():
     extra = {44: 'cyan ball (pushable)', 45: 'purple ball (pushable)', 46: 'yellow ball (pushable)',
              50: 'cyan paint puddle', 51: 'purple paint puddle',
              52: 'yellow paint puddle', 53: 'cyan colour block (pushable)', 54: 'purple colour block (pushable)',
-             55: 'yellow colour block (pushable)', 56: 'cherry'}
+             55: 'green colour block (pushable)', 56: 'cherry'}
     for kind, depicts in extra.items():
         data = (SPRITES / f'tile-{kind}.png').read_bytes()
         manifest.append({'path': f'sprites/tile-{kind}.png', 'depicts': depicts,

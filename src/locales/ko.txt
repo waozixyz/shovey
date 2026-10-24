@@ -257,7 +257,22 @@
 베리 덤불
 ---
 [shovey_piece_block_goal]
-색 블록 목표 지점
+빨간 블록 목표 지점
+---
+[shovey_piece_blue_block_goal]
+파란 블록 목표 지점
+---
+[shovey_piece_yellow_block_goal]
+노란 블록 목표 지점
+---
+[shovey_piece_cyan_block_goal]
+청록색 블록 목표 지점
+---
+[shovey_piece_purple_block_goal]
+보라색 블록 목표 지점
+---
+[shovey_piece_green_block_goal]
+초록 블록 목표 지점
 ---
 [shovey_piece_blue_ball]
 파란 공

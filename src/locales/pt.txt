@@ -257,7 +257,22 @@ Barril
 Arbusto de bagas
 ---
 [shovey_piece_block_goal]
-Destino do bloco de cor
+Destino do bloco vermelho
+---
+[shovey_piece_blue_block_goal]
+Destino do bloco azul
+---
+[shovey_piece_yellow_block_goal]
+Destino do bloco amarelo
+---
+[shovey_piece_cyan_block_goal]
+Destino do bloco ciano
+---
+[shovey_piece_purple_block_goal]
+Destino do bloco roxo
+---
+[shovey_piece_green_block_goal]
+Destino do bloco verde
 ---
 [shovey_piece_blue_ball]
 Bola azul

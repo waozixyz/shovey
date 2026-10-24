@@ -147,7 +147,7 @@ ImportCheck :: () -> bool {
             if kind == (ifx board.island then ISLAND_SHOVEY else CLASSIC_SHOVEY) { pushies += 1 }
             if kind == (ifx board.island then ISLAND_HOME else 7) { homes += 1 }
             if !board.island && EditBorder(at) && kind != CLASSIC_WALL && !(kind == 0 && board.tiles[at] == cast(u8)CLASSIC_WALL) { return ImportFail("Classic boards keep their wall ring", index) }
-            if !board.island && (kind > SHOVEY_LAST_KIND || kind == 22 || kind == 24 || kind == 32) { return ImportFail("it holds a piece no board starts with", index) }
+            if !board.island && (!ShoveyCellKind(kind) || kind == 22 || kind == 24 || kind == 32) { return ImportFail("it holds a piece no board starts with", index) }
             if board.island && (board.ground[at] > cast(u8)48 || board.objects[at] > cast(u8)124 ||
                 board.objects[at] == cast(u8)50 || board.objects[at] == cast(u8)79) { return ImportFail("it holds a piece no island starts with", index) }
         }

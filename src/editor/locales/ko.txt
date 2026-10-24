@@ -395,7 +395,31 @@ Shovey
 노란 색 블록
 ---
 [editor_block_goal]
-색 블록 목표 지점
+빨간 블록 목표 지점
+---
+[editor_blue_block_goal]
+파란 블록 목표 지점
+---
+[editor_yellow_block_goal]
+노란 블록 목표 지점
+---
+[editor_cyan_block_goal]
+청록색 블록 목표 지점
+---
+[editor_purple_block_goal]
+보라색 블록 목표 지점
+---
+[editor_green_block_goal]
+초록 블록 목표 지점
+---
+[editor_cyan_block]
+청록색 블록
+---
+[editor_purple_block]
+보라색 블록
+---
+[editor_green_block]
+초록색 블록
 ---
 [editor_mirror_shovey]
 거울 Shovey

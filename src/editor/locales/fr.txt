@@ -395,7 +395,31 @@ Bloc de couleur bleu
 Bloc de couleur jaune
 ---
 [editor_block_goal]
-Cible pour bloc de couleur
+Cible pour bloc rouge
+---
+[editor_blue_block_goal]
+Cible pour bloc bleu
+---
+[editor_yellow_block_goal]
+Cible pour bloc jaune
+---
+[editor_cyan_block_goal]
+Cible pour bloc cyan
+---
+[editor_purple_block_goal]
+Cible pour bloc violet
+---
+[editor_green_block_goal]
+Cible pour bloc vert
+---
+[editor_cyan_block]
+Bloc cyan
+---
+[editor_purple_block]
+Bloc violet
+---
+[editor_green_block]
+Bloc vert
 ---
 [editor_mirror_shovey]
 Shovey miroir
