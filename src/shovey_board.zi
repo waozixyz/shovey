@@ -857,7 +857,8 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     // those edges cannot reveal a pale grid through a joined opening.
     grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
             .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
-            .fill = Color.{2, 4, 5, 255}, .label = "Shovey", .pixel_snap = board_pixel_snap, .nearest_tiles = abyss_sprite_indices[:]})
+            .fill = ifx board_pixel_snap then Color.{2, 4, 5, 255} else Color.{}, .label = "Shovey", .pixel_snap = board_pixel_snap,
+            .nearest_tiles = abyss_sprite_indices[:]})
     return ShoveyBoardPieces(session, game, grid, key, now, names, landscape)
 }
 
@@ -937,7 +938,8 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
             .columns = cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH),
             .rows = cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT),
             .tiles = files, .names = names, .layers = board_preview_layers[:], .layer_count = 4,
-            .fill = Color.{2, 4, 5, 255}, .label = "", .pixel_snap = scenery && board_pixel_snap, .nearest_tiles = abyss_sprite_indices[:]})
+            .fill = ifx scenery && !board_pixel_snap then Color.{} else Color.{2, 4, 5, 255}, .label = "",
+            .pixel_snap = scenery && board_pixel_snap, .nearest_tiles = abyss_sprite_indices[:]})
     BoardBoats(session, *board_preview_game, grid, WidgetPartKey(key, SHOVEY_CELLS * 4 + 1), 0.0, landscape)
     player := board_preview_game.player
     if !scenery && player >= 0 && player < SHOVEY_CELLS {

@@ -81,6 +81,24 @@ def editor_starter_levels():
     return [level, dict(level, number=2, solution='')]
 
 
+def secret_functions():
+    """The secret levels beside the last one, from the private levels/secret.json:
+    side 1 is 175a, up the beach from it, side 2 is 175b, down the beach.
+    Builds without the file have none."""
+    path = ROOT / 'levels/secret.json'
+    secrets = json.loads(path.read_text())['levels'] if path.exists() else []
+    lines = ['ShoveySecretData :: (side: s32) -> string {']
+    for side, level in enumerate(secrets, 1):
+        cells(level['cells'])
+        data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))
+        lines.append(f'    if side == {side} {{ return "{data}" }}')
+    lines += ['    return ""', '}', '', 'ShoveySecretSolution :: (side: s32) -> string {']
+    for side, level in enumerate(secrets, 1):
+        lines.append(f'    if side == {side} {{ return "{level.get("solution", "")}" }}')
+    lines += ['    return ""', '}', '']
+    return '\n'.join(lines)
+
+
 def classic_code(levels, approved_levels=None):
     if approved_levels is None:
         approved_levels = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
@@ -93,7 +111,7 @@ def classic_code(levels, approved_levels=None):
             '} else {\n' +
             f'SHOVEY_LEVEL_COUNT :: {len(levels)}\nSHOVEY_APPROVED_LEVEL_COUNT :: {approved}\n\n'
             '#if #defined(SHOVEY_RELEASE) {\n' + classic_functions(approved_levels) +
-            '} else {\n' + classic_functions(levels) + '}\n}\n')
+            '} else {\n' + classic_functions(levels) + '}\n}\n' + secret_functions())
 
 
 def island_code(levels):

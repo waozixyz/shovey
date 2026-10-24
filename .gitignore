@@ -8,6 +8,7 @@ __pycache__/
 # public. Level code and pictures are generated from the level files.
 /levels/classic.json
 /levels/island.json
+/levels/secret.json
 /src/levels.zi
 /src/island_levels.zi
 /assets/shovey/levels/

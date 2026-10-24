@@ -78,7 +78,7 @@ levels: src/levels.zi src/island_levels.zi
 
 # levels/classic.json and levels/island.json are private; without them the
 # published campaign in levels/approved.json is built.
-src/levels.zi src/island_levels.zi: $(wildcard levels/classic.json levels/island.json) levels/approved.json tools/levels/levels.py
+src/levels.zi src/island_levels.zi: $(wildcard levels/classic.json levels/island.json levels/secret.json) levels/approved.json tools/levels/levels.py
 	python3 tools/levels/levels.py generate
 	python3 tools/levels/levels.py previews
 

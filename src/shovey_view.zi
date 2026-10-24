@@ -132,6 +132,12 @@ HeaderText :: () -> string {
     digits: [24]u8
     AppendText(header_bytes[:], *length, AppLocaleHost("shovey_level"))
     AppendText(header_bytes[:], *length, " ")
+    if ShoveySecret(game.level) {
+        // The secret levels beside the last one are named after it.
+        AppendText(header_bytes[:], *length, FormatInteger(cast(s64)ShoveyLevelCount(), digits[:]))
+        AppendText(header_bytes[:], *length, ifx game.level == SHOVEY_SECRET_UP then "a" else "b")
+        return TextView(header_bytes[:length])
+    }
     AppendText(header_bytes[:], *length, FormatInteger(cast(s64)game.level, digits[:]))
     AppendText(header_bytes[:], *length, " / ")
     AppendText(header_bytes[:], *length, FormatInteger(cast(s64)ShoveyLevelCount(), digits[:]))
@@ -327,6 +333,8 @@ Sprite :: (key: u64, index: s32, bounds: Rectangle, label: string) {
 reported_levels: s32 = -1;
 
 Remember :: () {
+    // A secret level is never saved: the game reopens on the last level.
+    if ShoveySecret(game.level) { return }
     ShoveyRecordWin(*progress, *game)
     record := ShoveySharedRecord(*progress, *game)
     if SharedProgressSave(*shared_progress, *record) { save_failed = false }
@@ -709,9 +717,80 @@ sail_start_y: float32;
 BOAT_ZOOM :: 0.55
 ocean_layers: [4096]s32;
 
-// Open water: no floor and nothing in it.
+// The secret levels: off the top edge of the last level's beach lies 175a,
+// off its bottom edge 175b, and back again (engine directions: up the beach
+// is 2, down is 0). The boards slide past each other for EDGE_SECONDS;
+// edge_from is the level slid away from, edge_visible the screen direction
+// of the travel, secret_return the last level's cell Shovey left it from.
+EDGE_SECONDS :: 0.55
+edge_from: s32;
+edge_at: float64;
+edge_visible: s32;
+secret_return: s32 = -1;
+
+// Steps Shovey across an open edge into the board beyond; false when the
+// step stays on this board.
+EdgeTravel :: (direction: s32, landscape: bool) -> bool {
+    if game.won || game.lost || game.player < 0 || direction < 0 || ShoveyNeighbor(game.player, direction) >= 0 { return false }
+    last := ShoveyLevelCount()
+    target: s32 = -1
+    if game.level == last && direction == 2 { target = SHOVEY_SECRET_UP }
+    if game.level == last && direction == 0 { target = SHOVEY_SECRET_DOWN }
+    if game.level == SHOVEY_SECRET_UP && direction == 0 { target = last }
+    if game.level == SHOVEY_SECRET_DOWN && direction == 2 { target = last }
+    if target < 0 { return false }
+    // Across the edge: the same row of the portrait board, the far column.
+    entry := ifx direction == 2 then game.player - (SHOVEY_WIDTH - 1) else game.player + (SHOVEY_WIDTH - 1)
+    next: ShoveyGame
+    if !ShoveyLoad(*next, target) || entry < 0 || entry >= SHOVEY_CELLS { return false }
+    if next.tiles[entry] == 64 || next.ground[entry] != 0 || next.objects[entry] != 0 { return false }
+    if target != last { secret_return = game.player }
+    next.player = entry
+    next.direction = direction
+    edge_from = game.level
+    edge_at = frame.now
+    edge_visible = ifx landscape then (direction + 3) % 4 else direction
+    game = next
+    slide_count = 0
+    slide_next = 0
+    walk_count = 0
+    won_at = 0.0
+    return true
+}
+
+// A step, or a crossing into the board beyond an open edge.
+ShoveyStepOrCross :: (direction: s32, landscape: bool) -> bool {
+    if EdgeTravel(direction, landscape) { return true }
+    return ShoveyAct(direction)
+}
+
+// 0 to 1 while the boards slide after a crossing, or -1.
+EdgeSlide :: () -> float32 {
+    if edge_at <= 0.0 { return -1.0 }
+    share := cast(float32)((frame.now - edge_at) / EDGE_SECONDS)
+    if share >= 1.0 { edge_at = 0.0; return -1.0 }
+    return share
+}
+
+// A secret level won rests a moment, then Shovey is back on the last level
+// where he left it.
+SecretWinPause :: () {
+    if won_at == 0.0 { won_at = frame.now }
+    if !LevelWinContinues(LevelChangeMs(won_at)) { return }
+    back := game.level
+    next: ShoveyGame
+    if !ShoveyLoad(*next, ShoveyLevelCount()) { return }
+    if secret_return >= 0 && secret_return < SHOVEY_CELLS { next.player = secret_return }
+    next.direction = ifx back == SHOVEY_SECRET_UP then 0 else 2
+    game = next
+    won_at = 0.0
+    entered_at = frame.now
+}
+
+// Open water: the engine keeps water as ground 64; nothing floats or stands
+// in it.
 OpenWater :: (at: s32) -> bool {
-    return at >= 0 && game.tiles[at] == 64 && game.ground[at] == 0 && game.objects[at] == 0
+    return at >= 0 && game.tiles[at] == 64 && game.ground[at] == 64 && game.objects[at] == 0
 }
 
 // Whether Shovey stands on a bridge: floor with open water at both sides.
@@ -776,17 +855,27 @@ OceanBackdrop :: (area: Rectangle, origin: Vector2, cell: float32, landscape: bo
             .names = sprite_names[:], .layers = ocean_layers[:columns * rows], .layer_count = 1, .label = "", .pixel_snap = board_pixel_snap})
 }
 
-// The levels before the last joined round its board while the ending
-// plays, so the camera shows one island: the level Shovey came from to the
-// left, earlier ones above, below and at the corners. Open water lies past
-// them.
+// The screen direction of an engine direction: in landscape the board is
+// turned a quarter, so its directions are one quarter behind the screen's.
+EngineVector :: (engine: s32, landscape: bool) -> Vector2 {
+    visible := ifx landscape then (engine + 3) % 4 else engine
+    vectors: [4]Vector2 = .[Vector2.{-1.0, 0.0}, Vector2.{0.0, -1.0}, Vector2.{1.0, 0.0}, Vector2.{0.0, 1.0}]
+    return vectors[visible]
+}
+
+// The boards round the last level while the ending plays, so the camera
+// shows one island: the secret beaches 175a and 175b continue its shore up
+// and down the coast, and the levels Shovey came through lie inland.
 NeighbourBoards :: (origin: Vector2, size: Vector2, landscape: bool) {
-    offsets: [8]Vector2 = .[Vector2.{-1.0, 0.0}, Vector2.{0.0, -1.0}, Vector2.{0.0, 1.0}, Vector2.{-1.0, -1.0}, Vector2.{-1.0, 1.0},
-        Vector2.{-2.0, 0.0}, Vector2.{-2.0, -1.0}, Vector2.{-2.0, 1.0}]
+    up := EngineVector(2, landscape)
+    inland := EngineVector(1, landscape)
+    steps: [8]Vector2 = .[Vector2.{0.0, 1.0}, Vector2.{0.0, -1.0}, Vector2.{1.0, 0.0}, Vector2.{1.0, 1.0},
+        Vector2.{1.0, -1.0}, Vector2.{2.0, 0.0}, Vector2.{2.0, 1.0}, Vector2.{2.0, -1.0}]
     for index: cast(s32)0..7 {
-        level := game.level - 1 - index
-        if level < 1 { break }
-        ShoveyBoardPreview(frame.session, level, Rectangle.{origin.x + offsets[index].x * size.x, origin.y + offsets[index].y * size.y,
+        level := ifx index == 0 then SHOVEY_SECRET_UP else ifx index == 1 then SHOVEY_SECRET_DOWN else game.level - index + 1
+        if level < 1 { continue }
+        away := Vector2.{inland.x * steps[index].x + up.x * steps[index].y, inland.y * steps[index].x + up.y * steps[index].y}
+        ShoveyBoardPreview(frame.session, level, Rectangle.{origin.x + away.x * size.x, origin.y + away.y * size.y,
                 size.x, size.y}, cast(u64)(62000 + index * 16), sprite_names[:], landscape, true)
     }
 }
@@ -1040,6 +1129,7 @@ ShoveyFrame :: () {
         return
     }
     if game.won && game.level < ShoveyLevelCount() { WinPause() }
+    if game.won && ShoveySecret(game.level) { SecretWinPause() }
     EndingPump()
     key := AppKeyHost()
     if key == 72 { help_open = !help_open }
@@ -1151,8 +1241,8 @@ ShoveyFrame :: () {
     // Until the questions are answered they take every key.
     asking_updates := !mini && LevelUpdates() == 2
     choosing := !mini && (!ControlsChosen() || asking_updates)
-    if choosing || walking { keyed = -1; key = 0 }
-    if keyed >= 0 { changed = ShoveyAct(BoardEngineDirection(keyed, landscape)) }
+    if choosing || walking || edge_at > 0.0 { keyed = -1; key = 0 }
+    if keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
     if key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
     if slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
@@ -1189,6 +1279,19 @@ ShoveyFrame :: () {
         zoom = 1.0 - (1.0 - BOAT_ZOOM) * EaseInOut((board_sail - BOAT_HOP) / 0.45)
     }
     board_pixel_snap = board_sail < 0.0
+    // After a crossing the boards slide past each other: the new one in
+    // from the side Shovey went to, the old one out the other way.
+    crossing := EdgeSlide()
+    if crossing >= 0.0 && scene_cell > 0.0 {
+        board_pixel_snap = false
+        eased := EaseInOut(crossing)
+        travel := EngineVector(ifx landscape then (edge_visible + 1) % 4 else edge_visible, landscape)
+        arrive := Vector2.{scene_origin.x + travel.x * scene_size.x * (1.0 - eased), scene_origin.y + travel.y * scene_size.y * (1.0 - eased)}
+        OceanBackdrop(screen, arrive, scene_cell, landscape)
+        ShoveyBoardPreview(frame.session, edge_from, Rectangle.{arrive.x - travel.x * scene_size.x, arrive.y - travel.y * scene_size.y,
+                scene_size.x, scene_size.y}, cast(u64)63000, sprite_names[:], landscape, true)
+        board_bounds = Rectangle.{arrive.x, arrive.y, scene_size.x, scene_size.y}
+    }
     if cinematic && scene_cell > 0.0 {
         origin := Vector2.{centre.x + (scene_origin.x - focus.x) * zoom, centre.y + (scene_origin.y - focus.y) * zoom}
         size := Vector2.{scene_size.x * zoom, scene_size.y * zoom}
@@ -1197,7 +1300,7 @@ ShoveyFrame :: () {
         board_bounds = Rectangle.{origin.x, origin.y, size.x, size.y}
     }
     grid := ShoveyBoard(frame.session, *game, board_bounds, cast(u64)22000, frame.now, sprite_names[:], landscape)
-    if board_sail < 0.0 {
+    if board_sail < 0.0 && crossing < 0.0 {
         scene_cell = grid.cell
         scene_origin = Vector2.{grid.board.x, grid.board.y}
         scene_size = Vector2.{grid.board.width, grid.board.height}
@@ -1259,7 +1362,7 @@ ShoveyFrame :: () {
         ControlsChoice(width, top, bottom)
         return
     }
-    disabled := game.won || game.lost || walking || game.level == ShoveyFinaleLevel()
+    disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel()
     // Touch: swipe anywhere under the bar to step, or tap a cell or the space
     // beside the board to step towards it; hold either to keep walking. With
     // the movement pad chosen, only the pad steps. The pad and Fire come
@@ -1302,7 +1405,7 @@ ShoveyFrame :: () {
     if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
         if ThrowButton(width, top, bottom) { changed = ShoveyAct(-1) || changed }
     }
-    if step >= 0 { changed = ShoveyAct(step) || changed }
+    if step >= 0 { changed = ShoveyStepOrCross(step, landscape) || changed }
     if walking && slide_next >= slide_count && frame.now - walk_at >= WALK_SECONDS {
         walk_at = frame.now
         changed = ShoveyAct(walk_steps[walk_next]) || changed

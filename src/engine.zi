@@ -54,8 +54,15 @@ ShoveyLevelLimit :: () -> s32 {
     return ifx SHOVEY_LIVE_MAX > SHOVEY_LEVEL_COUNT then SHOVEY_LIVE_MAX else SHOVEY_LEVEL_COUNT
 }
 
+// The secret levels beside the last level, up the beach from it (175a) and
+// down (175b): numbered past any campaign, never listed, saved or counted.
+SHOVEY_SECRET_UP :: 1001
+SHOVEY_SECRET_DOWN :: 1002
+ShoveySecret :: (level: s32) -> bool { return level == SHOVEY_SECRET_UP || level == SHOVEY_SECRET_DOWN }
+
 // A level's starting board, from the loaded live campaign when there is one.
 ShoveyLevelBoard :: (level: s32) -> string {
+    if ShoveySecret(level) { return ShoveySecretData(level - 1000) }
     if shovey_live_count > 0 {
         if level >= 1 && level <= shovey_live_count {
             at := (level - 1) * SHOVEY_LIVE_BOARD

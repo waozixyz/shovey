@@ -55,6 +55,13 @@ for level in classic:
         assert set(level.get('solution', '')) <= set('0123ft') and level.get('solution'), f'Classic {level["number"]}: solution'
         checks.append(('classic', level['number'], ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', [])), level['solution']))
 
+# The secret beaches beside the last level, private like the level files,
+# are won by their routes too. They play as an ordinary level number.
+secret = ROOT / 'levels/secret.json'
+for level in json.loads(secret.read_text())['levels'] if secret.exists() else []:
+    assert level['solution'], f'Secret {level["name"]}: solution'
+    checks.append(('classic', 1, ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', [])), level['solution']))
+
 names = [level['name'] for level in island]
 assert all(names) and len(set(names)) == len(island), 'Every island has its own name'
 for level in island:
