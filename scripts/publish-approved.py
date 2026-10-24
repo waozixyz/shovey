@@ -285,6 +285,8 @@ def publish_campaign():
                 ([*private, 'python3', arcade / 'tests/collection_ui_test.py', '--binary', arcade / 'build/arcade', '--inbe-source', inbe], arcade),
                 ([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade),
                 ([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
+                  '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'], ROOT),
+                ([*private, 'python3', ROOT / 'tests/level_change_ui_test.py', '--binary', inbe_binary,
                   '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'], ROOT)]
             if len(approved) >= 28:
                 screens.append(([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
