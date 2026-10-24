@@ -826,6 +826,17 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
 
 // The board's four picture layers: floor, ground, decorations and pieces.
 // Animals gliding to a cell are drawn by the board itself while `glides`.
+// The floor a neighbouring cell shows, for drawing under an arrow.
+BoardArrowFloor :: (game: *ShoveyGame, at: s32) -> s32 {
+    for side: cast(s32)0..3 {
+        neighbor := ShoveyNeighbor(at, side)
+        if neighbor < 0 { continue }
+        tile := game.tiles[neighbor]
+        if tile == 77 || ShoveyMaterialFloor(tile) { return tile }
+    }
+    return 0
+}
+
 BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: bool, glides: bool) {
     for at: cast(s32)0..SHOVEY_CELLS - 1 { board_abyss_open[at] = BoardAbyss(game, at) }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
@@ -857,6 +868,12 @@ BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: b
         }
         if !BoardAbyss(game, at) {
             layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+        }
+        // An arrow is painted on the floor around it, not on the black
+        // behind the board.
+        if ShoveyArrow(base) >= 0 {
+            layers[display] = KindSprite(game, BoardArrowFloor(game, at), at, now, landscape)
+            layers[SHOVEY_CELLS + display] = KindSprite(game, base, at, now, landscape)
         }
         decoration := game.decorations[at]
         layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
