@@ -73,6 +73,8 @@ def translations(descriptor):
 
 
 def build(toolchain, kryon, apps, mingcute):
+    lock_flags = [] if (ROOT / 'ziran.local.toml').exists() else ['--locked']
+    entity = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'entity', *lock_flags], cwd=ROOT, text=True).strip())
     for manifest in EDITIONS:
         descriptor = json.loads((ROOT / manifest).read_text())
         name = descriptor['name']
@@ -112,6 +114,7 @@ def build(toolchain, kryon, apps, mingcute):
             '--module-path', str(toolchain / 'std'),
             '--module-path', 'apps=' + str(apps / 'src'),
             '--module-path', 'mingcute=' + str(mingcute / 'src'),
+            '--module-path', 'entity=' + str(entity / 'src'),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir', 'assets=' + str(staged / 'assets'),
             '--entry', descriptor['entry'], '-o', str(bundle), str(ROOT / descriptor['source'])],

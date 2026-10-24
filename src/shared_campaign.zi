@@ -1,0 +1,33 @@
+#import "std/text_buffer"
+#import "std/c_string"
+Progress :: #import "entity/game_progress";
+#import, file "progress.zi";
+#import, file "engine.zi";
+#import, file "levels.zi";
+#import, file "shared_progress.zi";
+
+ShoveySharedRecord :: (progress: *ShoveyProgress, game: *ShoveyGame) -> Progress.GameProgressRecord {
+    value: Progress.GameProgressRecord
+    unused CopyCString("shovey.classic", value.game[:])
+    value.unlocked = progress.unlocked
+    count: s32 = 0
+    for index: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 {
+        value.completed[index] = ifx progress.completed[index] then #char "1" else #char "0"
+        if progress.completed[index] { count = index + 1 }
+    }
+    value.completed[count] = 0
+    position := ShoveySave(game)
+    unused SharedPositionWrite(ShoveyBoardMark(game.level), position, value.state[:])
+    return value
+}
+
+ShoveySharedRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, value: *Progress.GameProgressRecord) {
+    progress.unlocked = value.unlocked
+    marks := TextUntilNul(value.completed[:])
+    for index: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 { progress.completed[index] = index < marks.count && marks[index] == #char "1" }
+    text := TextUntilNul(value.state[:])
+    position: ShoveyGame
+    if text.count >= 10 && ShoveyRestore(*position, text[10:]) && position.level <= progress.unlocked &&
+    position.level <= ShoveyLevelCount() && SharedPositionMatches(text, ShoveyBoardMark(position.level)) { game.* = position }
+    else { unused ShoveyLoad(game, ifx progress.unlocked < ShoveyLevelCount() then progress.unlocked else ShoveyLevelCount()) }
+}

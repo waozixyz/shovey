@@ -1,0 +1,100 @@
+#import "std/json_scan"
+#import "std/text_buffer"
+#import "std/vec"
+#import "std/c_string"
+Progress :: #import "entity/game_progress";
+#import, file "../src/shared_progress.zi";
+Classic :: #import, file "../src/shared_campaign.zi";
+ClassicGame :: #import, file "../src/engine.zi";
+ClassicProgress :: #import, file "../src/progress.zi";
+
+remote: Progress.GameProgressRecord;
+remote_exists: bool;
+synced: bool;
+available: bool = true;
+old_host: bool;
+other_owner: bool;
+retired: s32;
+reply: string;
+
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if name != "entity.records" || !available { return "{\"status\":\"unavailable\"}" }
+    if SharedProgressStatusField(request, "operation", "status") {
+        if old_host { return "{\"status\":\"done\",\"account\":\"first\",\"sync\":\"synced\"}" }
+        if other_owner { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"second\",\"sync\":\"synced\"}" }
+        if synced { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"first\",\"sync\":\"synced\"}" }
+        return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"first\",\"sync\":\"pending\"}"
+    }
+    if SharedProgressStatusField(request, "operation", "put") {
+        at := FieldAt(request, 0, "document")
+        incoming: Progress.GameProgressRecord
+        if !Progress.GameProgressRead(request[at:ValueEnd(request, at, 0)], *incoming) { return "{\"status\":\"rejected\"}" }
+        if remote_exists { unused Progress.GameProgressMerge(*incoming, *remote, false) }
+        remote = incoming
+        remote_exists = true
+        synced = false
+        return "{\"status\":\"done\"}"
+    }
+    if !remote_exists { return "{\"status\":\"missing\"}" }
+    out: Vec(u8)
+    BuilderPrint(*out, "{\"status\":\"done\",\"document\":")
+    Progress.GameProgressWrite(*remote, *out)
+    BuilderPrint(*out, "}")
+    reply = BuilderFinish(out)
+    return reply
+}
+
+#program_export
+FakeRecord :: (name: string) -> string { unused name; return "" }
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    if (name == "campaign" || name == "position") && text == "" { retired += 1 }
+    return true
+}
+
+#program_export
+Check :: () -> s32 {
+    game: ClassicGame.ShoveyGame
+    unused ClassicGame.ShoveyLoad(*game, 1)
+    local := ClassicProgress.ShoveyProgressNew()
+    record := Classic.ShoveySharedRecord(*local, *game)
+    remote = record
+    remote.unlocked = 40
+    remote.completed[0] = #char "1"
+    remote.completed[1] = 0
+    remote_exists = true
+    session: SharedProgressSession
+    SharedProgressStart(*session, record, 0.0)
+    if !session.available || session.record.unlocked != 40 || remote.unlocked != 40 || retired != 0 { return 1 }
+    synced = true
+    unused SharedProgressPump(*session, 1.0)
+    if retired != 2 { return 2 }
+    record.unlocked = 5
+    record.completed[0] = #char "0"
+    record.completed[1] = #char "1"
+    record.completed[2] = 0
+    if !SharedProgressSave(*session, *record) { return 3 }
+    unused SharedProgressPump(*session, 2.0)
+    if remote.unlocked != 40 || TextUntilNul(remote.completed[:]) != "11" { return 4 }
+    other_owner = true
+    if SharedProgressPump(*session, 3.0) != 2 || session.available || session.record.unlocked != 0 { return 5 }
+    other_owner = false
+    available = false
+    SharedProgressStart(*session, record, 4.0)
+    if SharedProgressSave(*session, *record) { return 6 }
+    available = true
+    old_host = true
+    SharedProgressStart(*session, record, 5.0)
+    if session.available || SharedProgressSave(*session, *record) { return 8 }
+    // Both editions keep their exact unfinished board without duplicating
+    // unlock/completion data in the opaque position.
+    restored: ClassicGame.ShoveyGame
+    restored_progress: ClassicProgress.ShoveyProgress
+    record = Classic.ShoveySharedRecord(*local, *game)
+    Classic.ShoveySharedRestore(*restored_progress, *restored, *record)
+    saved_position: [8193]u8
+    unused CopyCString(ClassicGame.ShoveySave(*restored), saved_position[:])
+    if TextUntilNul(saved_position[:]) != ClassicGame.ShoveySave(*game) || restored_progress.unlocked != 1 { return 7 }
+    return 42
+}

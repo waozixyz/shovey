@@ -36,6 +36,8 @@ Math :: #import "std/math";
 #import, file "levels.zi";
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
+#import, file "shared_progress.zi";
+#import, file "shared_campaign.zi";
 #import, file "controls.zi";
 #import, file "pieces.zi";
 #import, file "shovey_theme.zi";
@@ -66,6 +68,8 @@ progress: ShoveyProgress;
 selector_open: bool;
 levels_scroll: s32;
 loaded: bool;
+shared_progress: SharedProgressSession;
+shared_account_changed: bool;
 help_open: bool;
 // An embedded mini page opens straight into a level with only its levels
 // and restart controls.
@@ -324,8 +328,9 @@ reported_levels: s32 = -1;
 
 Remember :: () {
     ShoveyRecordWin(*progress, *game)
-    saved := ShoveyCampaignSave(*progress, *game)
-    save_failed = !SaveAppRecordHost("campaign", saved)
+    record := ShoveySharedRecord(*progress, *game)
+    if SharedProgressSave(*shared_progress, *record) { save_failed = false }
+    else { save_failed = !SaveAppRecordHost("campaign", ShoveyCampaignSave(*progress, *game)) }
     ReportSolvedLevels(progress.completed[:], *reported_levels)
 
 }
@@ -641,8 +646,8 @@ ShoveyFrame :: () {
         // The host's cover is the title: every open goes straight to play.
         mini = AppMini()
         LiveCampaignStart()
-        if !ShoveyCampaignRestore(*progress, *game, AppRecordHost("campaign")) {
-            if ShoveyRestore(*game, AppRecordHost("position")) {
+        if shared_account_changed || !ShoveyCampaignRestore(*progress, *game, AppRecordHost("campaign")) {
+            if !shared_account_changed && ShoveyRestore(*game, AppRecordHost("position")) {
                 progress = ShoveyMigrateProgress(*game)
                 // That record predates the shipped boards: restart its level.
                 unused ShoveyLoad(*game, game.level)
@@ -651,6 +656,9 @@ ShoveyFrame :: () {
                 progress = ShoveyProgressNew()
             }
         }
+        shared_account_changed = false
+        SharedProgressStart(*shared_progress, ShoveySharedRecord(*progress, *game), frame.now)
+        if shared_progress.available { ShoveySharedRestore(*progress, *game, *shared_progress.record) }
         // Entering play keeps the campaign, so its record exists from the
         // start; an embedded mini page saves only once something changes.
         latest := ShoveyOpenLatest(*progress, *game)
@@ -661,6 +669,15 @@ ShoveyFrame :: () {
     }
     LiveCampaignPump()
     LiveCampaignCheck()
+    shared_change := SharedProgressPump(*shared_progress, frame.now)
+    if shared_change == 2 { loaded = false; shared_account_changed = true; return }
+    if shared_change == 1 {
+        ShoveySharedRestore(*progress, *game, *shared_progress.record)
+        unused ShoveyOpenLatest(*progress, *game)
+        slide_count = 0
+        slide_next = 0
+        ReportSolvedLevels(progress.completed[:], *reported_levels)
+    }
     width := cast(float32)frame.width
     top := cast(float32)frame.top
     bottom := cast(float32)(frame.height - frame.bottom)

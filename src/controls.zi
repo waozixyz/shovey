@@ -41,6 +41,18 @@
 }
 #import "std/text_buffer"
 
+// Account records are shared across standalone and hosted editions.
+ProgressAccountService :: (request: string) -> string { return AppServiceHost("entity.records", request) }
+ProgressRetireLegacy :: () {
+    #if #defined(SHOVEY_WEB) {
+        unused WebApp.DocumentWrite("campaign", "")
+        unused WebApp.DocumentWrite("position", "")
+    } else {
+        unused ControlsSaveRecord("campaign", "")
+        unused ControlsSaveRecord("position", "")
+    }
+}
+
 // Friends rank how many levels an edition has solved. Only that number goes
 // to the host, and only when it changes; a host without a leaderboard
 // answers that it is unavailable.

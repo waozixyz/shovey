@@ -41,10 +41,18 @@ Play locally without an account. Shovey is free and open source, with no ads or
 analytics SDK. Optional account and node features are separate from local play.
 
 Shovey also runs inside [Arcade](https://github.com/waozixyz/arcade) and
-[Inner Breeze](https://github.com/waozixyz/inbe).
+[Breeze](https://github.com/waozixyz/breeze).
 
 [F-Droid submission (draft)](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/53911)
 · [Report a problem](https://github.com/waozixyz/shovey/issues)
 · [Build and contribute](docs/development.md)
 
 BSD 3-Clause. See [LICENSE](LICENSE).
+
+## Account progress
+
+Classic and Island each keep one shared Entity `game-progress` record for the
+account, whether played in Breeze or standalone Shovey. Unlocks and completion
+marks merge without going backwards; the unfinished board is stored once in
+that record. Local host saves are migrated and retired after confirmed account
+sync. Hosts without the shared service retain the existing offline save.
