@@ -97,6 +97,10 @@ class Phone:
         self.settle(4)
 
     def launch(self):
+        # A sleeping phone keeps am start -W waiting: wake it and lift a
+        # keyguard without a lock first.
+        self.adb('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP')
+        self.adb('shell', 'wm', 'dismiss-keyguard', check=False)
         self.adb('shell', 'am', 'start', '-W', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.LAUNCHER',
                  '-n', f'{self.package}/{ACTIVITY}')
         self.pids.append(self.adb('shell', 'pidof', self.package, check=False).strip())
