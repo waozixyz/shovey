@@ -3,8 +3,10 @@
 // let the Ziran solver check them, export them for the developer, and
 // share level collections where the host offers it.
 //
-// Custom levels live in the editor's own records (see edit.zi). A story
-// level is never changed: the first stroke on one makes a custom copy.
+// Custom levels live in the account's own entity records where the host
+// offers them (see drafts.zi), so they follow the account to every device,
+// and in the editor's own records elsewhere (see edit.zi). A story level is
+// never changed: the first stroke on one makes a custom copy.
 #import "kryon/session"
 #import "kryon/joystick"
 #import "kryon/geometry"
@@ -47,6 +49,7 @@
 #import, file "coast.zi";
 #import, file "edit.zi";
 #import, file "sharing.zi";
+#import, file "drafts.zi";
 host_api :: #system_library "host_api";
 ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
 // The editor's text in the player's language, from its own locale files;
@@ -112,6 +115,16 @@ editor_save_failed: bool;
 // A short message under the bar, shown for a few seconds.
 editor_notice: string;
 editor_notice_until: float64;
+
+// The host keeps custom levels in the account's entity records.
+editor_entity: bool;
+editor_drafts_request: [180000]u8;
+editor_drafts_entries: [EDIT_LEVELS * 2]DraftsEntry;
+editor_drafts_moved: DraftsMoved;
+// The open level was saved this frame, its index line with it.
+editor_drafts_fresh: bool;
+editor_drafts_revision: float64 = -1.0;
+editor_drafts_checked: float64 = -1000.0;
 
 editor_classic: EditCatalog;
 editor_isle: EditCatalog;
@@ -382,6 +395,11 @@ EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64, landscape: bool)
 // Records
 
 EditorSaveIndex :: (island: bool) {
+    // Each entity record carries its own index line.
+    if editor_entity {
+        if editor_open_id > 0 && island == editor_island && !editor_drafts_fresh { EditorSaveLevel() }
+        return
+    }
     edition := ifx island then 1 else 0
     if editor_index_bad[edition] { editor_save_failed = true; return }
     catalog := ifx island then *editor_isle else *editor_classic
@@ -391,9 +409,113 @@ EditorSaveIndex :: (island: bool) {
 
 EditorSaveLevel :: () {
     if editor_open_id <= 0 { return }
-    if !SaveAppRecordHost(EditLevelRecord(editor_island, editor_open_id), EditLevelText(*editor_level)) {
+    if !EditorWriteLevel(editor_island, EditFind(EditorCatalog(), editor_open_id), *editor_level) {
         editor_save_failed = true
+        return
     }
+    editor_drafts_fresh = editor_entity
+}
+
+EditorDrafts :: (length: s32) -> string {
+    return AppServiceHost(DRAFTS_SERVICE, TextView(editor_drafts_request[0:length]))
+}
+
+// How much of a custom level's record id is set: 32 once it has a record.
+EditorRecordLength :: (summary: *EditSummary) -> s64 {
+    length: s64 = 0
+    while length < 32 && summary.record[length] != cast(u8)0 { length += 1 }
+    return length
+}
+
+// Saves the custom level at `at` of an edition with level as its board and
+// route: as its entity record, or in the editor's own records.
+EditorWriteLevel :: (island: bool, at: s32, level: *EditLevel) -> bool {
+    catalog := ifx island then *editor_isle else *editor_classic
+    if at < 0 || at >= catalog.count { return false }
+    summary := *catalog.levels[at]
+    if !editor_entity { return SaveAppRecordHost(EditLevelRecord(island, summary.id), EditLevelText(level)) }
+    writer := EditWriter.{.bytes = editor_drafts_request[:]}
+    DraftsPutLevel(*writer, TextView(summary.record[0:EditorRecordLength(summary)]), island, summary, level,
+        EditField(summary.name[:], summary.name_length))
+    if writer.full { return false }
+    record: [40]u8
+    if !DraftsPutRead(EditorDrafts(writer.length), record[:]) { return false }
+    for place: cast(s64)0..31 { summary.record[place] = record[place] }
+    return true
+}
+
+// Reads a custom level's board and route. False when it cannot be read.
+EditorReadLevel :: (island: bool, summary: *EditSummary, level: *EditLevel) -> bool {
+    if !editor_entity { return EditLevelRead(level, island, AppRecordHost(EditLevelRecord(island, summary.id))) }
+    if EditorRecordLength(summary) != 32 { return false }
+    writer := EditWriter.{.bytes = editor_drafts_request[:]}
+    DraftsRecordRequest(*writer, "get", TextView(summary.record[0:32]))
+    return !writer.full && DraftsLevelRead(EditorDrafts(writer.length), island, level)
+}
+
+EditorRemoveLevel :: (island: bool, summary: *EditSummary) {
+    if !editor_entity { unused SaveAppRecordHost(EditLevelRecord(island, summary.id), ""); return }
+    if EditorRecordLength(summary) != 32 { return }
+    writer := EditWriter.{.bytes = editor_drafts_request[:]}
+    DraftsRecordRequest(*writer, "delete", TextView(summary.record[0:32]))
+    if !writer.full { unused EditorDrafts(writer.length) }
+}
+
+// Both editions' custom levels from the account's records, in the order
+// they were made.
+EditorDraftsList :: () {
+    writer := EditWriter.{.bytes = editor_drafts_request[:]}
+    DraftsListRequest(*writer)
+    count := DraftsListRead(EditorDrafts(writer.length), editor_drafts_entries[:])
+    editor_classic = EditCatalog.{.next = 1}
+    editor_isle = EditCatalog.{.island = true, .next = 1}
+    for index: cast(s32)0..count - 1 {
+        entry := *editor_drafts_entries[index]
+        catalog := ifx entry.island then *editor_isle else *editor_classic
+        if catalog.count >= EDIT_LEVELS { continue }
+        catalog.levels[catalog.count] = entry.summary
+        catalog.levels[catalog.count].id = catalog.next
+        catalog.count += 1
+        catalog.next += 1
+    }
+}
+
+// The editor's own records are copied into the account's records once,
+// level by level, and left in place for older versions of the editor.
+EditorDraftsMove :: () {
+    DraftsMovedRead(AppRecordHost(DRAFTS_MOVED_RECORD), *editor_drafts_moved)
+    for edition: cast(s32)0..1 {
+        island := edition == 1
+        catalog := ifx island then *editor_isle else *editor_classic
+        if !EditIndexRead(catalog, island, AppRecordHost(EditIndexRecord(island))) { continue }
+        for at: cast(s32)0..catalog.count - 1 {
+            summary := *catalog.levels[at]
+            if DraftsMovedHas(*editor_drafts_moved, island, summary.id) ||
+                editor_drafts_moved.count >= cast(s32)editor_drafts_moved.id.count { continue }
+            if !EditLevelRead(*editor_download, island, AppRecordHost(EditLevelRecord(island, summary.id))) { continue }
+            record: [40]u8
+            moved := DraftsMovedRecord(island, summary.id, *editor_download, record[:])
+            for place: cast(s64)0..31 { summary.record[place] = moved[place] }
+            if !EditorWriteLevel(island, at, *editor_download) { continue }
+            editor_drafts_moved.island[editor_drafts_moved.count] = island
+            editor_drafts_moved.id[editor_drafts_moved.count] = summary.id
+            editor_drafts_moved.count += 1
+            writer := EditWriter.{.bytes = editor_drafts_request[:]}
+            DraftsMovedText(*writer, *editor_drafts_moved)
+            if !writer.full { unused SaveAppRecordHost(DRAFTS_MOVED_RECORD, TextView(editor_drafts_request[0:writer.length])) }
+        }
+    }
+}
+
+// Changes from the account's other devices show on the level lists.
+EditorDraftsRefresh :: () {
+    if !editor_entity || editor_open_id > 0 || editor_frame.now - editor_drafts_checked < 2.0 { return }
+    editor_drafts_checked = editor_frame.now
+    status := AppServiceHost(DRAFTS_SERVICE, "{\"operation\":\"status\"}")
+    revision := SharingNumber(status, 0, "revision")
+    if revision < 0.0 || revision == editor_drafts_revision { return }
+    if editor_drafts_revision >= 0.0 { EditorDraftsList() }
+    editor_drafts_revision = revision
 }
 
 // The summary of the open custom level, or null.
@@ -410,10 +532,16 @@ EditorLoad :: () {
     editor_piece[0] = 12
     editor_piece[1] = 1
     editor_budget = 1500
-    editor_index_bad[0] = !EditIndexRead(*editor_classic, false, AppRecordHost(EditIndexRecord(false)))
-    editor_index_bad[1] = !EditIndexRead(*editor_isle, true, AppRecordHost(EditIndexRecord(true)))
-    if editor_index_bad[0] { editor_classic = EditCatalog.{.next = 1} }
-    if editor_index_bad[1] { editor_isle = EditCatalog.{.island = true, .next = 1} }
+    editor_entity = AppSupportsHost(DRAFTS_SERVICE)
+    if editor_entity {
+        EditorDraftsMove()
+        EditorDraftsList()
+    } else {
+        editor_index_bad[0] = !EditIndexRead(*editor_classic, false, AppRecordHost(EditIndexRecord(false)))
+        editor_index_bad[1] = !EditIndexRead(*editor_isle, true, AppRecordHost(EditIndexRecord(true)))
+        if editor_index_bad[0] { editor_classic = EditCatalog.{.next = 1} }
+        if editor_index_bad[1] { editor_isle = EditCatalog.{.island = true, .next = 1} }
+    }
     for edition: cast(s32)0..1 {
         id := AppRecordHost(ifx edition == 1 then "island-publication" else "classic-publication")
         editor_publication_length[edition] = EditSetField(editor_publication[edition][:], id)
@@ -459,7 +587,7 @@ EditorOpenCustom :: (at: s32) {
     catalog := EditorCatalog()
     if at < 0 || at >= catalog.count { return }
     id := catalog.levels[at].id
-    if !EditLevelRead(*editor_level, editor_island, AppRecordHost(EditLevelRecord(editor_island, id))) {
+    if !EditorReadLevel(editor_island, *catalog.levels[at], *editor_level) {
         EditorNotice("editor_unreadable")
         return
     }
@@ -542,11 +670,11 @@ EditorDelete :: () {
     catalog := EditorCatalog()
     at := EditFind(catalog, editor_open_id)
     if at < 0 { return }
-    unused SaveAppRecordHost(EditLevelRecord(editor_island, editor_open_id), "")
+    EditorRemoveLevel(editor_island, *catalog.levels[at])
     EditRemove(catalog, at)
+    editor_open_id = 0
     EditorSaveIndex(editor_island)
     EditorClear()
-    editor_open_id = 0
     editor_page = EDITOR_LEVELS
 }
 
@@ -1096,7 +1224,7 @@ EditorExportOpen :: () {
         for at: cast(s32)0..catalog.count - 1 {
             summary := *catalog.levels[at]
             if summary.proof == EDIT_PROOF_NONE { continue }
-            if !EditLevelRead(*editor_download, island, AppRecordHost(EditLevelRecord(island, summary.id))) { continue }
+            if !EditorReadLevel(island, summary, *editor_download) { continue }
             if editor_download.route_length == 0 { continue }
             EditExportLevel(*writer, summary, *editor_download, editor_export_count == 0, EditorLevelName(1, summary))
             editor_export_count += 1
@@ -1263,7 +1391,7 @@ EditorVerifyStep :: () {
         if at < 0 { editor_verify_refused += 1; continue }
         catalog.levels[at].proof = EDIT_PROOF_DOWNLOAD
         EditSetAuthor(*catalog.levels[at], EditField(editor_verify_author[:], editor_verify_author_length))
-        unused SaveAppRecordHost(EditLevelRecord(editor_document.island, catalog.levels[at].id), EditLevelText(*editor_download))
+        unused EditorWriteLevel(editor_document.island, at, *editor_download)
         EditorSaveIndex(editor_document.island)
         editor_verify_added += 1
         return
@@ -1295,7 +1423,7 @@ EditorPublish :: () {
     for at: cast(s32)0..catalog.count - 1 {
         summary := *catalog.levels[at]
         if summary.proof == EDIT_PROOF_NONE || editor_share_skip[at] { continue }
-        if !EditLevelRead(*editor_download, editor_island, AppRecordHost(EditLevelRecord(editor_island, summary.id))) { continue }
+        if !EditorReadLevel(editor_island, summary, *editor_download) { continue }
         if editor_download.route_length == 0 { continue }
         SharingDocumentLevel(*document, EditorLevelName(1, summary), *editor_download, count == 0)
         count += 1
@@ -1431,6 +1559,8 @@ EditorFrame :: (language: string) {
     editor_frame = ReadAppUiHost()
     editor_language = language
     if !editor_loaded { EditorLoad() }
+    editor_drafts_fresh = false
+    EditorDraftsRefresh()
     elapsed := editor_frame.now - editor_last_now
     editor_last_now = editor_frame.now
     EditorNames()

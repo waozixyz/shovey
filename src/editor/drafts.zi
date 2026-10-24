@@ -1,0 +1,248 @@
+// Custom levels kept in the account's own records: the host's
+// "entity.records" service (Daochi docs/entity-data.md) holds each custom
+// level as one private record of kind "levels", a collection of one level,
+// so every app and device of the account sees the same drafts. Only text is
+// built and read here; the editor's view sends it with
+// AppServiceHost("entity.records", request) where the host offers the
+// service, and keeps its own records elsewhere.
+//
+// A record's document:
+//   {"format":"shovey-levels-1","edition":"classic","title":"My crates",
+//    "from":12,"proof":"s","completed":false,"author":"","order":3,
+//    "levels":[{"name":"My crates","route":"…","cells":[…],…}]}
+// from, proof, completed and author are the custom level's index line (see
+// edit.zi); order keeps the levels in the order they were made. A level
+// copied from the developer's campaign carries "campaign" and stays out of
+// these lists. Publishing stays the separate publications request.
+#import "std/json_scan"
+#import "std/number_text"
+#import, file "edit.zi";
+#import, file "sharing.zi";
+
+DRAFTS_SERVICE :: "entity.records"
+DRAFTS_KIND :: "levels"
+DRAFTS_SCHEMA :: "entity.levels.v1"
+// Which old custom levels were already copied, kept in the editor's own
+// records so the copy happens once: "M1", then lines of "<edition> <id>".
+DRAFTS_MOVED_RECORD :: "entity-moved"
+
+DraftsPutLevel :: (writer: *EditWriter, record: string, island: bool, summary: *EditSummary, level: *EditLevel,
+    name: string) {
+    EditPut(writer, "{\"operation\":\"put\",\"kind\":\"levels\",\"schema\":\"entity.levels.v1\"")
+    if record.count > 0 {
+        EditPut(writer, ",\"id\":")
+        EditPutJson(writer, record)
+    }
+    EditPut(writer, ",\"document\":{\"format\":\"shovey-levels-1\",\"edition\":")
+    EditPutJson(writer, EditRecordPrefix(island))
+    EditPut(writer, ",\"title\":")
+    EditPutJson(writer, EditField(summary.name[:], summary.name_length))
+    EditPut(writer, ",\"from\":")
+    EditPutNumber(writer, cast(s64)summary.from)
+    EditPut(writer, ",\"proof\":")
+    EditPutJson(writer, EditProofLetter(summary.proof))
+    EditPut(writer, ifx summary.completed then ",\"completed\":true,\"author\":" else ",\"completed\":false,\"author\":")
+    EditPutJson(writer, EditField(summary.author[:], summary.author_length))
+    EditPut(writer, ",\"order\":")
+    EditPutNumber(writer, cast(s64)summary.id)
+    EditPut(writer, ",\"levels\":[{\"name\":")
+    EditPutJson(writer, name)
+    EditPut(writer, ",\"route\":")
+    EditPutJson(writer, EditField(level.route[:], level.route_length))
+    EditPut(writer, ",")
+    EditPutRows(writer, *level.board, "")
+    EditPut(writer, "}]}}")
+}
+
+DraftsListRequest :: (writer: *EditWriter) {
+    EditPut(writer, "{\"operation\":\"list\",\"kind\":\"levels\",\"fields\":[\"format\",\"edition\",\"title\",\"from\",\"proof\",\"completed\",\"author\",\"order\",\"campaign\"]}")
+}
+
+DraftsRecordRequest :: (writer: *EditWriter, operation: string, record: string) {
+    EditPut(writer, "{\"operation\":")
+    EditPutJson(writer, operation)
+    EditPut(writer, ",\"kind\":\"levels\",\"id\":")
+    EditPutJson(writer, record)
+    EditPut(writer, "}")
+}
+
+// The status of a reply: "done", "missing", "rejected", or "" when malformed.
+DraftsStatus :: (text: string, output: []u8) -> string {
+    length := SharingText(text, 0, "status", output)
+    return ifx length < 0 then "" else TextView(output[0:length])
+}
+
+DraftsRecordValid :: (record: string) -> bool {
+    if record.count != 32 { return false }
+    for byte: record {
+        if !((byte >= #char "0" && byte <= #char "9") || (byte >= #char "a" && byte <= #char "f")) { return false }
+    }
+    return true
+}
+
+// The id a done put answers into record. False when there is none.
+DraftsPutRead :: (text: string, record: []u8) -> bool {
+    status: [16]u8
+    if DraftsStatus(text, status[:]) != "done" { return false }
+    length := SharingText(text, 0, "id", record)
+    return length == 32 && DraftsRecordValid(TextView(record[0:32]))
+}
+
+// One custom level of a list reply: its edition and order, and its summary.
+DraftsEntry :: struct {
+    island: bool
+    order: s64
+    summary: EditSummary
+}
+
+// Reads a list reply's custom levels into entries, in the order they were
+// made. Returns how many, or -1 when the reply is malformed.
+DraftsListRead :: (text: string, entries: []DraftsEntry) -> s32 {
+    status: [16]u8
+    if DraftsStatus(text, status[:]) != "done" { return -1 }
+    list := FieldAt(text, 0, "records")
+    if list < 0 { return -1 }
+    positions: [EDIT_LEVELS * 2 + 1]s32
+    count := ArrayPositions(text, list, positions[:])
+    if count < 0 { return -1 }
+    found: s32 = 0
+    for index: cast(s32)0..count - 1 {
+        if index >= positions.count || cast(s64)found >= entries.count { break }
+        at := positions[index]
+        format: [24]u8
+        edition: [16]u8
+        format_length := SharingText(text, at, "format", format[:])
+        edition_length := SharingText(text, at, "edition", edition[:])
+        record: [40]u8
+        record_length := SharingText(text, at, "id", record[:])
+        if format_length < 0 || TextView(format[0:format_length]) != SHARING_FORMAT || edition_length < 0 ||
+            record_length != 32 || FieldAt(text, at, "campaign") >= 0 { continue }
+        name := TextView(edition[0:edition_length])
+        if name != "classic" && name != "island" { continue }
+        entry: DraftsEntry
+        entry.island = name == "island"
+        entry.order = cast(s64)SharingNumber(text, at, "order")
+        summary := *entry.summary
+        summary.from = cast(s32)SharingNumber(text, at, "from")
+        if summary.from < 0 || summary.from > 100000 { summary.from = 0 }
+        proof: [4]u8
+        proof_length := SharingText(text, at, "proof", proof[:])
+        letter := TextView(proof[0:ifx proof_length < 0 then 0 else proof_length])
+        if letter == "s" { summary.proof = EDIT_PROOF_SOLVER }
+        else if letter == "p" { summary.proof = EDIT_PROOF_PLAYED }
+        else if letter == "d" { summary.proof = EDIT_PROOF_DOWNLOAD }
+        completed := FieldAt(text, at, "completed")
+        summary.completed = completed >= 0 && MatchLiteral(text, completed, "true")
+        summary.name_length = SharingText(text, at, "title", summary.name[:])
+        if summary.name_length < 0 { summary.name_length = 0 }
+        summary.author_length = SharingText(text, at, "author", summary.author[:])
+        if summary.author_length < 0 { summary.author_length = 0 }
+        for byte, place: TextView(record[0:32]) { summary.record[place] = byte }
+        // Insertion keeps the made order; records without one go last.
+        place := found
+        while place > 0 && entries[place - 1].order > entry.order && entry.order >= 0 {
+            entries[place] = entries[place - 1]
+            place -= 1
+        }
+        entries[place] = entry
+        found += 1
+    }
+    return found
+}
+
+// Reads a get reply's level into level. A draft may have no route yet.
+// False when the record is missing or malformed.
+DraftsLevelRead :: (text: string, island: bool, level: *EditLevel) -> bool {
+    status: [16]u8
+    if DraftsStatus(text, status[:]) != "done" { return false }
+    at := FieldAt(text, 0, "document")
+    if at < 0 { return false }
+    document: SharingDocument
+    if !SharingDocumentRead(text, at, *document) || document.island != island || document.count < 1 { return false }
+    level_at := document.positions[0]
+    if island {
+        if !SharingRows(text, FieldAt(text, level_at, "terrain"), sharing_hex[:], 0) ||
+        !SharingRows(text, FieldAt(text, level_at, "objects"), sharing_hex[:], EDIT_CELLS * 2) { return false }
+    } else if !SharingRows(text, FieldAt(text, level_at, "cells"), sharing_hex[:], 0) { return false }
+    layered := !island && FieldAt(text, level_at, "tiles") >= 0
+    if layered && !SharingRows(text, FieldAt(text, level_at, "tiles"), sharing_hex[:], EDIT_CELLS * 2) { return false }
+    decorated := !island && FieldAt(text, level_at, "decorations") >= 0
+    if decorated && (!layered || !SharingRows(text, FieldAt(text, level_at, "decorations"), sharing_hex[:], EDIT_CELLS * 4)) { return false }
+    layers: s32 = ifx decorated then 3 else ifx island || layered then 2 else 1
+    if !EditBoardRead(*level.board, island, TextView(sharing_hex[0:EDIT_CELLS * 2 * layers])) || EditShovey(*level.board) < 0 { return false }
+    route_at := FieldAt(text, level_at, "route")
+    span := ReadString(text, route_at)
+    if route_at < 0 || !span.valid || span.end - span.start > EDIT_ROUTE { return false }
+    route := text[span.start:span.end]
+    for letter: route {
+        move := letter >= #char "0" && letter <= #char "3"
+        if !move && (island || (letter != #char "f" && letter != #char "t")) { return false }
+    }
+    return EditSetRoute(level, route)
+}
+
+// ---------------------------------------------------------------------------
+// The copy of the old records, once
+
+DraftsMoved :: struct {
+    count: s32
+    island: [EDIT_LEVELS * 2]bool
+    id: [EDIT_LEVELS * 2]s32
+}
+
+DraftsMovedRead :: (text: string, moved: *DraftsMoved) {
+    moved.count = 0
+    if EditLine(text, 0) != "M1" { return }
+    at: s64 = 3
+    while at < text.count && moved.count < cast(s32)moved.id.count {
+        line := EditLine(text, at)
+        at += line.count + 1
+        cursor: s64 = 0
+        edition := EditWord(line, *cursor)
+        id := EditNumber(EditWord(line, *cursor))
+        if (edition != "classic" && edition != "island") || id < 1 { continue }
+        moved.island[moved.count] = edition == "island"
+        moved.id[moved.count] = id
+        moved.count += 1
+    }
+}
+
+DraftsMovedHas :: (moved: *DraftsMoved, island: bool, id: s32) -> bool {
+    for at: cast(s32)0..moved.count - 1 { if moved.island[at] == island && moved.id[at] == id { return true } }
+    return false
+}
+
+DraftsMovedText :: (writer: *EditWriter, moved: *DraftsMoved) {
+    EditPut(writer, "M1\n")
+    for at: cast(s32)0..moved.count - 1 {
+        EditPut(writer, EditRecordPrefix(moved.island[at]))
+        EditPut(writer, " ")
+        EditPutNumber(writer, cast(s64)moved.id[at])
+        EditPut(writer, "\n")
+    }
+}
+
+// The record id an old custom level is copied to: the same on every device
+// that holds the same level, so copies from two devices make one record.
+DraftsMovedRecord :: (island: bool, id: s32, level: *EditLevel, output: []u8) -> string {
+    first: u64 = 0xcbf29ce484222325
+    second: u64 = 0x84222325cbf29ce4
+    digits: [24]u8
+    parts: [4]string = .[EditRecordPrefix(island), FormatInteger(cast(s64)id, digits[:]), EditBoardHex(*level.board),
+        EditField(level.route[:], level.route_length)]
+    for part: parts {
+        for byte: part {
+            first = (first ^ cast(u64)byte) * 0x100000001b3
+            second = (second ^ cast(u64)byte) * 0x100000001b3
+            second = second ^ (second >> 29)
+        }
+        first = (first ^ 10) * 0x100000001b3
+        second = (second ^ 10) * 0x100000001b3
+    }
+    alphabet := "0123456789abcdef"
+    for at: cast(s64)0..15 {
+        output[at] = alphabet[cast(s64)((first >> cast(u64)(60 - at * 4)) & 15)]
+        output[16 + at] = alphabet[cast(s64)((second >> cast(u64)(60 - at * 4)) & 15)]
+    }
+    return TextView(output[0:32])
+}

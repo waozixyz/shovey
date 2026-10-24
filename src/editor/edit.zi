@@ -487,6 +487,8 @@ EditSummary :: struct {
     name_length: s32
     author: [EDIT_ALIAS]u8
     author_length: s32
+    // Its record in the account's entity records (drafts.zi), once saved there.
+    record: [33]u8
 }
 
 EditCatalog :: struct {

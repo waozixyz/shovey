@@ -50,7 +50,11 @@ start a new one. Island editing is available with no published story levels yet.
 a piece up from the board, and undo a stroke at a time; Island's shores and
 banks follow the sand, meadow and water you paint. A story level is never
 changed: the first stroke on one makes your own copy. Every change is kept
-in the editor's own records.
+at once as a private record of the account (`private.entity.v1.levels`)
+where the host offers its `entity.records` service, so drafts follow the
+account to every device; levels from the editor's own older records are
+copied there once and left in place. Other hosts keep them in the editor's
+own records.
 
 While you build, the solver in `src/solver/` (Ziran, with the
 searches of `tools/solver/solver.c`) checks the board a little every frame,
