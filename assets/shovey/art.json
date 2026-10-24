@@ -155,7 +155,7 @@
     {
       "path": "sprites/tile-26.png",
       "depicts": "ammunition: one iron shot",
-      "sha256": "15d70a2567172363dbe18b17d9ae3b9bc9f74e4f59ec5b41b7356ff5375d137b"
+      "sha256": "31ed9d496cc250ed5ab0a66dbec0350499eedb35e103dde00c7cceb1e82371af"
     },
     {
       "path": "sprites/tile-27.png",
@@ -199,8 +199,8 @@
     },
     {
       "path": "sprites/tile-35.png",
-      "depicts": "slide power: a token with an ice crystal",
-      "sha256": "f696c38fcb63741508b31a5d485f13aa856ee5220e1bdc39c38d45e55e5964ca"
+      "depicts": "slide power: green chevrons spreading out from a dot",
+      "sha256": "6eda61d2e8cc86c97da388cd6ef1d92ba29541f677115db18ba0d9a7b9a6ee82"
     },
     {
       "path": "sprites/tile-36.png",

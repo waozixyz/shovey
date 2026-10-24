@@ -1049,6 +1049,30 @@ def trail_marker():
     return image
 
 
+def slide_chevrons():
+    """The original's slide power: a green dot with two rings of chevrons
+    pointing outwards, the inner ring bright and the outer one deeper."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    # One chevron pointing up, short enough to stay apart from its
+    # neighbours, lit on its outer edge and shaded on its inner one; the
+    # other three are the same turned about the centre.
+    for apex, lit, dark in ((8, (96, 230, 80, 255), (30, 128, 44, 255)), (3, (60, 186, 64, 255), (22, 96, 36, 255))):
+        for t in range(3):
+            for x in (15 - t, 16 + t):
+                draw.point((x, apex + t), fill=lit)
+                draw.point((x, apex + t + 1), fill=dark)
+    for turn in (90, 180, 270):
+        image.alpha_composite(image.rotate(turn))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((14, 14, 17, 17), fill=(30, 128, 44, 255))
+    draw.rectangle((14, 14, 16, 16), fill=(96, 230, 80, 255))
+    draw.point((15, 15), fill=(206, 250, 186, 255))
+    for corner in ((14, 14), (17, 14), (14, 17), (17, 17)):
+        draw.point(corner, fill=(0, 0, 0, 0))
+    return image
+
+
 def sprites():
     green = lambda h, s, v: 60 <= h <= 180 and s > 0.2
     blue = lambda h, s, v: 170 <= h <= 230 and s > 0.25
@@ -1059,11 +1083,14 @@ def sprites():
     duck = native('duck-up')
     players = {'up': up, 'right': up.rotate(-90), 'down': up.rotate(180), 'left': up.rotate(90)}
     mirror = recolour(players['up'], green, 330)
+    # A small shot lying on the floor, about the size of the original's,
+    # with its shadow to the lower right.
     shot = Image.new('RGBA', (SIZE, SIZE))
     shot_draw = ImageDraw.Draw(shot)
-    shot_draw.ellipse((6, 6, 25, 25), fill=(74, 85, 83, 255), outline=(35, 43, 42, 255))
-    shot_draw.ellipse((10, 9, 17, 16), fill=(117, 130, 127, 255))
-    shot_draw.point((12, 11), fill=(190, 201, 198, 255))
+    shot_draw.ellipse((12, 13, 24, 24), fill=(0, 0, 0, 70))
+    shot_draw.ellipse((9, 9, 21, 21), fill=(60, 68, 67, 255), outline=(26, 32, 32, 255))
+    shot_draw.ellipse((12, 11, 16, 15), fill=(112, 124, 121, 255))
+    shot_draw.point((13, 12), fill=(196, 206, 203, 255))
     out = {
         'tile-0': ('floor: a pale grey paving stone', floor()),
         'tile-1': ('red ball (pushable)', native('ball-red')),
@@ -1103,7 +1130,7 @@ def sprites():
         'tile-32': ('moving block stopping: its light turns red', over_floor(recolour(native('puck'), blue, 4))),
         'tile-33': ('key', native('key')),
         'tile-34': ('lock: a padlock', native('lock')),
-        'tile-35': ('slide power: a token with an ice crystal', native('slide')),
+        'tile-35': ('slide power: green chevrons spreading out from a dot', slide_chevrons()),
         'tile-36': ('red colour block (pushable)', block((228, 38, 28, 255))),
         'tile-37': ('blue colour block (pushable)', block((30, 84, 228, 255))),
         'tile-38': ('yellow colour block (pushable)', block((242, 206, 36, 255))),
