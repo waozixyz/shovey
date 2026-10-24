@@ -225,9 +225,9 @@ ChargeEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32
 ShockShovey :: (image: *ImageProps, cell: Rectangle, progress: float32, now: float64) {
     size := cell.width
     if progress < 0.62 {
-        shake: float32 = ifx cast(s32)(now * 40.0) % 2 == 0 then 1.0 else -1.0
+        shake: float32 = ifx cast(s64)(now * 40.0) % 2 == 0 then 1.0 else -1.0
         image.bounds.x += shake * size * 0.05
-        if cast(s32)(now * 16.0) % 2 == 0 { image.tint = 0x3a3a40ff }
+        if cast(s64)(now * 16.0) % 2 == 0 { image.tint = 0x3a3a40ff }
     } else {
         slump := (progress - 0.62) / 0.38
         image.tint = 0x3a3a40ff
@@ -253,7 +253,7 @@ ShockEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32,
     }
     if progress < 0.7 {
         // Sparks jump around him, a new pattern every few frames.
-        step := cast(s32)(now * 14.0)
+        step := cast(s32)(cast(s64)(now * 14.0) % 1000)
         for spark: cast(s32)0..3 {
             angle := cast(float64)(step * 7 + spark * 23) * 0.9
             reach := size * 0.42
@@ -264,7 +264,7 @@ ShockEffects :: (session: Session, key: u64, cell: Rectangle, progress: float32,
                     .shape = SHOCK_SPARK, .color = Color.{255, 236, 120, 235}})
         }
         glow := size * 1.15
-        pulse := ifx cast(s32)(now * 16.0) % 2 == 0 then 110.0 else 50.0
+        pulse := ifx cast(s64)(now * 16.0) % 2 == 0 then 110.0 else 50.0
         unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 701), .bounds = Rectangle.{cx - glow / 2.0, cy - glow / 2.0, glow, glow},
                 .fill = Color.{255, 230, 120, cast(u8)pulse}, .radius = glow / 2.0})
     }
@@ -1003,7 +1003,7 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u6
             }
         }
         // Water breaks on the bow, faster once the boat makes way.
-        wake := cast(s32)(now / ifx aboard && board_sail > BOAT_HOP then 0.09 else 0.28) % 4
+        wake := cast(s32)(cast(s64)(now / ifx aboard && board_sail > BOAT_HOP then 0.09 else 0.28) % 4)
         Image(session, ImageProps.{.key = BoardOverlayKey(key, 1030 + drawn), .asset_path = files[SPRITE_BOAT_WAKE + wake],
                 .alt_text = "", .bounds = Rectangle.{boat.x, boat.y, boat.width * BOAT_WAKE_WIDE, boat.height},
                 .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
