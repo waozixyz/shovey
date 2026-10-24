@@ -73,6 +73,7 @@ jobs:
           export CHROMIUM="$(command -v google-chrome || command -v chromium)"
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_mini_test.mjs
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_tap_beside_board_test.mjs
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_copy_test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

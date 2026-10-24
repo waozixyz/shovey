@@ -183,13 +183,28 @@
     var pageTitle = document.title;
     var wasmBytes = __SHOVEY_WASM_BYTES__;
     var loadingCheck;
+    // A copy of this page on another site (an app store bundle, a saved page)
+    // has none of the game's files beside it, so it loads them from the
+    // game's home, which serves them to every site.
+    var gameHome = 'https://shovey.waozi.xyz/';
+    var fileBase = '';
+    function gameFile(name) { return fileBase + name + '?v=' + buildRevision; }
+    function loadFromHome() {
+      if (fileBase) return false;
+      fileBase = gameHome;
+      Array.prototype.forEach.call(loadingScreen.querySelectorAll('img, source'), function(picture) {
+        var attribute = picture.hasAttribute('srcset') ? 'srcset' : 'src';
+        picture.setAttribute(attribute, gameHome + picture.getAttribute(attribute));
+      });
+      return true;
+    }
     function startingGame() {
       statusElement.textContent = 'Opening Shovey…';
       progressElement.removeAttribute('value');
     }
     async function instantiateGame(imports) {
       var received = 0;
-      var response = await fetch('index.wasm?v=' + buildRevision, {credentials: 'same-origin'});
+      var response = await fetch(gameFile('index.wasm'), {credentials: 'same-origin'});
       if (!response.ok) throw new Error('Game download returned ' + response.status);
       function downloaded(bytes) {
         received += bytes;
@@ -244,9 +259,9 @@
     }
     var Module = {
       locateFile: function(path) {
-        if (path === 'runtime.wasm') return 'index.wasm?v=' + buildRevision;
-        if (path === 'runtime.data') return 'runtime.data?v=' + buildRevision;
-        if (path === 'index.data') return 'index.data?v=' + buildRevision;
+        if (path === 'runtime.wasm') return gameFile('index.wasm');
+        if (path === 'runtime.data') return gameFile('runtime.data');
+        if (path === 'index.data') return gameFile('index.data');
         return path;
       },
       instantiateWasm: function(imports, ready) {
@@ -283,11 +298,17 @@
         console.error('Shovey aborted:', reason);
       }
     };
-    var runtimeScript = document.createElement('script');
-    runtimeScript.async = true;
-    runtimeScript.src = 'index.js?v=' + buildRevision;
-    runtimeScript.onerror = function() { Module.setStatus('Could not download Shovey.'); };
-    document.body.appendChild(runtimeScript);
+    function loadRuntime() {
+      var runtimeScript = document.createElement('script');
+      runtimeScript.async = true;
+      runtimeScript.src = gameFile('index.js');
+      runtimeScript.onerror = function() {
+        if (loadFromHome()) loadRuntime();
+        else Module.setStatus('Could not download Shovey.');
+      };
+      document.body.appendChild(runtimeScript);
+    }
+    loadRuntime();
   </script>
 </body>
 </html>

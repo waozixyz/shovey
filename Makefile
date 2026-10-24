@@ -180,6 +180,7 @@ web-itch: web
 web-test: web
 	node tests/web_mini_test.mjs
 	node tests/web_tap_beside_board_test.mjs
+	node tests/web_copy_test.mjs
 
 # The profile and the live campaign run on the ZX player's web edition.
 web-zx-test: web-zx
