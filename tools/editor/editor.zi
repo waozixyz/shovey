@@ -2508,6 +2508,34 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     GLMMenu()
 }
 
+// Frames in a row that Kryon refused. One refused frame keeps the previous
+// picture and the next is built from scratch; only a failure that lasts about
+// two seconds closes the editor. The reason goes to its output and to
+// backup/editor-drafts/frame-failure.txt.
+FRAME_FAILURE_LIMIT :: 120
+frame_failures: s32 = 0;
+
+FrameFailed :: (status: FrameStatus) -> bool {
+    frame_failures += 1
+    if frame_failures == 1 || frame_failures == FRAME_FAILURE_LIMIT {
+        text: [256]u8
+        length: s32 = 0
+        digits: [24]u8
+        AppendText(text[:], *length, "Editor frame could not finish: ")
+        AppendText(text[:], *length, FrameStatusMessage(cast(s32)status))
+        AppendText(text[:], *length, " (widget ")
+        AppendText(text[:], *length, FormatInteger(cast(s64)FrameFailureAt(session).key, digits[:]))
+        AppendText(text[:], *length, ", place ")
+        AppendNumber(text[:], *length, current)
+        AppendText(text[:], *length, ifx frame_failures == 1 then ").\n" else "); closing.\n")
+        Say(TextView(text[:length]))
+        unused WriteEntireFile("backup/editor-drafts/frame-failure.txt", TextView(text[:length]))
+    }
+    if frame_failures >= FRAME_FAILURE_LIMIT { return false }
+    DesktopFrameUnchanged(true)
+    return EndDesktopFrame()
+}
+
 Draw :: () -> bool {
     BeginDesktopFrame()
     key := DesktopPressedKey()
@@ -2521,10 +2549,8 @@ Draw :: () -> bool {
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { Say("Editor frame could not begin.\n"); return false }
     Screen(viewport, key, modifiers)
     finished := EndFrameRetained(session, DesktopFrameReusable())
-    if finished.status != FrameStatus.FrameOk {
-        Say("Editor frame could not finish: "); Say(FrameFailureAt(session).message); Say(".\n")
-        return false
-    }
+    if finished.status != FrameStatus.FrameOk { return FrameFailed(finished.status) }
+    frame_failures = 0
     TestDriverFrame(session)
     DesktopFrameUnchanged(finished.paint_unchanged)
     drawn := EndDesktopFrame()
