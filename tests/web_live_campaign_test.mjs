@@ -19,6 +19,9 @@ longer.levels.push({...structuredClone(approved.levels[0]), number: builtIn + 1}
 // The same campaign with a route that does not win must be refused.
 const broken = structuredClone(longer);
 broken.levels[builtIn].solution = '0';
+// A node behind this build, as when a publication failed, serves fewer levels.
+const older = structuredClone(approved);
+older.levels.pop();
 const profile = await mkdtemp(join(tmpdir(), 'shovey-live-'));
 const driver = `document.addEventListener('DOMContentLoaded', () => {
   Module.preRun = Module.preRun || [];
@@ -143,8 +146,15 @@ try {
   await open();
   await delay(3000);
   await count(builtIn);
+
+  // A campaign older than the build never replaces its levels.
+  serving = older;
+  await open();
+  await wait(`Module.FS.readdir('/kryon-apps/shovey').includes('live-campaign-mark')`);
+  await delay(1000);
+  await count(builtIn);
   assert.equal(failures.length, 0, failures.join('|'));
-  console.log(`Live campaign: the game loads ${builtIn + 1} node levels, keeps them offline after a reload and refuses a campaign with a losing route; no screenshots.`);
+  console.log(`Live campaign: the game loads ${builtIn + 1} node levels, keeps them offline after a reload and refuses a campaign with a losing route or fewer levels than the build; no screenshots.`);
 } finally {
   if (socket) socket.close();
   if (browser.exitCode === null && browser.signalCode === null) {

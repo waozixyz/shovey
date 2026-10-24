@@ -801,15 +801,28 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
         }
     }
     if !cached {
-        for at: cast(s32)0..SHOVEY_CELLS - 1 { board_abyss_open[at] = BoardAbyss(game, at) }
+        BoardLayersFill(game, board_layers[:], now, landscape, true)
+        BoardCacheKeep(game, landscape)
     }
+    // Mobile density can put tile edges between physical pixels even with
+    // integer logical cells. Match the abyss interior behind the tiles so
+    // those edges cannot reveal a pale grid through a joined opening.
+    grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
+            .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
+            .fill = Color.{2, 4, 5, 255}, .label = "Shovey", .pixel_snap = true, .nearest_tiles = abyss_sprite_indices[:]})
+    return ShoveyBoardPieces(session, game, grid, key, now, names, landscape)
+}
+
+// The board's four picture layers: floor, ground, decorations and pieces.
+// Animals gliding to a cell are drawn by the board itself while `glides`.
+BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: bool, glides: bool) {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { board_abyss_open[at] = BoardAbyss(game, at) }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if cached { break }
         ground := game.ground[at]
         object := game.objects[at]
         display := BoardDisplayIndex(at, landscape)
         base := game.tiles[at]
-        board_layers[display] = KindSprite(game, base, at, now, landscape)
+        layers[display] = KindSprite(game, base, at, now, landscape)
         // An abyss, drawn or left by cracked floor, joins its neighbours into
         // one drop. Its edges go by screen direction, so the far cliff always
         // shows at the top of the opening.
@@ -819,9 +832,9 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
                 neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
                 if neighbor < 0 || !BoardAbyss(game, neighbor) { mask |= 1 << side }
             }
-            board_layers[display] = SPRITE_ABYSS + mask
+            layers[display] = SPRITE_ABYSS + mask
             corners := BoardAbyssCorners(at, landscape, board_abyss_open)
-            board_layers[SHOVEY_CELLS + display] = ifx corners != 0 then SPRITE_ABYSS_CORNER + corners else -1
+            layers[SHOVEY_CELLS + display] = ifx corners != 0 then SPRITE_ABYSS_CORNER + corners else -1
         } else if base == 77 {
             // Grass runs up to an abyss's own lip; other floors get a soft edge.
             mask: s32 = 0
@@ -829,23 +842,45 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
                 neighbor := ShoveyNeighbor(at, direction)
                 if neighbor >= 0 && game.tiles[neighbor] != 77 && !BoardAbyss(game, neighbor) { mask |= 1 << direction }
             }
-            board_layers[display] = SPRITE_GRASS_EDGE + mask
+            layers[display] = SPRITE_GRASS_EDGE + mask
         }
         if !BoardAbyss(game, at) {
-            board_layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+            layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
         }
         decoration := game.decorations[at]
-        board_layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
-        piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) && board_gliding[at] < 0 then ground else 0
-        board_layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now, landscape)
+        layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
+        piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) && (!glides || board_gliding[at] < 0) then ground else 0
+        layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now, landscape)
     }
-    if !cached { BoardCacheKeep(game, landscape) }
-    // Mobile density can put tile edges between physical pixels even with
-    // integer logical cells. Match the abyss interior behind the tiles so
-    // those edges cannot reveal a pale grid through a joined opening.
-    grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
-            .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
-            .fill = Color.{2, 4, 5, 255}, .label = "Shovey", .pixel_snap = true, .nearest_tiles = abyss_sprite_indices[:]})
+}
+
+// A level's board drawn small for the level list, where the picture built
+// with this release shows an older board or none: a level published or
+// changed on the node since.
+board_preview_game: ShoveyGame;
+board_preview_layers: [SHOVEY_CELLS * 4]s32;
+
+ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64, names: []string, landscape: bool) {
+    if !sprites_ready { SpritesPrepare() }
+    if !ShoveyLoad(*board_preview_game, level) { return }
+    BoardLayersFill(*board_preview_game, board_preview_layers[:], 0.0, landscape, false)
+    files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
+    grid := TileMap(session, TileMapProps.{.key = key, .bounds = bounds,
+            .columns = cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH),
+            .rows = cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT),
+            .tiles = files, .names = names, .layers = board_preview_layers[:], .layer_count = 4,
+            .fill = Color.{2, 4, 5, 255}, .label = "", .nearest_tiles = abyss_sprite_indices[:]})
+    player := board_preview_game.player
+    if player >= 0 && player < SHOVEY_CELLS {
+        Image(session, ImageProps.{.key = WidgetPartKey(key, SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(*board_preview_game, landscape)],
+                .alt_text = "Shovey", .bounds = TileMapCell(grid, BoardDisplayIndex(player, landscape)),
+                .fit = ImageFit.ImageFitContain, .smooth = true})
+    }
+}
+
+// Shovey, gliding animals, effects and guides over the board's tiles.
+ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u64, now: float64, names: []string,
+    landscape: bool) -> TileMapResult {
     glide_files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         index := board_gliding[at]

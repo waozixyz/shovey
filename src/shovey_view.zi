@@ -498,6 +498,8 @@ LiveAsk :: (request: string) -> string {
 LiveCampaignStart :: () {
     cached := LiveCacheRead()
     if cached != "" { unused ShoveyLiveLoadCompact(cached) }
+    // A campaign shorter than this release's is older than it.
+    if shovey_live_count < SHOVEY_APPROVED_LEVEL_COUNT { shovey_live_count = 0 }
     if LevelUpdates() == 1 { LiveCampaignFetch() }
 }
 
@@ -559,6 +561,16 @@ LiveCampaignCheck :: () {
     if result < 0 { return }
     live_checking = false
     if result == 0 { return }
+    if shovey_live_count < SHOVEY_APPROVED_LEVEL_COUNT {
+        // Older than this release: keep the levels it ships, or the newer
+        // campaign saved earlier.
+        shovey_live_count = 0
+        cached := LiveCacheRead()
+        if cached != "" { unused ShoveyLiveLoadCompact(cached) }
+        if shovey_live_count < SHOVEY_APPROVED_LEVEL_COUNT { shovey_live_count = 0 }
+        unused SaveAppRecordHost("live-campaign-mark", TextUntilNul(live_mark[:]))
+        return
+    }
     if compact != LiveCacheRead() { unused LiveCacheWrite(compact) }
     unused SaveAppRecordHost("live-campaign-mark", TextUntilNul(live_mark[:]))
     for at: cast(s32)0..174 { level_preview_paths[at][0] = 0 }
@@ -639,6 +651,7 @@ ShoveyFrame :: () {
                 .content_height = rows * row_height, .scroll_offset = levels_scroll})
         levels_scroll = scroll.scroll_offset
         if scroll.opened {
+            SpriteNames()
             for number: cast(s32)1..ShoveyLevelCount() {
                 at := number - 1
                 bounds := Rectangle.{scroll.content.x + cast(float32)(at % columns) * (cell + 8.0),
@@ -670,11 +683,13 @@ ShoveyFrame :: () {
                     }
                     // Cover the centered visual label only inside the picture
                     // area, then repeat the number in the card's footer. A
-                    // level changed since this release has no picture yet.
+                    // level changed since this release is drawn from its board.
+                    picture := Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height}
                     if level_preview_current[at] { Image(frame.session, ImageProps.{.key = cast(u64)(35000 + number),
                             .asset_path = TextUntilNul(level_preview_paths[at][:]),
-                            .alt_text = label, .bounds = Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height},
+                            .alt_text = label, .bounds = picture,
                             .fit = ImageFit.ImageFitContain, .smooth = true}) }
+                    else { ShoveyBoardPreview(frame.session, number, picture, cast(u64)(52000 + number), sprite_names[:], landscape) }
                 }
                 {
                     Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)
