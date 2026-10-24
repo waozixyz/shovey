@@ -874,7 +874,7 @@ ShoveyFrame :: () {
     grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:], landscape)
     shade := LevelChangeShade()
     if shade > 0.0 {
-        Fill(cast(u64)20096, area, Color.{14, 16, 18, cast(u8)(shade * 255.0)})
+        Fill(cast(u64)20097, area, Color.{14, 16, 18, cast(u8)(shade * 255.0)})
     }
     // No move or piece counters: the line speaks only when there is news.
     status := ""
