@@ -124,6 +124,7 @@ web-zx: bundles
 	ZIRAN='$(TOOLCHAIN)/build/bin/ziran' python3 '$(ENTITY)/scripts/build-web.py' \
 		--bundle build/web/shovey.zx --profile '$(ENTITY)/build/entity.zx' --output build/web/runtime.html
 	cp src/web/index.html build/web/index.html
+	cp src/web/privacy.html build/web/privacy.html
 	python3 scripts/stamp-web.py
 	cp assets/shovey/preview.png build/web/loading.png
 	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png build/web/
@@ -134,7 +135,6 @@ web-zx: bundles
 	cp build/web/runtime.wasm build/web/index.wasm
 	rm -f build/web/runtime.html build/web/runtime.js build/web/runtime.wasm
 
-web-itch: web
 
 # The browser game compiled to WebAssembly: smooth on slow phones, where
 # the interpreted ZX lagged. Kryon's canvas runner answers the app's
@@ -173,17 +173,18 @@ web: bundles
 	cp assets/branding/shovey-social.png build/web/og.png
 	cp src/web/manifest.webmanifest src/web/_headers build/web/
 
+web-itch: web
 
 web-test: web
 	node tests/web_mini_test.mjs
 	node tests/web_tap_beside_board_test.mjs
 
-previews:
 # The profile and the live campaign run on the ZX player's web edition.
 web-zx-test: web-zx
 	node tests/web_profile_test.mjs
 	node tests/web_live_campaign_test.mjs
 
+previews:
 	python3 tools/levels/levels.py previews
 
 art:
