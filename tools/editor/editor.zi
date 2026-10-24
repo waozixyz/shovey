@@ -57,7 +57,6 @@
 #import, file "../../src/shovey_board.zi";
 #import, file "../../src/orientation.zi";
 #import, file "../../src/levels.zi";
-#import, file "../levels/similarity.zi";
 
 sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
@@ -203,12 +202,6 @@ draft_bytes: [64]u8;
 layers_original: [SHOVEY_CELLS * 3]s32;
 layers_edit: [SHOVEY_CELLS * 3]s32;
 names: [1]string;
-similarity_percent: s32;
-similarity_matches: s32;
-similarity_total: s32;
-similarity_cache: [(PLACES + 1) * HEX]u8;
-similarity_cached: [PLACES + 1]bool;
-similarity_scores: [PLACES + 1]s32;
 
 // Palette: board kinds in the order a level is usually built.
 PALETTE :: 110
@@ -450,39 +443,11 @@ OnBorder :: (at: s32) -> bool {
     return x == 0 || y == 0 || x == SHOVEY_WIDTH - 1 || y == SHOVEY_HEIGHT - 1
 }
 
-// Surface changes do not disguise a near copy. Small piece relocations and
-// mirrored layouts remain similar. Cache each place's immutable comparison.
-SimilarityTo :: (place: s32, number: s32) -> s32 {
-    if number < 1 || number > PLACES || !original_found[number] { return -1 }
-    cached := similarity_cache[place * HEX:(place + 1) * HEX]
-    if place == number && similarity_cached[place] && Same(cached, Board(place)) {
-        similarity_percent = similarity_scores[place]
-        return similarity_percent
-    }
-    similarity_percent = PuzzleSimilarity(Board(place), Original(number))
-    if place == number {
-        Copy(cached, Board(place))
-        similarity_cached[place] = true
-        similarity_scores[place] = similarity_percent
-    }
-    return similarity_percent
-}
-
-BestMirrorMatch :: (place: s32) -> s32 { return SimilarityTo(place, original_shown) }
-
-// Still too close to its own original: it is on the list of places to change
-// and, measured over the whole map, most of its pieces match that original.
-TOO_CLOSE_PERCENT :: 70
-TooClose :: (place: s32) -> bool {
-    return SimilarityTo(place, place) >= TOO_CLOSE_PERCENT
-}
-
-// The next place to work on: waiting for a winnable layout, or still too
-// close to its original and not changed here yet.
+// The next place to work on: one still waiting for a winnable layout.
 NextWaiting :: () -> s32 {
     for step: cast(s32)1..PLACES {
         place := (current - 1 + step) % PLACES + 1
-        if !InGame(place) || (TooClose(place) && Same(Board(place), SavedBoard(place)) && !PathExists(DraftPath(place))) { return place }
+        if !InGame(place) { return place }
     }
     return current
 }
@@ -1132,7 +1097,6 @@ FollowLevelFile :: (now: s64) {
     if changed {
         LoadLevels()
         level_file_hash = hash
-        for place: cast(s32)0..PLACES { similarity_cached[place] = false }
     }
     LoadDrafts()
     level_update_pending = false
@@ -2047,20 +2011,7 @@ Inside :: (bounds: Rectangle, x: float32, y: float32) -> bool {
     return x >= bounds.x && y >= bounds.y && x < bounds.x + bounds.width && y < bounds.y + bounds.height
 }
 
-// Green below 50%, then a continuous shift through yellow and orange to red.
-Lerp :: (a: s32, b: s32, part: s32, of: s32) -> u8 {
-    return cast(u8)(a + (b - a) * part / of)
-}
-
-SimilarityColor :: (percent: s32) -> Color {
-    if percent <= 50 { return Color.{96, 168, 120, 255} }
-    if percent < 70 { return Color.{Lerp(96, 236, percent - 50, 20), Lerp(168, 208, percent - 50, 20), Lerp(120, 72, percent - 50, 20), 255} }
-    if percent < 90 { return Color.{Lerp(236, 226, percent - 70, 20), Lerp(208, 80, percent - 70, 20), Lerp(72, 60, percent - 70, 20), 255} }
-    value := ifx percent > 100 then 100 else percent
-    return Color.{Lerp(226, 214, value - 90, 10), Lerp(80, 36, value - 90, 10), Lerp(60, 36, value - 90, 10), 255}
-}
-
-LevelCardColor :: (place: s32, similarity: s32) -> Color {
+LevelCardColor :: (place: s32) -> Color {
     if Approved(place) || published_places[place - 1] {
         if !server_configured { return Color.{159, 111, 209, 255} }
         if !server_verified { return Color.{144, 148, 148, 255} }
@@ -2069,26 +2020,92 @@ LevelCardColor :: (place: s32, similarity: s32) -> Color {
         }
         return Color.{218, 132, 167, 255}
     }
-    return SimilarityColor(similarity)
+    return Color.{72, 80, 78, 255}
 }
 
-// Every place at once: a button for each, coloured by what it needs, with
-// its number and how alike its board is to its own original (mirroring
-// and rotation ignored). A click opens that place.
+// Pictures of every place's board, drawn by scripts/editor_previews.py and
+// named after the board's FNV-1a hash, so an edited board waits for its new
+// picture instead of showing the old one.
+PREVIEW_FOLDER :: "backup/editor-drafts/previews/"
+PREVIEW_PATH :: 48
+preview_hashes: [PLACES]u32;
+preview_ready: [PLACES]bool;
+preview_paths: [PLACES * PREVIEW_PATH]u8;
+preview_lengths: [PLACES]s32;
+preview_wanted: [PLACES * (HEX + 5)]u8;
+preview_checked_at: s64 = -100000;
+preview_requested_at: s64 = -100000;
+
+BoardHash :: (board: []u8) -> u32 {
+    hash: u32 = 2166136261
+    for byte: board { hash = (hash ^ cast(u32)byte) * cast(u32)16777619 }
+    return hash
+}
+
+PreviewPath :: (place: s32) -> string {
+    index := place - 1
+    return TextView(preview_paths[index * PREVIEW_PATH:index * PREVIEW_PATH + preview_lengths[index]])
+}
+
+// Once a second, find which places have their picture; when some are
+// missing, list every board for the drawing script and start it, at most
+// every few seconds.
+RefreshPreviews :: (now: s64) {
+    if now - preview_checked_at < 1000 { return }
+    preview_checked_at = now
+    missing := false
+    digits := "0123456789abcdef"
+    for place: cast(s32)1..PLACES {
+        index := place - 1
+        hash := BoardHash(Board(place))
+        if hash != preview_hashes[index] || preview_lengths[index] == 0 {
+            preview_hashes[index] = hash
+            path := preview_paths[index * PREVIEW_PATH:(index + 1) * PREVIEW_PATH]
+            length: s32 = 0
+            AppendText(path, *length, PREVIEW_FOLDER)
+            if place < 100 { AppendText(path, *length, "0") }
+            if place < 10 { AppendText(path, *length, "0") }
+            AppendNumber(path, *length, place)
+            AppendText(path, *length, "-")
+            for shift: cast(s32)0..7 {
+                path[length] = digits[cast(s64)((hash >> cast(u32)((7 - shift) * 4)) & cast(u32)15)]
+                length += 1
+            }
+            AppendText(path, *length, ".png")
+            preview_lengths[index] = length
+            preview_ready[index] = false
+        }
+        if !preview_ready[index] { preview_ready[index] = PathExists(PreviewPath(place)) }
+        if !preview_ready[index] { missing = true }
+    }
+    if !missing || now - preview_requested_at < 4000 { return }
+    preview_requested_at = now
+    length: s32 = 0
+    for place: cast(s32)1..PLACES {
+        AppendNumber(preview_wanted[:], *length, place)
+        AppendText(preview_wanted[:], *length, " ")
+        AppendText(preview_wanted[:], *length, TextView(Board(place)))
+        AppendText(preview_wanted[:], *length, "\n")
+    }
+    Shell("mkdir -p backup/editor-drafts/previews")
+    if WriteEntireFile("backup/editor-drafts/previews/wanted.txt", TextView(preview_wanted[:length])) {
+        Shell("setsid python3 scripts/editor_previews.py > backup/editor-previews.log 2>&1 < /dev/null &")
+    }
+}
+
+// Every place at once, as a picture of its board under a strip coloured by
+// its release state and holding its number. A click opens that place.
 SELECTOR_COLUMNS :: 15
 SelectorScreen :: (area: Rectangle) {
+    RefreshPreviews(MonotonicMilliseconds())
     rows := (PLACES + SELECTOR_COLUMNS - 1) / SELECTOR_COLUMNS
     legend_height: float32 = 28.0
     gap: float32 = 4.0
+    strip: float32 = 16.0
     cell_width := (area.width - gap * cast(float32)(SELECTOR_COLUMNS - 1)) / cast(float32)SELECTOR_COLUMNS
     cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
     Caption(15, Rectangle.{area.x, area.y, area.width, legend_height},
-        ifx server_configured && !server_verified then "Server unverified. Similarity: green below 50% → red above 90%." else
-        "Purple: synced. Pink: changed. Similarity: green below 50% → red above 90%.", 14)
-    // Measuring a place sets the status line's numbers; keep them.
-    keep_percent := similarity_percent
-    keep_matches := similarity_matches
-    keep_total := similarity_total
+        ifx server_configured && !server_verified then "Server unverified." else "Purple: synced. Pink: changed.", 14)
     for place: cast(s32)1..PLACES {
         index := place - 1
         column := index % SELECTOR_COLUMNS
@@ -2097,26 +2114,25 @@ SelectorScreen :: (area: Rectangle) {
                 area.y + legend_height + cast(float32)row * (cell_height + gap), cell_width, cell_height}
         length: s32 = 0
         AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, place)
-        alike := SimilarityTo(place, place)
-        if alike >= 0 {
-            AppendText(cell_bytes[index * 16:index * 16 + 16], *length, " ")
-            AppendNumber(cell_bytes[index * 16:index * 16 + 16], *length, alike)
-            AppendText(cell_bytes[index * 16:index * 16 + 16], *length, "%")
-        }
-        fill := LevelCardColor(place, alike)
         border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
         unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
-                .fill = fill, .border = border, .radius = 5.0})
+                .fill = LevelCardColor(place), .border = border, .radius = 5.0})
+        if preview_ready[index] {
+            Image(session, ImageProps.{.key = cast(u64)(76000 + place), .asset_path = PreviewPath(place),
+                    .bounds = Rectangle.{bounds.x + 2.0, bounds.y + strip, bounds.width - 4.0, bounds.height - strip - 2.0},
+                    .fit = ImageFit.ImageFitContain})
+        }
+        Text(session, TextProps.{.key = cast(u64)(78000 + place),
+                .bounds = Rectangle.{bounds.x + 4.0, bounds.y, bounds.width - 8.0, strip},
+                .text = TextView(cell_bytes[index * 16:index * 16 + length]), .font = 12,
+                .align = TextAlign.TextAlignEnd, .vertical_align = TextAlign.TextAlignCenter})
         if Button(session, ButtonProps.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
                 .label = TextView(cell_bytes[index * 16:index * 16 + length]), .tone = ButtonTone.ButtonToneNeutral,
-                .emphasis = ButtonEmphasis.ButtonEmphasisGhost}) != 0 {
+                .emphasis = ButtonEmphasis.ButtonEmphasisGhost, .invisible = true}) != 0 {
             Open(place)
             selector_open = false
         }
     }
-    similarity_percent = keep_percent
-    similarity_matches = keep_matches
-    similarity_total = keep_total
 }
 
 // What the solver says about the board on screen, while you play too.
@@ -2212,11 +2228,6 @@ StatusText :: (show_solution: bool = true) -> string {
         AppendText(status_bytes[:], *length, ifx Proven() then " s." else " s. Play it (Tab) to prove it, or change it.")
     }
     }
-    if BestMirrorMatch(current) >= 0 {
-        AppendText(status_bytes[:], *length, "    Puzzle similarity: ")
-        AppendNumber(status_bytes[:], *length, similarity_percent)
-        AppendText(status_bytes[:], *length, "% (layout and pieces, best mirror)")
-    }
     if show_solution && Proven() {
         AppendText(status_bytes[:], *length, "    You won it in ")
         AppendNumber(status_bytes[:], *length, proof_length)
@@ -2229,9 +2240,6 @@ StatusText :: (show_solution: bool = true) -> string {
     }
     else if !InGame(current) && Same(Board(current), SavedBoard(current)) {
         AppendText(status_bytes[:], *length, "Not in the game yet: once it is winnable it goes in by itself.")
-    }
-    else if TooClose(current) && Same(Board(current), SavedBoard(current)) {
-        AppendText(status_bytes[:], *length, "Too close to its original: change it so it differs more.")
     }
     else if save_state == 3 {
         AppendText(status_bytes[:], *length, "Not saved: ")
@@ -2582,16 +2590,6 @@ main :: (argc: s32, argv: **u8) -> s32 {
     LoadDrafts()
     LoadOrientation()
     LoadApprovals()
-    if argc >= 2 && TextFromCString(argv[1]) == "--similarity" {
-        digits: [24]u8
-        for place: cast(s32)1..PLACES {
-            Say(FormatInteger(cast(s64)place, digits[:]))
-            Say(" ")
-            Say(FormatInteger(cast(s64)SimilarityTo(place, place), digits[:]))
-            Say("%\n")
-        }
-        return 0
-    }
     selected = 256
     palette_tab = 0
     start: s32 = 1

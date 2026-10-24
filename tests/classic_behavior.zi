@@ -1,7 +1,6 @@
 #import, file "../src/engine.zi";
 #import, file "../src/orientation.zi";
 #import, file "../src/progress.zi";
-#import, file "../tools/levels/similarity.zi";
 
 // Opening the game lands on the newest unlocked puzzle; an unfinished
 // position there is kept, and a replay of an older puzzle is left behind.
@@ -490,37 +489,6 @@ NatureChecks :: () -> s32 {
     return 0
 }
 
-SimilaritySet :: (board: []u8, at: s32, kind: s32) {
-    alphabet := "0123456789abcdef"
-    board[at * 2] = alphabet[kind >> 4]
-    board[at * 2 + 1] = alphabet[kind & 15]
-}
-
-SimilarityChecks :: () -> s32 {
-    a: [1440]u8; b: [1440]u8
-    for at: cast(s32)0..1439 { a[at] = cast(u8)48; b[at] = cast(u8)48 }
-    SimilaritySet(a[:], 25, 10)
-    SimilaritySet(a[:], 49, 9)
-    SimilaritySet(a[:], 73, 18)
-    SimilaritySet(a[:], 97, 7)
-    for at: cast(s32)40..45 { SimilaritySet(a[:], at, 12) }
-    for at: cast(s32)0..239 {
-        mirrored := (19 - at / 12) * 12 + at % 12
-        SimilaritySet(b[:], mirrored, ShoveyByte(TextView(a[:]), at * 2))
-        SimilaritySet(b[:], 240 + at, 77)
-        SimilaritySet(b[:], 480 + at, 57)
-    }
-    if PuzzleSimilarity(a[:], b[:]) != 100 { return 140 }
-    SimilaritySet(b[:], 205, 0)
-    SimilaritySet(b[:], 206, 10)
-    score := PuzzleSimilarity(a[:], b[:])
-    if score < 70 || score >= 100 || score != PuzzleSimilarity(b[:], a[:]) { return 141 }
-    for at: cast(s32)0..1439 { b[at] = cast(u8)48 }
-    SimilaritySet(b[:], 50, SHOVEY_CRAB)
-    if PuzzleSimilarity(a[:], b[:]) >= 70 { return 142 }
-    return 0
-}
-
 #program_export
 Check :: () -> s32 {
     result := OpenChecks()
@@ -538,8 +506,6 @@ Check :: () -> s32 {
     result = TickChecks()
     if result != 0 { return result }
     result = NatureChecks()
-    if result != 0 { return result }
-    result = SimilarityChecks()
     if result != 0 { return result }
     result = BoardChecks()
     if result != 0 { return result }

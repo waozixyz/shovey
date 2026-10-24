@@ -82,14 +82,20 @@ def publish_live(output):
         return False
     publication = json.loads(record.read_text())
     entity = Path(subprocess.check_output(['ziran', 'pkg', 'path', 'entity'], cwd=ROOT, text=True).strip())
-    try:
-        subprocess.run(['make', 'publication'], cwd=entity, stdout=output, stderr=subprocess.STDOUT, check=True)
-        subprocess.run([str(entity / 'build/publication'), 'publish', str(key), publication['server'], publication['format'],
-                        publication['title'], str(ROOT / 'levels/approved.json'), publication['id']],
-                       cwd=ROOT, stdout=output, stderr=subprocess.STDOUT, check=True)
-    except subprocess.CalledProcessError as error:
-        output.write(f'Live campaign not updated: {error}\n')
-        return False
+    # The node keeps documents of up to 256 KiB, so the published copy leaves
+    # out approved.json's indentation; the games read either form.
+    campaign = ROOT / 'backup/campaign-publisher/campaign.json'
+    atomic(campaign, json.dumps(json.loads((ROOT / 'levels/approved.json').read_text()), separators=(',', ':'),
+                                ensure_ascii=False))
+    subprocess.run(['make', 'publication'], cwd=entity, stdout=output, stderr=subprocess.STDOUT, check=True)
+    answer = subprocess.run([str(entity / 'build/publication'), 'publish', str(key), publication['server'], publication['format'],
+                             publication['title'], str(campaign), publication['id']],
+                            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    output.write(answer.stdout)
+    if answer.returncode != 0:
+        # The screen checks expect the new campaign, so say why it is missing.
+        reason = (answer.stdout.strip().splitlines() or ['no answer'])[-1]
+        raise RuntimeError(f'Live campaign not updated ({campaign.stat().st_size} bytes): {reason}')
     return True
 
 

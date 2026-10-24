@@ -164,8 +164,8 @@ with (output / 'app.log').open('w') as log:
         time.sleep(2.3)
         colors = map_colors()
         assert colors[0] == purple, colors[0]
-        assert colors[72][0] > 2 * colors[72][1] and colors[72][0] > 2 * colors[72][2], colors[72]
-        assert colors[73][1] > colors[73][0] and colors[73][1] > colors[73][2], colors[73]
+        # Places nobody approved share one plain colour; no similarity score.
+        assert colors[72] == colors[73] == (72, 80, 78), (colors[72], colors[73])
         server['boards'][0] = base_board
         (drafts / 'server-campaign.json').write_text(json.dumps(server))
         time.sleep(2.3)
@@ -267,7 +267,7 @@ with (output / 'app.log').open('w') as log:
             if base is not None:
                 assert (drafts / '002.hex').read_bytes() == base, 'Menu click painted the board below it'
             time.sleep(2.7)
-        print('Approval retries and saves passed; server matches purple, changed drafts pink, unverified gray; waiting 100% red and unknown/low similarity green')
+        print('Approval retries and saves passed; server matches purple, changed drafts pink, unverified gray; unapproved places plain')
     finally:
         if windows:
             subprocess.run(['import', '-window', windows[0], str(output / 'last.png')], check=True)

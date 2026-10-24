@@ -92,8 +92,9 @@ Reset restores the level's original reference board when available, including
 every layer; Undo restores the edit you had before resetting.
 The level overview checks the live signed server release in the background.
 Purple means the current board matches it; pink means a local change needs an
-update, and gray means the server could not be verified. Similarity stays green
-below 50% and shifts smoothly toward red above 90%, including waiting levels.
+update, and gray means the server could not be verified. Each place shows a
+picture of its current board, drawn by `scripts/editor_previews.py` into
+`backup/editor-drafts/previews/`, so the whole campaign reads at a glance.
 Changed published boards show Update. Saved wins are reused only when they
 still win on the visible draft; otherwise Update starts a check and shows
 Checking. It keeps an already running check and publishes that exact draft
@@ -182,10 +183,7 @@ Placing abyss clears objects and decoration above it. Adjacent abyss cells share
 one opening with a recessed stone lip at its boundary. Falling spins and shrinks
 Shovey into the opening. Teleporters have a recessed inward spiral.
 
-The original-board comparison measures mirrored puzzle layouts and nearby piece
-placements, ignoring cosmetic floors and color swaps. The level overview caches
-these scores. Run `build/private-editor/shovey-level-editor --similarity` to print
-them without opening a window. Tree proposals, the rabbit alternative and image
+Tree proposals, the rabbit alternative and image
 generation prompts are kept in `tools/pixel/proposals/`.
 
 Classic's optional `tiles` and `decorations` rows are stored separately from
