@@ -389,6 +389,12 @@ AnimalsWander :: () -> bool {
     return changed
 }
 
+// Whether a shot still lies somewhere on the board.
+BoardHasShots :: () -> bool {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 { if game.ground[at] == 26 { return true } }
+    return false
+}
+
 // Moves (or throws, for direction -1) and plays what the move did.
 ShoveyAct :: (direction: s32) -> bool {
     before := game
@@ -953,7 +959,10 @@ ShoveyFrame :: () {
         if gesture.tapped || gesture.held {
             cell := TileMapCellAt(grid, gesture.x, gesture.y)
             cell = BoardLogicalIndex(cell, landscape)
-            if cell >= 0 {
+            // Tapping Shovey himself throws the shot he holds.
+            if gesture.tapped && cell >= 0 && cell == game.player && (game.powers & SHOVEY_AMMO) != 0 {
+                changed = ShoveyAct(-1) || changed
+            } else if cell >= 0 {
                 step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
                     cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
             } else {
@@ -974,8 +983,11 @@ ShoveyFrame :: () {
                 .floating = true})
         if pad.step { step = BoardEngineDirection(pad.direction, landscape) }
     }
-    if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
-        if Control(20018, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, AppLocaleHost("shovey_fire"), disabled) {
+    // In a level with shots the Fire button is always there, so players see
+    // how to throw; it works once Shovey holds a shot.
+    armed := (game.powers & SHOVEY_AMMO) != 0
+    if (armed || BoardHasShots()) && !disabled {
+        if Control(20018, Rectangle.{width - 124.0, bottom - 64.0, 110.0, 48.0}, AppLocaleHost("shovey_fire"), !armed) {
             changed = ShoveyAct(-1) || changed
         }
     }

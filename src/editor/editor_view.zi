@@ -198,7 +198,7 @@ editor_download_name_length: s32;
 editor_text_bytes: [4][512]u8;
 editor_classic_names: [SPRITE_COUNT]string;
 // The palette's names in the player's language, by edition and place.
-editor_piece_names: [2][EDIT_ISLAND_PIECES]string;
+editor_piece_names: [2][EDIT_MOST_PIECES]string;
 editor_island_names: [ISLAND_PICTURES]string;
 editor_view_classic: ShoveyGame;
 editor_view_isle: IslandGame;
