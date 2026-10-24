@@ -91,7 +91,7 @@ try {
     await delay(400);
     assert.equal(await evaluate('window.scrollY'), 0, 'The wheel over the loading game scrolled the page');
   }
-  // The ZIB edition waits for its profile; the compiled one has none.
+  // The ZX edition waits for its profile; the compiled one has none.
   await wait(`(${mini}?.Module?.profileReady || ${mini}?.Module?.FS?.analyzePath('/assets/shovey/catalog.json').exists) && ${mini}.document.querySelector('#loading-screen').classList.contains('is-hidden')`);
   // The embedded page's test driver lists the widgets it drew; nothing is captured.
   let serial = 0;

@@ -53,12 +53,12 @@ jobs:
         run: |
           make -j2 -C "$GITHUB_WORKSPACE/ziranlang/ziran"
           "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" fetch --locked
-      - name: Check the game and build its ZIB web edition
+      - name: Check the game and build its ZX web edition
         run: |
           make public-test ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
-          make web-zib ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
-      # The profile and the live campaign still need the ZIB player.
-      - name: Play the ZIB edition in a private browser
+          make web-zx ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
+      # The profile and the live campaign still need the ZX player.
+      - name: Play the ZX edition in a private browser
         run: |
           export CHROMIUM="$(command -v google-chrome || command -v chromium)"
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_profile_test.mjs

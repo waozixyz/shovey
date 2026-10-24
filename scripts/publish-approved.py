@@ -158,7 +158,7 @@ def complete_release(config, receipt, output):
     store = ROOT / 'build/approved-releases'
     release = json.loads((store / 'inbe.arcade/latest-v2.json').read_text())
     artifact = release['artifacts'][0]
-    payload = store / 'inbe.arcade' / (artifact['sha256'] + '.zib')
+    payload = store / 'inbe.arcade' / (artifact['sha256'] + '.zx')
     if (release['version'] != receipt['versions']['arcade'] or artifact['sha256'] != receipt['sha256'] or
             payload.stat().st_size != artifact['size'] or hashlib.sha256(payload.read_bytes()).hexdigest() != artifact['sha256']):
         raise ValueError('The checked release artifact changed; no upload was attempted')
@@ -193,7 +193,7 @@ def complete_release(config, receipt, output):
     if receipt.get('approved_boards'):
         remember_verified(ROOT, receipt)
     if config.get('install_local') and not receipt.get('local_installed'):
-        built = arcade / 'build/arcade.zib'
+        built = arcade / 'build/arcade.zx'
         if hashlib.sha256(built.read_bytes()).hexdigest() != artifact['sha256']:
             raise ValueError('The local build changed after checking; the published release was preserved')
         # All release gates already passed for these outputs. Installation
@@ -278,15 +278,15 @@ def publish_campaign():
             run([*private, 'python3', arcade / 'tests/collection_ui_test.py', '--binary', arcade / 'build/arcade', '--inbe-source', inbe], arcade)
             run([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade)
             run([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
-                 '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
+                 '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'])
             if len(approved) >= 28:
                 run([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
-                     '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zib'])
+                     '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'])
             if fingerprint() != approved_hash:
                 # Requests for this snapshot join the next campaign build.
                 Queue(ROOT).advance(ACTIVE_IDS, 'building', 'Campaign changed; rebuilding')
                 continue
-            bundle = arcade / 'build/arcade.zib'
+            bundle = arcade / 'build/arcade.zx'
             receipt.update(phase='checked', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
                            checks=['approved routes', 'release boundary and saves', 'assets', 'Arcade UI', 'standalone Shovey UI', 'Inbe UI'])
             if len(approved) >= 28:

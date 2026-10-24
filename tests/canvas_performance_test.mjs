@@ -17,7 +17,7 @@ const runnerSha256=createHash('sha256').update(await readFile(new URL(import.met
 const artifacts={};
 for(const directory of [before,after]) {
   artifacts[resolve(directory)]={};
-  for(const name of ['index.js','index.wasm','runtime.data','shovey.zib']) {
+  for(const name of ['index.js','index.wasm','runtime.data','shovey.zx']) {
     artifacts[resolve(directory)][name]=createHash('sha256').update(await readFile(join(directory,name))).digest('hex');
   }
 }
@@ -81,7 +81,7 @@ async function sample(directory) {
   const tree=JSON.parse(await evaluate('Module.FS.readFile("/tmp/test-driver/reply",{encoding:"utf8"})'));
   assert(tree.ok);assert(tree.nodes.some(n=>/^Level 1 \/ /.test(n.label)),'Not on level one');
   await wait('globalThis.frameTimes.length>60');
-  const assets=await evaluate(`(()=>{const hashes={};for(const path of ['/app.zib','/entity.zib','/kryon-font.ttf']){const bytes=Module.FS.readFile(path);let h=2166136261;for(const x of bytes)h=Math.imul(h^x,16777619);hashes[path]={length:bytes.length,hash:h>>>0};}return hashes;})()`);
+  const assets=await evaluate(`(()=>{const hashes={};for(const path of ['/app.zx','/entity.zx','/kryon-font.ttf']){const bytes=Module.FS.readFile(path);let h=2166136261;for(const x of bytes)h=Math.imul(h^x,16777619);hashes[path]={length:bytes.length,hash:h>>>0};}return hashes;})()`);
   await evaluate('globalThis.frameTimes=[]');
   // CPU sampling is diagnostic work, not part of the frame-time benchmark.
   // Starting V8's profiler can stall on large Wasm modules; opt in separately.

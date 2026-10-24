@@ -1,5 +1,4 @@
 #import "session"
-ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 FingerSwipe :: #import "mingcute/mingcute_filled_finger_swipe";
 Math :: #import "std/math";
 #import "joystick"
@@ -39,7 +38,6 @@ Math :: #import "std/math";
 #import, file "controls.zi";
 #import, file "pieces.zi";
 #import, file "shovey_theme.zi";
-#import "kryon/carousel"
 #import "kryon/app_mini"
 #import "kryon/app_context"
 #import "json_scan"
@@ -63,13 +61,6 @@ selector_open: bool;
 levels_scroll: s32;
 loaded: bool;
 help_open: bool;
-// The title screen opens the game and returns until Play.
-title_open: bool = true;
-// Whether the host has a game library to return to: -1 until asked.
-title_library: s32 = -1;
-// The same cover browser used by Arcade, with game-owned header actions.
-title_carousel: CarouselState;
-title_external: bool;
 // An embedded mini page opens straight into a level with only its levels
 // and restart controls.
 mini: bool;
@@ -512,83 +503,20 @@ ContinueGame :: () {
     Remember()
 }
 
-// Back from a level, its list or help returns to the title screen; false
-// on the title screen, so the host can leave the game.
+// Back from the level list or help returns to the level; false while
+// playing, so the host returns to the cover that opened the game.
 ShoveyBack :: () -> bool {
-    if title_open { return false }
-    if title_external || mini {
-        if selector_open || help_open {
-            selector_open = false
-            help_open = false
-            return true
-        }
-        return false
-    }
-    title_open = true
+    if !selector_open && !help_open { return false }
     selector_open = false
     help_open = false
     return true
 }
 
-// The title screen: one page per way into the game, Classic and, where the
-// host carries it, the editor. Swipe, the arrows or arrow keys turn pages.
-ShoveyTitle :: (width: float32, top: float32, bottom: float32, can_leave: bool) {
-    pages: s32 = ifx EditorAvailable() then 2 else 1
-    items: [2]CarouselItem = .[
-    CarouselItem.{.label = AppLocaleHost("shovey_title_art"),
-        .portrait = "assets/shovey/title-portrait.png", .landscape = "assets/shovey/title-landscape.png",
-        .logo = "assets/shovey/logo.png", .action = AppLocaleHost("shovey_play")},
-    CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
-        .portrait = "assets/shovey/editor-portrait.png", .landscape = "assets/shovey/editor-landscape.png",
-        .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_editor"), .action = AppLocaleHost("shovey_open")}
-    ]
-    entered := Carousel(frame.session, CarouselProps.{.key = cast(u64)20210,
-            .bounds = Rectangle.{0.0, top, width, bottom - top}, .now = frame.now, .key_pressed = AppKeyHost(),
-            .dark = true, .label = AppLocaleHost("shovey_title_art"), .previous_label = AppLocaleHost("shovey_page_previous"),
-            .next_label = AppLocaleHost("shovey_page_next")}, items[:pages], *title_carousel)
-    if entered >= 0 { TitleEnter(entered) }
-    if ProfileAvailable() && Control(20400, Rectangle.{width - 60.0, top + 12.0, 44.0, 44.0},
-        AppLocaleHost("shovey_profile"), false, "", ProfileIcon.Shape) {
-        OpenProfile()
-    }
-    TitleToolbar()
-    row_y := top + 6.0
-    // Classic's levels, help and sound, and the other games where the host
-    // has a list; the editor page keeps only its own button.
-    if title_carousel.selected != 0 { return }
-    if title_library < 0 { title_library = ifx LibraryAvailable() then 1 else 0 }
-    x: float32 = 12.0
-    if Control(20203, Rectangle.{x, row_y, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
-        title_open = false
-        selector_open = true
-    }
-    if Control(20204, Rectangle.{x + 56.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_help"), false, "", ICON_HELP) {
-        title_open = false
-        help_open = true
-    }
-    if Control(20205, Rectangle.{x + 112.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_mute"), false, "",
-        ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
-        SoundSetMuted(!SoundMuted())
-    }
-    if title_library == 1 && Control(20206, Rectangle.{x + 168.0, row_y, 44.0, 44.0}, AppLocaleHost("shovey_games"), false, "", ICON_GAMES) {
-        LeaveForGameSelection()
-    }
-}
-
-TitleEnter :: (page: s32) {
-    // Entering play keeps the campaign, so its record exists from the start.
-    if page == 0 { title_open = false; Remember() }
-    if page == 1 { OpenEditor() }
-}
-
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
     if !loaded {
-        // Library opens and explicit routes both reach this first frame.
-        // Standalone and older hosts keep their own title screen.
-        title_external = LibraryAvailable()
+        // The host's cover is the title: every open goes straight to play.
         mini = AppMini()
-        title_open = !title_external && !mini
         LiveCampaignStart()
         if !ShoveyCampaignRestore(*progress, *game, AppRecordHost("campaign")) {
             if ShoveyRestore(*game, AppRecordHost("position")) {
@@ -600,7 +528,10 @@ ShoveyFrame :: () {
                 progress = ShoveyProgressNew()
             }
         }
-        if ShoveyOpenLatest(*progress, *game) { Remember() }
+        // Entering play keeps the campaign, so its record exists from the
+        // start; an embedded mini page saves only once something changes.
+        latest := ShoveyOpenLatest(*progress, *game)
+        if latest || !mini { Remember() }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
         last_tick = frame.now
         loaded = true
@@ -610,12 +541,7 @@ ShoveyFrame :: () {
     width := cast(float32)frame.width
     top := cast(float32)frame.top
     bottom := cast(float32)(frame.height - frame.bottom)
-    can_leave := GameSelectionAvailable()
     ShoveyDress(frame.session, width, top, bottom)
-    if title_open {
-        ShoveyTitle(width, top, bottom, can_leave)
-        return
-    }
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)

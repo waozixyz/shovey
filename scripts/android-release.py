@@ -38,7 +38,7 @@ def verify(apk, version, tools):
         abis = sorted(p.split('/')[1] for p in archive.namelist() if re.fullmatch(r'lib/[^/]+/libmain\.so', p))
         assert abis == ['arm64-v8a', 'armeabi-v7a'], 'Both supported ARM architectures must be present'
         metadata = json.loads(archive.read('assets/arcade.json'))
-        payload = archive.read('assets/arcade.zib')
+        payload = archive.read('assets/arcade.zx')
         assert metadata['id'] == 'arcade.shovey-player' and metadata['version'] == version
         assert metadata['sha256'] == hashlib.sha256(payload).hexdigest(), 'Embedded game collection differs from its receipt'
     return dict(version=version, version_code=int(package[2]), package=package[1], abis=abis,
@@ -68,7 +68,7 @@ def verify_bundle(bundle, version, bundletool):
     with zipfile.ZipFile(bundle) as archive:
         metadata = json.loads(archive.read('base/assets/arcade.json'))
         assert metadata['version'] == version and metadata['id'] == 'arcade.shovey-player'
-        assert metadata['sha256'] == hashlib.sha256(archive.read('base/assets/arcade.zib')).hexdigest()
+        assert metadata['sha256'] == hashlib.sha256(archive.read('base/assets/arcade.zx')).hexdigest()
         abis = {name.split('/')[2] for name in archive.namelist() if name.startswith('base/lib/') and name.endswith('.so')}
         assert abis == {'arm64-v8a', 'armeabi-v7a'}
         verify_root = ROOT / 'build/play-verify'

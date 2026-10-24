@@ -1,9 +1,52 @@
-// A game, ready to play, on the shared standalone browser host.
+// A game, ready to play, on the shared standalone browser host. Like Arcade's
+// library, the page opens on one cover per app, and each cover opens its app.
 #import "kryon/app_context"
 #import "kryon/app_protocol"
+#import "kryon/app_mini"
+#import "kryon/geometry"
+#import "kryon/carousel"
+#import "kryon/button_widget"
+#import "kryon/button_props"
+#import "kryon/control_props"
+ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
+#import, file "host.zi";
+#import, file "../shovey_theme.zi";
 #import, file "../shovey_view.zi";
 #import, file "../editor/editor_view.zi";
 #import, file "../controls.zi";
+
+web_covers: CarouselState;
+
+// Classic and the editor, with the cover art apps.json declares for them.
+WebCovers :: () {
+    page := ReadAppUiHost()
+    width := cast(float32)page.width
+    top := cast(float32)page.top
+    bottom := cast(float32)(page.height - page.bottom)
+    ShoveyDress(page.session, width, top, bottom)
+    items: [2]CarouselItem = .[
+    CarouselItem.{.label = AppLocaleHost("shovey_title_art"),
+        .portrait = "assets/shovey/title-portrait.png", .landscape = "assets/shovey/title-landscape.png",
+        .logo = "assets/shovey/logo.png", .action = AppLocaleHost("shovey_play")},
+    CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
+        .portrait = "assets/shovey/editor-portrait.png", .landscape = "assets/shovey/editor-landscape.png",
+        .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_editor"), .action = AppLocaleHost("shovey_open")}
+    ]
+    entered := Carousel(page.session, CarouselProps.{.key = cast(u64)20210,
+            .bounds = Rectangle.{0.0, top, width, bottom - top}, .now = page.now, .key_pressed = AppKeyHost(),
+            .dark = true, .label = AppLocaleHost("shovey_title_art"), .previous_label = AppLocaleHost("shovey_page_previous"),
+            .next_label = AppLocaleHost("shovey_page_next")}, items[:], *web_covers)
+    if entered >= 0 {
+        web_covers_open = false
+        web_editor_open = entered == 1
+    }
+    if AppSupports("entity.profile") && Button(page.session, ButtonProps.{.key = cast(u64)20400, .id = 20400,
+            .bounds = Rectangle.{width - 60.0, top + 12.0, 44.0, 44.0}, .label = AppLocaleHost("shovey_profile"),
+            .icon_shape = ProfileIcon.Shape, .icon_only = true, .fit_content = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        unused AppService("entity.profile", "open")
+    }
+}
 
 #program_export
 Main :: () -> s64 {
@@ -14,7 +57,9 @@ Main :: () -> s64 {
         return APP_PROTOCOL
     }
     if mode == APP_FRAME {
-        if web_editor_open { EditorFrame("en") }
+        // An embedded mini page opens straight into its level.
+        if web_covers_open && !AppMini() { WebCovers() }
+        else if web_editor_open { EditorFrame("en") }
         else { ShoveyFrame() }
     }
     return 0

@@ -1,14 +1,16 @@
 #if #defined(SHOVEY_WEB) {
     WebApp :: #import "kryon/app_context";
+    // The page opens on its covers; Back from a game returns to them.
+    web_covers_open: bool = true;
     web_editor_open: bool;
     // The editor's service calls are bound to this export; it differs from
     // the app context's own AppServiceHost, which a compiled page answers.
     #program_export
     GameServiceHost :: (name: string, request: string) -> string { return AppServiceHost(name, request) }
     AppServiceHost :: (name: string, request: string) -> string {
-        if name == "arcade.navigation" {
-            if request == "editor" { web_editor_open = true; return "opened" }
-            if request == "back" { web_editor_open = false; return "opened" }
+        if name == "arcade.navigation" && request == "back" {
+            web_covers_open = true
+            return "queued"
         }
         if name == "arcade.controls" {
             if request == "get" { return WebApp.DocumentRead("controls") }
@@ -28,7 +30,6 @@
 } else {
     host_api :: #system_library "host_api";
     AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
-    AppSupportsHost :: (capability: string) -> bool #foreign host_api;
 }
 #import "std/text_buffer"
 
@@ -118,42 +119,7 @@ ControlsSetPad :: (pad: bool) {
     controls_chosen = true
 }
 
+// Leaves the game for the cover that opened it.
 LeaveForGameSelection :: () {
     unused AppServiceHost("arcade.navigation", "back")
-}
-
-// The editor opens from the title screen where the host carries it.
-OpenEditor :: () {
-    unused AppServiceHost("arcade.navigation", "editor")
-}
-
-TitleToolbar :: () {
-    unused AppServiceHost("arcade.navigation", "toolbar")
-}
-
-// Whether the host has a list of games to return to.
-LibraryAvailable :: () -> bool {
-    return GameSelectionAvailable() && AppServiceHost("arcade.navigation", "library") == "available"
-}
-
-#if #defined(SHOVEY_WEB) {
-    GameSelectionAvailable :: () -> bool { return false }
-    EditorAvailable :: () -> bool { return true }
-} else {
-    GameSelectionAvailable :: () -> bool { return AppSupportsHost("arcade.navigation") }
-    EditorAvailable :: () -> bool { return AppSupportsHost("arcade.navigation") }
-}
-
-// Only a standalone native host offers this route. Embedded games keep the
-// outer application's existing Entity profile and never load another one.
-ProfileAvailable :: () -> bool {
-    #if #defined(SHOVEY_WEB) {
-        return WebApp.AppSupports("entity.profile")
-    } else {
-        return AppSupportsHost("entity.profile")
-    }
-}
-
-OpenProfile :: () {
-    unused AppServiceHost("entity.profile", "open")
 }

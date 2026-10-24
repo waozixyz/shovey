@@ -27,11 +27,11 @@ class Publication(unittest.TestCase):
         (self.root / 'levels').mkdir()
         (self.root / 'levels/approved.json').write_text(json.dumps(dict(levels=[{}] * 19)))
         (self.root / 'build').mkdir(exist_ok=True)
-        payload = b'ZIB\0checked release'
+        payload = b'ZX\0\0checked release'
         self.digest = hashlib.sha256(payload).hexdigest()
-        self.payload = self.store / (self.digest + '.zib')
+        self.payload = self.store / (self.digest + '.zx')
         self.payload.write_bytes(payload)
-        (self.root / 'build/arcade.zib').write_bytes(payload)
+        (self.root / 'build/arcade.zx').write_bytes(payload)
         self.release = dict(version='0.6.7', artifacts=[dict(sha256=self.digest, size=len(payload))])
         (self.store / 'latest-v2.json').write_text(json.dumps(self.release))
         self.receipt = dict(versions=dict(arcade='0.6.7'), sha256=self.digest,

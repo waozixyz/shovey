@@ -9,7 +9,7 @@ ENTITY = $(shell $(ZIRAN) pkg path entity $(LOCK_FLAGS))
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
-.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zib web-zib-test
+.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zx web-zx-test
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test
 editor-server-test:
@@ -86,7 +86,7 @@ DESKTOP_DEFINES ?=
 .PHONY: desktop
 desktop: bundles
 	python3 scripts/prepare-web.py
-	$(MAKE) -C '$(KRYON)' zib-raylib
+	$(MAKE) -C '$(KRYON)' zx-raylib
 	rm -rf '$(DESKTOP_DIR)'
 	mkdir -p '$(DESKTOP_DIR)'
 	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
@@ -99,13 +99,13 @@ desktop: bundles
 		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
 		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
 		--asset-dir assets=build/web-assets/assets --entry game:Main \
-		-o '$(DESKTOP_DIR)/app.zib' src/web/game.zi
-	cp '$(KRYON)/build/zib-raylib/zib' '$(DESKTOP_DIR)/shovey'
-	cp '$(KRYON)/build/zib-raylib/kryon-font.ttf' '$(DESKTOP_DIR)/'
+		-o '$(DESKTOP_DIR)/app.zx' src/web/game.zi
+	cp '$(KRYON)/build/zx-raylib/zx' '$(DESKTOP_DIR)/shovey'
+	cp '$(KRYON)/build/zx-raylib/kryon-font.ttf' '$(DESKTOP_DIR)/'
 	printf 'Shovey\n' > '$(DESKTOP_DIR)/app.title'
-	'$(DESKTOP_DIR)/shovey' --check '$(DESKTOP_DIR)/app.zib'
+	'$(DESKTOP_DIR)/shovey' --check '$(DESKTOP_DIR)/app.zx'
 
-web-zib: bundles
+web-zx: bundles
 	python3 scripts/prepare-web.py
 	rm -rf build/web
 	mkdir -p build/web
@@ -119,10 +119,10 @@ web-zib: bundles
 		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
 		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
 		--asset-dir assets=build/web-assets/assets --entry game:Main \
-		-o build/web/shovey.zib src/web/game.zi
-	$(MAKE) -C '$(ENTITY)' build/entity.zib ZIRAN='$(TOOLCHAIN)/build/bin/ziran'
+		-o build/web/shovey.zx src/web/game.zi
+	$(MAKE) -C '$(ENTITY)' build/entity.zx ZIRAN='$(TOOLCHAIN)/build/bin/ziran'
 	ZIRAN='$(TOOLCHAIN)/build/bin/ziran' python3 '$(ENTITY)/scripts/build-web.py' \
-		--bundle build/web/shovey.zib --profile '$(ENTITY)/build/entity.zib' --output build/web/runtime.html
+		--bundle build/web/shovey.zx --profile '$(ENTITY)/build/entity.zx' --output build/web/runtime.html
 	cp src/web/index.html build/web/index.html
 	python3 scripts/stamp-web.py
 	cp assets/shovey/preview.png build/web/loading.png
@@ -137,10 +137,10 @@ web-zib: bundles
 web-itch: web
 
 # The browser game compiled to WebAssembly: smooth on slow phones, where
-# the interpreted ZIB lagged. Kryon's canvas runner answers the app's
-# context calls and keeps saves where the ZIB player kept them, so players
+# the interpreted ZX lagged. Kryon's canvas runner answers the app's
+# context calls and keeps saves where the ZX player kept them, so players
 # keep their progress. The live campaign and the Entity profile need the
-# ZIB player for now: `make web-zib` builds that edition into build/web.
+# ZX player for now: `make web-zx` builds that edition into build/web.
 ZIRAN_BIN ?= $(TOOLCHAIN)/build/bin
 EMCC ?= $(or $(wildcard $(HOME)/emsdk/upstream/emscripten/emcc),emcc)
 web: bundles
@@ -179,8 +179,8 @@ web-test: web
 	node tests/web_tap_beside_board_test.mjs
 
 previews:
-# The profile and the live campaign run on the ZIB player's web edition.
-web-zib-test: web-zib
+# The profile and the live campaign run on the ZX player's web edition.
+web-zx-test: web-zx
 	node tests/web_profile_test.mjs
 	node tests/web_live_campaign_test.mjs
 

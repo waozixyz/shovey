@@ -4,7 +4,7 @@ module_roots = ["src"]
 
 [toolchain]
 git = "https://github.com/ziranlang/ziran.git"
-ref = "b7228368e9b08c95856eb4bd98e03c2823560f17"
+ref = "master"
 
 [dependencies.kryon]
 git = "https://github.com/kryonlabs/kryon.git"
@@ -20,7 +20,6 @@ ref = "master"
 
 [exports]
 shovey_theme = "src/shovey_theme.zi"
-title_art = "src/title_art.zi"
 
 [dependencies.entity]
 git = "https://github.com/waozixyz/entity.git"

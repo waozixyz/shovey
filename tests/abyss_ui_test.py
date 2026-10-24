@@ -53,14 +53,11 @@ def main():
         driver.type('Arcade')
         driver.press(label='Arcade', role='button')
         driver.wait_gone(label='Find an app', role='text_field', timeout=30)
-        # Arcade's cover shows Shovey's Classic card; its Play opens Shovey's
-        # own menu, whose Levels control is unique to that menu.
+        # Arcade's cover shows Shovey's Classic card; its Play opens the level.
         driver.wait(label='Classic', role='text')
         driver.wait_idle(frames=12)
         driver.press(label='Play', role='button')
-        driver.wait(label='Levels', role='button', timeout=30)
-        driver.press(label='Play', role='button')
-        driver.wait(label='Restart', role='button')
+        driver.wait(label='Restart', role='button', timeout=30)
         # Newer Shovey asks how to move the first time a level opens; its
         # question dims the board, so answer it before looking at pixels.
         driver.wait_idle(frames=4)

@@ -111,9 +111,8 @@ try {
   await wait('Module.profileVisible');
   await delay(600);
   let profileText = await labels();
-  assert(profileText.includes('Dew balance'), profileText.join('|'));
+  assert(profileText.includes('Not signed in'), profileText.join('|'));
   assert(!profileText.includes('Name') && !profileText.includes('Intention'));
-  await textClick('Connect an account');
   if (process.env.WEB_FAIL_STORAGE) {
     await evaluate(`Module.FS.syncfs = function(populate, callback) { setTimeout(() => callback(new Error('Storage fixture refused the write')), 0); }`);
   }
@@ -121,7 +120,7 @@ try {
   let connected = false, refused = false;
   for (const end = Date.now() + 20000; Date.now() < end;) {
     const text = await labels();
-    if (text.includes('Account connected on this device')) { connected = true; break; }
+    if (text.some(label => label.startsWith('Account connected'))) { connected = true; break; }
     if (text.some(label => /could not|couldn't|failed/i.test(label))) { refused = true; break; }
     await delay(20);
   }
@@ -138,7 +137,7 @@ try {
     await wait('Module.profileVisible');
     profileText = await labels();
     assert(profileText.includes('Dew balance'));
-    assert(!profileText.includes('Connect an account'), 'Persisted account was not restored');
+    assert(!profileText.includes('Not signed in'), 'Persisted account was not restored');
     if (process.env.WEB_VERIFY_NODE) {
       let confirmed = false;
       for (const end = Date.now() + 25000; Date.now() < end;) {

@@ -1,9 +1,0 @@
-#import "kryon/session"
-#import "kryon/geometry"
-#import "kryon/carousel"
-
-// A shared cover composition for native startup before the game is ready.
-TitleArtwork :: (session: Session, bounds: Rectangle, key: u64, art: string, logo: string,
-    label: string) -> Rectangle {
-    return CarouselArtwork(session, bounds, key, art, logo, label)
-}

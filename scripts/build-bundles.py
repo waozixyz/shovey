@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build both Shovey editions and the editor into portable app bundles
-(build/games/*.zib).
+"""Build every app apps.json declares into a portable app bundle
+(build/games/*.zx).
 
 Each catalog.json names its entry, source, assets and locales. Hosts such as
-Arcade build the same bundles from this package's sources.
+Arcade read the same apps.json and build the same bundles from this package.
 
     python3 scripts/build-bundles.py --toolchain DIR --kryon DIR --apps DIR --mingcute DIR
 """
@@ -15,7 +15,7 @@ import subprocess
 from release_assets import prepare_release_assets
 
 ROOT = Path(__file__).resolve().parents[1]
-EDITIONS = ['src/catalog.json', 'src/island/catalog.json', 'src/editor/catalog.json']
+EDITIONS = [app['manifest'] for app in json.loads((ROOT / 'apps.json').read_text())['apps']]
 # A bundle may hold only its own assets/<name>/ folder. A game that draws
 # another's pictures lists copies in shared_assets.json beside its catalog.
 
@@ -100,10 +100,10 @@ def build(toolchain, kryon, apps, mingcute):
         generated = ROOT / 'build/game-generated' / name
         generated.mkdir(parents=True, exist_ok=True)
         (generated / 'translations.zi').write_text(code)
-        bundle = ROOT / 'build/games' / f'{name}.zib'
+        bundle = ROOT / 'build/games' / f'{name}.zx'
         bundle.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run([
-            str(toolchain / 'build/bin/zi2zib'), 'bundle', '--root', str(ROOT),
+            str(toolchain / 'build/bin/zi2zx'), 'bundle', '--root', str(ROOT),
             '--module-path', str(generated),
             '--module-path', str(kryon / 'src/ui'),
             '--module-path', 'kryon=' + str(kryon / 'src/ui'),

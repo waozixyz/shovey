@@ -32,7 +32,7 @@ board, solve and check it:
 To check the bottom navigation while Classic and Island's editor play run
 inside Inner Breeze, build Arcade's collection from these sources, then run
 `make inbe-ui-test INBE_BINARY=/path/to/inbe INBE_SOURCE=/path/to/inbe/source
-ARCADE_BUNDLE=/path/to/arcade.zib`. It uses a private display and disposable profiles.
+ARCADE_BUNDLE=/path/to/arcade.zx`. It uses a private display and disposable profiles.
 
 When the solver cannot finish a board, play it and keep your winning route:
 

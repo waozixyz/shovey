@@ -14,7 +14,7 @@ Main :: () -> s32 {
         ShoveyFrame()
         message.succeeded = true
     }
-    // Back returns to the title screen before it leaves the game.
+    // Back closes the level list or help before it leaves the game.
     if message.action == APP_BACK { message.succeeded = ShoveyBack() }
     WriteAppHost(message)
     return 0

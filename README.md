@@ -31,7 +31,7 @@ pits, move crates onto their marks and untangle the board one move at a time.
   <img src="docs/screenshots/editor.png" alt="Paint and test your own puzzle in Shovey Editor" width="64%">
 </p>
 
-Open **Shovey Editor** from the title screen. Start a new board or make your own
+Open **Shovey Editor** from its cover on the start screen. Start a new board or make your own
 copy of a story level. Paint the ground and objects, undo a stroke, then press
 **Play** to try it. Drafts save as you edit, and proven puzzles can be exported.
 

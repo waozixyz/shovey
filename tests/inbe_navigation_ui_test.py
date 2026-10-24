@@ -95,7 +95,7 @@ def main():
                 assert hashlib.sha256(bundle.read_bytes()).hexdigest() == artifact['sha256']
                 cache = profile / 'packages'
                 cache.mkdir(exist_ok=True)
-                shutil.copyfile(bundle, cache / f'arcade.{artifact["sha256"]}.zib')
+                shutil.copyfile(bundle, cache / f'arcade.{artifact["sha256"]}.zx')
                 shutil.copyfile(args.release_metadata, cache / 'arcade.current.json')
             with sqlite3.connect(profile / 'inbe.db') as db:
                 user = db.execute("SELECT id FROM users WHERE kind='local' LIMIT 1").fetchone()[0]
@@ -129,34 +129,31 @@ def main():
                 driver.press(label='Arcade', role='button')
                 driver.wait_gone(label='Find an app', role='text_field', timeout=30)
                 # Arcade's cover shows Shovey's art with its Classic card and
-                # Play, which opens Shovey's own menu. Its Levels control is
-                # unique to that menu; the card's Play can stay visible while
-                # the game prepares.
+                # Play, which opens the level directly.
                 driver.wait(label='Classic', role='text')
                 if edition == 'classic':
-                    driver.press(label='Play', role='button')
-                    driver.wait(label='Levels', role='button', timeout=30)
                     driver.press(label='Play', role='button')
                 else:
                     driver.press(label='Next', role='button')
                     driver.wait(label='Editor', role='text')
                     driver.press(label='Open', role='button')
                 if edition == 'classic':
-                    driver.wait(label='Restart', role='button')
+                    driver.wait(label='Restart', role='button', timeout=30)
                     driver.wait(label=f'Level 1 / {approved_count}', role='text')
                     answer_controls(driver)
                     # Exercise Shovey's own action, below Inbe's return bar.
                     back = driver.find(label='Back', role='button', visible=True)
                     assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working Back action'
+                    # Shovey's Back returns to Arcade's covers.
                     driver.press(key=max(back, key=lambda node: node['y'])['key'])
                     driver.wait(label='Play', role='button')
                     driver.press(label='Play', role='button')
+                    driver.wait(label='Restart', role='button', timeout=30)
                     driver.press(label='Levels', role='button')
                     back = driver.find(label='Back', role='button', visible=True)
                     assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working selector Back action'
+                    # Back from the level list returns to the level.
                     driver.press(key=max(back, key=lambda node: node['y'])['key'])
-                    driver.wait(label='Play', role='button')
-                    driver.press(label='Play', role='button')
                     driver.wait(label='Restart', role='button')
                     driver.key('left')
                 else:
