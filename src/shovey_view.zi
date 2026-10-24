@@ -401,20 +401,20 @@ ThrowButton :: (armed: bool, width: float32, top: float32, bottom: float32) -> b
     if armed {
         pulse := cast(float32)(0.5 + 0.5 * Math.Sin(frame.now * 4.0))
         glow := size * (0.08 + 0.06 * pulse)
-        unused Box(frame.session, BoxProps.{.key = cast(u64)20016, .radius = (size + glow * 2.0) / 2.0,
+        unused Box(frame.session, BoxProps.{.key = cast(u64)20060, .radius = (size + glow * 2.0) / 2.0,
                 .bounds = Rectangle.{bounds.x - glow, bounds.y - glow, size + glow * 2.0, size + glow * 2.0},
                 .fill = Color.{255, 226, 150, cast(u8)(40.0 + 50.0 * pulse)}})
     }
-    unused Box(frame.session, BoxProps.{.key = cast(u64)20017, .bounds = bounds, .radius = size / 2.0,
+    unused Box(frame.session, BoxProps.{.key = cast(u64)20061, .bounds = bounds, .radius = size / 2.0,
             .fill = ifx armed then Color.{40, 46, 45, 200} else Color.{40, 46, 45, 110},
             .border = ifx armed then Color.{255, 226, 150, 255} else Color.{232, 236, 234, 90}})
     // The drawn shot sits right of and below its frame's centre.
     shot := size * 1.25
-    Image(frame.session, ImageProps.{.key = cast(u64)20019, .asset_path = sprite_files[SPRITE_SHOT],
+    Image(frame.session, ImageProps.{.key = cast(u64)20062, .asset_path = sprite_files[SPRITE_SHOT],
             .alt_text = AppLocaleHost("shovey_ammo"), .fit = ImageFit.ImageFitContain, .smooth = true,
             .bounds = Rectangle.{bounds.x + (size - shot) / 2.0 - shot * 0.047, bounds.y + (size - shot) / 2.0 - shot * 0.078, shot, shot},
             .tint = ifx armed then cast(u32)0 else cast(u32)0x9aa0a0a0})
-    press := Press(frame.session, PressProps.{.key = cast(u64)20018, .id = 20018, .bounds = bounds,
+    press := Press(frame.session, PressProps.{.key = cast(u64)20063, .id = 20063, .bounds = bounds,
             .label = AppLocaleHost("shovey_fire"), .now = frame.now, .disabled = !armed})
     return press.clicked
 }
