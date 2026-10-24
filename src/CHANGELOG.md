@@ -1,5 +1,25 @@
 # Shovey changelog
 
+## [0.6.122] - 2026-10-24
+
+- Play the approved Classic campaign through level 117.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.121] - 2026-10-24
+
+- Play the approved Classic campaign through level 117.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.120] - 2026-10-24
+
+- Play the approved Classic campaign through level 111.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.119] - 2026-10-24
+
+- Play the approved Classic campaign through level 111.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
 ## [0.6.118] - 2026-10-24
 
 - Play the approved Classic campaign through level 111.
