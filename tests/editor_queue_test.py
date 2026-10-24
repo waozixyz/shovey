@@ -52,6 +52,16 @@ class PublicationQueue(unittest.TestCase):
         self.queue.claim([self.first['board'], self.second['board']])
         self.assertEqual(self.latest(2)['state'], 'building')
 
+    def test_cancel_stops_the_level_and_leaves_others(self):
+        self.queue.enqueue([self.first])
+        self.queue.claim([self.first['board']])
+        self.queue.enqueue([self.second])
+        self.queue.cancel(1)
+        self.assertEqual(self.latest(1)['state'], 'cancelled')
+        self.assertEqual(self.latest(2)['state'], 'queued')
+        self.queue.cancel(2)
+        self.assertEqual(self.latest(2)['state'], 'cancelled')
+
     def test_campaign_change_carries_existing_requests_into_next_build(self):
         self.queue.enqueue([self.first])
         self.queue.claim([self.first['board']])

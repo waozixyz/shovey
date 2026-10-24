@@ -781,6 +781,11 @@ CheckServer :: (now: s64) {
     Shell("setsid python3 scripts/editor_server.py > backup/editor-server.log 2>&1 < /dev/null &")
 }
 
+// An approval can be taken back until that board is live.
+CancelAvailable :: () -> bool {
+    return !playing && Approved(current) && !PublishedApprovalMatches(current)
+}
+
 ApprovalAvailable :: () -> bool {
     if playing { return false }
     if (Solved() || Proven()) && !ApprovalMatches(current) { return true }
@@ -2454,9 +2459,14 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             .label = "Update all",
             .disabled = !server_configured || playing || glm_busy}) != 0 { UpdateAll() }
     if !selector_open {
-        unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{742.0, 51.0, 220.0, 30.0},
+        if CancelAvailable() && Button(session, ButtonProps.{.key = 25, .id = 25, .bounds = Rectangle.{742.0, 51.0, 136.0, 30.0},
+                .label = "Cancel approval"}) != 0 {
+            RunAction("cancel")
+            ActionMessage("Approval cancelled")
+        }
+        unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{886.0, 51.0, 220.0, 30.0},
             .fill = SolutionColor(), .radius = 4.0})
-        Caption(24, Rectangle.{750.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
+        Caption(24, Rectangle.{894.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
     }
     {
     status := StatusText(false)
@@ -2465,7 +2475,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if selector_open { status = TextView(publish_message[:publish_message_length]) }
     if glm_busy || action_message_length > 0 { status = TextView(action_message[:action_message_length]) }
     if level_update_pending { status = "New version ready · Edit to view" }
-    Caption(9, ifx selector_open then Rectangle.{482.0, 14.0, width - 494.0, 28.0} else Rectangle.{974.0, 52.0, width - 986.0, 28.0}, status, 14)
+    Caption(9, ifx selector_open then Rectangle.{482.0, 14.0, width - 494.0, 28.0} else Rectangle.{1118.0, 52.0, width - 1130.0, 28.0}, status, 14)
     }
 
     if selector_open {

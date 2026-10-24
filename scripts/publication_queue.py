@@ -127,6 +127,13 @@ class Queue:
                     job['error'] = str(error)[:1200]
                     self.event(data, job, 'failed', job['error'])
 
+    def cancel(self, level):
+        """The owner took back the level's approval: its jobs stop waiting."""
+        with self.transaction() as data:
+            for job in data['jobs']:
+                if job['level'] == level and job['state'] in BUSY | WAITING | {'failed'}:
+                    self.event(data, job, 'cancelled', 'Approval cancelled')
+
     def published(self, boards):
         with self.transaction() as data:
             for job in data['jobs']:

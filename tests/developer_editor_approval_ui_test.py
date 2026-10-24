@@ -248,7 +248,7 @@ with (output / 'app.log').open('w') as log:
         assert (drafts / 'worker-started').read_text() == 'fix 1'
         subprocess.run(['import', '-window', window, str(output / 'fix-status.png')], check=True)
         with Image.open(output / 'fix-status.png').convert('RGB') as image:
-            red, green, blue = image.getpixel((746, 75))
+            red, green, blue = image.getpixel((890, 75))
             assert red > green and red > blue, 'The remembered unsuccessful check was hidden by the GLM job'
         click(480, 28)
         assert (drafts / 'place').read_text().strip() == '2', 'GLM repair blocked navigation'

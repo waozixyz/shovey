@@ -91,6 +91,40 @@ def approve(number):
                      start_new_session=True)
 
 
+def cancel(number):
+    """Take back an approval that is not live yet. A level the campaign never
+    published leaves it, and approvals after it wait again, since the
+    campaign stays in order; a new version of a published level goes back to
+    the published one."""
+    path = ROOT / 'levels/approved.json'
+    with (DRAFTS / 'approval.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        data = json.loads(path.read_text())
+        approved = {item['number']: item for item in data['levels']}
+        pending = {int(n): value for n, value in data.get('pending', {}).items()}
+        marker = DRAFTS / f'{number:03}.published'
+        published = marker.read_text().strip() if marker.exists() else ''
+        pending.pop(number, None)
+        if published:
+            # The live record is the one the publisher last committed.
+            head = json.loads(subprocess.check_output(['git', 'show', 'HEAD:levels/approved.json'], cwd=ROOT, text=True))
+            live = next((level for level in head['levels'] if level['number'] == number and board_hex(level) == published), None)
+            if live is None:
+                raise ValueError(f'Level {number} is live, but its published record is not in levels/approved.json')
+            approved[number] = live
+            atomic(DRAFTS / f'{number:03}.approved', published)
+        else:
+            approved.pop(number, None)
+            for later in [n for n in approved if n > number]:
+                pending[later] = approved.pop(later)
+            (DRAFTS / f'{number:03}.approved').unlink(missing_ok=True)
+        data['levels'] = [approved[n] for n in sorted(approved)]
+        data['pending'] = pending
+        atomic(path, json.dumps(data, indent=1) + '\n')
+    Queue(ROOT).cancel(number)
+    atomic(DRAFTS / 'publish-status', f'Level {number}: approval cancelled')
+
+
 def update(force=True, number=None):
     # Updating an approved campaign never depends on the open draft's proof.
     if not (ROOT / 'backup/editor-publish.json').is_file():
@@ -1083,7 +1117,7 @@ def failure_message(error):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('approve', 'glm', 'glm-redesign', 'glm-prettify', 'fix', 'update', 'update-all'))
+    parser.add_argument('action', choices=('approve', 'cancel', 'glm', 'glm-redesign', 'glm-prettify', 'fix', 'update', 'update-all'))
     parser.add_argument('level', type=int)
     args = parser.parse_args()
     if not 1 <= args.level <= (175 if args.action in ('update', 'update-all') else 174):
@@ -1093,6 +1127,8 @@ if __name__ == '__main__':
             update(number=args.level)
         elif args.action == 'update-all':
             update_all()
+        elif args.action == 'cancel':
+            cancel(args.level)
         elif args.action == 'fix':
             modify(args.level, repair=True)
         elif args.action.startswith('glm'):
@@ -1100,7 +1136,8 @@ if __name__ == '__main__':
         else:
             approve(args.level)
     except Exception as error:
-        message = failure_message(error) if args.action in ('glm', 'glm-redesign', 'glm-prettify', 'fix') else 'Update failed. Retry.'
+        message = failure_message(error) if args.action in ('glm', 'glm-redesign', 'glm-prettify', 'fix') else \
+            f'Cancel failed: {error}' if args.action == 'cancel' else 'Update failed. Retry.'
         path = DRAFTS / (f'{args.level:03}.glm-status' if args.action in ('glm', 'glm-redesign', 'glm-prettify', 'fix') else 'publish-status')
         atomic(path, message[:220])
         if args.action in ('glm', 'glm-redesign', 'glm-prettify', 'fix'):
