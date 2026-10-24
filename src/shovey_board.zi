@@ -68,6 +68,7 @@ fall_level: s32;
 fall_moves: s32;
 fall_position: s32;
 fall_points: [4]Vector2;
+held_points: [4]Vector2;
 portal_seen: bool;
 portal_level: s32;
 portal_moves: s32;
@@ -954,13 +955,24 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
             dot += 1
             at = ShoveyNeighbor(at, game.direction)
         }
-        // He holds the shot at his left side, its ball against his body.
+        // He holds the shot against his body beside his left eye, pointing
+        // the way he looks, so it turns with him. The sprite points right.
+        facing := (PlayerSprite(game, landscape) - SPRITE_PLAYER) % 4
+        visible := ifx landscape then (facing + 3) % 4 else facing
+        forward_x: float32 = ifx visible == 0 then -1.0 else ifx visible == 2 then 1.0 else 0.0
+        forward_y: float32 = ifx visible == 1 then -1.0 else ifx visible == 3 then 1.0 else 0.0
         held := size * 0.55
-        cx := cell.x + size * 0.08
-        cy := cell.y + size * 0.58
+        cx := cell.x + size * (0.5 + forward_x * 0.24 + forward_y * 0.34)
+        cy := cell.y + size * (0.5 + forward_y * 0.24 - forward_x * 0.34)
+        // The drawn shot sits right of and below its frame's centre.
+        cx -= held * (forward_x * 0.047 - forward_y * 0.078)
+        cy -= held * (forward_y * 0.047 + forward_x * 0.078)
+        frame := Rectangle.{cx - held / 2.0, cy - held / 2.0, held, held}
+        center := Vector2.{cx, cy}
         Image(session, ImageProps.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = files[SPRITE_SHOT],
-                .alt_text = shot_label, .bounds = Rectangle.{cx - held / 2.0, cy - held / 2.0, held, held},
-                .fit = ImageFit.ImageFitContain, .smooth = true})
+                .alt_text = shot_label, .bounds = frame, .fit = ImageFit.ImageFitContain, .smooth = true,
+                .mesh = ImageMeshQuad(frame, Camera.{.target = center, .offset = center, .zoom = 1.0,
+                        .rotation = cast(float32)(((visible + 2) % 4) * 90)}, held_points[:])})
     }
     // A thrown shot flies along its line.
     if board_flight_from >= 0 {
