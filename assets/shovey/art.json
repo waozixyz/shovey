@@ -1546,6 +1546,16 @@
       "path": "editor-portrait.png",
       "depicts": "editor title art for phones: 3D Shovey building a puzzle board with floating pieces",
       "sha256": "bf0bbeb15249f3d73c1b410e9737f7fd207310dcb5f28b7c3ce45401b77c8f9e"
+    },
+    {
+      "path": "island-landscape.png",
+      "depicts": "Shovey Island title art: the green Shovey on a tropical beach with a crab, a coconut, palm trees and a hut over the water",
+      "sha256": "96c8b9b47d11a8ad8928fc5aa4c4ffe96fcffcdf99714b7977c9e6a480aeaf6a"
+    },
+    {
+      "path": "island-portrait.png",
+      "depicts": "Shovey Island title art for phones: the green Shovey on a tropical beach with a crab and palm trees",
+      "sha256": "c019dcbb7265bdc207afd8ab968a487fbb0558fc1df489e4f6fa33cdf5ced86a"
     }
   ]
 }

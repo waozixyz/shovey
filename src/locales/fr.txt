@@ -223,6 +223,18 @@ Ouvrir
 [shovey_editor_art]
 Shovey construit un plateau avec des caisses, des boules et des dalles flottantes
 ---
+[shovey_island]
+Île
+---
+[shovey_island_art]
+Shovey sur une plage tropicale avec un crabe et une noix de coco
+---
+[shovey_coming_soon]
+Bientôt
+---
+[shovey_dew]
+Dew
+---
 [shovey_page_previous]
 Précédent
 ---

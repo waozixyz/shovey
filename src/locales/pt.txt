@@ -223,6 +223,18 @@ Abrir
 [shovey_editor_art]
 Shovey monta um tabuleiro com caixas, bolas e ladrilhos a flutuar
 ---
+[shovey_island]
+Ilha
+---
+[shovey_island_art]
+Shovey numa praia tropical com um caranguejo e um coco
+---
+[shovey_coming_soon]
+Em breve
+---
+[shovey_dew]
+Dew
+---
 [shovey_page_previous]
 Anterior
 ---

@@ -223,6 +223,18 @@ Open
 [shovey_editor_art]
 Shovey builds a puzzle board with floating crates, balls and tiles
 ---
+[shovey_island]
+Island
+---
+[shovey_island_art]
+Shovey on a tropical beach with a crab and a coconut
+---
+[shovey_coming_soon]
+Coming soon
+---
+[shovey_dew]
+Dew
+---
 [shovey_page_previous]
 Previous
 ---

@@ -223,6 +223,18 @@ Otevřít
 [shovey_editor_art]
 Shovey staví hrací plochu z vznášejících se beden, koulí a dlaždic
 ---
+[shovey_island]
+Ostrov
+---
+[shovey_island_art]
+Shovey na tropické pláži s krabem a kokosem
+---
+[shovey_coming_soon]
+Již brzy
+---
+[shovey_dew]
+Dew
+---
 [shovey_page_previous]
 Předchozí
 ---

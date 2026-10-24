@@ -223,6 +223,18 @@ Shovey 推着木箱穿过阳光花园回家
 [shovey_editor_art]
 Shovey 用漂浮的木箱、球和地砖搭建谜题棋盘
 ---
+[shovey_island]
+海岛
+---
+[shovey_island_art]
+热带海滩上的Shovey，旁边有螃蟹和椰子
+---
+[shovey_coming_soon]
+即将推出
+---
+[shovey_dew]
+Dew
+---
 [shovey_page_previous]
 上一页
 ---

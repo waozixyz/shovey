@@ -9,6 +9,10 @@
 #import "kryon/button_props"
 #import "kryon/control_props"
 ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
+DewIcon :: #import "mingcute/mingcute_filled_drop";
+#import "entity/dew_model"
+#import "json_scan"
+#import "text_buffer"
 #import, file "host.zi";
 #import, file "../shovey_theme.zi";
 #import, file "../shovey_view.zi";
@@ -16,18 +20,33 @@ ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 #import, file "../controls.zi";
 
 web_covers: CarouselState;
+web_dew_text: [32]u8;
 
-// Classic and the editor, with the cover art apps.json declares for them.
+// The account's Dew as the page's account service reports it, 0 without one.
+WebDewText :: () -> string {
+    answer := AppService("entity.dew", "balance")
+    units := ReadNumber(answer, FieldAt(answer, 0, "units"))
+    value: s64 = ifx units.valid && units.value > 0.0 then cast(s64)units.value else 0
+    if !DewFormat(value, DewUnits, web_dew_text[:]) { return "0" }
+    return TextUntilNul(web_dew_text[:])
+}
+
+// Classic, Island (coming soon) and the editor, with the cover art apps.json
+// declares for them.
 WebCovers :: () {
     page := ReadAppUiHost()
     width := cast(float32)page.width
     top := cast(float32)page.top
     bottom := cast(float32)(page.height - page.bottom)
     ShoveyDress(page.session, width, top, bottom)
-    items: [2]CarouselItem = .[
+    items: [3]CarouselItem = .[
     CarouselItem.{.label = AppLocaleHost("shovey_title_art"),
         .portrait = "assets/shovey/title-portrait.png", .landscape = "assets/shovey/title-landscape.png",
         .logo = "assets/shovey/logo.png", .action = AppLocaleHost("shovey_play")},
+    CarouselItem.{.label = AppLocaleHost("shovey_island_art"),
+        .portrait = "assets/shovey/island-portrait.png", .landscape = "assets/shovey/island-landscape.png",
+        .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_island"), .action = AppLocaleHost("shovey_coming_soon"),
+        .disabled = true},
     CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
         .portrait = "assets/shovey/editor-portrait.png", .landscape = "assets/shovey/editor-landscape.png",
         .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_editor"), .action = AppLocaleHost("shovey_open")}
@@ -36,9 +55,19 @@ WebCovers :: () {
             .bounds = Rectangle.{0.0, top, width, bottom - top}, .now = page.now, .key_pressed = AppKeyHost(),
             .dark = true, .label = AppLocaleHost("shovey_title_art"), .previous_label = AppLocaleHost("shovey_page_previous"),
             .next_label = AppLocaleHost("shovey_page_next")}, items[:], *web_covers)
-    if entered >= 0 {
+    if entered == 0 || entered == 2 {
         web_covers_open = false
-        web_editor_open = entered == 1
+        web_editor_open = entered == 2
+    }
+    // The account's Dew beside the Profile: a drop and the number.
+    if AppSupports("entity.dew") {
+        dew := WebDewText()
+        dew_width := 52.0 + 10.0 * cast(float32)dew.count
+        if Button(page.session, ButtonProps.{.key = cast(u64)20401, .id = 20401,
+                .bounds = Rectangle.{width - 68.0 - dew_width, top + 12.0, dew_width, 44.0}, .label = dew,
+                .icon_shape = DewIcon.Shape, .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+            unused AppService("entity.profile", "open")
+        }
     }
     if AppSupports("entity.profile") && Button(page.session, ButtonProps.{.key = cast(u64)20400, .id = 20400,
             .bounds = Rectangle.{width - 60.0, top + 12.0, 44.0, 44.0}, .label = AppLocaleHost("shovey_profile"),

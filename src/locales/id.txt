@@ -223,6 +223,18 @@ Buka
 [shovey_editor_art]
 Shovey menyusun papan teka-teki dengan peti, bola, dan ubin yang melayang
 ---
+[shovey_island]
+Pulau
+---
+[shovey_island_art]
+Shovey di pantai tropis bersama kepiting dan kelapa
+---
+[shovey_coming_soon]
+Segera hadir
+---
+[shovey_dew]
+Dew
+---
 [shovey_page_previous]
 Sebelumnya
 ---
