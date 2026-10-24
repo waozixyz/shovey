@@ -69,6 +69,8 @@ SPRITE_COUNT :: 288
 BOAT_DECK_X :: 0.2
 BOAT_DECK_Y :: 0.86
 BOAT_RIDER :: 0.28
+// The part of the sailing he spends jumping from his cell into the boat.
+BOAT_HOP :: 0.1
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -968,14 +970,25 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u6
         Image(session, ImageProps.{.key = BoardOverlayKey(key, 1000 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT],
                 .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
         if aboard {
-            // Shovey rides in the stern, inside the hull.
+            // Shovey jumps in from the cell he came from, in an arc, and
+            // rides in the stern, inside the hull.
             size := boat.width * BOAT_RIDER
+            rider := Rectangle.{boat.x + boat.width * BOAT_DECK_X - size * 0.5, boat.y + boat.height * BOAT_DECK_Y - size, size, size}
+            hop := board_sail / BOAT_HOP
+            from := ShoveyNeighbor(at, (game.direction + 2) % 4)
+            if hop < 1.0 && from >= 0 {
+                start := TileMapCell(grid, BoardDisplayIndex(from, landscape))
+                eased := hop * (2.0 - hop)
+                lift := cast(float32)Math.Sin(cast(float64)hop * 3.141592653589793) * cell.height * 0.7
+                rider = Rectangle.{start.x + (rider.x - start.x) * eased, start.y + (rider.y - start.y) * eased - lift,
+                    start.width + (rider.width - start.width) * eased, start.height + (rider.height - start.height) * eased}
+            }
             Image(session, ImageProps.{.key = BoardOverlayKey(key, 1001 + drawn * 3), .asset_path = files[PlayerSprite(game, landscape)],
-                    .alt_text = "Shovey", .bounds = Rectangle.{boat.x + boat.width * BOAT_DECK_X - size * 0.5,
-                    boat.y + boat.height * BOAT_DECK_Y - size, size, size},
-                    .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
-            Image(session, ImageProps.{.key = BoardOverlayKey(key, 1002 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT + 1],
-                    .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
+                    .alt_text = "Shovey", .bounds = rider, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
+            if hop >= 1.0 {
+                Image(session, ImageProps.{.key = BoardOverlayKey(key, 1002 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT + 1],
+                        .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
+            }
         }
         drawn += 1
     }

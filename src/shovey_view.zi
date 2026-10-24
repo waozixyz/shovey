@@ -681,6 +681,19 @@ ENDING_ROW_SECONDS :: 2.6
 ending_level: s32;
 ending_won_at: float64;
 ending_at: float64;
+// Shovey jumps into a boat beside him by himself once everything is done,
+// a moment after he arrives; this holds when he arrived, or 0.
+BOAT_JUMP_WAIT :: 0.25
+boat_beside_at: float64;
+
+// The way to a boat beside Shovey, or -1.
+BoatBeside :: () -> s32 {
+    for side: cast(s32)0..3 {
+        next := ShoveyNeighbor(game.player, side)
+        if next >= 0 && game.ground[next] == SHOVEY_BOAT { return side }
+    }
+    return -1
+}
 
 // Follows the win of the last level: when it was won, how far the boat has
 // sailed, and when THE END began.
@@ -1111,6 +1124,13 @@ ShoveyFrame :: () {
         if ThrowButton(width, top, bottom) { changed = ShoveyAct(-1) || changed }
     }
     if step >= 0 { changed = ShoveyAct(step) || changed }
+    boat := ifx disabled || slide_next < slide_count || ShoveyRemaining(*game) > 0 then -1 else BoatBeside()
+    if boat < 0 { boat_beside_at = 0.0 }
+    else if boat_beside_at == 0.0 { boat_beside_at = frame.now }
+    else if frame.now - boat_beside_at >= BOAT_JUMP_WAIT {
+        boat_beside_at = 0.0
+        changed = ShoveyAct(boat) || changed
+    }
     if (changed || before_direction != game.direction) && slide_next >= slide_count {
         if game.won && game.level < ShoveyLevelCount() { WinPause() }
         else { Remember() }
