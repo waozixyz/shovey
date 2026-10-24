@@ -676,9 +676,9 @@ WinPause :: () {
 // open water, the picture fades, and THE END rolls over the campaign's
 // boards until a level is chosen. A last level won at a house rests a moment
 // first.
-SAIL_SECONDS :: 9.0
+SAIL_SECONDS :: 14.0
 ENDING_REST_SECONDS :: 1.6
-ENDING_FADE_SECONDS :: 1.8
+ENDING_FADE_SECONDS :: 2.5
 ENDING_ROW_SECONDS :: 2.6
 ending_level: s32;
 ending_won_at: float64;
@@ -698,11 +698,12 @@ walk_next: s32;
 walk_at: float64;
 walk_level: s32;
 walk_tried: s32 = -1;
-// The camera following the sailing boat: the cell size, the boat's middle
-// and the board's corner when it cast off, all 0 until then.
-sail_cell: float32;
+// The board's corner, cell and size where it rests, from the last frame
+// without a camera; and the boat's middle when it cast off, 0 until then.
+scene_cell: float32;
+scene_origin: Vector2;
+scene_size: Vector2;
 sail_start_x: float32;
-sail_origin: Vector2;
 ocean_layers: [4096]s32;
 
 // Open water: no floor and nothing in it.
@@ -770,6 +771,20 @@ OceanBackdrop :: (area: Rectangle, origin: Vector2, cell: float32, landscape: bo
             .bounds = Rectangle.{first.x, first.y, cast(float32)columns * cell, cast(float32)rows * cell},
             .columns = columns, .rows = rows, .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:],
             .names = sprite_names[:], .layers = ocean_layers[:columns * rows], .layer_count = 1, .label = "", .pixel_snap = true})
+}
+
+// The levels before the last joined round its board while the ending
+// plays, so the camera shows one island: the level Shovey came from to the
+// left, earlier ones above, below and at the corners. Open water lies past
+// them.
+NeighbourBoards :: (origin: Vector2, size: Vector2, landscape: bool) {
+    offsets: [5]Vector2 = .[Vector2.{-1.0, 0.0}, Vector2.{0.0, -1.0}, Vector2.{0.0, 1.0}, Vector2.{-1.0, -1.0}, Vector2.{-1.0, 1.0}]
+    for index: cast(s32)0..4 {
+        level := game.level - 1 - index
+        if level < 1 { break }
+        ShoveyBoardPreview(frame.session, level, Rectangle.{origin.x + offsets[index].x * size.x, origin.y + offsets[index].y * size.y,
+                size.x, size.y}, cast(u64)(62000 + index * 16), sprite_names[:], landscape, true)
+    }
 }
 
 // Whole cells from a board edge back past the area's edge, `gap` away.
@@ -1078,29 +1093,36 @@ ShoveyFrame :: () {
         EndingScreen(width, top, bottom, key)
         return
     }
+    // On the bridge Shovey walks the rest of the way by himself; from then
+    // on the ending plays on the whole screen, without the bar or the status.
+    walking := walk_count > 0 && walk_level == game.level && !game.won && !game.lost
+    if !walking { walk_count = 0 }
+    cinematic := walking || board_sail >= 0.0
     // Return sits at the edge, then the game's own navigation and status.
-    if !mini && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
-        if !ShoveyBack() { LeaveForGameSelection() }
-        return
-    }
-    levels_x: float32 = ifx mini then 8.0 else 92.0
-    if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
-        selector_open = true
-    }
-    restart_x := ifx mini then width - 52.0 else width - 156.0
-    Caption(20001, Rectangle.{levels_x + 48.0, top + 4.0, restart_x - levels_x - 48.0, 44.0}, HeaderText(), 14, true)
-    if Control(20016, Rectangle.{restart_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
-        ChangeLevel(game.level)
-    }
-    if !mini && Control(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
-        AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
-        ifx help_open then ICON_CLOSE else ICON_HELP) {
-        help_open = !help_open
-    }
-    if !mini && Control(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
-        AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"), false, "",
-        ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
-        SoundSetMuted(!SoundMuted())
+    if !cinematic {
+        if !mini && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
+            if !ShoveyBack() { LeaveForGameSelection() }
+            return
+        }
+        levels_x: float32 = ifx mini then 8.0 else 92.0
+        if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
+            selector_open = true
+        }
+        restart_x := ifx mini then width - 52.0 else width - 156.0
+        Caption(20001, Rectangle.{levels_x + 48.0, top + 4.0, restart_x - levels_x - 48.0, 44.0}, HeaderText(), 14, true)
+        if Control(20016, Rectangle.{restart_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
+            ChangeLevel(game.level)
+        }
+        if !mini && Control(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
+            AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
+            ifx help_open then ICON_CLOSE else ICON_HELP) {
+            help_open = !help_open
+        }
+        if !mini && Control(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
+            AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"), false, "",
+            ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
+            SoundSetMuted(!SoundMuted())
+        }
     }
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
@@ -1118,9 +1140,6 @@ ShoveyFrame :: () {
     // Until the questions are answered they take every key.
     asking_updates := !mini && LevelUpdates() == 2
     choosing := !mini && (!ControlsChosen() || asking_updates)
-    // On the bridge Shovey walks the rest of the way by himself.
-    walking := walk_count > 0 && walk_level == game.level && !game.won && !game.lost
-    if !walking { walk_count = 0 }
     if choosing || walking { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyAct(BoardEngineDirection(keyed, landscape)) }
     if key == 32 { changed = ShoveyAct(-1) }
@@ -1140,31 +1159,33 @@ ShoveyFrame :: () {
     }
     if !sliding { unused AnimalsWander() }
     SpriteNames()
-    // While the boat sails off the camera keeps it in the middle: the board
-    // slides away and open water shows round it.
+    // While the ending plays the whole screen is the scene: the island the
+    // last level belongs to and the open water round it. Once the boat sails
+    // the camera follows it, catching up gently and keeping it in the middle.
+    screen := Rectangle.{0.0, top, width, bottom - top}
     camera: float32 = 0.0
-    if board_sail < 0.0 { sail_cell = 0.0 }
-    if board_sail >= 0.0 && sail_cell > 0.0 {
-        camera = sail_start_x + BoardSailTravel(board_sail) * sail_cell - (area.x + area.width / 2.0)
+    if board_sail < 0.0 { sail_start_x = 0.0 }
+    if board_sail >= 0.0 && sail_start_x > 0.0 {
+        camera = sail_start_x + BoardSailTravel(board_sail) * scene_cell - (screen.x + screen.width / 2.0)
         if camera < 0.0 { camera = 0.0 }
-        OceanBackdrop(area, Vector2.{sail_origin.x - camera, sail_origin.y}, sail_cell, landscape)
+        follow := board_sail / 0.35
+        if follow < 1.0 { camera *= follow * follow * (3.0 - 2.0 * follow) }
+    }
+    if cinematic && scene_cell > 0.0 {
+        origin := Vector2.{scene_origin.x - camera, scene_origin.y}
+        OceanBackdrop(screen, origin, scene_cell, landscape)
+        NeighbourBoards(origin, scene_size, landscape)
     }
     grid := ShoveyBoard(frame.session, *game, Rectangle.{area.x - camera, area.y, area.width, area.height}, cast(u64)22000,
         frame.now, sprite_names[:], landscape)
-    if board_sail >= 0.0 && sail_cell == 0.0 && game.player >= 0 {
-        boat_cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
-        sail_cell = grid.cell
-        sail_start_x = boat_cell.x + grid.cell * 1.5
-        sail_origin = Vector2.{grid.board.x, grid.board.y}
+    if camera == 0.0 {
+        scene_cell = grid.cell
+        scene_origin = Vector2.{grid.board.x, grid.board.y}
+        scene_size = Vector2.{grid.board.width, grid.board.height}
     }
-    if board_sail > BOAT_HOP {
-        // They sail into the sunset: the light warms and a low sun shows
-        // ahead of them.
-        glow := (board_sail - BOAT_HOP) / (1.0 - BOAT_HOP)
-        sun := area.height * 0.7
-        Fill(cast(u64)20112, Rectangle.{area.x + area.width - sun * 0.45, area.y + area.height * 0.4 - sun / 2.0, sun, sun},
-            Color.{255, 206, 110, cast(u8)(glow * 190.0)}, sun / 2.0)
-        Fill(cast(u64)20113, area, Color.{255, 120, 60, cast(u8)(glow * 105.0)})
+    if board_sail >= 0.0 && sail_start_x == 0.0 && game.player >= 0 {
+        boat_cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+        sail_start_x = boat_cell.x + grid.cell * 1.5
     }
     shade := LevelChangeShade()
     ending_shade := EndingShade()
@@ -1174,7 +1195,7 @@ ShoveyFrame :: () {
         // rises from it, never through black.
         backdrop := ColorFromPacked(cast(u32)SHOVEY_SLATE)
         backdrop.a = cast(u8)(shade * 255.0)
-        Fill(cast(u64)20097, area, backdrop)
+        Fill(cast(u64)20097, ifx cinematic then screen else area, backdrop)
     }
     // No move or piece counters: the line speaks only when there is news.
     status := ""
@@ -1198,13 +1219,13 @@ ShoveyFrame :: () {
     // On a tip level the tip says what to do, until the level is won or lost.
     if game.won || game.lost { tip = "" }
     if tip != "" { status_icon = "" }
-    if status_icon != "" {
+    if status_icon != "" && !cinematic {
         unused Button(frame.session, ButtonProps.{.key = cast(u64)20021, .id = 20021,
                 .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
                 .label = status, .icon_shape = status_icon, .icon_only = true,
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
     }
-    if tip != "" {
+    if tip != "" && !cinematic {
         // It shares the status line's space between the bar and the board.
         Caption(20024, Rectangle.{16.0, status_y - 4.0, width - 32.0, 32.0}, AppLocaleHost(tip), 13, true)
     }

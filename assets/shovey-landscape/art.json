@@ -165,12 +165,12 @@
     {
       "path": "sprites/boat-big-hull.png",
       "depicts": "landscape presentation of the near side of the big boat's hull, drawn over Shovey when he rides in it",
-      "sha256": "3b27260d69e55e7deea6c28b4a9228a886d713c7467f80719e31d16d9fa21d02"
+      "sha256": "9b873bcd3340cb2d58389256d60827f20a5a89bd979679b749ecebbd0bc292f7"
     },
     {
       "path": "sprites/boat-big.png",
       "depicts": "landscape presentation of the boat as the board shows it, three cells wide: a wooden sailing boat with a red-striped sail and a pennant",
-      "sha256": "0330cd0e5abcd4e035a82bd171544f46e062327601fb65d703d883048f7f324d"
+      "sha256": "43a996a316b01def1c7e87f4f67b0bcdf6f6875830166cc0ab2af3965b108d5e"
     },
     {
       "path": "sprites/boat-wake-0.png",
@@ -1035,7 +1035,7 @@
     {
       "path": "sprites/tile-148.png",
       "depicts": "landscape presentation of boat at the shore: a wooden boat with a white sail, the way home of the last level",
-      "sha256": "3d6dbb2ec2037c9976767aa83259c6a9eb2406958a3e8926808a87e8b0cbb486"
+      "sha256": "04e249d44cf43aae7465e7495a7c6d79f32dc2e449898f013e3fcc7b914a26af"
     },
     {
       "path": "sprites/tile-149.png",

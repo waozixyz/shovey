@@ -608,6 +608,18 @@ def colour_goal(stripe=(204, 82, 66, 255), pale=(238, 200, 190, 255)):
 BOAT_NEAR_SIDE_FROM = 72
 
 
+def boat_calm(image):
+    """The big boat without the white splash the model drew at its bow: the
+    moving foam is drawn by the game."""
+    calm = image.copy()
+    for y in range(76, calm.height):
+        for x in range(calm.width):
+            r, g, b, a = calm.getpixel((x, y))
+            if a and min(r, g, b) >= 200:
+                calm.putpixel((x, y), (0, 0, 0, 0))
+    return calm
+
+
 def boat_near_edge(image):
     """For each column, the first row of the near side of the hull: climbing
     from the keel past the dark planks to the near gunwale's light edge, the
@@ -1296,11 +1308,12 @@ def sprites():
         'tile-145': ('cyan colour block goal: a cyan hatched square', colour_goal((20, 170, 180, 255), (190, 240, 242, 255))),
         'tile-146': ('purple colour block goal: a purple hatched square', colour_goal((150, 40, 200, 255), (228, 196, 245, 255))),
         'tile-147': ('green colour block goal: a green hatched square', colour_goal((40, 160, 60, 255), (196, 236, 200, 255))),
-        'tile-148': ('boat at the shore: a wooden boat with a white sail, the way home of the last level', shrink(native('boat-big'), 30)),
+        'tile-148': ('boat at the shore: a wooden boat with a white sail, the way home of the last level',
+                     shrink(boat_calm(native('boat-big')), 30)),
         'boat-big': ('the boat as the board shows it, three cells wide: a wooden sailing boat with a red-striped sail and a pennant',
-                     native('boat-big')),
+                     boat_calm(native('boat-big'))),
         'boat-big-hull': ('the near side of the big boat\'s hull, drawn over Shovey when he rides in it',
-                          boat_hull_front(native('boat-big'))),
+                          boat_hull_front(boat_calm(native('boat-big')))),
         **{f'boat-wake-{frame}': (f'water breaking on the big boat\'s bow and foam along its waterline, frame {frame + 1} of 4',
                                   boat_wake(frame)) for frame in range(4)},
         'tile-149': ('floating crate: a crate pushed into water, floating low; Shovey can walk on it', floating_crate()),

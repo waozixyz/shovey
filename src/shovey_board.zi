@@ -72,10 +72,10 @@ BOAT_DECK_X :: 0.2
 BOAT_DECK_Y :: 0.9
 BOAT_RIDER :: 0.28
 // The part of the sailing he spends jumping from his cell into the boat.
-BOAT_HOP :: 0.1
+BOAT_HOP :: 0.08
 // How many cells the boat sails out to sea, and how much wider than the
 // boat the wake picture is, for the spray ahead of the bow.
-BOAT_TRAVEL :: 24.0
+BOAT_TRAVEL :: 14.0
 BOAT_WAKE_WIDE :: 1.3333334
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
@@ -925,7 +925,10 @@ BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: b
 board_preview_game: ShoveyGame;
 board_preview_layers: [SHOVEY_CELLS * 4]s32;
 
-ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64, names: []string, landscape: bool) {
+// With `scenery`, the board is part of a wider scene: no Shovey on it, and
+// its cells snap to whole pixels like the board in play, so the two join.
+ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64, names: []string, landscape: bool,
+    scenery: bool = false) {
     if !sprites_ready { SpritesPrepare() }
     if !ShoveyLoad(*board_preview_game, level) { return }
     BoardLayersFill(*board_preview_game, board_preview_layers[:], 0.0, landscape, false)
@@ -934,10 +937,10 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
             .columns = cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH),
             .rows = cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT),
             .tiles = files, .names = names, .layers = board_preview_layers[:], .layer_count = 4,
-            .fill = Color.{2, 4, 5, 255}, .label = "", .nearest_tiles = abyss_sprite_indices[:]})
+            .fill = Color.{2, 4, 5, 255}, .label = "", .pixel_snap = scenery, .nearest_tiles = abyss_sprite_indices[:]})
     BoardBoats(session, *board_preview_game, grid, WidgetPartKey(key, SHOVEY_CELLS * 4 + 1), 0.0, landscape)
     player := board_preview_game.player
-    if player >= 0 && player < SHOVEY_CELLS {
+    if !scenery && player >= 0 && player < SHOVEY_CELLS {
         Image(session, ImageProps.{.key = WidgetPartKey(key, SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(*board_preview_game, landscape)],
                 .alt_text = "Shovey", .bounds = TileMapCell(grid, BoardDisplayIndex(player, landscape)),
                 .fit = ImageFit.ImageFitContain, .smooth = true})
@@ -991,13 +994,15 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u6
             if hop < 1.0 && from >= 0 {
                 start := TileMapCell(grid, BoardDisplayIndex(from, landscape))
                 eased := hop * (2.0 - hop)
-                lift := cast(float32)Math.Sin(cast(float64)hop * 3.141592653589793) * cell.height * 0.7
+                lift := cast(float32)Math.Sin(cast(float64)hop * 3.141592653589793) * cell.height * 1.1
                 rider = Rectangle.{start.x + (rider.x - start.x) * eased, start.y + (rider.y - start.y) * eased - lift,
                     start.width + (rider.width - start.width) * eased, start.height + (rider.height - start.height) * eased}
             }
             Image(session, ImageProps.{.key = BoardOverlayKey(key, 1001 + drawn * 3), .asset_path = files[PlayerSprite(game, landscape)],
                     .alt_text = "Shovey", .bounds = rider, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
-            if hop >= 1.0 {
+            // He clears the near gunwale at the top of his jump and drops in
+            // behind it.
+            if hop >= 0.5 {
                 Image(session, ImageProps.{.key = BoardOverlayKey(key, 1002 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT + 1],
                         .alt_text = "", .bounds = boat, .fit = ImageFit.ImageFitContain, .smooth = true, .tint = tint})
             }
