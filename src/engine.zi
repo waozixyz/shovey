@@ -47,10 +47,11 @@ shovey_live_lengths: [SHOVEY_LIVE_MAX]s32;
 // is played like any other and the end sequence follows it.
 ShoveyFinaleLevel :: () -> s32 { return ifx shovey_live_count > 0 then shovey_live_count + 1 else SHOVEY_LEVEL_COUNT + 1 }
 
-// The highest level number a saved game may name.
+// The highest level number a saved game may name: a campaign published
+// later can hold SHOVEY_LIVE_MAX levels, and a save from it is kept even
+// before that campaign reaches this game.
 ShoveyLevelLimit :: () -> s32 {
-    finale := ShoveyFinaleLevel()
-    return ifx finale > SHOVEY_LEVEL_COUNT then finale else SHOVEY_LEVEL_COUNT
+    return ifx SHOVEY_LIVE_MAX > SHOVEY_LEVEL_COUNT then SHOVEY_LIVE_MAX else SHOVEY_LEVEL_COUNT
 }
 
 // A level's starting board, from the loaded live campaign when there is one.
