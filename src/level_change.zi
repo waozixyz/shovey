@@ -1,5 +1,6 @@
 // How a won level hands over to the next: the won board stays on screen,
-// dips to dark over the end of the pause, and the next board fades in.
+// fades into the slate backdrop over the end of the pause, and the next board
+// rises from it.
 // Times are milliseconds since the win and since the next level appeared.
 LEVEL_WIN_HOLD_MS :: 750
 LEVEL_WIN_FADE_MS :: 300

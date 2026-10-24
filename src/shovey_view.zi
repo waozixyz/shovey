@@ -874,7 +874,11 @@ ShoveyFrame :: () {
     grid := ShoveyBoard(frame.session, *game, area, cast(u64)22000, frame.now, sprite_names[:], landscape)
     shade := LevelChangeShade()
     if shade > 0.0 {
-        Fill(cast(u64)20097, area, Color.{14, 16, 18, cast(u8)(shade * 255.0)})
+        // The won board dissolves into the slate backdrop and the next one
+        // rises from it, never through black.
+        backdrop := ColorFromPacked(cast(u32)SHOVEY_SLATE)
+        backdrop.a = cast(u8)(shade * 255.0)
+        Fill(cast(u64)20097, area, backdrop)
     }
     // No move or piece counters: the line speaks only when there is news.
     status := ""
