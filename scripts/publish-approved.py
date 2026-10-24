@@ -256,6 +256,7 @@ def publish_campaign():
             status('Updating live levels', 'building')
             receipt['live'] = publish_live(output)
             atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
+            if receipt['live']: Queue(ROOT).live(ACTIVE_IDS)
             status('Building campaign', 'building')
             changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
                       f'- Play the approved Classic campaign through level {len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Keep your progress and use the integrated level editor.', True)

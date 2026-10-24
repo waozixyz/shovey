@@ -44,7 +44,13 @@ class Queue:
             active = [j for j in latest.values() if j['state'] in BUSY]
             queued = [j for j in latest.values() if j['state'] in WAITING]
             failed = [j for j in latest.values() if j['state'] == 'failed']
-            if active:
+            if active and all(j.get('live') for j in active):
+                # Players already load these boards; only the release is still on its way.
+                message = (f"Level {active[0]['level']}: live · {active[0]['state']} release" if len(active) == 1 else
+                           f"{len(active)} levels live · {active[0]['state']} release")
+                if queued:
+                    message += f' · {len(queued)} queued'
+            elif active:
                 message = (f"Level {active[0]['level']}: {active[0]['state']}" if len(active) == 1 else
                            f"{active[0]['state'].capitalize()} {len(active)} levels")
                 if queued:
@@ -52,7 +58,8 @@ class Queue:
             elif queued:
                 message = f'{len(queued)} queued'
             elif failed:
-                message = f"Level {failed[-1]['level']}: update failed. Retry."
+                message = (f"Level {failed[-1]['level']}: live; release failed. Retry." if failed[-1].get('live') else
+                           f"Level {failed[-1]['level']}: update failed. Retry.")
             else:
                 message = 'Published' if latest else ''
                 summary = self.state / 'update-all-summary.json'
@@ -119,6 +126,13 @@ class Queue:
                     if job['state'] != state or job['step'] != step:
                         job['step'] = step
                         self.event(data, job, state, step)
+
+    def live(self, ids):
+        """The live campaign on the node now holds these boards."""
+        with self.transaction() as data:
+            for job in data['jobs']:
+                if job['id'] in ids and job['state'] in BUSY:
+                    job['live'] = True
 
     def fail(self, ids, error):
         with self.transaction() as data:

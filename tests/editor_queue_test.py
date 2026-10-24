@@ -42,6 +42,15 @@ class PublicationQueue(unittest.TestCase):
         self.assertEqual(self.latest(1)['attempt'], 2)
         self.assertEqual(self.latest(1)['error'], '')
 
+    def test_status_says_live_once_the_campaign_is_on_the_node(self):
+        self.queue.enqueue([self.first])
+        ids = self.queue.claim([self.first['board']])
+        self.queue.live(ids)
+        self.queue.advance(ids, 'checking', 'Screen check')
+        self.assertEqual((self.queue.state / 'publish-status').read_text(), 'Level 1: live · checking release')
+        self.queue.fail(ids, 'Screen check failed')
+        self.assertEqual((self.queue.state / 'publish-status').read_text(), 'Level 1: live; release failed. Retry.')
+
     def test_another_level_can_queue_and_failure_does_not_erase_it(self):
         self.queue.enqueue([self.first])
         ids = self.queue.claim([self.first['board']])
