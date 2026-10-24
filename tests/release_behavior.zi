@@ -30,5 +30,21 @@ Check :: () -> s32 {
     position: ShoveyGame
     if !ShoveyCampaignRestore(*restored, *position, saved) || position.level != last || restored.unlocked != later || !restored.completed[last - 1] || !restored.completed[22] { return 5 }
     if ShoveyOpenLatest(*restored, *position) || position.level != last { return 6 }
+    // A live campaign past 175 levels saves the wide layout and restores it.
+    for index: cast(s32)0..299 {
+        board := ShoveyLevelData(1 + index % last)
+        for at: cast(s64)0..board.count - 1 { shovey_live_boards[cast(s64)index * SHOVEY_LIVE_BOARD + at] = board[at] }
+        shovey_live_lengths[index] = cast(s32)board.count
+    }
+    shovey_live_count = 300
+    wide := ShoveyProgress.{.unlocked = 250}
+    wide.completed[22] = true
+    wide.completed[200] = true
+    if !ShoveyLoad(*game, 240) { return 7 }
+    saved = ShoveyCampaignSave(*wide, *game)
+    if saved[:2] != "C5" { return 8 }
+    if !ShoveyCampaignRestore(*restored, *position, saved) || restored.unlocked != 250 || !restored.completed[22] ||
+    !restored.completed[200] || restored.completed[201] || position.level != 240 { return 9 }
+    shovey_live_count = 0
     return 0
 }

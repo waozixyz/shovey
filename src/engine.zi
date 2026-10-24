@@ -31,7 +31,7 @@ ShoveyGame :: struct {
 // A campaign published after this release: the approved levels kept on the
 // node, each proven by its own winning route (see live_campaign.zi). While
 // one is loaded it replaces the release's built-in approved levels.
-SHOVEY_LIVE_MAX :: 170
+SHOVEY_LIVE_MAX :: 500
 SHOVEY_LIVE_BOARD :: 1440
 shovey_live_count: s32;
 shovey_live_boards: [SHOVEY_LIVE_MAX * SHOVEY_LIVE_BOARD]u8;

@@ -82,24 +82,27 @@ slide_count: s32;
 slide_next: s32;
 slide_at: float64;
 header_bytes: [256]u8;
-level_preview_paths: [175][64]u8;
+level_preview_paths: [SHOVEY_PROGRESS_LEVELS][64]u8;
 level_preview_landscape: bool;
 // Whether a level still starts from the board its built-in picture shows.
-level_preview_current: [175]bool;
+level_preview_current: [SHOVEY_PROGRESS_LEVELS]bool;
 // The live campaign request: the host service, its request and next poll.
 live_service: string;
 live_request: [24]u8;
 live_waiting: bool;
 live_poll_at: float64;
 live_bytes: [96]u8;
-// The cached campaign, read back from records of at most LIVE_CHUNK bytes.
+// The cached campaign, read back from records of at most LIVE_CHUNK bytes:
+// enough chunks for SHOVEY_LIVE_MAX compact levels. A downloaded document
+// is about 1.9 KB a level; 1 MiB is the largest fixed array.
 LIVE_CHUNK :: 49152
-LIVE_CHUNKS :: 6
+LIVE_CHUNKS :: 15
+LIVE_DOCUMENT :: 1048576
 live_cache: [LIVE_CHUNK * LIVE_CHUNKS]u8;
 live_cache_length: s32;
 live_names: [LIVE_CHUNKS][24]u8;
 // A downloaded campaign being checked, and the mark of the last one checked.
-live_document: [LIVE_CHUNK * LIVE_CHUNKS]u8;
+live_document: [LIVE_DOCUMENT]u8;
 live_checking: bool;
 live_mark: [24]u8;
 // New levels from the node: -1 unread, 0 off, 1 on, 2 not asked yet.
@@ -573,7 +576,7 @@ LiveCampaignCheck :: () {
     }
     if compact != LiveCacheRead() { unused LiveCacheWrite(compact) }
     unused SaveAppRecordHost("live-campaign-mark", TextUntilNul(live_mark[:]))
-    for at: cast(s32)0..174 { level_preview_paths[at][0] = 0 }
+    for at: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 { level_preview_paths[at][0] = 0 }
     // An untouched level reopens on its new board; a level in play keeps its
     // board until it is restarted or left.
     if !game.won && game.moves == 0 && game.level <= ShoveyLevelCount() { unused ShoveyLoad(*game, game.level) }

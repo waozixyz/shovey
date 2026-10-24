@@ -3,9 +3,12 @@
 #import, file "engine.zi";
 #import, file "levels.zi";
 
+// Levels a campaign can track; SHOVEY_LIVE_MAX keeps the closing board within.
+SHOVEY_PROGRESS_LEVELS :: 1000
+
 ShoveyProgress :: struct {
     unlocked: s32
-    completed: [175]bool
+    completed: [SHOVEY_PROGRESS_LEVELS]bool
 }
 
 ShoveyProgressNew :: () -> ShoveyProgress { return ShoveyProgress.{.unlocked = 1} }
@@ -61,7 +64,11 @@ ShoveyMigrateProgress :: (game: *ShoveyGame) -> ShoveyProgress {
 
 // C2 adds a fingerprint of the level's starting board after the C1 layout.
 SHOVEY_CAMPAIGN_C1 :: 1651
-campaign_bytes: [SHOVEY_CAMPAIGN_C1 + 968]u8;
+// C5 tracks campaigns past 175 levels: the unlocked level in four hex digits
+// and a mark for each of SHOVEY_PROGRESS_LEVELS, then C4's position and
+// fingerprint. Smaller campaigns keep saving the older layouts.
+SHOVEY_CAMPAIGN_C5 :: 6 + SHOVEY_PROGRESS_LEVELS
+campaign_bytes: [SHOVEY_CAMPAIGN_C5 + 2432 + 8]u8;
 
 // FNV-1a over a level's starting board. A saved position is kept only while
 // its level still starts from that board, so a game saved before levels were
@@ -76,19 +83,27 @@ ShoveyBoardMark :: (level: s32) -> u64 {
 }
 
 ShoveyCampaignSave :: (progress: *ShoveyProgress, game: *ShoveyGame) -> string {
-    campaign_bytes[0] = #char "C"
-    campaign_bytes[1] = #char "2"
     alphabet := "0123456789abcdef"
-    campaign_bytes[2] = alphabet[(progress.unlocked >> 4) & 15]
-    campaign_bytes[3] = alphabet[progress.unlocked & 15]
-    for index: cast(s32)0..174 {
-        campaign_bytes[4 + index] = ifx progress.completed[index] then #char "1" else #char "0"
+    wide := progress.unlocked > 175
+    for index: cast(s32)175..SHOVEY_PROGRESS_LEVELS - 1 {
+        if progress.completed[index] { wide = true }
+    }
+    header: s32 = ifx wide then 6 else 4
+    marks: s32 = ifx wide then SHOVEY_PROGRESS_LEVELS else 175
+    campaign_bytes[0] = #char "C"
+    campaign_bytes[1] = ifx wide then #char "5" else #char "2"
+    for digit: cast(s32)0..header - 3 {
+        campaign_bytes[2 + digit] = alphabet[(progress.unlocked >> ((header - 3 - digit) * 4)) & 15]
+    }
+    for index: cast(s32)0..marks - 1 {
+        campaign_bytes[header + index] = ifx progress.completed[index] then #char "1" else #char "0"
     }
     position := ShoveySave(game)
-    for index: cast(s32)0..cast(s32)position.count - 1 { campaign_bytes[179 + index] = position[index] }
-    end := 179 + cast(s32)position.count
-    if position.count > 1472 { campaign_bytes[1] = #char "3" }
-    if position.count > 1952 { campaign_bytes[1] = #char "4" }
+    start := header + marks
+    for index: cast(s32)0..cast(s32)position.count - 1 { campaign_bytes[start + index] = position[index] }
+    end := start + cast(s32)position.count
+    if !wide && position.count > 1472 { campaign_bytes[1] = #char "3" }
+    if !wide && position.count > 1952 { campaign_bytes[1] = #char "4" }
     mark := ShoveyBoardMark(game.level)
     for digit: cast(s32)0..7 {
         campaign_bytes[end + digit] = alphabet[cast(s32)((mark >> cast(u64)((7 - digit) * 4)) & 15)]
@@ -97,22 +112,33 @@ ShoveyCampaignSave :: (progress: *ShoveyProgress, game: *ShoveyGame) -> string {
 }
 
 ShoveyCampaignRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, text: string) -> bool {
-    decorated := text.count == SHOVEY_CAMPAIGN_C1 + 968 && text[:2] == "C4"
-    layered := decorated || (text.count == SHOVEY_CAMPAIGN_C1 + 488 && text[:2] == "C3")
-    end := ifx decorated then SHOVEY_CAMPAIGN_C1 + 960 else ifx layered then SHOVEY_CAMPAIGN_C1 + 480 else SHOVEY_CAMPAIGN_C1
-    marked := layered || (text.count == SHOVEY_CAMPAIGN_C1 + 8 && text[:2] == "C2")
+    wide := text.count > SHOVEY_CAMPAIGN_C5 && text[:2] == "C5"
+    header: s32 = ifx wide then 6 else 4
+    marks: s32 = ifx wide then SHOVEY_PROGRESS_LEVELS else 175
+    start := header + marks
+    positions := cast(s32)text.count - start - 8
+    decorated := (wide && positions == 2432) || (text.count == SHOVEY_CAMPAIGN_C1 + 968 && text[:2] == "C4")
+    layered := decorated || (wide && positions == 1952) || (text.count == SHOVEY_CAMPAIGN_C1 + 488 && text[:2] == "C3")
+    end := start + (ifx decorated then 2432 else ifx layered then 1952 else 1472)
+    marked := layered || (wide && positions == 1472) || (text.count == SHOVEY_CAMPAIGN_C1 + 8 && text[:2] == "C2")
+    if wide && !marked { return false }
     if !marked && (text.count != SHOVEY_CAMPAIGN_C1 || text[:2] != "C1") { return false }
     restored: ShoveyProgress
-    restored.unlocked = ShoveyByte(text, 2)
+    restored.unlocked = 0
+    for digit: cast(s32)2..header - 1 {
+        value := ShoveyDigit(text[digit])
+        if value < 0 { return false }
+        restored.unlocked = restored.unlocked * 16 + value
+    }
     if restored.unlocked < 1 || restored.unlocked > ShoveyLevelLimit() { return false }
-    for index: cast(s32)0..174 {
-        byte := text[4 + index]
+    for index: cast(s32)0..marks - 1 {
+        byte := text[header + index]
         if byte != #char "0" && byte != #char "1" { return false }
         restored.completed[index] = byte == #char "1"
         if restored.completed[index] && index + 1 >= restored.unlocked { return false }
     }
     position: ShoveyGame
-    if !ShoveyRestore(*position, text[179:end]) || position.level > restored.unlocked { return false }
+    if !ShoveyRestore(*position, text[start:end]) || position.level > restored.unlocked { return false }
     // Older releases exposed unfinished levels. Keep all earned progress,
     // but reopen an approved board instead of discarding the campaign.
     if position.level > ShoveyLevelCount() {

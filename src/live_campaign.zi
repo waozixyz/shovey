@@ -12,9 +12,9 @@
 
 LIVE_CAMPAIGN_ID :: "435c51fbedc3c928f54124560b46116a"
 LIVE_CAMPAIGN_ROUTE :: 8192
-// The compact form: "L1", the count as two hex digits, then each level's
-// 1440 board digits.
-LIVE_COMPACT_HEADER :: 4
+// The compact form: "L2", the count as three hex digits, then each level's
+// 1440 board digits. Caches from before 256 levels start "L1" with two.
+LIVE_COMPACT_HEADER :: 5
 
 LiveCheck :: struct {
     document: string
@@ -120,9 +120,10 @@ LiveCheckInstall :: () -> string {
     digits: [16]u8 = .[#char "0", #char "1", #char "2", #char "3", #char "4", #char "5", #char "6", #char "7",
     #char "8", #char "9", #char "a", #char "b", #char "c", #char "d", #char "e", #char "f"]
     live_compact[0] = #char "L"
-    live_compact[1] = #char "1"
-    live_compact[2] = digits[count / 16]
-    live_compact[3] = digits[count % 16]
+    live_compact[1] = #char "2"
+    live_compact[2] = digits[(count / 256) % 16]
+    live_compact[3] = digits[(count / 16) % 16]
+    live_compact[4] = digits[count % 16]
     for index: cast(s32)0..count * SHOVEY_LIVE_BOARD - 1 { live_compact[LIVE_COMPACT_HEADER + index] = live_staged[index] }
     return TextView(live_compact[:LIVE_COMPACT_HEADER + count * SHOVEY_LIVE_BOARD])
 }
@@ -170,15 +171,18 @@ ShoveyLiveLoadCompact :: (text: string) -> bool {
         unused text
         return false
     }
-    if text.count < LIVE_COMPACT_HEADER || text[0] != #char "L" || text[1] != #char "1" { return false }
-    high := ShoveyDigit(text[2])
-    low := ShoveyDigit(text[3])
-    if high < 0 || low < 0 { return false }
-    count := high * 16 + low
-    if count < 1 || count > SHOVEY_LIVE_MAX || text.count != LIVE_COMPACT_HEADER + count * SHOVEY_LIVE_BOARD { return false }
+    if text.count < 4 || text[0] != #char "L" || (text[1] != #char "1" && text[1] != #char "2") { return false }
+    header: s32 = ifx text[1] == #char "2" then 5 else 4
+    count: s32 = 0
+    for at: cast(s32)2..header - 1 {
+        digit := ShoveyDigit(text[at])
+        if digit < 0 { return false }
+        count = count * 16 + digit
+    }
+    if count < 1 || count > SHOVEY_LIVE_MAX || text.count != header + count * SHOVEY_LIVE_BOARD { return false }
     for index: cast(s32)0..count * SHOVEY_LIVE_BOARD - 1 {
-        if ShoveyDigit(text[LIVE_COMPACT_HEADER + index]) < 0 { return false }
-        shovey_live_boards[index] = text[LIVE_COMPACT_HEADER + index]
+        if ShoveyDigit(text[header + index]) < 0 { return false }
+        shovey_live_boards[index] = text[header + index]
     }
     for index: cast(s32)0..count - 1 { shovey_live_lengths[index] = SHOVEY_LIVE_BOARD }
     shovey_live_count = count
