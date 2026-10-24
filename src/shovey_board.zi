@@ -259,7 +259,9 @@ SpritePathIn :: (files: []string, index: s32, folder: string, name: string) {
     files[index] = BuilderFinish(bytes)
 }
 
-#if #defined(KRYON_HOSTED_UI) {
+// Hosted games and the website pack the landscape art inside the game's
+// own folder; desktop builds read the repository's folders.
+#if #defined(KRYON_HOSTED_UI) || #defined(SHOVEY_WEB) {
     SPRITE_LANDSCAPE_FOLDER :: "shovey/landscape"
 } else {
     SPRITE_LANDSCAPE_FOLDER :: "shovey-landscape"
