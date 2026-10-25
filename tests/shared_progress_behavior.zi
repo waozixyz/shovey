@@ -86,6 +86,7 @@ Check :: () -> s32 {
     remote_exists = true
     if SharedProgressPump(*session, 16.0) != 1 { return 3 }
     Classic.ShoveySharedRestore(*local, *session.record)
+    unused ClassicProgress.ShoveyOpenLatest(*local, *game)
     if local.unlocked != 40 || !local.completed[0] ||
     TextUntilNul(board[:]) != ClassicGame.ShoveySave(*game) || account_writes != 0 { return 4 }
     // A newly completed puzzle is the only normal save to the account.

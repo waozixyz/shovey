@@ -43,6 +43,9 @@ ShoveySelectLevel :: (progress: *ShoveyProgress, game: *ShoveyGame, level: s32) 
 // position on that puzzle is kept; anything else starts it from the beginning.
 ShoveyOpenLatest :: (progress: *ShoveyProgress, game: *ShoveyGame) -> bool {
     ShoveyRecordWin(progress, game)
+    // A puzzle already in progress belongs to this device, even when
+    // another device has since earned access to later levels.
+    if game.moves > 0 && !game.won && !game.lost { return false }
     latest := ifx progress.unlocked > ShoveyLevelCount() then ShoveyLevelCount() else progress.unlocked
     if game.level == latest && !game.won && !game.lost { return false }
     return ShoveySelectLevel(progress, game, latest)
