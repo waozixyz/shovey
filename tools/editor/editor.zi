@@ -56,6 +56,7 @@
 #import, file "../../src/shovey_board.zi";
 #import, file "../../src/orientation.zi";
 #import, file "../../src/levels.zi";
+#import, file "../../src/reward_locations.zi";
 
 sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
@@ -96,6 +97,7 @@ focus: [LEVELS_MAX + 1]bool;
 our_portrait_tiles: [SPRITE_COUNT]string;
 our_landscape_tiles: [SPRITE_COUNT]string;
 current: s32;
+chest_context: bool;
 boards_landscape: bool;
 selected: s32;
 palette_tab: s32;
@@ -686,7 +688,7 @@ PrivateSprite :: (kind: s32) -> s32 {
 
 hex_abyss_open: [SHOVEY_CELLS]bool;
 
-HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string) -> TileMapResult {
+HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string, chest: bool = false) -> TileMapResult {
     for at: cast(s32)0..SHOVEY_CELLS - 1 { hex_abyss_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         kind := KindAt(board, at)
@@ -722,6 +724,7 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
             if corners != 0 { layers[SHOVEY_CELLS + display] = SPRITE_ABYSS_CORNER + corners }
         }
         layers[SHOVEY_CELLS * 2 + display] = ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, landscape) else ifx kind > 0 && ShoveyCellKind(kind) then PrivateSprite(kind) else -1
+        if chest && at == CHEST_CELL && kind == 0 && tile == 78 { layers[SHOVEY_CELLS * 2 + display] = SPRITE_CHEST }
     }
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
@@ -1379,6 +1382,7 @@ Open :: (place: s32) {
     StopCheck()
     check_state = 0
     current = (place - 1 + ALL_PLACES) % ALL_PLACES + 1
+    chest_context = false
     ActionMessage("")
     LoadPublication()
     playing = false
@@ -2240,6 +2244,7 @@ selector_map: bool;
 // A place clicked in the list opens at the start of the next frame, so no
 // frame mixes the list's widgets with the level's.
 selector_pick: s32;
+CHEST_SELECTOR :: ALL_PLACES + 1
 map_hash: u32;
 map_ready: bool;
 map_path: [64]u8;
@@ -2304,6 +2309,11 @@ SELECTOR_COLUMNS :: 15
 SelectorScreen :: (area: Rectangle) {
     rows := (ALL_PLACES + SELECTOR_COLUMNS - 1) / SELECTOR_COLUMNS
     legend_height: float32 = 28.0
+    #if !#defined(SHOVEY_ADMIN) {
+        if Control(62, Rectangle.{area.x + area.width - 300.0, area.y, 96.0, legend_height - 4.0}, "29a", chest_context) {
+            selector_pick = CHEST_SELECTOR
+        }
+    }
     if Control(60, Rectangle.{area.x + area.width - 200.0, area.y, 96.0, legend_height - 4.0}, "Map", selector_map) { selector_map = true }
     if Control(61, Rectangle.{area.x + area.width - 100.0, area.y, 96.0, legend_height - 4.0}, "Levels", !selector_map) { selector_map = false }
     if selector_map {
@@ -2323,7 +2333,7 @@ SelectorScreen :: (area: Rectangle) {
                     .bounds = Rectangle.{origin_x, origin_y, map_width * scale, map_height * scale},
                     .fit = ImageFit.ImageFitStretch})
         } else {
-            Caption(15, Rectangle.{area.x, area.y, area.width - 210.0, legend_height}, "Drawing the map…", 14)
+            Caption(15, Rectangle.{area.x, area.y, area.width - 310.0, legend_height}, "Drawing the map…", 14)
         }
         for place: cast(s32)1..ALL_PLACES {
             index := place - 1
@@ -2345,7 +2355,7 @@ SelectorScreen :: (area: Rectangle) {
     gap: float32 = 4.0
     cell_width := (area.width - gap * cast(float32)(SELECTOR_COLUMNS - 1)) / cast(float32)SELECTOR_COLUMNS
     cell_height := (area.height - legend_height - gap * cast(float32)(rows - 1)) / cast(float32)rows
-    Caption(15, Rectangle.{area.x, area.y, area.width - 210.0, legend_height},
+    Caption(15, Rectangle.{area.x, area.y, area.width - 310.0, legend_height},
         ifx server_configured && !server_verified then "Server unverified." else "Purple: synced. Pink: changed.", 14)
     for place: cast(s32)1..ALL_PLACES {
         index := place - 1
@@ -2544,7 +2554,11 @@ GLMMenu :: () {
 
 Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     if selector_pick > 0 {
-        Open(selector_pick)
+        picked := selector_pick
+        Open(ifx picked == CHEST_SELECTOR then CHEST_LEVEL else picked)
+        #if !#defined(SHOVEY_ADMIN) {
+            chest_context = picked == CHEST_SELECTOR
+        }
         selector_open = false
         selector_pick = 0
     }
@@ -2598,7 +2612,9 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     width := viewport.width
     height := viewport.height
     length: s32 = 0
-    if SecretPlace(current) {
+    if chest_context {
+        AppendText(title_bytes[:], *length, "Secret chest 29a")
+    } else if SecretPlace(current) {
         AppendText(title_bytes[:], *length, "Secret beach ")
         AppendPlace(title_bytes[:], *length, current)
     } else if InGame(current) {
@@ -2714,9 +2730,18 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         }
         play_bounds := Rectangle.{edit_area.x + (edit_area.width - play_width) / 2.0,
             edit_area.y + (edit_area.height - play_height) / 2.0, play_width, play_height}
+        #if !#defined(SHOVEY_ADMIN) {
+            board_chest = ifx current == CHEST_LEVEL && play.tiles[CHEST_CELL] == 78 && play.ground[CHEST_CELL] == 0 then CHEST_CELL else -1
+            board_chest_open = false
+        }
         unused ShoveyBoard(session, *play, play_bounds, cast(u64)200000, cast(float64)now / 1000.0, names[0:0], boards_landscape)
+        board_chest = -1
     } else {
-        grid := HexBoard(Board(current), OurTiles(), layers_edit[:], cast(u64)200000, edit_area, boards_landscape, "New level")
+        show_chest := false
+        #if !#defined(SHOVEY_ADMIN) {
+            show_chest = current == CHEST_LEVEL
+        }
+        grid := HexBoard(Board(current), OurTiles(), layers_edit[:], cast(u64)200000, edit_area, boards_landscape, "New level", show_chest)
         if diff_open { HighlightDifferences(grid, cast(u64)801000) }
         // Alt+click (or Shift+click, if the desktop keeps Alt) picks up the
         // piece under the pointer to paint with.

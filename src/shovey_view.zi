@@ -51,6 +51,7 @@ Math :: #import "std/math";
 #import "json_scan"
 #import, file "live_campaign.zi";
 #import, file "rewards.zi";
+#import, file "reward_locations.zi";
 #if #defined(SHOVEY_WEB) {
     #import, file "web/host.zi";
 } else {

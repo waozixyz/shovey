@@ -8,16 +8,13 @@
 #import "json_scan"
 #import "text_buffer"
 #import "entity/dew_model"
+#import, file "reward_locations.zi";
 #import, file "engine.zi";
 #import, file "controls.zi";
 
 REWARD_COUNT :: 2
 REWARD_CHEST :: 0
 REWARD_CAMPAIGN :: 1
-// The chest lies on level 29's beach, behind the wall a bomb crate breaks.
-CHEST_LEVEL :: 29
-CHEST_CELL :: 13 * SHOVEY_WIDTH + 1
-
 // Per reward: 0 not earned, 1 earned and waiting for the node, 2 answered.
 reward_state: [REWARD_COUNT]s32;
 reward_loaded: bool;
