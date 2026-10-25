@@ -180,7 +180,7 @@ web: bundles
 	'$(ZIRAN_BIN)/zi2zir' --root . --module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--module-path '$(ENTITY)/src' --module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
+		--module-path '$(ENTITY)/src' --module-path 'entity=$(ENTITY)/src' --module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
 		--entry canvas_app_run:main --bind canvas_app_run:CanvasAppMain=game:Main \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
@@ -196,7 +196,7 @@ web: bundles
 		--preload-file '$(KRYON)/assets/fonts/LiberationSans-Regular.ttf@/kryon-font.ttf' \
 		--preload-file build/web-assets/assets@/assets -o build/web/index.js
 	cp src/web/index.html build/web/index.html
-	python3 scripts/stamp-web.py
+	python3 scripts/stamp-web.py --deployed
 	cp assets/shovey/preview.png build/web/loading.png
 	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png build/web/
 	cp assets/branding/shovey-icon.png build/web/icon.png

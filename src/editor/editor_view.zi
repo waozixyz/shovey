@@ -259,6 +259,19 @@ EditorNotice :: (key: string) {
 // ---------------------------------------------------------------------------
 // Pictures: the editions' sprites, packed under the editor's own folder
 
+// Where the editor finds Classic's pictures and sounds: its own packed
+// copies, or on the web page, which holds Shovey's own folder beside the
+// editor's, that folder itself.
+#if #defined(SHOVEY_WEB) {
+    EDITOR_CLASSIC :: "assets/shovey"
+    EDITOR_CLASSIC_PREVIEW :: "assets/shovey/preview.png"
+    EDITOR_CLASSIC_SOUNDS: [9]string = .["assets/shovey/sounds/push.wav", "assets/shovey/sounds/pit.wav", "assets/shovey/sounds/goal.wav", "assets/shovey/sounds/pickup.wav", "assets/shovey/sounds/door.wav", "assets/shovey/sounds/teleport.wav", "assets/shovey/sounds/shot.wav", "assets/shovey/sounds/won.wav", "assets/shovey/sounds/lost.wav"];
+} else {
+    EDITOR_CLASSIC :: "assets/shovey-editor/classic"
+    EDITOR_CLASSIC_PREVIEW :: "assets/shovey-editor/classic/preview.png"
+    EDITOR_CLASSIC_SOUNDS: [9]string = .["assets/shovey-editor/classic/sounds/push.wav", "assets/shovey-editor/classic/sounds/pit.wav", "assets/shovey-editor/classic/sounds/goal.wav", "assets/shovey-editor/classic/sounds/pickup.wav", "assets/shovey-editor/classic/sounds/door.wav", "assets/shovey-editor/classic/sounds/teleport.wav", "assets/shovey-editor/classic/sounds/shot.wav", "assets/shovey-editor/classic/sounds/won.wav", "assets/shovey-editor/classic/sounds/lost.wav"];
+}
+
 // Points the board modules at the editor's copies of their pictures before
 // they prepare their own paths, which would name the editions' folders.
 EditorPictures :: () {
@@ -266,7 +279,12 @@ EditorPictures :: () {
     // edge overlays, then point them at the editor's own packed copies.
     SpritesPrepare()
     prefix := "assets/shovey/sprites/"
+    #if #defined(SHOVEY_WEB) {
+        // The page's Shovey folder is where the board already looks.
+        prefix = ""
+    }
     for index: cast(s32)0..SPRITE_COUNT - 1 {
+        if prefix.count == 0 { break }
         name := sprite_files[index][prefix.count:]
         portrait: Vec(u8)
         BuilderPrint(*portrait, "assets/shovey-editor/classic/sprites/%", name)
@@ -294,7 +312,8 @@ EditorStoryPicture :: (island: bool, number: s32) -> string {
     if slot < 0 || slot >= 512 { return "" }
     if editor_picture_paths[slot].count == 0 {
         bytes: Vec(u8)
-        BuilderPrint(*bytes, "assets/shovey-editor/%/levels/%.png", ifx island then "island" else "classic", number)
+        if island { BuilderPrint(*bytes, "assets/shovey-editor/island/levels/%.png", number) }
+        else { BuilderPrint(*bytes, "%/levels/%.png", EDITOR_CLASSIC, number) }
         editor_picture_paths[slot] = BuilderFinish(bytes)
     }
     return editor_picture_paths[slot]
@@ -821,7 +840,7 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
             editor_page = EDITOR_LEVELS
         }
         EditorImage(cast(u64)(111 + edition * 4),
-            ifx island then "assets/shovey-editor/island/preview.png" else "assets/shovey-editor/classic/preview.png",
+            ifx island then "assets/shovey-editor/island/preview.png" else EDITOR_CLASSIC_PREVIEW,
             Rectangle.{x + 8.0, y + 8.0, card_width - 16.0, card_height - 64.0}, name)
         EditorCaption(cast(u64)(112 + edition * 4), Rectangle.{x + 12.0, y + card_height - 52.0, card_width - 24.0, 26.0}, name, 20, true)
         EditorCaption(cast(u64)(113 + edition * 4), Rectangle.{x + 12.0, y + card_height - 28.0, card_width - 24.0, 22.0},
@@ -1092,11 +1111,7 @@ EditorSound :: (event: s32) {
         if event < 9 { unused AppSoundHost(sounds[event]) }
         return
     }
-    sounds: [10]string = .["", "assets/shovey-editor/classic/sounds/push.wav", "assets/shovey-editor/classic/sounds/pit.wav",
-    "assets/shovey-editor/classic/sounds/goal.wav", "assets/shovey-editor/classic/sounds/pickup.wav",
-    "assets/shovey-editor/classic/sounds/door.wav", "assets/shovey-editor/classic/sounds/teleport.wav",
-    "assets/shovey-editor/classic/sounds/shot.wav", "assets/shovey-editor/classic/sounds/won.wav",
-    "assets/shovey-editor/classic/sounds/lost.wav"]
+    sounds: [10]string = .["", EDITOR_CLASSIC_SOUNDS[0], EDITOR_CLASSIC_SOUNDS[1], EDITOR_CLASSIC_SOUNDS[2], EDITOR_CLASSIC_SOUNDS[3], EDITOR_CLASSIC_SOUNDS[4], EDITOR_CLASSIC_SOUNDS[5], EDITOR_CLASSIC_SOUNDS[6], EDITOR_CLASSIC_SOUNDS[7], EDITOR_CLASSIC_SOUNDS[8]]
     if event < 10 { unused AppSoundHost(sounds[event]) }
 }
 

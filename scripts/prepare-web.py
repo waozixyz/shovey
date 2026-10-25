@@ -17,6 +17,9 @@ for name in ('shovey', 'shovey-editor'):
 # Cloudflare Pages file limit. The developer's private Island editor keeps them.
 if os.environ.get('SHOVEY_ISLAND_EDITOR') != '1':
     shutil.rmtree(assets / 'shovey-editor' / 'island', ignore_errors=True)
+# The editor reads Classic's pictures and sounds from Shovey's own folder on
+# the page, so its packed copies stay out (see EDITOR_CLASSIC).
+shutil.rmtree(assets / 'shovey-editor' / 'classic', ignore_errors=True)
 
 translations = runpy.run_path(str(root / 'scripts/build-bundles.py'))['translations']
 code = []

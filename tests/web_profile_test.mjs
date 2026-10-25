@@ -150,14 +150,32 @@ try {
     await click(40, 28);
     await wait('!Module.profileVisible');
     await click(195, 680);
-    await wait(`Module.FS.analyzePath('/kryon-apps/shovey/campaign').exists`);
-    const campaign = await evaluate(`Module.FS.readFile('/kryon-apps/shovey/campaign', {encoding: 'utf8'})`);
-    assert(campaign.length > 0);
+    // Classic keeps its progress in the account's shared game record.
+    const progress = `(() => {
+      const found = [];
+      const walk = path => {
+        for (const name of Module.FS.readdir(path)) {
+          if (name === '.' || name === '..') continue;
+          const child = path + '/' + name;
+          if (Module.FS.isDir(Module.FS.stat(child).mode)) walk(child);
+          else if (child.includes('/game-progress/')) {
+            const text = Module.FS.readFile(child, {encoding: 'utf8'});
+            if (text.includes('"game":"shovey.classic"')) found.push(text);
+          }
+        }
+      };
+      walk('/kryon-apps');
+      return found.length === 1 ? found[0] : '';
+    })()`;
+    await wait(`${progress}.length > 0`);
+    const campaign = JSON.parse(await evaluate(progress));
+    assert(campaign.unlocked >= 1);
     await click(114, 26);
     assert((await labels()).some(text => text.includes('Level')));
     await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: 2200});
     await delay(500);
-    assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/campaign', {encoding: 'utf8'})`), campaign, 'Scrolling changed progress');
+    const scrolled = JSON.parse(await evaluate(progress));
+    assert.deepEqual([scrolled.unlocked, scrolled.completed], [campaign.unlocked, campaign.completed], 'Scrolling changed progress');
     console.log('Web Profile, inline Dew, game identity, account creation/persistence and level navigation passed; no screenshots.');
   }
 } finally {
