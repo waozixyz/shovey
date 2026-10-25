@@ -2,22 +2,22 @@
   "format": 1,
   "packages": [
     {
-      "commit": "fab417e5b14bcc02648bea23b996461943f0bb87",
+      "commit": "57dc367b731ef95b90e187413b1103f05bbb3939",
       "dependencies": {},
-      "id": "p78e98592f812b8a2",
+      "id": "p94f73b510dd2e7ff",
       "name": "host",
-      "ref": "fab417e5b14bcc02648bea23b996461943f0bb87",
+      "ref": "57dc367b731ef95b90e187413b1103f05bbb3939",
       "source": true,
       "url": "https://github.com/waozixyz/arcade.git"
     }
   ],
   "root": {
-    "dependencies": {"host": "p78e98592f812b8a2"},
+    "dependencies": {"host": "p94f73b510dd2e7ff"},
     "name": "ShoveyAndroid"
   },
   "toolchain": {
-    "commit": "3b54282ca1d0b494130263e28ce5df6fb7ff75e2",
-    "ref": "3b54282ca1d0b494130263e28ce5df6fb7ff75e2",
+    "commit": "21c6a681c9ba684bbe069004fd971748cc5c7dc0",
+    "ref": "21c6a681c9ba684bbe069004fd971748cc5c7dc0",
     "url": "https://github.com/ziranlang/ziran.git"
   }
 }

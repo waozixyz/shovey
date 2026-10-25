@@ -3,9 +3,9 @@ name = "ShoveyAndroid"
 
 [toolchain]
 git = "https://github.com/ziranlang/ziran.git"
-ref = "3b54282ca1d0b494130263e28ce5df6fb7ff75e2"
+ref = "21c6a681c9ba684bbe069004fd971748cc5c7dc0"
 
 [dependencies.host]
 git = "https://github.com/waozixyz/arcade.git"
-ref = "fab417e5b14bcc02648bea23b996461943f0bb87"
+ref = "57dc367b731ef95b90e187413b1103f05bbb3939"
 source = true
