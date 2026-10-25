@@ -103,15 +103,16 @@ def main():
             driver.press(label='Restart', role='button')
             driver.wait_idle(frames=6)
         # Unlock only this disposable profile; real player records are untouched.
+        # Classic keeps its progress in the account's shared game record.
         with sqlite3.connect(profile / 'inbe.db') as db:
-            records = [(key, value) for key, value in db.execute(
+            records = [(key, json.loads(value)) for key, value in db.execute(
                 'SELECT key,value FROM settings WHERE user_id=?', (user,))
-                if key.endswith('.campaign')]
-            assert len(records) == 1, list(db.execute('SELECT key FROM settings WHERE key LIKE "%campaign%"'))
-            key, value = records[0]
-            assert value.startswith(('C2', 'C3', 'C4'))
+                if key.startswith('entity.game-progress.') and json.loads(value).get('game') == 'shovey.classic']
+            assert len(records) == 1, list(db.execute('SELECT key FROM settings WHERE key LIKE "%progress%"'))
+            key, progress = records[0]
+            progress['unlocked'] = 28
             db.execute('UPDATE settings SET value=? WHERE user_id=? AND key=?',
-                       (value[:2] + '1c' + value[4:], user, key))
+                       (json.dumps(progress, separators=(',', ':')), user, key))
 
         level = json.loads((root / 'levels/approved.json').read_text())['levels'][27]
         abyss = [int(''.join(level['tiles'])[i:i + 2], 16) == 65 for i in range(0, 480, 2)]
