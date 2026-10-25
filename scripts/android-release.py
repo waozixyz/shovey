@@ -127,7 +127,9 @@ def main():
         else:
             subprocess.run([str(tools / 'zipalign'), '-P', '16', '-f', '4', str(apk), str(aligned)], check=True)
         try:
-            subprocess.run([str(tools / 'apksigner'), 'sign', '--ks', str(args.keystore.resolve(strict=True)),
+            # apksigner re-aligns entries with its own padding unless told to
+            # keep them; kept, F-Droid's rebuild takes this signature as is.
+            subprocess.run([str(tools / 'apksigner'), 'sign', '--alignment-preserved', '--ks', str(args.keystore.resolve(strict=True)),
                             '--ks-key-alias', args.alias, '--ks-pass', 'file:' + str(args.password_file.resolve(strict=True)),
                             '--out', str(temporary), str(aligned)], check=True)
         finally:
