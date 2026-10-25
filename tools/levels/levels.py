@@ -84,16 +84,22 @@ def editor_starter_levels():
 def secret_functions():
     """The secret levels beside the last one, from the private levels/secret.json:
     side 1 is 175a, up the beach from it, side 2 is 175b, down the beach.
-    Builds without the file have none."""
+    The approved hidden 29a room is side 3, including public builds."""
     path = ROOT / 'levels/secret.json'
     secrets = json.loads(path.read_text())['levels'] if path.exists() else []
+    entries = list(enumerate(secrets, 1))
+    approved = json.loads((ROOT / 'levels/approved.json').read_text())
+    chest = [level for level in approved.get('hidden_levels', []) if level.get('name') == '29a']
+    if len(chest) != 1:
+        raise ValueError('One approved hidden 29a room is required')
+    entries.append((3, chest[0]))
     lines = ['ShoveySecretData :: (side: s32) -> string {']
-    for side, level in enumerate(secrets, 1):
+    for side, level in entries:
         cells(level['cells'])
         data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))
         lines.append(f'    if side == {side} {{ return "{data}" }}')
     lines += ['    return ""', '}', '', 'ShoveySecretSolution :: (side: s32) -> string {']
-    for side, level in enumerate(secrets, 1):
+    for side, level in entries:
         lines.append(f'    if side == {side} {{ return "{level.get("solution", "")}" }}')
     lines += ['    return ""', '}', '']
     return '\n'.join(lines)

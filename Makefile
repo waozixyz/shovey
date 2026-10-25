@@ -254,6 +254,8 @@ game-maps-test:
 	python3 tests/game_maps_test.py
 
 public-test: solver laws game-maps-test
+	python3 tests/hidden_levels_test.py
+	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
@@ -275,6 +277,8 @@ laws:
 	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
 
 test: solver laws game-maps-test
+	python3 tests/hidden_levels_test.py
+	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py

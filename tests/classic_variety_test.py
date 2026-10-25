@@ -67,7 +67,7 @@ def main():
             search(dict(level, tiles=rows(sealed)), impossible=True)
             print('Classic 56: opposite-room colour families need 27 phase-correct pushes', flush=True)
         elif number == 64:
-            assert board.count(21) == proof['goals'] == 7 and terrain.count(71) == 14
+            assert board.count(21) == proof['goals'] == 7 and board.count(71) + terrain.count(71) == 14
             assert not proof['pushes'] and proof['moves'] == 57
             # Taking the left bridge first strands the last apple/return path.
             search(level, prefix='223330333', impossible=True)

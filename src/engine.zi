@@ -1,6 +1,7 @@
 // Shovey Classic: a bounded 12 by 20 board, independent of graphics and storage.
 #import "text_buffer"
 #import, file "levels.zi";
+#import, file "reward_locations.zi";
 
 SHOVEY_WIDTH :: 12
 SHOVEY_HEIGHT :: 20
@@ -58,7 +59,7 @@ ShoveyLevelLimit :: () -> s32 {
 // down (175b): numbered past any campaign, never listed, saved or counted.
 SHOVEY_SECRET_UP :: 1001
 SHOVEY_SECRET_DOWN :: 1002
-ShoveySecret :: (level: s32) -> bool { return level == SHOVEY_SECRET_UP || level == SHOVEY_SECRET_DOWN }
+ShoveySecret :: (level: s32) -> bool { return level == SHOVEY_SECRET_UP || level == SHOVEY_SECRET_DOWN || level == CHEST_LEVEL }
 
 // A level's starting board, from the loaded live campaign when there is one.
 ShoveyLevelBoard :: (level: s32) -> string {

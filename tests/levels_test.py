@@ -37,6 +37,12 @@ assert [level['number'] for level in classic] == list(range(1, len(classic) + 1)
 assert [level['number'] for level in island] == list(range(1, len(island) + 1))
 
 checks = []
+hidden = json.loads((ROOT / 'levels/approved.json').read_text()).get('hidden_levels', [])
+assert [level['name'] for level in hidden] == ['29a']
+for level in hidden:
+    assert all(len(cells(level[key])) == CELLS for key in ('cells', 'tiles', 'decorations'))
+    assert level['solution'] and set(level['solution']) <= set('0123ft')
+    checks.append(('classic', 1003, ''.join(level['cells'] + level['tiles'] + level['decorations']), level['solution']))
 for level in classic:
     board = cells(level['cells'])
     tiles = cells(level['tiles']) if 'tiles' in level else [0] * CELLS

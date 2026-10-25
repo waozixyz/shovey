@@ -1,3 +1,4 @@
 // Fixed reward locations shared by the game and its private editor.
-CHEST_LEVEL :: 29
-CHEST_CELL :: 157
+CHEST_PARENT_LEVEL :: 29
+CHEST_LEVEL :: 1003
+CHEST_CELL :: 124

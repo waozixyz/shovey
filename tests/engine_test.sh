@@ -7,7 +7,7 @@ toolchain=${1:?usage: engine_test.sh TOOLCHAIN}
 lib="$root/build/ziran/libziran.a"
 unset DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS
 [ -f "$lib" ] || make -s -C "$toolchain" BUILD_DIR="$root/build/ziran" "$lib"
-for edition in classic island editor import; do
+for edition in classic island editor import secret; do
     work="$root/build/engine-test/$edition"
     rm -rf "$work"
     mkdir -p "$work/c"
@@ -56,3 +56,4 @@ done
 echo 'Engines: opening the newest level, progress, saves and every board load passed for both editions'
 echo 'Editor: painting, coast, undo, records, play proofs, export, shared collections and the Ziran solver passed'
 echo 'Import: level files rewritten byte for byte, proven levels merged, unproven ones refused'
+echo 'Hidden 29a: real beach entry, chest route, exact parent return and campaign isolation passed natively'
