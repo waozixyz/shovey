@@ -47,6 +47,24 @@ editor: levels build/ziran/libziran.a
 		-o $(EDITOR_OUT)/shovey-level-editor.new
 	mv $(EDITOR_OUT)/shovey-level-editor.new $(EDITOR_OUT)/shovey-level-editor
 
+# Island's private level editor: each place beside its original, saving
+# won boards into levels/island.json.
+ISLAND_EDITOR_OUT ?= build/island-editor
+.PHONY: island-editor
+island-editor: levels build/ziran/libziran.a
+	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
+		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+		--module-path 'mingcute=$(MINGCUTE)/src' \
+		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
+		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--entry island_editor:main -o $(ISLAND_EDITOR_OUT)/c tools/editor/island_editor.zi
+	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
+		$$(find $(ISLAND_EDITOR_OUT)/c -type d -printf ' -iquote %p') $$(find $(ISLAND_EDITOR_OUT)/c -name '*.c') \
+		build/ziran/libziran.a -Wl,--gc-sections \
+		$$(pkg-config --libs sdl2 cairo freetype2 fontconfig pangocairo) -lm -lpthread \
+		-o $(ISLAND_EDITOR_OUT)/shovey-island-editor.new
+	mv $(ISLAND_EDITOR_OUT)/shovey-island-editor.new $(ISLAND_EDITOR_OUT)/shovey-island-editor
+
 .PHONY: admin-editor
 admin-editor:
 	$(MAKE) editor EDITOR_OUT=build/admin-editor EDITOR_DEFINES='--define SHOVEY_ADMIN'
