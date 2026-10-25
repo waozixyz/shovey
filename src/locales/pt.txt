@@ -232,6 +232,21 @@ Shovey numa praia tropical com um caranguejo e um coco
 [shovey_coming_soon]
 Em breve
 ---
+[shovey_chest_found]
+Você encontrou um baú secreto!
+---
+[shovey_campaign_reward]
+Você terminou Shovey!
+---
+[shovey_reward_signin]
+Conecte uma conta para resgatar seu Dew. Você também pode fazer isso depois.
+---
+[shovey_reward_connect]
+Conectar conta
+---
+[shovey_close]
+Fechar
+---
 [shovey_dew]
 Dew
 ---

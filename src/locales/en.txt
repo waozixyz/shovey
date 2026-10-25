@@ -232,6 +232,21 @@ Shovey on a tropical beach with a crab and a coconut
 [shovey_coming_soon]
 Coming soon
 ---
+[shovey_chest_found]
+You found a secret chest!
+---
+[shovey_campaign_reward]
+You finished Shovey!
+---
+[shovey_reward_signin]
+Connect an account to claim its Dew. You can do it later too.
+---
+[shovey_reward_connect]
+Connect account
+---
+[shovey_close]
+Close
+---
 [shovey_dew]
 Dew
 ---

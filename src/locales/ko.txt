@@ -232,6 +232,21 @@
 [shovey_coming_soon]
 출시 예정
 ---
+[shovey_chest_found]
+비밀 상자를 찾았어요!
+---
+[shovey_campaign_reward]
+Shovey를 끝냈어요!
+---
+[shovey_reward_signin]
+계정을 연결하고 Dew를 받으세요. 나중에 받아도 돼요.
+---
+[shovey_reward_connect]
+계정 연결
+---
+[shovey_close]
+닫기
+---
 [shovey_dew]
 Dew
 ---

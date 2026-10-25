@@ -232,6 +232,21 @@ Shovey di pantai tropis bersama kepiting dan kelapa
 [shovey_coming_soon]
 Segera hadir
 ---
+[shovey_chest_found]
+Kamu menemukan peti rahasia!
+---
+[shovey_campaign_reward]
+Kamu menamatkan Shovey!
+---
+[shovey_reward_signin]
+Hubungkan akun untuk mengklaim Dew-nya. Kamu juga bisa melakukannya nanti.
+---
+[shovey_reward_connect]
+Hubungkan akun
+---
+[shovey_close]
+Tutup
+---
 [shovey_dew]
 Dew
 ---

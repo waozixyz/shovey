@@ -64,7 +64,9 @@ SPRITE_BLOCK_GOAL :: 279
 SPRITE_BOAT :: 284
 SPRITE_BIG_BOAT :: 286
 SPRITE_BOAT_WAKE :: 288
-SPRITE_COUNT :: 292
+// A secret chest, closed and opened.
+SPRITE_CHEST :: 292
+SPRITE_COUNT :: 294
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -77,6 +79,10 @@ BOAT_HOP :: 0.08
 // boat the wake picture is, for the spray ahead of the bow.
 BOAT_TRAVEL :: 14.0
 BOAT_WAKE_WIDE :: 1.3333334
+// The cell of a secret chest on the board in play, -1 for none, and whether
+// it is open; the view sets both, and the chest lies under Shovey.
+board_chest: s32 = -1;
+board_chest_open: bool;
 sprite_files: [SPRITE_COUNT]string;
 landscape_sprite_files: [SPRITE_COUNT]string;
 sprites_ready: bool;
@@ -321,6 +327,8 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_BOAT + 1, "tile-149")
     SpritePath(SPRITE_BIG_BOAT, "boat-big")
     SpritePath(SPRITE_BIG_BOAT + 1, "boat-big-hull")
+    SpritePath(SPRITE_CHEST, "chest-closed")
+    SpritePath(SPRITE_CHEST + 1, "chest-open")
     for frame_number: cast(s32)0..3 {
         wake: Vec(u8)
         BuilderPrint(*wake, "boat-wake-%", FormatInteger(cast(s64)frame_number, digits[:]))
@@ -606,12 +614,13 @@ board_cache_tiles: [SHOVEY_CELLS]s32;
 board_cache_decorations: [SHOVEY_CELLS]s32;
 board_cache_gliding: [SHOVEY_CELLS]s32;
 board_cache_player: s32 = -2;
+board_cache_chest: s32 = -2;
 board_cache_landscape: bool;
 board_cache_animated: [SHOVEY_CELLS]s32;
 board_cache_animated_count: s32;
 
 BoardCacheCurrent :: (game: *ShoveyGame, landscape: bool) -> bool {
-    if board_cache_player != game.player || board_cache_landscape != landscape { return false }
+    if board_cache_player != game.player || board_cache_landscape != landscape || board_cache_chest != BoardChestState() { return false }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         if board_cache_ground[at] != game.ground[at] || board_cache_objects[at] != game.objects[at] ||
         board_cache_light[at] != game.light_from[at] || board_cache_tiles[at] != game.tiles[at] ||
@@ -619,6 +628,8 @@ BoardCacheCurrent :: (game: *ShoveyGame, landscape: bool) -> bool {
     }
     return true
 }
+
+BoardChestState :: () -> s32 { return board_chest * 2 + ifx board_chest_open then 1 else 0 }
 
 // Tasks left on the drawn board, counted when the board changes.
 board_remaining: s32;
@@ -641,6 +652,7 @@ BoardCacheKeep :: (game: *ShoveyGame, landscape: bool) {
         }
     }
     board_cache_player = game.player
+    board_cache_chest = BoardChestState()
     board_cache_landscape = landscape
 }
 
@@ -915,6 +927,8 @@ BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: b
         }
         decoration := game.decorations[at]
         layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else KindSprite(game, decoration, at, now, landscape)
+        // Only the board in play has the chest; level pictures never show it.
+        if glides && at == board_chest { layers[SHOVEY_CELLS * 2 + display] = SPRITE_CHEST + ifx board_chest_open then 1 else 0 }
         piece := ifx object != 0 then object else ifx ShoveyAnimal(ground) && (!glides || board_gliding[at] < 0) then ground else 0
         layers[SHOVEY_CELLS * 3 + display] = ifx piece == 0 then -1 else KindSprite(game, piece, at, now, landscape)
     }

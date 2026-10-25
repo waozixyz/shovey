@@ -232,6 +232,21 @@ Shovey sur une plage tropicale avec un crabe et une noix de coco
 [shovey_coming_soon]
 Bientôt
 ---
+[shovey_chest_found]
+Tu as trouvé un coffre secret !
+---
+[shovey_campaign_reward]
+Tu as terminé Shovey !
+---
+[shovey_reward_signin]
+Connecte un compte pour réclamer son Dew. Tu peux aussi le faire plus tard.
+---
+[shovey_reward_connect]
+Connecter un compte
+---
+[shovey_close]
+Fermer
+---
 [shovey_dew]
 Dew
 ---

@@ -1317,6 +1317,8 @@ def sprites():
         **{f'boat-wake-{frame}': (f'water breaking on the big boat\'s bow and foam along its waterline, frame {frame + 1} of 4',
                                   boat_wake(frame)) for frame in range(4)},
         'tile-149': ('floating crate: a crate pushed into water, floating low; Shovey can walk on it', floating_crate()),
+        'chest-closed': ('secret chest: a small wooden treasure chest with iron bands and a golden lock', native('chest-closed')),
+        'chest-open': ('secret chest opened: gold coins and a blue Dew drop inside', native('chest-open')),
         'tile-40': ('mirror Shovey (pink)', mirror),
         'tile-57': ('flowers scattered on the floor (decoration)', flowers()),
         'tile-58': ('grass tufts on the floor (decoration)', grass_tufts()),

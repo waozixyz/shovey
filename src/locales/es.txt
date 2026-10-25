@@ -232,6 +232,21 @@ Shovey en una playa tropical con un cangrejo y un coco
 [shovey_coming_soon]
 Próximamente
 ---
+[shovey_chest_found]
+¡Encontraste un cofre secreto!
+---
+[shovey_campaign_reward]
+¡Terminaste Shovey!
+---
+[shovey_reward_signin]
+Conecta una cuenta para reclamar su Dew. También puedes hacerlo más tarde.
+---
+[shovey_reward_connect]
+Conectar cuenta
+---
+[shovey_close]
+Cerrar
+---
 [shovey_dew]
 Dew
 ---

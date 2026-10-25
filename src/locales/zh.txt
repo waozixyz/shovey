@@ -232,6 +232,21 @@ Shovey 用漂浮的木箱、球和地砖搭建谜题棋盘
 [shovey_coming_soon]
 即将推出
 ---
+[shovey_chest_found]
+你找到了一个秘密宝箱！
+---
+[shovey_campaign_reward]
+你通关了 Shovey！
+---
+[shovey_reward_signin]
+连接账户即可领取它的 Dew，之后再领也可以。
+---
+[shovey_reward_connect]
+连接账户
+---
+[shovey_close]
+关闭
+---
 [shovey_dew]
 Dew
 ---

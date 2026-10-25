@@ -1,0 +1,65 @@
+#import, file "../src/rewards.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+
+// A host whose entity.dew service has no account at first, then one: the
+// claim waits for the account, the node credits the chest once, and the
+// record keeps what was answered across a relaunch.
+signed_in: bool;
+claimed: bool;
+record_rewards: [16]u8;
+
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if name != "entity.dew" { return "" }
+    if request == "claim:shovey.secret-chest" {
+        if !signed_in { return "{\"status\":\"signin\"}" }
+        claimed = true
+        return "{\"status\":\"pending\"}"
+    }
+    if request == "claim-status" && claimed {
+        return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\",\"credited\":true,\"units\":200000,\"balance\":200000}"
+    }
+    return "{\"status\":\"failed\"}"
+}
+
+#program_export
+FakeRecord :: (name: string) -> string {
+    return ifx name == "rewards" then TextUntilNul(record_rewards[:]) else ""
+}
+
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    return name == "rewards" && CopyCString(text, record_rewards[:])
+}
+
+#program_export
+Check :: () -> s32 {
+    RewardEarn(REWARD_CHEST, 1.0)
+    if TextUntilNul(record_rewards[:]) != "r1:10" { return 1 }
+    RewardsPump(1.0)
+    if reward_card != REWARD_CHEST || !reward_card_signin || claimed { return 2 }
+    // The player connects an account; the next try claims it.
+    signed_in = true
+    RewardsPump(3.0)
+    if claimed { return 3 }
+    RewardsPump(6.5)
+    if !claimed || reward_claiming != REWARD_CHEST { return 4 }
+    RewardsPump(7.5)
+    if reward_claiming != -1 || reward_state[REWARD_CHEST] != 2 { return 5 }
+    if reward_card != REWARD_CHEST || reward_card_signin || TextUntilNul(reward_card_amount[:]) != "0.2" { return 6 }
+    if TextUntilNul(record_rewards[:]) != "r1:20" { return 7 }
+    // A relaunch reads the record and claims nothing again.
+    reward_loaded = false
+    reward_state[REWARD_CHEST] = 0
+    claimed = false
+    RewardsPump(100.0)
+    if !RewardEarned(REWARD_CHEST) || reward_state[REWARD_CHEST] != 2 || claimed { return 8 }
+    // Finishing the campaign without an account asks once, then waits.
+    signed_in = false
+    RewardEarn(REWARD_CAMPAIGN, 200.0)
+    reward_card = -1
+    RewardsPump(200.0)
+    if reward_card != -1 || reward_state[REWARD_CAMPAIGN] != 1 { return 9 }
+    return 42
+}

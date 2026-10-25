@@ -1,0 +1,149 @@
+// Dew rewards: the secret chest on level 29's hidden beach, and finishing
+// the campaign. The game only names a reward to its host's entity.dew
+// service; the node keeps what each gives and gives it to an account once,
+// so naming it again is safe and credits nothing. A reward earned here is
+// kept in the "rewards" record until the node has answered for it. Without a
+// connected account the claim waits, and the view asks the player to connect
+// one, without stopping play.
+#import "json_scan"
+#import "text_buffer"
+#import "entity/dew_model"
+#import, file "engine.zi";
+#import, file "controls.zi";
+
+REWARD_COUNT :: 2
+REWARD_CHEST :: 0
+REWARD_CAMPAIGN :: 1
+// The chest lies on level 29's beach, behind the wall a bomb crate breaks.
+CHEST_LEVEL :: 29
+CHEST_CELL :: 13 * SHOVEY_WIDTH + 1
+
+// Per reward: 0 not earned, 1 earned and waiting for the node, 2 answered.
+reward_state: [REWARD_COUNT]s32;
+reward_loaded: bool;
+// A reward earned in this session; its claim tells the player when an
+// account is missing.
+reward_fresh: [REWARD_COUNT]bool;
+// The reward being claimed, -1 for none, and when to ask the host again.
+reward_claiming: s32 = -1;
+reward_next_at: float64;
+// The card the view shows: which reward, -1 for none; whether it asks for
+// an account or tells the Dew received, and that amount as text.
+reward_card: s32 = -1;
+reward_card_signin: bool;
+reward_card_amount: [32]u8;
+reward_card_shown_at: float64;
+
+RewardName :: (reward: s32) -> string {
+    return ifx reward == REWARD_CHEST then "shovey.secret-chest" else "shovey.campaign-complete"
+}
+
+// "r1:" and one digit per reward.
+RewardsLoad :: () {
+    reward_loaded = true
+    text := RewardsRecord()
+    if text.count != 3 + REWARD_COUNT || text[:3] != "r1:" { return }
+    for reward: cast(s32)0..REWARD_COUNT - 1 {
+        digit := cast(s32)text[3 + reward] - cast(s32)#char "0"
+        if digit < 0 || digit > 2 { return }
+    }
+    for reward: cast(s32)0..REWARD_COUNT - 1 { reward_state[reward] = cast(s32)text[3 + reward] - cast(s32)#char "0" }
+}
+
+RewardsSave :: () {
+    text: Vec(u8)
+    BuilderPrint(*text, "r1:")
+    for reward: cast(s32)0..REWARD_COUNT - 1 { BuilderPrint(*text, "%", reward_state[reward]) }
+    unused RewardsSaveRecord(TextView(VecSlice(text, 0, text.count)))
+    VecFree(text)
+}
+
+RewardEarned :: (reward: s32) -> bool {
+    if !reward_loaded { RewardsLoad() }
+    return reward_state[reward] != 0
+}
+
+// Earns a reward on this device; its claim starts at once.
+RewardEarn :: (reward: s32, now: float64) {
+    if RewardEarned(reward) { return }
+    reward_state[reward] = 1
+    reward_fresh[reward] = true
+    reward_next_at = now
+    RewardsSave()
+}
+
+RewardStatus :: (answer: string, output: []u8) -> string {
+    if answer.count == 0 || answer[0] != #char "{" { return "" }
+    length := ReadStringText(answer, FieldAt(answer, 0, "status"), output)
+    return ifx length > 0 then TextView(output[:length]) else ""
+}
+
+// Claims earned rewards, one at a time, through the host; the node's answer
+// arrives over later frames.
+RewardsPump :: (now: float64) {
+    if !reward_loaded { RewardsLoad() }
+    if now < reward_next_at { return }
+    status_bytes: [16]u8
+    if reward_claiming >= 0 {
+        reward := reward_claiming
+        answer := DewService("claim-status")
+        status := RewardStatus(answer, status_bytes[:])
+        if status == "pending" { reward_next_at = now + 0.5; return }
+        reward_claiming = -1
+        name: [64]u8
+        named := ReadStringText(answer, FieldAt(answer, 0, "reward"), name[:])
+        if status != "done" || named < 1 || TextView(name[:named]) != RewardName(reward) {
+            reward_next_at = now + 60.0
+            return
+        }
+        reward_state[reward] = 2
+        RewardsSave()
+        // Already given to this account, on another device perhaps: nothing new.
+        if RewardText(answer, "\"credited\":true") {
+            units := ReadNumber(answer, FieldAt(answer, 0, "units"))
+            if units.valid && units.value > 0.0 && DewFormat(cast(s64)units.value, DewUnits, reward_card_amount[:]) {
+                reward_card = reward
+                reward_card_signin = false
+                reward_card_shown_at = 0.0
+            }
+        } else if reward_card == reward { reward_card = -1 }
+        reward_next_at = now
+        return
+    }
+    for reward: cast(s32)0..REWARD_COUNT - 1 {
+        if reward_state[reward] != 1 { continue }
+        request: Vec(u8)
+        BuilderPrint(*request, "claim:%", RewardName(reward))
+        answer := DewService(TextView(VecSlice(request, 0, request.count)))
+        VecFree(request)
+        status := RewardStatus(answer, status_bytes[:])
+        if status == "pending" {
+            reward_claiming = reward
+            reward_next_at = now + 0.5
+        } else if status == "signin" {
+            // Asked once when it is earned; it is claimed whenever an
+            // account is connected later.
+            if reward_fresh[reward] {
+                reward_card = reward
+                reward_card_signin = true
+                reward_card_shown_at = 0.0
+            }
+            reward_fresh[reward] = false
+            reward_next_at = now + 5.0
+        } else if status == "busy" {
+            reward_next_at = now + 1.0
+        } else {
+            reward_next_at = now + 60.0
+        }
+        return
+    }
+}
+
+RewardText :: (text: string, part: string) -> bool {
+    at: s64 = 0
+    while at + part.count <= text.count {
+        if text[at:at + part.count] == part { return true }
+        at += 1
+    }
+    return false
+}

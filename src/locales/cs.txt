@@ -232,6 +232,21 @@ Shovey na tropické pláži s krabem a kokosem
 [shovey_coming_soon]
 Již brzy
 ---
+[shovey_chest_found]
+Našel jsi tajnou truhlu!
+---
+[shovey_campaign_reward]
+Dohrál jsi Shovey!
+---
+[shovey_reward_signin]
+Připoj účet a získej její Dew. Můžeš to udělat i později.
+---
+[shovey_reward_connect]
+Připojit účet
+---
+[shovey_close]
+Zavřít
+---
 [shovey_dew]
 Dew
 ---

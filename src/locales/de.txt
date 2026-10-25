@@ -232,6 +232,21 @@ Shovey an einem tropischen Strand mit einer Krabbe und einer Kokosnuss
 [shovey_coming_soon]
 Demnächst
 ---
+[shovey_chest_found]
+Du hast eine geheime Truhe gefunden!
+---
+[shovey_campaign_reward]
+Du hast Shovey geschafft!
+---
+[shovey_reward_signin]
+Verbinde ein Konto, um ihren Dew zu erhalten. Das geht auch später.
+---
+[shovey_reward_connect]
+Konto verbinden
+---
+[shovey_close]
+Schließen
+---
 [shovey_dew]
 Dew
 ---

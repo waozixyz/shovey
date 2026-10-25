@@ -150,6 +150,28 @@ ControlsSetPad :: (pad: bool) {
     controls_chosen = true
 }
 
+// The account's Dew and the rewards it claims (rewards.zi), from the host's
+// entity.dew service; a host without it answers nothing.
+DewService :: (request: string) -> string { return AppServiceHost("entity.dew", request) }
+
+// The Dew rewards earned on this device (rewards.zi), in the page's
+// documents or the edition's own records.
+RewardsRecord :: () -> string {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentRead("rewards")
+    } else {
+        return ControlsRecord("rewards")
+    }
+}
+
+RewardsSaveRecord :: (text: string) -> bool {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentWrite("rewards", text)
+    } else {
+        return ControlsSaveRecord("rewards", text)
+    }
+}
+
 // Leaves the game for the cover that opened it.
 LeaveForGameSelection :: () {
     unused AppServiceHost("arcade.navigation", "back")

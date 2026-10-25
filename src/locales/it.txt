@@ -232,6 +232,21 @@ Shovey su una spiaggia tropicale con un granchio e una noce di cocco
 [shovey_coming_soon]
 Prossimamente
 ---
+[shovey_chest_found]
+Hai trovato un forziere segreto!
+---
+[shovey_campaign_reward]
+Hai finito Shovey!
+---
+[shovey_reward_signin]
+Collega un account per riscattare il suo Dew. Puoi farlo anche più tardi.
+---
+[shovey_reward_connect]
+Collega account
+---
+[shovey_close]
+Chiudi
+---
 [shovey_dew]
 Dew
 ---

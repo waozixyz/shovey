@@ -232,6 +232,21 @@ Shovey на тропическом пляже с крабом и кокосом
 [shovey_coming_soon]
 Скоро
 ---
+[shovey_chest_found]
+Ты нашёл секретный сундук!
+---
+[shovey_campaign_reward]
+Ты прошёл Shovey!
+---
+[shovey_reward_signin]
+Подключи аккаунт, чтобы получить его Dew. Это можно сделать и позже.
+---
+[shovey_reward_connect]
+Подключить аккаунт
+---
+[shovey_close]
+Закрыть
+---
 [shovey_dew]
 Dew
 ---

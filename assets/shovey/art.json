@@ -288,6 +288,16 @@
       "sha256": "6bdaf7c3b18641d0aaaffcb263b30466c4aff2d7711dc97b62f44908d3096dc1"
     },
     {
+      "path": "sprites/chest-closed.png",
+      "depicts": "secret chest: a small wooden treasure chest with iron bands and a golden lock",
+      "sha256": "5df8390d8f332ee694151366de31ceaa4de1f04d9c3285a69a8e0aee0442aecc"
+    },
+    {
+      "path": "sprites/chest-open.png",
+      "depicts": "secret chest opened: gold coins and a blue Dew drop inside",
+      "sha256": "ee9c8adca0158c3aa946420f1bf6f9d5df5aff25fa887ee7dedf7014e2b03eb7"
+    },
+    {
       "path": "sprites/tile-40.png",
       "depicts": "mirror Shovey (pink)",
       "sha256": "cbb03af227e8fd74a0c476763d5d836981cf5aa7197c54935eb4b109fc568944"

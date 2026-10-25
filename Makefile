@@ -245,6 +245,7 @@ test: solver laws
 	python3 tests/assets_test.py
 	sh tests/engine_test.sh '$(TOOLCHAIN)'
 	sh tests/controls_test.sh '$(TOOLCHAIN)'
+	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	$(MAKE) bundles
 

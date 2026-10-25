@@ -243,6 +243,16 @@
       "sha256": "657d947c3fd55ebe113235a7b40fae134d0f1789317a4f768d119fdaea76c86a"
     },
     {
+      "path": "sprites/chest-closed.png",
+      "depicts": "landscape presentation of secret chest: a small wooden treasure chest with iron bands and a golden lock",
+      "sha256": "5df8390d8f332ee694151366de31ceaa4de1f04d9c3285a69a8e0aee0442aecc"
+    },
+    {
+      "path": "sprites/chest-open.png",
+      "depicts": "landscape presentation of secret chest opened: gold coins and a blue Dew drop inside",
+      "sha256": "ee9c8adca0158c3aa946420f1bf6f9d5df5aff25fa887ee7dedf7014e2b03eb7"
+    },
+    {
       "path": "sprites/crab-down.png",
       "depicts": "landscape presentation of crab facing down",
       "sha256": "8ba1040359e8e48012489e1c6d1dc62aa6e5caa7c122c234ad59abe6ac9c82a5"
