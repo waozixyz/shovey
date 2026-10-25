@@ -242,7 +242,11 @@ bench: levels build/ziran/libziran.a
 		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/solver/shovey-bench
 
 # The checks the public repository can run with only the published campaign.
-public-test: solver laws
+.PHONY: game-maps-test
+game-maps-test:
+	python3 tests/game_maps_test.py
+
+public-test: solver laws game-maps-test
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
@@ -261,7 +265,7 @@ laws:
 	done
 	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
 
-test: solver laws
+test: solver laws game-maps-test
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
