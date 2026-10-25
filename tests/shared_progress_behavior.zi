@@ -109,6 +109,10 @@ Check :: () -> s32 {
     synced = true
     unused SharedProgressPump(*session, 32.0)
     if retired != 2 { return 6 }
+    // Reopening a saved puzzle with already-synced unlocks is read-only.
+    reopened: SharedProgressSession
+    SharedProgressStart(*reopened, session.record, 33.0)
+    if account_writes != 1 || reopened.dirty { return 13 }
     other_owner = true
     record.completed[2] = #char "1"
     record.completed[3] = 0

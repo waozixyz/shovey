@@ -96,6 +96,7 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     Progress.GameProgressRead(reply[at:end], *remote)
     if found { unused Progress.GameProgressMerge(*session.record, *remote) }
     changed := !Progress.GameProgressSame(*before, *session.record)
+    if found && Progress.GameProgressSame(*session.record, *remote) { session.dirty = false }
     if session.dirty || (found && !Progress.GameProgressSame(*session.record, *remote)) {
         unused SharedProgressPut(session)
     } else if session.retiring && synced && TextUntilNul(session.owner[:]) != "" {
