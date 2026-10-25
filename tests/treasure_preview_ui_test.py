@@ -79,10 +79,31 @@ with tempfile.TemporaryDirectory(dir=output, prefix='profile-') as temporary:
             subprocess.run(['import', '-window', window, str(screenshot)], check=True)
             text = subprocess.check_output(['tesseract', str(screenshot), 'stdout'], stderr=subprocess.DEVNULL, text=True)
             assert 'secret chest' in text.lower() and 'Connect an account' in text, text
+            # Activate the real reward card action, then verify the actual
+            # Entity account composition and modal dismissal preserve the game.
+            def click(x, y):
+                subprocess.run(['xdotool', 'mousemove', '--window', window, str(x), str(y), 'mousedown', '1'], check=True)
+                time.sleep(.12)
+                subprocess.run(['xdotool', 'mouseup', '1'], check=True)
+                time.sleep(.3)
+            click(590, 752)
+            account = wait(lambda: document('preview.account-modal'), 'Connect account did not open its modal')
+            assert account == dict(service='entity.profile', modal='account', offline=True, credited=False)
+            modal_image = output / 'account-modal.png'
+            subprocess.run(['import', '-window', window, str(modal_image)], check=True)
+            modal_ocr = output / 'account-modal-ocr.png'
+            subprocess.run(['convert', str(modal_image), '-crop', '560x300+360+250', '-resize', '300%', str(modal_ocr)], check=True)
+            modal_text = subprocess.check_output(['tesseract', str(modal_ocr), 'stdout', '--psm', '6'], stderr=subprocess.DEVNULL, text=True)
+            assert 'Account' in modal_text and 'Not signed in' in modal_text and 'offline preview' in modal_text, modal_text
+            subprocess.run(['xdotool', 'key', '--window', window, 'Down'], check=True)
+            time.sleep(.25)
+            click(890, 280)
+            closed = wait(lambda: document('preview.account-closed'), 'Account modal did not dismiss')
+            assert closed == dict(preserved=True), 'Account modal moved or reset the player'
             (output / 'result.json').write_text(json.dumps(dict(started=started, treasure=result,
                 actual_game_pid=child.pid, preview=str(preview), screenshot=str(screenshot),
-                account_files_copied=False, live_claim=False), indent=2) + '\n')
-            print('Actual game preview: level29a rendered; eight real moves reach chest; unsigned account dialog shown; no credit/live claim', flush=True)
+                account_files_copied=False, live_claim=False, account_modal=account, account_closed=closed), indent=2) + '\n')
+            print('Actual game preview: level29a rendered; eight real moves reach chest; unsigned account dialog and Connect account modal opened/closed with board preserved; no credit/live claim', flush=True)
         finally:
             if child.poll() is None:
                 child.terminate()

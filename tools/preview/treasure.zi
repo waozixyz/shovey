@@ -7,10 +7,21 @@ Game :: #import, file "../../src/engine.zi";
 Progress :: #import, file "../../src/progress.zi";
 Rewards :: #import, file "../../src/rewards.zi";
 Controls :: #import, file "../../src/controls.zi";
+Profile :: #import "entity"
+#import "kryon/modal_props"
+#import "kryon/modal_frame_widget"
+#import "kryon/tree"
+#import "kryon/widget_palette"
+#import "session"
+#import "std/c_string"
+#import "std/text_buffer"
 #import "preview_map"
 
 started: bool;
 treasure_seen: bool;
+profile_open: bool;
+profile_seen: bool;
+account_game: [2433]u8;
 
 #program_export
 LocaleHost :: (key: string) -> string { return Host.AppLocaleHost(key) }
@@ -19,7 +30,7 @@ RecordHost :: (name: string) -> string { return DocumentRead(name) }
 #program_export
 SaveHost :: (name: string, text: string) -> bool { return DocumentWrite(name, text) }
 #program_export
-KeyHost :: () -> s32 { return AppKey() }
+KeyHost :: () -> s32 { return ifx profile_open then 0 else AppKey() }
 #program_export
 SoundHost :: (path: string) -> bool { unused path; return false }
 
@@ -35,11 +46,43 @@ CheckOffline :: () -> s32 {
 
 #program_export
 OfflineService :: (name: string, request: string) -> string {
-    unused request
+    if name == "entity.profile" && request == "open" {
+        unused CopyCString(Game.ShoveySave(*View.game), account_game[:])
+        profile_open = true
+        return "queued"
+    }
     if name == "entity.dew" { return "{\"status\":\"signin\"}" }
     if name == "arcade.controls" { return "off" }
     if name == "arcade.sound" { return "muted" }
     return "{\"status\":\"unavailable\"}"
+}
+
+// The preview uses Entity's real account composition, with no account
+// provider or credentials. It must respond to the same open action as a host.
+AccountModal :: () {
+    if !profile_open { return }
+    modal := ModalFrame(AppSession(), ModalFrameProps.{.key = cast(u64)880000,
+        .id = 880000, .title = Profile.Label("entity.account", "Account"),
+        .width = 560, .height = 300, .scale = AppScale(),
+        .has_right_action = true, .right_label = Host.AppLocaleHost("shovey_close")})
+    if modal.dismissed || modal.right_clicked {
+        profile_open = false
+        unused DocumentWrite("preview.account-closed", ifx Game.ShoveySave(*View.game) == TextUntilNul(account_game[:]) then
+            "{\"preserved\":true}" else "{\"preserved\":false}")
+    }
+    if !modal.opened { return }
+    Profile.session = AppSession()
+    Profile.scale = AppScale()
+    y := modal.layout.content.y + 16.0
+    Profile.AccountPage(modal.layout.content.x, *y, modal.layout.content.width)
+    Profile.Paragraph(cast(u64)880010,
+        "Account connection is unavailable in this offline preview. Nothing has been credited.",
+        modal.layout.content.x, y + 8.0, modal.layout.content.width, 80.0)
+    unused End(AppSession())
+    if !profile_seen {
+        unused DocumentWrite("preview.account-modal", "{\"service\":\"entity.profile\",\"modal\":\"account\",\"offline\":true,\"credited\":false}")
+        profile_seen = true
+    }
 }
 
 #program_export
@@ -65,6 +108,10 @@ Main :: () -> s64 {
             started = true
         }
         View.ShoveyFrame()
+        if profile_open {
+            unused WidgetPaletteRestore(AppSession())
+            AccountModal()
+        }
         if !treasure_seen && Rewards.reward_card == Rewards.REWARD_CHEST && Rewards.reward_card_signin {
             unused DocumentWrite("preview.treasure", "{\"level\":1003,\"cell\":124,\"dialog\":\"signin\",\"credited\":false}")
             treasure_seen = true

@@ -29,6 +29,7 @@ def build(output):
     toolchain, kryon, apps, mingcute, entity = [package(name) for name in ('ziran', 'kryon', 'apps', 'mingcute', 'entity')]
     daochi = package('daochi_client', entity)
     crypto = package('crypto', daochi)
+    qrcode = package('qrcode', entity)
     ziran = toolchain / 'build/bin/ziran'
     subprocess.run(['python3', 'tools/levels/levels.py', 'generate'], cwd=ROOT, check=True)
     room = next(level for level in json.loads((ROOT / 'levels/approved.json').read_text())['hidden_levels'] if level['name'] == '29a')
@@ -41,14 +42,15 @@ def build(output):
     code = runpy.run_path(str(ROOT / 'scripts/build-bundles.py'))['translations'](json.loads((ROOT / 'src/catalog.json').read_text()))[1]
     (output / 'translations.zi').write_text(code + '\nEditorLocaleText :: (language:string,key:string)->string { unused language; unused key; return "" }\n')
     command = [str(ziran), 'bundle', '--root', str(ROOT)]
-    paths = [str(output), str(kryon / 'src/ui'), f'kryon={kryon}/src/ui', f'kryon={kryon}/src/backend',
+    paths = [str(output), str(entity / 'src'), str(kryon / 'src/ui'), f'kryon={kryon}/src/ui', f'kryon={kryon}/src/backend',
              f'std={toolchain}/std', str(toolchain / 'std'), f'apps={apps}/src', f'mingcute={mingcute}/src',
-             f'entity={entity}/src', f'daochi_client={daochi}', f'crypto={crypto}/src']
+             f'entity={entity}/src', f'daochi_client={daochi}', f'crypto={crypto}/src', f'qrcode={qrcode}/src']
     for path in paths:
         command += ['--module-path', path]
     for flag in ('KRYON_HOSTED_UI', 'SHOVEY_RELEASE'):
         command += ['--define', flag]
-    bindings = {'controls:AppServiceHost': 'treasure:OfflineService',
+    bindings = {'app_context:AppServiceHost': 'treasure:OfflineService',
+                'controls:AppServiceHost': 'treasure:OfflineService',
                 'controls:AppRecordHost': 'treasure:RecordHost', 'controls:SaveAppRecordHost': 'treasure:SaveHost',
                 'shovey_view:ReadAppUiHost': 'host:ReadAppUiHost', 'shovey_view:AppLocaleHost': 'treasure:LocaleHost',
                 'shovey_view:AppRecordHost': 'treasure:RecordHost', 'shovey_view:SaveAppRecordHost': 'treasure:SaveHost',
