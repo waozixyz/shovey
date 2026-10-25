@@ -7,9 +7,8 @@ description: >
 
 inputs:
   revision:
-    description: Arcade host revision (pin a full commit for store candidates)
+    description: Arcade host revision (defaults to the Android host pin)
     required: false
-    default: master
   packages:
     description: Ubuntu packages the job's build and checks need
     required: true
@@ -17,10 +16,23 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Read the pinned Arcade host
+      id: host
+      shell: sh
+      run: |
+        python3 - <<'PY'
+        import json, os, re
+        lock = json.load(open("waozixyz/shovey/packaging/android/ziran.lock"))
+        host = next(package for package in lock["packages"]
+                    if package["name"] == "host" and package["url"] == "https://github.com/waozixyz/arcade.git")
+        assert re.fullmatch("[0-9a-f]{40}", host["commit"]), "Pin a full Arcade commit"
+        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+            output.write("revision=" + host["commit"] + "\n")
+        PY
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       with:
         repository: waozixyz/arcade
-        ref: ${{ inputs.revision }}
+        ref: ${{ inputs.revision || steps.host.outputs.revision }}
         path: waozixyz/arcade
     - name: Read Arcade's locked toolchain
       id: toolchain

@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.142] - 2026-10-25
+
+- Keep every move and unfinished puzzle on this device.
+- Share earned level unlocks after completing puzzles; account updates never rewind an active game.
+- Keep account progress separate when switching accounts.
+
 ## [0.6.141] - 2026-10-24
 
 - Play the approved Classic campaign through level 175.
