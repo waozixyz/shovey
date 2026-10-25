@@ -777,6 +777,8 @@ EditorCheckStep :: (elapsed: float64) {
 }
 
 EditorCheckText :: () -> string {
+    // A blank board says nothing until its first stroke makes it a level.
+    if editor_open_id <= 0 && editor_open_story <= 0 { return "" }
     if editor_open_id <= 0 { return EditorSay(1, "editor_story_note", cast(s64)editor_open_story) }
     if editor_check == CHECK_WAITING { return EditorText("editor_check_waiting") }
     if editor_check == CHECK_RUNNING { return EditorSay(1, "editor_checking", SolverStates()) }
