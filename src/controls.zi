@@ -46,9 +46,23 @@ ProgressAccountService :: (request: string) -> string { return AppServiceHost("e
 // Local saves have their own record and are never retired by account sync.
 // Read an older device save once when no device-only campaign exists yet.
 LocalCampaignRecord :: () -> string {
-    value := ControlsRecord("local.campaign")
-    if value != "" { return value }
-    return ControlsRecord("campaign")
+    #if #defined(SHOVEY_WEB) {
+        value := WebApp.DocumentRead("local.campaign")
+        if value != "" { return value }
+        return WebApp.DocumentRead("campaign")
+    } else {
+        value := ControlsRecord("local.campaign")
+        if value != "" { return value }
+        return ControlsRecord("campaign")
+    }
+}
+
+SaveLocalCampaign :: (text: string) -> bool {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentWrite("local.campaign", text)
+    } else {
+        return ControlsSaveRecord("local.campaign", text)
+    }
 }
 
 ProgressRetireLegacy :: () {
