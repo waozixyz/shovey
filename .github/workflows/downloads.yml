@@ -198,7 +198,10 @@ jobs:
           sudo apt-get install -y apksigcopier
           rebuilt=$(find build/fdroid-rebuild/tmp -name '*.apk')
           test "$(printf '%s\n' "$rebuilt" | wc -l)" = 1
-          apksigcopier compare --unsigned "build/downloads/shovey-$version-fdroid.apk" "$rebuilt"
+          # apksigcopier runs apksigner, which the runner keeps in the
+          # Android SDK's build-tools rather than on PATH.
+          tools=$(ls -d "${ANDROID_SDK_ROOT:-$ANDROID_HOME}"/build-tools/* | sort -V | tail -1)
+          PATH="$tools:$PATH" apksigcopier compare --unsigned "build/downloads/shovey-$version-fdroid.apk" "$rebuilt"
           python3 - "$version" > build/release-notes.md <<'PY'
           import re, sys
           text = open('src/CHANGELOG.md').read()
