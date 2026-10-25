@@ -53,7 +53,10 @@ SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GamePr
 
 // 1 means another device changed this campaign; 2 means the account changed
 // and the caller must reload the current account before saving anything.
-SharedProgressPump :: (session: *SharedProgressSession, now: float64) -> s32 {
+SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: bool = false) -> s32 {
+    // Read account progress on entry and between puzzles. An active puzzle
+    // needs no account queries; its moves and board belong to this device.
+    if playing { return 0 }
     if now < session.poll_at { return 0 }
     session.poll_at = now + 15.0
     status := ProgressAccountService("{\"operation\":\"status\"}")

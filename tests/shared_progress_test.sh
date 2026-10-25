@@ -16,4 +16,4 @@ test "$("$toolchain/build/bin/ziran" run "$work/progress.zx")" = 42
     --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
     --entry island_shared_progress_behavior:Check -o "$work/island.zx" "$root/tests/island_shared_progress_behavior.zi"
 test "$("$toolchain/build/bin/ziran" run "$work/island.zx")" = 42
-echo 'Shared game progress: unlock-only account records, no writes for moves, active Classic/Island boards preserved, account changes and offline fallback'
+echo 'Shared game progress: completion-only account writes, zero account calls during moves and active play, active Classic/Island boards preserved, account changes and offline fallback'

@@ -16,10 +16,12 @@ old_host: bool;
 other_owner: bool;
 retired: s32;
 account_writes: s32;
+account_calls: s32;
 reply: string;
 
 #program_export
 FakeService :: (name: string, request: string) -> string {
+    if name == "entity.records" { account_calls += 1 }
     if name != "entity.records" || !available { return "{\"status\":\"unavailable\"}" }
     if SharedProgressStatusField(request, "operation", "status") {
         if old_host { return "{\"status\":\"done\",\"account\":\"first\",\"sync\":\"synced\"}" }
@@ -70,13 +72,24 @@ Check :: () -> s32 {
     }
     board: [8193]u8
     unused CopyCString(ClassicGame.ShoveySave(*game), board[:])
+    startup_calls := account_calls
     for move: cast(s32)0..99 {
         record = Classic.ShoveySharedRecord(*local)
-        if !SharedProgressSave(*session, *record, false) || account_writes != 0 { return 2 }
+        if !SharedProgressSave(*session, *record, false) || account_writes != 0 ||
+        account_calls != startup_calls { return 2 }
     }
     record.unlocked = 2
     if !SharedProgressSave(*session, *record, false) || session.record.unlocked != 1 || account_writes != 0 { return 10 }
     record.unlocked = 1
+    // Playing crosses many polling intervals without calling the account
+    // service at all. Even a pending completion waits until a safe boundary.
+    calls := account_calls
+    session.dirty = true
+    for second: cast(s32)16..180 {
+        if SharedProgressPump(*session, cast(float64)second, true) != 0 ||
+        account_calls != calls || !session.dirty { return 11 }
+    }
+    session.dirty = false
     // Even a newer campaign from another device cannot move this player,
     // replace the board or advance the current level.
     remote = record

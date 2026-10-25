@@ -1057,7 +1057,7 @@ ShoveyFrame :: () {
     // who finished before it existed.
     if !RewardEarned(REWARD_CAMPAIGN) && ShoveyAllDone() { RewardEarn(REWARD_CAMPAIGN, frame.now) }
     RewardsPump(frame.now)
-    shared_change := SharedProgressPump(*shared_progress, frame.now)
+    shared_change := SharedProgressPump(*shared_progress, frame.now, game.moves > 0 && !game.won)
     if shared_change == 2 { loaded = false; shared_account_changed = true; return }
     if shared_change == 1 {
         ShoveySharedRestore(*progress, *shared_progress.record)
