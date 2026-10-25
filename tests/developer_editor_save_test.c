@@ -143,6 +143,10 @@ int main(int argc, char **argv) {
         assert(memcmp(requested, editor_Board(1).data, HEX) == 0);
         memcpy(publish_message, "Publishing…", strlen("Publishing…"));
         publish_message_length = strlen("Publishing…");
+        assert(editor_UpdateAvailable()); /* Another publication cannot block this board. */
+        memcpy(publication_board, editor_Board(1).data, HEX);
+        memcpy(publication_state, "publishing", 10);
+        publication_state_length = 10;
         assert(!editor_UpdateAvailable());
         puts("Update checks the latest draft, reuses an active search and queues only its verified board");
         return 0;
@@ -159,20 +163,11 @@ int main(int argc, char **argv) {
         return 0;
     }
     assert(level_count == 2 && mapping_ok);
-    /* Every low score is green; high scores stay red even for waiting places.
-       Adjacent scores shift gently across the 50/70/90 boundaries. */
-    Color last = editor_SimilarityColor(0);
-    for (int score = 0; score <= 100; score++) {
-        Color color = editor_SimilarityColor(score);
-        if (score < 50) assert(color.g > color.r && color.g > color.b);
-        if (score >= 90) assert(color.r > 2 * color.g && color.r > 2 * color.b);
-        assert(abs((int)color.r - last.r) <= 8);
-        assert(abs((int)color.g - last.g) <= 8);
-        assert(abs((int)color.b - last.b) <= 8);
-        last = color;
-    }
-    Color waiting = editor_LevelCardColor(73, 99);
-    assert(waiting.r > 2 * waiting.g && waiting.r > 2 * waiting.b);
+    /* Unapproved places share a neutral colour, independently of originals. */
+    Color waiting = editor_LevelCardColor(73);
+    Color another_waiting = editor_LevelCardColor(74);
+    assert(waiting.r == 72 && waiting.g == 80 && waiting.b == 78);
+    assert(waiting.r == another_waiting.r && waiting.g == another_waiting.g && waiting.b == another_waiting.b);
     /* Canonical approvals color published levels even without local markers.
        Opening the map refreshes approvals made after this process started. */
     assert(!editor_Approved(23));
@@ -296,7 +291,7 @@ int main(int argc, char **argv) {
     editor_SetKind(editor_Board(1), 15, 7);
     editor_SetKind(editor_Board(1), SHOVEY_CELLS + 15, 0);
     editor_Edited();
-    editor_StartPlay();
+    editor_StartPlay(false, true);
     editor_PlayAct(2);
     editor_PlayAct(2);
     assert(play.won && editor_Proven() && editor_Solved() && !check_wanted);
@@ -305,7 +300,7 @@ int main(int argc, char **argv) {
     remove("backup/editor-drafts/001.proof");
     proof_length = 0;
     check_state = 0;
-    assert(editor_RestoreLearnedRoute() && editor_Solved());
+    assert(editor_RestoreLearnedRoute(false) && editor_Solved());
     assert(route_length == 2 && route[0] == '2' && route[1] == '2');
     editor_AutoSave();
     assert(save_state == 2 && route_length == 2);
@@ -438,7 +433,7 @@ int main(int argc, char **argv) {
     assert(solution.length >= 8 && memcmp(solution.data, "Checking", 8) == 0);
     check_state = 3;
     solution = editor_SolutionText();
-    assert(solution.length == 17 && memcmp(solution.data, "No solution found", 17) == 0);
+    assert(solution.length == 18 && memcmp(solution.data, "No route found yet", 18) == 0);
     check_state = 0;
     solution = editor_SolutionText();
     assert(solution.length == 11 && memcmp(solution.data, "Not checked", 11) == 0);

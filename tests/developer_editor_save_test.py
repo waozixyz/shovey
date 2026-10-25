@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,7 +46,9 @@ subprocess.run([str(output / 'save-test')], cwd=profile, env=environment, check=
 solver = profile / 'build/solver/shovey-solve-classic'
 solver.parent.mkdir(parents=True, exist_ok=True)
 if not solver.exists():
-    solver.symlink_to(ROOT / 'build/solver/shovey-solve-classic')
+    shutil.copy2(ROOT / 'build/solver/shovey-solve-classic', solver)
+(profile / 'scripts').mkdir(exist_ok=True)
+shutil.copy2(ROOT / 'scripts/editor_check.py', profile / 'scripts/editor_check.py')
 for mode in ('update', 'status'):
     for record in (profile / 'backup/editor-drafts').iterdir():
         record.unlink()

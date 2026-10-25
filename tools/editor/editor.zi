@@ -1,5 +1,5 @@
 // Classic's level editor for the machine that keeps the originals: all 175
-// places of the original game in order, each beside its original. A place
+// places of the original game in order. A place
 // is a level in the game, or waits for a winnable layout and starts from the
 // original board. Paint with the mouse, play with the keyboard, and let the
 // solver check while you edit. Every change is kept as a draft at once, and a
@@ -14,8 +14,7 @@
 //
 // Edit: left button paints, right button clears to floor, Alt+click (or
 // Shift+click) picks up the piece under the pointer, Z undoes a stroke,
-// N / P change place, U goes to the next waiting place, [ / ] change the
-// original shown, C checks now,
+// N / P change place, U goes to the next waiting place, C checks now,
 // Ctrl+S saves, Tab plays. Play: arrows or WASD, Space throws, Z undoes,
 // R restarts, Tab goes back to editing.
 #import "c_string"
@@ -92,12 +91,9 @@ unlinked_count: s32;
 mapping_ok: bool;
 // Places still too close to their original (backup/editor-drafts/focus.txt).
 focus: [LEVELS_MAX + 1]bool;
-original_sprites: bool;
-original_tiles: [SPRITE_COUNT]string;
 our_portrait_tiles: [SPRITE_COUNT]string;
 our_landscape_tiles: [SPRITE_COUNT]string;
 current: s32;
-original_shown: s32;
 boards_landscape: bool;
 selected: s32;
 palette_tab: s32;
@@ -612,25 +608,10 @@ LoadOriginals :: () {
             else { if number > 0 && number <= LEVELS_MAX { focus[number] = true }; number = 0 }
         }
     }
-    #if !#defined(SHOVEY_ADMIN) {
-        original_sprites = PathExists("backup/original/sprites/tile-0.png")
-    }
     SpritesPrepare()
     for index: cast(s32)0..SPRITE_COUNT - 1 {
         our_portrait_tiles[index] = sprite_files[index]
         our_landscape_tiles[index] = landscape_sprite_files[index]
-        original_tiles[index] = SpriteFile(index)
-    }
-    #if !#defined(SHOVEY_ADMIN) {
-        if original_sprites {
-            digits: [24]u8
-            for kind: cast(s32)0..40 {
-                bytes: Vec(u8)
-                BuilderPrint(*bytes, "backup/original/sprites/tile-%.png", FormatInteger(cast(s64)kind, digits[:]))
-                original_tiles[kind] = BuilderFinish(bytes)
-            }
-            original_tiles[SPRITE_PLAYER + 1] = "backup/original/sprites/player.png"
-        }
     }
     for kind: cast(s32)44..55 {
         digits: [24]u8
@@ -1403,7 +1384,6 @@ Open :: (place: s32) {
     diff_open = false
     RestoreDraft(current)
     Copy(reset_board[:], Board(current))
-    original_shown = current
     // Reopening the editor comes back to this place.
     digits: [24]u8
     unused WriteEntireFile("backup/editor-drafts/place", FormatInteger(cast(s64)current, digits[:]))
@@ -2602,8 +2582,6 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if key == 78 { Open(current + 1) }
         if key == 80 { Open(current - 1) }
         if key == 85 { Open(NextWaiting()) }
-        if key == 91 && original_shown > 1 { original_shown -= 1 }
-        if key == 93 && original_shown < PLACES { original_shown += 1 }
         if key == 90 { UndoEdit() }
         if key == 89 { RedoEdit() }
         if key == 67 { StartCheck() }
@@ -2635,7 +2613,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     // everything else acts on the open level.
     if !selector_open {
         // One row of controls: moving between places, play and check, then the
-        // fix queue and the rotation both boards share.
+        // fix queue and the board orientation.
         bx: float32 = 350.0
         if Control(2, Rectangle.{bx, 8.0, 88.0, 40.0}, "Previous") { Open(current - 1) }
         bx += 96.0
@@ -2706,33 +2684,17 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     palette_width: float32 = 360.0
     boards_area := Rectangle.{8.0, 84.0, width - palette_width - 24.0, height - 84.0 - 8.0}
     half := (boards_area.height - 28.0) / 2.0
-    has_original := original_shown >= 1 && original_shown <= LEVELS_MAX && original_found[original_shown]
-    edit_top := boards_area.y + half + 28.0
-    edit_height := half - 26.0
-    #if #defined(SHOVEY_ADMIN) {
-        edit_top = boards_area.y
-        edit_height = boards_area.height - 26.0
-    } else {
-        length = 0
+    edit_top := boards_area.y
+    edit_height := boards_area.height - 26.0
+    #if !#defined(SHOVEY_ADMIN) {
         if diff_open && server_verified && published_places[current - 1] {
-            AppendText(label_bytes[:], *length, "Server version")
-        } else if has_original {
-            AppendText(label_bytes[:], *length, "Original level ")
-            AppendNumber(label_bytes[:], *length, original_shown)
-            AppendText(label_bytes[:], *length, ifx original_sprites then "" else "  (drawn with the new pictures)")
-        } else {
-            AppendText(label_bytes[:], *length, "No original on this machine")
-        }
-        Caption(11, Rectangle.{boards_area.x, boards_area.y, boards_area.width, 24.0}, TextView(label_bytes[:length]), 15)
-        if diff_open && server_verified && published_places[current - 1] {
+            edit_top = boards_area.y + half + 28.0
+            edit_height = half - 26.0
+            Caption(11, Rectangle.{boards_area.x, boards_area.y, boards_area.width, 24.0}, "Server version", 15)
             server_grid := HexBoard(published_boards[(current - 1) * HEX:current * HEX], OurTiles(), layers_original[:],
                 cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
                 boards_landscape, "Server version")
             HighlightDifferences(server_grid, cast(u64)800000)
-        } else if has_original {
-            unused HexBoard(Original(original_shown), ifx original_sprites then original_tiles[:] else OurTiles(), layers_original[:],
-                cast(u64)100000, Rectangle.{boards_area.x, boards_area.y + 26.0, boards_area.width, half - 26.0},
-                boards_landscape, "Original")
         }
     }
     Caption(12, Rectangle.{boards_area.x, edit_top, boards_area.width, 24.0},

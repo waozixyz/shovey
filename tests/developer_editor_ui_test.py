@@ -45,10 +45,10 @@ with (output / 'app.log').open('w') as log:
         for width, height in ((1500, 1000), (1437, 937)):
             subprocess.run(['xdotool', 'windowsize', window, str(width), str(height)], check=True)
             time.sleep(0.2)
-            half = (height - 120) / 2
-            cell = int(min((width - 384) / 12, (half - 26) / 20))
+            edit_height = height - 118
+            cell = int(min((width - 384) / 12, edit_height / 20))
             origin_x = int(8 + (width - 384 - cell * 12) / 2)
-            origin_y = int(138 + half + (half - 26 - cell * 20) / 2)
+            origin_y = int(110 + (edit_height - cell * 20) / 2)
             tiles = [dict(x=origin_x + at % 12 * cell, y=origin_y + at // 12 * cell,
                           width=cell, height=cell) for at in range(240)]
             shot = output / f'editor-{width}.png'

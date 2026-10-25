@@ -133,7 +133,14 @@ with (output / 'app.log').open('w') as log:
         time.sleep(0.15)
         click(1300, 174)  # Moss floor, before every wall brush.
         time.sleep(0.15)
-        click(476, 615)  # Cosmetic edit under Shovey preserves the winning route.
+        # Paint under Shovey in the full-height board, rather than the old
+        # lower comparison panel. The cosmetic edit preserves its winning route.
+        with Image.open(output / 'editor.png') as screenshot:
+            width, height = screenshot.size
+        cell = int(min((width - 384) / 12, (height - 118) / 20))
+        x = int(8 + (width - 384 - cell * 12) / 2 + 1.5 * cell)
+        y = int(110 + (height - 118 - cell * 20) / 2 + 1.5 * cell)
+        click(x, y)
         for attempt in range(80):
             proof = drafts / '001.proof'
             if proof.exists() and proof.read_text().splitlines()[0][480 + 13 * 2:482 + 13 * 2] == '67':
@@ -172,9 +179,17 @@ with (output / 'app.log').open('w') as log:
         time.sleep(2.3)
         assert map_colors()[0] == (218, 132, 167), 'Changed local board must be pink'
         click(100, 28)
+        # Compare like-sized boards: open Diff with the matching server board,
+        # then change the server copy while the comparison remains open.
+        server['boards'][0] = requested
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
+        click(460, 66)
         subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
         subprocess.run(['import', '-window', window, str(output / 'diff-before.png')], check=True)
-        click(460, 66)
+        server['boards'][0] = base_board
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
         subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
         subprocess.run(['import', '-window', window, str(output / 'diff.png')], check=True)
         with Image.open(output / 'diff-before.png').convert('RGB') as before, Image.open(output / 'diff.png').convert('RGB') as after:

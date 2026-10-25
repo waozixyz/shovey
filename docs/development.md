@@ -78,6 +78,9 @@ The developer editor runs directly from the repository:
     make editor
     build/private-editor/shovey-level-editor
 
+Classic shows the current board with Shovey's own artwork across the editing
+area. **Diff** opens a comparison with the published server board when needed.
+
 Its source is `tools/editor/editor.zi`. **Tiles** paints the floor; **Objects**
 holds pieces, animals, flowers, tufts, boulders and trees. Tiles remain underneath
 objects. Right-click in Objects clears pieces and decoration together, while
