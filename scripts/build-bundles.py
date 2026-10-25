@@ -108,6 +108,8 @@ def translations(descriptor):
 def build(toolchain, kryon, apps, mingcute):
     lock_flags = [] if (ROOT / 'ziran.local.toml').exists() else ['--locked']
     entity = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'entity', *lock_flags], cwd=ROOT, text=True).strip())
+    daochi = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'daochi_client', *lock_flags], cwd=entity, text=True).strip())
+    crypto = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'crypto', *lock_flags], cwd=daochi, text=True).strip())
     for manifest in EDITIONS:
         descriptor = json.loads((ROOT / manifest).read_text())
         name = descriptor['name']
@@ -148,6 +150,8 @@ def build(toolchain, kryon, apps, mingcute):
             '--module-path', 'apps=' + str(apps / 'src'),
             '--module-path', 'mingcute=' + str(mingcute / 'src'),
             '--module-path', 'entity=' + str(entity / 'src'),
+            '--module-path', 'daochi_client=' + str(daochi),
+            '--module-path', 'crypto=' + str(crypto / 'src'),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir',
             'assets=' + str(bundle_assets(manifest, name, staged, 'SHOVEY_RELEASE' in descriptor.get('build_defines', []))),

@@ -1,0 +1,304 @@
+#import, file "../src/completion_path.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/levels.zi";
+#import "std/vec"
+#import "std/text_buffer"
+#import "std/c_string"
+#import "std/json_scan"
+
+keys: [160]string;
+values: [160]string;
+records: s32;
+calls: s32;
+writes: s32;
+bad_record: bool;
+refuse_save: bool;
+service_status: string = "done";
+submitted: string;
+map_bytes: [1441]u8;
+fixtures: [9]string;
+fixture_count: s32;
+
+
+Owned :: (text: string) -> string {
+    copy: Vec(u8)
+    BuilderPrint(*copy, "%", text)
+    return BuilderFinish(copy)
+}
+
+#program_export
+FakeRecord :: (name: string) -> string {
+    for at: cast(s32)0..records - 1 { if keys[at] == name { return values[at] } }
+    return ""
+}
+
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    if refuse_save { return false }
+    writes += 1
+    if name.count >= 64 || text.count >= 65536 || name[:6] != "local." { bad_record = true; return false }
+    for at: cast(s32)0..records - 1 {
+        if keys[at] == name { values[at] = Owned(text); return true }
+    }
+    if records >= 160 { bad_record = true; return false }
+    keys[records] = Owned(name)
+    values[records] = Owned(text)
+    records += 1
+    return true
+}
+
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    calls += 1
+    if name != "entity.game-completions" { return "{\"status\":\"wrong-service\"}" }
+    submitted = Owned(request)
+    out: Vec(u8)
+    BuilderPrint(*out, "{\"status\":\"%\",\"queued\":true}", service_status)
+    return BuilderFinish(out)
+}
+
+Cell :: (layer: s32, at: s32, kind: s32) {
+    alphabet := "0123456789abcdef"
+    map_bytes[layer * 480 + at * 2] = alphabet[kind >> 4]
+    map_bytes[layer * 480 + at * 2 + 1] = alphabet[kind & 15]
+}
+
+Map :: () -> string {
+    for at: cast(s32)0..1439 { map_bytes[at] = #char "0" }
+    map_bytes[1440] = 0
+    Cell(0, 13, 10)
+    Cell(0, 15, 7)
+    return TextUntilNul(map_bytes[:])
+}
+
+Act :: (path: *CompletionPath, game: *ShoveyGame, direction: s32) {
+    frames: [SHOVEY_CELLS + 1]ShoveyGame
+    before := game.*
+    count := ShoveyMoveFrames(game, direction, frames[:])
+    if count > 0 {
+        PathAction(path, *before, frames[:count], direction)
+        game.* = frames[count - 1]
+    }
+}
+
+RouteTests :: () -> s32 {
+    map := Map()
+    game: ShoveyGame
+    unused ShoveyLoadData(*game, 1, map)
+    path: CompletionPath
+    PathStart(*path, *game, map, "first")
+    if !path.complete || TextView(path.trace[:path.trace_count]) != "0d" { return 1 }
+    // One hundred local actions, with local checkpoints, call no service.
+    for pair: cast(s32)0..49 {
+        Act(*path, *game, 3); Act(*path, *game, 1)
+        if !PathSave(*path, *game) || PathSubmit(*path, *game) != 0 { return 2 }
+    }
+    if calls != 0 || path.actions_count != 100 || game.moves != 100 { return 3 }
+    restored: CompletionPath
+    if !PathRestore(*restored, *game) || !restored.complete || TextView(restored.actions[:restored.actions_count]) != TextView(path.actions[:path.actions_count]) ||
+    TextView(restored.trace[:restored.trace_count]) != TextView(path.trace[:path.trace_count]) || TextUntilNul(restored.owner[:]) != "first" { return 4 }
+    Act(*restored, *game, 2); Act(*restored, *game, 2)
+    if !game.won || game.moves != 102 || !PathKeepBest(*restored, *game) { return 5 }
+    if PathSubmit(*restored, *game) != 1 || calls != 1 || PathNumber(submitted, "moves") != 102 ||
+    !PathTrue(submitted, "evidence_complete") || PathNumber(submitted, "level") != 1 { return 6 }
+    unused PathSubmit(*restored, *game)
+    if calls != 1 || !PathSave(*restored, *game) { return 7 }
+    reopened: CompletionPath
+    if !PathRestore(*reopened, *game) || !reopened.submitted || PathSubmit(*reopened, *game) != 0 { return 8 }
+    // A legacy checkpoint has no prefix; never manufacture completeness.
+    game.won = false
+    PathStart(*path, *game, map, "second")
+    if path.complete || TextView(path.trace[:path.trace_count]) != "0f" || PathRestore(*path, *game) { return 9 }
+    PathClear(*path); PathClear(*restored); PathClear(*reopened)
+    return 0
+}
+
+SpecialTests :: () -> s32 {
+    map := Map()
+    Cell(1, 14, 70)
+    game: ShoveyGame
+    unused ShoveyLoadData(*game, 2, map)
+    path: CompletionPath
+    PathStart(*path, *game, map, "first")
+    Act(*path, *game, 2)
+    if !game.won || game.moves != 2 || TextView(path.actions[:path.actions_count]) != "2" || TextView(path.trace[:path.trace_count]) != "0d0e0f" { return 10 }
+    // Teleports retain entrance+exit, separately from accepted action count.
+    map = Map()
+    Cell(0, 14, 73); Cell(0, 50, 73)
+    unused ShoveyLoadData(*game, 3, map)
+    PathStart(*path, *game, map, "first")
+    Act(*path, *game, 2)
+    if game.player != 50 || TextView(path.trace[:path.trace_count]) != "0d0e32" || path.actions_count != 1 || game.moves != 1 { return 11 }
+    // Returning from a portal to the same origin still records both cells.
+    game.ground[51] = 73
+    game.objects[14] = 9
+    before := game
+    frames: [1]ShoveyGame
+    if !ShoveyMove(*game, 2) || game.player != 50 { return 12 }
+    frames[0] = game
+    PathAction(*path, *before, frames[:], 2)
+    if TextView(path.trace[:path.trace_count]) != "0d0e323332" { return 13 }
+    // Fire uses an engine move without adding a fictitious traversed cell.
+    before = game
+    game.powers = game.powers | SHOVEY_AMMO
+    if !ShoveyFire(*game) { return 14 }
+    frames[0] = game
+    PathAction(*path, *before, frames[:], -1)
+    if TextView(path.actions[:path.actions_count]) != "22f" || TextView(path.trace[:path.trace_count]) != "0d0e323332" || game.moves != 3 { return 15 }
+    // Reverse input evidence keeps the actual direction of travel in trace.
+    before = game
+    game.powers = game.powers | SHOVEY_REVERSE
+    if !ShoveyMove(*game, 2) { return 16 }
+    frames[0] = game
+    PathAction(*path, *before, frames[:], 2)
+    if game.player != 49 || TextView(path.trace[:path.trace_count]) != "0d0e32333231" { return 17 }
+    PathClear(*path)
+    return 0
+}
+
+BestTests :: () -> s32 {
+    map := Map()
+    game: ShoveyGame
+    path: CompletionPath
+    unused ShoveyLoadData(*game, 4, map)
+    PathStart(*path, *game, map, "first")
+    Act(*path, *game, 2); Act(*path, *game, 2)
+    if !PathKeepBest(*path, *game) || PathNumber(FakeRecord("local.path.best.4.index"), "count") != 1 { return 20 }
+    // A sub-ten minimum cannot hide a later qualifying run. Submit actual
+    // current attempts even when slower; the host receives ten actual moves.
+    unused ShoveyLoadData(*game, 4, map)
+    PathStart(*path, *game, map, "first")
+    for pair: cast(s32)0..3 { Act(*path, *game, 3); Act(*path, *game, 1) }
+    Act(*path, *game, 2); Act(*path, *game, 2)
+    if game.moves != 10 || !PathKeepBest(*path, *game) || PathNumber(FakeRecord("local.path.best.4.index"), "count") != 2 { return 21 }
+    if PathSubmit(*path, *game) != 1 || PathNumber(submitted, "moves") != 10 { return 22 }
+    // An even slower complete replay submits, but doesn't replace either best.
+    unused ShoveyLoadData(*game, 4, map)
+    PathStart(*path, *game, map, "first")
+    for pair: cast(s32)0..4 { Act(*path, *game, 3); Act(*path, *game, 1) }
+    Act(*path, *game, 2); Act(*path, *game, 2)
+    if !PathKeepBest(*path, *game) || PathNumber(FakeRecord("local.path.best.4.index"), "count") != 2 ||
+    PathSubmit(*path, *game) != 1 || PathNumber(submitted, "moves") != 12 { return 23 }
+    // A different owner's real attempt gets its own best; never old evidence.
+    unused ShoveyLoadData(*game, 4, map)
+    PathStart(*path, *game, map, "second")
+    for pair: cast(s32)0..5 { Act(*path, *game, 3); Act(*path, *game, 1) }
+    Act(*path, *game, 2); Act(*path, *game, 2)
+    service_status = "owner-changed"
+    if !PathKeepBest(*path, *game) || PathNumber(FakeRecord("local.path.best.4.index"), "count") != 3 ||
+    PathSubmit(*path, *game) != 2 || PathNumber(submitted, "moves") != 14 { return 24 }
+    owner: [65]u8
+    if ReadStringText(submitted, FieldAt(submitted, 0, "expected_owner"), owner[:]) < 0 || TextUntilNul(owner[:]) != "second" { return 25 }
+    // Legacy incomplete evidence can be submitted, but cannot poison bests.
+    unused ShoveyLoadData(*game, 4, map)
+    unused ShoveyMove(*game, 2)
+    PathStart(*path, *game, map, "second")
+    Act(*path, *game, 2)
+    service_status = "signin"
+    if !PathKeepBest(*path, *game) || PathNumber(FakeRecord("local.path.best.4.index"), "count") != 3 ||
+    PathSubmit(*path, *game) != 1 || PathTrue(submitted, "evidence_complete") { return 26 }
+    service_status = "unavailable"
+    path.submitted = false
+    if PathSubmit(*path, *game) != 1 || path.actions_count != 1 { return 27 }
+    // A changed played map gets a new best without replacing either owner.
+    map = Map()
+    Cell(2, 20, 135)
+    unused ShoveyLoadData(*game, 4, map)
+    PathStart(*path, *game, map, "first")
+    Act(*path, *game, 2); Act(*path, *game, 2)
+    if !PathKeepBest(*path, *game) || PathNumber(FakeRecord("local.path.best.4.index"), "count") != 4 { return 28 }
+    PathClear(*path)
+    return 0
+}
+
+ChunkTests :: () -> s32 {
+    map := Map()
+    game: ShoveyGame
+    unused ShoveyLoadData(*game, 5, map)
+    path: CompletionPath
+    PathStart(*path, *game, map, "first")
+    for at: cast(s32)0..PATH_ACTIONS - 1 { path.actions[at] = #char "2" }
+    path.actions_count = PATH_ACTIONS
+    for at: cast(s32)2..PATH_TRACE_BYTES - 1 { path.trace[at] = #char "0" }
+    path.trace_count = PATH_TRACE_BYTES
+    if !PathSave(*path, *game) { return 30 }
+    copy: CompletionPath
+    if !PathRestore(*copy, *game) || copy.actions_count != PATH_ACTIONS || copy.trace_count != PATH_TRACE_BYTES { return 31 }
+    before_writes := writes
+    if !PathSave(*path, *game) || writes != before_writes + 1 { return 32 }
+    before := game
+    frames: [1]ShoveyGame
+    frames[0] = game
+    PathAction(*path, *before, frames[:], 2)
+    if path.complete || path.actions_count != PATH_ACTIONS { return 33 }
+    // Failing a new checkpoint leaves old complete metadata and bests intact.
+    refuse_save = true
+    if PathSave(*path, *game) { return 34 }
+    refuse_save = false
+    if !PathRestore(*copy, *game) || !copy.complete { return 35 }
+    PathClear(*path); PathClear(*copy)
+    return 0
+}
+
+CampaignTests :: () -> s32 {
+    path: CompletionPath
+    frames: [SHOVEY_CELLS + 1]ShoveyGame
+    for level: cast(s32)1..ShoveyLevelCount() {
+        game: ShoveyGame
+        if !ShoveyLoad(*game, level) { return 50 }
+        PathStart(*path, *game, ShoveyLevelBoard(level), "first")
+        if !path.complete { return 51 }
+        start := game.player
+        for input: ShoveyLevelSolution(level) {
+            before := game
+            if input == #char "t" { unused ShoveyTick(*game); continue }
+            if input == #char "f" {
+                if ShoveyFire(*game) { frames[0] = game; PathAction(*path, *before, frames[:1], -1) }
+            } else {
+                direction := cast(s32)input - 48
+                count := ShoveyMoveFrames(*game, direction, frames[:])
+                if count > 0 { PathAction(*path, *before, frames[:count], direction); game = frames[count - 1] }
+                else {
+                    unused ShoveyMove(*game, direction)
+                    if game.direction != before.direction { frames[0] = game; PathAction(*path, *before, frames[:1], direction) }
+                }
+            }
+        }
+        if !game.won || !path.complete || game.moves < 1 { return 5200 + level }
+        // Every visited cell is present, including intermediate ice cells;
+        // every discontinuity is exactly a portal edge from this played map.
+        initial: ShoveyGame
+        unused ShoveyLoadData(*initial, level, TextUntilNul(path.map[:]))
+        previous := start
+        for at: cast(s32)1..path.trace_count / 2 - 1 {
+            cell := ShoveyDigit(path.trace[at * 2]) * 16 + ShoveyDigit(path.trace[at * 2 + 1])
+            adjacent := false
+            for direction: cast(s32)0..3 { if ShoveyNeighbor(previous, direction) == cell { adjacent = true } }
+            portal := (initial.ground[previous] == 8 || ShoveyColorPortal(initial.ground[previous])) &&
+                initial.ground[previous] == initial.ground[cell]
+            if !adjacent && !portal { return 53 }
+            previous = cell
+        }
+        if previous != game.player { return 54 }
+        if level == 1 || level == 28 || level == 55 || level == 56 || level == 63 ||
+        level == 64 || level == 65 || level == 68 || level == 175 {
+            service_status = "done"
+            unused PathSubmit(*path, *game)
+            if PathNumber(submitted, "moves") != game.moves { return 55 }
+            fixtures[fixture_count] = Owned(submitted)
+            fixture_count += 1
+        }
+    }
+    return 0
+}
+
+#program_export
+Check :: () -> s32 {
+    result := RouteTests(); if result != 0 { return result }
+    result = SpecialTests(); if result != 0 { return result }
+    result = BestTests(); if result != 0 { return result }
+    result = ChunkTests(); if result != 0 { return result }
+    result = CampaignTests(); if result != 0 { return result }
+    if bad_record { return 40 }
+    return 42
+}

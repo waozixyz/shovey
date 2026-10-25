@@ -1,0 +1,287 @@
+// Classic route evidence stays local until an actual win. The account host
+// owns its durable offline queue; unsupported hosts get no upload queue here.
+Completion :: #import "entity/game_completion";
+#import "std/vec"
+#import "std/text_buffer"
+#import "std/c_string"
+#import "std/json_scan"
+#import, file "engine.zi";
+#import, file "controls.zi";
+
+PATH_CHUNK :: 49152
+PATH_ACTIONS :: 60000
+PATH_TRACE_BYTES :: 240000
+
+CompletionPath :: struct {
+    level: s32
+    owner: [65]u8
+    map_hash: [65]u8
+    map: [1441]u8
+    actions: [PATH_ACTIONS + 1]u8
+    trace: [PATH_TRACE_BYTES + 1]u8
+    actions_count: s32
+    trace_count: s32
+    complete: bool
+    submitted: bool
+    bank: s32
+    saved_actions: s32
+    saved_trace: s32
+}
+
+
+PathQuote :: (out: *Vec(u8), text: string) {
+    BuilderPrint(out, "\"")
+    alphabet := "0123456789abcdef"
+    one: [1]u8
+    for byte: text {
+        one[0] = byte
+        if byte == 34 || byte == 92 { BuilderPrint(out, "\\%", TextView(one[:])) }
+        else if byte < 32 {
+            hex: [2]u8
+            hex[0] = alphabet[byte >> 4]; hex[1] = alphabet[byte & 15]
+            BuilderPrint(out, "\\u00%", TextView(hex[:]))
+        } else { BuilderPrint(out, "%", TextView(one[:])) }
+    }
+    BuilderPrint(out, "\"")
+}
+
+PathNumber :: (text: string, field: string) -> s32 {
+    number := ReadNumber(text, FieldAt(text, 0, field))
+    if !number.valid || number.value < 0.0 || number.value > 2147483647.0 ||
+    number.value != cast(float64)cast(s32)number.value { return -1 }
+    return cast(s32)number.value
+}
+
+PathTrue :: (text: string, field: string) -> bool {
+    at := FieldAt(text, 0, field)
+    return at >= 0 && at + 4 <= text.count && text[at:at + 4] == "true"
+}
+
+PathClear :: (path: *CompletionPath) {
+    path.* = .{}
+}
+
+PathCell :: (path: *CompletionPath, cell: s32) {
+    if cell < 0 || cell >= SHOVEY_CELLS || path.trace_count + 2 > PATH_TRACE_BYTES {
+        path.complete = false
+        return
+    }
+    alphabet := "0123456789abcdef"
+    path.trace[path.trace_count] = alphabet[cell >> 4]
+    path.trace[path.trace_count + 1] = alphabet[cell & 15]
+    path.trace_count += 2
+}
+
+PathStart :: (path: *CompletionPath, game: *ShoveyGame, map: string, owner: string) {
+    old_bank := PathNumber(PathRecord("local.path.meta"), "bank")
+    PathClear(path)
+    path.bank = ifx old_bank == 0 then 1 else 0
+    path.level = game.level
+    unused CopyCString(owner, path.owner[:])
+    if !Completion.GameCompletionMapHash("shovey.classic", game.level, map, path.map_hash[:]) { return }
+    unused CopyCString(map, path.map[:])
+    // Missing legacy paths remain playable, but never get an invented prefix.
+    checkpoint: [2433]u8
+    unused CopyCString(ShoveySave(game), checkpoint[:])
+    initial: ShoveyGame
+    path.complete = ShoveyLoadData(*initial, game.level, map) &&
+        TextUntilNul(checkpoint[:]) == ShoveySave(*initial) && !game.won && !game.lost
+    PathCell(path, game.player)
+}
+
+// One frame is one internal step. A portal frame contains its exit, so add
+// its adjacent entrance first, including a jump that returns to the same cell.
+PathFrame :: (path: *CompletionPath, before: *ShoveyGame, after: *ShoveyGame) {
+    entrance := ShoveyNeighbor(before.player, after.direction)
+    if after.teleports > before.teleports && entrance >= 0 &&
+    (before.ground[entrance] == 8 || ShoveyColorPortal(before.ground[entrance])) {
+        PathCell(path, entrance)
+        PathCell(path, after.player)
+    } else if before.player != after.player { PathCell(path, after.player) }
+}
+
+PathAction :: (path: *CompletionPath, before: *ShoveyGame, frames: []ShoveyGame, action: s32) {
+    if frames.count == 0 || path.level != before.level || path.map_hash[0] == 0 { return }
+    if path.actions_count >= PATH_ACTIONS { path.complete = false; return }
+    path.actions[path.actions_count] = ifx action < 0 then #char "f" else cast(u8)(48 + action)
+    path.actions_count += 1
+    previous := before.*
+    for next: frames { PathFrame(path, *previous, *next); previous = next }
+}
+
+PathPrefix :: (path: *CompletionPath) -> string {
+    out: Vec(u8)
+    BuilderPrint(*out, "local.path.%", path.bank)
+    return BuilderFinish(out)
+}
+
+// Only the tail chunks that grew are rewritten during play. Every key is
+// below the native host's 64-byte limit; every value is below 64 KiB.
+PathChunksSave :: (prefix: string, kind: string, value: string, saved: s64 = 0) -> bool {
+    if saved >= value.count { return true }
+    at := (saved / PATH_CHUNK) * PATH_CHUNK
+    while at < value.count {
+        end := at + PATH_CHUNK
+        if end > value.count { end = value.count }
+        name: Vec(u8)
+        BuilderPrint(*name, "%.%.%", prefix, kind, at / PATH_CHUNK)
+        key := BuilderFinish(name)
+        if !PathSaveRecord(key, value[at:end]) { return false }
+        at = end
+    }
+    return true
+}
+
+PathChunksRead :: (prefix: string, kind: string, count: s32, output: []u8) -> bool {
+    at: s32 = 0
+    while at < count {
+        size := count - at
+        if size > PATH_CHUNK { size = PATH_CHUNK }
+        name: Vec(u8)
+        BuilderPrint(*name, "%.%.%", prefix, kind, at / PATH_CHUNK)
+        key := BuilderFinish(name)
+        value := PathRecord(key)
+        if value.count < size { return false }
+        for index: cast(s32)0..size - 1 { output[at + index] = value[index] }
+        at += size
+    }
+    return true
+}
+
+PathMetadata :: (path: *CompletionPath, game: *ShoveyGame, checkpoint: bool) -> string {
+    out: Vec(u8)
+    BuilderPrint(*out, "{\"format\":1,\"bank\":%,\"level\":%,\"moves\":%,\"actions\":%,\"trace\":%,\"complete\":%,\"submitted\":%,\"owner\":",
+        path.bank, path.level, game.moves, path.actions_count, path.trace_count,
+        ifx path.complete then "true" else "false", ifx path.submitted then "true" else "false")
+    PathQuote(*out, TextUntilNul(path.owner[:]))
+    BuilderPrint(*out, ",\"map_hash\":"); PathQuote(*out, TextUntilNul(path.map_hash[:]))
+    if checkpoint {
+        BuilderPrint(*out, ",\"map\":"); PathQuote(*out, TextUntilNul(path.map[:]))
+        BuilderPrint(*out, ",\"checkpoint\":"); PathQuote(*out, ShoveySave(game))
+    }
+    BuilderPrint(*out, "}")
+    return BuilderFinish(out)
+}
+
+PathSave :: (path: *CompletionPath, game: *ShoveyGame) -> bool {
+    if path.level != game.level || path.map_hash[0] == 0 { return true }
+    prefix := PathPrefix(path)
+    if !PathChunksSave(prefix, "a", TextView(path.actions[:path.actions_count]), path.saved_actions) ||
+    !PathChunksSave(prefix, "t", TextView(path.trace[:path.trace_count]), path.saved_trace) ||
+    !PathSaveRecord("local.path.meta", PathMetadata(path, game, true)) { return false }
+    path.saved_actions = path.actions_count
+    path.saved_trace = path.trace_count
+    return true
+}
+
+PathRestore :: (path: *CompletionPath, game: *ShoveyGame) -> bool {
+    text := PathRecord("local.path.meta")
+    restored: CompletionPath
+    checkpoint: [2433]u8
+    if PathNumber(text, "format") != 1 || PathNumber(text, "level") != game.level ||
+    ReadStringText(text, FieldAt(text, 0, "checkpoint"), checkpoint[:]) < 0 ||
+    TextUntilNul(checkpoint[:]) != ShoveySave(game) { return false }
+    restored.level = game.level
+    restored.bank = PathNumber(text, "bank")
+    restored.complete = PathTrue(text, "complete")
+    restored.submitted = PathTrue(text, "submitted")
+    actions := PathNumber(text, "actions")
+    trace := PathNumber(text, "trace")
+    if restored.bank < 0 || restored.bank > 1 || actions < 0 || actions > PATH_ACTIONS ||
+    trace < 2 || trace > PATH_TRACE_BYTES || trace % 2 != 0 ||
+    ReadStringText(text, FieldAt(text, 0, "owner"), restored.owner[:]) < 0 ||
+    ReadStringText(text, FieldAt(text, 0, "map"), restored.map[:]) != 1440 ||
+    ReadStringText(text, FieldAt(text, 0, "map_hash"), restored.map_hash[:]) != 64 { return false }
+    hash: [65]u8
+    if !Completion.GameCompletionMapHash("shovey.classic", game.level, TextUntilNul(restored.map[:]), hash[:]) ||
+    TextUntilNul(hash[:]) != TextUntilNul(restored.map_hash[:]) { return false }
+    prefix := PathPrefix(*restored)
+    if !PathChunksRead(prefix, "a", actions, restored.actions[:]) ||
+    !PathChunksRead(prefix, "t", trace, restored.trace[:]) {
+        return false
+    }
+    restored.actions_count = actions
+    restored.trace_count = trace
+    for byte: TextView(restored.actions[:restored.actions_count]) {
+        if byte != #char "0" && byte != #char "1" && byte != #char "2" && byte != #char "3" &&
+        byte != #char "f" && byte != #char "t" { return false }
+    }
+    trace_text := TextView(restored.trace[:restored.trace_count])
+    for at: cast(s32)0..trace / 2 - 1 {
+        high := ShoveyDigit(trace_text[at * 2])
+        low := ShoveyDigit(trace_text[at * 2 + 1])
+        if high < 0 || low < 0 || high * 16 + low >= SHOVEY_CELLS { return false }
+    }
+    restored.actions_count = actions
+    restored.trace_count = trace
+    restored.saved_actions = actions
+    restored.saved_trace = trace
+    PathClear(path)
+    path.* = restored
+    return true
+}
+
+// Keep the minimum complete route for each exact owner/map. Keep a separate
+// qualifying minimum too: a sub-ten shortcut must not erase a real replay.
+// Appending before advancing the index preserves prior bests on write failure.
+PathKeepBest :: (path: *CompletionPath, game: *ShoveyGame) -> bool {
+    if !game.won || !path.complete || path.map_hash[0] == 0 { return true }
+    name: Vec(u8)
+    BuilderPrint(*name, "local.path.best.%", game.level)
+    prefix := BuilderFinish(name)
+    index_name: Vec(u8)
+    BuilderPrint(*index_name, "%.index", prefix)
+    index_key := BuilderFinish(index_name)
+    count := PathNumber(PathRecord(index_key), "count")
+    if count < 0 { count = 0 }
+    best: s32 = 2147483647
+    eligible: s32 = 2147483647
+    for slot: cast(s32)0..count - 1 {
+        key: Vec(u8)
+        BuilderPrint(*key, "%.%.meta", prefix, slot)
+        text := PathRecord(BuilderFinish(key))
+        if text == "" { count = slot; break }
+        owner: [65]u8
+        hash: [65]u8
+        moves := PathNumber(text, "moves")
+        if !PathTrue(text, "complete") || moves < 0 ||
+        ReadStringText(text, FieldAt(text, 0, "owner"), owner[:]) < 0 ||
+        ReadStringText(text, FieldAt(text, 0, "map_hash"), hash[:]) < 0 ||
+        TextUntilNul(owner[:]) != TextUntilNul(path.owner[:]) ||
+        TextUntilNul(hash[:]) != TextUntilNul(path.map_hash[:]) { continue }
+        if moves < best { best = moves }
+        if moves >= 10 && moves < eligible { eligible = moves }
+    }
+    if game.moves >= best && (game.moves < 10 || game.moves >= eligible) { return true }
+    slot_name: Vec(u8)
+    BuilderPrint(*slot_name, "%.%", prefix, count)
+    slot_prefix := BuilderFinish(slot_name)
+    if !PathChunksSave(slot_prefix, "a", TextView(path.actions[:path.actions_count])) ||
+    !PathChunksSave(slot_prefix, "t", TextView(path.trace[:path.trace_count])) { return false }
+    meta_name: Vec(u8)
+    BuilderPrint(*meta_name, "%.meta", slot_prefix)
+    if !PathSaveRecord(BuilderFinish(meta_name), PathMetadata(path, game, false)) { return false }
+    index: Vec(u8)
+    BuilderPrint(*index, "{\"count\":%}", count + 1)
+    return PathSaveRecord(index_key, BuilderFinish(index))
+}
+
+// Returns 2 only for an account change, so the caller schedules its existing
+// safe-boundary reload. Repeated wins/improvements still validate expected_owner.
+PathSubmit :: (path: *CompletionPath, game: *ShoveyGame) -> s32 {
+    if !game.won || path.submitted || path.level != game.level || path.map_hash[0] == 0 { return 0 }
+    path.submitted = true
+    body: Vec(u8)
+    BuilderPrint(*body, "{\"operation\":\"put\",\"expected_owner\":")
+    PathQuote(*body, TextUntilNul(path.owner[:]))
+    BuilderPrint(*body, ",\"game\":\"shovey.classic\",\"level\":%,\"map_hash\":", game.level)
+    PathQuote(*body, TextUntilNul(path.map_hash[:]))
+    BuilderPrint(*body, ",\"moves\":%,\"actions\":", game.moves)
+    PathQuote(*body, TextView(path.actions[:path.actions_count]))
+    BuilderPrint(*body, ",\"trace\":"); PathQuote(*body, TextView(path.trace[:path.trace_count]))
+    BuilderPrint(*body, ",\"evidence_complete\":%}", ifx path.complete then "true" else "false")
+    reply := CompletionAccountService(BuilderFinish(body))
+    status: [32]u8
+    unused ReadStringText(reply, FieldAt(reply, 0, "status"), status[:])
+    return ifx TextUntilNul(status[:]) == "owner-changed" then 2 else 1
+}

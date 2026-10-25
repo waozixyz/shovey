@@ -37,6 +37,7 @@ Math :: #import "std/math";
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
 #import, file "shared_progress.zi";
+#import, file "completion_path.zi";
 #import, file "shared_campaign.zi";
 #import, file "controls.zi";
 #import, file "pieces.zi";
@@ -71,6 +72,7 @@ selector_open: bool;
 levels_scroll: s32;
 loaded: bool;
 shared_progress: SharedProgressSession;
+completion_path: CompletionPath;
 shared_account_changed: bool;
 help_open: bool;
 // An embedded mini page opens straight into a level with only its levels
@@ -82,7 +84,9 @@ help_scroll: s32;
 last_tick: float64;
 // A slide plays one cell at a time: the boards it passes through, and which
 // one is drawn next. Input waits until the last is shown.
-SLIDE_FRAMES :: 32
+// Keep every internal step for both animation and route evidence. A slide
+// stops on a repeated cell, so a board's cells plus its first step suffice.
+SLIDE_FRAMES :: SHOVEY_CELLS + 1
 SLIDE_SECONDS :: 0.06
 slide_boards: [SLIDE_FRAMES]ShoveyGame;
 slide_count: s32;
@@ -316,7 +320,11 @@ Remember :: () {
     if ShoveySecret(game.level) { return }
     ShoveyRecordWin(*progress, *game)
     save_failed = !SaveLocalCampaign(ShoveyCampaignSave(*progress, *game))
+    if !PathSave(*completion_path, *game) { save_failed = true }
     if game.won {
+        if !PathKeepBest(*completion_path, *game) { save_failed = true }
+        if PathSubmit(*completion_path, *game) == 2 { shared_progress.poll_at = 0.0 }
+        if !PathSave(*completion_path, *game) { save_failed = true }
         unused SharedProgressSave(*shared_progress, game.level, true)
         ReportSolvedLevels(progress.completed[:], *reported_levels)
     }
@@ -326,6 +334,7 @@ ChangeLevel :: (level: s32) {
     slide_count = 0
     slide_next = 0
     if ShoveySelectLevel(*progress, *game, level) {
+        PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
         last_tick = frame.now
         selector_open = false
         help_open = false
@@ -417,6 +426,7 @@ ShoveyAct :: (direction: s32) -> bool {
             game = slide_boards[0]
             // Sound and the win check judge the board the slide ends on.
             final := slide_boards[slide_count - 1]
+            PathAction(*completion_path, *before, slide_boards[:slide_count], direction)
             slid := ShoveyEvent(*before, *final)
             if slid != SHOVEY_EVENT_NONE && !SoundMuted() {
                 sounds: [10]string = .["", "assets/shovey/sounds/push.wav", "assets/shovey/sounds/pit.wav",
@@ -429,6 +439,11 @@ ShoveyAct :: (direction: s32) -> bool {
         }
         changed = ShoveyMove(*game, direction)
     } else { changed = ShoveyMove(*game, direction) }
+    if changed || game.direction != before.direction {
+        result: [1]ShoveyGame
+        result[0] = game
+        PathAction(*completion_path, *before, result[:], direction)
+    }
     event := SHOVEY_EVENT_NONE
     if changed { event = ShoveyEvent(*before, *game) }
     if event != SHOVEY_EVENT_NONE && !SoundMuted() {
@@ -619,7 +634,10 @@ LiveCampaignCheck :: () {
     for at: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 { level_preview_paths[at][0] = 0 }
     // An untouched level reopens on its new board; a level in play keeps its
     // board until it is restarted or left.
-    if !game.won && game.moves == 0 && game.level <= ShoveyLevelCount() { unused ShoveyLoad(*game, game.level) }
+    if !game.won && game.moves == 0 && game.level <= ShoveyLevelCount() {
+        unused ShoveyLoad(*game, game.level)
+        PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+    }
 }
 
 // A won level stays on screen for a moment and dips to dark, and the next
@@ -634,6 +652,7 @@ ContinueGame :: () {
     unused ShoveyContinue(*progress, *game)
     // Past the last level Continue opens it afresh, not its ending.
     if game.won && game.level >= ShoveyLevelCount() { unused ShoveyLoad(*game, ShoveyLevelCount()) }
+    PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
     selector_open = false
     help_open = false
     last_tick = frame.now
@@ -732,6 +751,9 @@ EdgeTravel :: (direction: s32, landscape: bool) -> bool {
     edge_at = frame.now
     edge_visible = ifx landscape then (direction + 3) % 4 else direction
     game = next
+    // An excursion outside the campaign board cannot be represented as a
+    // continuous route on that one map. Returning keeps play, not a fake prefix.
+    PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
     slide_count = 0
     slide_next = 0
     walk_count = 0
@@ -764,6 +786,7 @@ SecretWinPause :: () {
     if secret_return >= 0 && secret_return < SHOVEY_CELLS { next.player = secret_return }
     next.direction = ifx back == SHOVEY_SECRET_UP then 0 else 2
     game = next
+    PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
     won_at = 0.0
     entered_at = frame.now
 }
@@ -1045,6 +1068,9 @@ ShoveyFrame :: () {
         // Entering play keeps the campaign, so its record exists from the
         // start; an embedded mini page saves only once something changes.
         latest := ShoveyOpenLatest(*progress, *game)
+        if latest || !PathRestore(*completion_path, *game) {
+            PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+        }
         if latest || !mini { Remember() }
         if ShoveyAllDone() { selector_open = true }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
@@ -1059,11 +1085,20 @@ ShoveyFrame :: () {
     RewardsPump(frame.now)
     shared_change := SharedProgressPump(*shared_progress, frame.now, game.moves > 0 && !game.won)
     if shared_change == 2 { loaded = false; shared_account_changed = true; return }
+    // Hydration may finish while an untouched board is idle. Bind that fresh
+    // attempt to the cached owner; active attempts retain their original owner.
+    if game.moves == 0 && completion_path.actions_count == 0 && !game.won && !game.lost &&
+    TextUntilNul(completion_path.owner[:]) != TextUntilNul(shared_progress.owner[:]) {
+        PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+    }
     if shared_change == 1 {
         ShoveySharedRestore(*progress, *shared_progress.record)
         // Account hydration can finish after the first frame. Open its
         // latest puzzle unless this device already has a board in progress.
-        if ShoveyOpenLatest(*progress, *game) { Remember() }
+        if ShoveyOpenLatest(*progress, *game) {
+            PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+            Remember()
+        }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
     }
     width := cast(float32)frame.width

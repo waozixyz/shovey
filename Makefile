@@ -6,6 +6,9 @@ KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 MINGCUTE = $(shell $(ZIRAN) pkg path mingcute $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 ENTITY = $(shell $(ZIRAN) pkg path entity $(LOCK_FLAGS))
+DAOCHI_CLIENT = $(shell cd '$(ENTITY)' && $(ZIRAN) pkg path daochi_client $(LOCK_FLAGS))
+CRYPTO = $(shell cd '$(DAOCHI_CLIENT)' && $(ZIRAN) pkg path crypto $(LOCK_FLAGS))
+COMPLETION_MODULES = --module-path 'daochi_client=$(DAOCHI_CLIENT)' --module-path 'crypto=$(CRYPTO)/src'
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
@@ -28,6 +31,10 @@ editor-ui-test: editor editor-server-test
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_ui_test.py
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_launch_ui_test.py
+	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 \
+		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_designs_ui_test.py
+	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 \
+		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/editor_chest_ui_test.py
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_approval_ui_test.py
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
@@ -121,7 +128,7 @@ desktop: bundles
 	mkdir -p '$(DESKTOP_DIR)'
 	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
-		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'entity=$(ENTITY)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'entity=$(ENTITY)/src' $(COMPLETION_MODULES) --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--module-path build/web-generated --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE $(DESKTOP_DEFINES) \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
@@ -143,7 +150,7 @@ web-zx: bundles
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--module-path build/web-generated --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE \
-		--module-path 'entity=$(ENTITY)/src' \
+		--module-path 'entity=$(ENTITY)/src' $(COMPLETION_MODULES) \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
 		--bind editor_view:AppKeyHost=host:GameKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
@@ -182,7 +189,7 @@ web: bundles
 	'$(ZIRAN_BIN)/zi2zir' --root . --module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--module-path '$(ENTITY)/src' --module-path 'entity=$(ENTITY)/src' --module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
+		--module-path '$(ENTITY)/src' --module-path 'entity=$(ENTITY)/src' $(COMPLETION_MODULES) --module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
 		--entry canvas_app_run:main --bind canvas_app_run:CanvasAppMain=game:Main \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
@@ -248,6 +255,7 @@ game-maps-test:
 
 public-test: solver laws game-maps-test
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
+	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
@@ -278,6 +286,7 @@ test: solver laws game-maps-test
 	sh tests/controls_test.sh '$(TOOLCHAIN)'
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
+	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
 	$(MAKE) bundles
 
 # A desktop player that records a winning route for each board it is given:

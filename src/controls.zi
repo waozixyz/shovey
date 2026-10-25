@@ -43,6 +43,22 @@
 
 // Account records are shared across standalone and hosted editions.
 ProgressAccountService :: (request: string) -> string { return AppServiceHost("entity.records", request) }
+CompletionAccountService :: (request: string) -> string { return AppServiceHost("entity.game-completions", request) }
+// Path chunks are device records, including on hosts with account records.
+PathRecord :: (name: string) -> string {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentRead(name)
+    } else {
+        return ControlsRecord(name)
+    }
+}
+PathSaveRecord :: (name: string, text: string) -> bool {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentWrite(name, text)
+    } else {
+        return ControlsSaveRecord(name, text)
+    }
+}
 // Local saves have their own record and are never retired by account sync.
 // Read an older device save once when no device-only campaign exists yet.
 LocalCampaignRecord :: () -> string {
