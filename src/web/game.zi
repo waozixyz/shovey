@@ -86,6 +86,10 @@ Main :: () -> s64 {
         return APP_PROTOCOL
     }
     if mode == APP_FRAME {
+        // The developer's private Island build opens straight into the editor.
+        #if #defined(SHOVEY_ISLAND_EDITOR) {
+            if web_covers_open { web_covers_open = false; web_editor_open = true }
+        }
         // An embedded mini page opens straight into its level.
         if web_covers_open && !AppMini() { WebCovers() }
         else if web_editor_open { EditorFrame("en") }

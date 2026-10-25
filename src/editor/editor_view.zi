@@ -327,7 +327,7 @@ EditorNames :: () {
     editor_classic_names[SPRITE_DOOR + 1] = EditorText("editor_door")
     editor_classic_names[SPRITE_LANTERN] = EditorText("editor_lantern")
     decorations: [8]string = .["editor_mushrooms", "editor_fallen_leaves", "editor_bluebells", "editor_lily_pads",
-        "editor_berry_bush", "editor_flower_pot", "editor_barrel", "editor_tree_stump"]
+    "editor_berry_bush", "editor_flower_pot", "editor_barrel", "editor_tree_stump"]
     for decoration: cast(s32)0..7 { editor_classic_names[SPRITE_DECORATION + decoration] = EditorText(decorations[decoration]) }
     editor_classic_names[SPRITE_DOOR_OPEN] = EditorText("editor_gate")
     for material: cast(s32)0..3 { editor_classic_names[SPRITE_MOSS_FLOOR + material] = EditorText("editor_gate") }
@@ -491,7 +491,7 @@ EditorDraftsMove :: () {
         for at: cast(s32)0..catalog.count - 1 {
             summary := *catalog.levels[at]
             if DraftsMovedHas(*editor_drafts_moved, island, summary.id) ||
-                editor_drafts_moved.count >= cast(s32)editor_drafts_moved.id.count { continue }
+            editor_drafts_moved.count >= cast(s32)editor_drafts_moved.id.count { continue }
             if !EditLevelRead(*editor_download, island, AppRecordHost(EditLevelRecord(island, summary.id))) { continue }
             record: [40]u8
             moved := DraftsMovedRecord(island, summary.id, *editor_download, record[:])
@@ -547,6 +547,10 @@ EditorLoad :: () {
         editor_publication_length[edition] = EditSetField(editor_publication[edition][:], id)
     }
     editor_sharing = AppSupportsHost(SHARING_SERVICE)
+    #if #defined(SHOVEY_ISLAND_EDITOR) {
+        editor_island = true
+        editor_page = EDITOR_LEVELS
+    }
     editor_loaded = true
 }
 
@@ -774,9 +778,15 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
 }
 
 // ---------------------------------------------------------------------------
-// The first page: Classic, and Island once it is offered for sale
+// The first page: Classic, and Island once it is offered for sale. The
+// developer's private Island build (SHOVEY_ISLAND_EDITOR) has both and opens
+// on Island's levels.
 
-EDITOR_EDITIONS :: 1
+#if #defined(SHOVEY_ISLAND_EDITOR) {
+    EDITOR_EDITIONS :: 2
+} else {
+    EDITOR_EDITIONS :: 1
+}
 
 EditorHome :: (width: float32, top: float32, bottom: float32) {
     #if #defined(SHOVEY_WEB) {

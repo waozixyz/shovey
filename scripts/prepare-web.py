@@ -1,5 +1,6 @@
 """Stage the existing game and editor resources for their shared browser host."""
 import json
+import os
 from pathlib import Path
 import runpy
 import shutil
@@ -13,8 +14,9 @@ for name in ('shovey', 'shovey-editor'):
     shutil.copytree(root / 'build/game-assets' / name / 'assets' / name, assets / name)
 # The editor offers only Classic until Island is for sale, so the browser
 # build leaves Island's pictures out; that keeps runtime.data under the
-# Cloudflare Pages file limit.
-shutil.rmtree(assets / 'shovey-editor' / 'island', ignore_errors=True)
+# Cloudflare Pages file limit. The developer's private Island editor keeps them.
+if os.environ.get('SHOVEY_ISLAND_EDITOR') != '1':
+    shutil.rmtree(assets / 'shovey-editor' / 'island', ignore_errors=True)
 
 translations = runpy.run_path(str(root / 'scripts/build-bundles.py'))['translations']
 code = []
