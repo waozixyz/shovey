@@ -246,6 +246,7 @@ public-test: solver laws
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
 	python3 tests/classic_difficulty_test.py
+	python3 tests/classic_63_65_68_test.py
 	python3 tests/assets_test.py
 
 # Laws state policy independently of its implementation; `ziran check`
@@ -263,6 +264,7 @@ test: solver laws
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
 	python3 tests/classic_difficulty_test.py
+	python3 tests/classic_63_65_68_test.py
 	python3 tests/assets_test.py
 	sh tests/engine_test.sh '$(TOOLCHAIN)'
 	sh tests/controls_test.sh '$(TOOLCHAIN)'
