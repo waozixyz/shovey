@@ -1061,6 +1061,9 @@ ShoveyFrame :: () {
     if shared_change == 2 { loaded = false; shared_account_changed = true; return }
     if shared_change == 1 {
         ShoveySharedRestore(*progress, *shared_progress.record)
+        // Account hydration can finish after the first frame. Open its
+        // latest puzzle unless this device already has a board in progress.
+        if ShoveyOpenLatest(*progress, *game) { Remember() }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
     }
     width := cast(float32)frame.width
