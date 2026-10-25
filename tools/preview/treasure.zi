@@ -57,7 +57,7 @@ Main :: () -> s64 {
             View.mini = true
             View.progress = Progress.ShoveyProgressNew()
             View.level_updates = 0
-            View.chest_discovered = 1
+            unused DocumentWrite("local.secret29a", "1")
             View.last_tick = AppNow()
             Rewards.reward_loaded = true
             if !Game.ShoveyLoadData(*View.game, 1003, PreviewMap) { return -1 }

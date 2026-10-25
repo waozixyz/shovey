@@ -737,36 +737,12 @@ edge_from: s32;
 edge_at: float64;
 edge_visible: s32;
 secret_visit: ShoveySecretVisit;
-chest_discovered: s32 = -1;
-
-ChestDiscovered :: () -> bool {
-    if chest_discovered < 0 { chest_discovered = ifx PathRecord("local.secret29a") == "1" then 1 else 0 }
-    return chest_discovered == 1
-}
-
-OpenDiscoveredChest :: () {
-    if game.level != CHEST_LEVEL {
-        if !ShoveyReopenChest(*game, *secret_visit, ChestDiscovered()) { return }
-        // Menu entry has no captured walk to the parent beach. Never invent
-        // that prefix or borrow an earlier account's route.
-        PathStart(*completion_path, *secret_visit.parent, ShoveyLevelBoard(CHEST_PARENT_LEVEL), TextUntilNul(shared_progress.owner[:]))
-    }
-    slide_count = 0
-    slide_next = 0
-    walk_count = 0
-    won_at = 0.0
-    last_tick = frame.now
-    selector_open = false
-    help_open = false
-}
-
 // Steps Shovey across an open edge into the board beyond; false when the
 // step stays on this board.
 EdgeTravel :: (direction: s32, landscape: bool) -> bool {
     previous := game.level
     if !ShoveySecretEdge(*game, *secret_visit, direction) { return false }
     if game.level == CHEST_LEVEL {
-        chest_discovered = 1
         unused PathSaveRecord("local.secret29a", "1")
     }
     edge_from = previous
@@ -1133,8 +1109,7 @@ ShoveyFrame :: () {
         }
         columns := cast(s32)((width - 24.0) / 112.0)
         if columns < 2 { columns = 2 }
-        discovered := ChestDiscovered()
-        listed := ShoveyLevelCount() + (ifx discovered then 1 else 0)
+        listed := ShoveyLevelCount()
         rows := (listed + columns - 1) / columns
         cell := (width - 32.0 - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
         preview_height := (cell - 12.0) * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
@@ -1146,17 +1121,16 @@ ShoveyFrame :: () {
         if scroll.opened {
             SpriteNames()
             for slot: cast(s32)1..listed {
-                number := ShoveyListedLevel(slot, discovered)
-                secret := number == CHEST_LEVEL
+                number := slot
                 at := slot - 1
                 bounds := Rectangle.{scroll.content.x + cast(float32)(at % columns) * (cell + 8.0),
                     scroll.content.y + cast(float32)(at / columns) * cast(float32)row_height, cell, preview_height + 52.0}
                 // Only the cards in view are built; slow phones paid for all of them every frame.
                 if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
-                unlocked := secret || ShoveyLevelUnlocked(*progress, number)
-                completed := ifx secret then RewardEarned(REWARD_CHEST) else progress.completed[number - 1]
+                unlocked := ShoveyLevelUnlocked(*progress, number)
+                completed := progress.completed[number - 1]
                 digits: [24]u8
-                label := ifx secret then "29a" else FormatInteger(cast(s64)number, digits[:])
+                label := FormatInteger(cast(s64)number, digits[:])
                 // Status stays accessible in the semantic label, while the
                 // visual card uses a lock/check icon and an unlocked board.
                 status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
@@ -1165,14 +1139,13 @@ ShoveyFrame :: () {
                         .selected = completed, .fit_content = true,
                         .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
                         .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-                    if secret { OpenDiscoveredChest() } else { ChangeLevel(number) }
+                    ChangeLevel(number)
                 }
                 if unlocked {
                     // Cover the centered visual label only inside the picture
                     // area, then repeat the number in the card's footer.
                     picture := Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height}
-                    if secret { ShoveyBoardPreview(frame.session, number, picture, cast(u64)(52000 + number), sprite_names[:], landscape) }
-                    else { LevelPicture(number, picture, cast(u64)(35000 + number), cast(u64)(52000 + number), landscape) }
+                    LevelPicture(number, picture, cast(u64)(35000 + number), cast(u64)(52000 + number), landscape)
                 }
                 {
                     Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)

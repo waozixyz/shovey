@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -49,6 +50,22 @@ with tempfile.TemporaryDirectory(dir=output, prefix='profile-') as temporary:
             assert started['level'] == 1003 and started['unsigned']
             subprocess.run(['xdotool', 'windowsize', window, '1280', '800', 'windowfocus', window], check=True)
             time.sleep(.5)
+            # A previously discovered room must still be absent from the
+            # player selector. The preview seeds the actual discovery record.
+            subprocess.run(['xdotool', 'mousemove', '--window', window, '30', '26', 'mousedown', '1'], check=True)
+            time.sleep(.12)
+            subprocess.run(['xdotool', 'mouseup', '1'], check=True)
+            time.sleep(.5)
+            selector = output / 'player-selector.png'
+            subprocess.run(['import', '-window', window, str(selector)], check=True)
+            labels = subprocess.check_output(['tesseract', str(selector), 'stdout', '--psm', '11'],
+                                             stderr=subprocess.DEVNULL, text=True)
+            assert re.search(r'\b29\b', labels) and re.search(r'\b30\b', labels), labels
+            assert not re.search(r'\b(?:29a|175[ab])\b', labels, re.IGNORECASE), labels
+            subprocess.run(['xdotool', 'mousemove', '--window', window, '1205', '32', 'mousedown', '1'], check=True)
+            time.sleep(.12)
+            subprocess.run(['xdotool', 'mouseup', '1'], check=True)
+            time.sleep(.25)
             subprocess.run(['import', '-window', window, str(output / 'room.png')], check=True)
             # The real engine's bridge/chest route, transformed to landscape
             # screen directions; no reward state or UI dialog is fabricated.

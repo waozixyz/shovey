@@ -1,6 +1,7 @@
 """The private selector edits the distinct 29a room and keeps level 29 unchanged."""
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -105,7 +106,8 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                 if mode == 'Map':
                     press('Map')
                 if ADMIN:
-                    assert not showing('29a'), 'Public editor exposed private chest room'
+                    assert not any(re.fullmatch(r'[0-9]+[ab]', node.get('label', ''))
+                                   for node in nodes()), 'Public editor exposed a secret level'
                     press('Level 28 of 175')
                     continue
                 wait(lambda: showing('29a'), f'29a absent from {mode} selector')
@@ -170,5 +172,5 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
             if child.poll() is None:
                 child.terminate()
             child.wait(timeout=10)
-print('Public editor excludes 29a' if ADMIN else
+print('Public editor excludes all secret letter levels' if ADMIN else
       'Private Map/Levels order29-29a-30 opens separate room178; chest in edit/play; winning edits save only approved.hidden_levels, all ordinary boards/metadata preserved')
