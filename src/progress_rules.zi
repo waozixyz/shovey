@@ -1,0 +1,4 @@
+// Movement, restarts and visiting a level never publish account progress.
+SharedProgressShouldPublish :: (won: bool, earned: bool) -> bool {
+    return won && earned
+}

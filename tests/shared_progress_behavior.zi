@@ -15,6 +15,7 @@ available: bool = true;
 old_host: bool;
 other_owner: bool;
 retired: s32;
+account_writes: s32;
 reply: string;
 
 #program_export
@@ -30,10 +31,11 @@ FakeService :: (name: string, request: string) -> string {
         at := FieldAt(request, 0, "document")
         incoming: Progress.GameProgressRecord
         if !Progress.GameProgressRead(request[at:ValueEnd(request, at, 0)], *incoming) { return "{\"status\":\"rejected\"}" }
-        if remote_exists { unused Progress.GameProgressMerge(*incoming, *remote, false) }
+        if remote_exists { unused Progress.GameProgressMerge(*incoming, *remote) }
         remote = incoming
         remote_exists = true
         synced = false
+        account_writes += 1
         return "{\"status\":\"done\"}"
     }
     if !remote_exists { return "{\"status\":\"missing\"}" }
@@ -58,43 +60,52 @@ Check :: () -> s32 {
     game: ClassicGame.ShoveyGame
     unused ClassicGame.ShoveyLoad(*game, 1)
     local := ClassicProgress.ShoveyProgressNew()
-    record := Classic.ShoveySharedRecord(*local, *game)
+    record := Classic.ShoveySharedRecord(*local)
+    session: SharedProgressSession
+    SharedProgressStart(*session, record, 0.0)
+    // Opening a new game and moving do not create a network record.
+    if account_writes != 0 { return 1 }
+    for direction: cast(s32)0..3 {
+        if ClassicGame.ShoveyMove(*game, direction) { break }
+    }
+    board: [8193]u8
+    unused CopyCString(ClassicGame.ShoveySave(*game), board[:])
+    for move: cast(s32)0..99 {
+        record = Classic.ShoveySharedRecord(*local)
+        if !SharedProgressSave(*session, *record, false) || account_writes != 0 { return 2 }
+    }
+    record.unlocked = 2
+    if !SharedProgressSave(*session, *record, false) || session.record.unlocked != 1 || account_writes != 0 { return 10 }
+    record.unlocked = 1
+    // Even a newer campaign from another device cannot move this player,
+    // replace the board or advance the current level.
     remote = record
     remote.unlocked = 40
     remote.completed[0] = #char "1"
     remote.completed[1] = 0
     remote_exists = true
-    session: SharedProgressSession
-    SharedProgressStart(*session, record, 0.0)
-    if !session.available || session.record.unlocked != 40 || remote.unlocked != 40 || retired != 0 { return 1 }
-    synced = true
-    unused SharedProgressPump(*session, 1.0)
-    if retired != 2 { return 2 }
-    record.unlocked = 5
-    record.completed[0] = #char "0"
+    if SharedProgressPump(*session, 16.0) != 1 { return 3 }
+    Classic.ShoveySharedRestore(*local, *session.record)
+    if local.unlocked != 40 || !local.completed[0] ||
+    TextUntilNul(board[:]) != ClassicGame.ShoveySave(*game) || account_writes != 0 { return 4 }
+    // A newly completed puzzle is the only normal save to the account.
     record.completed[1] = #char "1"
     record.completed[2] = 0
-    if !SharedProgressSave(*session, *record) { return 3 }
-    unused SharedProgressPump(*session, 2.0)
-    if remote.unlocked != 40 || TextUntilNul(remote.completed[:]) != "11" { return 4 }
+    if !SharedProgressSave(*session, *record, true) || account_writes != 1 || remote.unlocked != 40 { return 5 }
+    synced = true
+    unused SharedProgressPump(*session, 32.0)
+    if retired != 2 { return 6 }
     other_owner = true
-    if SharedProgressPump(*session, 3.0) != 2 || session.available || session.record.unlocked != 0 { return 5 }
+    if SharedProgressPump(*session, 48.0) != 2 || session.available || session.record.unlocked != 0 { return 7 }
     other_owner = false
     available = false
-    SharedProgressStart(*session, record, 4.0)
-    if SharedProgressSave(*session, *record) { return 6 }
+    SharedProgressStart(*session, record, 49.0)
+    record.unlocked = 41
+    if SharedProgressSave(*session, *record, true) { return 8 }
     available = true
     old_host = true
-    SharedProgressStart(*session, record, 5.0)
-    if session.available || SharedProgressSave(*session, *record) { return 8 }
-    // Both editions keep their exact unfinished board without duplicating
-    // unlock/completion data in the opaque position.
-    restored: ClassicGame.ShoveyGame
-    restored_progress: ClassicProgress.ShoveyProgress
-    record = Classic.ShoveySharedRecord(*local, *game)
-    Classic.ShoveySharedRestore(*restored_progress, *restored, *record)
-    saved_position: [8193]u8
-    unused CopyCString(ClassicGame.ShoveySave(*restored), saved_position[:])
-    if TextUntilNul(saved_position[:]) != ClassicGame.ShoveySave(*game) || restored_progress.unlocked != 1 { return 7 }
+    SharedProgressStart(*session, record, 50.0)
+    record.unlocked = 42
+    if session.available || SharedProgressSave(*session, *record, true) { return 9 }
     return 42
 }

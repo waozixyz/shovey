@@ -1,11 +1,13 @@
 // One account record per edition, through the common Entity service.
-// The old host record is recovery data only until that record is synced.
+// Only earned unlocks are shared. The unfinished board stays on this device.
 Progress :: #import "entity/game_progress";
 #import "std/json_scan"
 #import "std/text_buffer"
 #import "std/vec"
 #import "std/c_string"
 #import, file "controls.zi";
+#import, file "progress_rules.zi";
+#import, file "progress_laws.zi";
 
 SharedProgressSession :: struct {
     record: Progress.GameProgressRecord
@@ -13,7 +15,6 @@ SharedProgressSession :: struct {
     owner_known: bool
     available: bool
     dirty: bool
-    position_dirty: bool
     retiring: bool
     poll_at: float64
 }
@@ -23,17 +24,15 @@ SharedProgressStatusField :: (reply: string, field: string, expected: string) ->
     return ReadStringText(reply, FieldAt(reply, 0, field), bytes[:]) >= 0 && TextUntilNul(bytes[:]) == expected
 }
 
-SharedProgressSave :: (session: *SharedProgressSession, record: *Progress.GameProgressRecord) -> bool {
-    unused Progress.GameProgressMerge(*session.record, record, true)
+SharedProgressSave :: (session: *SharedProgressSession, record: *Progress.GameProgressRecord, won: bool) -> bool {
+    if !SharedProgressShouldPublish(won, !Progress.GameProgressSame(*session.record, record)) { return true }
+    unused Progress.GameProgressMerge(*session.record, record)
     session.dirty = true
-    session.position_dirty = true
-    session.poll_at = 0.0
     return session.available && SharedProgressPut(session)
 }
 
-// Saving a move is a synchronous local write, just as the old host save
-// was. Account network sync happens later; leaving the game cannot discard
-// a move waiting only in the portable VM's memory.
+// Only a newly earned completion reaches the account store; movement is a
+// local campaign write and never enters this service.
 SharedProgressPut :: (session: *SharedProgressSession) -> bool {
     put: Vec(u8)
     BuilderPrint(*put, "{\"operation\":\"put\",\"kind\":\"game-progress\",\"schema\":\"entity.game-progress.v1\",\"document\":")
@@ -43,13 +42,12 @@ SharedProgressPut :: (session: *SharedProgressSession) -> bool {
     VecFree(put)
     if !SharedProgressStatusField(saved, "status", "done") { return false }
     session.dirty = false
-    session.position_dirty = false
     session.retiring = true
     return true
 }
 
 SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GameProgressRecord, now: float64) {
-    session.* = SharedProgressSession.{.record = record, .dirty = true}
+    session.* = SharedProgressSession.{.record = record, .dirty = record.unlocked > 1 || TextUntilNul(record.completed[:]) != ""}
     unused SharedProgressPump(session, now)
 }
 
@@ -57,7 +55,7 @@ SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GamePr
 // and the caller must reload the current account before saving anything.
 SharedProgressPump :: (session: *SharedProgressSession, now: float64) -> s32 {
     if now < session.poll_at { return 0 }
-    session.poll_at = now + 0.5
+    session.poll_at = now + 15.0
     status := ProgressAccountService("{\"operation\":\"status\"}")
     session.available = SharedProgressStatusField(status, "status", "done") &&
     SharedProgressStatusField(status, "game_progress", "account-v1")
@@ -81,9 +79,9 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64) -> s32 {
     end := ValueEnd(reply, at, 0)
     found := SharedProgressStatusField(reply, "status", "done") && at >= 0 && end > at &&
     Progress.GameProgressRead(reply[at:end], *remote)
-    if found { unused Progress.GameProgressMerge(*session.record, *remote, !session.position_dirty) }
+    if found { unused Progress.GameProgressMerge(*session.record, *remote) }
     changed := !Progress.GameProgressSame(*before, *session.record)
-    if session.dirty || !found || !Progress.GameProgressSame(*session.record, *remote) {
+    if session.dirty || (found && !Progress.GameProgressSame(*session.record, *remote)) {
         unused SharedProgressPut(session)
     } else if session.retiring && synced && TextUntilNul(session.owner[:]) != "" {
         // Read back first; only retire a legacy copy after account sync.
@@ -91,22 +89,4 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64) -> s32 {
         session.retiring = false
     }
     return ifx changed then 1 else 0
-}
-
-SharedPositionWrite :: (mark: u64, position: string, output: []u8) -> string {
-    if output.count < position.count + 10 { return "" }
-    output[0] = #char "M"; output[1] = #char "1"
-    digits := "0123456789abcdef"
-    for index: cast(s32)0..7 { output[2 + index] = digits[cast(s32)((mark >> cast(u64)((7 - index) * 4)) & 15)] }
-    for index: cast(s64)0..position.count - 1 { output[10 + index] = position[index] }
-    return TextView(output[:position.count + 10])
-}
-
-SharedPositionMatches :: (text: string, mark: u64) -> bool {
-    if text.count < 10 || text[:2] != "M1" { return false }
-    digits := "0123456789abcdef"
-    for index: cast(s32)0..7 {
-        if text[2 + index] != digits[cast(s32)((mark >> cast(u64)((7 - index) * 4)) & 15)] { return false }
-    }
-    return true
 }

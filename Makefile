@@ -240,7 +240,7 @@ bench: levels build/ziran/libziran.a
 		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/solver/shovey-bench
 
 # The checks the public repository can run with only the published campaign.
-public-test: solver
+public-test: solver laws
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py

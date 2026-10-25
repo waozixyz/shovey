@@ -51,8 +51,7 @@ BSD 3-Clause. See [LICENSE](LICENSE).
 
 ## Account progress
 
-Classic and Island each keep one shared Entity `game-progress` record for the
-account, whether played in Breeze or standalone Shovey. Unlocks and completion
-marks merge without going backwards; the unfinished board is stored once in
-that record. Local host saves are migrated and retired after confirmed account
-sync. Hosts without the shared service retain the existing offline save.
+Classic and Island share only earned level unlocks and completion marks through
+Entity. Moves, player positions and unfinished boards stay on the current device.
+Incoming account progress never changes a puzzle being played. Finishing a new
+puzzle queues its earned progress for account sync; offline play never waits for it.

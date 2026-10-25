@@ -43,6 +43,14 @@
 
 // Account records are shared across standalone and hosted editions.
 ProgressAccountService :: (request: string) -> string { return AppServiceHost("entity.records", request) }
+// Local saves have their own record and are never retired by account sync.
+// Read an older device save once when no device-only campaign exists yet.
+LocalCampaignRecord :: () -> string {
+    value := ControlsRecord("local.campaign")
+    if value != "" { return value }
+    return ControlsRecord("campaign")
+}
+
 ProgressRetireLegacy :: () {
     #if #defined(SHOVEY_WEB) {
         unused WebApp.DocumentWrite("campaign", "")

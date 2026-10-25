@@ -1,0 +1,8 @@
+#import, file "progress_rules.zi";
+// Owner law: player movement and unfinished boards are device-only. A
+// completed puzzle can publish a new unlock; an incoming unlock never gets
+// a board parameter (SharedRestore merges into progress only).
+#law UnfinishedPuzzleStaysOffline custom !SharedProgressShouldPublish(false, true);
+#law MovementNeverPublishes custom !SharedProgressShouldPublish(false, false);
+#law RepeatedWinNeverPublishes custom !SharedProgressShouldPublish(true, false);
+#law NewCompletionPublishes custom SharedProgressShouldPublish(true, true);
