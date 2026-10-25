@@ -16,6 +16,7 @@ EDITOR_DEFINES ?=
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test
 editor-server-test:
+	python3 tests/editor_chest_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/editor_queue_test.py
 	python3 tests/editor_cancel_test.py

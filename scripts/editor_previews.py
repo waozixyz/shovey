@@ -75,7 +75,7 @@ def main():
         sprites = levels.Sprites(ROOT / 'assets/shovey-landscape/sprites', CELL)
         drawn = 0
         names = []
-        for number, board in sorted(wanted.items()):
+        for number, board in wanted.items():
             name = f'{number:03}-{fnv(board)}.png'
             names.append(name)
             for old in FOLDER.glob(f'{number:03}-*.png'):

@@ -1,4 +1,4 @@
-"""The requested five redesigns load and render in the private editor.
+"""The redesigned levels and real 29a room load and render in the private editor.
 
 Use disposable data and drafts on a private display; read the rendered board
 back through paint/undo, then verify that revisiting it preserves the artwork.
@@ -19,6 +19,7 @@ BINARY = Path(os.environ.get('SHOVEY_EDITOR', ROOT / 'build/private-editor/shove
 OUTPUT = ROOT / 'build/editor-designs-test'
 OUTPUT.mkdir(parents=True, exist_ok=True)
 levels = json.loads((ROOT / 'levels/classic.json').read_text())['levels']
+chest = next(level for level in json.loads((ROOT / 'levels/approved.json').read_text())['hidden_levels'] if level['name'] == '29a')
 
 
 def wait(predicate, message):
@@ -49,14 +50,16 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
     drafts.mkdir(parents=True)
     (profile / 'levels').mkdir()
     shutil.copy2(ROOT / 'levels/classic.json', profile / 'levels/classic.json')
+    shutil.copy2(ROOT / 'levels/approved.json', profile / 'levels/approved.json')
     for artwork in ('shovey', 'shovey-landscape'):
         shutil.copytree(ROOT / 'assets' / artwork / 'sprites', profile / 'assets' / artwork / 'sprites')
     (drafts / 'orientation').write_text('portrait')
     environment = {key: value for key, value in os.environ.items()
                    if key not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER', 'GDK_DISPLAY')}
     environment.update(SDL_VIDEODRIVER='x11', SDL_AUDIODRIVER='dummy', YUE_DESKTOP_RECOVERY='0')
-    for number in (55, 56, 64, 65, 68):
-        expected = normalized(levels[number - 1])
+    for number in (55, 56, 64, 65, 68, '29a'):
+        place = 178 if number == '29a' else number
+        expected = normalized(chest if number == '29a' else levels[number - 1])
         with (OUTPUT / f'{number}.log').open('w') as log:
             child = subprocess.Popen([str(BINARY), str(number)], cwd=profile, env=environment,
                                      stdout=log, stderr=subprocess.STDOUT)
@@ -66,7 +69,7 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                     return subprocess.run(['xdotool', 'search', '--onlyvisible', '--pid', str(child.pid)],
                                           capture_output=True, text=True).stdout.split()
                 window = wait(window_ready, 'No private editor window')[0]
-                wait(lambda: (drafts / 'place').read_text().strip() == str(number), 'Wrong level selected')
+                wait(lambda: (drafts / 'place').read_text().strip() == str(place), 'Wrong level selected')
                 subprocess.run(['xdotool', 'windowsize', window, '1500', '1000', 'windowfocus', window], check=True)
                 time.sleep(.4)
                 before = OUTPUT / f'{number}.png'
@@ -85,10 +88,10 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                 click(palette + 56, 274)
                 click(x, y)
                 subprocess.run(['xdotool', 'key', '--window', window, 'z'], check=True)
-                draft = drafts / f'{number:03}.hex'
+                draft = drafts / f'{place:03}.hex'
                 wait(lambda: draft.exists() and draft.read_text() == expected,
                      f'Editor did not load the verified redesigned board {number}')
-                for key, target in (('n', number + 1), ('p', number)):
+                for key, target in (('n', 30 if number == '29a' else number + 1), ('p', place)):
                     subprocess.run(['xdotool', 'key', '--window', window, key], check=True)
                     wait(lambda: (drafts / 'place').read_text().strip() == str(target), 'Wrong navigation result')
                 time.sleep(.2)
