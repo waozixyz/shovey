@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep Classic 54–57 solvable and dependent on coordinated crate pushes.
+"""Keep the retained Classic 54 and 57 crate puzzles coordinated and solvable.
 
 The existing solver's macro BFS is push-optimal on these ordinary Sokoban
 boards: walking is free and each macro edge is one crate push. Compare that
@@ -67,7 +67,9 @@ def main():
     classic = json.loads(private.read_text())['levels'] if private.exists() else approved
     # Crates, minimum pushes, and unavoidable extra pushes caused by sharing
     # the rooms with other crates. These are solution minima, not route padding.
-    difficulty = {54: (4, 27, 8), 55: (4, 33, 8), 56: (5, 39, 14), 57: (5, 47, 12)}
+    # The distinct switch/colour designs for 55 and 56 have their own proofs
+    # in classic_variety_test.py rather than ordinary Sokoban assumptions.
+    difficulty = {54: (4, 27, 8), 57: (5, 47, 12)}
     for number, (crate_count, minimum, detours) in difficulty.items():
         level = classic[number - 1]
         assert level == approved[number - 1], f'Classic {number}: campaign copies differ'

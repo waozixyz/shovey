@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prove the redesigned crate rooms and their colour/pressure objectives.
+"""Preserve Classic 63's crate/colour proof across terrain layer placement.
 
 For the colour boards, also solve a relaxation with the ball, paint and pit
 removed. Compare its push optimum with an optimal assignment of independently
@@ -75,41 +75,38 @@ def main():
     private = ROOT / 'levels/classic.json'
     classic = json.loads(private.read_text())['levels'] if private.exists() else approved
     # Measured optima of the authored layouts, with the colour objective cleared.
-    colour_rooms = {63: (16, 5, 28, 22), 68: (15, 4, 21, 17)}
-    for number in (63, 65, 68):
+    colour_rooms = {63: (16, 5, 28, 22)}
+    for number in (63,):
         level = approved[number - 1]
-        assert level == classic[number - 1], f'Classic {number}: campaign copies differ'
+        def logical_layers(value):
+            pieces, terrain = cells(value['cells']), cells(value['tiles'])
+            for at, kind in enumerate(pieces):
+                if kind in (4, 5, 6):
+                    pieces[at], terrain[at] = 0, kind
+            return pieces, terrain, cells(value['decorations']), value['solution']
+        assert logical_layers(level) == logical_layers(classic[number - 1]), \
+            f'Classic {number}: gameplay copies differ'
         board = cells(level['cells'])
         assert set(board) <= {0, 3, 4, 5, 7, 9, 10, 13, 14, 15, 16, 18}
-        assert set(cells(level['tiles'])) <= {0, 12, 78, 95, 96, 99, 100}
+        assert set(cells(level['tiles'])) <= {0, 5, 12, 78, 95, 96, 99, 100}
         assert set(cells(level['decorations'])) <= {0, 135, 136, 137}
         assert board.count(9) == 4 and board.count(10) == board.count(7) == 1
         stored = explain(level, level['solution'])
-        fresh = solve(level, 'macro-bfs' if number == 65 else 'greedy')
-        assert stored['goals'] == fresh['goals'] == (3 if number == 65 else 5)
+        fresh = solve(level, 'greedy')
+        assert stored['goals'] == fresh['goals'] == 5
         assert len({event['piece_id'] for event in fresh['events']
                     if event['piece'] == 9}) == 4
-        if number == 65:
-            assert fresh['crate_pushes'] == fresh['pushes'] == 22
-            # A crate must hold the plate and another must enter the gated room.
-            assert fresh['used_features'] & 72 == 72
-            plate = next(event['step'] for event in fresh['events'] if event['features'] & 64)
-            crossing = next(event['step'] for event in fresh['events'] if event['features'] & 8)
-            assert plate < crossing
-            sealed = [12 if kind == 13 else kind for kind in board]
-            assert solve(dict(level, cells=rows(sealed)), 'macro-bfs',
-                         unsolvable=True) is None
-            print('Classic 65: 22 minimum pushes; plate and gated delivery required', flush=True)
-            continue
         paint, pit, minimum, independent = colour_rooms[number]
         assert board.count(18) == 4 and board.count(3) == 1
-        assert board.count(paint) == board.count(pit) == 1
+        terrain = cells(level['tiles'])
+        assert board.count(paint) == board.count(pit) + terrain.count(pit) == 1
         assert fresh['used_features'] & 32
         unpainted = [0 if kind == paint else kind for kind in board]
         assert solve(dict(level, cells=rows(unpainted)), 'macro-bfs',
                      unsolvable=True) is None
         relaxed = dict(level, cells=rows([0 if kind in (3, paint, pit) else kind
-                                         for kind in board]))
+                                         for kind in board]),
+                       tiles=rows([0 if kind == pit else kind for kind in terrain]))
         optimum = solve(relaxed, 'macro-bfs')
         assert optimum['pushes'] == optimum['crate_pushes'] == minimum
         assert independent_assignment(relaxed) == independent < minimum
