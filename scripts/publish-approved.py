@@ -73,7 +73,7 @@ def record_published(receipt):
     Queue(ROOT).published(boards or [])
 
 
-def publish_live(output):
+def publish_live(output, campaign_path=None):
     """Replace the live campaign on the node, which players load at their next
     start. Each game checks every level's route itself before using it."""
     record = ROOT / 'backup/campaign-publisher/publication.json'
@@ -85,7 +85,8 @@ def publish_live(output):
     # The node keeps documents of up to 256 KiB, so the published copy leaves
     # out approved.json's indentation; the games read either form.
     campaign = ROOT / 'backup/campaign-publisher/campaign.json'
-    atomic(campaign, json.dumps(json.loads((ROOT / 'levels/approved.json').read_text()), separators=(',', ':'),
+    source = Path(campaign_path) if campaign_path is not None else ROOT / 'levels/approved.json'
+    atomic(campaign, json.dumps(json.loads(source.read_text()), separators=(',', ':'),
                                 ensure_ascii=False))
     subprocess.run(['make', 'publication'], cwd=entity, stdout=output, stderr=subprocess.STDOUT, check=True)
     answer = subprocess.run([str(entity / 'build/publication'), 'publish', str(key), publication['server'], publication['format'],
