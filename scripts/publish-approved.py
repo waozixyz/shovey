@@ -162,9 +162,94 @@ def release_publisher(arcade):
     return publisher
 
 
+# The package key lives only in Breeze's GitHub secrets, so Breeze's Node app
+# release workflow signs and publishes the checked bundle; this machine never
+# holds the key.
+RELEASE_WORKFLOW_REPOSITORY = 'waozixyz/breeze'
+RELEASE_WORKFLOW = 'node-app-release.yml'
+
+
+def github_release(config, receipt, arcade, output):
+    """Hands the exact checked Arcade bundle to the Node app release workflow
+    and waits until the node serves it. The workflow signs the ledger entry
+    of the Arcade commit recording this version, so that commit is pushed
+    first; the bundle travels as an asset of a GitHub release there."""
+    version, digest = receipt['versions']['arcade'], receipt['sha256']
+    publisher = release_publisher(arcade)
+    origin = 'https://api.waozi.xyz'
+
+    def served():
+        public = publisher.served_release(origin, 'inbe.arcade')
+        if public and public['version'] == version and public['artifacts'][0]['sha256'] == digest:
+            return public
+        return None
+
+    public = served()
+    if public:
+        return public
+    bundle = arcade / 'build/arcade.zx'
+    if hashlib.sha256(bundle.read_bytes()).hexdigest() != digest:
+        raise ValueError('The checked release artifact changed; nothing was handed to GitHub')
+    if not receipt.get('arcade_records'):
+        count = len(json.loads((ROOT / 'levels/approved.json').read_text())['levels'])
+        receipt['arcade_records'] = commit_paths(arcade, ['CHANGELOG.md', 'VERSION', 'apps/versions.json'],
+            f'Record Arcade {version} with approved Shovey Classic levels 1-{count}', output)
+        atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
+    repository = config.get('github_repository', 'waozixyz/arcade')
+    tag = f'node-arcade-{version}'
+    gh = lambda *arguments, **options: subprocess.run(['gh', *arguments], cwd=arcade, text=True, **options)
+    staging = ROOT / 'build/approved-releases/github'
+    staging.mkdir(parents=True, exist_ok=True)
+    asset = staging / 'arcade.zx'
+    asset.write_bytes(bundle.read_bytes())
+    if gh('release', 'view', tag, '--repo', repository, capture_output=True).returncode != 0:
+        status('Handing the release to GitHub', 'publishing')
+        gh('release', 'create', tag, str(asset), '--repo', repository, '--target', receipt['arcade_records'],
+           '--title', f'Arcade {version}', '--notes',
+           f'The Arcade bundle Shovey\'s publisher built and checked (SHA-256 {digest}); '
+           'Breeze\'s Node app release workflow signs and publishes it to Waozi\'s node.',
+           stdout=output, stderr=subprocess.STDOUT, check=True)
+    else:
+        # A retry reuses the release only when it holds the same bytes.
+        asset.unlink()
+        gh('release', 'download', tag, '--repo', repository, '--pattern', 'arcade.zx', '--dir', str(staging),
+           stdout=output, stderr=subprocess.STDOUT, check=True)
+        if hashlib.sha256(asset.read_bytes()).hexdigest() != digest:
+            raise ValueError(f'GitHub release {tag} holds other bytes than the checked bundle')
+    started = time.time()
+    gh('workflow', 'run', RELEASE_WORKFLOW, '--repo', RELEASE_WORKFLOW_REPOSITORY, '-f', 'app=arcade',
+       '-f', f'repository={repository}', '-f', f'commit={receipt["arcade_records"]}', '-f', f'tag={tag}',
+       '-f', f'sha256={digest}', stdout=output, stderr=subprocess.STDOUT, check=True)
+    status('Publishing release on GitHub', 'publishing')
+    run_id = None
+    for _ in range(30):
+        time.sleep(4)
+        runs = json.loads(gh('run', 'list', '--repo', RELEASE_WORKFLOW_REPOSITORY, '--workflow', RELEASE_WORKFLOW,
+                             '--event', 'workflow_dispatch', '--limit', '10', '--json', 'databaseId,createdAt',
+                             capture_output=True, check=True).stdout)
+        recent = [run for run in runs if time.mktime(time.strptime(run['createdAt'], '%Y-%m-%dT%H:%M:%SZ')) - time.timezone >= started - 30]
+        if recent:
+            run_id = str(max(recent, key=lambda run: run['createdAt'])['databaseId'])
+            break
+    if run_id is None:
+        raise RuntimeError('The Node app release workflow did not start')
+    receipt['github_run'] = run_id
+    atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
+    gh('run', 'watch', run_id, '--repo', RELEASE_WORKFLOW_REPOSITORY, '--exit-status', '--interval', '15',
+       stdout=output, stderr=subprocess.STDOUT, check=True)
+    public = served()
+    if not public:
+        raise RuntimeError(f'GitHub run {run_id} finished, but the node does not serve Arcade {version}')
+    return public
+
+
 def complete_release(config, receipt, output):
     """Resume the exact checked artifact, even after an uncertain upload."""
     arcade = Path(config['arcade']).resolve(strict=True)
+    if 'key' not in config:
+        release = github_release(config, receipt, arcade, output)
+        finish_release(config, receipt, output, arcade, release, release['artifacts'][0]['sha256'])
+        return
     store = ROOT / 'build/approved-releases'
     release = json.loads((store / 'inbe.arcade/latest-v2.json').read_text())
     artifact = release['artifacts'][0]
@@ -198,13 +283,18 @@ def complete_release(config, receipt, output):
     status('Verifying server release', 'verifying')
     with contextlib.redirect_stdout(output):
         publisher.verify_node_app(store, 'arcade', origin)
+    finish_release(config, receipt, output, arcade, release, artifact['sha256'])
+
+
+def finish_release(config, receipt, output, arcade, release, digest):
+    """After the node serves the release: receipts, local install and website."""
     receipt.update(phase='published', release=release)
     atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
     if receipt.get('approved_boards'):
         remember_verified(ROOT, receipt)
     if config.get('install_local') and not receipt.get('local_installed'):
         built = arcade / 'build/arcade.zx'
-        if hashlib.sha256(built.read_bytes()).hexdigest() != artifact['sha256']:
+        if hashlib.sha256(built.read_bytes()).hexdigest() != digest:
             raise ValueError('The local build changed after checking; the published release was preserved')
         # All release gates already passed for these outputs. Installation
         # must use them rather than silently rebuilding a different artifact.
@@ -325,10 +415,11 @@ def publish_campaign():
             if len(approved) >= 28:
                 receipt['checks'].append('level 28 abyss pixels at fractional scales')
             atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-            publisher = release_publisher(arcade)
-            store = ROOT / 'build/approved-releases'
-            publisher.stage_node_app(store, 'arcade', Path(config['key']), config['key_id'],
-                inbe / 'apps/publishers.json', ledger_path=arcade / 'apps/versions.json', bundle_directory=arcade / 'build')
+            if 'key' in config:
+                publisher = release_publisher(arcade)
+                store = ROOT / 'build/approved-releases'
+                publisher.stage_node_app(store, 'arcade', Path(config['key']), config['key_id'],
+                    inbe / 'apps/publishers.json', ledger_path=arcade / 'apps/versions.json', bundle_directory=arcade / 'build')
             receipt['phase'] = 'uploading'
             atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
             complete_release(config, receipt, output)
