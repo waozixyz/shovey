@@ -204,18 +204,29 @@ def github_release(config, receipt, arcade, output):
     asset.write_bytes(bundle.read_bytes())
     if gh('release', 'view', tag, '--repo', repository, capture_output=True).returncode != 0:
         status('Handing the release to GitHub', 'publishing')
-        gh('release', 'create', tag, str(asset), '--repo', repository, '--target', receipt['arcade_records'],
+        gh('release', 'create', tag, '--repo', repository, '--target', receipt['arcade_records'],
            '--title', f'Arcade {version}', '--notes',
            f'The Arcade bundle Shovey\'s publisher built and checked (SHA-256 {digest}); '
            'Breeze\'s Node app release workflow signs and publishes it to Waozi\'s node.',
            stdout=output, stderr=subprocess.STDOUT, check=True)
-    else:
-        # A retry reuses the release only when it holds the same bytes.
-        asset.unlink()
-        gh('release', 'download', tag, '--repo', repository, '--pattern', 'arcade.zx', '--dir', str(staging),
-           stdout=output, stderr=subprocess.STDOUT, check=True)
-        if hashlib.sha256(asset.read_bytes()).hexdigest() != digest:
-            raise ValueError(f'GitHub release {tag} holds other bytes than the checked bundle')
+
+    def attached():
+        # The asset counts once GitHub has all of it: its size, and its
+        # digest where GitHub reports one.
+        assets = json.loads(gh('release', 'view', tag, '--repo', repository, '--json', 'assets',
+                               capture_output=True, check=True).stdout)['assets']
+        return any(item['name'] == 'arcade.zx' and item['size'] == asset.stat().st_size and
+                   item.get('digest', 'sha256:' + digest) == 'sha256:' + digest for item in assets)
+
+    # A large upload can time out on a slow line; try again, replacing any
+    # partial copy, until GitHub holds the whole bundle.
+    for attempt in range(4):
+        if attached():
+            break
+        gh('release', 'upload', tag, str(asset), '--repo', repository, '--clobber',
+           stdout=output, stderr=subprocess.STDOUT)
+    if not attached():
+        raise RuntimeError(f'GitHub release {tag} could not take the checked bundle')
     started = time.time()
     gh('workflow', 'run', RELEASE_WORKFLOW, '--repo', RELEASE_WORKFLOW_REPOSITORY, '-f', 'app=arcade',
        '-f', f'repository={repository}', '-f', f'commit={receipt["arcade_records"]}', '-f', f'tag={tag}',
