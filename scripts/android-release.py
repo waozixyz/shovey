@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
@@ -120,7 +121,11 @@ def main():
         output.parent.mkdir(parents=True, exist_ok=True)
         aligned = output.with_name('aligned-unsigned.apk')
         temporary = output.with_name('shovey.new.apk')
-        subprocess.run([str(tools / 'zipalign'), '-P', '16', '-f', '4', str(apk), str(aligned)], check=True)
+        # Keep an aligned build's bytes, which F-Droid reproduces from source.
+        if subprocess.run([str(tools / 'zipalign'), '-c', '-P', '16', '4', str(apk)], capture_output=True).returncode == 0:
+            shutil.copyfile(apk, aligned)
+        else:
+            subprocess.run([str(tools / 'zipalign'), '-P', '16', '-f', '4', str(apk), str(aligned)], check=True)
         try:
             subprocess.run([str(tools / 'apksigner'), 'sign', '--ks', str(args.keystore.resolve(strict=True)),
                             '--ks-key-alias', args.alias, '--ks-pass', 'file:' + str(args.password_file.resolve(strict=True)),

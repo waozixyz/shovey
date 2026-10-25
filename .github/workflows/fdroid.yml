@@ -1,0 +1,119 @@
+name: F-Droid
+
+# F-Droid's own builder image builds a commit with the submitted recipe
+# (packaging/fdroid). Downloads signs the same build as
+# shovey-VERSION-fdroid.apk and publishes it only when this rebuild matches it
+# byte for byte. A change to the build, or a manual run, also builds the APK
+# as Downloads does and compares the two, without releasing anything.
+on:
+  push:
+    branches: [master]
+    paths:
+      - scripts/android-build.sh
+      - scripts/fdroid-ci.py
+      - packaging/fdroid/metadata/**
+      - .github/actions/android/**
+      - .github/workflows/fdroid.yml
+  workflow_call:
+    inputs:
+      revision:
+        required: true
+        type: string
+      release:
+        description: Downloads compares its signed APK with the rebuild itself
+        required: false
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Full commit to build (defaults to this run's commit)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    name: F-Droid build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      # Official F-Droid builder, pinned like Inner Breeze's.
+      image: registry.gitlab.com/fdroid/fdroidserver@sha256:1ea8bef1820bff06c2974e31b4fc4c79c364cd24231b86e71fa4b926797e0dac
+    env:
+      ANDROID_HOME: /opt/android-sdk
+      ANDROID_SDK_ROOT: /opt/android-sdk
+    steps:
+      - name: Require a full commit
+        env:
+          CANDIDATE: ${{ inputs.revision || github.sha }}
+        shell: bash
+        run: |
+          [[ "$CANDIDATE" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::revision must be a full commit ID"; exit 1; }
+      - name: Install F-Droid's build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends openjdk-21-jdk-headless fdroidserver git
+          update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+          path: build/xyz.waozi.shovey
+          persist-credentials: false
+      - name: Install the Android SDK parts the host locks
+        run: sdkmanager --sdk_root=/opt/android-sdk 'ndk;28.2.13676358' 'build-tools;36.0.0' 'platforms;android-36' 'cmake;3.22.1'
+      - name: Build with F-Droid
+        run: python3 build/xyz.waozi.shovey/scripts/fdroid-ci.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: fdroid-unsigned
+          path: |
+            tmp/*.apk
+            metadata/
+            logs/
+          if-no-files-found: error
+          retention-days: 7
+
+  build:
+    name: Downloads build
+    if: ${{ !inputs.release }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/android
+      - run: make android-fdroid
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: downloads-unsigned
+          path: build/fdroid/shovey.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  compare:
+    name: Same APK
+    needs: [rebuild, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fdroid-unsigned
+          path: apks/fdroid-unsigned
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: downloads-unsigned
+          path: apks/downloads-unsigned
+      - name: Require F-Droid's build to match the Downloads build byte for byte
+        run: |
+          set -euo pipefail
+          rebuilt=$(find apks/fdroid-unsigned/tmp -name '*.apk')
+          test "$(printf '%s\n' "$rebuilt" | wc -l)" = 1
+          cmp "$rebuilt" apks/downloads-unsigned/shovey.apk
+          sha256sum "$rebuilt" apks/downloads-unsigned/shovey.apk

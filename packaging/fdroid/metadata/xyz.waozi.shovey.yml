@@ -12,7 +12,7 @@ AutoName: Shovey
 
 RepoType: git
 Repo: https://github.com/waozixyz/shovey.git
-Binaries: https://github.com/waozixyz/shovey/releases/download/v%v/shovey-v%v.apk
+Binaries: https://github.com/waozixyz/shovey/releases/download/v%v/shovey-%v-fdroid.apk
 
 Builds:
   - versionName: 0.6.110

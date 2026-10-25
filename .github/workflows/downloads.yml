@@ -1,10 +1,12 @@
 name: Downloads
 
 # A push whose changelog names a version that is not released yet builds and
-# checks the signed Android APK and the Linux and Windows downloads, then
-# publishes them as that version's release, like Inner Breeze. Pushes of a
-# released version only check that nothing needs releasing. A manual run
-# retries an unreleased version. No release is left as a draft.
+# checks the signed Android APK, also published as shovey-VERSION-fdroid.apk
+# once F-Droid's own build of the commit matches it, and the Linux and Windows
+# downloads, then publishes them as that version's release, like Inner
+# Breeze. Pushes of a released version only check that nothing needs
+# releasing. A manual run retries an unreleased version. No release is left as
+# a draft.
 on:
   push:
     branches: [master]
@@ -46,47 +48,41 @@ jobs:
     needs: due
     if: needs.due.outputs.release_due == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    defaults:
-      run:
-        working-directory: waozixyz/shovey
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          path: waozixyz/shovey
-      - uses: ./waozixyz/shovey/.github/actions/arcade
-        with:
-          packages: build-essential cmake pkg-config python3-pil python3-numpy
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - name: Install the Android SDK parts the host locks
-        run: |
-          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$sdkmanager" --licenses > /dev/null
-          "$sdkmanager" --install 'ndk;28.2.13676358' 'build-tools;36.0.0' 'platforms;android-36' 'cmake;3.22.1' > /dev/null
+      - uses: ./.github/actions/android
+      # The build F-Droid's recipe runs, from the Arcade host pinned in
+      # packaging/android; it has no self-update, so one APK serves both.
       - name: Build the release APK
-        run: make -C ../arcade android-shovey-release
+        run: make android-fdroid
       - name: Sign and check the APK
         env:
           KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
           PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+          VERSION: ${{ needs.due.outputs.version }}
         run: |
-          version=$(python3 -c 'import json; print(json.load(open("../arcade/build/shovey.json"))["version"])')
           umask 077
           printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
           printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
-          python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.apk --version "$version" \
+          python3 scripts/android-release.py sign build/fdroid/shovey.apk --version "$VERSION" \
             --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
-            --output "build/downloads/shovey-v$version.apk"
+            --output "build/downloads/shovey-v$VERSION.apk"
           rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"
+          cp "build/downloads/shovey-v$VERSION.apk" "build/downloads/shovey-$VERSION-fdroid.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: shovey-android
-          path: waozixyz/shovey/build/downloads/*.apk
+          path: build/downloads/*.apk
           if-no-files-found: error
           retention-days: 7
+
+  fdroid:
+    needs: due
+    if: needs.due.outputs.release_due == 'true'
+    uses: ./.github/workflows/fdroid.yml
+    with:
+      revision: ${{ github.sha }}
 
   linux:
     needs: due
@@ -160,7 +156,7 @@ jobs:
           retention-days: 7
 
   release:
-    needs: [due, android, linux, windows]
+    needs: [due, android, fdroid, linux, windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -179,18 +175,30 @@ jobs:
           pattern: shovey-*
           path: waozixyz/shovey/build/downloads
           merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: fdroid-unsigned
+          path: waozixyz/shovey/build/fdroid-rebuild
       - name: Check every download is this version
         id: version
         run: |
           apk=$(ls build/downloads/shovey-v*.apk)
           version=${apk##*/shovey-v}
           version=${version%.apk}
-          for file in "shovey-v$version.apk" "shovey-v$version-linux-x86_64.tar.gz" "shovey-v$version-windows-x86_64.zip"; do
+          for file in "shovey-v$version.apk" "shovey-$version-fdroid.apk" "shovey-v$version-linux-x86_64.tar.gz" "shovey-v$version-windows-x86_64.zip"; do
             test -f "build/downloads/$file" || { echo "Missing $file" >&2; exit 1; }
           done
-          test "$(ls build/downloads | wc -l)" = 3 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
+          test "$(ls build/downloads | wc -l)" = 4 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
           test "$version" = "$CHANGELOG_VERSION" || { echo "The downloads are $version but the changelog names $CHANGELOG_VERSION" >&2; exit 1; }
           python3 scripts/android-release.py verify "build/downloads/shovey-v$version.apk" --version "$version"
+          python3 scripts/android-release.py verify "build/downloads/shovey-$version-fdroid.apk" --version "$version"
+          # F-Droid copies this signature onto its own build of the recipe, so
+          # that rebuild must match the signed APK byte for byte.
+          sudo apt-get update
+          sudo apt-get install -y apksigcopier
+          rebuilt=$(find build/fdroid-rebuild/tmp -name '*.apk')
+          test "$(printf '%s\n' "$rebuilt" | wc -l)" = 1
+          apksigcopier compare --unsigned "build/downloads/shovey-$version-fdroid.apk" "$rebuilt"
           python3 - "$version" > build/release-notes.md <<'PY'
           import re, sys
           text = open('src/CHANGELOG.md').read()

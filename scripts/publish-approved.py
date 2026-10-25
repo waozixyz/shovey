@@ -131,7 +131,11 @@ def publish_website(receipt, output, arcade):
     count = len(json.loads((ROOT / 'levels/approved.json').read_text())['levels'])
     receipt['arcade_records'] = commit_paths(arcade, ['CHANGELOG.md', 'VERSION', 'apps/versions.json'],
         f'Record Arcade {receipt["versions"]["arcade"]} with approved Shovey Classic levels 1-{count}', output)
-    receipt['website'] = commit_paths(ROOT, ['levels/approved.json', 'src/CHANGELOG.md', 'src/editor/CHANGELOG.md'],
+    # The Android APK and F-Droid build from the Arcade commit recording this version.
+    subprocess.run([sys.executable, str(ROOT / 'scripts/pin-android-host.py'), '--arcade', str(arcade),
+                    receipt['arcade_records']], stdout=output, stderr=subprocess.STDOUT, check=True)
+    receipt['website'] = commit_paths(ROOT, ['levels/approved.json', 'src/CHANGELOG.md', 'src/editor/CHANGELOG.md',
+        'packaging/android/ziran.toml', 'packaging/android/ziran.lock'],
         f'Publish the approved campaign of {count} Classic levels on the website', output)
 
 
