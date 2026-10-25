@@ -12,9 +12,10 @@ import tempfile
 def save(root):
     drafts = root / 'backup/editor-drafts'
     request = (drafts / '178.chest-request').read_text().splitlines()
-    if len(request) != 2 or not re.fullmatch('[0-9a-f]{1440}', request[0]) or not re.fullmatch('[0123ft]+', request[1]):
+    if (len(request) != 3 or not re.fullmatch('[0-9a-f]{1440}', request[0]) or
+            not re.fullmatch('[0-9a-f]{1440}', request[1]) or not re.fullmatch('[0123ft]+', request[2])):
         raise ValueError('Incomplete chest board or winning route')
-    board, route = request
+    expected, board, route = request
     # Share the existing level-write mutex with the approval writer, without
     # altering approvals or invoking its publication queue.
     with (drafts / 'approval.lock').open('a') as lock:
@@ -26,6 +27,9 @@ def save(root):
         if len(matches) != 1:
             raise ValueError('Expected one hidden 29a entry')
         level = matches[0]
+        current = ''.join(level['cells'] + level['tiles'] + level['decorations'])
+        if current != expected:
+            raise ValueError('29a changed after this editor loaded it; reopen before saving')
         for layer, name in enumerate(('cells', 'tiles', 'decorations')):
             start = layer * 480
             level[name] = [board[at:at + 24] for at in range(start, start + 480, 24)]

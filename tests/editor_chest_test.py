@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory(dir=fixture_root) as temporary:
     path = root / 'levels/approved.json'
     path.write_text(json.dumps(source))
     edited = raw[:960] + '39' + raw[962:]
-    (drafts / '178.chest-request').write_text(edited + '\n' + hidden['solution'] + '\n')
+    (drafts / '178.chest-request').write_text(raw + '\n' + edited + '\n' + hidden['solution'] + '\n')
     saver.save(root)
     after = json.loads(path.read_text())
     assert after['levels'] == source['levels']
@@ -40,6 +40,12 @@ with tempfile.TemporaryDirectory(dir=fixture_root) as temporary:
     assert ''.join(after['hidden_levels'][0]['decorations']).startswith('39')
     assert not list(drafts.glob('*.publication')) and not list(drafts.glob('*.approved'))
     before = path.read_bytes()
+    try:
+        saver.save(root)
+        raise AssertionError('A stale loaded board overwrote a newer saved map')
+    except ValueError:
+        pass
+    assert path.read_bytes() == before
     (drafts / '178.chest-request').write_text('incomplete\n')
     try:
         saver.save(root)

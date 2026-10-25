@@ -118,6 +118,13 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                 wait(chest_shown, 'The actual chest sprite is missing in edit mode')
                 press('Play (Tab)')
                 wait(chest_shown, 'The actual chest sprite is missing in play mode')
+                if mode == 'Levels':
+                    changed = json.loads(approved_file.read_text())
+                    row = changed['hidden_levels'][0]['decorations'][1]
+                    changed['hidden_levels'][0]['decorations'][1] = row[:16] + '89' + row[18:]
+                    approved_file.write_text(json.dumps(changed, indent=1) + '\n')
+                    wait(lambda: showing('New version ready · Edit to view'),
+                         'Hidden source change was not deferred during play')
                 press('Edit (Tab)')
                 press('Next')
                 wait(lambda: showing('Level 30 of 175'), 'Next did not leave 29a for 30')
@@ -153,6 +160,8 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                 assert saved['levels'] == approved['levels'], 'Hidden save altered an ordinary level'
                 assert saved['retained_metadata'] == approved['retained_metadata'], 'Hidden save lost metadata'
                 assert saved['hidden_levels'][0]['solution'] == '0'
+                assert saved['hidden_levels'][0]['decorations'][1][16:18] == '89', \
+                    'Saving erased the newer hidden source edit'
                 assert not (drafts / '178.approved').exists() and not (drafts / '178.publication').exists(), \
                     'Saving a hidden room triggered approval/publication'
                 assert campaign.read_bytes() == before, 'Hidden save changed private campaign'

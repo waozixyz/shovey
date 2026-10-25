@@ -85,6 +85,7 @@ CHEST_PLACE :: 178
     ALL_PLACES :: 178
 }
 SECRET_FILE :: "levels/secret.json"
+chest_source_raw: [HEX]u8;
 
 level_count: s32;
 boards: [LEVELS_MAX * HEX]u8;
@@ -444,12 +445,14 @@ LoadChest :: () {
                     if !valid { break }
                 }
                 if valid && ReadBoard(TextView(candidate[:]), Board(CHEST_PLACE)) {
+                    Copy(chest_source_raw[:], candidate[:])
                     Copy(SavedBoard(CHEST_PLACE), Board(CHEST_PLACE))
                     return
                 }
             }
         }
         unused ReadBoard(data, Board(CHEST_PLACE))
+        for index: cast(s32)0..HEX - 1 { chest_source_raw[index] = data[index] }
         Copy(SavedBoard(CHEST_PLACE), Board(CHEST_PLACE))
     }
 }
@@ -457,11 +460,12 @@ LoadChest :: () {
 SaveChest :: (letters: []u8) {
     if letters.count < 1 || letters.count > ROUTE_MAX { SaveFailed("the winning route could not be kept."); return }
     request: Vec(u8)
-    BuilderPrint(*request, "%\n%\n", TextView(Board(current)), TextView(letters))
+    BuilderPrint(*request, "%\n%\n%\n", TextView(chest_source_raw[:]), TextView(Board(current)), TextView(letters))
     if !WriteEntireFile("backup/editor-drafts/178.chest-request", BuilderFinish(request)) { SaveFailed("the chest draft could not be written."); return }
     command: [160]u8
     unused CopyCString("python3 scripts/editor_chest.py > backup/editor-chest-save.log 2>&1", command[:])
-    if RunShell(*command[0]) != 0 { SaveFailed("29a could not be saved. See backup/editor-chest-save.log."); return }
+    if RunShell(*command[0]) != 0 { SaveFailed("29a changed or could not be saved. Reopen the room and retry."); return }
+    Copy(chest_source_raw[:], Board(current))
     Copy(SavedBoard(current), Board(current))
     Copy(save_board[:], Board(current))
     save_level = current
@@ -1300,18 +1304,24 @@ DraftPath :: (number: s32, suffix: string = ".hex") -> string {
 }
 
 LevelFileHash :: () -> u32 {
-    file := OpenRead(LEVELS_FILE)
-    if !file.valid { return 0 }
     hash: u32 = 2166136261
-    offset: s64 = 0
-    while true {
-        count := ReadAt(file, level_file_chunk[:], offset)
-        if count <= 0 { break }
-        for at: cast(s64)0..count - 1 { hash = (hash ^ cast(u32)level_file_chunk[at]) * cast(u32)16777619 }
-        offset += count
+    files: [2]string = .[LEVELS_FILE, "levels/approved.json"]
+    found := false
+    for path: files {
+        file := OpenRead(path)
+        if !file.valid { continue }
+        found = true
+        offset: s64 = 0
+        while true {
+            count := ReadAt(file, level_file_chunk[:], offset)
+            if count <= 0 { break }
+            for at: cast(s64)0..count - 1 { hash = (hash ^ cast(u32)level_file_chunk[at]) * cast(u32)16777619 }
+            offset += count
+        }
+        CloseFile(file)
+        hash = (hash ^ cast(u32)255) * cast(u32)16777619
     }
-    CloseFile(file)
-    return hash
+    return ifx found then hash else 0
 }
 
 // Follow both saved levels and draft-only updates from authoring tools. A play
@@ -1325,6 +1335,15 @@ FollowLevelFile :: (now: s64) {
     Copy(previous[:], Board(current))
     if playing {
         if changed {
+            if current == CHEST_PLACE {
+                active: [HEX]u8
+                saved: [HEX]u8
+                raw: [HEX]u8
+                Copy(active[:], Board(current)); Copy(saved[:], SavedBoard(current)); Copy(raw[:], chest_source_raw[:])
+                LoadChest()
+                Copy(previous[:], Board(current))
+                Copy(Board(current), active[:]); Copy(SavedBoard(current), saved[:]); Copy(chest_source_raw[:], raw[:])
+            }
             text_bytes: Vec(u8)
             found := ReadFileInto(LEVELS_FILE, *text_bytes)
             text := TextView(VecSlice(text_bytes, 0, text_bytes.count))
