@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import time
 import sys
+import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publication_queue import Queue, atomic
@@ -54,6 +55,65 @@ def read_json(path):
     return json.loads(path.read_text()) if path.exists() else {}
 
 
+def live_campaign_snapshot(config, answer, verify_route, previous=None):
+    """Verify the campaign players download, independently of the Arcade package."""
+    publication = answer.get('publication', {})
+    author = publication.get('author', {})
+    if (config.get('format') != 'shovey-campaign-1' or
+            not re.fullmatch('[0-9a-f]{32}', config.get('id', '')) or
+            not re.fullmatch('[0-9a-f]{64}', config.get('author', '')) or
+            publication.get('id') != config['id'] or
+            publication.get('format') != config['format'] or
+            author.get('public_id') != config['author'] or
+            publication.get('visibility') != 'public'):
+        raise ValueError('The live campaign identity differs from this publisher')
+    document = answer.get('document', {})
+    levels = document.get('levels', [])
+    if (document.get('edition') != 'classic' or not isinstance(levels, list) or
+            not 1 <= len(levels) <= 175 or publication.get('levels') != len(levels)):
+        raise ValueError('The live campaign is incomplete')
+    boards, routes = [], []
+    for number, level in enumerate(levels, 1):
+        if level.get('number') != number:
+            raise ValueError('The live campaign has missing or duplicate levels')
+        layers = []
+        for key in ('cells', 'tiles', 'decorations'):
+            rows = level.get(key)
+            if (not isinstance(rows, list) or len(rows) != 20 or
+                    any(not isinstance(row, str) or not re.fullmatch('[0-9a-f]{24}', row) for row in rows)):
+                raise ValueError('The live campaign has an invalid board')
+            layers.extend(rows)
+        route = level.get('solution')
+        if not isinstance(route, str) or not re.fullmatch('[0123ft]{1,60000}', route):
+            raise ValueError('The live campaign has no winning route')
+        boards.append(''.join(layers))
+        routes.append(route)
+    digest = hashlib.sha256(json.dumps(document, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    identity = dict(id=config['id'], author=config['author'])
+    previous = previous or {}
+    already_verified = (previous.get('source') == 'live-campaign' and
+                        previous.get('publication') == identity and
+                        previous.get('document_sha256') == digest and previous.get('boards') == boards)
+    if not already_verified:
+        deadline = time.monotonic() + 30
+        for number, (board, route) in enumerate(zip(boards, routes), 1):
+            if time.monotonic() > deadline or not verify_route(number, board, route):
+                raise ValueError(f'The live campaign route does not win at level {number}')
+    return dict(status='verified', source='live-campaign', checked_at=int(time.time()),
+                publication=identity, document_sha256=digest, boards=boards)
+
+
+def read_live_campaign(config, previous):
+    from editor_actions import verify_route
+    request = urllib.request.Request(config['server'].rstrip('/') + '/api/v1/publications/' + config['id'],
+                                     headers={'User-Agent': 'Shovey Editor', 'Cache-Control': 'no-cache'})
+    with urllib.request.urlopen(request, timeout=20) as response:
+        body = response.read(2 * 1024 * 1024 + 1)
+    if len(body) > 2 * 1024 * 1024:
+        raise ValueError('The live campaign is too large')
+    return live_campaign_snapshot(config, json.loads(body), verify_route, previous)
+
+
 def check(root=ROOT):
     state = root / 'backup/editor-drafts'
     config_path = root / 'backup/editor-publish.json'
@@ -71,18 +131,22 @@ def check(root=ROOT):
         except (OSError, ValueError):
             previous = {}
         try:
-            spec = importlib.util.spec_from_file_location('approved_publisher', root / 'scripts/publish-approved.py')
-            workflow = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(workflow)
-            config = read_json(config_path)
-            publisher = workflow.release_publisher(Path(config['arcade']))
-            release = publisher.served_release('https://api.waozi.xyz', 'inbe.arcade')
-            pins = read_json(Path(config['inbe_source']) / 'apps/publishers.json')
-            publisher.validate_release(release, 'inbe.arcade', pins)
-            receipt = read_json(root / 'backup/approved-publication.json')
-            history = read_json(history_path(root, release))
-            boards = campaign_boards(release, receipt, previous, history)
-            result = dict(status='verified', checked_at=int(time.time()), release=release, boards=boards)
+            live_config = root / 'backup/campaign-publisher/publication.json'
+            if live_config.is_file():
+                result = read_live_campaign(read_json(live_config), previous)
+            else:
+                spec = importlib.util.spec_from_file_location('approved_publisher', root / 'scripts/publish-approved.py')
+                workflow = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(workflow)
+                config = read_json(config_path)
+                publisher = workflow.release_publisher(Path(config['arcade']))
+                release = publisher.served_release('https://api.waozi.xyz', 'inbe.arcade')
+                pins = read_json(Path(config['inbe_source']) / 'apps/publishers.json')
+                publisher.validate_release(release, 'inbe.arcade', pins)
+                receipt = read_json(root / 'backup/approved-publication.json')
+                history = read_json(history_path(root, release))
+                boards = campaign_boards(release, receipt, previous, history)
+                result = dict(status='verified', checked_at=int(time.time()), release=release, boards=boards)
         except Exception as error:
             # Keep the previous authenticated snapshot for a later retry, but
             # do not claim a fresh server match when this check failed.

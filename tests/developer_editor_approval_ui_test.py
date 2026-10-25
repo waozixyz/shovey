@@ -1,24 +1,30 @@
 """An approved level can publish while the editor remains usable."""
+import argparse
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
+import tempfile
 import time
 from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser()
+parser.add_argument('--binary', type=Path, default=ROOT / 'build/private-editor/shovey-level-editor')
+parser.add_argument('--output', type=Path, default=ROOT / 'build/developer-editor-approval-test')
+args = parser.parse_args()
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
-output = ROOT / 'build/developer-editor-approval-test'
-profile = output / 'profile'
+output = args.output.resolve()
+output.mkdir(parents=True, exist_ok=True)
+profile = Path(tempfile.mkdtemp(prefix='profile-', dir=output))
 drafts = profile / 'backup/editor-drafts'
 for folder in (drafts, profile / 'levels', profile / 'scripts', profile / 'backup/redesign', profile / 'backup/original'):
     folder.mkdir(parents=True, exist_ok=True)
 for path in drafts.iterdir():
     shutil.rmtree(path) if path.is_dir() else path.unlink()
 (drafts / 'orientation').write_text('portrait')
-if not (profile / 'assets').exists():
-    (profile / 'assets').symlink_to(ROOT / 'assets', target_is_directory=True)
+shutil.copytree(ROOT / 'assets', profile / 'assets')
 pieces = [12] * 240
 pieces[13], pieces[14] = 10, 7
 tiles = [kind if kind == 12 else 77 if kind == 7 else 0 for kind in pieces]
@@ -60,7 +66,7 @@ environment = {k: v for k, v in os.environ.items()
                if k not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
 environment.update(SDL_VIDEODRIVER='x11', SDL_AUDIODRIVER='dummy', YUE_DESKTOP_RECOVERY='0')
 with (output / 'app.log').open('w') as log:
-    child = subprocess.Popen([str(ROOT / 'build/private-editor/shovey-level-editor'), '1'],
+    child = subprocess.Popen([str(args.binary.resolve()), '1'],
                              cwd=profile, env=environment, stdout=log, stderr=subprocess.STDOUT)
     try:
         for attempt in range(300):
@@ -172,6 +178,23 @@ with (output / 'app.log').open('w') as log:
         time.sleep(2.3)
         colors = map_colors()
         assert colors[0] == purple, colors[0]
+        # Moving a pit between equivalent raw layers does not change its board.
+        local_pit = base_board[:30] + '05' + base_board[32:]
+        server_pit = base_board[:30] + '00' + base_board[32:510] + '05' + base_board[512:]
+        (drafts / '002.hex').write_text(local_pit)
+        server['boards'][1] = server_pit
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
+        assert map_colors()[1] == purple, 'Equivalent pit layers were marked changed'
+        assert (drafts / '002.hex').read_text() == local_pit, 'Status comparison rewrote the draft'
+        server['boards'][1] = server_pit[:510] + '06' + server_pit[512:]
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
+        assert map_colors()[1] == (218, 132, 167), 'A different pit colour was hidden'
+        (drafts / '002.hex').write_text(base_board)
+        server['boards'][1] = base_board
+        (drafts / 'server-campaign.json').write_text(json.dumps(server))
+        time.sleep(2.3)
         # Places nobody approved share one plain colour; no similarity score.
         assert colors[72] == colors[73] == (72, 80, 78), (colors[72], colors[73])
         server['boards'][0] = base_board
