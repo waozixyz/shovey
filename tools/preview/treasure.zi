@@ -1,0 +1,74 @@
+// A separate unsigned local preview of the real game and reward UI.
+#import "kryon/app_context"
+#import "kryon/app_protocol"
+Host :: #import, file "../../src/web/host.zi";
+View :: #import, file "../../src/shovey_view.zi";
+Game :: #import, file "../../src/engine.zi";
+Progress :: #import, file "../../src/progress.zi";
+Rewards :: #import, file "../../src/rewards.zi";
+Controls :: #import, file "../../src/controls.zi";
+#import "preview_map"
+
+started: bool;
+treasure_seen: bool;
+
+#program_export
+LocaleHost :: (key: string) -> string { return Host.AppLocaleHost(key) }
+#program_export
+RecordHost :: (name: string) -> string { return DocumentRead(name) }
+#program_export
+SaveHost :: (name: string, text: string) -> bool { return DocumentWrite(name, text) }
+#program_export
+KeyHost :: () -> s32 { return AppKey() }
+#program_export
+SoundHost :: (path: string) -> bool { unused path; return false }
+
+#program_export
+CheckOffline :: () -> s32 {
+    if Controls.DewService("claim:shovey.secret-chest") != "{\"status\":\"signin\"}" { return 1 }
+    if Controls.CompletionAccountService("{}") != "{\"status\":\"unavailable\"}" { return 2 }
+    if Game.ShoveyLevelBoard(1003) != PreviewMap { return 3 }
+    game: Game.ShoveyGame
+    if !Game.ShoveyLoadData(*game, 1003, PreviewMap) || game.player < 0 { return 4 }
+    return 42
+}
+
+#program_export
+OfflineService :: (name: string, request: string) -> string {
+    unused request
+    if name == "entity.dew" { return "{\"status\":\"signin\"}" }
+    if name == "arcade.controls" { return "off" }
+    if name == "arcade.sound" { return "muted" }
+    return "{\"status\":\"unavailable\"}"
+}
+
+#program_export
+Main :: () -> s64 {
+    mode := AppMode()
+    if mode == APP_IDENTIFY {
+        AppIdentity("shovey-treasure-preview")
+        AppDescribe("Shovey 29a · Offline preview", "S1.7rr:M4 4H20V20H4ZM9 9H15V15H9Z")
+        return APP_PROTOCOL
+    }
+    if mode == APP_FRAME {
+        if !started {
+            // Skip account/campaign hydration. No owner documents are read.
+            View.loaded = true
+            View.mini = true
+            View.progress = Progress.ShoveyProgressNew()
+            View.level_updates = 0
+            View.chest_discovered = 1
+            View.last_tick = AppNow()
+            Rewards.reward_loaded = true
+            if !Game.ShoveyLoadData(*View.game, 1003, PreviewMap) { return -1 }
+            unused DocumentWrite("preview.started", PreviewIdentity)
+            started = true
+        }
+        View.ShoveyFrame()
+        if !treasure_seen && Rewards.reward_card == Rewards.REWARD_CHEST && Rewards.reward_card_signin {
+            unused DocumentWrite("preview.treasure", "{\"level\":1003,\"cell\":124,\"dialog\":\"signin\",\"credited\":false}")
+            treasure_seen = true
+        }
+    }
+    return 0
+}
