@@ -1,0 +1,4 @@
+{
+  "about": "What a game bundle leaves out of its assets folder; hosts that pack it read this. The cover art and logo stay out: the library and the web page carry their own copies, and a host keeps a collection and the games it opens in one memory budget.",
+  "leave_out": ["*-portrait.png", "*-landscape.png", "logo.png"]
+}

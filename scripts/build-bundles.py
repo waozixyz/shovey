@@ -19,6 +19,39 @@ EDITIONS = [app['manifest'] for app in json.loads((ROOT / 'apps.json').read_text
 # A bundle may hold only its own assets/<name>/ folder. A game that draws
 # another's pictures lists copies in shared_assets.json beside its catalog.
 
+# What a bundle leaves out of its staged folder, which the web page and the
+# private editors still use whole, is listed in bundle.json beside the
+# catalog (see leave_out); Arcade's game build reads the same file.
+LEAVE_OUT_FILE = 'bundle.json'
+
+
+def leave_out(manifest, release):
+    """The top-level names (glob patterns) of an app's assets its bundle leaves out."""
+    path = (ROOT / manifest).with_name(LEAVE_OUT_FILE)
+    rules = json.loads(path.read_text()) if path.exists() else {}
+    return rules.get('leave_out', []) + (rules.get('release_leave_out', []) if release else [])
+
+
+def bundle_assets(manifest, name, staged, release):
+    """The asset folder the bundle packs: the staged one, or a copy without
+    what the bundle leaves out, its manifest listing only what remains."""
+    patterns = leave_out(manifest, release)
+    if not patterns:
+        return staged / 'assets'
+    resources = staged / 'assets' / name
+    kept = ROOT / 'build/game-bundle-assets' / name
+    if kept.exists():
+        shutil.rmtree(kept)
+    left_out = {path.name for pattern in patterns for path in resources.glob(pattern)}
+    shutil.copytree(resources, kept / 'assets' / name,
+                    ignore=lambda folder, names: [item for item in names if Path(folder) == resources and item in left_out])
+    art_path = kept / 'assets' / name / 'art.json'
+    if art_path.exists():
+        art = json.loads(art_path.read_text())
+        art['files'] = [item for item in art['files'] if (art_path.parent / item['path']).is_file()]
+        art_path.write_text(json.dumps(art, indent=2) + '\n')
+    return kept / 'assets'
+
 
 LOCALE_PIECE = 800
 
@@ -116,7 +149,8 @@ def build(toolchain, kryon, apps, mingcute):
             '--module-path', 'mingcute=' + str(mingcute / 'src'),
             '--module-path', 'entity=' + str(entity / 'src'),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
-            '--define', 'KRYON_HOSTED_UI', '--asset-dir', 'assets=' + str(staged / 'assets'),
+            '--define', 'KRYON_HOSTED_UI', '--asset-dir',
+            'assets=' + str(bundle_assets(manifest, name, staged, 'SHOVEY_RELEASE' in descriptor.get('build_defines', []))),
             '--entry', descriptor['entry'], '-o', str(bundle), str(ROOT / descriptor['source'])],
             cwd=ROOT, check=True)
         shutil.copyfile(ROOT / descriptor['preview'], bundle.with_name(f'{name}-preview.png'))
