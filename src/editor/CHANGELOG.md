@@ -1,5 +1,11 @@
 # Shovey Editor changelog
 
+## [0.2.140] - 2026-10-25
+
+- Install the editor as an add-on to Shovey and reuse its downloaded art and sounds.
+- Use the matching Shovey Editor title logo.
+- All objects stop at the abyss when testing Classic levels.
+- Create your own Classic levels; story examples follow the approved Classic campaign.
 ## [0.2.139] - 2026-10-25
 
 - All objects stop at the abyss when testing Classic levels.

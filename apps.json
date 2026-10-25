@@ -24,7 +24,10 @@
         "logo": "assets/covers/shovey-editor-logo.png",
         "caption": "Editor",
         "action": "open"
-      }
+      },
+      "requires": [
+        "arcade.shovey"
+      ]
     }
   ]
 }

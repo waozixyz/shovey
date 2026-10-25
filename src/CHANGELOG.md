@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.148] - 2026-10-25
+
+- Play the approved Classic campaign through level 175.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
 ## [0.6.147] - 2026-10-25
 
 - Keep movement and unfinished puzzles offline; sync earned unlocks only after completing a level.
