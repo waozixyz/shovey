@@ -1095,14 +1095,22 @@ ShoveyFrame :: () {
     top := cast(float32)frame.top
     bottom := cast(float32)(frame.height - frame.bottom)
     ShoveyDress(frame.session, width, top, bottom)
+    key := AppKeyHost()
+    if selector_open && key == 256 {
+        unused ShoveyBack()
+        key = 0
+    }
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
-        if Control(20022, Rectangle.{16.0, top + 12.0, 88.0, 44.0}, AppLocaleHost("shovey_back")) {
+        if Button(frame.session, ButtonProps.{.key = cast(u64)20022, .id = 20022,
+                .bounds = Rectangle.{12.0, top + 8.0, 112.0, 48.0}, .label = AppLocaleHost("shovey_back"),
+                .icon_shape = ICON_PREVIOUS, .fit_content = true,
+                .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
             if !ShoveyBack() { LeaveForGameSelection() }
             return
         }
-        heading_x: float32 = 112.0
+        heading_x: float32 = 136.0
         Caption(20103, Rectangle.{heading_x, top + 12.0, width - 144.0 - heading_x, 44.0}, AppLocaleHost("shovey_levels"), 24)
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
@@ -1174,7 +1182,6 @@ ShoveyFrame :: () {
     if game.won && game.level < ShoveyLevelCount() { WinPause() }
     if game.won && ShoveySecret(game.level) { SecretWinPause() }
     EndingPump()
-    key := AppKeyHost()
     if key == 72 { help_open = !help_open }
     if key == 256 { help_open = false }
     if help_open {

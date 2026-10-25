@@ -901,13 +901,19 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
 
 EditorLevels :: (width: float32, top: float32, bottom: float32) {
     catalog := EditorCatalog()
-    if EditorControl(200, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_EDIT; return }
+    if Button(editor_frame.session, ButtonProps.{.key = cast(u64)200, .id = 200,
+            .bounds = Rectangle.{8.0, top + 6.0, 112.0, 48.0}, .label = EditorText("editor_back"),
+            .icon_shape = "S2rr:M15 5L8 12L15 19", .fit_content = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        editor_page = EDITOR_EDIT
+        return
+    }
     // The developer's own editor switches editions on the first page.
     edition_name := EditorText(ifx editor_island then "editor_island" else "editor_classic")
     #if #defined(SHOVEY_ISLAND_EDITOR) {
-        if EditorControl(201, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, edition_name) { editor_page = EDITOR_HOME; return }
+        if EditorControl(201, Rectangle.{128.0, top + 6.0, width - 240.0, 40.0}, edition_name) { editor_page = EDITOR_HOME; return }
     } else {
-        EditorCaption(201, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, edition_name, 20, true)
+        EditorCaption(201, Rectangle.{128.0, top + 6.0, width - 240.0, 40.0}, edition_name, 20, true)
     }
     if EditorControl(202, Rectangle.{width - 108.0, top + 6.0, 100.0, 40.0}, EditorText("editor_publish")) {
         EditorPublishOpen()
