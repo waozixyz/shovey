@@ -21,7 +21,7 @@
       "cover": {
         "portrait": "assets/shovey/editor-portrait.png",
         "landscape": "assets/shovey/editor-landscape.png",
-        "logo": "assets/shovey/logo.png",
+        "logo": "assets/covers/shovey-editor-logo.png",
         "caption": "Editor",
         "action": "open"
       }
