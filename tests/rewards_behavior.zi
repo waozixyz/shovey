@@ -18,7 +18,7 @@ FakeService :: (name: string, request: string) -> string {
         return "{\"status\":\"pending\"}"
     }
     if request == "claim-status" && claimed {
-        return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\",\"credited\":true,\"units\":200000,\"balance\":200000}"
+        return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\",\"credited\":true,\"units\":2000000,\"balance\":2000000}"
     }
     return "{\"status\":\"failed\"}"
 }
@@ -47,7 +47,7 @@ Check :: () -> s32 {
     if !claimed || reward_claiming != REWARD_CHEST { return 4 }
     RewardsPump(7.5)
     if reward_claiming != -1 || reward_state[REWARD_CHEST] != 2 { return 5 }
-    if reward_card != REWARD_CHEST || reward_card_signin || TextUntilNul(reward_card_amount[:]) != "0.2" { return 6 }
+    if reward_card != REWARD_CHEST || reward_card_signin || TextUntilNul(reward_card_amount[:]) != "2" { return 6 }
     if TextUntilNul(record_rewards[:]) != "r1:20" { return 7 }
     // A relaunch reads the record and claims nothing again.
     reward_loaded = false
