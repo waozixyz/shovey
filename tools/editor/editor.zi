@@ -61,6 +61,8 @@ sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
 libc :: #system_library "libc";
 RunShell :: (command: *u8) -> s32 #foreign libc "system";
+EditorReadLink :: (path: *u8, output: *u8, capacity: usize) -> isize #foreign libc "readlink";
+EditorChangeDirectory :: (path: *u8) -> s32 #foreign libc "chdir";
 EditorPid :: () -> s32 #foreign libc "getpid";
 
 LEVELS_MAX :: 200
@@ -2798,6 +2800,32 @@ Say :: (text: string) {
     if CopyCString(text, bytes[:]) { unused WriteOut(1, *bytes[0], cast(usize)text.count) }
 }
 
+EditorFilesPresent :: () -> bool {
+    return PathExists("assets/shovey/sprites/tile-0.png") &&
+        (PathExists("levels/classic.json") || PathExists("levels/approved.json"))
+}
+
+// Desktop launchers start beside the executable. Keep artwork, level files
+// and drafts together in the project; an explicit usable profile takes priority.
+EnterEditorRoot :: () -> bool {
+    if EditorFilesPresent() { return true }
+    link: [32]u8
+    executable: [4096]u8
+    if !CopyCString("/proc/self/exe", link[:]) { return false }
+    length := EditorReadLink(*link[0], *executable[0], 4095)
+    if length <= 0 || length >= 4095 { return false }
+    while length > 0 {
+        while length > 0 && executable[length - 1] != cast(u8)47 { length -= 1 }
+        if length == 0 { return false }
+        if length > 1 { length -= 1 }
+        executable[length] = 0
+        if EditorChangeDirectory(*executable[0]) != 0 { return false }
+        if EditorFilesPresent() { return true }
+        if length == 1 { return false }
+    }
+    return false
+}
+
 #program_export
 main :: (argc: s32, argv: **u8) -> s32 {
     // --check-file: can the level file be read and written back unchanged?
@@ -2809,6 +2837,12 @@ main :: (argc: s32, argv: **u8) -> s32 {
         if LevelFileText() != text { Say("levels/classic.json would not be written back unchanged\n"); return 1 }
         Say("levels/classic.json reads and writes back unchanged\n")
         return 0
+    }
+    #if !#defined(SHOVEY_ADMIN) {
+        if !EnterEditorRoot() {
+            Say("Shovey editor could not locate its project artwork and levels.\n")
+            return 1
+        }
     }
     LoadOriginals()
     LoadUnlinked()

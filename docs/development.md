@@ -80,6 +80,8 @@ The developer editor runs directly from the repository:
 
 Classic shows the current board with Shovey's own artwork across the editing
 area. **Diff** opens a comparison with the published server board when needed.
+Launching the executable from its build folder also finds the project's artwork,
+levels and drafts; an explicit profile with its own assets and levels is kept.
 
 Its source is `tools/editor/editor.zi`. **Tiles** paints the floor; **Objects**
 holds pieces, animals, flowers, tufts, boulders and trees. Tiles remain underneath
