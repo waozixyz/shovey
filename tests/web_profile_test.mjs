@@ -8,7 +8,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
-const root = new URL('../build/web/', import.meta.url).pathname;
+const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-profile-'));
 const server = createServer(async (request, response) => {
   try {
@@ -147,11 +147,9 @@ try {
       }
       assert(confirmed, 'The node did not confirm the inline Dew balance');
     }
-    await click(40, 28);
-    await wait('!Module.profileVisible');
-    await click(195, 680);
-    // Classic keeps its progress in the account's shared game record.
-    const progress = `(() => {
+    // A new account has no earned game record. Entering a puzzle and
+    // browsing levels must keep that record unchanged.
+    const accountProgress = `(() => {
       const found = [];
       const walk = path => {
         for (const name of Module.FS.readdir(path)) {
@@ -160,23 +158,33 @@ try {
           if (Module.FS.isDir(Module.FS.stat(child).mode)) walk(child);
           else if (child.includes('/game-progress/')) {
             const text = Module.FS.readFile(child, {encoding: 'utf8'});
-            if (text.includes('"game":"shovey.classic"')) found.push(text);
+            if (text.includes('"game":"shovey.classic"')) found.push([child, text]);
           }
         }
       };
       walk('/kryon-apps');
-      return found.length === 1 ? found[0] : '';
+      return found.sort((a, b) => a[0].localeCompare(b[0]));
     })()`;
-    await wait(`${progress}.length > 0`);
-    const campaign = JSON.parse(await evaluate(progress));
-    assert(campaign.unlocked >= 1);
-    await click(114, 26);
+    const earnedBefore = await evaluate(accountProgress);
+    assert.deepEqual(earnedBefore, [], 'A new account already has game progress');
+    await click(40, 28);
+    await wait('!Module.profileVisible');
+    await textClick('Play');
+    const localPath = '/kryon-apps/shovey/local.campaign';
+    await wait(`Module.FS.analyzePath(${JSON.stringify(localPath)}).exists`);
+    if ((await labels()).includes('Download new levels when they come out?')) await textClick('Not now');
+    if ((await labels()).includes('How do you want to move?')) await textClick('Swipe and tap');
+    const campaign = await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`);
+    assert.match(campaign, /^C[1-5]/, 'Classic did not save its device campaign');
+    assert.equal(parseInt(campaign.slice(2, campaign.startsWith('C5') ? 6 : 4), 16), 1);
+    assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Opening Classic wrote unearned account progress');
+    await textClick('Levels');
     assert((await labels()).some(text => text.includes('Level')));
     await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: 2200});
     await delay(500);
-    const scrolled = JSON.parse(await evaluate(progress));
-    assert.deepEqual([scrolled.unlocked, scrolled.completed], [campaign.unlocked, campaign.completed], 'Scrolling changed progress');
-    console.log('Web Profile, inline Dew, game identity, account creation/persistence and level navigation passed; no screenshots.');
+    assert.equal(await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`), campaign, 'Scrolling changed the device campaign');
+    assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Scrolling wrote account progress');
+    console.log('Web Profile, inline Dew, account persistence and device-only level navigation passed without writing unearned account progress; no screenshots.');
   }
 } finally {
   if (socket) socket.close();
