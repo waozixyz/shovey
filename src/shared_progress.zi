@@ -28,7 +28,19 @@ SharedProgressSave :: (session: *SharedProgressSession, record: *Progress.GamePr
     if !SharedProgressShouldPublish(won, !Progress.GameProgressSame(*session.record, record)) { return true }
     unused Progress.GameProgressMerge(*session.record, record)
     session.dirty = true
-    return session.available && SharedProgressPut(session)
+    if !session.available { return false }
+    // Account queries wait until a win. Check the owner at that boundary
+    // before publishing; an account switch must never receive the old game.
+    status := ProgressAccountService("{\"operation\":\"status\"}")
+    owner: [65]u8
+    valid := SharedProgressStatusField(status, "status", "done") &&
+        SharedProgressStatusField(status, "game_progress", "account-v1") &&
+        ReadStringText(status, FieldAt(status, 0, "account"), owner[:]) >= 0
+    if !valid || !session.owner_known || TextUntilNul(owner[:]) != TextUntilNul(session.owner[:]) {
+        session.poll_at = 0.0
+        return false
+    }
+    return SharedProgressPut(session)
 }
 
 // Only a newly earned completion reaches the account store; movement is a

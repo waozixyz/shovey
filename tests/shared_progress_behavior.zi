@@ -110,6 +110,9 @@ Check :: () -> s32 {
     unused SharedProgressPump(*session, 32.0)
     if retired != 2 { return 6 }
     other_owner = true
+    record.completed[2] = #char "1"
+    record.completed[3] = 0
+    if SharedProgressSave(*session, *record, true) || account_writes != 1 { return 12 }
     if SharedProgressPump(*session, 48.0) != 2 || session.available || session.record.unlocked != 0 { return 7 }
     other_owner = false
     available = false
