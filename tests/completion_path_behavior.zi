@@ -116,6 +116,8 @@ RouteTests :: () -> s32 {
 SpecialTests :: () -> s32 {
     map := Map()
     Cell(1, 14, 70)
+    // Snapshot the finished fixture: the portable VM owns string values.
+    map = Owned(TextUntilNul(map_bytes[:]))
     game: ShoveyGame
     unused ShoveyLoadData(*game, 2, map)
     path: CompletionPath
@@ -125,6 +127,7 @@ SpecialTests :: () -> s32 {
     // Teleports retain entrance+exit, separately from accepted action count.
     map = Map()
     Cell(0, 14, 73); Cell(0, 50, 73)
+    map = Owned(TextUntilNul(map_bytes[:]))
     unused ShoveyLoadData(*game, 3, map)
     PathStart(*path, *game, map, "first")
     Act(*path, *game, 2)
@@ -203,6 +206,7 @@ BestTests :: () -> s32 {
     // A changed played map gets a new best without replacing either owner.
     map = Map()
     Cell(2, 20, 135)
+    map = Owned(TextUntilNul(map_bytes[:]))
     unused ShoveyLoadData(*game, 4, map)
     PathStart(*path, *game, map, "first")
     Act(*path, *game, 2); Act(*path, *game, 2)
