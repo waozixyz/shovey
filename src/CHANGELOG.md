@@ -1,5 +1,33 @@
 # Shovey changelog
 
+## [0.6.147] - 2026-10-25
+
+- Keep movement and unfinished puzzles offline; sync earned unlocks only after completing a level.
+- Preserve your active board when account progress arrives or changes.
+- Play more varied Classic puzzles, including the redesigned beach and ice challenges.
+- Discover a hidden treasure cove through the beach, with secret rooms kept out of the level selector.
+- Keep local completion routes and map versions for optional account evidence.
+
+## [0.6.146] - 2026-10-25
+
+- Play the approved Classic campaign through level 175.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.145] - 2026-10-25
+
+- Play the approved Classic campaign through level 175.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.144] - 2026-10-25
+
+- Play the approved Classic campaign through level 175.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
+## [0.6.143] - 2026-10-25
+
+- Play the approved Classic campaign through level 175.
+- All objects stop at the abyss and leave it open.
+- Keep your progress and use the integrated level editor.
 ## [0.6.142] - 2026-10-25
 
 - Keep every move and unfinished puzzle on this device.

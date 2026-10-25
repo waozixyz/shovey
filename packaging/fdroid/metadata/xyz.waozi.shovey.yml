@@ -29,8 +29,7 @@ Builds:
 AllowedAPKSigningKeys: 3f687dd9aa7edd8c81b9d3ade255f0b620be7b9fd62783e5f8d7e7f7df658820
 
 AutoUpdateMode: Version v%v
-UpdateCheckMode: HTTP
-UpdateCheckData: 'https://raw.githubusercontent.com/waozixyz/arcade/master/apps/versions.json|"shovey":
-  *[{][^}]*"sequence": *([0-9]+)|.|"shovey": *[{][^}]*"version": *"([^"]+)"'
+UpdateCheckMode: Tags v[0-9.]+
+UpdateCheckData: 'version.json|"version_code": ([0-9]+)|version.json|"version": "([0-9.]+)"'
 CurrentVersion: 0.6.110
 CurrentVersionCode: 118

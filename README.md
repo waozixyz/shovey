@@ -16,7 +16,7 @@ pits, move crates onto their marks and untangle the board one move at a time.
 
 ## Find your way home
 
-- **100 Classic puzzles:** discover a route through gardens, sand yards and winding rooms.
+- **175 Classic puzzles:** discover a route through gardens, sand yards and winding rooms.
 - **A world that moves:** portals, levers, gates and wandering animals change the path.
 - **Play your way:** swipe, use the movement pad or a keyboard, in portrait or landscape.
 - **Keep your progress:** revisit unlocked puzzles and try a fresh approach whenever you like.
