@@ -314,11 +314,12 @@ Remember :: () {
     // A secret level is never saved: the game reopens on the last level.
     if ShoveySecret(game.level) { return }
     ShoveyRecordWin(*progress, *game)
-    record := ShoveySharedRecord(*progress)
     save_failed = !ControlsSaveRecord("local.campaign", ShoveyCampaignSave(*progress, *game))
-    unused SharedProgressSave(*shared_progress, *record, game.won)
-    ReportSolvedLevels(progress.completed[:], *reported_levels)
-
+    if game.won {
+        record := ShoveySharedRecord(*progress)
+        unused SharedProgressSave(*shared_progress, *record, true)
+        ReportSolvedLevels(progress.completed[:], *reported_levels)
+    }
 }
 
 ChangeLevel :: (level: s32) {
