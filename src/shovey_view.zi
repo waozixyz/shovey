@@ -316,8 +316,7 @@ Remember :: () {
     ShoveyRecordWin(*progress, *game)
     save_failed = !SaveLocalCampaign(ShoveyCampaignSave(*progress, *game))
     if game.won {
-        record := ShoveySharedRecord(*progress)
-        unused SharedProgressSave(*shared_progress, *record, true)
+        unused SharedProgressSave(*shared_progress, game.level, true)
         ReportSolvedLevels(progress.completed[:], *reported_levels)
     }
 }

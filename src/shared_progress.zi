@@ -24,9 +24,19 @@ SharedProgressStatusField :: (reply: string, field: string, expected: string) ->
     return ReadStringText(reply, FieldAt(reply, 0, field), bytes[:]) >= 0 && TextUntilNul(bytes[:]) == expected
 }
 
-SharedProgressSave :: (session: *SharedProgressSession, record: *Progress.GameProgressRecord, won: bool) -> bool {
-    if !SharedProgressShouldPublish(won, !Progress.GameProgressSame(*session.record, record)) { return true }
-    unused Progress.GameProgressMerge(*session.record, record)
+SharedProgressSave :: (session: *SharedProgressSession, level: s32, won: bool) -> bool {
+    if !won { return true }
+    if level < 1 || level >= Progress.GAME_PROGRESS_LIMIT { return false }
+    // Publish this completion, never the device's campaign snapshot. The
+    // same device can keep an unfinished board while accounts change.
+    record := session.record
+    count := cast(s32)TextUntilNul(record.completed[:]).count
+    while count < level { record.completed[count] = #char "0"; count += 1 }
+    record.completed[count] = 0
+    record.completed[level - 1] = #char "1"
+    if record.unlocked <= level { record.unlocked = level + 1 }
+    if !SharedProgressShouldPublish(won, !Progress.GameProgressSame(*session.record, *record)) { return true }
+    session.record = record
     session.dirty = true
     if !session.available { return false }
     // Account queries wait until a win. Check the owner at that boundary
@@ -59,7 +69,11 @@ SharedProgressPut :: (session: *SharedProgressSession) -> bool {
 }
 
 SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GameProgressRecord, now: float64) {
-    session.* = SharedProgressSession.{.record = record, .dirty = record.unlocked > 1 || TextUntilNul(record.completed[:]) != ""}
+    // Entry reads only the current account's earned progress. Device-only
+    // unlocks and positions must never seed a different account's record.
+    session.* = .{}
+    session.record.game = record.game
+    session.record.unlocked = 1
     unused SharedProgressPump(session, now)
 }
 
@@ -101,8 +115,7 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
         unused SharedProgressPut(session)
     } else if session.retiring && synced && TextUntilNul(session.owner[:]) != "" {
         // Read back first; only retire a legacy copy after account sync.
-        ProgressRetireLegacy()
-        session.retiring = false
+        session.retiring = !ProgressRetireLegacy()
     }
     return ifx changed then 1 else 0
 }

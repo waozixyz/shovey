@@ -7,6 +7,7 @@ Progress :: #import "entity/game_progress";
 Classic :: #import, file "../src/shared_campaign.zi";
 ClassicGame :: #import, file "../src/engine.zi";
 ClassicProgress :: #import, file "../src/progress.zi";
+Controls :: #import, file "../src/controls.zi";
 
 remote: Progress.GameProgressRecord;
 remote_exists: bool;
@@ -17,6 +18,7 @@ other_owner: bool;
 retired: s32;
 account_writes: s32;
 account_calls: s32;
+local_save_allowed: bool = true;
 reply: string;
 
 #program_export
@@ -53,6 +55,7 @@ FakeService :: (name: string, request: string) -> string {
 FakeRecord :: (name: string) -> string { unused name; return "" }
 #program_export
 FakeSave :: (name: string, text: string) -> bool {
+    if name == "local.campaign" { return local_save_allowed }
     if (name == "campaign" || name == "position") && text == "" { retired += 1 }
     return true
 }
@@ -75,11 +78,11 @@ Check :: () -> s32 {
     startup_calls := account_calls
     for move: cast(s32)0..99 {
         record = Classic.ShoveySharedRecord(*local)
-        if !SharedProgressSave(*session, *record, false) || account_writes != 0 ||
+        if !SharedProgressSave(*session, 1, false) || account_writes != 0 ||
         account_calls != startup_calls { return 2 }
     }
     record.unlocked = 2
-    if !SharedProgressSave(*session, *record, false) || session.record.unlocked != 1 || account_writes != 0 { return 10 }
+    if !SharedProgressSave(*session, 40, false) || session.record.unlocked != 1 || account_writes != 0 { return 10 }
     record.unlocked = 1
     // Playing crosses many polling intervals without calling the account
     // service at all. Even a pending completion waits until a safe boundary.
@@ -105,28 +108,48 @@ Check :: () -> s32 {
     // A newly completed puzzle is the only normal save to the account.
     record.completed[1] = #char "1"
     record.completed[2] = 0
-    if !SharedProgressSave(*session, *record, true) || account_writes != 1 || remote.unlocked != 40 { return 5 }
+    if !SharedProgressSave(*session, 2, true) || account_writes != 1 || remote.unlocked != 40 { return 5 }
+    if !SharedProgressSave(*session, 2, true) || account_writes != 1 { return 14 }
     synced = true
+    local_save_allowed = false
+    if Controls.SaveLocalCampaign("device-board") { return 17 }
     unused SharedProgressPump(*session, 32.0)
+    if retired != 0 || !session.retiring { return 18 }
+    local_save_allowed = true
+    if !Controls.SaveLocalCampaign("device-board") { return 19 }
+    unused SharedProgressPump(*session, 48.0)
     if retired != 2 { return 6 }
     // Reopening a saved puzzle with already-synced unlocks is read-only.
     reopened: SharedProgressSession
-    SharedProgressStart(*reopened, session.record, 33.0)
+    SharedProgressStart(*reopened, session.record, 49.0)
     if account_writes != 1 || reopened.dirty { return 13 }
     other_owner = true
     record.completed[2] = #char "1"
     record.completed[3] = 0
-    if SharedProgressSave(*session, *record, true) || account_writes != 1 { return 12 }
-    if SharedProgressPump(*session, 48.0) != 2 || session.available || session.record.unlocked != 0 { return 7 }
+    if SharedProgressSave(*session, 3, true) || account_writes != 1 { return 12 }
+    if SharedProgressPump(*session, 65.0) != 2 || session.available || session.record.unlocked != 0 { return 7 }
     other_owner = false
     available = false
     SharedProgressStart(*session, record, 49.0)
     record.unlocked = 41
-    if SharedProgressSave(*session, *record, true) { return 8 }
+    if SharedProgressSave(*session, 40, true) { return 8 }
     available = true
     old_host = true
     SharedProgressStart(*session, record, 50.0)
     record.unlocked = 42
-    if session.available || SharedProgressSave(*session, *record, true) { return 9 }
+    if session.available || SharedProgressSave(*session, 41, true) { return 9 }
+    // A fresh runtime after logout may still have this device's old level
+    // 40 campaign. Entry is read-only; winning level 1 earns only level 2.
+    old_host = false
+    other_owner = true
+    remote_exists = false
+    writes := account_writes
+    record.unlocked = 40
+    record.completed[0] = 0
+    cold: SharedProgressSession
+    SharedProgressStart(*cold, record, 60.0)
+    if account_writes != writes || cold.record.unlocked != 1 { return 15 }
+    if !SharedProgressSave(*cold, 1, true) || account_writes != writes + 1 ||
+    remote.unlocked != 2 || TextUntilNul(remote.completed[:]) != "1" { return 16 }
     return 42
 }

@@ -57,21 +57,23 @@ LocalCampaignRecord :: () -> string {
     }
 }
 
+local_campaign_saved: bool;
+
 SaveLocalCampaign :: (text: string) -> bool {
     #if #defined(SHOVEY_WEB) {
-        return WebApp.DocumentWrite("local.campaign", text)
+        local_campaign_saved = WebApp.DocumentWrite("local.campaign", text)
     } else {
-        return ControlsSaveRecord("local.campaign", text)
+        local_campaign_saved = ControlsSaveRecord("local.campaign", text)
     }
+    return local_campaign_saved
 }
 
-ProgressRetireLegacy :: () {
+ProgressRetireLegacy :: () -> bool {
+    if !local_campaign_saved { return false }
     #if #defined(SHOVEY_WEB) {
-        unused WebApp.DocumentWrite("campaign", "")
-        unused WebApp.DocumentWrite("position", "")
+        return WebApp.DocumentWrite("campaign", "") && WebApp.DocumentWrite("position", "")
     } else {
-        unused ControlsSaveRecord("campaign", "")
-        unused ControlsSaveRecord("position", "")
+        return ControlsSaveRecord("campaign", "") && ControlsSaveRecord("position", "")
     }
 }
 
