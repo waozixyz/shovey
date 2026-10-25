@@ -49,6 +49,9 @@ Island
 [editor_story_level]
 ストーリーのレベル {n}
 ---
+[editor_story_locked]
+Classic をプレイしてこのレベルを解放しましょう。
+---
 [editor_story_note]
 ストーリーのレベル {n}。描くと自分用のコピーが作られ、ストーリーのレベルはそのまま残ります。
 ---

@@ -1,5 +1,5 @@
-// The Shovey Editor's screens: choose Classic or Island, browse the story
-// levels and your own, paint boards, play them with the real engines and
+// The Shovey Editor's screens: a blank board first, then load one of your
+// levels or a story level Classic has unlocked, paint boards, play them with the real engines and
 // let the Ziran solver check them, export them for the developer, and
 // share level collections where the host offers it.
 //
@@ -108,6 +108,10 @@ editor_frame: AppUiFrame;
 editor_language: string;
 editor_loaded: bool;
 editor_page: s32;
+// How many Classic story levels the player has unlocked, as the account's
+// shared progress says (see shared_progress.zi), read again every few seconds.
+editor_unlocked: s32;
+editor_unlocked_at: float64 = -10.0;
 editor_island: bool;
 editor_key: s32;
 editor_last_now: float64;
@@ -568,8 +572,8 @@ EditorLoad :: () {
     editor_sharing = AppSupportsHost(SHARING_SERVICE)
     #if #defined(SHOVEY_ISLAND_EDITOR) {
         editor_island = true
-        editor_page = EDITOR_LEVELS
     }
+    EditorBlank()
     editor_loaded = true
 }
 
@@ -624,6 +628,40 @@ EditorOpenCustom :: (at: s32) {
         editor_check_at = editor_frame.now
     } else { editor_check = CHECK_PROVEN }
     editor_page = EDITOR_EDIT
+}
+
+// The editor opens on a blank board, saved as a level of your own on its
+// first stroke; Levels loads one of your levels or an unlocked story level.
+EditorBlank :: () {
+    editor_level.board = EditNewBoard(editor_island)
+    editor_level.route_length = 0
+    EditorClear()
+    editor_open_id = 0
+    editor_open_story = 0
+    EditorNameField()
+    editor_page = EDITOR_EDIT
+}
+
+// Story levels open as a starting point only once Classic has unlocked
+// them. Island, only in the developer's own editor, and debug builds open
+// every level.
+EditorUnlocked :: () -> s32 {
+    #if #defined(SHOVEY_UNLOCK_ALL) {
+        return EditStoryCount(editor_island)
+    }
+    if editor_island { return EditStoryCount(true) }
+    if editor_frame.now - editor_unlocked_at >= 3.0 && AppSupportsHost(DRAFTS_SERVICE) {
+        editor_unlocked_at = editor_frame.now
+        reply := AppServiceHost(DRAFTS_SERVICE, "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}")
+        at := FieldAt(reply, 0, "document")
+        if at >= 0 {
+            unlocked := ReadNumber(reply, FieldAt(reply, at, "unlocked"))
+            if unlocked.valid && unlocked.value >= 1.0 && unlocked.value <= 100000.0 {
+                editor_unlocked = cast(s32)unlocked.value
+            }
+        }
+    }
+    return ifx editor_unlocked < 1 then 1 else editor_unlocked
 }
 
 EditorNewLevel :: () {
@@ -798,8 +836,8 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
 
 // ---------------------------------------------------------------------------
 // The first page: Classic, and Island once it is offered for sale. The
-// developer's private Island build (SHOVEY_ISLAND_EDITOR) has both and opens
-// on Island's levels.
+// developer's private Island build (SHOVEY_ISLAND_EDITOR) has both and starts
+// on a blank Island board.
 
 #if #defined(SHOVEY_ISLAND_EDITOR) {
     EDITOR_EDITIONS :: 2
@@ -861,9 +899,14 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
 
 EditorLevels :: (width: float32, top: float32, bottom: float32) {
     catalog := EditorCatalog()
-    if EditorControl(200, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_HOME; return }
-    EditorCaption(201, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0},
-        EditorText(ifx editor_island then "editor_island" else "editor_classic"), 20, true)
+    if EditorControl(200, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_EDIT; return }
+    // The developer's own editor switches editions on the first page.
+    edition_name := EditorText(ifx editor_island then "editor_island" else "editor_classic")
+    #if #defined(SHOVEY_ISLAND_EDITOR) {
+        if EditorControl(201, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, edition_name) { editor_page = EDITOR_HOME; return }
+    } else {
+        EditorCaption(201, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, edition_name, 20, true)
+    }
     if EditorControl(202, Rectangle.{width - 108.0, top + 6.0, 100.0, 40.0}, EditorText("editor_publish")) {
         EditorPublishOpen()
         return
@@ -877,10 +920,24 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     customs := catalog.count + 1
     custom_rows := (customs + columns - 1) / columns
     story_rows := (EditStoryCount(editor_island) + columns - 1) / columns
+    unlocked := EditorUnlocked()
     story_top := 36.0 + cast(float32)custom_rows * (custom_height + gap) + 40.0
     content := story_top + cast(float32)story_rows * (story_height + gap)
+    // Sharing and the developer export sit under the list.
+    foot := bottom - 60.0
+    foot_half := (width - 32.0 - gap) / 2.0
+    if EditorControl(120, Rectangle.{16.0, foot, foot_half, 48.0}, EditorText("editor_explore")) {
+        editor_list_scroll = 0
+        editor_sharing = AppSupportsHost(SHARING_SERVICE)
+        editor_page = EDITOR_EXPLORE
+        return
+    }
+    if EditorControl(121, Rectangle.{16.0 + foot_half + gap, foot, foot_half, 48.0}, EditorText("editor_export")) {
+        EditorExportOpen()
+        return
+    }
     scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)203,
-            .bounds = Rectangle.{16.0, top + 56.0, width - 32.0, bottom - top - 64.0},
+            .bounds = Rectangle.{16.0, top + 56.0, width - 32.0, foot - top - 64.0},
             .content_height = cast(s32)content, .scroll_offset = editor_levels_scroll})
     editor_levels_scroll = scroll.scroll_offset
     open_custom: s32 = -1
@@ -922,14 +979,32 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
             label := FormatInteger(cast(s64)number, digits[:])
             detail := ifx editor_island then IslandLevelName(number) else ""
             key := cast(u64)(260000 + number * 4)
+            // A level not reached yet in Classic shows a lock, not its board.
+            locked := number > unlocked
             if Button(editor_frame.session, ButtonProps.{.key = key, .id = 260000 + number * 4, .bounds = cell,
-                    .label = label, .detail = detail, .invisible = true}) != 0 { open_story = number }
-            EditorImage(key + 1, EditorStoryPicture(editor_island, number),
-                Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.width * 5.0 / 3.0 - 8.0}, label)
+                    .label = label, .detail = detail, .invisible = true}) != 0 {
+                if locked { EditorNotice("editor_story_locked") } else { open_story = number }
+            }
+            picture := Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.width * 5.0 / 3.0 - 8.0}
+            if locked {
+                unused Button(editor_frame.session, ButtonProps.{.key = key + 3, .id = 260000 + number * 4 + 3,
+                        .bounds = picture, .label = EditorText("editor_story_locked"), .disabled = true, .icon_only = true,
+                        .icon_shape = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17",
+                        .emphasis = ButtonEmphasis.ButtonEmphasisSoft})
+            } else {
+                EditorImage(key + 1, EditorStoryPicture(editor_island, number), picture, label)
+            }
             EditorCaption(key + 2, Rectangle.{cell.x + 6.0, cell.y + cell.width * 5.0 / 3.0, cell.width - 12.0, 32.0},
                 ifx editor_island then EditorSay(3, "editor_story_named", cast(s64)number, detail) else label, 14)
         }
         unused End(editor_frame.session)
+    }
+    // Why a level does not open, over the bottom of the list.
+    if editor_notice_until > editor_frame.now {
+        note := Rectangle.{16.0, foot - 44.0, width - 32.0, 36.0}
+        Box(editor_frame.session, BoxProps.{.key = cast(u64)207, .bounds = note,
+                .fill = Color.{59, 64, 63, 235}, .radius = 12.0})
+        EditorCaption(208, note, editor_notice, 14, true)
     }
     if make { EditorNewLevel() }
     else if open_custom >= 0 { EditorOpenCustom(open_custom) }
@@ -949,6 +1024,7 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
     // Lines borrowed from the text slots end before anything else runs.
     {
         title := EditorSay(0, "editor_story_level", cast(s64)editor_open_story)
+        if editor_open_story == 0 { title = EditorText("editor_new_level") }
         if summary != null { title = EditorLevelName(0, summary) }
         else if island { title = EditorSay(0, "editor_story_named", cast(s64)editor_open_story, IslandLevelName(editor_open_story)) }
         EditorCaption(301, Rectangle.{112.0, top + 6.0, width - 312.0, 40.0}, title, 17, true)
@@ -1266,7 +1342,7 @@ EditorExportOpen :: () {
 }
 
 EditorExport :: (width: float32, top: float32, bottom: float32) {
-    if EditorControl(500, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_HOME; return }
+    if EditorControl(500, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_LEVELS; return }
     EditorCaption(501, Rectangle.{112.0, top + 6.0, width - 232.0, 40.0}, EditorText("editor_export"), 20, true)
     copy := EditorControl(502, Rectangle.{width - 112.0, top + 6.0, 104.0, 40.0}, EditorText("editor_copy"), editor_export_length == 0)
     note := EditorSay(0, ifx editor_export_count == 0 then "editor_export_none" else "editor_export_note", cast(s64)editor_export_count)
@@ -1522,7 +1598,7 @@ EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
 }
 
 EditorExplore :: (width: float32, top: float32, bottom: float32) {
-    if EditorControl(700, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_HOME; return }
+    if EditorControl(700, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_LEVELS; return }
     EditorCaption(701, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, EditorText("editor_explore"), 20, true)
     busy := editor_share != SHARE_IDLE
     refused := ifx editor_verify_refused > 0 then EditorSay(1, "editor_refused", cast(s64)editor_verify_refused) else ""
@@ -1572,11 +1648,11 @@ EditorExplore :: (width: float32, top: float32, bottom: float32) {
 
 // Back from a page of the editor; false on its first page, so the host
 // leaves the editor.
+// The board is the editor's first page: Back there leaves the editor.
 EditorBack :: () -> bool {
-    if editor_page == EDITOR_HOME { return false }
-    if editor_page == EDITOR_PLAY { editor_page = EDITOR_EDIT }
-    else if editor_page == EDITOR_EDIT || editor_page == EDITOR_PUBLISH { editor_page = EDITOR_LEVELS }
-    else { editor_page = EDITOR_HOME }
+    if editor_page == EDITOR_EDIT { return false }
+    if editor_page == EDITOR_PLAY || editor_page == EDITOR_LEVELS { editor_page = EDITOR_EDIT }
+    else { editor_page = EDITOR_LEVELS }
     return true
 }
 
@@ -1591,7 +1667,7 @@ EditorFrame :: (language: string) {
     EditorNames()
     editor_key = AppKeyHost()
     #if #defined(SHOVEY_WEB) {
-        if editor_key == 256 && editor_page == EDITOR_HOME {
+        if editor_key == 256 && editor_page == EDITOR_EDIT && !editor_name.focused {
             unused AppServiceHost("arcade.navigation", "back")
             return
         }
@@ -1602,7 +1678,7 @@ EditorFrame :: (language: string) {
     top := cast(float32)editor_frame.top
     bottom := cast(float32)(editor_frame.height - editor_frame.bottom)
     ShoveyDress(editor_frame.session, width, top, bottom)
-    if editor_key == 256 && editor_page != EDITOR_HOME && !editor_name.focused &&
+    if editor_key == 256 && editor_page != EDITOR_EDIT && !editor_name.focused &&
     !editor_share_title.focused && !editor_share_query.focused { unused EditorBack() }
     if editor_page == EDITOR_HOME { EditorHome(width, top, bottom) }
     else if editor_page == EDITOR_LEVELS { EditorLevels(width, top, bottom) }

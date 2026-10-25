@@ -172,11 +172,14 @@ def main():
                     driver.wait(label='Restart', role='button')
                     driver.key('left')
                 else:
-                    # Island stays unavailable until it is offered for sale.
-                    driver.wait(label='Classic', role='button', timeout=30)
+                    # The editor opens on a blank board; its level list
+                    # offers no Island until Island is offered for sale.
+                    driver.wait(label='New level', role='text', timeout=30)
+                    driver.press(label='Levels', role='button')
+                    driver.wait(label='Story levels', role='text')
                     assert not driver.find(label='Island', role='button'), 'The editor offers Island'
-                    driver.press(label='Classic', role='button')
-                    driver.press(label='New level', role='button')
+                    driver.press(key=200)
+                    driver.wait(label='New level', role='text')
                     driver.press(label='Play', role='button')
                     driver.wait(label='Restart', role='button')
                     driver.key('right')

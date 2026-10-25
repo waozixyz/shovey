@@ -49,6 +49,9 @@ Level cerita
 [editor_story_level]
 Level cerita {n}
 ---
+[editor_story_locked]
+Mainkan Classic untuk membuka level ini.
+---
 [editor_story_note]
 Level cerita {n}. Menggambar di sini membuat salinanmu sendiri; level cerita tetap seperti semula.
 ---

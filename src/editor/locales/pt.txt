@@ -49,6 +49,9 @@ Níveis da história
 [editor_story_level]
 Nível da história {n}
 ---
+[editor_story_locked]
+Jogue Classic para desbloquear este nível.
+---
 [editor_story_note]
 Nível da história {n}. Pintar nele cria sua própria cópia; o nível da história continua como está.
 ---

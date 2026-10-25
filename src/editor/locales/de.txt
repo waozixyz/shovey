@@ -49,6 +49,9 @@ Story-Level
 [editor_story_level]
 Story-Level {n}
 ---
+[editor_story_locked]
+Spiele Classic, um dieses Level freizuschalten.
+---
 [editor_story_note]
 Story-Level {n}. Wenn du darauf malst, entsteht deine eigene Kopie; das Story-Level bleibt, wie es ist.
 ---

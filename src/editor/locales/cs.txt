@@ -49,6 +49,9 @@ Od @{s}
 [editor_story_level]
 Úroveň příběhu {n}
 ---
+[editor_story_locked]
+Odemkněte tuto úroveň hraním hry Classic.
+---
 [editor_story_note]
 Úroveň příběhu {n}. Když do ní kreslíš, vznikne tvoje vlastní kopie; úroveň příběhu zůstane, jak je.
 ---

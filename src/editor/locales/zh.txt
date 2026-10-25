@@ -49,6 +49,9 @@ Island
 [editor_story_level]
 剧情关卡 {n}
 ---
+[editor_story_locked]
+玩 Classic 来解锁此关卡。
+---
 [editor_story_note]
 剧情关卡 {n}。在上面绘制会生成你自己的副本；剧情关卡保持不变。
 ---

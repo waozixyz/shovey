@@ -49,6 +49,9 @@ Livelli della storia
 [editor_story_level]
 Livello della storia {n}
 ---
+[editor_story_locked]
+Gioca a Classic per sbloccare questo livello.
+---
 [editor_story_note]
 Livello della storia {n}. Dipingendoci sopra crei una tua copia; il livello della storia resta com’è.
 ---

@@ -49,6 +49,9 @@ Story levels
 [editor_story_level]
 Story level {n}
 ---
+[editor_story_locked]
+Play Classic to unlock this level.
+---
 [editor_story_note]
 Story level {n}. Painting on it makes your own copy; the story level stays as it is.
 ---

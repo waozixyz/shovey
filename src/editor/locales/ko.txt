@@ -49,6 +49,9 @@ Island
 [editor_story_level]
 스토리 단계 {n}
 ---
+[editor_story_locked]
+Classic을 플레이해 이 레벨을 잠금 해제하세요.
+---
 [editor_story_note]
 스토리 단계 {n}입니다. 그 위에 그리면 내 복사본이 만들어지고, 스토리 단계는 그대로 남습니다.
 ---
