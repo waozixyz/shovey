@@ -241,6 +241,7 @@ bench: levels build/ziran/libziran.a
 
 # The checks the public repository can run with only the published campaign.
 public-test: solver laws
+	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
