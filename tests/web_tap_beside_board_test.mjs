@@ -6,6 +6,7 @@ import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
+import {driverSetup} from './web_driver.mjs';
 
 const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-tap-'));
@@ -70,15 +71,7 @@ try {
   }
   await call('Runtime.enable');
   await call('Page.enable');
-  await call('Page.addScriptToEvaluateOnNewDocument', {source: `
-    document.addEventListener('DOMContentLoaded', () => {
-      Module.preRun = Module.preRun || [];
-      Module.preRun.push(function() {
-        ENV.KRYON_TEST_DRIVER = '/tmp/test-driver';
-        Module.FS.mkdirTree('/tmp/test-driver');
-      });
-    }, {once:true});
-  `});
+  await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
   const width = 1280, height = 720;
   await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: false});
   await call('Page.reload');

@@ -7,6 +7,7 @@ import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
+import {driverSetup} from './web_driver.mjs';
 
 const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-profile-'));
@@ -74,16 +75,7 @@ try {
   await call('Runtime.enable');
   await call('Page.enable');
   console.log('Browser connected');
-  await call('Page.addScriptToEvaluateOnNewDocument', {source: `
-    document.addEventListener('DOMContentLoaded', () => {
-      globalThis.profileTestHook = true;
-      Module.preRun = Module.preRun || [];
-      Module.preRun.push(function() {
-        ENV.KRYON_TEST_DRIVER = '/tmp/test-driver';
-        Module.FS.mkdirTree('/tmp/test-driver');
-      });
-    }, {once:true});
-  `});
+  await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
   await call('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
   await call('Page.reload');
   await wait(`globalThis.Module?.profileReady && document.querySelector('#loading-screen').classList.contains('is-hidden')`);
