@@ -1,5 +1,14 @@
 # Shovey
 
+## Google Play purchasing
+
+Owner instruction, 2026-10-26: Dew buying is disabled in the Google Play
+version until the owner confirms that the relevant Google Play account is
+authorized for purchases. Preserve this restriction in Play builds and do not
+enable Dew-buying or external funding paths as part of release preparation. Earning Dew
+rewards is separate from buying Dew. Store declarations must describe the
+actual Play build rather than purchasing features available in other hosts.
+
 ## Web deployment
 
 Owner instruction, 2026-10-22: the playable web game lives at
