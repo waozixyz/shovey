@@ -1,0 +1,27 @@
+#import, file "../src/editor/progress_access.zi";
+#import, file "../src/progress.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/levels.zi";
+#import "std/vec"
+#import "std/text_buffer"
+
+#program_export
+Check :: () -> s32 {
+    if EditorAccountUnlocked("{\"status\":\"missing\"}") != 1 ||
+    EditorAccountUnlocked("{\"status\":\"done\",\"unlocked\":100}") != 1 ||
+    EditorAccountUnlocked("{\"status\":\"done\",\"document\":{\"unlocked\":33}}") != 33 ||
+    EditorAccountUnlocked("{\"status\":\"done\",\"document\":{\"unlocked\":2.5}}") != 1 { return 1 }
+    progress := ShoveyProgressNew()
+    progress.unlocked = 84
+    board: ShoveyGame
+    unused ShoveyLoad(*board, 1)
+    reply: Vec(u8)
+    BuilderPrint(*reply, "{\"status\":\"done\",\"text\":\"%\"}", ShoveyCampaignSave(*progress, *board))
+    device := EditorDeviceUnlocked(TextView(VecSlice(reply, 0, reply.count)))
+    VecFree(reply)
+    if device != 84 || EditorVisibleUnlocked(33, device) != 84 || EditorVisibleUnlocked(100, device) != 100 { return 2 }
+    if EditorDeviceUnlocked("{\"status\":\"rejected\"}") != 0 ||
+    EditorDeviceUnlocked("{\"status\":\"done\",\"text\":\"malformed\"}") != 0 { return 3 }
+    if EditorVisibleUnlocked(1, 0) != 1 || EditorVisibleUnlocked(1000, 84) != ShoveyLevelCount() { return 4 }
+    return 0
+}

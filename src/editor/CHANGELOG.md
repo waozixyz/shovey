@@ -1,5 +1,13 @@
 # Shovey Editor changelog
 
+## [0.2.142] - 2026-10-26
+
+- Return to the title from the editing board and keep your changes.
+- Use your device and account progress to open story examples.
+- Move with right clicks when testing a puzzle.
+- Show objects without a background in the palette, and leave out the final boat.
+- Solve puzzles that use wooden crates as bridges across water.
+
 ## [0.2.141] - 2026-10-26
 
 - Reuse Shovey’s compiled game code as well as its downloaded art and sounds.

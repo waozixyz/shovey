@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.150] - 2026-10-26
+
+- Play the current approved Classic campaign from the private editor.
+- Solve puzzles that use wooden crates as bridges across water.
+- Move by right-clicking the board.
+
 ## [0.6.149] - 2026-10-26
 
 - Reopen a secret chest until its Dew is claimed, and show an empty chest after a confirmed claim.

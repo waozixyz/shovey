@@ -1438,7 +1438,7 @@ ShoveyFrame :: () {
     if !pad_mode {
         play := Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}
         gesture := SwipeArea(frame.session, SwipeAreaProps.{.key = cast(u64)31000, .id = 31000, .bounds = play,
-                .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
+                .label = AppLocaleHost("shovey_controls"), .now = frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .secondary_tap = true, .disabled = disabled})
         step = BoardEngineDirection(gesture.swiped, landscape)
         if gesture.down && !disabled { SwipeHud(gesture, grid) }
         if gesture.tapped || gesture.held {

@@ -38,6 +38,10 @@ Count :: (board: *EditBoard, kind: u8) -> s32 {
 // him, and Classic's wall ring stays.
 LayerChecks :: () -> s32 {
     board := EditNewBoard(false)
+    for index: cast(s32)0..EditPieceCount(false) - 1 {
+        if EditPieceKind(false, index) == SHOVEY_BOAT { return 177 }
+    }
+    if EditPaint(*board, SHOVEY_BOAT, 50) { return 178 }
     unused EditPaint(*board, 9, 50)
     if !EditPaint(*board, EDIT_TILE_BRUSH + 77, 50) || board.ground[50] != 9 || board.tiles[50] != 77 { return 150 }
     history: EditHistory

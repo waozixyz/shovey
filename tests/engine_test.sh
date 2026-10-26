@@ -7,7 +7,7 @@ toolchain=${1:?usage: engine_test.sh TOOLCHAIN}
 lib="$root/build/ziran/libziran.a"
 unset DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS
 [ -f "$lib" ] || make -s -C "$toolchain" BUILD_DIR="$root/build/ziran" "$lib"
-for edition in classic island editor import secret; do
+for edition in classic island editor editor_progress import secret; do
     work="$root/build/engine-test/$edition"
     rm -rf "$work"
     mkdir -p "$work/c"

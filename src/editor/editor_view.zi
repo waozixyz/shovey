@@ -50,6 +50,7 @@
 #import, file "edit.zi";
 #import, file "sharing.zi";
 #import, file "drafts.zi";
+#import, file "progress_access.zi";
 host_api :: #system_library "host_api";
 ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
 // The editor's text in the player's language, from its own locale files;
@@ -374,16 +375,17 @@ EditorPieceImage :: (key: u64, island: bool, kind: s32, bounds: Rectangle, label
         // The eraser is drawn by its button's icon.
         if kind == EDIT_CLEAR || kind < 0 || kind >= ISLAND_TILES { return }
         picture := ifx kind == ISLAND_SHOVEY then ISLAND_TILES + 2 else kind
-        // Pieces and shores stand on sand, as on an island.
-        if kind != 0 { EditorImage(key, IslandPictureFile(1), bounds, label) }
+        // Terrain previews include their sand; object previews stay transparent.
+        if kind > 0 && kind < 50 { EditorImage(key, IslandPictureFile(1), bounds, label) }
         EditorImage(key + 1, IslandPictureFile(picture), bounds, label)
         return
     }
+    tile := kind >= EDIT_TILE_BRUSH && kind < EDIT_DECO_BRUSH
     if kind >= EDIT_DECO_BRUSH { kind -= EDIT_DECO_BRUSH }
     else if kind >= EDIT_TILE_BRUSH { kind -= EDIT_TILE_BRUSH }
     floor := FloorSprite(kind)
     if kind == CLASSIC_SHOVEY { floor = 0 }
-    if floor >= 0 { EditorImage(key, SpriteFile(floor), bounds, label) }
+    if tile && floor >= 0 { EditorImage(key, SpriteFile(floor), bounds, label) }
     sprite := ifx kind == CLASSIC_SHOVEY then SPRITE_PLAYER + 1 else KindSprite(*editor_view_classic, kind, -1, editor_frame.now)
     if sprite >= 0 { EditorImage(key + 1, SpriteFile(sprite), bounds, label) }
 }
@@ -650,16 +652,23 @@ EditorUnlocked :: () -> s32 {
         return EditStoryCount(editor_island)
     }
     if editor_island { return EditStoryCount(true) }
-    if editor_frame.now - editor_unlocked_at >= 3.0 && AppSupportsHost(DRAFTS_SERVICE) {
+    if editor_frame.now - editor_unlocked_at >= 3.0 {
         editor_unlocked_at = editor_frame.now
-        reply := AppServiceHost(DRAFTS_SERVICE, "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}")
-        at := FieldAt(reply, 0, "document")
-        if at >= 0 {
-            unlocked := ReadNumber(reply, FieldAt(reply, at, "unlocked"))
-            if unlocked.valid && unlocked.value >= 1.0 && unlocked.value <= 100000.0 {
-                editor_unlocked = cast(s32)unlocked.value
+        account: s32 = 1
+        device: s32 = 0
+        if AppSupportsHost(DRAFTS_SERVICE) {
+            account = EditorAccountUnlocked(AppServiceHost(DRAFTS_SERVICE,
+                    "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
+        }
+        if AppSupportsHost("apps.records") {
+            device = EditorDeviceUnlocked(AppServiceHost("apps.records",
+                    "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"local.campaign\"}"))
+            if device == 0 {
+                device = EditorDeviceUnlocked(AppServiceHost("apps.records",
+                        "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"campaign\"}"))
             }
         }
+        editor_unlocked = EditorVisibleUnlocked(account, device)
     }
     return ifx editor_unlocked < 1 then 1 else editor_unlocked
 }
@@ -1025,7 +1034,17 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
 EditorEdit :: (width: float32, top: float32, bottom: float32) {
     island := editor_island
     summary := EditorSummary()
-    if EditorControl(300, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_levels")) {
+    if Button(editor_frame.session, ButtonProps.{.key = cast(u64)299, .id = 299,
+            .bounds = Rectangle.{8.0, top + 6.0, 44.0, 40.0}, .label = EditorText("editor_back"),
+            .icon_shape = "S2rr:M15 5L8 12L15 19", .icon_only = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        if !EditorBack() { unused AppServiceHost("arcade.navigation", "back") }
+        return
+    }
+    if Button(editor_frame.session, ButtonProps.{.key = cast(u64)300, .id = 300,
+            .bounds = Rectangle.{60.0, top + 6.0, 44.0, 40.0}, .label = EditorText("editor_levels"),
+            .icon_shape = "S2rr:M4 4H9V9H4ZM15 4H20V9H15ZM4 15H9V20H4ZM15 15H20V20H15Z", .icon_only = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
         editor_page = EDITOR_LEVELS
         return
     }
@@ -1302,7 +1321,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     // Swipe on the board to step, or tap a cell to step towards it; hold
     // either to keep walking.
     gesture := SwipeArea(editor_frame.session, SwipeAreaProps.{.key = cast(u64)405, .id = 405, .bounds = grid.board,
-            .label = EditorText("editor_controls"), .now = editor_frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .disabled = disabled})
+            .label = EditorText("editor_controls"), .now = editor_frame.now, .min_distance = grid.cell * 0.6, .repeat_seconds = 0.16, .secondary_tap = true, .disabled = disabled})
     step := BoardEngineDirection(gesture.swiped, landscape)
     player := ifx editor_island then editor_play.isle.player else editor_play.classic.player
     if gesture.tapped || gesture.held {
@@ -1658,7 +1677,24 @@ EditorExplore :: (width: float32, top: float32, bottom: float32) {
 // leaves the editor.
 // The board is the editor's first page: Back there leaves the editor.
 EditorBack :: () -> bool {
-    if editor_page == EDITOR_EDIT { return false }
+    if editor_page == EDITOR_EDIT {
+        if editor_stroke_changed { EditorBoardChanged(); editor_stroke_changed = false; editor_stroke = false }
+        summary := EditorSummary()
+        if summary != null {
+            name := EditField(editor_name.bytes[:], editor_name.length)
+            if EditField(summary.name[:], summary.name_length) != name {
+                EditSetName(summary, name)
+            }
+            // Retry a failed write before leaving, including a renamed board.
+            // Saving the index must not hide a failed board write.
+            editor_save_failed = false
+            EditorSaveLevel()
+            level_failed := editor_save_failed
+            EditorSaveIndex(editor_island)
+            editor_save_failed = editor_save_failed || level_failed
+        }
+        return editor_save_failed
+    }
     if editor_page == EDITOR_PLAY || editor_page == EDITOR_LEVELS { editor_page = EDITOR_EDIT }
     else { editor_page = EDITOR_LEVELS }
     return true
@@ -1676,7 +1712,7 @@ EditorFrame :: (language: string) {
     editor_key = AppKeyHost()
     #if #defined(SHOVEY_WEB) {
         if editor_key == 256 && editor_page == EDITOR_EDIT && !editor_name.focused {
-            unused AppServiceHost("arcade.navigation", "back")
+            if !EditorBack() { unused AppServiceHost("arcade.navigation", "back") }
             return
         }
     }

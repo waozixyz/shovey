@@ -105,6 +105,7 @@ our_landscape_tiles: [SPRITE_COUNT]string;
 current: s32;
 boards_landscape: bool;
 selected: s32;
+auto_publish_edits: bool = true;
 palette_tab: s32;
 palette_scroll: [3]s32;
 unlinked_saved_place: s32;
@@ -2167,7 +2168,7 @@ AutoSave :: () {
         if save_state == 3 && save_level == current && Same(save_board[:], Board(current)) { return }
         StartSave()
     }
-    if save_state == 2 && !playing && published_places[current - 1] &&
+    if auto_publish_edits && save_state == 2 && !playing && published_places[current - 1] &&
     (!server_configured || server_verified) && !ApprovalMatches(current) { ApproveEdit() }
 }
 
@@ -2970,6 +2971,9 @@ EnterEditorRoot :: () -> bool {
 
 #program_export
 main :: (argc: s32, argv: **u8) -> s32 {
+    for argument: cast(s32)1..argc - 1 {
+        if TextFromCString(argv[argument]) == "--no-auto-publish" { auto_publish_edits = false }
+    }
     // --check-file: can the level file be read and written back unchanged?
     if argc >= 2 && TextFromCString(argv[1]) == "--check-file" {
         text_bytes: Vec(u8)
@@ -2991,6 +2995,18 @@ main :: (argc: s32, argv: **u8) -> s32 {
     LoadLevels()
     level_file_hash = LevelFileHash()
     LoadDrafts()
+    if argc == 3 && TextFromCString(argv[1]) == "--export-boards" {
+        snapshot: Vec(u8)
+        BuilderPrint(*snapshot, "{\"boards\":[")
+        for place: cast(s32)1..ALL_PLACES {
+            if place > 1 { BuilderPrint(*snapshot, ",") }
+            BuilderPrint(*snapshot, "{\"place\":%,\"number\":%,\"in_game\":%,\"hex\":\"%\"}",
+                place, LevelNumber(place), InGame(place), TextView(Board(place)))
+        }
+        BuilderPrint(*snapshot, "]}\n")
+        ok := WriteEntireFile(TextFromCString(argv[2]), BuilderFinish(snapshot))
+        return ifx ok then 0 else 1
+    }
     LoadOrientation()
     LoadApprovals()
     selected = 256

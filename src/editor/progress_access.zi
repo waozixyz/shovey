@@ -1,0 +1,36 @@
+// The editor may read the base game's explicitly exported device save.
+// Displaying those unlocks never publishes them to an account.
+#import "std/json_scan"
+#import "std/text_buffer"
+#import, file "../progress.zi";
+#import, file "../engine.zi";
+#import, file "../levels.zi";
+
+EditorAccountUnlocked :: (reply: string) -> s32 {
+    status: [16]u8
+    if ReadStringText(reply, FieldAt(reply, 0, "status"), status[:]) < 0 || TextUntilNul(status[:]) != "done" { return 1 }
+    at := FieldAt(reply, 0, "document")
+    if at < 0 { return 1 }
+    value := ReadNumber(reply, FieldAt(reply, at, "unlocked"))
+    if !value.valid || value.value < 1.0 || value.value > 1000.0 || cast(float64)cast(s32)value.value != value.value { return 1 }
+    return cast(s32)value.value
+}
+
+EditorDeviceUnlocked :: (reply: string) -> s32 {
+    status: [16]u8
+    if ReadStringText(reply, FieldAt(reply, 0, "status"), status[:]) < 0 || TextUntilNul(status[:]) != "done" { return 0 }
+    text: [4096]u8
+    count := ReadStringText(reply, FieldAt(reply, 0, "text"), text[:])
+    if count < 1 { return 0 }
+    progress: ShoveyProgress
+    board: ShoveyGame
+    if !ShoveyCampaignRestore(*progress, *board, TextView(text[:count])) { return 0 }
+    return progress.unlocked
+}
+
+EditorVisibleUnlocked :: (account: s32, device: s32) -> s32 {
+    value := ifx account > device then account else device
+    if value < 1 { value = 1 }
+    count := ShoveyLevelCount()
+    return ifx value > count then count else value
+}
