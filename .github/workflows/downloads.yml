@@ -11,6 +11,11 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Full approved source commit (defaults to the triggering commit)
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -26,14 +31,23 @@ jobs:
     outputs:
       release_due: ${{ steps.due.outputs.release_due }}
       version: ${{ steps.due.outputs.version }}
+      revision: ${{ steps.due.outputs.revision }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+          fetch-depth: 0
       - name: Release only a new version or a requested run
         id: due
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          REQUESTED_REVISION: ${{ inputs.revision || github.sha }}
         run: |
+          [[ "$REQUESTED_REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo 'A full source commit is required' >&2; exit 1; }
+          test "$(git rev-parse HEAD)" = "$REQUESTED_REVISION"
+          git merge-base --is-ancestor HEAD origin/master
+          echo "revision=$REQUESTED_REVISION" >> "$GITHUB_OUTPUT"
           version=$(python3 -c 'import re; print(re.search(r"^## \[([0-9.]+)\]", open("src/CHANGELOG.md").read(), re.M)[1])')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           state=$(gh release view "v$version" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
@@ -51,6 +65,8 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.due.outputs.revision }}
       - uses: ./.github/actions/android
       # The build F-Droid's recipe runs, from the Arcade host pinned in
       # packaging/android; it has no self-update, so one APK serves both.
@@ -82,7 +98,7 @@ jobs:
     if: needs.due.outputs.release_due == 'true'
     uses: ./.github/workflows/fdroid.yml
     with:
-      revision: ${{ github.sha }}
+      revision: ${{ needs.due.outputs.revision }}
 
   linux:
     needs: due
@@ -95,6 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ needs.due.outputs.revision }}
           path: waozixyz/shovey
       - uses: ./waozixyz/shovey/.github/actions/arcade
         with:
@@ -139,6 +156,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ needs.due.outputs.revision }}
           path: waozixyz/shovey
       - uses: ./waozixyz/shovey/.github/actions/arcade
         with:
@@ -174,9 +192,11 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       CHANGELOG_VERSION: ${{ needs.due.outputs.version }}
+      RELEASE_REVISION: ${{ needs.due.outputs.revision }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ needs.due.outputs.revision }}
           path: waozixyz/shovey
       - uses: actions/download-artifact@v4
         with:
@@ -230,9 +250,9 @@ jobs:
           # The downloads go up on a draft first, so the release appears
           # only once all three are there.
           if [ "$state" = missing ]; then
-            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Shovey $VERSION" --notes-file build/release-notes.md
+            gh release create "$tag" --draft --target "$RELEASE_REVISION" --title "Shovey $VERSION" --notes-file build/release-notes.md
           else
-            gh release edit "$tag" --target "$GITHUB_SHA" --notes-file build/release-notes.md
+            gh release edit "$tag" --target "$RELEASE_REVISION" --notes-file build/release-notes.md
             for asset in $(gh release view "$tag" --json assets --jq '.assets[].name'); do
               gh release delete-asset "$tag" "$asset" --yes
             done
