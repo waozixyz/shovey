@@ -565,7 +565,9 @@ LiveCacheWrite :: (document: string) -> bool {
     for index: cast(s32)0..LIVE_CHUNKS - 1 {
         end := ifx at + LIVE_CHUNK < document.count then at + LIVE_CHUNK else document.count
         if !SaveAppRecordHost(LiveChunkName(index), document[at:end]) { return false }
-        if end - at < LIVE_CHUNK { return true }
+        if end - at < LIVE_CHUNK {
+            return SaveAppRecordHost("live-campaign-base", SHOVEY_APPROVED_CAMPAIGN_MARK)
+        }
         at = end
     }
     return true
@@ -608,7 +610,7 @@ LiveAsk :: (request: string) -> string {
 // session.
 LiveCampaignStart :: () {
     cached := LiveCacheRead()
-    if cached != "" { unused ShoveyLiveLoadCompact(cached) }
+    if cached != "" { unused ShoveyLiveLoadCached(cached, AppRecordHost("live-campaign-base")) }
     // A campaign shorter than this release's is older than it.
     if shovey_live_count < SHOVEY_APPROVED_LEVEL_COUNT { shovey_live_count = 0 }
     if LevelUpdates() == 1 { LiveCampaignFetch() }
@@ -677,12 +679,14 @@ LiveCampaignCheck :: () {
         // campaign saved earlier.
         shovey_live_count = 0
         cached := LiveCacheRead()
-        if cached != "" { unused ShoveyLiveLoadCompact(cached) }
+        if cached != "" { unused ShoveyLiveLoadCached(cached, AppRecordHost("live-campaign-base")) }
         if shovey_live_count < SHOVEY_APPROVED_LEVEL_COUNT { shovey_live_count = 0 }
         unused SaveAppRecordHost("live-campaign-mark", TextUntilNul(live_mark[:]))
         return
     }
-    if compact != LiveCacheRead() { unused LiveCacheWrite(compact) }
+    if compact != LiveCacheRead() || AppRecordHost("live-campaign-base") != SHOVEY_APPROVED_CAMPAIGN_MARK {
+        unused LiveCacheWrite(compact)
+    }
     unused SaveAppRecordHost("live-campaign-mark", TextUntilNul(live_mark[:]))
     LevelReplayReset(TextUntilNul(shared_progress.owner[:]))
     for at: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 { level_preview_paths[at][0] = 0 }
@@ -1259,8 +1263,8 @@ ShoveyFrame :: () {
                 }
                 if unlocked && LevelReplayDot(number, ShoveyLevelBoard(number), completed, TextUntilNul(shared_progress.owner[:])) {
                     unused Circle(frame.session, CircleProps.{.key = cast(u64)(43000 + number),
-                        .center = Vector2.{bounds.x + bounds.width - 13.0, bounds.y + 13.0},
-                        .radius = 4.0, .fill = Color.{255, 226, 150, 255}})
+                            .center = Vector2.{bounds.x + bounds.width - 13.0, bounds.y + 13.0},
+                            .radius = 4.0, .fill = Color.{255, 226, 150, 255}})
                 }
             }
             End(frame.session)
@@ -1449,6 +1453,7 @@ ShoveyFrame :: () {
     }
     board_chest = ifx ChestHere() then CHEST_CELL else -1
     board_chest_open = RewardEarned(REWARD_CHEST)
+    board_chest_claimed = RewardClaimed(REWARD_CHEST)
     grid := ShoveyBoard(frame.session, *game, board_bounds, cast(u64)22000, frame.now, sprite_names[:], landscape)
     board_chest = -1
     if board_sail < 0.0 && crossing < 0.0 {
@@ -1522,7 +1527,7 @@ ShoveyFrame :: () {
             if feedback_size < 44.0 { feedback_size = 44.0 }
             if feedback_size > 72.0 { feedback_size = 72.0 }
             SwipeFeedback(frame.session, SwipeFeedbackProps.{.key = cast(u64)20070,
-                .gesture = gesture, .size = feedback_size})
+                    .gesture = gesture, .size = feedback_size})
         }
         if gesture.tapped || gesture.held {
             cell := TileMapCellAt(grid, gesture.x, gesture.y)

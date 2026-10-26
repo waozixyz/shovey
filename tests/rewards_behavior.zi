@@ -13,6 +13,7 @@ already_claimed: bool;
 ineligible: bool;
 claim_requests: s32;
 record_rewards: [16]u8;
+record_flags: [REWARD_COUNT * 2]bool;
 
 #program_export
 FakeService :: (name: string, request: string) -> string {
@@ -35,12 +36,29 @@ FakeService :: (name: string, request: string) -> string {
 
 #program_export
 FakeRecord :: (name: string) -> string {
-    return ifx name == "rewards" then TextUntilNul(record_rewards[:]) else ""
+    if name == "rewards" { return TextUntilNul(record_rewards[:]) }
+    for reward: cast(s32)0..REWARD_COUNT - 1 {
+        for flag: cast(s32)0..1 {
+            if name == RewardFlagRecord(reward, flag == 1) {
+                return ifx record_flags[reward * 2 + flag] then "1" else ""
+            }
+        }
+    }
+    return ""
 }
 
 #program_export
 FakeSave :: (name: string, text: string) -> bool {
-    return name == "rewards" && CopyCString(text, record_rewards[:])
+    if name == "rewards" { return CopyCString(text, record_rewards[:]) }
+    for reward: cast(s32)0..REWARD_COUNT - 1 {
+        for flag: cast(s32)0..1 {
+            if name == RewardFlagRecord(reward, flag == 1) && text == "1" {
+                record_flags[reward * 2 + flag] = true
+                return true
+            }
+        }
+    }
+    return false
 }
 
 #program_export
@@ -91,6 +109,7 @@ Check :: () -> s32 {
     if !reward_card_empty || reward_card != REWARD_CHEST { return 15 }
     // The node may confirm that another device already claimed it: show empty.
     unused CopyCString("r1:10", record_rewards[:])
+    record_flags = .{}
     reward_loaded = false
     reward_state = .{}
     already_claimed = true
@@ -100,6 +119,7 @@ Check :: () -> s32 {
     if !RewardClaimed(REWARD_CHEST) || !reward_card_empty || reward_card != REWARD_CHEST { return 16 }
     // Eligibility is a real rejection, not an unclaimed or credited result.
     unused CopyCString("r1:10", record_rewards[:])
+    record_flags = .{}
     reward_loaded = false
     reward_state = .{}
     ineligible = true
@@ -120,5 +140,32 @@ Check :: () -> s32 {
     reward_card = -1
     RewardsPump(200.0)
     if reward_card != -1 || reward_state[REWARD_CAMPAIGN] != 1 { return 9 }
+    // Another device's opening arrives after launch, without a local visit.
+    record_rewards = .{}
+    record_flags = .{}
+    reward_state = .{}
+    reward_loaded = false
+    reward_card = -1
+    RewardsPump(300.0)
+    record_flags[REWARD_CHEST * 2] = true
+    RewardsPump(302.0)
+    if !RewardEarned(REWARD_CHEST) || RewardClaimed(REWARD_CHEST) { return 20 }
+    // A stale r1 snapshot cannot close the opened chest, even on restart.
+    unused CopyCString("r1:00", record_rewards[:])
+    reward_state = .{}
+    reward_loaded = false
+    RewardsLoad()
+    if !RewardEarned(REWARD_CHEST) || RewardClaimed(REWARD_CHEST) { return 21 }
+    // A synced claim removes the reward without closing the chest.
+    RewardOpen(REWARD_CHEST, 303.0)
+    record_flags[REWARD_CHEST * 2 + 1] = true
+    RewardsPump(304.0)
+    if !RewardEarned(REWARD_CHEST) || !RewardClaimed(REWARD_CHEST) || !reward_card_empty { return 22 }
+    // An older device's unclaimed save cannot undo that confirmed claim.
+    unused CopyCString("r1:10", record_rewards[:])
+    reward_state = .{}
+    reward_loaded = false
+    RewardsLoad()
+    if !RewardEarned(REWARD_CHEST) || !RewardClaimed(REWARD_CHEST) { return 23 }
     return 42
 }

@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from PIL import Image
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--binary', type=Path, required=True)
@@ -78,6 +79,23 @@ def capture(child, name):
     (output / (name + '.json')).write_text(json.dumps(driver.tree(), indent=2) + '\n')
 
 
+def check_chest_art(child, name, unclaimed):
+    chest = driver.find(key=20126)[0]
+    # Step back along the route so Shovey does not cover the chest's inside.
+    driver.key('left')
+    time.sleep(.4)
+    capture(child, name)
+    left, top = int(chest['x']), int(chest['y'])
+    with Image.open(output / (name + '.png')) as picture:
+        cell = picture.convert('RGB').crop((left, top, left + int(chest['width']), top + int(chest['height'])))
+        pixels = cell.load()
+        blue = sum(pixels[x, y][2] > 140 and pixels[x, y][1] > 70 and pixels[x, y][2] > pixels[x, y][0] * 1.6
+                   for y in range(cell.height) for x in range(cell.width))
+    assert (blue > 0) == unclaimed, f'{name}: blue Dew diamond pixels={blue}'
+    driver.key('right')
+    driver.wait(key=20120)
+
+
 with tempfile.TemporaryDirectory(prefix='chest-', dir=output) as temporary:
     for state, expected in (('10', 'You found a secret chest!'), ('20', 'You have already claimed this chest’s Dew.')):
         profile = Path(temporary) / state
@@ -99,6 +117,8 @@ with tempfile.TemporaryDirectory(prefix='chest-', dir=output) as temporary:
                 # the chest, where tapping it must open the same dialog again.
                 driver.key('left')
                 close()
+                check_chest_art(child, state + '-' + str(attempt) + '-board', state == '10')
+                close()
                 reopen()
                 driver.wait(label=expected)
                 close()
@@ -106,4 +126,4 @@ with tempfile.TemporaryDirectory(prefix='chest-', dir=output) as temporary:
                 driver.wait(label=expected)
                 capture(child, state + '-' + str(attempt))
                 assert (records / 'rewards').read_text() == 'r1:' + state
-print('Chest UI local test: unclaimed and empty dialogs reopen on tap and after restart; movement blocked')
+print('Chest UI local test: diamond only for unclaimed Dew, claimed chest empty; both stay open after restart and dialogs reopen')

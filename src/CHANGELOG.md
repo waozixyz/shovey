@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.154] - 2026-10-26
+
+- Keep opened chests open across restarts and account sync; show the blue Dew diamond only while their reward is unclaimed.
+- Show an empty open chest after its Dew is claimed.
+- Use corrected campaign boards after an update, including level 29 when an older campaign was cached offline.
+
 ## [0.6.153] - 2026-10-26
 
 - Recover rewards automatically for older synced saves.

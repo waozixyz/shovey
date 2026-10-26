@@ -3,6 +3,7 @@
 #import, file "../src/levels.zi";
 #import, file "../src/island_levels.zi";
 #import, file "../src/editor/edit.zi";
+#import, file "../src/live_campaign.zi";
 
 #program_export
 Check :: () -> s32 {
@@ -45,6 +46,24 @@ Check :: () -> s32 {
     if saved[:2] != "C5" { return 8 }
     if !ShoveyCampaignRestore(*restored, *position, saved) || restored.unlocked != 250 || !restored.completed[22] ||
     !restored.completed[200] || restored.completed[201] || position.level != 240 { return 9 }
+    shovey_live_count = 0
+    // An old cache with exactly as many levels must not replace corrected
+    // level 29 when this build starts, including offline.
+    live_check.count = last
+    for index: cast(s32)0..last - 1 {
+        board := ShoveyLevelData(ifx index == 28 then 1 else index + 1)
+        for at: cast(s64)0..board.count - 1 {
+            live_staged[cast(s64)index * SHOVEY_LIVE_BOARD + at] = board[at]
+        }
+    }
+    cached := LiveCheckInstall()
+    shovey_live_count = 0
+    if ShoveyLiveLoadCached(cached, "previous-campaign") ||
+    ShoveyLevelBoard(29) != ShoveyLevelData(29) { return 10 }
+    if ShoveyLiveLoadCached(cached, "") { return 11 }
+    // An update proven against this build is still available offline.
+    if !ShoveyLiveLoadCached(cached, SHOVEY_APPROVED_CAMPAIGN_MARK) ||
+    ShoveyLevelBoard(29) != ShoveyLevelData(1) { return 12 }
     shovey_live_count = 0
     return 0
 }

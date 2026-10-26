@@ -20,6 +20,7 @@ classic += [f'fish-{fish}-{frame}-{facing}' for fish in ('gold', 'koi', 'minnow'
 classic += [f'grass-edge-{mask}' for mask in range(16)]
 classic += [f'{kind}-{facing}' for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
 classic += ['shadow', 'door-open', 'projectile'] + [f'sensor-{frame}' for frame in range(1, 9)]
+classic += ['chest-closed', 'chest-open', 'chest-empty']
 classic += [f'moss-lowered-{style}' for style in range(4)]
 expected = [f'assets/shovey/sprites/{name}.png' for name in classic]
 expected += [f'assets/shovey-landscape/sprites/{name}.png' for name in classic]

@@ -7,10 +7,13 @@
 // one, without stopping play.
 #import "json_scan"
 #import "text_buffer"
+#import "std/c_string"
 #import "entity/dew_model"
 #import, file "reward_locations.zi";
 #import, file "engine.zi";
 #import, file "controls.zi";
+#import, file "shared_progress.zi";
+RewardProgress :: #import "entity/game_progress";
 
 REWARD_COUNT :: 2
 REWARD_CHEST :: 0
@@ -18,6 +21,11 @@ REWARD_CAMPAIGN :: 1
 // Per reward: 0 not earned, 1 earned and waiting for the node, 2 answered.
 reward_state: [REWARD_COUNT]s32;
 reward_loaded: bool;
+reward_refresh_at: float64;
+reward_shared: SharedProgressSession;
+reward_shared_started: bool;
+reward_shared_owner: [65]u8;
+reward_local_allowed: bool = true;
 // A reward earned in this session; its claim tells the player when an
 // account is missing.
 reward_fresh: [REWARD_COUNT]bool;
@@ -37,24 +45,115 @@ RewardName :: (reward: s32) -> string {
     return ifx reward == REWARD_CHEST then "shovey.secret-chest" else "shovey.campaign-complete"
 }
 
-// "r1:" and one digit per reward.
+RewardFlagRecord :: (reward: s32, claimed: bool) -> string {
+    if reward == REWARD_CHEST {
+        return ifx claimed then "reward.chest.claimed" else "reward.chest.opened"
+    }
+    return ifx claimed then "reward.campaign.claimed" else "reward.campaign.opened"
+}
+
+// Each flag only ever becomes "1". Separate synchronized records cannot
+// erase an opening or claim when an older device saves another reward.
+// Keep reading r1 saves so existing opened chests migrate without closing.
 RewardsLoad :: () {
     reward_loaded = true
+    if !reward_local_allowed { return }
     text := RewardsRecord()
-    if text.count != 3 + REWARD_COUNT || text[:3] != "r1:" { return }
-    for reward: cast(s32)0..REWARD_COUNT - 1 {
-        digit := cast(s32)text[3 + reward] - cast(s32)#char "0"
-        if digit < 0 || digit > 2 { return }
+    valid := text.count == 3 + REWARD_COUNT && text[:3] == "r1:"
+    if valid {
+        for reward: cast(s32)0..REWARD_COUNT - 1 {
+            digit := cast(s32)text[3 + reward] - cast(s32)#char "0"
+            if digit < 0 || digit > 2 { valid = false }
+        }
     }
-    for reward: cast(s32)0..REWARD_COUNT - 1 { reward_state[reward] = cast(s32)text[3 + reward] - cast(s32)#char "0" }
+    for reward: cast(s32)0..REWARD_COUNT - 1 {
+        previous := reward_state[reward]
+        if valid {
+            digit := cast(s32)text[3 + reward] - cast(s32)#char "0"
+            if digit > reward_state[reward] { reward_state[reward] = digit }
+        }
+        opened := RewardFlagRecord(reward, false)
+        claimed := RewardFlagRecord(reward, true)
+        opened_saved := PathRecord(opened) == "1"
+        claimed_saved := PathRecord(claimed) == "1"
+        if opened_saved && reward_state[reward] < 1 { reward_state[reward] = 1 }
+        if claimed_saved { reward_state[reward] = 2 }
+        if reward_state[reward] > 0 && !opened_saved { unused PathSaveRecord(opened, "1") }
+        if reward_state[reward] == 2 && !claimed_saved { unused PathSaveRecord(claimed, "1") }
+        if previous < 2 && reward_state[reward] == 2 && reward_card == reward {
+            reward_card_empty = true
+            reward_card_signin = false
+            reward_card_amount = .{}
+        }
+    }
 }
 
 RewardsSave :: () {
-    text: Vec(u8)
-    BuilderPrint(*text, "r1:")
-    for reward: cast(s32)0..REWARD_COUNT - 1 { BuilderPrint(*text, "%", reward_state[reward]) }
-    unused RewardsSaveRecord(TextView(VecSlice(text, 0, text.count)))
-    VecFree(text)
+    RewardsLoad()
+    if reward_local_allowed {
+        text: Vec(u8)
+        BuilderPrint(*text, "r1:")
+        for reward: cast(s32)0..REWARD_COUNT - 1 { BuilderPrint(*text, "%", reward_state[reward]) }
+        unused RewardsSaveRecord(TextView(VecSlice(text, 0, text.count)))
+        VecFree(text)
+    }
+    RewardsSync(0.0)
+}
+
+// These are earned milestones in a separate account-progress record, never
+// campaign completions. The shared provider unions their completion marks
+// across hosts and devices, including stale replies. Ordinary local records
+// remain the offline fallback for hosts without an account service.
+RewardsSync :: (now: float64) {
+    if !reward_shared_started {
+        record: RewardProgress.GameProgressRecord
+        unused CopyCString("shovey.rewards", record.game[:])
+        SharedProgressStart(*reward_shared, record, now)
+        reward_shared_started = true
+    } else if SharedProgressPump(*reward_shared, now, false, false) == 2 {
+        reward_shared_started = false
+        if TextUntilNul(reward_shared_owner[:]) != "" {
+            reward_state = .{}
+            reward_fresh = .{}
+            reward_card = -1
+            reward_claiming = -1
+            reward_local_allowed = false
+        }
+        reward_shared_owner = .{}
+        return
+    }
+    if !reward_shared.available || !reward_shared.owner_known { return }
+    {
+        owner := TextUntilNul(reward_shared.owner[:])
+        if owner == "" { return }
+        if owner != TextUntilNul(reward_shared_owner[:]) {
+            local_owner := PathRecord("reward.owner")
+            reward_local_allowed = local_owner == "" || local_owner == owner
+            if !reward_local_allowed { reward_state = .{} }
+            else if local_owner == "" { unused PathSaveRecord("reward.owner", owner) }
+            unused CopyCString(owner, reward_shared_owner[:])
+        }
+        marks := TextUntilNul(reward_shared.record.completed[:])
+        for reward: cast(s32)0..REWARD_COUNT - 1 {
+            previous := reward_state[reward]
+            opened := reward * 2
+            if opened < marks.count && marks[opened] == #char "1" && reward_state[reward] < 1 {
+                reward_state[reward] = 1
+            }
+            if opened + 1 < marks.count && marks[opened + 1] == #char "1" { reward_state[reward] = 2 }
+            if previous < 2 && reward_state[reward] == 2 && reward_card == reward {
+                reward_card_empty = true
+                reward_card_signin = false
+                reward_card_amount = .{}
+            }
+        }
+    }
+    for reward: cast(s32)0..REWARD_COUNT - 1 {
+        for milestone: cast(s32)1..reward_state[reward] {
+            unused SharedProgressSave(*reward_shared, reward * 2 + milestone, true)
+        }
+    }
+    RewardsLoad()
 }
 
 RewardEarned :: (reward: s32) -> bool {
@@ -108,7 +207,11 @@ RewardStatus :: (answer: string, output: []u8) -> string {
 // Claims earned rewards, one at a time, through the host; the node's answer
 // arrives over later frames.
 RewardsPump :: (now: float64) {
-    if !reward_loaded { RewardsLoad() }
+    if !reward_loaded || now >= reward_refresh_at {
+        RewardsLoad()
+        RewardsSync(now)
+        reward_refresh_at = now + 1.0
+    }
     if now < reward_next_at { return }
     status_bytes: [16]u8
     if reward_claiming >= 0 {

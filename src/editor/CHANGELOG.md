@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [0.2.144] - 2026-10-26
+
+- Keep chest artwork consistent with the game when playtesting a level.
+
 ## [0.2.143] - 2026-10-26
 
 - Show the original full-colour Editor title artwork and keep its logo coloured during fades.

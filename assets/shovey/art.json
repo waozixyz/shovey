@@ -1566,6 +1566,11 @@
       "path": "island-portrait.png",
       "depicts": "Shovey Island title art for phones: the green Shovey on a tropical beach with a crab and palm trees",
       "sha256": "c019dcbb7265bdc207afd8ab968a487fbb0558fc1df489e4f6fa33cdf5ced86a"
+    },
+    {
+      "path": "sprites/chest-empty.png",
+      "depicts": "secret chest opened and claimed: empty dark wooden interior, with no Dew diamond or treasure",
+      "sha256": "a3a6edd466e315e87ecbc9051f97acf89f3af9c1da370a372645fb7e9053b002"
     }
   ]
 }

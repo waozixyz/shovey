@@ -248,6 +248,11 @@
       "sha256": "5df8390d8f332ee694151366de31ceaa4de1f04d9c3285a69a8e0aee0442aecc"
     },
     {
+      "path": "sprites/chest-empty.png",
+      "depicts": "landscape presentation of secret chest opened and claimed: empty dark wooden interior, with no Dew diamond or treasure",
+      "sha256": "a3a6edd466e315e87ecbc9051f97acf89f3af9c1da370a372645fb7e9053b002"
+    },
+    {
       "path": "sprites/chest-open.png",
       "depicts": "landscape presentation of secret chest opened: gold coins and a blue Dew drop inside",
       "sha256": "ee9c8adca0158c3aa946420f1bf6f9d5df5aff25fa887ee7dedf7014e2b03eb7"

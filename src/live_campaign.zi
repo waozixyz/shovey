@@ -9,6 +9,7 @@
 #import "json_scan"
 #import "text_buffer"
 #import, file "engine.zi";
+#import, file "levels.zi";
 
 LIVE_CAMPAIGN_ID :: "435c51fbedc3c928f54124560b46116a"
 LIVE_CAMPAIGN_ROUTE :: 8192
@@ -173,6 +174,13 @@ ShoveyLiveCheckStep :: (moves: s32, compact: *string) -> s32 {
     live_check.replaying = false
     live_check.index += 1
     return -1
+}
+
+// A cache checked against an older shipped campaign must not replace newly
+// corrected boards just because both campaigns have the same level count.
+ShoveyLiveLoadCached :: (text: string, base: string) -> bool {
+    if base != SHOVEY_APPROVED_CAMPAIGN_MARK { return false }
+    return ShoveyLiveLoadCompact(text)
 }
 
 // Loads a compact campaign kept after an earlier check.

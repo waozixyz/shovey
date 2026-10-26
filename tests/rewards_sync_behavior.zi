@@ -1,0 +1,146 @@
+#import, file "../src/rewards.zi";
+#import, file "../src/shared_progress.zi";
+#import "std/c_string"
+#import "std/json_scan"
+#import "std/text_buffer"
+Progress :: #import "entity/game_progress";
+
+first: Progress.GameProgressRecord;
+second: Progress.GameProgressRecord;
+first_exists: bool;
+second_exists: bool;
+other_account: bool;
+other_device: bool;
+local_first: [16]u8;
+local_second: [16]u8;
+owner_first: [65]u8;
+owner_second: [65]u8;
+flags: [8]bool;
+reply: string;
+retired: s32;
+writes: s32;
+connected: bool;
+
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if name != "entity.records" { return "{\"status\":\"signin\"}" }
+    if SharedProgressStatusField(request, "operation", "status") {
+        if !connected { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"\",\"sync\":\"local\"}" }
+        if other_account { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"second\",\"sync\":\"synced\"}" }
+        return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"first\",\"sync\":\"synced\"}"
+    }
+    if SharedProgressStatusField(request, "operation", "put") {
+        at := FieldAt(request, 0, "document")
+        incoming: Progress.GameProgressRecord
+        if !Progress.GameProgressRead(request[at:ValueEnd(request, at, 0)], *incoming) ||
+        TextUntilNul(incoming.game[:]) != "shovey.rewards" { return "{\"status\":\"rejected\"}" }
+        if other_account {
+            if second_exists { unused Progress.GameProgressMerge(*incoming, *second) }
+            second = incoming
+            second_exists = true
+        } else {
+            if first_exists { unused Progress.GameProgressMerge(*incoming, *first) }
+            first = incoming
+            first_exists = true
+        }
+        writes += 1
+        return "{\"status\":\"done\"}"
+    }
+    if (other_account && !second_exists) || (!other_account && !first_exists) {
+        return "{\"status\":\"missing\"}"
+    }
+    out: Vec(u8)
+    BuilderPrint(*out, "{\"status\":\"done\",\"document\":")
+    if other_account { Progress.GameProgressWrite(*second, *out) }
+    else { Progress.GameProgressWrite(*first, *out) }
+    BuilderPrint(*out, "}")
+    reply = BuilderFinish(out)
+    return reply
+}
+
+#program_export
+FakeRecord :: (name: string) -> string {
+    if name == "rewards" { return ifx other_device then TextUntilNul(local_second[:]) else TextUntilNul(local_first[:]) }
+    if name == "reward.owner" { return ifx other_device then TextUntilNul(owner_second[:]) else TextUntilNul(owner_first[:]) }
+    offset: s32 = ifx other_device then 4 else 0
+    for reward: cast(s32)0..1 {
+        for flag: cast(s32)0..1 {
+            if name == RewardFlagRecord(reward, flag == 1) {
+                return ifx flags[offset + reward * 2 + flag] then "1" else ""
+            }
+        }
+    }
+    return ""
+}
+
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    if name == "campaign" || name == "position" { retired += 1; return false }
+    if name == "rewards" { return ifx other_device then CopyCString(text, local_second[:]) else CopyCString(text, local_first[:]) }
+    if name == "reward.owner" { return ifx other_device then CopyCString(text, owner_second[:]) else CopyCString(text, owner_first[:]) }
+    offset: s32 = ifx other_device then 4 else 0
+    for reward: cast(s32)0..1 {
+        for flag: cast(s32)0..1 {
+            if name == RewardFlagRecord(reward, flag == 1) && text == "1" {
+                flags[offset + reward * 2 + flag] = true
+                return true
+            }
+        }
+    }
+    return true
+}
+
+Restart :: () {
+    reward_state = .{}
+    reward_loaded = false
+    reward_refresh_at = 0.0
+    reward_shared = .{}
+    reward_shared_started = false
+    reward_shared_owner = .{}
+    reward_local_allowed = true
+    reward_claiming = -1
+    reward_card = -1
+    reward_fresh = .{}
+}
+
+#program_export
+Check :: () -> s32 {
+    RewardOpen(REWARD_CHEST, 1.0)
+    RewardsPump(1.0)
+    if !RewardEarned(REWARD_CHEST) || first_exists { return 10 }
+    connected = true
+    RewardsPump(16.0)
+    if !RewardEarned(REWARD_CHEST) { return 11 }
+    RewardsPump(18.0)
+    if !first_exists || TextUntilNul(first.completed[:]) != "1" { return 1 }
+    // A fresh second device reads the first device's opened milestone.
+    other_device = true
+    Restart()
+    RewardsPump(20.0)
+    if !RewardEarned(REWARD_CHEST) || RewardClaimed(REWARD_CHEST) { return 2 }
+    reward_state[REWARD_CHEST] = 2
+    RewardsSave()
+    if TextUntilNul(first.completed[:]) != "11" { return 3 }
+    // The first device remains open and becomes empty on account hydration.
+    other_device = false
+    Restart()
+    RewardsPump(40.0)
+    if !RewardEarned(REWARD_CHEST) || !RewardClaimed(REWARD_CHEST) { return 4 }
+    // Its older local unclaimed snapshot cannot undo the synced claim.
+    unused CopyCString("r1:10", local_first[:])
+    Restart()
+    RewardsPump(60.0)
+    if !RewardClaimed(REWARD_CHEST) || TextUntilNul(first.completed[:]) != "11" { return 5 }
+    // Switching accounts cannot assign the first account's chest to another.
+    other_account = true
+    RewardsPump(80.0)
+    RewardsPump(82.0)
+    if RewardEarned(REWARD_CHEST) || second_exists { return 6 }
+    RewardOpen(REWARD_CHEST, 83.0)
+    if !second_exists || TextUntilNul(second.completed[:]) != "1" { return 7 }
+    Restart()
+    RewardsPump(100.0)
+    if !RewardEarned(REWARD_CHEST) || RewardClaimed(REWARD_CHEST) { return 8 }
+    if retired != 0 { return 9 }
+    return 42
+}
