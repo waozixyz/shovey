@@ -14,7 +14,7 @@ EDITOR_DEFINES ?=
 
 .PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zx web-zx-test
 
-.PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test
+.PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test star-merge-test
 editor-server-test:
 	python3 tests/editor_chest_test.py
 	python3 tests/editor_server_test.py
@@ -27,7 +27,12 @@ editor-glm-test: solver
 editor-save-test: editor solver
 	python3 tests/developer_editor_save_test.py
 
-editor-ui-test: editor editor-server-test
+star-merge-test: editor
+	ZIRAN_TOOLCHAIN='$(TOOLCHAIN)' EDITOR_GENERATED='$(EDITOR_OUT)/c' python3 tests/star_merge_behavior_test.py
+	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy \
+		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/star_merge_ui_test.py --binary '$(EDITOR_OUT)/shovey-level-editor'
+
+editor-ui-test: star-merge-test editor-server-test
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_ui_test.py
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 \
@@ -267,6 +272,7 @@ game-maps-test:
 	python3 tests/game_maps_test.py
 
 public-test: solver laws game-maps-test
+	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
@@ -296,6 +302,7 @@ laws:
 	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
 
 test: solver laws game-maps-test
+	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
 	sh tests/guide_test.sh '$(TOOLCHAIN)'

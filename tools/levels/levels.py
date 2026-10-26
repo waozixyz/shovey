@@ -14,6 +14,9 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from level_rules import validate_star_spacing
+
 WIDTH, HEIGHT = 12, 20
 CELLS = WIDTH * HEIGHT
 
@@ -53,7 +56,7 @@ def cells(rows):
 def classic_functions(levels):
     lines = ['ShoveyLevelData :: (number: s32) -> string {']
     for level in levels:
-        cells(level['cells'])
+        validate_star_spacing(cells(level['cells']), f'Classic {level["number"]}')
         if 'tiles' in level:
             assert all(kind in {0,4,5,6,12,14,47,48,49,*range(57,79),*range(95,104),*range(127,131)} for kind in cells(level['tiles']))
         if 'decorations' in level:
@@ -95,7 +98,7 @@ def secret_functions():
     entries.append((3, chest[0]))
     lines = ['ShoveySecretData :: (side: s32) -> string {']
     for side, level in entries:
-        cells(level['cells'])
+        validate_star_spacing(cells(level['cells']), f'Hidden {level.get("name", side)}')
         data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))
         lines.append(f'    if side == {side} {{ return "{data}" }}')
     lines += ['    return ""', '}', '', 'ShoveySecretSolution :: (side: s32) -> string {']

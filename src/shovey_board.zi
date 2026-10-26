@@ -739,14 +739,17 @@ BOARD_EFFECTS :: 16
 BOARD_FLIGHT_STEP :: 0.05
 BOARD_BURST_FRAME :: 0.06
 BOARD_BLAST_FRAME :: 0.08
+BOARD_STAR_SECONDS :: 0.55
 BoardEffect :: struct {
     // 1 a struck target, 2 a blast, 3 a ball dropping into its pit,
-    // 4 the first electric charge; 0 a free slot.
+    // 4 the first electric charge, 5 joining stars; 0 a free slot.
     kind: s32
     at: s32
     start: float64
     // The ball that dropped.
     piece: s32
+    // The neighboring stars absorbed at the pushed star's destination.
+    stars: s32
 }
 board_effects: [BOARD_EFFECTS]BoardEffect;
 board_flight_from: s32 = -1;
@@ -760,13 +763,13 @@ board_seen_powers: s32;
 board_seen_ground: [SHOVEY_CELLS]s32;
 board_seen_objects: [SHOVEY_CELLS]s32;
 
-BoardEffectStart :: (kind: s32, at: s32, start: float64, piece: s32 = 0) {
+BoardEffectStart :: (kind: s32, at: s32, start: float64, piece: s32 = 0, stars: s32 = 0) {
     slot: s32 = 0
     for index: cast(s32)0..BOARD_EFFECTS - 1 {
         if board_effects[index].kind == 0 { slot = index; break }
         if board_effects[index].start < board_effects[slot].start { slot = index }
     }
-    board_effects[slot] = BoardEffect.{.kind = kind, .at = at, .start = start, .piece = piece}
+    board_effects[slot] = BoardEffect.{.kind = kind, .at = at, .start = start, .piece = piece, .stars = stars}
 }
 
 BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
@@ -810,6 +813,19 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
             pit := ShoveyNeighbor(game.player, game.direction)
             if pit >= 0 && ShoveyPitColor(game.ground[pit]) > 0 && game.objects[pit] == 0 { BoardEffectStart(3, pit, now, before) }
         }
+        if before == 19 {
+            meeting := ShoveyNeighbor(game.player, game.direction)
+            if meeting >= 0 && game.objects[meeting] == 0 {
+                stars: s32 = 0
+                for side: cast(s32)0..3 {
+                    neighbor := ShoveyNeighbor(meeting, side)
+                    if neighbor >= 0 && neighbor != game.player && board_seen_objects[neighbor] == 19 && game.objects[neighbor] == 0 {
+                        stars |= 1 << side
+                    }
+                }
+                if stars != 0 { BoardEffectStart(5, meeting, now, 19, stars) }
+            }
+        }
     }
     board_seen = true
     board_seen_level = game.level
@@ -818,6 +834,66 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         board_seen_ground[at] = game.ground[at]
         board_seen_objects[at] = game.objects[at]
+    }
+}
+
+STAR_SPARK :: "F:M12 0L15 9L24 12L15 15L12 24L9 15L0 12L9 9Z"
+
+// The actual star pictures draw together, compress into a warm pulse, then
+// release a small ring of glints. Logical cells keep both orientations aligned.
+StarMergeEffects :: (session: Session, key: u64, grid: TileMapResult, effect: BoardEffect,
+    progress: float32, files: []string, landscape: bool) {
+    center := TileMapCell(grid, BoardDisplayIndex(effect.at, landscape))
+    cx := center.x + center.width * 0.5
+    cy := center.y + center.height * 0.5
+    count: s32 = 1
+    for side: cast(s32)0..3 {
+        if (effect.stars & (1 << side)) == 0 { continue }
+        neighbor := ShoveyNeighbor(effect.at, side)
+        if neighbor < 0 { continue }
+        cell := TileMapCell(grid, BoardDisplayIndex(neighbor, landscape))
+        cx += cell.x + cell.width * 0.5
+        cy += cell.y + cell.height * 0.5
+        count += 1
+    }
+    cx /= cast(float32)count
+    cy /= cast(float32)count
+    pull := progress / 0.65
+    if pull > 1.0 { pull = 1.0 }
+    eased := pull * pull * (3.0 - 2.0 * pull)
+    fade := 1.0 - progress
+    glow := center.width * (0.7 + progress * 1.4)
+    pulse := cast(float32)Math.Sin(cast(float64)progress * 3.141592653589793)
+    unused Box(session, BoxProps.{.key = WidgetPartKey(key, 1),
+            .bounds = Rectangle.{cx - glow * 0.5, cy - glow * 0.5, glow, glow},
+            .fill = Color.{255, 229, 141, cast(u8)(105.0 * pulse * fade)},
+            .border = Color.{255, 245, 199, cast(u8)(190.0 * pulse * fade)}, .radius = glow * 0.5})
+    if progress < 0.8 {
+        size := center.width * (1.0 - 0.88 * eased)
+        alpha := cast(u32)(255.0 * (1.0 - pull * pull))
+        for part: cast(s32)0..4 {
+            if part > 0 && (effect.stars & (1 << (part - 1))) == 0 { continue }
+            at := ifx part == 0 then effect.at else ShoveyNeighbor(effect.at, part - 1)
+            if at < 0 { continue }
+            cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            x := cell.x + cell.width * 0.5
+            y := cell.y + cell.height * 0.5
+            Image(session, ImageProps.{.key = WidgetPartKey(key, 2 + part), .asset_path = files[19], .alt_text = "",
+                    .bounds = Rectangle.{x + (cx - x) * eased - size * 0.5, y + (cy - y) * eased - size * 0.5, size, size},
+                    .fit = ImageFit.ImageFitContain, .smooth = true, .tint = 0xffffff00 | alpha})
+        }
+    }
+    if progress > 0.3 {
+        release := (progress - 0.3) / 0.7
+        for spark: cast(s32)0..7 {
+            angle := cast(float64)spark * 0.7853981633974483 + 0.3926990816987241
+            reach := center.width * (0.18 + release * 0.8)
+            size := center.width * (0.08 + (1.0 - release) * 0.12)
+            x := cx + cast(float32)Math.Cos(angle) * reach
+            y := cy + cast(float32)Math.Sin(angle) * reach
+            SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{x - size * 0.5, y - size * 0.5, size, size},
+                    .shape = STAR_SPARK, .color = Color.{255, 238, 166, cast(u8)(230.0 * (1.0 - release) * (1.0 - release))}})
+        }
     }
 }
 
@@ -1141,6 +1217,12 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, 
     for index: cast(s32)0..BOARD_EFFECTS - 1 {
         effect := *board_effects[index]
         if effect.kind == 0 || now < effect.start { continue }
+        if effect.kind == 5 {
+            progress := cast(float32)((now - effect.start) / BOARD_STAR_SECONDS)
+            if progress >= 1.0 { effect.kind = 0; continue }
+            StarMergeEffects(session, BoardOverlayKey(key, 1600 + index * 16), grid, effect.*, progress, files, landscape)
+            continue
+        }
         if effect.kind == 4 {
             progress := cast(float32)((now - effect.start) / CHARGE_SECONDS)
             if progress >= 1.0 || game.lost { effect.kind = 0; continue }

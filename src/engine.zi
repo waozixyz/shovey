@@ -304,6 +304,15 @@ ShoveyLoadData :: (game: *ShoveyGame, level: s32, data: string) -> bool {
             game.ground[position] = game.decorations[position]
         }
     }
+    // Stars join only after a push. Reject an already touching starting
+    // pair in built-in, downloaded and custom boards alike.
+    for position: cast(s32)0..SHOVEY_CELLS - 1 {
+        if game.objects[position] != 19 { continue }
+        for side: cast(s32)2..3 {
+            neighbor := ShoveyNeighbor(position, side)
+            if neighbor >= 0 && game.objects[neighbor] == 19 { return false }
+        }
+    }
     return game.player >= 0
 }
 

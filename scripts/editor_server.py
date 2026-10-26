@@ -12,6 +12,7 @@ import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publication_queue import Queue, atomic
+from level_rules import validate_star_spacing
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -83,6 +84,8 @@ def live_campaign_snapshot(config, answer, verify_route, previous=None):
                     any(not isinstance(row, str) or not re.fullmatch('[0-9a-f]{24}', row) for row in rows)):
                 raise ValueError('The live campaign has an invalid board')
             layers.extend(rows)
+        validate_star_spacing([int(''.join(level['cells'])[at:at + 2], 16)
+                               for at in range(0, 480, 2)], f'Classic {number}')
         route = level.get('solution')
         if not isinstance(route, str) or not re.fullmatch('[0123ft]{1,60000}', route):
             raise ValueError('The live campaign has no winning route')

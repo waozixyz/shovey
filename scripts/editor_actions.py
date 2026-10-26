@@ -21,6 +21,7 @@ from collections import Counter
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publication_queue import Queue
+from level_rules import validate_star_spacing
 DRAFTS = ROOT / 'backup/editor-drafts'
 SOLVER = ROOT / 'build/solver/shovey-solve-classic'
 LAYERS = ('cells', 'tiles', 'decorations')
@@ -55,6 +56,7 @@ def board_hex(level):
 def record(number, board, route):
     if not re.fullmatch('[0-9a-f]{1440}', board) or not re.fullmatch('[0123ft]+', route):
         raise ValueError('The saved board or winning route is incomplete')
+    validate_star_spacing([int(board[at:at + 2], 16) for at in range(0, 480, 2)], f'Classic {number}')
     def rows(start):
         return [board[i:i + 24] for i in range(start, start + 480, 24)]
     return dict(number=number, cells=rows(0), tiles=rows(480), decorations=rows(960), solution=route)
@@ -344,6 +346,8 @@ def apply_proposal(original, proposal, repair=False, mode='modify', partial=Fals
             raise ValueError('A puzzle piece overlaps blocked terrain')
         if decoration in BLOCKING_DECORATIONS and (kind or tile in WALLS | MOSS_WALLS | {64, 65}):
             raise ValueError('Keep trees clear of puzzle pieces and blocked terrain')
+    if not partial:
+        validate_star_spacing(updated)
     return ''.join(f'{kind:02x}' for kind in updated)
 
 
