@@ -183,7 +183,7 @@ try {
     const header = campaign.startsWith('C5') ? 6 : 4;
     const editorFixture = campaign.slice(0, 2) + (2).toString(16).padStart(header - 2, '0') + campaign.slice(header);
     await evaluate(`Module.FS.writeFile(${JSON.stringify(localPath)}, ${JSON.stringify(editorFixture)})`);
-    await textClick('Next');
+    for (let cover = 0; cover < 3 && !(await labels()).includes('Open'); cover++) await textClick('Next');
     await textClick('Open');
     await textClick('Levels');
     const editorNodes = await tree();
