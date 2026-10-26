@@ -1,0 +1,26 @@
+// Disposable UI-test save: the actual unfinished coast of level 29, one
+// outward step from its hidden room. No private room is added to the list.
+#import, file "../src/engine.zi";
+#import, file "../src/levels.zi";
+#import, file "../src/progress.zi";
+#import, file "../src/reward_locations.zi";
+
+#program_export
+Fixture :: () -> string {
+    board: ShoveyGame
+    if !ShoveyLoad(*board, CHEST_PARENT_LEVEL) { return "" }
+    board.player = 9 * SHOVEY_WIDTH
+    board.moves = 17
+    board.direction = 0
+    progress := ShoveyProgressNew()
+    progress.unlocked = CHEST_PARENT_LEVEL
+    return ShoveyCampaignSave(*progress, *board)
+}
+
+#import "std/file"
+#import "std/byte_text_linux"
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    if argc != 2 { return 1 }
+    return ifx WriteEntireFile(TextFromCString(argv[1]), Fixture()) then 0 else 1
+}

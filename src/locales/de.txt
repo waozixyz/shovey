@@ -664,3 +664,18 @@ Nicht jetzt
 [shovey_updates_setting]
 Neue Level
 ---
+[shovey_chest_empty]
+Leere Truhe
+---
+[shovey_chest_empty_detail]
+Du hast den Dew aus dieser Truhe bereits erhalten.
+---
+[shovey_reward_pending]
+Dein Dew wird angefordert…
+---
+[shovey_reward_unclaimed]
+Diese Belohnung wurde noch nicht abgeholt.
+---
+[shovey_reward_retry]
+Erneut versuchen
+---

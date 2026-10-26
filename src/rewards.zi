@@ -29,7 +29,7 @@ reward_next_at: float64;
 reward_card: s32 = -1;
 reward_card_signin: bool;
 reward_card_amount: [32]u8;
-reward_card_shown_at: float64;
+reward_card_empty: bool;
 
 RewardName :: (reward: s32) -> string {
     return ifx reward == REWARD_CHEST then "shovey.secret-chest" else "shovey.campaign-complete"
@@ -58,6 +58,30 @@ RewardsSave :: () {
 RewardEarned :: (reward: s32) -> bool {
     if !reward_loaded { RewardsLoad() }
     return reward_state[reward] != 0
+}
+
+RewardClaimed :: (reward: s32) -> bool {
+    if !reward_loaded { RewardsLoad() }
+    return reward_state[reward] == 2
+}
+
+// Opening a chest is repeatable. Only a confirmed claim makes it empty.
+RewardOpen :: (reward: s32, now: float64) {
+    RewardEarn(reward, now)
+    reward_card = reward
+    reward_card_empty = RewardClaimed(reward)
+    reward_card_signin = false
+    reward_card_amount = .{}
+    if !reward_card_empty {
+        reward_fresh[reward] = true
+        reward_next_at = now
+    }
+}
+
+RewardRetry :: (reward: s32, now: float64) {
+    if RewardClaimed(reward) { return }
+    reward_fresh[reward] = true
+    reward_next_at = now
 }
 
 // Earns a reward on this device; its claim starts at once.
@@ -93,17 +117,34 @@ RewardsPump :: (now: float64) {
             reward_next_at = now + 60.0
             return
         }
+        credited_at := FieldAt(answer, 0, "credited")
+        credited_end := ifx credited_at < 0 then -1 else ValueEnd(answer, credited_at, 0)
+        credited: s32 = -1
+        if credited_at >= 0 && credited_end == credited_at + 4 && answer[credited_at:credited_end] == "true" {
+            credited = 1
+        } else if credited_at >= 0 && credited_end == credited_at + 5 && answer[credited_at:credited_end] == "false" {
+            credited = 0
+        }
+        units := ReadNumber(answer, FieldAt(answer, 0, "units"))
+        if credited < 0 || (credited == 1 && (!units.valid || units.value <= 0.0 ||
+            units.value > 9007199254740991.0 || cast(float64)cast(s64)units.value != units.value)) {
+            reward_next_at = now + 60.0
+            return
+        }
         reward_state[reward] = 2
         RewardsSave()
         // Already given to this account, on another device perhaps: nothing new.
-        if RewardText(answer, "\"credited\":true") {
-            units := ReadNumber(answer, FieldAt(answer, 0, "units"))
+        if credited == 1 {
             if units.valid && units.value > 0.0 && DewFormat(cast(s64)units.value, DewUnits, reward_card_amount[:]) {
                 reward_card = reward
                 reward_card_signin = false
-                reward_card_shown_at = 0.0
+                reward_card_empty = false
             }
-        } else if reward_card == reward { reward_card = -1 }
+        } else if reward_card == reward {
+            reward_card_empty = true
+            reward_card_signin = false
+            reward_card_amount = .{}
+        }
         reward_next_at = now
         return
     }
@@ -116,6 +157,7 @@ RewardsPump :: (now: float64) {
         status := RewardStatus(answer, status_bytes[:])
         if status == "pending" {
             reward_claiming = reward
+            if reward_card == reward { reward_card_signin = false }
             reward_next_at = now + 0.5
         } else if status == "signin" {
             // Asked once when it is earned; it is claimed whenever an
@@ -123,7 +165,6 @@ RewardsPump :: (now: float64) {
             if reward_fresh[reward] {
                 reward_card = reward
                 reward_card_signin = true
-                reward_card_shown_at = 0.0
             }
             reward_fresh[reward] = false
             reward_next_at = now + 5.0
@@ -134,13 +175,4 @@ RewardsPump :: (now: float64) {
         }
         return
     }
-}
-
-RewardText :: (text: string, part: string) -> bool {
-    at: s64 = 0
-    while at + part.count <= text.count {
-        if text[at:at + part.count] == part { return true }
-        at += 1
-    }
-    return false
 }

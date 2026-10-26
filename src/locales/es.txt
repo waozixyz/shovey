@@ -664,3 +664,18 @@ Ahora no
 [shovey_updates_setting]
 Niveles nuevos
 ---
+[shovey_chest_empty]
+Cofre vacío
+---
+[shovey_chest_empty_detail]
+Ya has reclamado el Dew de este cofre.
+---
+[shovey_reward_pending]
+Reclamando tu Dew…
+---
+[shovey_reward_unclaimed]
+Aún no has reclamado esta recompensa.
+---
+[shovey_reward_retry]
+Reintentar
+---

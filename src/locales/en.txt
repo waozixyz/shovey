@@ -664,3 +664,18 @@ Not now
 [shovey_updates_setting]
 New levels
 ---
+[shovey_chest_empty]
+Empty chest
+---
+[shovey_chest_empty_detail]
+You have already claimed this chest’s Dew.
+---
+[shovey_reward_pending]
+Claiming your Dew…
+---
+[shovey_reward_unclaimed]
+This reward has not been claimed yet.
+---
+[shovey_reward_retry]
+Try again
+---

@@ -664,3 +664,18 @@ Dew
 [shovey_updates_setting]
 Новые уровни
 ---
+[shovey_chest_empty]
+Пустой сундук
+---
+[shovey_chest_empty_detail]
+Ты уже получил Dew из этого сундука.
+---
+[shovey_reward_pending]
+Получаем Dew…
+---
+[shovey_reward_unclaimed]
+Эта награда ещё не получена.
+---
+[shovey_reward_retry]
+Попробовать снова
+---

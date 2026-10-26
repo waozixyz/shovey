@@ -7,6 +7,10 @@
 // record keeps what was answered across a relaunch.
 signed_in: bool;
 claimed: bool;
+service_failed: bool;
+malformed_answer: bool;
+already_claimed: bool;
+claim_requests: s32;
 record_rewards: [16]u8;
 
 #program_export
@@ -14,10 +18,14 @@ FakeService :: (name: string, request: string) -> string {
     if name != "entity.dew" { return "" }
     if request == "claim:shovey.secret-chest" {
         if !signed_in { return "{\"status\":\"signin\"}" }
+        if service_failed { return "{\"status\":\"failed\"}" }
+        claim_requests += 1
         claimed = true
         return "{\"status\":\"pending\"}"
     }
     if request == "claim-status" && claimed {
+        if malformed_answer { return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\"}" }
+        if already_claimed { return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\",\"credited\":false,\"units\":0,\"balance\":2000000}" }
         return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\",\"credited\":true,\"units\":2000000,\"balance\":2000000}"
     }
     return "{\"status\":\"failed\"}"
@@ -39,22 +47,55 @@ Check :: () -> s32 {
     if TextUntilNul(record_rewards[:]) != "r1:10" { return 1 }
     RewardsPump(1.0)
     if reward_card != REWARD_CHEST || !reward_card_signin || claimed { return 2 }
-    // The player connects an account; the next try claims it.
+    // Closing or revisiting an opened chest must not hide an unclaimed reward.
+    reward_card = -1
+    RewardOpen(REWARD_CHEST, 2.0)
+    if reward_card != REWARD_CHEST || reward_card_empty || RewardClaimed(REWARD_CHEST) { return 10 }
+    RewardsPump(2.0)
+    if !reward_card_signin { return 11 }
+    // The player connects an account; failure still leaves the reward pending.
     signed_in = true
     RewardsPump(3.0)
     if claimed { return 3 }
-    RewardsPump(6.5)
+    service_failed = true
+    RewardsPump(7.0)
+    if RewardClaimed(REWARD_CHEST) || reward_state[REWARD_CHEST] != 1 { return 12 }
+    service_failed = false
+    reward_card = -1
+    RewardOpen(REWARD_CHEST, 8.0)
+    RewardsPump(8.0)
     if !claimed || reward_claiming != REWARD_CHEST { return 4 }
-    RewardsPump(7.5)
+    malformed_answer = true
+    RewardsPump(9.0)
+    if RewardClaimed(REWARD_CHEST) || TextUntilNul(record_rewards[:]) != "r1:10" { return 13 }
+    malformed_answer = false
+    RewardRetry(REWARD_CHEST, 10.0)
+    RewardsPump(10.0)
+    RewardsPump(11.0)
     if reward_claiming != -1 || reward_state[REWARD_CHEST] != 2 { return 5 }
     if reward_card != REWARD_CHEST || reward_card_signin || TextUntilNul(reward_card_amount[:]) != "2" { return 6 }
     if TextUntilNul(record_rewards[:]) != "r1:20" { return 7 }
+    requests := claim_requests
+    RewardOpen(REWARD_CHEST, 20.0)
+    RewardsPump(21.0)
+    if !reward_card_empty || reward_card != REWARD_CHEST || claim_requests != requests { return 14 }
     // A relaunch reads the record and claims nothing again.
     reward_loaded = false
     reward_state[REWARD_CHEST] = 0
     claimed = false
+    RewardOpen(REWARD_CHEST, 100.0)
     RewardsPump(100.0)
     if !RewardEarned(REWARD_CHEST) || reward_state[REWARD_CHEST] != 2 || claimed { return 8 }
+    if !reward_card_empty || reward_card != REWARD_CHEST { return 15 }
+    // The node may confirm that another device already claimed it: show empty.
+    unused CopyCString("r1:10", record_rewards[:])
+    reward_loaded = false
+    reward_state = .{}
+    already_claimed = true
+    RewardOpen(REWARD_CHEST, 150.0)
+    RewardsPump(150.0)
+    RewardsPump(151.0)
+    if !RewardClaimed(REWARD_CHEST) || !reward_card_empty || reward_card != REWARD_CHEST { return 16 }
     // Finishing the campaign without an account asks once, then waits.
     signed_in = false
     RewardEarn(REWARD_CAMPAIGN, 200.0)

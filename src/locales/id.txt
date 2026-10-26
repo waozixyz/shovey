@@ -664,3 +664,18 @@ Nanti saja
 [shovey_updates_setting]
 Level baru
 ---
+[shovey_chest_empty]
+Peti kosong
+---
+[shovey_chest_empty_detail]
+Dew dari peti ini sudah kamu klaim.
+---
+[shovey_reward_pending]
+Mengklaim Dew…
+---
+[shovey_reward_unclaimed]
+Hadiah ini belum diklaim.
+---
+[shovey_reward_retry]
+Coba lagi
+---

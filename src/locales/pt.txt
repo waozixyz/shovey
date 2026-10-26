@@ -664,3 +664,18 @@ Agora não
 [shovey_updates_setting]
 Novos níveis
 ---
+[shovey_chest_empty]
+Baú vazio
+---
+[shovey_chest_empty_detail]
+Você já resgatou o Dew deste baú.
+---
+[shovey_reward_pending]
+Resgatando seu Dew…
+---
+[shovey_reward_unclaimed]
+Esta recompensa ainda não foi resgatada.
+---
+[shovey_reward_retry]
+Tentar novamente
+---

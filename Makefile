@@ -250,6 +250,16 @@ bench: levels build/ziran/libziran.a
 		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/solver/shovey-bench
 
 # The checks the public repository can run with only the published campaign.
+.PHONY: chest-fixture
+chest-fixture: build/ziran/libziran.a
+	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
+		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+		--entry chest_fixture:main -o build/chest-test/c tests/chest_fixture.zi
+	$${CC:-cc} -std=c11 -O1 -I'$(TOOLCHAIN)/include' \
+		$$(find build/chest-test/c -type d -printf ' -iquote %p') \
+		$$(find build/chest-test/c -name '*.c') build/ziran/libziran.a -lm -lpthread -o build/chest-test/fixture
+	build/chest-test/fixture build/chest-test/fixture.txt
+
 .PHONY: game-maps-test
 game-maps-test:
 	python3 tests/game_maps_test.py
@@ -258,6 +268,7 @@ public-test: solver laws game-maps-test
 	python3 tests/editor_server_test.py
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
+	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
@@ -282,6 +293,7 @@ test: solver laws game-maps-test
 	python3 tests/editor_server_test.py
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
+	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py

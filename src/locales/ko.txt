@@ -664,3 +664,18 @@ Shovey
 [shovey_updates_setting]
 새 단계
 ---
+[shovey_chest_empty]
+빈 보물 상자
+---
+[shovey_chest_empty_detail]
+이 상자의 Dew는 이미 받았어요.
+---
+[shovey_reward_pending]
+Dew를 받는 중…
+---
+[shovey_reward_unclaimed]
+아직 이 보상을 받지 않았어요.
+---
+[shovey_reward_retry]
+다시 시도
+---

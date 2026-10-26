@@ -664,3 +664,18 @@ Pas maintenant
 [shovey_updates_setting]
 Nouveaux niveaux
 ---
+[shovey_chest_empty]
+Coffre vide
+---
+[shovey_chest_empty_detail]
+Tu as déjà récupéré le Dew de ce coffre.
+---
+[shovey_reward_pending]
+Récupération de ton Dew…
+---
+[shovey_reward_unclaimed]
+Cette récompense n’a pas encore été récupérée.
+---
+[shovey_reward_retry]
+Réessayer
+---

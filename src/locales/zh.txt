@@ -664,3 +664,18 @@ Shovey
 [shovey_updates_setting]
 新关卡
 ---
+[shovey_chest_empty]
+空宝箱
+---
+[shovey_chest_empty_detail]
+你已经领取了这个宝箱的 Dew。
+---
+[shovey_reward_pending]
+正在领取 Dew…
+---
+[shovey_reward_unclaimed]
+这份奖励尚未领取。
+---
+[shovey_reward_retry]
+重试
+---

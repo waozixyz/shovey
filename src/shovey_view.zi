@@ -16,6 +16,8 @@ Math :: #import "std/math";
 #import "control_props"
 #import "box_props"
 #import "box_widget"
+#import "modal_widget"
+#import "modal_props"
 #import "svg_icon_props"
 #import "svg_icon_widget"
 #import "press_props"
@@ -981,33 +983,44 @@ EndingScreen :: (width: float32, top: float32, bottom: float32, key: s32) {
     RewardCard(width, bottom)
 }
 
-// A reward's card floats over the bottom of the screen without stopping
-// play: it asks for an account to claim the reward's Dew, or tells the Dew
-// received and goes by itself. Its X closes it either way.
-REWARD_CARD_SECONDS :: 6.0
+// A chest stays available until the node confirms its reward. Closing its
+// dialog never marks that reward as claimed.
 RewardCard :: (width: float32, bottom: float32) {
     if reward_card < 0 { return }
-    if reward_card_shown_at == 0.0 { reward_card_shown_at = frame.now }
-    if !reward_card_signin && frame.now - reward_card_shown_at >= REWARD_CARD_SECONDS { reward_card = -1; return }
-    card_width := ifx width - 32.0 < 440.0 then width - 32.0 else 440.0
-    height: float32 = ifx reward_card_signin then 136.0 else 84.0
-    bounds := Rectangle.{(width - card_width) / 2.0, bottom - height - 16.0, card_width, height}
-    unused Box(frame.session, BoxProps.{.key = cast(u64)20120, .bounds = bounds, .radius = 14.0,
-            .fill = Color.{30, 36, 35, 238}, .border = Color.{255, 226, 150, 255}})
-    Image(frame.session, ImageProps.{.key = cast(u64)20121, .asset_path = sprite_files[SPRITE_CHEST + 1], .alt_text = "",
-            .fit = ImageFit.ImageFitContain, .bounds = Rectangle.{bounds.x + 12.0, bounds.y + 14.0, 56.0, 56.0}})
-    title := AppLocaleHost(ifx reward_card == REWARD_CHEST then "shovey_chest_found" else "shovey_campaign_reward")
-    Caption(20122, Rectangle.{bounds.x + 80.0, bounds.y + 10.0, bounds.width - 136.0, 28.0}, title, 17)
+    title := AppLocaleHost(ifx reward_card_empty then "shovey_chest_empty" else
+        ifx reward_card == REWARD_CHEST then "shovey_chest_found" else "shovey_campaign_reward")
     detail: Vec(u8)
-    if reward_card_signin { BuilderPrint(*detail, "%", AppLocaleHost("shovey_reward_signin")) }
-    else { BuilderPrint(*detail, "+% %", TextUntilNul(reward_card_amount[:]), AppLocaleHost("shovey_dew")) }
-    Caption(20123, Rectangle.{bounds.x + 80.0, bounds.y + 40.0, bounds.width - 136.0, 36.0}, TextView(VecSlice(detail, 0, detail.count)), 14)
-    VecFree(detail)
-    if Control(20124, Rectangle.{bounds.x + bounds.width - 52.0, bounds.y + 8.0, 44.0, 44.0}, AppLocaleHost("shovey_close"), false, "", ICON_CLOSE) {
-        reward_card = -1
+    defer { VecFree(detail) }
+    if reward_card_empty {
+        BuilderPrint(*detail, "%", AppLocaleHost("shovey_chest_empty_detail"))
+    } else if reward_card_signin {
+        BuilderPrint(*detail, "%", AppLocaleHost("shovey_reward_signin"))
+    } else if reward_card_amount[0] != 0 {
+        BuilderPrint(*detail, "+% %", TextUntilNul(reward_card_amount[:]), AppLocaleHost("shovey_dew"))
+    } else {
+        BuilderPrint(*detail, "%", AppLocaleHost(ifx reward_claiming == reward_card then
+            "shovey_reward_pending" else "shovey_reward_unclaimed"))
     }
-    if reward_card_signin && Control(20125, Rectangle.{bounds.x + 80.0, bounds.y + 82.0, 180.0, 44.0}, AppLocaleHost("shovey_reward_connect")) {
-        unused AppService("entity.profile", "open")
+    actions: [2]ActionModalAction
+    count: s64 = 0
+    can_retry := !reward_card_empty && reward_card_amount[0] == 0 && reward_claiming != reward_card
+    if can_retry {
+        actions[0] = ActionModalAction.{.label = AppLocaleHost(ifx reward_card_signin then
+                "shovey_reward_connect" else "shovey_reward_retry"),
+            .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}
+        count += 1
+    }
+    actions[count] = ActionModalAction.{.label = AppLocaleHost("shovey_close"),
+        .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}
+    count += 1
+    result := ActionModal(frame.session, ActionModalProps.{.key = cast(u64)20120, .id = 20120,
+            .title = title, .message = TextView(VecSlice(detail, 0, detail.count)), .max_width = 440,
+            .show_close = true, .close_label = AppLocaleHost("shovey_close")}, actions[:count])
+    if can_retry && result.action == 1 {
+        if reward_card_signin { unused AppService("entity.profile", "open") }
+        else { RewardRetry(reward_card, frame.now) }
+    } else if result.action != 0 {
+        reward_card = -1
     }
 }
 
@@ -1030,6 +1043,7 @@ LevelChangeShade :: () -> float32 {
 // Back from the level list or help returns to the level; false while
 // playing, so the host returns to the cover that opened the game.
 ShoveyBack :: () -> bool {
+    if reward_card >= 0 { reward_card = -1; return true }
     if !selector_open && !help_open { return false }
     selector_open = false
     help_open = false
@@ -1096,6 +1110,10 @@ ShoveyFrame :: () {
     bottom := cast(float32)(frame.height - frame.bottom)
     ShoveyDress(frame.session, width, top, bottom)
     key := AppKeyHost()
+    if reward_card >= 0 {
+        if key == 256 || key == 4 { reward_card = -1 }
+        key = 0
+    }
     if selector_open && key == 256 {
         unused ShoveyBack()
         key = 0
@@ -1291,7 +1309,7 @@ ShoveyFrame :: () {
     if key == 264 || key == 83 { keyed = 3 }
     // Until the controls question is answered it takes every key.
     choosing := !mini && !ControlsChosen()
-    if choosing || walking || edge_at > 0.0 { keyed = -1; key = 0 }
+    if choosing || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
     if key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
@@ -1411,7 +1429,7 @@ ShoveyFrame :: () {
         ControlsChoice(width, top, bottom)
         return
     }
-    disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel()
+    disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel() || reward_card >= 0
     // Touch: swipe anywhere under the bar to step, or tap a cell or the space
     // beside the board to step towards it; hold either to keep walking. With
     // the movement pad chosen, only the pad steps. The pad and Fire come
@@ -1483,9 +1501,16 @@ ShoveyFrame :: () {
         else { Remember() }
     }
     // Stepping onto the secret chest opens it.
-    if changed && ChestHere() && game.player == CHEST_CELL && !RewardEarned(REWARD_CHEST) {
-        RewardEarn(REWARD_CHEST, frame.now)
-        if !SoundMuted() { unused AppSoundHost("assets/shovey/sounds/goal.wav") }
+    if ChestHere() && game.player == CHEST_CELL {
+        chest := TileMapCell(grid, BoardDisplayIndex(CHEST_CELL, landscape))
+        tapped := Press(frame.session, PressProps.{.key = cast(u64)20126, .id = 20126,
+                .bounds = chest, .label = AppLocaleHost("shovey_chest_found"),
+                .now = frame.now, .disabled = reward_card >= 0}).clicked
+        if changed || tapped {
+            first_open := !RewardEarned(REWARD_CHEST)
+            RewardOpen(REWARD_CHEST, frame.now)
+            if first_open && !SoundMuted() { unused AppSoundHost("assets/shovey/sounds/goal.wav") }
+        }
     }
     if !cinematic { RewardCard(width, bottom) }
 }

@@ -664,3 +664,18 @@ Teď ne
 [shovey_updates_setting]
 Nové úrovně
 ---
+[shovey_chest_empty]
+Prázdná truhla
+---
+[shovey_chest_empty_detail]
+Dew z této truhly už máš.
+---
+[shovey_reward_pending]
+Vyzvedávání Dew…
+---
+[shovey_reward_unclaimed]
+Tato odměna ještě nebyla vyzvednuta.
+---
+[shovey_reward_retry]
+Zkusit znovu
+---

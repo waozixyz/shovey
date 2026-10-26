@@ -664,3 +664,18 @@ Non ora
 [shovey_updates_setting]
 Nuovi livelli
 ---
+[shovey_chest_empty]
+Scrigno vuoto
+---
+[shovey_chest_empty_detail]
+Hai già riscattato il Dew di questo scrigno.
+---
+[shovey_reward_pending]
+Riscatto del Dew…
+---
+[shovey_reward_unclaimed]
+Questa ricompensa non è ancora stata riscattata.
+---
+[shovey_reward_retry]
+Riprova
+---
