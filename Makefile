@@ -213,6 +213,7 @@ web: bundles
 		--preload-file '$(KRYON)/assets/fonts/LiberationSans-Regular.ttf@/kryon-font.ttf' \
 		--preload-file build/web-assets/assets@/assets -o $(WEB_OUT)/index.js
 	cp src/web/index.html $(WEB_OUT)/index.html
+	cp src/web/privacy.html $(WEB_OUT)/privacy.html
 	SHOVEY_WEB_OUT='$(WEB_OUT)' python3 scripts/stamp-web.py --deployed
 	cp assets/shovey/preview.png $(WEB_OUT)/loading.png
 	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png $(WEB_OUT)/

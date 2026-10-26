@@ -1,10 +1,52 @@
 <!doctype html>
-<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shovey privacy and account data</title>
-<style>body{font:18px/1.6 system-ui,sans-serif;max-width:48rem;margin:3rem auto;padding:0 1.5rem;color:#223328;background:#fafaf4}a{color:#286342}h1,h2{line-height:1.2}</style>
-<main><a href="/">Shovey</a><h1>Privacy and account data</h1><p>Updated 23 October 2026. Shovey is made by Waozi.</p>
-<h2>Local puzzles and progress</h2><p>You can play Shovey without an account. Progress, preferences and editor drafts are stored on your device. Shovey has no advertising or analytics SDK. Your device or browser may include app data in its own backup system; those copies are governed by that system's settings.</p>
-<h2>Optional profile and node services</h2><p>Profile can connect an account to a Daochi node. Explicit account, device-link and node-service requests use the network. The selected node receives the account identifiers and service requests needed for those features; network services can observe connection information such as an IP address and request time. The default Waozi node is <a href="https://api.waozi.xyz">api.waozi.xyz</a>. Other nodes have their own operators and policies. Local game progress is separate from these account services.</p>
-<h2 id="delete-account">Delete account data</h2><p>Profile's account-management screen offers remote-data clearing and logout. For help deleting data held by Waozi's node without reinstalling Shovey, email <a href="mailto:waozi@proton.me?subject=Shovey%20account%20deletion">waozi@proton.me</a> with the subject “Shovey account deletion”, your public account ID and the node address. We must verify control of the account before removing its data. Never send a private account key, password or sign-in code. For a different node, contact its operator.</p>
-<p>Logging out or clearing remote account data does not erase local progress, exported levels, device backups or other devices' copies. Your operating system's app-data controls can remove local Android data; your browser's site-data controls can remove the browser game's local data. Back up anything you want to retain before clearing it.</p>
-<h2>Contact</h2><p>Privacy questions and data requests: <a href="mailto:waozi@proton.me">waozi@proton.me</a>. <a href="https://github.com/waozixyz/shovey">Read Shovey's source</a>.</p></main></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shovey Privacy Policy</title>
+  <meta name="description" content="How Shovey handles local saves, optional accounts, online services and data deletion.">
+  <style>
+    body{font:18px/1.65 system-ui,sans-serif;max-width:48rem;margin:3rem auto;padding:0 1.5rem;color:#223328;background:#fafaf4}
+    a{color:#286342}h1,h2{line-height:1.2}h2{margin-top:2rem}
+    li{margin:.5rem 0}footer{margin:2rem 0;color:#526052}
+  </style>
+</head>
+<body>
+<main>
+  <a href="/">Play Shovey</a>
+  <h1>Shovey Privacy Policy</h1>
+  <p>Updated 26 October 2026. This policy covers the Shovey game for Android, desktop and the web, made by Waozi. Privacy contact: <a href="mailto:waozi@proton.me">waozi@proton.me</a>.</p>
+
+  <h2>Playing on your device</h2>
+  <p>You can play the included puzzles without creating an account. Shovey stores preferences, unlocked puzzles, completed levels, unfinished boards, editor drafts and locally earned reward status on your device or in your browser. A local completion history can include the puzzle version, moves and route used to solve it. Shovey includes no advertising or analytics SDK.</p>
+  <p>Your device or browser may include app data in its own backup system. Those copies are governed by that system's settings. Exported levels and account backups you choose to save are also under your control.</p>
+
+  <h2>Online features and connection information</h2>
+  <p>Fetching campaign updates or shared levels, connecting an account and using node services require a network connection. The receiving service and its hosting providers can process connection information such as your IP address and request time to deliver the request and protect the service. The website is hosted on Cloudflare Pages.</p>
+  <p>The default Waozi node is <a href="https://api.waozi.xyz">https://api.waozi.xyz</a>. Where the app lets you select another node, that node has its own operator and privacy practices. Selecting a node alone does not create an account or enable account synchronization.</p>
+
+  <h2>Optional accounts, progress and rewards</h2>
+  <p>When you connect an account, the account service uses your public account identifier and alias, if set, to provide account, device-connection and synchronization features. The native host manages account keys and recovery. Do not send private keys, passwords or recovery codes to support.</p>
+  <p>On hosts that support account synchronization, earned unlocks and completion marks can be synchronized with your connected account. Supported editor records can also be synchronized. The unfinished board and movement saves stay on the device. Synced private records can be encrypted by the host before upload; public identifiers and requests to use a service are still visible to its operator.</p>
+  <p>To verify completed puzzles and optional Dew rewards, the account service may submit completion evidence, including the game and level identifier, puzzle version, moves or solution route, and the account claiming the completion. The node uses this information to validate earned progress and prevent duplicate or invalid reward claims.</p>
+  <p>If you use the optional Dew services in Profile, the selected node processes your account identifier, balance, reward claims, funding-address requests and storage-plan purchases. Funding and payments are handled by the node and the applicable payment network. Local puzzles do not require a payment or a connected account.</p>
+
+  <h2>Sharing levels</h2>
+  <p>If you choose to publish a level collection through a supported host, the selected node receives the collection, its title, puzzle data, winning routes, visibility setting and your public account identifier or alias. Public collections and their author details can be seen by other users. Choose the offered visibility setting before sharing; unpublishing does not remove copies that other people have already downloaded.</p>
+
+  <h2>How data is used and shared</h2>
+  <p>These services use data to deliver requested content, keep account records available across supported devices, verify progress and rewards, and operate and protect the service. Shovey does not send data to advertising or analytics SDKs. Node operators, hosting providers and any payment service you choose receive the information needed for the features they provide. Publishing a collection also shares it with the audience you select.</p>
+  <p>The default Waozi endpoints use HTTPS. The security and retention practices of another node depend on its operator. Account-key backups, device connection and exports should be handled with care because they can grant access to an account or contain its data.</p>
+
+  <h2 id="delete-account">Retention and deleting account data</h2>
+  <p>Local saves remain until you remove them using the app or your operating system's app-data controls. Browser saves can be removed through the browser's site-data controls. Back up anything you want to keep before clearing data.</p>
+  <p>Profile's account-management screen offers remote-data clearing on supported hosts and logout. Synced content remains on the selected node until removed through those controls or its operator. Logging out alone does not delete remote data.</p>
+  <p>You can request deletion of your account and associated data held by Waozi's node without reinstalling Shovey. Email <a href="mailto:waozi@proton.me?subject=Shovey%20account%20deletion">waozi@proton.me</a> with the subject <strong>Shovey account deletion</strong>, your public account ID and the node address. We must verify that you control the account before acting. Never send a private account key, password or sign-in code. For a different node, contact that node's operator.</p>
+  <p>Remote-data clearing or an account-deletion request does not erase local saves, exported files, device backups or other people's copies of shared levels. If service, security or legal requirements prevent removal of particular records, the operator must explain what remains and why when handling the request.</p>
+
+  <h2>Questions and updates</h2>
+  <p>For privacy questions, account-data requests or questions about a child's data, contact <a href="mailto:waozi@proton.me">waozi@proton.me</a>. This page will be updated when Shovey's data handling changes. Its date shows the latest revision.</p>
+</main>
+<footer><a href="https://github.com/waozixyz/shovey">Shovey source code</a> &middot; <a href="https://waozi.xyz">Waozi</a></footer>
+</body>
+</html>
