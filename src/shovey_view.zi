@@ -1063,7 +1063,7 @@ ShoveyBack :: () -> bool {
 
 ReplayOpened :: () {
     if ShoveySecret(game.level) || completion_path.level != game.level { return }
-    replay_ack_failed = !LevelReplayOpened(game.level, TextUntilNul(completion_path.map[:]), TextUntilNul(shared_progress.owner[:]))
+    replay_ack_failed = !LevelReplayOpened(game.level, TextUntilNul(completion_path.map[:]), TextUntilNul(shared_progress.owner[:]), ShoveyLevelBoard(game.level))
     if replay_ack_failed { save_failed = true }
 }
 

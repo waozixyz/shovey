@@ -44,6 +44,9 @@ Check :: () -> s32 {
     Fixture.Cell(0, 15, 0); Fixture.Cell(0, 26, 7)
     edited := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
     if !Notice(4, edited) || Fixture.calls != 0 { return 4 }
+    // Continue on an old attempt cannot acknowledge a live replacement.
+    if !LevelReplayOpened(4, original, "first", edited) ||
+    !LevelReplayDot(4, edited, true, "first") { return 21 }
     // Inspecting the selector and frame pumping never changes saved records.
     writes := Fixture.writes
     game: ShoveyGame
@@ -52,13 +55,13 @@ Check :: () -> s32 {
     unused Notice(4, edited)
     if Fixture.writes != writes || checkpoint != ShoveySave(*game) { return 5 }
     // Opening, without playing or winning, dismisses only the opened revision.
-    if !LevelReplayOpened(4, edited, "first") || Notice(4, edited) { return 6 }
+    if !LevelReplayOpened(4, edited, "first", edited) || Notice(4, edited) { return 6 }
     unused Fixture.Map()
     Fixture.Cell(0, 15, 0); Fixture.Cell(0, 38, 7)
     newer := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
     if !Notice(4, newer) { return 7 }
     // A second account's acknowledgement and route cannot dismiss this one.
-    if !LevelReplayOpened(4, newer, "second") || !Notice(4, newer, "first") || Notice(4, newer, "second") { return 8 }
+    if !LevelReplayOpened(4, newer, "second", newer) || !Notice(4, newer, "first") || Notice(4, newer, "second") { return 8 }
     if !Notice(4, newer, "first") { return 9 }
     // A new win on the edited board needs no replay, even after restart.
     if !Win(4, newer, "233") || Notice(4, newer) { return 10 }
@@ -93,7 +96,7 @@ Check :: () -> s32 {
     level_replay_notices[6].checked { return 17 }
     // Dismissal failure is reported; it must not corrupt routes or win marks.
     Fixture.refuse_save = true
-    if LevelReplayOpened(7, edited, "first") { return 18 }
+    if LevelReplayOpened(7, edited, "first", edited) { return 18 }
     Fixture.refuse_save = false
     if Fixture.calls != 0 || Fixture.bad_record || !Notice(7, edited) { return 19 }
     if UiFixture().count == 0 { return 20 }

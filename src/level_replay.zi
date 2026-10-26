@@ -67,8 +67,11 @@ LevelReplaySeen :: (level: s32, owner: string, hash: []u8) -> bool {
 
 // Opening acknowledges this exact board, without clearing any earned win,
 // changing the best route, or acknowledging a later revision.
-LevelReplayOpened :: (level: s32, map: string, owner: string) -> bool {
+LevelReplayOpened :: (level: s32, map: string, owner: string, current_map: string) -> bool {
     if level < 1 || level > SHOVEY_PROGRESS_LEVELS { return true }
+    // Returning to an older attempt after a live edit does not open the
+    // replacement board, so its notice must remain until that board opens.
+    if map != current_map { return true }
     LevelReplayOwner(owner)
     hash: [65]u8
     if !Completion.GameCompletionMapHash("shovey.classic", level, map, hash[:]) { return false }
