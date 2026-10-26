@@ -16,6 +16,8 @@ from release_assets import prepare_release_assets
 
 ROOT = Path(__file__).resolve().parents[1]
 EDITIONS = [app['manifest'] for app in json.loads((ROOT / 'apps.json').read_text())['apps']]
+LIBRARY_ENTRIES = {app['manifest']: app.get('library_entries', [])
+                   for app in json.loads((ROOT / 'apps.json').read_text())['apps']}
 # A bundle may hold only its own assets/<name>/ folder. A game that draws
 # another's pictures lists copies in shared_assets.json beside its catalog.
 
@@ -153,6 +155,7 @@ def build(toolchain, kryon, apps, mingcute):
             '--module-path', 'daochi_client=' + str(daochi),
             '--module-path', 'crypto=' + str(crypto / 'src'),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
+            *[flag for name in LIBRARY_ENTRIES[manifest] for flag in ('--retain', name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir',
             'assets=' + str(bundle_assets(manifest, name, staged, 'SHOVEY_RELEASE' in descriptor.get('build_defines', []))),
             '--entry', descriptor['entry'], '-o', str(bundle), str(ROOT / descriptor['source'])],
