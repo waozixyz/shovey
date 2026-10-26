@@ -28,12 +28,14 @@ solve_classic_game: ShoveyGame;
 solve_classic_shadows: s32;
 solve_classic_root_shadows: s32;
 solve_classic_initial_shadows: s32;
+solve_classic_water_may_bridge: bool;
 // Work done, in units of about a hundred engine statements.
 solve_classic_work: s64;
 
 // Loads a board of 480 hex digits. False when the engine rejects it.
 SolveClassicLoad :: (data: string) -> bool {
     if !ShoveyLoadData(*solve_classic_initial, 0, data) { return false }
+    solve_classic_water_may_bridge = SolveWaterMayBridge(*solve_classic_initial)
     solve_classic_initial_shadows = SolveClassicShadows(*solve_classic_initial)
     SolveClassicSetRoot(*solve_classic_initial)
     SolveClassicPrepare()
@@ -203,6 +205,7 @@ solve_classic_door_needed: bool;
 // sensors, home, portals, trails, charges, other colours' holes and rests.
 // Doors only while shut. Apples, paint, pickups and locks can go away.
 SolveClassicLasting :: (ground: s32, piece: s32, shut: bool) -> bool {
+    if ground == 64 && solve_classic_water_may_bridge { return false }
     if ground == 12 || ground == 23 || ground == SHOVEY_PIT || ShoveySolidDecor(ground) { return true }
     if ground == 14 { return shut }
     if piece == 10 { return false }

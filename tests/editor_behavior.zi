@@ -12,6 +12,7 @@
 #import, file "../src/editor/edit.zi";
 #import, file "../src/editor/sharing.zi";
 #import, file "../src/solver/solver.zi";
+#import, file "../src/solver/classic_rules.zi";
 #import, file "fixtures/classic_solver.zi";
 
 play: EditPlay;
@@ -269,6 +270,29 @@ Solve :: (island: bool, board: string, budget: s64) -> s32 {
 // The solver's routes are the engine's own moves, replayed to a win before
 // they count; a board without a way home can never be won.
 SolverChecks :: () -> s32 {
+    // A crate can become a bridge. The second water cell still blocks the
+    // ball after the first push; neither static nor trail pruning may call it lost.
+    water: [480]u8
+    digits := "0123456789abcdef"
+    for cell: cast(s32)0..SHOVEY_CELLS - 1 {
+        water[cell * 2] = cast(u8)48
+        water[cell * 2 + 1] = cast(u8)99
+    }
+    row: [8]s32 = .[10, 9, 64, 9, 64, 1, 4, 7]
+    for x: cast(s32)0..7 {
+        water[(61 + x) * 2] = digits[row[x] >> 4]
+        water[(61 + x) * 2 + 1] = digits[row[x] & 15]
+    }
+    for trail: cast(s32)0..1 {
+        if !SolveClassicLoad(TextView(water[:])) { return 173 }
+        if trail != 0 { solve_classic_game.powers = SHOVEY_TRAIL }
+        for step: cast(s32)0..6 {
+            if SolveClassicDead() || !SolveClassicAct(2) { return 174 }
+        }
+        if !solve_classic_game.won || solve_classic_game.ground[63] != SHOVEY_FLOATING_CRATE ||
+        solve_classic_game.ground[65] != SHOVEY_FLOATING_CRATE { return 175 }
+    }
+    if Solve(false, TextView(water[:]), 2000000) != SOLVER_WON { return 176 }
     board := EditNewBoard(false)
     if Solve(false, EditBoardHex(*board), 2000000) != SOLVER_WON { return 90 }
     at: s32 = 0

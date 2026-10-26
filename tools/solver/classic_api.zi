@@ -25,6 +25,7 @@ classic_base: ShoveyGame;
 classic_game: ShoveyGame;
 // A mirror shadow moves with every step, so no step is plain while one exists.
 classic_shadow: bool;
+classic_water_may_bridge: bool;
 
 #program_export
 ClassicApiStateSize :: () -> s32 { return CLASSIC_STATE_SIZE }
@@ -41,6 +42,7 @@ ClassicApiLoad :: (hex: *u8, level: s32) -> s32 {
     if !ShoveyLoadData(*classic_initial, level, TextView(classic_hex[0:count])) { return 0 }
     classic_base = classic_initial
     classic_game = classic_initial
+    classic_water_may_bridge = SolveWaterMayBridge(*classic_initial)
     ClassicApiCrateCells()
     ClassicApiDoorCells()
     ClassicApiPushTable(18, false, classic_goal_table[:])
@@ -63,10 +65,10 @@ classic_doors: bool;
 classic_switch_pushes: [SHOVEY_CELLS]s32;
 classic_area: [SHOVEY_CELLS]s32;
 
-// Ground a crate can never enter: walls, holes, home, portals and the
-// colour-block goal. Apples, paint, pickups, locks and doors can go away.
+// Lasting walls for optimistic reachability. Water can become a bridge when
+// the loaded board has a wooden crate. Exact moves still run in the engine.
 ClassicApiPermanentWall :: (ground: s32) -> bool {
-    return ground == 12 || ground == 63 || ground == 64 || ground == SHOVEY_PIT || ground == 76 ||
+    return ground == 12 || ground == 63 || (ground == 64 && !classic_water_may_bridge) || ground == SHOVEY_PIT || ground == 76 ||
         ShoveyBlockingDecoration(ground) || (ground >= 95 && ground <= 98)
 }
 

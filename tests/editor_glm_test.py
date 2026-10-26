@@ -272,6 +272,22 @@ class Variations(unittest.TestCase):
             checked += 1
         self.assertGreater(checked, 100)
 
+    def test_crates_can_bridge_water_before_a_ball_is_reachable(self):
+        cells = [12] * 240
+        # Both bridges are needed before the red ball can move. Pruning after
+        # the first crate used to discard this valid route in every macro search.
+        for x, kind in enumerate((10, 9, 64, 9, 64, 1, 4, 7), 1):
+            cells[5 * 12 + x] = kind
+        candidate = ''.join(f'{kind:02x}' for kind in cells)
+        self.assertTrue(actions.verify_route(1, candidate, '2222222'))
+        for method in ('bfs', 'greedy', 'macro-bfs', 'chain'):
+            with self.subTest(method=method):
+                result = actions.subprocess.run([str(actions.SOLVER), 'solve', '--seconds', '2',
+                    '--max-states', '100000', '--max-mb', '64', '--only', method, candidate],
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertTrue(actions.verify_route(1, candidate, result.stdout.strip()))
+
     def test_spare_crates_do_not_distract_from_the_solution(self):
         generated = ROOT / 'build/solver/classic/c'
         output = ROOT / 'build/solver-focus-test'

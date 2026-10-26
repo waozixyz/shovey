@@ -2,13 +2,21 @@
 // Both solver hosts use this; the game engine remains the rule authority.
 #import, file "../engine.zi";
 
-SolveTrailWall :: (kind: s32) -> bool {
-    return kind == 12 || kind == 63 || kind == 64 || kind == SHOVEY_PIT || kind == 76 ||
+// A wooden crate can become walkable ground when pushed into water. Static
+// reachability must allow that future bridge; the engine validates each push.
+SolveWaterMayBridge :: (game: *ShoveyGame) -> bool {
+    for object: game.objects { if object == 9 { return true } }
+    return false
+}
+
+SolveTrailWall :: (kind: s32, water_may_bridge: bool) -> bool {
+    return kind == 12 || kind == 63 || (kind == 64 && !water_may_bridge) || kind == SHOVEY_PIT || kind == 76 ||
         ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98)
 }
 
 SolveTrailBallsBlocked :: (game: *ShoveyGame) -> bool {
     if (game.powers & SHOVEY_TRAIL) == 0 { return false }
+    water_may_bridge := SolveWaterMayBridge(game)
     live: [SHOVEY_CELLS]bool
     queue: [SHOVEY_CELLS]s32
     count: s32 = 0
@@ -33,8 +41,8 @@ SolveTrailBallsBlocked :: (game: *ShoveyGame) -> bool {
             behind := ShoveyNeighbor(from, side)
             if from < 0 || behind < 0 || live[from] { continue }
             ground := game.ground[from]
-            if SolveTrailWall(ground) || ground == 7 || ground == 8 || ground == 11 || ShoveyColorPortal(ground) { continue }
-            if SolveTrailWall(game.ground[behind]) { continue }
+            if SolveTrailWall(ground, water_may_bridge) || ground == 7 || ground == 8 || ground == 11 || ShoveyColorPortal(ground) { continue }
+            if SolveTrailWall(game.ground[behind], water_may_bridge) { continue }
             live[from] = true
             queue[count] = from
             count += 1

@@ -9,6 +9,29 @@ static void kind(uint8_t *board, int at, int value) {
     board[at * 2 + 1] = hex[value & 15];
 }
 
+static void water_bridges(void) {
+    uint8_t board[481];
+    for (int at = 0; at < 240; at++) kind(board, at, 12);
+    board[480] = 0;
+    int row[] = {10, 9, 64, 9, 64, 1, 4, 7};
+    for (int x = 0; x < 8; x++) kind(board, 61 + x, row[x]);
+    for (int trail = 0; trail < 2; trail++) {
+        assert(ClassicApiLoad(board, 1));
+        if (trail) classic_game.powers |= SHOVEY_TRAIL;
+        for (int step = 0; step < 7; step++) {
+            assert(!ClassicApiDead());
+            assert(ClassicApiAct(2));
+        }
+        assert(ClassicApiWon());
+        assert(classic_game.ground[63] == SHOVEY_FLOATING_CRATE);
+        assert(classic_game.ground[65] == SHOVEY_FLOATING_CRATE);
+    }
+    /* Without a crate, the ball really is trapped against the water. */
+    kind(board, 62, 0); kind(board, 64, 0);
+    assert(ClassicApiLoad(board, 1));
+    assert(ClassicApiDead());
+}
+
 int main(int argc, char **argv) {
     if (argc == 3) {
         if (!ClassicApiLoad((uint8_t *)argv[1], 1)) return 1;
@@ -23,6 +46,7 @@ int main(int argc, char **argv) {
         }
         return ClassicApiWon() ? 0 : 4;
     }
+    water_bridges();
     uint8_t board[1441];
     memset(board, '0', 1440); board[1440] = 0;
     kind(board, 13, 10); kind(board, 70, 7);
