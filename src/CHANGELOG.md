@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.149] - 2026-10-26
+
+- Reopen a secret chest until its Dew is claimed, and show an empty chest after a confirmed claim.
+- Keep the whole board visible while its tile images and animations load.
+
 ## [0.6.148] - 2026-10-25
 
 - Play the approved Classic campaign through level 175.

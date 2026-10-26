@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [0.2.141] - 2026-10-26
+
+- Reuse Shovey’s compiled game code as well as its downloaded art and sounds.
+
 ## [0.2.140] - 2026-10-25
 
 - Install the editor as an add-on to Shovey and reuse its downloaded art and sounds.
