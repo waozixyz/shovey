@@ -761,8 +761,17 @@ You have already claimed this chest’s Dew.
 Claiming your Dew…
 ---
 [shovey_reward_unclaimed]
-This reward has not been claimed yet.
+Claim your Dew reward.
 ---
-[shovey_reward_retry]
-Try again
+[shovey_reward_claim]
+Claim reward
+---
+[shovey_reward_failed]
+Could not claim this reward. Check your connection and try again.
+---
+[shovey_reward_chest_requirements]
+Complete and sync levels 1–28 with at least 10 moves per level to claim this reward.
+---
+[shovey_reward_campaign_requirements]
+Complete and sync all Classic levels with at least 10 moves per level to claim this reward.
 ---

@@ -761,8 +761,17 @@ Du hast den Dew aus dieser Truhe bereits erhalten.
 Dein Dew wird angefordert…
 ---
 [shovey_reward_unclaimed]
-Diese Belohnung wurde noch nicht abgeholt.
+Hole dir deine Dew-Belohnung.
 ---
-[shovey_reward_retry]
-Erneut versuchen
+[shovey_reward_claim]
+Belohnung abholen
+---
+[shovey_reward_failed]
+Die Belohnung konnte nicht abgeholt werden. Prüfe deine Verbindung und versuche es erneut.
+---
+[shovey_reward_chest_requirements]
+Schließe die Level 1–28 mit mindestens 10 Zügen pro Level ab und synchronisiere sie, um diese Belohnung abzuholen.
+---
+[shovey_reward_campaign_requirements]
+Schließe alle Classic-Level mit mindestens 10 Zügen pro Level ab und synchronisiere sie, um diese Belohnung abzuholen.
 ---

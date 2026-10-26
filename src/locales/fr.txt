@@ -761,8 +761,17 @@ Tu as déjà récupéré le Dew de ce coffre.
 Récupération de ton Dew…
 ---
 [shovey_reward_unclaimed]
-Cette récompense n’a pas encore été récupérée.
+Récupère ta récompense Dew.
 ---
-[shovey_reward_retry]
-Réessayer
+[shovey_reward_claim]
+Récupérer la récompense
+---
+[shovey_reward_failed]
+Impossible de récupérer cette récompense. Vérifie ta connexion et réessaie.
+---
+[shovey_reward_chest_requirements]
+Termine et synchronise les niveaux 1 à 28 avec au moins 10 déplacements par niveau pour récupérer cette récompense.
+---
+[shovey_reward_campaign_requirements]
+Termine et synchronise tous les niveaux Classic avec au moins 10 déplacements par niveau pour récupérer cette récompense.
 ---

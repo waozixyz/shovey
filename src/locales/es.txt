@@ -761,8 +761,17 @@ Ya has reclamado el Dew de este cofre.
 Reclamando tu Dew…
 ---
 [shovey_reward_unclaimed]
-Aún no has reclamado esta recompensa.
+Reclama tu recompensa de Dew.
 ---
-[shovey_reward_retry]
-Reintentar
+[shovey_reward_claim]
+Reclamar recompensa
+---
+[shovey_reward_failed]
+No se pudo reclamar esta recompensa. Comprueba tu conexión e inténtalo de nuevo.
+---
+[shovey_reward_chest_requirements]
+Completa y sincroniza los niveles 1–28 con al menos 10 movimientos por nivel para reclamar esta recompensa.
+---
+[shovey_reward_campaign_requirements]
+Completa y sincroniza todos los niveles Classic con al menos 10 movimientos por nivel para reclamar esta recompensa.
 ---

@@ -761,8 +761,17 @@ Hai già riscattato il Dew di questo scrigno.
 Riscatto del Dew…
 ---
 [shovey_reward_unclaimed]
-Questa ricompensa non è ancora stata riscattata.
+Riscatta la tua ricompensa Dew.
 ---
-[shovey_reward_retry]
-Riprova
+[shovey_reward_claim]
+Riscatta ricompensa
+---
+[shovey_reward_failed]
+Impossibile riscattare questa ricompensa. Controlla la connessione e riprova.
+---
+[shovey_reward_chest_requirements]
+Completa e sincronizza i livelli 1–28 con almeno 10 mosse per livello per riscattare questa ricompensa.
+---
+[shovey_reward_campaign_requirements]
+Completa e sincronizza tutti i livelli Classic con almeno 10 mosse per livello per riscattare questa ricompensa.
 ---

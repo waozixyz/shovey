@@ -30,6 +30,8 @@ reward_card: s32 = -1;
 reward_card_signin: bool;
 reward_card_amount: [32]u8;
 reward_card_empty: bool;
+reward_card_failed: bool;
+reward_card_ineligible: bool;
 
 RewardName :: (reward: s32) -> string {
     return ifx reward == REWARD_CHEST then "shovey.secret-chest" else "shovey.campaign-complete"
@@ -72,6 +74,8 @@ RewardOpen :: (reward: s32, now: float64) {
     reward_card_empty = RewardClaimed(reward)
     reward_card_signin = false
     reward_card_amount = .{}
+    reward_card_failed = false
+    reward_card_ineligible = false
     if !reward_card_empty {
         reward_fresh[reward] = true
         reward_next_at = now
@@ -80,6 +84,8 @@ RewardOpen :: (reward: s32, now: float64) {
 
 RewardRetry :: (reward: s32, now: float64) {
     if RewardClaimed(reward) { return }
+    reward_card_failed = false
+    reward_card_ineligible = false
     reward_fresh[reward] = true
     reward_next_at = now
 }
@@ -114,6 +120,10 @@ RewardsPump :: (now: float64) {
         name: [64]u8
         named := ReadStringText(answer, FieldAt(answer, 0, "reward"), name[:])
         if status != "done" || named < 1 || TextView(name[:named]) != RewardName(reward) {
+            if reward_card == reward {
+                reward_card_failed = true
+                reward_card_ineligible = status == "ineligible"
+            }
             reward_next_at = now + 60.0
             return
         }
@@ -128,10 +138,13 @@ RewardsPump :: (now: float64) {
         units := ReadNumber(answer, FieldAt(answer, 0, "units"))
         if credited < 0 || (credited == 1 && (!units.valid || units.value <= 0.0 ||
             units.value > 9007199254740991.0 || cast(float64)cast(s64)units.value != units.value)) {
+            if reward_card == reward { reward_card_failed = true; reward_card_ineligible = false }
             reward_next_at = now + 60.0
             return
         }
         reward_state[reward] = 2
+        reward_card_failed = false
+        reward_card_ineligible = false
         RewardsSave()
         // Already given to this account, on another device perhaps: nothing new.
         if credited == 1 {
@@ -156,6 +169,8 @@ RewardsPump :: (now: float64) {
         VecFree(request)
         status := RewardStatus(answer, status_bytes[:])
         if status == "pending" {
+            reward_card_failed = false
+            reward_card_ineligible = false
             reward_claiming = reward
             if reward_card == reward { reward_card_signin = false }
             reward_next_at = now + 0.5
@@ -171,6 +186,10 @@ RewardsPump :: (now: float64) {
         } else if status == "busy" {
             reward_next_at = now + 1.0
         } else {
+            if reward_card == reward {
+                reward_card_failed = true
+                reward_card_ineligible = status == "ineligible"
+            }
             reward_next_at = now + 60.0
         }
         return

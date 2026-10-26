@@ -761,8 +761,17 @@ Dew dari peti ini sudah kamu klaim.
 Mengklaim Dew…
 ---
 [shovey_reward_unclaimed]
-Hadiah ini belum diklaim.
+Klaim hadiah Dew-mu.
 ---
-[shovey_reward_retry]
-Coba lagi
+[shovey_reward_claim]
+Klaim hadiah
+---
+[shovey_reward_failed]
+Hadiah ini tidak dapat diklaim. Periksa koneksimu dan coba lagi.
+---
+[shovey_reward_chest_requirements]
+Selesaikan dan sinkronkan level 1–28 dengan minimal 10 langkah per level untuk mengklaim hadiah ini.
+---
+[shovey_reward_campaign_requirements]
+Selesaikan dan sinkronkan semua level Classic dengan minimal 10 langkah per level untuk mengklaim hadiah ini.
 ---

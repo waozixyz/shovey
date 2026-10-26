@@ -761,8 +761,17 @@ Shovey
 Dew를 받는 중…
 ---
 [shovey_reward_unclaimed]
-아직 이 보상을 받지 않았어요.
+Dew 보상을 받으세요.
 ---
-[shovey_reward_retry]
-다시 시도
+[shovey_reward_claim]
+보상 받기
+---
+[shovey_reward_failed]
+보상을 받지 못했어요. 연결을 확인하고 다시 시도해 주세요.
+---
+[shovey_reward_chest_requirements]
+이 보상을 받으려면 1~28 레벨을 각각 10회 이상 이동하여 완료하고 동기화하세요.
+---
+[shovey_reward_campaign_requirements]
+이 보상을 받으려면 모든 Classic 레벨을 각각 10회 이상 이동하여 완료하고 동기화하세요.
 ---

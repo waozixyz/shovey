@@ -761,8 +761,17 @@ Shovey
 正在领取 Dew…
 ---
 [shovey_reward_unclaimed]
-这份奖励尚未领取。
+领取你的 Dew 奖励。
 ---
-[shovey_reward_retry]
-重试
+[shovey_reward_claim]
+领取奖励
+---
+[shovey_reward_failed]
+无法领取奖励。请检查网络连接后重试。
+---
+[shovey_reward_chest_requirements]
+要领取此奖励，请完成并同步第 1–28 关，每关至少移动 10 次。
+---
+[shovey_reward_campaign_requirements]
+要领取此奖励，请完成并同步所有 Classic 关卡，每关至少移动 10 次。
 ---

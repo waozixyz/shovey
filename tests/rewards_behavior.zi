@@ -10,6 +10,7 @@ claimed: bool;
 service_failed: bool;
 malformed_answer: bool;
 already_claimed: bool;
+ineligible: bool;
 claim_requests: s32;
 record_rewards: [16]u8;
 
@@ -24,6 +25,7 @@ FakeService :: (name: string, request: string) -> string {
         return "{\"status\":\"pending\"}"
     }
     if request == "claim-status" && claimed {
+        if ineligible { return "{\"status\":\"ineligible\",\"reward\":\"shovey.secret-chest\"}" }
         if malformed_answer { return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\"}" }
         if already_claimed { return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\",\"credited\":false,\"units\":0,\"balance\":2000000}" }
         return "{\"status\":\"done\",\"reward\":\"shovey.secret-chest\",\"credited\":true,\"units\":2000000,\"balance\":2000000}"
@@ -96,6 +98,22 @@ Check :: () -> s32 {
     RewardsPump(150.0)
     RewardsPump(151.0)
     if !RewardClaimed(REWARD_CHEST) || !reward_card_empty || reward_card != REWARD_CHEST { return 16 }
+    // Eligibility is a real rejection, not an unclaimed or credited result.
+    unused CopyCString("r1:10", record_rewards[:])
+    reward_loaded = false
+    reward_state = .{}
+    ineligible = true
+    already_claimed = false
+    RewardOpen(REWARD_CHEST, 160.0)
+    RewardsPump(160.0)
+    RewardsPump(161.0)
+    if !reward_card_failed || !reward_card_ineligible || RewardClaimed(REWARD_CHEST) { return 17 }
+    ineligible = false
+    RewardRetry(REWARD_CHEST, 162.0)
+    if reward_card_failed || reward_card_ineligible { return 18 }
+    RewardsPump(162.0)
+    RewardsPump(163.0)
+    if !RewardClaimed(REWARD_CHEST) || reward_card_failed || reward_card_ineligible { return 19 }
     // Finishing the campaign without an account asks once, then waits.
     signed_in = false
     RewardEarn(REWARD_CAMPAIGN, 200.0)

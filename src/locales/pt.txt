@@ -761,8 +761,17 @@ Você já resgatou o Dew deste baú.
 Resgatando seu Dew…
 ---
 [shovey_reward_unclaimed]
-Esta recompensa ainda não foi resgatada.
+Resgate sua recompensa Dew.
 ---
-[shovey_reward_retry]
-Tentar novamente
+[shovey_reward_claim]
+Resgatar recompensa
+---
+[shovey_reward_failed]
+Não foi possível resgatar esta recompensa. Verifique sua conexão e tente novamente.
+---
+[shovey_reward_chest_requirements]
+Conclua e sincronize os níveis 1–28 com pelo menos 10 movimentos por nível para resgatar esta recompensa.
+---
+[shovey_reward_campaign_requirements]
+Conclua e sincronize todos os níveis Classic com pelo menos 10 movimentos por nível para resgatar esta recompensa.
 ---

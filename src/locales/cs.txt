@@ -761,8 +761,17 @@ Dew z této truhly už máš.
 Vyzvedávání Dew…
 ---
 [shovey_reward_unclaimed]
-Tato odměna ještě nebyla vyzvednuta.
+Vyzvedni si svou odměnu Dew.
 ---
-[shovey_reward_retry]
-Zkusit znovu
+[shovey_reward_claim]
+Vyzvednout odměnu
+---
+[shovey_reward_failed]
+Odměnu se nepodařilo vyzvednout. Zkontroluj připojení a zkus to znovu.
+---
+[shovey_reward_chest_requirements]
+Pro získání odměny dokonči a synchronizuj úrovně 1–28 s alespoň 10 tahy v každé úrovni.
+---
+[shovey_reward_campaign_requirements]
+Pro získání odměny dokonči a synchronizuj všechny úrovně Classic s alespoň 10 tahy v každé úrovni.
 ---

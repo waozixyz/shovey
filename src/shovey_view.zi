@@ -1042,6 +1042,9 @@ RewardCard :: (width: float32, bottom: float32) {
         BuilderPrint(*detail, "%", AppLocaleHost("shovey_reward_signin"))
     } else if reward_card_amount[0] != 0 {
         BuilderPrint(*detail, "+% %", TextUntilNul(reward_card_amount[:]), AppLocaleHost("shovey_dew"))
+    } else if reward_card_failed {
+        BuilderPrint(*detail, "%", AppLocaleHost(ifx !reward_card_ineligible then "shovey_reward_failed" else
+            ifx reward_card == REWARD_CHEST then "shovey_reward_chest_requirements" else "shovey_reward_campaign_requirements"))
     } else {
         BuilderPrint(*detail, "%", AppLocaleHost(ifx reward_claiming == reward_card then
             "shovey_reward_pending" else "shovey_reward_unclaimed"))
@@ -1051,7 +1054,7 @@ RewardCard :: (width: float32, bottom: float32) {
     can_retry := !reward_card_empty && reward_card_amount[0] == 0 && reward_claiming != reward_card
     if can_retry {
         actions[0] = ActionModalAction.{.label = AppLocaleHost(ifx reward_card_signin then
-                "shovey_reward_connect" else "shovey_reward_retry"),
+                "shovey_reward_connect" else "shovey_reward_claim"),
             .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}
         count += 1
     }
