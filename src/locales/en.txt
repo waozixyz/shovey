@@ -664,6 +664,93 @@ Not now
 [shovey_updates_setting]
 New levels
 ---
+[shovey_friend_name]
+Pip
+---
+[shovey_friend_continue]
+Got it
+---
+[shovey_friend_replay]
+Pip’s tips
+---
+[shovey_friend_welcome]
+Hi, I’m Pip! Clear the tasks, then help Shovey get home.
+---
+[shovey_friend_crates]
+Push crates onto their marks. You can push, but never pull.
+---
+[shovey_friend_fruit]
+Pick up all the fruit before heading home.
+---
+[shovey_friend_stars]
+Bring the star blocks together.
+---
+[shovey_friend_buttons]
+Leave an object on a button to keep its matching gate open.
+---
+[shovey_friend_paint]
+Paint changes a ball’s color, then disappears.
+---
+[shovey_friend_portals]
+Matching portals are connected. Step into one to leave through the other.
+---
+[shovey_friend_trail]
+This pickup leaves a trail behind you. Objects cannot cross it.
+---
+[shovey_friend_reverse]
+This pickup reverses the controls. Watch which way Shovey goes.
+---
+[shovey_friend_shots]
+Pick up a shot, face a target and throw. One shot can hit several targets.
+---
+[shovey_friend_charge]
+This pickup charges Shovey. Another charger is dangerous while charged.
+---
+[shovey_friend_wagon]
+The wagon follows its track. Cover the fresh track, then block its exits.
+---
+[shovey_friend_keys]
+Collect a key, then walk into a lock to open it.
+---
+[shovey_friend_ice]
+On ice, Shovey slides until something stops him. Plan where to land.
+---
+[shovey_friend_color_blocks]
+Every push changes a block’s color. Find the right color for its goal.
+---
+[shovey_friend_shadow]
+Shadow Shovey moves the opposite way. Bring the two together.
+---
+[shovey_friend_animals]
+Animals move on their own. Give them room and watch their paths.
+---
+[shovey_friend_bridge]
+Push a crate into water to make a stepping stone.
+---
+[shovey_friend_boat]
+The boat is a way home. Finish the tasks, then step aboard.
+---
+[shovey_friend_cracks]
+Cracked floor falls away after you leave it. Plan your way back.
+---
+[shovey_friend_bomb]
+Push a bomb crate into a cracked wall to break both.
+---
+[shovey_friend_arrows]
+Shovey can enter an arrow tile only in the arrow’s direction.
+---
+[shovey_friend_slide]
+This pickup makes every move slide. Look for safe stopping places.
+---
+[shovey_friend_sensors]
+Step onto a sensor to light it. The next one closes the lit sensors.
+---
+[shovey_friend_doors]
+Walk into a wooden door to open it.
+---
+[shovey_friend_abyss]
+Pushable objects stop at the abyss. Shovey can fall in, so mind the edge.
+---
 [shovey_chest_empty]
 Empty chest
 ---

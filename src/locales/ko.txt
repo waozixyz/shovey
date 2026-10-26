@@ -664,6 +664,93 @@ Shovey
 [shovey_updates_setting]
 새 단계
 ---
+[shovey_friend_name]
+핍
+---
+[shovey_friend_continue]
+알겠어
+---
+[shovey_friend_replay]
+핍의 도움말
+---
+[shovey_friend_welcome]
+안녕, 나는 핍이야! 할 일을 마치고 쇼비가 집에 가도록 도와주자.
+---
+[shovey_friend_crates]
+상자를 표시 위로 밀어 봐. 밀 수는 있지만 당길 수는 없어.
+---
+[shovey_friend_fruit]
+집에 가기 전에 과일을 모두 모으자.
+---
+[shovey_friend_stars]
+별 블록끼리 붙여 봐.
+---
+[shovey_friend_buttons]
+버튼 위에 물건을 두면 연결된 문을 계속 열어 둘 수 있어.
+---
+[shovey_friend_paint]
+물감은 공의 색을 바꾼 뒤 사라져.
+---
+[shovey_friend_portals]
+같은 포털끼리 이어져 있어. 하나로 들어가면 다른 쪽으로 나와.
+---
+[shovey_friend_trail]
+이 아이템은 뒤에 흔적을 남겨. 물건은 흔적을 지나갈 수 없어.
+---
+[shovey_friend_reverse]
+이 아이템은 조작 방향을 뒤집어. 쇼비가 어느 쪽으로 가는지 잘 봐.
+---
+[shovey_friend_shots]
+탄환을 줍고 표적을 향해 던져 봐. 한 번에 여러 표적을 맞힐 수도 있어.
+---
+[shovey_friend_charge]
+이 아이템은 쇼비를 충전해. 충전된 상태에서 또 충전하면 위험해.
+---
+[shovey_friend_wagon]
+수레는 선로를 따라가. 새 선로를 모두 지난 다음 출구를 막아 봐.
+---
+[shovey_friend_keys]
+열쇠를 줍고 자물쇠 쪽으로 가면 열 수 있어.
+---
+[shovey_friend_ice]
+얼음 위에서는 무언가 막을 때까지 미끄러져. 멈출 곳을 생각해 봐.
+---
+[shovey_friend_color_blocks]
+밀 때마다 블록의 색이 바뀌어. 목표에 맞는 색을 찾아보자.
+---
+[shovey_friend_shadow]
+그림자 쇼비는 반대쪽으로 움직여. 둘을 만나게 해 줘.
+---
+[shovey_friend_animals]
+동물은 스스로 움직여. 자리를 비켜 주고 길을 살펴보자.
+---
+[shovey_friend_bridge]
+상자를 물에 밀어 넣으면 디딤돌이 돼.
+---
+[shovey_friend_boat]
+배도 집으로 가는 길이야. 할 일을 마치고 올라타자.
+---
+[shovey_friend_cracks]
+금이 간 바닥은 떠난 뒤 무너져. 돌아올 길도 생각해 둬.
+---
+[shovey_friend_bomb]
+폭탄 상자를 금이 간 벽으로 밀면 둘 다 부술 수 있어.
+---
+[shovey_friend_arrows]
+화살표 바닥에는 화살표 방향으로만 들어갈 수 있어.
+---
+[shovey_friend_slide]
+이 아이템을 얻으면 움직일 때마다 미끄러져. 안전하게 멈출 곳을 찾아봐.
+---
+[shovey_friend_sensors]
+감지기를 밟으면 불이 켜져. 다음 것을 켜면 켜져 있던 감지기가 닫혀.
+---
+[shovey_friend_doors]
+나무 문 쪽으로 걸어가면 문이 열려.
+---
+[shovey_friend_abyss]
+물건은 낭떠러지 끝에서 멈추지만 쇼비는 떨어질 수 있어. 가장자리를 조심해.
+---
 [shovey_chest_empty]
 빈 보물 상자
 ---

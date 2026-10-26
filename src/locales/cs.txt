@@ -664,6 +664,93 @@ Teď ne
 [shovey_updates_setting]
 Nové úrovně
 ---
+[shovey_friend_name]
+Pip
+---
+[shovey_friend_continue]
+Rozumím
+---
+[shovey_friend_replay]
+Pipovy tipy
+---
+[shovey_friend_welcome]
+Ahoj, já jsem Pip! Splň úkoly a doveď Shoveyho domů.
+---
+[shovey_friend_crates]
+Posuň bedny na značky. Předměty lze tlačit, ale ne tahat.
+---
+[shovey_friend_fruit]
+Sesbírej všechno ovoce, než půjdeš domů.
+---
+[shovey_friend_stars]
+Přisuň k sobě hvězdné bloky.
+---
+[shovey_friend_buttons]
+Nech předmět na tlačítku, aby odpovídající brána zůstala otevřená.
+---
+[shovey_friend_paint]
+Barva přebarví kouli a pak zmizí.
+---
+[shovey_friend_portals]
+Stejné portály jsou propojené. Vstup do jednoho a vyjdeš druhým.
+---
+[shovey_friend_trail]
+Tato schopnost za tebou nechává stopu. Předměty přes ni neprojdou.
+---
+[shovey_friend_reverse]
+Tato schopnost obrátí ovládání. Sleduj, kterým směrem Shovey jde.
+---
+[shovey_friend_shots]
+Vezmi střelu, namiř a hoď ji. Jedna střela může zasáhnout více terčů.
+---
+[shovey_friend_charge]
+Tato věc nabije Shoveyho. Další nabití je nebezpečné, dokud je nabitý.
+---
+[shovey_friend_wagon]
+Vozík jezdí po kolejích. Projeď čerstvé koleje a pak zablokuj jeho výjezdy.
+---
+[shovey_friend_keys]
+Seber klíč a vstup do zámku, aby se otevřel.
+---
+[shovey_friend_ice]
+Na ledu Shovey klouže, dokud ho něco nezastaví. Naplánuj si místo zastavení.
+---
+[shovey_friend_color_blocks]
+Každé strčení změní barvu bloku. Najdi správnou barvu pro jeho cíl.
+---
+[shovey_friend_shadow]
+Stínový Shovey jde opačně. Doveď je k sobě.
+---
+[shovey_friend_animals]
+Zvířata se pohybují sama. Nech jim místo a sleduj jejich cesty.
+---
+[shovey_friend_bridge]
+Zatlač bednu do vody a vytvoř si přechod.
+---
+[shovey_friend_boat]
+Loď tě také doveze domů. Splň úkoly a nastup.
+---
+[shovey_friend_cracks]
+Popraskaná podlaha se za tebou propadne. Naplánuj si cestu zpět.
+---
+[shovey_friend_bomb]
+Zatlač výbušnou bednu do popraskané zdi. Obojí se rozbije.
+---
+[shovey_friend_arrows]
+Na šipkové pole může Shovey vstoupit jen ve směru šipky.
+---
+[shovey_friend_slide]
+Tato schopnost způsobí klouzání při každém kroku. Hledej bezpečná místa k zastavení.
+---
+[shovey_friend_sensors]
+Vstup na snímač a rozsviť ho. Další snímač uzavře ty rozsvícené.
+---
+[shovey_friend_doors]
+Do dřevěných dveří stačí vstoupit a otevřou se.
+---
+[shovey_friend_abyss]
+Předměty se zastaví na kraji propasti. Shovey do ní může spadnout.
+---
 [shovey_chest_empty]
 Prázdná truhla
 ---

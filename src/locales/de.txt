@@ -664,6 +664,93 @@ Nicht jetzt
 [shovey_updates_setting]
 Neue Level
 ---
+[shovey_friend_name]
+Pip
+---
+[shovey_friend_continue]
+Verstanden
+---
+[shovey_friend_replay]
+Pips Tipps
+---
+[shovey_friend_welcome]
+Hallo, ich bin Pip! Erledige die Aufgaben und bring Shovey nach Hause.
+---
+[shovey_friend_crates]
+Schiebe Kisten auf ihre Markierungen. Du kannst schieben, aber nie ziehen.
+---
+[shovey_friend_fruit]
+Sammle alle Früchte, bevor du nach Hause gehst.
+---
+[shovey_friend_stars]
+Bringe die Sternblöcke zusammen.
+---
+[shovey_friend_buttons]
+Lass einen Gegenstand auf dem Knopf liegen, damit sein Tor offen bleibt.
+---
+[shovey_friend_paint]
+Farbe färbt einen Ball um und verschwindet danach.
+---
+[shovey_friend_portals]
+Gleiche Portale sind verbunden. Geh in eines hinein und komm aus dem anderen heraus.
+---
+[shovey_friend_trail]
+Diese Fähigkeit hinterlässt eine Spur. Gegenstände können sie nicht überqueren.
+---
+[shovey_friend_reverse]
+Diese Fähigkeit kehrt die Steuerung um. Achte darauf, wohin Shovey geht.
+---
+[shovey_friend_shots]
+Sammle ein Geschoss, ziele und wirf. Ein Wurf kann mehrere Ziele treffen.
+---
+[shovey_friend_charge]
+Das lädt Shovey auf. Eine weitere Ladung ist gefährlich, solange er geladen ist.
+---
+[shovey_friend_wagon]
+Der Wagen folgt den Schienen. Befahre die frischen Schienen und blockiere dann seine Ausgänge.
+---
+[shovey_friend_keys]
+Sammle einen Schlüssel und geh gegen ein Schloss, um es zu öffnen.
+---
+[shovey_friend_ice]
+Auf Eis rutscht Shovey, bis ihn etwas stoppt. Plane deinen Haltepunkt.
+---
+[shovey_friend_color_blocks]
+Jeder Schub ändert die Blockfarbe. Finde die passende Farbe für sein Ziel.
+---
+[shovey_friend_shadow]
+Schatten-Shovey bewegt sich entgegengesetzt. Bringe die beiden zusammen.
+---
+[shovey_friend_animals]
+Tiere bewegen sich selbst. Lass ihnen Platz und beobachte ihre Wege.
+---
+[shovey_friend_bridge]
+Schiebe eine Kiste ins Wasser, um einen Trittstein zu schaffen.
+---
+[shovey_friend_boat]
+Auch das Boot bringt dich heim. Erledige die Aufgaben und steige ein.
+---
+[shovey_friend_cracks]
+Rissiger Boden bricht nach deinem Schritt weg. Plane den Rückweg.
+---
+[shovey_friend_bomb]
+Schiebe eine Bombenkiste gegen eine rissige Wand, um beide zu zerstören.
+---
+[shovey_friend_arrows]
+Shovey kann ein Pfeilfeld nur in Pfeilrichtung betreten.
+---
+[shovey_friend_slide]
+Diese Fähigkeit lässt jeden Schritt rutschen. Suche sichere Haltepunkte.
+---
+[shovey_friend_sensors]
+Betritt einen Sensor, um ihn zu erhellen. Der nächste schließt die erhellten Sensoren.
+---
+[shovey_friend_doors]
+Geh gegen eine Holztür, um sie zu öffnen.
+---
+[shovey_friend_abyss]
+Gegenstände stoppen am Abgrund. Shovey kann hineinfallen: Achte auf den Rand.
+---
 [shovey_chest_empty]
 Leere Truhe
 ---

@@ -1,0 +1,167 @@
+// Device-only introductions to mechanics, based on the board being played.
+#import, file "engine.zi";
+
+GUIDE_TOPICS :: 30
+GUIDE_HOME :: 0
+GUIDE_BALL :: 1
+GUIDE_CRATE :: 2
+GUIDE_FRUIT :: 3
+GUIDE_STARS :: 4
+GUIDE_LEVER :: 5
+GUIDE_BUTTON :: 6
+GUIDE_PAINT :: 7
+GUIDE_PORTAL :: 8
+GUIDE_TRAIL :: 9
+GUIDE_REVERSE :: 10
+GUIDE_SHOT :: 11
+GUIDE_CHARGE :: 12
+GUIDE_WAGON :: 13
+GUIDE_KEY :: 14
+GUIDE_ICE :: 15
+GUIDE_COLOR_BLOCK :: 16
+GUIDE_SHADOW :: 17
+GUIDE_ANIMALS :: 18
+GUIDE_BRIDGE :: 19
+GUIDE_BOAT :: 20
+GUIDE_CRACK :: 21
+GUIDE_BOMB :: 22
+GUIDE_ARROW :: 23
+GUIDE_SLIDE :: 24
+GUIDE_SENSOR :: 25
+GUIDE_COLORS :: 26
+GUIDE_RESTART :: 27
+GUIDE_DOOR :: 28
+GUIDE_ABYSS :: 29
+
+ShoveyGuide :: struct {
+    seen: u64
+    pending: u64
+    level: s32
+}
+
+GuideBit :: (topic: s32) -> u64 {
+    return ifx topic >= 0 && topic < GUIDE_TOPICS then cast(u64)1 << cast(u64)topic else 0
+}
+
+GuideKind :: (kind: s32) -> u64 {
+    if ShoveyBallColor(kind) > 0 || ShoveyPitColor(kind) > 0 { return GuideBit(GUIDE_BALL) }
+    if kind == 9 || kind == 18 { return GuideBit(GUIDE_CRATE) }
+    if kind == 21 || kind == 56 { return GuideBit(GUIDE_FRUIT) }
+    if kind == 19 { return GuideBit(GUIDE_STARS) }
+    if ShoveyLever(kind) || ShoveyGateColor(kind) >= 0 { return GuideBit(GUIDE_LEVER) }
+    if ShoveyButtonColor(kind) >= 0 || ShoveyMossColor(kind) >= 0 { return GuideBit(GUIDE_BUTTON) }
+    if ShoveyPaintColor(kind) > 0 { return GuideBit(GUIDE_PAINT) }
+    if kind == 8 || ShoveyColorPortal(kind) { return GuideBit(GUIDE_PORTAL) }
+    if kind == 11 { return GuideBit(GUIDE_TRAIL) }
+    if kind == 25 { return GuideBit(GUIDE_REVERSE) }
+    if kind == 26 || kind == 28 { return GuideBit(GUIDE_SHOT) }
+    if kind == 27 { return GuideBit(GUIDE_CHARGE) }
+    if kind >= 29 && kind <= 32 { return GuideBit(GUIDE_WAGON) }
+    if kind == 33 || kind == 34 { return GuideBit(GUIDE_KEY) }
+    if kind == SHOVEY_ICE { return GuideBit(GUIDE_ICE) }
+    if ShoveyColorBlock(kind) || ShoveyColorGoal(kind) { return GuideBit(GUIDE_COLOR_BLOCK) }
+    if kind == 40 { return GuideBit(GUIDE_SHADOW) }
+    if ShoveyAnimal(kind) && !ShoveyFish(kind) { return GuideBit(GUIDE_ANIMALS) }
+    if kind == SHOVEY_BOAT { return GuideBit(GUIDE_BOAT) }
+    if kind == SHOVEY_CRACKED_FLOOR { return GuideBit(GUIDE_CRACK) }
+    if kind == SHOVEY_BOMB { return GuideBit(GUIDE_BOMB) }
+    if ShoveyArrow(kind) >= 0 { return GuideBit(GUIDE_ARROW) }
+    if kind == 35 { return GuideBit(GUIDE_SLIDE) }
+    if kind == 20 || kind == 22 || kind == 23 || kind == 24 || kind == 41 || kind == 42 { return GuideBit(GUIDE_SENSOR) }
+    if ShoveyClosedDoor(kind) || ShoveyOpenDoor(kind) { return GuideBit(GUIDE_DOOR) }
+    if kind == SHOVEY_PIT { return GuideBit(GUIDE_ABYSS) }
+    return 0
+}
+
+GuideBoardTopics :: (board: *ShoveyGame) -> u64 {
+    result := GuideBit(GUIDE_HOME)
+    colors: u64
+    crate := false
+    water := false
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        result = result | GuideKind(board.ground[at]) | GuideKind(board.objects[at])
+        color := ShoveyBallColor(board.objects[at])
+        if color > 0 { colors = colors | (cast(u64)1 << cast(u64)color) }
+        if board.objects[at] == 9 { crate = true }
+        if board.ground[at] == 64 { water = true }
+    }
+    if colors != 0 && (colors & (colors - 1)) != 0 { result = result | GuideBit(GUIDE_COLORS) }
+    if crate && water { result = result | GuideBit(GUIDE_BRIDGE) }
+    return result
+}
+
+GuideOffer :: (guide: *ShoveyGuide, board: *ShoveyGame) {
+    if board.level < 1 || board.level > ShoveyLevelCount() || ShoveySecret(board.level) || board.won { return }
+    if guide.level != board.level {
+        guide.level = board.level
+        guide.pending = 0
+        // Never interrupt a saved board midway through an attempt.
+        if board.moves == 0 && !board.lost { guide.pending = GuideBoardTopics(board) & ~guide.seen }
+    }
+    if board.lost { guide.pending = guide.pending | (GuideBit(GUIDE_RESTART) & ~guide.seen) }
+}
+
+GuideNext :: (guide: *ShoveyGuide) -> s32 {
+    for topic: cast(s32)0..GUIDE_TOPICS - 1 {
+        if (guide.pending & GuideBit(topic)) != 0 { return topic }
+    }
+    return -1
+}
+
+GuideAcknowledge :: (guide: *ShoveyGuide) -> bool {
+    topic := GuideNext(guide)
+    if topic < 0 { return false }
+    before := guide.seen
+    guide.seen = guide.seen | GuideBit(topic)
+    guide.pending = guide.pending & ~GuideBit(topic)
+    return before != guide.seen
+}
+
+GuideReplay :: (guide: *ShoveyGuide, board: *ShoveyGame) {
+    guide.level = board.level
+    guide.pending = GuideBoardTopics(board)
+    if board.level > 1 { guide.pending = guide.pending & ~GuideBit(GUIDE_HOME) }
+    if board.lost { guide.pending = guide.pending | GuideBit(GUIDE_RESTART) }
+    if guide.pending == 0 { guide.pending = GuideBit(GUIDE_HOME) }
+}
+
+GuideRead :: (guide: *ShoveyGuide, text: string) -> bool {
+    if text.count != 10 || text[:2] != "G1" { return false }
+    seen: u64
+    for at: cast(s32)2..9 {
+        digit := ShoveyDigit(text[at])
+        if digit < 0 { return false }
+        seen = (seen << 4) | cast(u64)digit
+    }
+    guide.seen = seen & ((cast(u64)1 << cast(u64)GUIDE_TOPICS) - 1)
+    return true
+}
+
+GuideWrite :: (guide: *ShoveyGuide, output: []u8) -> bool {
+    if output.count < 10 { return false }
+    output[0] = #char "G"; output[1] = #char "1"
+    alphabet := "0123456789abcdef"
+    for at: cast(s32)0..7 {
+        output[2 + at] = alphabet[cast(s32)((guide.seen >> cast(u64)((7 - at) * 4)) & 15)]
+    }
+    return true
+}
+
+// Existing players already met the mechanics in their earlier unlocked levels.
+GuideSeedEarlier :: (guide: *ShoveyGuide, level: s32) {
+    for number: cast(s32)1..level - 1 {
+        if number > ShoveyLevelCount() { break }
+        board: ShoveyGame
+        if ShoveyLoad(*board, number) { guide.seen = guide.seen | GuideBoardTopics(*board) }
+    }
+}
+
+GuideTextKey :: (topic: s32) -> string {
+    keys: [GUIDE_TOPICS]string = .["shovey_friend_welcome", "shovey_tip_ball", "shovey_friend_crates", "shovey_friend_fruit",
+    "shovey_friend_stars", "shovey_tip_lever", "shovey_friend_buttons", "shovey_friend_paint", "shovey_friend_portals",
+    "shovey_friend_trail", "shovey_friend_reverse", "shovey_friend_shots", "shovey_friend_charge", "shovey_friend_wagon",
+    "shovey_friend_keys", "shovey_friend_ice", "shovey_friend_color_blocks", "shovey_friend_shadow", "shovey_friend_animals",
+    "shovey_friend_bridge", "shovey_friend_boat", "shovey_friend_cracks", "shovey_friend_bomb", "shovey_friend_arrows",
+    "shovey_friend_slide", "shovey_friend_sensors", "shovey_tip_colors", "shovey_tip_restart", "shovey_friend_doors", "shovey_friend_abyss"]
+    return ifx topic >= 0 && topic < GUIDE_TOPICS then keys[topic] else ""
+}

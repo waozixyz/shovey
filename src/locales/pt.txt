@@ -664,6 +664,93 @@ Agora não
 [shovey_updates_setting]
 Novos níveis
 ---
+[shovey_friend_name]
+Pip
+---
+[shovey_friend_continue]
+Entendi
+---
+[shovey_friend_replay]
+Dicas do Pip
+---
+[shovey_friend_welcome]
+Olá, sou o Pip! Cumpra as tarefas e ajude Shovey a voltar para casa.
+---
+[shovey_friend_crates]
+Empurre as caixas até suas marcas. Você pode empurrar, mas nunca puxar.
+---
+[shovey_friend_fruit]
+Recolha todas as frutas antes de voltar para casa.
+---
+[shovey_friend_stars]
+Junte os blocos de estrela.
+---
+[shovey_friend_buttons]
+Deixe um objeto sobre um botão para manter aberto o portão correspondente.
+---
+[shovey_friend_paint]
+A tinta muda a cor de uma bola e depois desaparece.
+---
+[shovey_friend_portals]
+Portais iguais estão ligados. Entre por um para sair pelo outro.
+---
+[shovey_friend_trail]
+Este item deixa um rastro atrás de você. Os objetos não conseguem atravessá-lo.
+---
+[shovey_friend_reverse]
+Este item inverte os controles. Observe para onde Shovey vai.
+---
+[shovey_friend_shots]
+Pegue um projétil, mire num alvo e arremesse. Um disparo pode atingir vários alvos.
+---
+[shovey_friend_charge]
+Este item carrega Shovey. Outro carregador é perigoso enquanto ele está carregado.
+---
+[shovey_friend_wagon]
+A vagoneta segue os trilhos. Percorra os trilhos novos e depois bloqueie as saídas.
+---
+[shovey_friend_keys]
+Pegue uma chave e caminhe até uma fechadura para abri-la.
+---
+[shovey_friend_ice]
+No gelo, Shovey desliza até algo pará-lo. Planeje onde vai parar.
+---
+[shovey_friend_color_blocks]
+Cada empurrão muda a cor do bloco. Encontre a cor certa para sua meta.
+---
+[shovey_friend_shadow]
+A sombra de Shovey anda no sentido oposto. Junte os dois.
+---
+[shovey_friend_animals]
+Os animais se movem sozinhos. Dê espaço e observe os caminhos deles.
+---
+[shovey_friend_bridge]
+Empurre uma caixa para a água para criar uma passagem.
+---
+[shovey_friend_boat]
+O barco é outro caminho para casa. Cumpra as tarefas e embarque.
+---
+[shovey_friend_cracks]
+O chão rachado desaba depois que você sai dele. Planeje a volta.
+---
+[shovey_friend_bomb]
+Empurre uma caixa-bomba contra uma parede rachada para quebrar as duas.
+---
+[shovey_friend_arrows]
+Shovey só pode entrar numa casa com seta seguindo a direção dela.
+---
+[shovey_friend_slide]
+Este item faz todo movimento deslizar. Procure pontos de parada seguros.
+---
+[shovey_friend_sensors]
+Pise num sensor para acendê-lo. O próximo fecha os sensores acesos.
+---
+[shovey_friend_doors]
+Caminhe até uma porta de madeira para abri-la.
+---
+[shovey_friend_abyss]
+Os objetos param na beira do abismo. Shovey pode cair: cuidado com a borda.
+---
 [shovey_chest_empty]
 Baú vazio
 ---

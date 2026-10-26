@@ -664,6 +664,93 @@ Non ora
 [shovey_updates_setting]
 Nuovi livelli
 ---
+[shovey_friend_name]
+Pip
+---
+[shovey_friend_continue]
+Capito
+---
+[shovey_friend_replay]
+I consigli di Pip
+---
+[shovey_friend_welcome]
+Ciao, sono Pip! Completa i compiti e aiuta Shovey a tornare a casa.
+---
+[shovey_friend_crates]
+Spingi le casse sui segni. Puoi spingere, ma mai tirare.
+---
+[shovey_friend_fruit]
+Raccogli tutta la frutta prima di tornare a casa.
+---
+[shovey_friend_stars]
+Avvicina i blocchi con la stella.
+---
+[shovey_friend_buttons]
+Lascia un oggetto su un pulsante per tenere aperto il suo cancello.
+---
+[shovey_friend_paint]
+La vernice cambia il colore di una palla, poi scompare.
+---
+[shovey_friend_portals]
+I portali uguali sono collegati. Entra in uno per uscire dall’altro.
+---
+[shovey_friend_trail]
+Questo oggetto lascia una scia dietro di te. Gli oggetti non possono attraversarla.
+---
+[shovey_friend_reverse]
+Questo oggetto inverte i comandi. Guarda in che direzione va Shovey.
+---
+[shovey_friend_shots]
+Raccogli un proiettile, mira e lancialo. Un lancio può colpire più bersagli.
+---
+[shovey_friend_charge]
+Questo oggetto carica Shovey. Un’altra carica è pericolosa finché è carico.
+---
+[shovey_friend_wagon]
+Il carrello segue i binari. Percorri quelli nuovi, poi blocca le sue uscite.
+---
+[shovey_friend_keys]
+Raccogli una chiave, poi cammina verso una serratura per aprirla.
+---
+[shovey_friend_ice]
+Sul ghiaccio Shovey scivola finché qualcosa lo ferma. Pianifica dove fermarti.
+---
+[shovey_friend_color_blocks]
+Ogni spinta cambia il colore del blocco. Trova il colore giusto per la sua meta.
+---
+[shovey_friend_shadow]
+L’ombra di Shovey va nella direzione opposta. Fai incontrare i due.
+---
+[shovey_friend_animals]
+Gli animali si muovono da soli. Lascia spazio e osserva i loro percorsi.
+---
+[shovey_friend_bridge]
+Spingi una cassa nell’acqua per creare un passaggio.
+---
+[shovey_friend_boat]
+Anche la barca porta a casa. Completa i compiti e sali a bordo.
+---
+[shovey_friend_cracks]
+Il pavimento crepato crolla dopo il tuo passaggio. Pianifica il ritorno.
+---
+[shovey_friend_bomb]
+Spingi una cassa esplosiva contro un muro crepato per rompere entrambi.
+---
+[shovey_friend_arrows]
+Shovey può entrare su una freccia solo nella direzione indicata.
+---
+[shovey_friend_slide]
+Questo oggetto fa scivolare ogni movimento. Cerca punti di arresto sicuri.
+---
+[shovey_friend_sensors]
+Cammina su un sensore per accenderlo. Il successivo chiude quelli accesi.
+---
+[shovey_friend_doors]
+Cammina verso una porta di legno per aprirla.
+---
+[shovey_friend_abyss]
+Gli oggetti si fermano sul bordo dell’abisso. Shovey può cadere: fai attenzione.
+---
 [shovey_chest_empty]
 Scrigno vuoto
 ---

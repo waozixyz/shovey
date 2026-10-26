@@ -664,6 +664,93 @@ Nanti saja
 [shovey_updates_setting]
 Level baru
 ---
+[shovey_friend_name]
+Pip
+---
+[shovey_friend_continue]
+Mengerti
+---
+[shovey_friend_replay]
+Kiat Pip
+---
+[shovey_friend_welcome]
+Hai, aku Pip! Selesaikan tugasnya, lalu bantu Shovey pulang.
+---
+[shovey_friend_crates]
+Dorong peti ke tandanya. Kamu bisa mendorong, tetapi tidak bisa menarik.
+---
+[shovey_friend_fruit]
+Ambil semua buah sebelum pulang.
+---
+[shovey_friend_stars]
+Satukan balok berbintang.
+---
+[shovey_friend_buttons]
+Biarkan benda menekan tombol agar gerbang pasangannya tetap terbuka.
+---
+[shovey_friend_paint]
+Cat mengubah warna bola, lalu menghilang.
+---
+[shovey_friend_portals]
+Portal yang sama saling terhubung. Masuk ke satu untuk keluar dari yang lain.
+---
+[shovey_friend_trail]
+Benda ini meninggalkan jejak. Benda lain tidak bisa melintasinya.
+---
+[shovey_friend_reverse]
+Benda ini membalik kendali. Perhatikan arah gerak Shovey.
+---
+[shovey_friend_shots]
+Ambil peluru, hadap target, lalu lempar. Satu lemparan bisa mengenai beberapa target.
+---
+[shovey_friend_charge]
+Benda ini mengisi daya Shovey. Pengisi daya lain berbahaya saat dayanya masih penuh.
+---
+[shovey_friend_wagon]
+Gerobak mengikuti rel. Lewati rel baru, lalu tutup semua jalan keluarnya.
+---
+[shovey_friend_keys]
+Ambil kunci, lalu dekati gembok untuk membukanya.
+---
+[shovey_friend_ice]
+Di atas es, Shovey meluncur sampai ada yang menghentikannya. Rencanakan tempat berhenti.
+---
+[shovey_friend_color_blocks]
+Setiap dorongan mengubah warna balok. Cari warna yang tepat untuk tujuannya.
+---
+[shovey_friend_shadow]
+Bayangan Shovey bergerak berlawanan arah. Pertemukan keduanya.
+---
+[shovey_friend_animals]
+Hewan bergerak sendiri. Beri ruang dan perhatikan jalurnya.
+---
+[shovey_friend_bridge]
+Dorong peti ke air untuk membuat pijakan.
+---
+[shovey_friend_boat]
+Perahu juga merupakan jalan pulang. Selesaikan tugas, lalu naiklah.
+---
+[shovey_friend_cracks]
+Lantai retak runtuh setelah kamu meninggalkannya. Rencanakan jalan kembali.
+---
+[shovey_friend_bomb]
+Dorong peti bom ke dinding retak untuk menghancurkan keduanya.
+---
+[shovey_friend_arrows]
+Shovey hanya bisa memasuki ubin panah mengikuti arah panahnya.
+---
+[shovey_friend_slide]
+Benda ini membuat setiap gerakan meluncur. Cari tempat berhenti yang aman.
+---
+[shovey_friend_sensors]
+Injak sensor untuk menyalakannya. Sensor berikutnya menutup sensor yang sudah menyala.
+---
+[shovey_friend_doors]
+Dekati pintu kayu untuk membukanya.
+---
+[shovey_friend_abyss]
+Benda berhenti di tepi jurang. Shovey bisa terjatuh, jadi hati-hati.
+---
 [shovey_chest_empty]
 Peti kosong
 ---

@@ -183,10 +183,12 @@ web-zx: bundles
 # edition into build/web.
 ZIRAN_BIN ?= $(TOOLCHAIN)/build/bin
 EMCC ?= $(or $(wildcard $(HOME)/emsdk/upstream/emscripten/emcc),emcc)
+WEB_OUT ?= build/web
+WEB_NATIVE_OUT ?= build/web-native
 web: bundles
 	python3 scripts/prepare-web.py
-	rm -rf build/web build/web-native
-	mkdir -p build/web build/web-native/ir build/web-native/c
+	rm -rf $(WEB_OUT) $(WEB_NATIVE_OUT)
+	mkdir -p $(WEB_OUT) $(WEB_NATIVE_OUT)/ir $(WEB_NATIVE_OUT)/c
 	'$(ZIRAN_BIN)/zi2zir' --root . --module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
 		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
 		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
@@ -197,21 +199,21 @@ web: bundles
 		--bind editor_view:AppKeyHost=host:GameKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
 		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
 		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
-		-o build/web-native/ir '$(KRYON)/src/backend/canvas_app_run.zi' '$(KRYON)/src/backend/canvas_raster.zi' src/web/game.zi
-	'$(ZIRAN_BIN)/zi2c' --define PLATFORM_WEB --root build/web-native/ir -o build/web-native/c $$(find build/web-native/ir -name '*.zir')
-	'$(EMCC)' -O2 -I'$(TOOLCHAIN)/include' $$(find build/web-native/c -type d -printf ' -iquote %p') \
-		$$(find build/web-native/c -name '*.c') --js-library '$(TOOLCHAIN)/web/ziran_web.js' \
+		-o $(WEB_NATIVE_OUT)/ir '$(KRYON)/src/backend/canvas_app_run.zi' '$(KRYON)/src/backend/canvas_raster.zi' src/web/game.zi
+	'$(ZIRAN_BIN)/zi2c' --define PLATFORM_WEB --root $(WEB_NATIVE_OUT)/ir -o $(WEB_NATIVE_OUT)/c $$(find $(WEB_NATIVE_OUT)/ir -name '*.zir')
+	'$(EMCC)' -O2 -I'$(TOOLCHAIN)/include' $$(find $(WEB_NATIVE_OUT)/c -type d -printf ' -iquote %p') \
+		$$(find $(WEB_NATIVE_OUT)/c -name '*.c') --js-library '$(TOOLCHAIN)/web/ziran_web.js' \
 		-sEXPORTED_RUNTIME_METHODS=FS -sFORCE_FILESYSTEM=1 -lidbfs.js -sALLOW_MEMORY_GROWTH=1 \
 		-sASYNCIFY -sENVIRONMENT=web -sSTACK_SIZE=8388608 -sASYNCIFY_STACK_SIZE=1048576 \
 		--preload-file '$(KRYON)/assets/fonts/LiberationSans-Regular.ttf@/kryon-font.ttf' \
-		--preload-file build/web-assets/assets@/assets -o build/web/index.js
-	cp src/web/index.html build/web/index.html
-	python3 scripts/stamp-web.py --deployed
-	cp assets/shovey/preview.png build/web/loading.png
-	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png build/web/
-	cp assets/branding/shovey-icon.png build/web/icon.png
-	cp assets/branding/shovey-social.png build/web/og.png
-	cp src/web/manifest.webmanifest src/web/_headers build/web/
+		--preload-file build/web-assets/assets@/assets -o $(WEB_OUT)/index.js
+	cp src/web/index.html $(WEB_OUT)/index.html
+	SHOVEY_WEB_OUT='$(WEB_OUT)' python3 scripts/stamp-web.py --deployed
+	cp assets/shovey/preview.png $(WEB_OUT)/loading.png
+	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png $(WEB_OUT)/
+	cp assets/branding/shovey-icon.png $(WEB_OUT)/icon.png
+	cp assets/branding/shovey-social.png $(WEB_OUT)/og.png
+	cp src/web/manifest.webmanifest src/web/_headers $(WEB_OUT)/
 
 web-itch: web
 
@@ -266,6 +268,8 @@ game-maps-test:
 
 public-test: solver laws game-maps-test
 	python3 tests/editor_server_test.py
+	python3 tests/campaign_publication_test.py
+	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
@@ -293,6 +297,8 @@ laws:
 
 test: solver laws game-maps-test
 	python3 tests/editor_server_test.py
+	python3 tests/campaign_publication_test.py
+	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'

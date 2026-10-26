@@ -40,6 +40,7 @@ Math :: #import "std/math";
 #import, file "levels.zi";
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
+#import, file "guide.zi";
 #import, file "shared_progress.zi";
 #import, file "completion_path.zi";
 #import, file "level_replay.zi";
@@ -76,11 +77,14 @@ game: ShoveyGame;
 progress: ShoveyProgress;
 selector_open: bool;
 levels_scroll: s32;
+levels_focus_pending: bool;
 loaded: bool;
 shared_progress: SharedProgressSession;
 completion_path: CompletionPath;
 shared_account_changed: bool;
 help_open: bool;
+friend_guide: ShoveyGuide;
+friend_loaded: bool;
 // An embedded mini page opens straight into a level with only its levels
 // and restart controls.
 mini: bool;
@@ -158,17 +162,6 @@ HeaderText :: () -> string {
     return TextView(header_bytes[:length])
 }
 
-// The first levels that bring something new each have a short tip, shown
-// over the board until the level is won.
-LevelTip :: (level: s32) -> string {
-    if level == 4 { return "shovey_tip_ball" }
-    if level == 5 { return "shovey_tip_push" }
-    if level == 6 { return "shovey_tip_restart" }
-    if level == 7 { return "shovey_tip_lever" }
-    if level == 8 { return "shovey_tip_colors" }
-    return ""
-}
-
 Fill :: (key: u64, bounds: Rectangle, color: Color, radius: float32 = 0.0) {
     Box(frame.session, BoxProps.{.key = key, .bounds = bounds, .fill = color, .radius = radius})
 }
@@ -178,6 +171,65 @@ Caption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16, center: b
             .wrap = TextWrap.TextWrapAuto,
             .align = ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
             .vertical_align = TextAlign.TextAlignCenter})
+}
+
+FriendSave :: () {
+    bytes: [10]u8
+    if GuideWrite(*friend_guide, bytes[:]) && !PathSaveRecord("local.guide.seen", TextView(bytes[:])) { save_failed = true }
+}
+
+FriendPrepare :: () {
+    if mini || ShoveySecret(game.level) || game.level == ShoveyFinaleLevel() { return }
+    if !friend_loaded {
+        friend_loaded = true
+        if !GuideRead(*friend_guide, PathRecord("local.guide.seen")) {
+            GuideSeedEarlier(*friend_guide, game.level)
+            if game.moves > 0 { friend_guide.seen = friend_guide.seen | GuideBoardTopics(*game) }
+            if friend_guide.seen != 0 { FriendSave() }
+        }
+    }
+    GuideOffer(*friend_guide, *game)
+}
+
+FriendCard :: (width: float32, top: float32, bottom: float32, key: s32, grid: TileMapResult, landscape: bool) {
+    topic := GuideNext(*friend_guide)
+    if topic < 0 { return }
+    text := AppLocaleHost(GuideTextKey(topic))
+    card_width: float32 = ifx width > 504.0 then 480.0 else width - 24.0
+    text_width: float32 = card_width - 108.0
+    text_height := cast(float32)TextHeight(frame.session, TextProps.{.text = text,
+            .bounds = Rectangle.{0.0, 0.0, text_width, 0.0}, .font = 15, .wrap = TextWrap.TextWrapAuto})
+    height: float32 = text_height + 98.0
+    if height < 154.0 { height = 154.0 }
+    y: float32 = bottom - height - 12.0
+    if y < top + 64.0 { y = top + 64.0 }
+    x: float32 = width - card_width - 12.0
+    // Pip sits in the scene beside a speech bubble; the puzzle stays visible.
+    unused Box(frame.session, BoxProps.{.key = cast(u64)20600,
+            .bounds = Rectangle.{x + 68.0, y, card_width - 68.0, height}, .radius = 18.0,
+            .fill = Color.{53, 61, 54, 250}, .border = Color.{161, 193, 112, 255}})
+    Caption(20601, Rectangle.{x + 94.0, y + 12.0, text_width, 24.0}, AppLocaleHost("shovey_friend_name"), 18)
+    Caption(20602, Rectangle.{x + 94.0, y + 42.0, text_width, text_height + 4.0}, text, 15)
+    bob := cast(float32)Math.Sin(frame.now * 2.0) * 2.5
+    Image(frame.session, ImageProps.{.key = cast(u64)20603,
+            .bounds = Rectangle.{x - 4.0, y + height - 112.0 + bob, 110.0, 116.0},
+            .asset_path = "assets/shovey/pip.png", .alt_text = AppLocaleHost("shovey_friend_name"),
+            .fit = ImageFit.ImageFitContain, .smooth = true})
+    // Point out the new mechanic without revealing a route through the puzzle.
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        focus := (GuideKind(game.ground[at]) | GuideKind(game.objects[at])) & GuideBit(topic)
+        if topic == GUIDE_HOME && ShoveyHome(game.ground[at]) { focus = 1 }
+        if focus != 0 {
+            cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            unused Box(frame.session, BoxProps.{.key = cast(u64)20605, .bounds = cell,
+                    .fill = Color.{181, 221, 104, 28}, .border = Color.{207, 242, 139, 255}, .radius = 4.0})
+            break
+        }
+    }
+    if Control(20604, Rectangle.{x + card_width - 104.0, y + height - 46.0, 88.0, 36.0},
+        AppLocaleHost("shovey_friend_continue")) || key == 257 || key == 32 || key == 256 {
+        if GuideAcknowledge(*friend_guide) { FriendSave() }
+    }
 }
 
 // A button; with an icon it shows only the icon and keeps label for
@@ -339,7 +391,13 @@ Remember :: () {
     }
 }
 
+OpenLevels :: () {
+    selector_open = true
+    levels_focus_pending = true
+}
+
 ChangeLevel :: (level: s32) {
+    friend_guide.level = 0
     slide_count = 0
     slide_next = 0
     if ShoveySecret(level) && game.level == level {
@@ -988,7 +1046,7 @@ EndingScreen :: (width: float32, top: float32, bottom: float32, key: s32) {
     press := Press(frame.session, PressProps.{.key = cast(u64)20111, .id = 20111, .bounds = area,
             .label = AppLocaleHost("shovey_back"), .now = frame.now})
     if press.clicked || key == 257 || key == 32 || key == 256 {
-        selector_open = true
+        OpenLevels()
         LeaveForGameSelection()
     }
     RewardCard(width, bottom)
@@ -1094,7 +1152,7 @@ ShoveyFrame :: () {
         }
         ReplayOpened()
         if latest || !mini { Remember() }
-        if ShoveyAllDone() { selector_open = true }
+        if ShoveyAllDone() { OpenLevels() }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
         last_tick = frame.now
         loaded = true
@@ -1161,6 +1219,13 @@ ShoveyFrame :: () {
         cell := (width - 32.0 - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
         preview_height := (cell - 12.0) * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
         row_height := cast(s32)(preview_height + 52.0 + 8.0)
+        if levels_focus_pending {
+            latest := progress.unlocked
+            if latest < 1 { latest = 1 }
+            if latest > listed { latest = listed }
+            levels_scroll = (latest - 1) / columns * row_height
+            levels_focus_pending = false
+        }
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
                 .bounds = Rectangle.{16.0, top + 72.0, width - 32.0, bottom - top - 88.0},
                 .content_height = rows * row_height, .scroll_offset = levels_scroll})
@@ -1250,7 +1315,8 @@ ShoveyFrame :: () {
         #if SHOVEY_ASKS_UPDATES {
             updates_setting = AppSupports("arcade.updates")
         }
-        settings_height: float32 = ifx updates_setting then 170.0 else 92.0
+        friend_setting := !ShoveySecret(game.level) && game.level < ShoveyFinaleLevel()
+        settings_height: float32 = (ifx updates_setting then 170.0 else 92.0) + (ifx friend_setting then 52.0 else 0.0)
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
                 .bounds = Rectangle.{16.0, top + 62.0, width - 32.0, bottom - top - 70.0},
                 .content_height = cast(s32)(settings_height + intro_height) + SHOVEY_HELP_COUNT * 68, .scroll_offset = help_scroll})
@@ -1274,6 +1340,11 @@ ShoveyFrame :: () {
                 if Choice(20035, Rectangle.{scroll.content.x + choice_width + 8.0, scroll.content.y + 124.0, choice_width, 44.0}, AppLocaleHost("shovey_updates_yes"), updates) {
                     LevelUpdatesSet(true)
                 }
+            }
+            if friend_setting && Control(20606, Rectangle.{scroll.content.x, scroll.content.y + settings_height - 48.0, scroll.content.width - 16.0, 40.0},
+                AppLocaleHost("shovey_friend_replay")) {
+                GuideReplay(*friend_guide, *game)
+                help_open = false
             }
             Caption(20006, Rectangle.{scroll.content.x, scroll.content.y + settings_height, scroll.content.width - 16.0, intro_height}, instructions)
             for index: cast(s32)0..SHOVEY_HELP_COUNT - 1 {
@@ -1303,7 +1374,7 @@ ShoveyFrame :: () {
         }
         levels_x: float32 = ifx mini then 8.0 else 92.0
         if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
-            selector_open = true
+            OpenLevels()
         }
         restart_x := ifx mini then width - 52.0 else width - 156.0
         Caption(20001, Rectangle.{levels_x + 48.0, top + 4.0, restart_x - levels_x - 48.0, 44.0}, HeaderText(), 14, true)
@@ -1324,7 +1395,7 @@ ShoveyFrame :: () {
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
     area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
-    tip := ifx mini then "" else LevelTip(game.level)
+    FriendPrepare()
     pad_mode := ControlsPad() && !mini
     landscape := BoardLandscape(area.width, area.height)
     before_direction := game.direction
@@ -1336,11 +1407,13 @@ ShoveyFrame :: () {
     if key == 264 || key == 83 { keyed = 3 }
     // Until the controls question is answered it takes every key.
     choosing := !mini && !ControlsChosen()
-    if choosing || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
+    guiding := !mini && !cinematic && !game.won && !ShoveySecret(game.level) && GuideNext(*friend_guide) >= 0
+    friend_key := key
+    if choosing || guiding || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
     if key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
-    if slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
+    if !guiding && slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
         game = slide_boards[slide_next]
         slide_next += 1
         slide_at = frame.now
@@ -1349,11 +1422,12 @@ ShoveyFrame :: () {
     sliding := slide_next < slide_count
     // Moving blocks and animals never decide a level, so their steps are
     // saved with the next move instead of writing the save every second.
-    if !sliding && frame.now - last_tick >= 1.0 {
+    if !guiding && !sliding && frame.now - last_tick >= 1.0 {
         unused ShoveyBlocksTick(*game)
         last_tick = frame.now
     }
-    if !sliding { unused AnimalsWander() }
+    if !guiding && !sliding { unused AnimalsWander() }
+    if guiding { last_tick = frame.now; slide_at = frame.now; boat_beside_at = 0.0 }
     SpriteNames()
     // While the ending plays the whole screen is the scene: the island the
     // last level belongs to and the open water round it. Once the boat sails
@@ -1438,22 +1512,19 @@ ShoveyFrame :: () {
         status = AppLocaleHost("shovey_finale")
         status_icon = "S2rr:M12 4L14 10H20L15 14L17 20L12 16L7 20L9 14L4 10H10Z"
     }
-    // On a tip level the tip says what to do, until the level is won or lost.
-    if game.won || game.lost { tip = "" }
-    if tip != "" { status_icon = "" }
     if status_icon != "" && !cinematic {
         unused Button(frame.session, ButtonProps.{.key = cast(u64)20021, .id = 20021,
                 .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
                 .label = status, .icon_shape = status_icon, .icon_only = true,
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
     }
-    if tip != "" && !cinematic {
-        // It shares the status line's space between the bar and the board.
-        Caption(20024, Rectangle.{16.0, status_y - 4.0, width - 32.0, 32.0}, AppLocaleHost(tip), 13, true)
-    }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     if choosing {
         ControlsChoice(width, top, bottom)
+        return
+    }
+    if guiding {
+        FriendCard(width, top, bottom, friend_key, grid, landscape)
         return
     }
     disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel() || reward_card >= 0

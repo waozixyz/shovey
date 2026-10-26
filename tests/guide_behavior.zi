@@ -1,0 +1,75 @@
+#import, file "../src/guide.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/progress.zi";
+#import "std/text_buffer"
+
+#program_export
+Fixture :: (level: s32) -> string {
+    if level < 1 || level > ShoveyLevelCount() { return "" }
+    board: ShoveyGame
+    if !ShoveyLoad(*board, level) { return "" }
+    progress := ShoveyProgressNew()
+    progress.unlocked = level
+    for at: cast(s32)0..level - 2 { progress.completed[at] = true }
+    return ShoveyCampaignSave(*progress, *board)
+}
+
+#program_export
+Check :: () -> s32 {
+    if Fixture(1) == "" { return 21 }
+    board := ShoveyGame.{.level = 1, .player = 13}
+    board.ground[14] = 7
+    guide: ShoveyGuide
+    GuideOffer(*guide, *board)
+    if GuideNext(*guide) != GUIDE_HOME || !GuideAcknowledge(*guide) || GuideNext(*guide) != -1 { return 1 }
+    GuideOffer(*guide, *board)
+    if GuideNext(*guide) != -1 { return 2 }
+    bytes: [12]u8
+    bytes[0] = #char "!"; bytes[11] = #char "!"
+    if !GuideWrite(*guide, bytes[1:11]) || bytes[0] != #char "!" || bytes[11] != #char "!" { return 3 }
+    restored: ShoveyGuide
+    if !GuideRead(*restored, TextView(bytes[1:11])) || restored.seen != guide.seen || GuideWrite(*guide, bytes[:9]) { return 4 }
+    if GuideRead(*restored, "G1zzzzzzzz") || GuideRead(*restored, "G1000") || restored.seen != guide.seen { return 5 }
+    board.level = 2; board.objects[25] = 9; board.ground[26] = 18
+    GuideOffer(*restored, *board)
+    if GuideNext(*restored) != GUIDE_CRATE || !GuideAcknowledge(*restored) || GuideNext(*restored) != -1 { return 6 }
+    board.level = 3; board.moves = 7; board.objects[25] = 1; board.ground[26] = 4
+    GuideOffer(*restored, *board)
+    if GuideNext(*restored) != -1 { return 7 }
+    board.level = SHOVEY_SECRET_UP; board.moves = 0
+    GuideOffer(*restored, *board)
+    if GuideNext(*restored) != -1 { return 8 }
+    board.level = 3; board.lost = true
+    GuideOffer(*restored, *board)
+    if GuideNext(*restored) != GUIDE_RESTART || !GuideAcknowledge(*restored) { return 9 }
+    GuideOffer(*restored, *board)
+    if GuideNext(*restored) != -1 { return 10 }
+    board.lost = false; board.level = 4; board.moves = 0
+    GuideOffer(*restored, *board)
+    if GuideNext(*restored) != GUIDE_BALL { return 11 }
+    unused GuideAcknowledge(*restored)
+    board.objects[27] = 3
+    if (GuideBoardTopics(*board) & GuideBit(GUIDE_COLORS)) == 0 { return 12 }
+    board.objects[27] = 1
+    if (GuideBoardTopics(*board) & GuideBit(GUIDE_COLORS)) != 0 { return 13 }
+    board.objects[27] = 9; board.ground[28] = 64
+    if (GuideBoardTopics(*board) & GuideBit(GUIDE_BRIDGE)) == 0 { return 14 }
+    board.objects[27] = 0
+    if (GuideBoardTopics(*board) & GuideBit(GUIDE_BRIDGE)) != 0 { return 15 }
+    if GuideKind(99) != 0 || GuideKind(SHOVEY_TREE) != 0 || GuideKind(SHOVEY_FISH) != 0 { return 16 }
+    kinds: [23]s32 = .[9, 21, 19, 93, 13, 15, 8, 11, 25, 26, 27, 29, 33, 70, 36, 40, 82, 148, 71, 72, 66, 35, 20]
+    topics: [23]s32 = .[GUIDE_CRATE, GUIDE_FRUIT, GUIDE_STARS, GUIDE_LEVER, GUIDE_BUTTON, GUIDE_PAINT, GUIDE_PORTAL,
+    GUIDE_TRAIL, GUIDE_REVERSE, GUIDE_SHOT, GUIDE_CHARGE, GUIDE_WAGON, GUIDE_KEY, GUIDE_ICE, GUIDE_COLOR_BLOCK,
+    GUIDE_SHADOW, GUIDE_ANIMALS, GUIDE_BOAT, GUIDE_CRACK, GUIDE_BOMB, GUIDE_ARROW, GUIDE_SLIDE, GUIDE_SENSOR]
+    for index: cast(s32)0..22 {
+        if GuideKind(kinds[index]) != GuideBit(topics[index]) || GuideTextKey(topics[index]) == "" { return 17 }
+    }
+    if GuideKind(104) != GuideBit(GUIDE_DOOR) || GuideKind(65) != GuideBit(GUIDE_ABYSS) { return 18 }
+    restored.seen = (cast(u64)1 << cast(u64)GUIDE_TOPICS) - 1
+    GuideReplay(*restored, *board)
+    if GuideNext(*restored) != GUIDE_BALL || GuideAcknowledge(*restored) { return 19 }
+    board.won = true; guide = .{}
+    GuideOffer(*guide, *board)
+    if GuideNext(*guide) != -1 { return 20 }
+    return 42
+}

@@ -58,10 +58,10 @@ jobs:
         run: |
           if command -v cc >/dev/null && command -v c++ >/dev/null && \
              command -v make >/dev/null && command -v cmake >/dev/null && \
-             command -v pkg-config >/dev/null && python3 -c 'import PIL, numpy'; then
+             command -v pkg-config >/dev/null && pkg-config --exists libcurl && python3 -c 'import PIL, numpy'; then
             echo 'Required build tools and image packages are already available.'
           else
-            sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential cmake pkg-config python3-pil python3-numpy
+            sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential cmake pkg-config libcurl4-openssl-dev python3-pil python3-numpy
           fi
       - uses: mymindstorm/setup-emsdk@v14
         with:
@@ -82,6 +82,21 @@ jobs:
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_profile_test.mjs
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 WEB_FAIL_STORAGE=1 node tests/web_profile_test.mjs
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_live_campaign_test.mjs
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_selector_latest_test.mjs
+      - name: Build the campaign publication client
+        run: |
+          entity=$("$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" pkg path entity --locked)
+          make -j1 -C "$entity" publication ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
+          mkdir -p build/campaign-publisher
+          cp "$entity/build/publication" build/campaign-publisher/publication
+          cp build/solver/shovey-solve-classic build/campaign-publisher/shovey-solve-classic
+          python3 scripts/publish-campaign.py --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: campaign-publisher
+          path: waozixyz/shovey/build/campaign-publisher
+          if-no-files-found: error
+          retention-days: 1
       # The website serves the game compiled to WebAssembly, which stays
       # smooth on slow phones.
       - name: Build the compiled web game
@@ -94,6 +109,7 @@ jobs:
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_tap_beside_board_test.mjs
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_copy_test.mjs
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_live_campaign_test.mjs
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_selector_latest_test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -106,6 +122,48 @@ jobs:
           name: web-browser-check
           path: waozixyz/shovey/build/web-test
           retention-days: 1
+
+  campaign:
+    name: Update live levels
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: campaign-server
+      url: https://api.waozi.xyz
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.build.outputs.revision }}
+      - name: Publish only the current master
+        id: current
+        env:
+          SOURCE_REVISION: ${{ needs.build.outputs.revision }}
+        run: |
+          git fetch origin master
+          if [ "$(git rev-parse origin/master)" = "$SOURCE_REVISION" ]; then
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          else
+            echo '::notice::A newer master superseded this campaign; its run will publish the levels.'
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.current.outputs.publish == 'true'
+        with:
+          name: campaign-publisher
+          path: build/campaign-publisher
+      - name: Publish and verify the approved campaign
+        if: steps.current.outputs.publish == 'true'
+        env:
+          CAMPAIGN_KEY: ${{ secrets.SHOVEY_CAMPAIGN_KEY }}
+        run: |
+          test -n "$CAMPAIGN_KEY" || { echo '::error::Set SHOVEY_CAMPAIGN_KEY to the existing campaign publisher key.'; exit 1; }
+          umask 077
+          key="$RUNNER_TEMP/shovey-campaign.key"
+          trap 'rm -f "$key"' EXIT
+          printf '%s' "$CAMPAIGN_KEY" > "$key"
+          chmod +x build/campaign-publisher/publication build/campaign-publisher/shovey-solve-classic
+          python3 scripts/publish-campaign.py --key-file "$key" --solver build/campaign-publisher/shovey-solve-classic
 
   deploy:
     if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'

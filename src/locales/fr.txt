@@ -664,6 +664,93 @@ Pas maintenant
 [shovey_updates_setting]
 Nouveaux niveaux
 ---
+[shovey_friend_name]
+Pip
+---
+[shovey_friend_continue]
+Compris
+---
+[shovey_friend_replay]
+Les conseils de Pip
+---
+[shovey_friend_welcome]
+Salut, moi c’est Pip ! Termine les tâches et aide Shovey à rentrer chez lui.
+---
+[shovey_friend_crates]
+Pousse les caisses sur leurs marques. Tu peux pousser, mais jamais tirer.
+---
+[shovey_friend_fruit]
+Ramasse tous les fruits avant de rentrer.
+---
+[shovey_friend_stars]
+Rapproche les blocs étoilés.
+---
+[shovey_friend_buttons]
+Laisse un objet sur un bouton pour maintenir sa porte ouverte.
+---
+[shovey_friend_paint]
+La peinture change la couleur d’une boule, puis disparaît.
+---
+[shovey_friend_portals]
+Les portails identiques sont reliés. Entre dans l’un pour ressortir par l’autre.
+---
+[shovey_friend_trail]
+Cet objet laisse une trace derrière toi. Les objets ne peuvent pas la traverser.
+---
+[shovey_friend_reverse]
+Cet objet inverse les commandes. Regarde dans quel sens va Shovey.
+---
+[shovey_friend_shots]
+Ramasse un projectile, vise une cible et lance-le. Il peut toucher plusieurs cibles.
+---
+[shovey_friend_charge]
+Cet objet charge Shovey. Une autre charge devient dangereuse tant qu’il est chargé.
+---
+[shovey_friend_wagon]
+Le wagon suit les rails. Parcours les rails neufs, puis bloque ses sorties.
+---
+[shovey_friend_keys]
+Ramasse une clé, puis avance vers une serrure pour l’ouvrir.
+---
+[shovey_friend_ice]
+Sur la glace, Shovey glisse jusqu’à rencontrer un obstacle. Prévois où t’arrêter.
+---
+[shovey_friend_color_blocks]
+Chaque poussée change la couleur du bloc. Trouve la bonne couleur pour son but.
+---
+[shovey_friend_shadow]
+L’ombre de Shovey part en sens inverse. Rapproche-les.
+---
+[shovey_friend_animals]
+Les animaux bougent seuls. Laisse-leur de la place et observe leurs trajets.
+---
+[shovey_friend_bridge]
+Pousse une caisse dans l’eau pour créer un passage.
+---
+[shovey_friend_boat]
+Le bateau permet aussi de rentrer. Termine les tâches, puis monte à bord.
+---
+[shovey_friend_cracks]
+Le sol fissuré s’effondre après ton passage. Prévois ton retour.
+---
+[shovey_friend_bomb]
+Pousse une caisse explosive contre un mur fissuré pour détruire les deux.
+---
+[shovey_friend_arrows]
+Shovey ne peut entrer sur une flèche que dans le sens indiqué.
+---
+[shovey_friend_slide]
+Cet objet fait glisser chaque déplacement. Cherche des arrêts sûrs.
+---
+[shovey_friend_sensors]
+Marche sur un capteur pour l’allumer. Le suivant ferme les capteurs allumés.
+---
+[shovey_friend_doors]
+Avance vers une porte en bois pour l’ouvrir.
+---
+[shovey_friend_abyss]
+Les objets s’arrêtent au bord du gouffre. Shovey peut tomber : attention au bord.
+---
 [shovey_chest_empty]
 Coffre vide
 ---

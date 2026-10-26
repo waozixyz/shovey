@@ -1,5 +1,6 @@
 """Identify the built game and keep browser caches on the same revision."""
 import json
+import os
 import re
 from pathlib import Path
 import subprocess
@@ -8,7 +9,7 @@ import sys
 root = Path(__file__).resolve().parents[1]
 revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
 approved = json.loads((root / 'levels/approved.json').read_text())['levels']
-output = root / 'build/web'
+output = Path(os.environ.get('SHOVEY_WEB_OUT', root / 'build/web'))
 # Cloudflare Pages takes files up to 25 MiB. Only the compiled game is
 # deployed (make web); the ZX edition is built and played in a browser check.
 if '--deployed' in sys.argv[1:]:
