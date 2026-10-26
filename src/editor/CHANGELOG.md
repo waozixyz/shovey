@@ -1,5 +1,12 @@
 # Shovey Editor changelog
 
+## [0.2.143] - 2026-10-26
+
+- Show the original full-colour Editor title artwork and keep its logo coloured during fades.
+- Use the redesigned Classic 73 and 74 and revised star puzzles as story examples.
+- Keep star blocks separated when creating a puzzle, and see them join when testing a winning push.
+- Keep the editor's earned examples separate from levels still waiting to be published.
+
 ## [0.2.142] - 2026-10-26
 
 - Return to the title from the editing board and keep your changes.

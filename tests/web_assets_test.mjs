@@ -11,13 +11,10 @@ import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
+import {driverSetup} from './web_driver.mjs';
 
 const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-assets-'));
-const driver = `document.addEventListener('DOMContentLoaded', () => {
-  Module.preRun = Module.preRun || [];
-  Module.preRun.push(function() { ENV.KRYON_TEST_DRIVER = '/tmp/test-driver'; Module.FS.mkdirTree('/tmp/test-driver'); });
-}, {once:true});`;
 const server = createServer(async (request, response) => {
   try {
     const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
@@ -109,7 +106,7 @@ try {
   }
   await call('Runtime.enable');
   await call('Page.enable');
-  await call('Page.addScriptToEvaluateOnNewDocument', {source: driver});
+  await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
   const views = [
     ['landscape', 1280, 800, ''], ['portrait', 420, 860, ''],
     ['landscape embed', 480, 400, '?mini'], ['portrait embed', 390, 700, '?mini']];
@@ -117,15 +114,18 @@ try {
   for (const [view, width, height, query] of views) {
     await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: width < 600});
     await call('Page.navigate', {url: site + 'index.html' + query});
-    await wait(`globalThis.Module?.FS?.analyzePath('/assets/shovey/catalog.json').exists && document.querySelector('#loading-screen')?.classList.contains('is-hidden')`);
+    await wait(`globalThis.Module?.FS?.analyzePath('/assets/shovey/catalog.json').exists && Module.FS.analyzePath('/tmp/test-driver').exists && document.querySelector('#loading-screen')?.classList.contains('is-hidden')`);
     await settle();
     if (!query) assert(await press('Play'), view + ': no Play button');
     // A first game asks how to move; either answer shows the board.
     if (!(await press('Movement pad'))) await settle();
+    for (let tip = 0; tip < 30 && await press('Got it'); tip++) {}
     const board = await check(view + ' board');
     assert(board >= 4, view + ': the board shows only ' + board + ' pictures');
     let list = 0;
-    if (await press('Levels')) list = await check(view + ' level list');
+    const openedList = await press('Levels');
+    if (!query) assert(openedList, view + ': no level list');
+    if (openedList) list = await check(view + ' level list');
     counts.push(`${view} ${board}${list ? '+' + list : ''}`);
   }
   assert.equal(failures.length, 0, failures.join('|'));

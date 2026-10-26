@@ -1,5 +1,16 @@
 # Shovey changelog
 
+## [0.6.151] - 2026-10-26
+
+- Show title screens in their original full colours, with a quick preview before the full artwork appears.
+- Keep title logos coloured during fades.
+- Use Claim reward and explain when a connection or synced completion history is needed.
+- Solve a new gate-and-paint workshop in Classic 73 and a colour-cycle ice pavilion in Classic 74.
+- Play a revised Classic 75; star blocks start separated and animate when pushed together.
+- Open level selection at your furthest unlocked level, including after replaying earlier puzzles.
+- Meet Pip for brief explanations when a new puzzle mechanic appears.
+- Use a larger movement pad with more edge padding in portrait and landscape.
+
 ## [0.6.150] - 2026-10-26
 
 - Play the current approved Classic campaign from the private editor.
