@@ -5,6 +5,11 @@ on:
     branches: [master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Full approved source commit (defaults to the triggering commit)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -17,6 +22,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    outputs:
+      revision: ${{ steps.source.outputs.revision }}
     defaults:
       run:
         working-directory: waozixyz/shovey
@@ -24,6 +31,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           path: waozixyz/shovey
+          ref: ${{ inputs.revision || github.sha }}
+          fetch-depth: 0
+      - name: Validate the requested source
+        id: source
+        env:
+          SHOVEY_REQUESTED_REVISION: ${{ inputs.revision || github.sha }}
+        run: |
+          [[ "$SHOVEY_REQUESTED_REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo 'A full source commit is required' >&2; exit 1; }
+          test "$(git rev-parse HEAD)" = "$SHOVEY_REQUESTED_REVISION"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then git merge-base --is-ancestor HEAD origin/master; fi
+          echo "revision=$SHOVEY_REQUESTED_REVISION" >> "$GITHUB_OUTPUT"
       - name: Read the locked toolchain
         id: toolchain
         run: |
@@ -106,7 +124,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy build/web --project-name=shovey --branch=master --commit-hash=${{ github.sha }}
+          command: pages deploy build/web --project-name=shovey --branch=master --commit-hash=${{ needs.build.outputs.revision }}
 
   itch:
     name: Publish itch.io
@@ -141,6 +159,7 @@ jobs:
           echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
       - name: Publish the tested browser build
         env:
+          SHOVEY_SOURCE_REVISION: ${{ needs.build.outputs.revision }}
           BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
         run: |
           version=$(python3 - <<'PY'
@@ -148,7 +167,7 @@ jobs:
           from pathlib import Path
           root = Path('build/web')
           build = json.loads((root / 'build.json').read_text())
-          assert build['revision'] == os.environ['GITHUB_SHA'], 'The web artifact belongs to another revision'
+          assert build['revision'] == os.environ['SHOVEY_SOURCE_REVISION'], 'The web artifact belongs to another revision'
           for name in ('index.html', 'index.js', 'index.wasm', 'index.data'):
               assert (root / name).is_file(), f'Missing web asset: {name}'
           print(build['version'] + '-' + build['revision'])

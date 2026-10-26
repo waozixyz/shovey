@@ -20,6 +20,10 @@ Check :: () -> s32 {
     device := EditorDeviceUnlocked(TextView(VecSlice(reply, 0, reply.count)))
     VecFree(reply)
     if device != 84 || EditorVisibleUnlocked(33, device) != 84 || EditorVisibleUnlocked(100, device) != 100 { return 2 }
+    #if #defined(SHOVEY_WEB) {
+        if EditorBrowserDeviceUnlocked(ShoveyCampaignSave(*progress, *board)) != 84 ||
+        EditorBrowserDeviceUnlocked("malformed") != 0 { return 5 }
+    }
     if EditorDeviceUnlocked("{\"status\":\"rejected\"}") != 0 ||
     EditorDeviceUnlocked("{\"status\":\"done\",\"text\":\"malformed\"}") != 0 { return 3 }
     if EditorVisibleUnlocked(1, 0) != 1 || EditorVisibleUnlocked(1000, 84) != ShoveyLevelCount() { return 4 }

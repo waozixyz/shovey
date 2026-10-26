@@ -28,6 +28,16 @@ EditorDeviceUnlocked :: (reply: string) -> s32 {
     return progress.unlocked
 }
 
+#if #defined(SHOVEY_WEB) {
+    // Classic and Editor share this first-party page's document store.
+    EditorBrowserDeviceUnlocked :: (text: string) -> s32 {
+        progress: ShoveyProgress
+        board: ShoveyGame
+        if !ShoveyCampaignRestore(*progress, *board, text) { return 0 }
+        return progress.unlocked
+    }
+}
+
 EditorVisibleUnlocked :: (account: s32, device: s32) -> s32 {
     value := ifx account > device then account else device
     if value < 1 { value = 1 }

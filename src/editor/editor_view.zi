@@ -656,6 +656,13 @@ EditorUnlocked :: () -> s32 {
         editor_unlocked_at = editor_frame.now
         account: s32 = 1
         device: s32 = 0
+        #if #defined(SHOVEY_WEB) {
+            // Read progress without changing the browser editor's draft store
+            // or granting account writes to its local drafts.
+            account = EditorAccountUnlocked(ProgressAccountService(
+                    "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
+            device = EditorBrowserDeviceUnlocked(LocalCampaignRecord())
+        } else {
         if AppSupportsHost(DRAFTS_SERVICE) {
             account = EditorAccountUnlocked(AppServiceHost(DRAFTS_SERVICE,
                     "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
@@ -667,6 +674,7 @@ EditorUnlocked :: () -> s32 {
                 device = EditorDeviceUnlocked(AppServiceHost("apps.records",
                         "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"campaign\"}"))
             }
+        }
         }
         editor_unlocked = EditorVisibleUnlocked(account, device)
     }

@@ -176,6 +176,22 @@ try {
     await delay(500);
     assert.equal(await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`), campaign, 'Scrolling changed the device campaign');
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Scrolling wrote account progress');
+    // Editor reads the browser's Classic save, while keeping the device's
+    // unlocks out of earned account progress and keeping future levels locked.
+    await textClick('Back');
+    await textClick('Back');
+    const header = campaign.startsWith('C5') ? 6 : 4;
+    const editorFixture = campaign.slice(0, 2) + (2).toString(16).padStart(header - 2, '0') + campaign.slice(header);
+    await evaluate(`Module.FS.writeFile(${JSON.stringify(localPath)}, ${JSON.stringify(editorFixture)})`);
+    await textClick('Next');
+    await textClick('Open');
+    await textClick('Levels');
+    const editorNodes = await tree();
+    assert(editorNodes.some(node => node.key === 260009 && node.label === '2'), 'Editor did not show device-unlocked level 2');
+    assert(!editorNodes.some(node => node.key === 260011), 'Device-unlocked level 2 is still locked');
+    assert(editorNodes.some(node => node.key === 260015), 'Future level 3 must stay locked');
+    assert.equal(await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`), editorFixture, 'Editor changed Classic progress');
+    assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Editor published device-only unlocks');
     console.log('Web Profile, inline Dew, account persistence and device-only level navigation passed without writing unearned account progress; no screenshots.');
   }
 } finally {
