@@ -97,6 +97,10 @@ try {
   await click(choice.x + choice.width / 2, choice.y + choice.height / 2);
   await delay(600);
   assert(!(await tree()).find(node => node.label === 'How do you want to move?'), 'The controls question stayed open');
+  // A new player meets Pip before movement becomes available.
+  const introduction = (await tree()).find(node => node.label === 'Got it');
+  if (introduction) await click(introduction.x + introduction.width / 2, introduction.y + introduction.height / 2);
+  assert(!(await tree()).find(node => node.label === 'Got it'), 'The introduction stayed open');
   const campaign = () => evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding: 'utf8'})`);
   const before = await campaign();
   // The board is centred, so the window's far edges lie beside it. A wall may
