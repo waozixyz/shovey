@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [0.6.153] - 2026-10-26
+
+- Recover rewards automatically for older synced saves.
+
 ## [0.6.152] - 2026-10-26
 
 - Keep earned unlocks and let older synced saves claim their Dew rewards after the security upgrade.
