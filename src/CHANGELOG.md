@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [0.6.152] - 2026-10-26
+
+- Keep earned unlocks and let older synced saves claim their Dew rewards after the security upgrade.
+
 ## [0.6.151] - 2026-10-26
 
 - Show title screens in their original full colours, with a quick preview before the full artwork appears.
