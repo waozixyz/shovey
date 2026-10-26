@@ -271,11 +271,13 @@ public-test: solver laws game-maps-test
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
+	sh tests/level_replay_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
 	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
 	python3 tests/classic_difficulty_test.py
 	python3 tests/classic_63_65_68_test.py
+	python3 tests/classic_73_74_test.py
 	python3 tests/classic_variety_test.py
 	python3 tests/assets_test.py
 
@@ -299,6 +301,7 @@ test: solver laws game-maps-test
 	python3 tests/levels_test.py
 	python3 tests/classic_difficulty_test.py
 	python3 tests/classic_63_65_68_test.py
+	python3 tests/classic_73_74_test.py
 	python3 tests/classic_variety_test.py
 	python3 tests/assets_test.py
 	sh tests/engine_test.sh '$(TOOLCHAIN)'
@@ -306,6 +309,7 @@ test: solver laws game-maps-test
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
+	sh tests/level_replay_test.sh '$(TOOLCHAIN)'
 	$(MAKE) bundles
 
 # A desktop player that records a winning route for each board it is given:

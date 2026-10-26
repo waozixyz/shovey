@@ -1,0 +1,213 @@
+// Local, owner-specific replay notices. Checking an old winning route uses a
+// separate engine and a small frame budget; it never touches the player's game.
+#import, file "completion_path.zi";
+#import, file "progress.zi";
+#import, file "engine.zi";
+#import, file "controls.zi";
+#import "std/vec"
+#import "std/text_buffer"
+#import "std/c_string"
+#import "std/json_scan"
+Completion :: #import "entity/game_completion";
+
+LevelReplayNotice :: struct {
+    checked: bool
+    dot: bool
+}
+
+LevelReplayCheck :: struct {
+    level: s32
+    slots: s32
+    slot: s32
+    hash: [65]u8
+    map: [1441]u8
+    actions: [PATH_ACTIONS + 1]u8
+    trace: [PATH_TRACE_BYTES + 1]u8
+    actions_count: s32
+    trace_count: s32
+    action_at: s32
+    trace_at: s32
+    replaying: bool
+    changed: bool
+    same_trace: bool
+    game: ShoveyGame
+}
+
+level_replay_notices: [SHOVEY_PROGRESS_LEVELS]LevelReplayNotice;
+level_replay_owner: [65]u8;
+level_replay_check: LevelReplayCheck;
+
+LevelReplayReset :: (owner: string) {
+    for at: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 { level_replay_notices[at] = .{} }
+    unused CopyCString(owner, level_replay_owner[:])
+    level_replay_check.level = 0
+}
+
+LevelReplayOwner :: (owner: string) {
+    if owner != TextUntilNul(level_replay_owner[:]) { LevelReplayReset(owner) }
+}
+
+// Keep host record names below 64 bytes. The complete owner is also stored
+// and compared, so a key collision cannot dismiss another owner's notice.
+LevelReplaySeenKey :: (level: s32, owner: string) -> string {
+    mark: u64 = 2166136261
+    for byte: owner { mark = ((mark ^ cast(u64)byte) * 16777619) & 4294967295 }
+    out: Vec(u8)
+    BuilderPrint(*out, "local.level.seen.%.%", mark, level)
+    return BuilderFinish(out)
+}
+
+LevelReplaySeen :: (level: s32, owner: string, hash: []u8) -> bool {
+    text := PathRecord(LevelReplaySeenKey(level, owner))
+    saved_owner: [65]u8
+    return ReadStringText(text, FieldAt(text, 0, "owner"), saved_owner[:]) >= 0 &&
+        TextUntilNul(saved_owner[:]) == owner &&
+        ReadStringText(text, FieldAt(text, 0, "map_hash"), hash) == 64
+}
+
+// Opening acknowledges this exact board, without clearing any earned win,
+// changing the best route, or acknowledging a later revision.
+LevelReplayOpened :: (level: s32, map: string, owner: string) -> bool {
+    if level < 1 || level > SHOVEY_PROGRESS_LEVELS { return true }
+    LevelReplayOwner(owner)
+    hash: [65]u8
+    if !Completion.GameCompletionMapHash("shovey.classic", level, map, hash[:]) { return false }
+    seen: [65]u8
+    saved := LevelReplaySeen(level, owner, seen[:]) && TextUntilNul(seen[:]) == TextUntilNul(hash[:])
+    if !saved {
+        out: Vec(u8)
+        BuilderPrint(*out, "{\"owner\":"); PathQuote(*out, owner)
+        BuilderPrint(*out, ",\"map_hash\":"); PathQuote(*out, TextUntilNul(hash[:]))
+        BuilderPrint(*out, "}")
+        saved = PathSaveRecord(LevelReplaySeenKey(level, owner), BuilderFinish(out))
+    }
+    level_replay_notices[level - 1] = .{.checked = true}
+    if level_replay_check.level == level { level_replay_check.level = 0 }
+    return saved
+}
+
+LevelReplayFinish :: (dot: bool) {
+    level_replay_notices[level_replay_check.level - 1] = .{.checked = true, .dot = dot}
+    level_replay_check.level = 0
+}
+
+// Called only for visible, unlocked selector cards. A legacy win with no
+// saved board or route cannot establish that an edit changed its solution.
+LevelReplayDot :: (level: s32, map: string, completed: bool, owner: string) -> bool {
+    if level < 1 || level > SHOVEY_PROGRESS_LEVELS { return false }
+    LevelReplayOwner(owner)
+    if level_replay_notices[level - 1].checked { return level_replay_notices[level - 1].dot }
+    if level_replay_check.level != 0 { return false }
+    level_replay_check = .{.level = level}
+    if !completed || !Completion.GameCompletionMapHash("shovey.classic", level, map, level_replay_check.hash[:]) ||
+    !ShoveyLoadData(*level_replay_check.game, level, map) {
+        LevelReplayFinish(false)
+        return false
+    }
+    unused CopyCString(map, level_replay_check.map[:])
+    seen: [65]u8
+    if LevelReplaySeen(level, owner, seen[:]) {
+        if TextUntilNul(seen[:]) == TextUntilNul(level_replay_check.hash[:]) {
+            LevelReplayFinish(false)
+            return false
+        }
+        level_replay_check.changed = true
+    }
+    name: Vec(u8)
+    BuilderPrint(*name, "local.path.best.%.index", level)
+    count := PathNumber(PathRecord(BuilderFinish(name)), "count")
+    level_replay_check.slots = ifx count > 0 then count else 0
+    return false
+}
+
+LevelReplayCell :: (cell: s32) {
+    at := level_replay_check.trace_at
+    if at + 2 > level_replay_check.trace_count ||
+    ShoveyByte(TextView(level_replay_check.trace[:level_replay_check.trace_count]), at) != cell {
+        level_replay_check.same_trace = false
+    }
+    level_replay_check.trace_at += 2
+}
+
+// At most one metadata record and budget engine actions per selector frame.
+// The persisted trace includes slide cells and both sides of portals.
+LevelReplayPump :: (budget: s32) {
+    if level_replay_check.level == 0 || budget < 1 { return }
+    if !level_replay_check.replaying {
+        if level_replay_check.slot >= level_replay_check.slots {
+            LevelReplayFinish(level_replay_check.changed)
+            return
+        }
+        prefix: Vec(u8)
+        BuilderPrint(*prefix, "local.path.best.%.%", level_replay_check.level, level_replay_check.slot)
+        level_replay_check.slot += 1
+        slot := BuilderFinish(prefix)
+        name: Vec(u8)
+        BuilderPrint(*name, "%.meta", slot)
+        text := PathRecord(BuilderFinish(name))
+        owner: [65]u8
+        hash: [65]u8
+        if !PathTrue(text, "complete") ||
+        ReadStringText(text, FieldAt(text, 0, "owner"), owner[:]) < 0 ||
+        TextUntilNul(owner[:]) != TextUntilNul(level_replay_owner[:]) ||
+        ReadStringText(text, FieldAt(text, 0, "map_hash"), hash[:]) != 64 { return }
+        if TextUntilNul(hash[:]) == TextUntilNul(level_replay_check.hash[:]) {
+            LevelReplayFinish(false)
+            return
+        }
+        level_replay_check.changed = true
+        actions := PathNumber(text, "actions")
+        trace := PathNumber(text, "trace")
+        if actions < 1 || actions > PATH_ACTIONS || trace < 2 || trace > PATH_TRACE_BYTES || trace % 2 != 0 ||
+        !PathChunksRead(slot, "a", actions, level_replay_check.actions[:]) ||
+        !PathChunksRead(slot, "t", trace, level_replay_check.trace[:]) { return }
+        level_replay_check.actions_count = actions
+        level_replay_check.trace_count = trace
+        level_replay_check.action_at = 0
+        level_replay_check.trace_at = 0
+        level_replay_check.same_trace = true
+        unused ShoveyLoadData(*level_replay_check.game, level_replay_check.level, TextUntilNul(level_replay_check.map[:]))
+        LevelReplayCell(level_replay_check.game.player)
+        level_replay_check.replaying = true
+    }
+    for step: cast(s32)0..budget - 1 {
+        if level_replay_check.action_at >= level_replay_check.actions_count ||
+        !level_replay_check.same_trace || level_replay_check.game.lost { break }
+        action := level_replay_check.actions[level_replay_check.action_at]
+        level_replay_check.action_at += 1
+        before := level_replay_check.game
+        frames: [SHOVEY_CELLS + 1]ShoveyGame
+        count: s32 = 1
+        if action >= #char "0" && action <= #char "3" {
+            direction := cast(s32)(action - #char "0")
+            // Turning against a wall is recorded too, for a following shot.
+            if (before.powers & SHOVEY_SLIDE) != 0 || before.ground[before.player] == SHOVEY_ICE || ShoveyHasIce(*before) {
+                count = ShoveyMoveFrames(*level_replay_check.game, direction, frames[:])
+                if count == 0 { unused ShoveyMove(*level_replay_check.game, direction); count = 1; frames[0] = level_replay_check.game }
+                else { level_replay_check.game = frames[count - 1] }
+            } else { unused ShoveyMove(*level_replay_check.game, direction); frames[0] = level_replay_check.game }
+        } else if action == #char "f" {
+            unused ShoveyFire(*level_replay_check.game)
+            frames[0] = level_replay_check.game
+        } else if action == #char "t" {
+            unused ShoveyTick(*level_replay_check.game)
+            frames[0] = level_replay_check.game
+        } else { level_replay_check.same_trace = false; break }
+        previous := before
+        for next: frames[:count] {
+            entrance := ShoveyNeighbor(previous.player, next.direction)
+            if next.teleports > previous.teleports && entrance >= 0 &&
+            (previous.ground[entrance] == 8 || ShoveyColorPortal(previous.ground[entrance])) {
+                LevelReplayCell(entrance); LevelReplayCell(next.player)
+            } else if previous.player != next.player { LevelReplayCell(next.player) }
+            previous = next
+        }
+    }
+    if level_replay_check.action_at >= level_replay_check.actions_count ||
+    !level_replay_check.same_trace || level_replay_check.game.lost {
+        if level_replay_check.same_trace && level_replay_check.game.won &&
+        level_replay_check.trace_at == level_replay_check.trace_count {
+            LevelReplayFinish(false)
+        } else { level_replay_check.replaying = false }
+    }
+}

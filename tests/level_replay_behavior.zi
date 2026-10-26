@@ -1,0 +1,124 @@
+#import, file "../src/level_replay.zi";
+#import, file "../src/completion_path.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/progress.zi";
+#import, file "../src/levels.zi";
+#import "std/vec"
+#import "std/text_buffer"
+#import "std/c_string"
+Fixture :: #import, file "completion_path_behavior.zi";
+
+Notice :: (level: s32, map: string, owner: string = "first") -> bool {
+    LevelReplayReset(owner)
+    unused LevelReplayDot(level, map, true, owner)
+    for frame: cast(s32)0..500 {
+        if level_replay_notices[level - 1].checked { break }
+        LevelReplayPump(1)
+    }
+    return LevelReplayDot(level, map, true, owner)
+}
+
+Win :: (level: s32, map: string, route: string, owner: string = "first") -> bool {
+    game: ShoveyGame
+    if !ShoveyLoadData(*game, level, map) { return false }
+    path: CompletionPath
+    PathStart(*path, *game, map, owner)
+    for action: route { Fixture.Act(*path, *game, cast(s32)(action - #char "0")) }
+    return game.won && PathKeepBest(*path, *game)
+}
+
+#program_export
+Check :: () -> s32 {
+    original := Fixture.Owned(Fixture.Map())
+    if !Win(4, original, "22") || Notice(4, original) { return 1 }
+    // Decorative edits and changes away from the route do not flag a win.
+    unused Fixture.Map()
+    Fixture.Cell(2, 20, 135)
+    cosmetic := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if Notice(4, cosmetic) { return 2 }
+    Fixture.Cell(1, 100, 12)
+    elsewhere := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if Notice(4, elsewhere) { return 3 }
+    // Moving the destination makes the old winning route stop winning.
+    unused Fixture.Map()
+    Fixture.Cell(0, 15, 0); Fixture.Cell(0, 26, 7)
+    edited := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if !Notice(4, edited) || Fixture.calls != 0 { return 4 }
+    // Inspecting the selector and frame pumping never changes saved records.
+    writes := Fixture.writes
+    game: ShoveyGame
+    unused ShoveyLoadData(*game, 4, original)
+    checkpoint := Fixture.Owned(ShoveySave(*game))
+    unused Notice(4, edited)
+    if Fixture.writes != writes || checkpoint != ShoveySave(*game) { return 5 }
+    // Opening, without playing or winning, dismisses only the opened revision.
+    if !LevelReplayOpened(4, edited, "first") || Notice(4, edited) { return 6 }
+    unused Fixture.Map()
+    Fixture.Cell(0, 15, 0); Fixture.Cell(0, 38, 7)
+    newer := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if !Notice(4, newer) { return 7 }
+    // A second account's acknowledgement and route cannot dismiss this one.
+    if !LevelReplayOpened(4, newer, "second") || !Notice(4, newer, "first") || Notice(4, newer, "second") { return 8 }
+    if !Notice(4, newer, "first") { return 9 }
+    // A new win on the edited board needs no replay, even after restart.
+    if !Win(4, newer, "233") || Notice(4, newer) { return 10 }
+    // Never flag a never-won level, or invent evidence for a legacy win.
+    LevelReplayReset("first")
+    if LevelReplayDot(8, edited, false, "first") || Notice(9, edited) { return 11 }
+    // Sliders retain each intermediate cell in the saved route.
+    unused Fixture.Map()
+    Fixture.Cell(1, 14, 70)
+    ice := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if !Win(5, ice, "2") { return 12 }
+    Fixture.Cell(2, 20, 135)
+    ice_cosmetic := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if Notice(5, ice_cosmetic) { return 13 }
+    // The same inputs can still win after a portal moves, but the player's
+    // actual route changed, so the changed trace must still show a dot.
+    unused Fixture.Map()
+    Fixture.Cell(0, 14, 73); Fixture.Cell(0, 50, 73)
+    Fixture.Cell(0, 15, 0); Fixture.Cell(0, 51, 7)
+    portal := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if !Win(6, portal, "22") { return 14 }
+    Fixture.Cell(0, 50, 0); Fixture.Cell(0, 51, 0)
+    Fixture.Cell(0, 62, 73); Fixture.Cell(0, 63, 7)
+    moved_portal := Fixture.Owned(TextUntilNul(Fixture.map_bytes[:]))
+    if !Notice(6, moved_portal) { return 15 }
+    // Bounded replay: a single frame cannot consume the whole old solution.
+    if !Win(7, original, "313131313122") { return 16 }
+    LevelReplayReset("first")
+    unused LevelReplayDot(7, edited, true, "first")
+    LevelReplayPump(1)
+    if !level_replay_check.replaying || level_replay_check.action_at != 1 ||
+    level_replay_notices[6].checked { return 17 }
+    // Dismissal failure is reported; it must not corrupt routes or win marks.
+    Fixture.refuse_save = true
+    if LevelReplayOpened(7, edited, "first") { return 18 }
+    Fixture.refuse_save = false
+    if Fixture.calls != 0 || Fixture.bad_record || !Notice(7, edited) { return 19 }
+    if UiFixture().count == 0 { return 20 }
+    return 42
+}
+
+// A genuine win on an older board, alongside an earned campaign, for the
+// private UI test. The game's current level 1 has a different solution.
+#program_export
+UiFixture :: () -> string {
+    if !Win(1, Fixture.Owned(Fixture.Map()), "22", "") { return "" }
+    progress := ShoveyProgress.{.unlocked = 3}
+    progress.completed[0] = true
+    progress.completed[1] = true
+    game: ShoveyGame
+    if !ShoveyLoad(*game, 3) { return "" }
+    unused Fixture.FakeSave("local.campaign", ShoveyCampaignSave(*progress, *game))
+    unused Fixture.FakeSave("controls", "off")
+    unused Fixture.FakeSave("level-updates", "off")
+    out: Vec(u8)
+    BuilderPrint(*out, "{")
+    for at: cast(s32)0..Fixture.records - 1 {
+        if at > 0 { BuilderPrint(*out, ",") }
+        PathQuote(*out, Fixture.keys[at]); BuilderPrint(*out, ":"); PathQuote(*out, Fixture.values[at])
+    }
+    BuilderPrint(*out, "}")
+    return BuilderFinish(out)
+}

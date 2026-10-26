@@ -16,6 +16,8 @@ Math :: #import "std/math";
 #import "control_props"
 #import "box_props"
 #import "box_widget"
+#import "shape_props"
+#import "shape_widget"
 #import "modal_widget"
 #import "modal_props"
 #import "svg_icon_props"
@@ -40,6 +42,7 @@ Math :: #import "std/math";
 #import, file "progress.zi";
 #import, file "shared_progress.zi";
 #import, file "completion_path.zi";
+#import, file "level_replay.zi";
 #import, file "secret_travel.zi";
 #import, file "shared_campaign.zi";
 #import, file "controls.zi";
@@ -82,6 +85,7 @@ help_open: bool;
 // and restart controls.
 mini: bool;
 save_failed: bool;
+replay_ack_failed: bool;
 help_scroll: s32;
 // Touch-first: hidden until the board is touched, then hidden again for keyboard.
 last_tick: float64;
@@ -322,8 +326,9 @@ reported_levels: s32 = -1;
 Remember :: () {
     // A secret level is never saved: the game reopens on the last level.
     if ShoveySecret(game.level) { return }
+    if replay_ack_failed { ReplayOpened() }
     ShoveyRecordWin(*progress, *game)
-    save_failed = !SaveLocalCampaign(ShoveyCampaignSave(*progress, *game))
+    save_failed = !SaveLocalCampaign(ShoveyCampaignSave(*progress, *game)) || replay_ack_failed
     if !PathSave(*completion_path, *game) { save_failed = true }
     if game.won {
         if !PathKeepBest(*completion_path, *game) { save_failed = true }
@@ -348,6 +353,7 @@ ChangeLevel :: (level: s32) {
     if ShoveySelectLevel(*progress, *game, level) {
         secret_visit.valid = false
         PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+        ReplayOpened()
         last_tick = frame.now
         selector_open = false
         help_open = false
@@ -644,12 +650,14 @@ LiveCampaignCheck :: () {
     }
     if compact != LiveCacheRead() { unused LiveCacheWrite(compact) }
     unused SaveAppRecordHost("live-campaign-mark", TextUntilNul(live_mark[:]))
+    LevelReplayReset(TextUntilNul(shared_progress.owner[:]))
     for at: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 { level_preview_paths[at][0] = 0 }
     // An untouched level reopens on its new board; a level in play keeps its
     // board until it is restarted or left.
     if !game.won && game.moves == 0 && game.level <= ShoveyLevelCount() {
         unused ShoveyLoad(*game, game.level)
         PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+        ReplayOpened()
     }
 }
 
@@ -662,10 +670,13 @@ entered_at: float64;
 ContinueGame :: () {
     slide_count = 0
     slide_next = 0
-    unused ShoveyContinue(*progress, *game)
+    advanced := ShoveyContinue(*progress, *game)
     // Past the last level Continue opens it afresh, not its ending.
-    if game.won && game.level >= ShoveyLevelCount() { unused ShoveyLoad(*game, ShoveyLevelCount()) }
-    PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+    if game.won && game.level >= ShoveyLevelCount() { advanced = ShoveyLoad(*game, ShoveyLevelCount()) }
+    // Continuing an attempt keeps its exact map and route, even if a newer
+    // campaign arrived while playing. Only a newly opened board is acknowledged.
+    if advanced { PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:])) }
+    ReplayOpened()
     selector_open = false
     help_open = false
     last_tick = frame.now
@@ -1050,6 +1061,12 @@ ShoveyBack :: () -> bool {
     return true
 }
 
+ReplayOpened :: () {
+    if ShoveySecret(game.level) || completion_path.level != game.level { return }
+    replay_ack_failed = !LevelReplayOpened(game.level, TextUntilNul(completion_path.map[:]), TextUntilNul(shared_progress.owner[:]))
+    if replay_ack_failed { save_failed = true }
+}
+
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
     if !loaded {
@@ -1075,6 +1092,7 @@ ShoveyFrame :: () {
         if latest || !PathRestore(*completion_path, *game) {
             PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
         }
+        ReplayOpened()
         if latest || !mini { Remember() }
         if ShoveyAllDone() { selector_open = true }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
@@ -1094,13 +1112,16 @@ ShoveyFrame :: () {
     if game.moves == 0 && completion_path.actions_count == 0 && !game.won && !game.lost &&
     TextUntilNul(completion_path.owner[:]) != TextUntilNul(shared_progress.owner[:]) {
         PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+        ReplayOpened()
     }
     if shared_change == 1 {
+        LevelReplayReset(TextUntilNul(shared_progress.owner[:]))
         ShoveySharedRestore(*progress, *shared_progress.record)
         // Account hydration can finish after the first frame. Open its
         // latest puzzle unless this device already has a board in progress.
         if ShoveyOpenLatest(*progress, *game) {
             PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+            ReplayOpened()
             Remember()
         }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
@@ -1192,9 +1213,15 @@ ShoveyFrame :: () {
                             .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
                             .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
                 }
+                if unlocked && LevelReplayDot(number, ShoveyLevelBoard(number), completed, TextUntilNul(shared_progress.owner[:])) {
+                    unused Circle(frame.session, CircleProps.{.key = cast(u64)(43000 + number),
+                        .center = Vector2.{bounds.x + bounds.width - 13.0, bounds.y + 13.0},
+                        .radius = 4.0, .fill = Color.{255, 226, 150, 255}})
+                }
             }
             End(frame.session)
         }
+        LevelReplayPump(24)
         return
     }
     if game.won && game.level < ShoveyLevelCount() { WinPause() }
