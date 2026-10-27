@@ -191,41 +191,57 @@ FriendPrepare :: () {
     GuideOffer(*friend_guide, *game)
 }
 
-FriendCard :: (width: float32, top: float32, bottom: float32, key: s32, grid: TileMapResult, landscape: bool) {
+// Whether Pip's card at y, with Pip leaning out of its left side and
+// bobbing just below it, would hide a cell.
+FriendCovers :: (x: float32, y: float32, card_width: float32, height: float32, cell: Rectangle) -> bool {
+    covered := RectangleIntersection(Rectangle.{x - 8.0, y - 4.0, card_width + 12.0, height + 14.0}, cell)
+    return covered.width > 0.0 && covered.height > 0.0
+}
+
+FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: TileMapResult, landscape: bool) {
     topic := GuideNext(*friend_guide)
     if topic < 0 { return }
     text := AppLocaleHost(GuideTextKey(topic))
     card_width: float32 = ifx width > 504.0 then 480.0 else width - 24.0
-    text_width: float32 = card_width - 108.0
+    text_width: float32 = card_width - 122.0
     text_height := cast(float32)TextHeight(frame.session, TextProps.{.text = text,
             .bounds = Rectangle.{0.0, 0.0, text_width, 0.0}, .font = 15, .wrap = TextWrap.TextWrapAuto})
     height: float32 = text_height + 98.0
     if height < 154.0 { height = 154.0 }
-    y: float32 = bottom - height - 12.0
-    if y < top + 64.0 { y = top + 64.0 }
     x: float32 = width - card_width - 12.0
+    // Point out the new mechanic without revealing a route through the puzzle.
+    focus_cell: Rectangle
+    focused := false
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        focus := (GuideKind(game.ground[at]) | GuideKind(game.objects[at])) & GuideBit(topic)
+        if topic == GUIDE_HOME && ShoveyHome(game.ground[at]) { focus = 1 }
+        if focus != 0 {
+            focus_cell = TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            focused = true
+            break
+        }
+    }
+    // Pip waits at the bottom, or under the bar when he would hide the cell
+    // he points at. The highlight goes under him, never over his card.
+    y: float32 = bottom - height - 12.0
+    if y < clear { y = clear }
+    hides := focused && FriendCovers(x, y, card_width, height, focus_cell)
+    if hides && !FriendCovers(x, clear, card_width, height, focus_cell) { y = clear }
+    if focused {
+        unused Box(frame.session, BoxProps.{.key = cast(u64)20605, .bounds = focus_cell,
+                .fill = Color.{181, 221, 104, 28}, .border = Color.{207, 242, 139, 255}, .radius = 4.0})
+    }
     // Pip sits in the scene beside a speech bubble; the puzzle stays visible.
     unused Box(frame.session, BoxProps.{.key = cast(u64)20600,
             .bounds = Rectangle.{x + 68.0, y, card_width - 68.0, height}, .radius = 18.0,
             .fill = Color.{53, 61, 54, 250}, .border = Color.{161, 193, 112, 255}})
-    Caption(20601, Rectangle.{x + 94.0, y + 12.0, text_width, 24.0}, AppLocaleHost("shovey_friend_name"), 18)
-    Caption(20602, Rectangle.{x + 94.0, y + 42.0, text_width, text_height + 4.0}, text, 15)
+    Caption(20601, Rectangle.{x + 108.0, y + 12.0, text_width, 24.0}, AppLocaleHost("shovey_friend_name"), 18)
+    Caption(20602, Rectangle.{x + 108.0, y + 42.0, text_width, text_height + 4.0}, text, 15)
     bob := cast(float32)Math.Sin(frame.now * 2.0) * 2.5
     Image(frame.session, ImageProps.{.key = cast(u64)20603,
             .bounds = Rectangle.{x - 4.0, y + height - 112.0 + bob, 110.0, 116.0},
             .asset_path = "assets/shovey/pip.png", .alt_text = AppLocaleHost("shovey_friend_name"),
             .fit = ImageFit.ImageFitContain, .smooth = true})
-    // Point out the new mechanic without revealing a route through the puzzle.
-    for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        focus := (GuideKind(game.ground[at]) | GuideKind(game.objects[at])) & GuideBit(topic)
-        if topic == GUIDE_HOME && ShoveyHome(game.ground[at]) { focus = 1 }
-        if focus != 0 {
-            cell := TileMapCell(grid, BoardDisplayIndex(at, landscape))
-            unused Box(frame.session, BoxProps.{.key = cast(u64)20605, .bounds = cell,
-                    .fill = Color.{181, 221, 104, 28}, .border = Color.{207, 242, 139, 255}, .radius = 4.0})
-            break
-        }
-    }
     if Control(20604, Rectangle.{x + card_width - 104.0, y + height - 46.0, 88.0, 36.0},
         AppLocaleHost("shovey_friend_continue")) || key == 257 || key == 32 || key == 256 {
         if GuideAcknowledge(*friend_guide) { FriendSave() }
@@ -1520,7 +1536,9 @@ ShoveyFrame :: () {
         return
     }
     if guiding {
-        FriendCard(width, top, bottom, friend_key, grid, landscape)
+        // Pip keeps clear of the bar and of the status shown under it.
+        clear := ifx status_icon != "" then status_y + 40.0 else top + 56.0
+        FriendCard(width, clear, bottom, friend_key, grid, landscape)
         return
     }
     disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel() || reward_card >= 0

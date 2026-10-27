@@ -66,6 +66,35 @@ def resize(child, width, height):
     return windows[0]
 
 
+def overlap(first, second):
+    return (min(first['x'] + first['width'], second['x'] + second['width']) - max(first['x'], second['x']) > 0.5 and
+            min(first['y'] + first['height'], second['y'] + second['height']) - max(first['y'], second['y']) > 0.5)
+
+
+def check_card(width, height, tip):
+    """Pip's card fits the window, keeps clear of the bar, the status and the
+    cell he points at, and its parts stay apart. Returns Pip's picture."""
+    avatar = driver.find(label='Pip', role='image', visible=True)[0]
+    button = driver.find(label='Got it', role='button', visible=True)[0]
+    bubble = driver.find(key=20600)[0]
+    focus = driver.find(key=20605)
+    for node in (avatar, tip, button, bubble):
+        assert node['x'] >= 0 and node['y'] >= 0
+        assert node['x'] + node['width'] <= width + 1
+        assert node['y'] + node['height'] <= height + 1
+    header = driver.find(label='Levels', role='button', visible=True)[0]
+    status = driver.find(key=20021)
+    for node in (avatar, tip, button, bubble):
+        assert node['y'] >= header['y'] + header['height'], 'Pip covered the bar'
+        assert not status or not overlap(node, status[0]), 'Pip covered the status under the bar'
+    assert not overlap(tip, button) and not overlap(tip, avatar), 'Pip, his tip and Got it overlap'
+    assert focus, 'Pip pointed at nothing on the board'
+    for node in (avatar, tip, button, bubble):
+        assert not overlap(node, focus[0]), f'Pip’s card hid the cell he points at at {width}x{height}'
+    assert focus[0]['index'] < bubble['index'], 'The highlight was drawn over Pip’s card'
+    return avatar
+
+
 def record_position(text):
     start = 1006 if text.startswith('C5') else 179
     return int(text[start + 4:start + 6], 16), int(text[start + 12:start + 20], 16)
@@ -102,14 +131,7 @@ with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as temporary:
         assert campaign.read_text() == before, 'Movement happened while Pip was speaking'
         for width, height in ((390, 844), (960, 600), (320, 568)):
             window = resize(child, width, height)
-            avatar = driver.find(label='Pip', role='image', visible=True)[0]
-            tip = driver.find(contains='Hi, I’m Pip!', role='text', visible=True)[0]
-            button = driver.find(label='Got it', role='button', visible=True)[0]
-            assert tip['y'] > height / 3, 'The introduction returned to the top status line'
-            for node in (avatar, tip, button):
-                assert node['x'] >= 0 and node['y'] >= 0
-                assert node['x'] + node['width'] <= width + 1
-                assert node['y'] + node['height'] <= height + 1
+            avatar = check_card(width, height, driver.find(contains='Hi, I’m Pip!', role='text', visible=True)[0])
             capture = output / f'pip-{width}x{height}.png'
             subprocess.run(['import', '-window', window, str(capture)], check=True)
             with Image.open(capture).convert('RGB') as image:
@@ -144,10 +166,13 @@ with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as temporary:
 with tempfile.TemporaryDirectory(prefix='crate-profile-', dir=output) as temporary:
     profile = Path(temporary)
     records = prepare(profile, 2)
-    with application(profile, 'new-mechanic'):
+    with application(profile, 'new-mechanic') as child:
         driver.wait(label='Pip', role='image')
         driver.wait(contains='Push crates onto their marks.', role='text')
         assert not driver.find(contains='Hi, I’m Pip!', role='text'), 'Existing progress repeated the welcome'
+        for width, height in ((390, 844), (960, 600)):
+            resize(child, width, height)
+            check_card(width, height, driver.find(contains='Push crates onto their marks.', role='text', visible=True)[0])
         driver.press(label='Got it', role='button')
         driver.wait_gone(label='Pip', role='image')
         assert int((records / 'local.guide.seen').read_text()[2:], 16) & 4
