@@ -34,4 +34,4 @@ includes=$(find "$work/c" -type d -printf ' -iquote %p')
 "${CC:-cc}" -std=c11 -O1 -ffunction-sections -fdata-sections -I"$toolchain/include" $includes \
     $(find "$work/c" -name '*.c') "$root/build/ziran/libziran.a" -Wl,--gc-sections -lm -lpthread -o "$work/native"
 "$work/native"
-echo 'Friend guide: first encounters, local seen records, manual replay, saved-attempt preservation, compound mechanics and secret-room exclusion'
+echo 'Friend guide: first encounters, local seen records, manual replay, saved-attempt preservation, compound mechanics, door tips near doors and secret-room exclusion'

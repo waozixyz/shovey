@@ -36,11 +36,42 @@ GUIDE_ABYSS :: 29
 ShoveyGuide :: struct {
     seen: u64
     pending: u64
+    // Topics on this board that wait until Shovey is near them.
+    waiting: u64
     level: s32
 }
 
+GUIDE_NEAR_STEPS :: 2
+
 GuideBit :: (topic: s32) -> u64 {
     return ifx topic >= 0 && topic < GUIDE_TOPICS then cast(u64)1 << cast(u64)topic else 0
+}
+
+// A wooden door can be far from the start, so its tip waits until Shovey
+// walks up to one.
+GuideNearby :: () -> u64 { return GuideBit(GUIDE_DOOR) }
+
+GuideSteps :: (from: s32, to: s32) -> s32 {
+    dx := from % SHOVEY_WIDTH - to % SHOVEY_WIDTH
+    dy := from / SHOVEY_WIDTH - to / SHOVEY_WIDTH
+    if dx < 0 { dx = -dx }
+    if dy < 0 { dy = -dy }
+    return dx + dy
+}
+
+// The cell showing topic closest to Shovey, or -1.
+GuideNearest :: (board: *ShoveyGame, topic: s32) -> s32 {
+    nearest: s32 = -1
+    best: s32 = 0
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if ((GuideKind(board.ground[at]) | GuideKind(board.objects[at])) & GuideBit(topic)) == 0 { continue }
+        steps := GuideSteps(board.player, at)
+        if nearest < 0 || steps < best {
+            nearest = at
+            best = steps
+        }
+    }
+    return nearest
 }
 
 GuideKind :: (kind: s32) -> u64 {
@@ -95,8 +126,24 @@ GuideOffer :: (guide: *ShoveyGuide, board: *ShoveyGame) {
     if guide.level != board.level {
         guide.level = board.level
         guide.pending = 0
+        guide.waiting = 0
         // Never interrupt a saved board midway through an attempt.
-        if board.moves == 0 && !board.lost { guide.pending = GuideBoardTopics(board) & ~guide.seen }
+        if board.moves == 0 && !board.lost {
+            topics := GuideBoardTopics(board) & ~guide.seen
+            guide.waiting = topics & GuideNearby()
+            guide.pending = topics & ~guide.waiting
+        }
+    }
+    if guide.waiting != 0 {
+        for topic: cast(s32)0..GUIDE_TOPICS - 1 {
+            bit := GuideBit(topic)
+            if (guide.waiting & bit) == 0 { continue }
+            near := GuideNearest(board, topic)
+            if near >= 0 && GuideSteps(board.player, near) <= GUIDE_NEAR_STEPS {
+                guide.waiting = guide.waiting & ~bit
+                guide.pending = guide.pending | (bit & ~guide.seen)
+            }
+        }
     }
     if board.lost { guide.pending = guide.pending | (GuideBit(GUIDE_RESTART) & ~guide.seen) }
 }

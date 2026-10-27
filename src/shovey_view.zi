@@ -212,7 +212,10 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     // Point out the new mechanic without revealing a route through the puzzle.
     focus_cell: Rectangle
     focused := false
+    // A door tip points at the door Shovey has walked up to.
+    nearest := ifx (GuideBit(topic) & GuideNearby()) != 0 then GuideNearest(*game, topic) else -1
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if nearest >= 0 && at != nearest { continue }
         focus := (GuideKind(game.ground[at]) | GuideKind(game.objects[at])) & GuideBit(topic)
         if topic == GUIDE_HOME && ShoveyHome(game.ground[at]) { focus = 1 }
         if focus != 0 {

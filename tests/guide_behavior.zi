@@ -71,5 +71,23 @@ Check :: () -> s32 {
     board.won = true; guide = .{}
     GuideOffer(*guide, *board)
     if GuideNext(*guide) != -1 { return 20 }
+    // The wooden door's tip waits until Shovey is two steps from the nearest door.
+    doors := ShoveyGame.{.level = 5, .player = 0}
+    doors.ground[SHOVEY_WIDTH * 12 + 6] = SHOVEY_DOOR
+    doors.ground[SHOVEY_WIDTH * 10 + 6] = SHOVEY_DOOR
+    met: ShoveyGuide
+    met.seen = GuideBit(GUIDE_HOME)
+    GuideOffer(*met, *doors)
+    if GuideNext(*met) != -1 || met.waiting != GuideBit(GUIDE_DOOR) { return 22 }
+    doors.player = SHOVEY_WIDTH * 7 + 6; doors.moves = 4
+    GuideOffer(*met, *doors)
+    if GuideNext(*met) != -1 { return 23 }
+    doors.player = SHOVEY_WIDTH * 8 + 6
+    GuideOffer(*met, *doors)
+    if GuideNext(*met) != GUIDE_DOOR || GuideNearest(*doors, GUIDE_DOOR) != SHOVEY_WIDTH * 10 + 6 { return 24 }
+    if !GuideAcknowledge(*met) || met.waiting != 0 { return 25 }
+    doors.player = SHOVEY_WIDTH * 11 + 6
+    GuideOffer(*met, *doors)
+    if GuideNext(*met) != -1 { return 26 }
     return 42
 }
