@@ -37,7 +37,7 @@ runs:
     # The compiler Arcade locks comes prebuilt, and Ubuntu packages from the
     # canonical archive.
     - name: Set up Arcade's locked Ziran and the build tools
-      uses: ziranlang/ziran/.github/actions/setup@5d3e5ca4cae76398dd2545a0e33d2b741fe5d321
+      uses: ziranlang/ziran/.github/actions/setup@979159a55bcf1f9edb9eb8f26ea10aca421412e2
       with:
         project: waozixyz/arcade
         path: ziranlang/ziran
