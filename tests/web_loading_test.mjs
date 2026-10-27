@@ -17,7 +17,7 @@ const server = createServer(async (request, response) => {
     const bytes = await readFile(join(root, name));
     response.setHeader('Content-Type', name.endsWith('.wasm') ? 'application/wasm'
       : name.endsWith('.js') ? 'text/javascript'
-      : name.endsWith('.png') ? 'image/png' : 'text/html');
+      : name.endsWith('.png') ? 'image/png' : name.endsWith('.jpg') ? 'image/jpeg' : 'text/html');
     response.end(bytes);
   } catch {
     response.writeHead(404).end();
@@ -127,7 +127,7 @@ try {
   assert.equal(await settle('document.querySelector(".loading-mark").naturalWidth', value => value === 1200), 1200);
   assert.equal(await evaluate('document.querySelector("link[rel=canonical]").href'), 'https://shovey.waozi.xyz/');
   assert(await evaluate(`document.querySelector('meta[property="og:image"]').content.includes('https://shovey.waozi.xyz/og.png?v=')`));
-  assert(await evaluate('document.querySelector(".loading-art source").srcset.includes("title-portrait.png")'));
+  assert(await evaluate('document.querySelector(".loading-art source").srcset.includes("title-portrait.jpg")'));
   await settle('document.querySelector("#loading-screen").classList.contains("is-hidden")', value => value);
   await settle('Number(getComputedStyle(document.querySelector(".loading-screen")).opacity)', value => value === 0);
   await delay(100);

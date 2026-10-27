@@ -216,8 +216,7 @@ web: bundles
 	cp src/web/privacy.html $(WEB_OUT)/privacy.html
 	SHOVEY_WEB_OUT='$(WEB_OUT)' python3 scripts/stamp-web.py --deployed
 	cp assets/shovey/preview.png $(WEB_OUT)/loading.png
-	cp assets/shovey/title-landscape.png assets/shovey/title-portrait.png assets/shovey/logo.png $(WEB_OUT)/
-	cp assets/branding/shovey-icon.png $(WEB_OUT)/icon.png
+	python3 scripts/build-site.py --pictures $(WEB_OUT)
 	cp assets/branding/shovey-social.png $(WEB_OUT)/og.png
 	cp src/web/manifest.webmanifest src/web/_headers $(WEB_OUT)/
 

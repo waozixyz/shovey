@@ -80,11 +80,20 @@ def download(tag, work):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--arcade', type=Path, required=True, help="Arcade's checkout, whose host runs the game")
+    parser.add_argument('--arcade', type=Path, help="Arcade's checkout, whose host runs the game")
     parser.add_argument('--download', type=Path, help='an unpacked release folder (shovey.zx, shovey.json, entity.zx)')
     parser.add_argument('--tag', help='the release to fetch, by default the newest published one')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/web-site')
+    parser.add_argument('--pictures', type=Path,
+                        help="only write the loading screen's small pictures into this folder (make web)")
     args = parser.parse_args()
+    if args.pictures:
+        args.pictures.mkdir(parents=True, exist_ok=True)
+        for name, source, longest in PAGE_PICTURES:
+            small_picture(ROOT / source, args.pictures / name, longest)
+        return
+    if not args.arcade:
+        parser.error('--arcade is required to build the site')
     (ROOT / 'build').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=ROOT / 'build') as temporary:
         work = Path(temporary)
