@@ -7,5 +7,5 @@ ref = "5efa24f818485cf265bdd5c066a4e2150175ac0e"
 
 [dependencies.host]
 git = "https://github.com/waozixyz/arcade.git"
-ref = "0c747f2c49fd9081366cc56d3f3875f69877ac0f"
+ref = "0788c12f40a15dad42e45acd994423c630b73cd7"
 source = true
