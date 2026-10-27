@@ -30,7 +30,11 @@ const server = createServer(async (request, response) => {
     const body = await readFile(join(root, path === '/' ? 'index.html' : path));
     response.setHeader('Content-Type', types[path.slice(path.lastIndexOf('.'))] || 'text/html');
     response.end(body);
-  } catch { response.writeHead(404).end(); }
+  } catch {
+    // Like Cloudflare Pages, a missing file gets the site's page.
+    try { response.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}).end(await readFile(join(root, 'index.html'))); }
+    catch { response.writeHead(404).end(); }
+  }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const environment = {...process.env};
@@ -119,6 +123,9 @@ try {
     revisions.size === 1 && /^[0-9a-f]{64}$/.test([...revisions][0]),
   'The runtime files did not share one cache revision: ' + runtime.map(url => url.pathname + url.search).join(' '));
   await wait(`Module.FS.analyzePath('/tmp/test-driver').exists`);
+  // Only a real bundle may stand in for the release's own Apps controller.
+  assert(await evaluate(`!Module.FS.analyzePath('/apps.zx').exists || String.fromCharCode(...Module.FS.readFile('/apps.zx').slice(0, 2)) === 'ZX'`),
+    'The page took a file the site does not have for the Apps controller');
   await delay(1500);
   await press('Not now');
   assert(await press('Play'), 'No Play button: ' + (await tree()).map(node => node.label).join('|'));

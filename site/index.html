@@ -82,15 +82,20 @@
       // The game travels gzip-compressed beside its plain copy (17.5 MB, or
       // 6.8 MB packed): Cloudflare does not compress binary files. Browsers
       // without DecompressionStream, or a missing .gz, take the plain file.
+      // Cloudflare answers a file the site does not have, such as the Apps
+      // controller a release carries itself, with this page.
+      function found(response) {
+        return response.ok && !/text\/html/.test(response.headers.get('Content-Type') || '');
+      }
       function plain(name) {
         return fetch(assetUrl(name)).then(function (response) {
-          return response.ok ? response.arrayBuffer() : null;
+          return found(response) ? response.arrayBuffer() : null;
         });
       }
       function bundle(name) {
         if (typeof DecompressionStream !== 'function') return plain(name);
         return fetch(assetUrl(name + '.gz')).then(function (response) {
-          if (!response.ok) throw new Error(response.status);
+          if (!found(response)) throw new Error(response.status);
           return response.arrayBuffer();
         }).then(function (packed) {
           var head = new Uint8Array(packed, 0, Math.min(2, packed.byteLength));
