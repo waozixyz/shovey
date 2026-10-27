@@ -25,6 +25,12 @@ the Google Play edition, uploads it to the **internal testing** track with the
 with Entity's `tools/play_dew_products.py` (the node's Dew price plus 10%,
 rounded up to a clean amount in each local currency).
 
+Dew product setup retries temporary API failures up to three times and fails
+unless all four packs are saved and activated. If the bundle upload succeeded
+but product setup failed, confirm the release on Play, then dispatch the workflow
+from `master` with that release's full `revision` and `products_only=true`.
+This repairs the packs without building or uploading the bundle again.
+
 Use `listing.json` and `fastlane/metadata/android` for the Console entry. Begin
 with **Internal testing**; the owner selects the tester emails or Google Group.
 Record the actual Play Console and opt-in URLs after creation. No production

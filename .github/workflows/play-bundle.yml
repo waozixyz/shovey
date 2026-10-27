@@ -20,6 +20,10 @@ on:
         description: Full Arcade host commit (defaults to the Android host pin)
         type: string
         required: false
+      products_only:
+        description: Repair Dew products after a successful bundle upload (no bundle upload)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -51,17 +55,21 @@ jobs:
           packages: build-essential cmake pkg-config python3-pil python3-numpy
           revision: ${{ inputs.arcade_revision }}
       - uses: actions/setup-java@v4
+        if: ${{ !inputs.products_only }}
         with:
           distribution: temurin
           java-version: '21'
       - name: Install Android tools
+        if: ${{ !inputs.products_only }}
         run: |
           sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$sdkmanager" --licenses >/dev/null || true
           "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
       - name: Build the Google Play edition bundle
+        if: ${{ !inputs.products_only }}
         run: make -C ../arcade android-shovey-bundle
       - name: Sign and verify the bundle
+        if: ${{ !inputs.products_only }}
         id: sign
         env:
           KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
@@ -83,12 +91,14 @@ jobs:
             --bundletool "$RUNNER_TEMP/bundletool.jar"
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.products_only }}
         with:
           name: shovey-play-testing
           path: waozixyz/shovey/build/android/*.aab
           if-no-files-found: error
           retention-days: 14
       - name: Write the release notes
+        if: ${{ !inputs.products_only }}
         env:
           VERSION: ${{ steps.sign.outputs.version }}
         run: |
@@ -103,6 +113,7 @@ jobs:
           PY
           cat build/play-notes/whatsnew-en-US
       - name: Upload to Google Play internal testing
+        if: ${{ !inputs.products_only }}
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
@@ -115,6 +126,7 @@ jobs:
       # Entity's tool prices dew_100 … dew_5000 from the node's Dew price
       # plus 10%, rounded up to a clean amount in each local currency.
       - name: Sell the Dew packs at Google Play prices
+        shell: bash
         env:
           ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
@@ -123,6 +135,18 @@ jobs:
           trap 'rm -f "$RUNNER_TEMP/play-account.json"' EXIT
           printf '%s' "$ACCOUNT" > "$RUNNER_TEMP/play-account.json"
           entity=$(cd ../arcade && "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" pkg path entity)
-          python3 "$entity/tools/play_dew_products.py" "$RUNNER_TEMP/play-account.json" xyz.waozi.shovey --apply | tee build/play-dew.log
-          # The tool reports each pack's save and activation; all eight must succeed.
-          test "$(grep -cE '^  (save|activate) 200 ok$' build/play-dew.log)" = 8
+          mkdir -p build
+          # Saving a fixed product ID and activating its buy option can be
+          # repeated after a temporary Play API failure. Never repeat the upload.
+          for attempt in 1 2 3; do
+            if python3 "$entity/tools/play_dew_products.py" "$RUNNER_TEMP/play-account.json" xyz.waozi.shovey --apply | tee build/play-dew.log &&
+                [ "$(grep -cE '^  (save|activate) 200 ok$' build/play-dew.log)" = 8 ]; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "::warning::Dew product setup incomplete; retrying in $((attempt * 10)) seconds."
+              sleep "$((attempt * 10))"
+            fi
+          done
+          echo '::error::Dew product setup failed after three attempts. Retry with products_only=true after confirming the bundle upload.'
+          exit 1
