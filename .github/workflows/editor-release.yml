@@ -26,22 +26,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           path: waozixyz/shovey
-      - name: Read the locked toolchain
-        id: toolchain
-        run: |
-          python3 -c 'import json,os; r=json.load(open("ziran.lock")); open(os.environ["GITHUB_OUTPUT"],"a").write("commit="+r["toolchain"]["commit"]+"\n")'
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      # The locked compiler comes prebuilt, the package checkouts cached, and
+      # Ubuntu packages from the canonical archive.
+      - name: Set up the locked Ziran, its packages and the test tools
+        uses: ziranlang/ziran/.github/actions/setup@5d3e5ca4cae76398dd2545a0e33d2b741fe5d321
         with:
-          repository: ziranlang/ziran
-          ref: ${{ steps.toolchain.outputs.commit }}
+          project: waozixyz/shovey
           path: ziranlang/ziran
-      - name: Install build and private-display test dependencies
-        run: |
-          sh "$GITHUB_WORKSPACE/ziranlang/ziran/scripts/ci_packages.sh" build-essential pkg-config libsdl2-dev libcairo2-dev libfreetype6-dev libfontconfig-dev libpango1.0-dev python3-pil python3-numpy xvfb xauth xdotool imagemagick
-      - name: Build the locked compiler and fetch packages
-        run: |
-          make -j2 -C "$GITHUB_WORKSPACE/ziranlang/ziran"
-          "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" fetch --locked
+          fetch: true
+          packages: >-
+            build-essential pkg-config libsdl2-dev libcairo2-dev libfreetype6-dev libfontconfig-dev
+            libpango1.0-dev python3-pil python3-numpy xvfb xauth xdotool imagemagick
       - name: Build the editor without campaign or reference data
         run: make admin-editor ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
       - name: Check the extracted download on a private display
