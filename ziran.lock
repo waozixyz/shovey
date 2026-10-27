@@ -35,9 +35,9 @@
       "url": "https://github.com/open-quantum-safe/liboqs.git"
     },
     {
-      "commit": "ca637d08b0d6b54ab6bb56bbfd9a25d7fb70f56c",
+      "commit": "1b46c4f2c750300cb1c5c46e203e14691571a72c",
       "dependencies": {"daochi_client": "p9972fcdd2d5ba999", "kryon": "p3127065409ca96f6", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
-      "id": "p52862c0351d05875",
+      "id": "pc231a4f8596eb9ca",
       "name": "Entity",
       "ref": "master",
       "url": "https://github.com/waozixyz/entity.git"
@@ -94,7 +94,7 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "p00b93f1ddcd2802f", "entity": "p52862c0351d05875", "kryon": "p3127065409ca96f6", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "p00b93f1ddcd2802f", "entity": "pc231a4f8596eb9ca", "kryon": "p3127065409ca96f6", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {
