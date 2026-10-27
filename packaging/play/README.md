@@ -3,18 +3,20 @@
 Shovey's Android ID is `xyz.waozi.shovey`. Its native Android host belongs to
 Arcade; game source and store metadata belong here.
 
-Build with `make -C ../arcade android-shovey-bundle`. Sign and verify the result:
+Build with `make -C ../arcade android-shovey-bundle`, Kryon's Google Play
+edition: Profile sells Dew through Google Play Billing (`dew_100`, `dew_500`,
+`dew_1000`, `dew_5000`). Sign and verify the result:
 
 ```sh
 python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.aab \
-  --version VERSION --output build/android/shovey-VERSION.aab \
+  --version VERSION --output build/android/shovey-vVERSION-gplay.aab \
   --bundletool /path/to/bundletool.jar
 ```
 
 The existing private Shovey release key is used by default. The verifier checks
 Google's bundle format, package/version, both ARM architectures, target API 36,
-the preserved release certificate, 16 KB native-library alignment and the exact
-embedded game collection. It never uploads the result. The manual Play bundle
+the preserved release certificate, 16 KB native-library alignment, Play Billing
+and the exact embedded game collection. It never uploads the result. The manual Play bundle
 workflow builds and signs a candidate using existing repository signing secrets.
 
 Use `listing.json` and `fastlane/metadata/android` for the Console entry. Begin

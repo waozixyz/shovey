@@ -72,6 +72,8 @@ def verify_bundle(bundle, version, bundletool):
         assert metadata['sha256'] == hashlib.sha256(archive.read('base/assets/arcade.zx')).hexdigest()
         abis = {name.split('/')[2] for name in archive.namelist() if name.startswith('base/lib/') and name.endswith('.so')}
         assert abis == {'arm64-v8a', 'armeabi-v7a'}
+        dex = b''.join(archive.read(name) for name in archive.namelist() if name.startswith('base/dex/'))
+        assert b'Lorg/kryonlabs/play/PlayBilling;' in dex, 'The Google Play edition must include Play Billing'
         verify_root = ROOT / 'build/play-verify'
         verify_root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=verify_root) as directory:

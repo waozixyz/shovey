@@ -40,7 +40,7 @@ jobs:
           sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$sdkmanager" --licenses >/dev/null || true
           "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
-      - name: Build bundle
+      - name: Build the Google Play edition bundle
         run: make -C ../arcade android-shovey-bundle
       - name: Sign and verify testing candidate
         env:
@@ -58,7 +58,7 @@ jobs:
           printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
           version=$(python3 -c 'import json; print(json.load(open("../arcade/build/shovey.json"))["version"])')
           python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.aab \
-            --version "$version" --output "build/android/shovey-v$version.aab" \
+            --version "$version" --output "build/android/shovey-v$version-gplay.aab" \
             --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
             --bundletool "$RUNNER_TEMP/bundletool.jar"
       - uses: actions/upload-artifact@v4

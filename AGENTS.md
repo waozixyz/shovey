@@ -2,12 +2,16 @@
 
 ## Google Play purchasing
 
-Owner instruction, 2026-10-26: Dew buying is disabled in the Google Play
-version until the owner confirms that the relevant Google Play account is
-authorized for purchases. Preserve this restriction in Play builds and do not
-enable Dew-buying or external funding paths as part of release preparation. Earning Dew
-rewards is separate from buying Dew. Store declarations must describe the
-actual Play build rather than purchasing features available in other hosts.
+Owner instruction, 2026-10-27, replacing the 2026-10-26 rule that disabled
+Dew buying in Play builds: every app has a normal edition (no suffix), an
+`-fdroid` and a `-gplay` edition. The Google Play edition sells the same Dew
+through Google Play Billing, at 10% above the base price rounded up to a
+clean amount in each local currency; the direct and F-Droid editions buy Dew
+with Monero at dew.waozi.xyz. Arcade builds the Play bundle as Kryon's
+`gplay` edition, so Entity's Profile Dew page lists the Play packs and credits
+them after the node verifies each purchase. Keep Play Billing in Play builds
+and offer no other way to buy Dew there. Earning Dew rewards is separate from
+buying Dew. Store declarations must describe the actual Play build.
 
 ## Web deployment
 
