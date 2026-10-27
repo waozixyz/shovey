@@ -183,6 +183,11 @@ ShoveyLiveLoadCached :: (text: string, base: string) -> bool {
     return ShoveyLiveLoadCompact(text)
 }
 
+ShoveyLiveAlreadyChecked :: (mark: string, checked_mark: string, base: string) -> bool {
+    return mark == checked_mark && base == SHOVEY_APPROVED_CAMPAIGN_MARK &&
+    shovey_live_count >= SHOVEY_APPROVED_LEVEL_COUNT
+}
+
 // Loads a compact campaign kept after an earlier check.
 ShoveyLiveLoadCompact :: (text: string) -> bool {
     #if !#defined(SHOVEY_RELEASE) {

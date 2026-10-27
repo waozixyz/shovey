@@ -61,9 +61,15 @@ Check :: () -> s32 {
     if ShoveyLiveLoadCached(cached, "previous-campaign") ||
     ShoveyLevelBoard(29) != ShoveyLevelData(29) { return 10 }
     if ShoveyLiveLoadCached(cached, "") { return 11 }
+    // An unchanged node publication must be rechecked when its old cache
+    // was rejected; the saved publication mark alone proves nothing.
+    if ShoveyLiveAlreadyChecked("publication", "publication", "previous-campaign") ||
+    ShoveyLiveAlreadyChecked("publication", "publication", SHOVEY_APPROVED_CAMPAIGN_MARK) { return 13 }
     // An update proven against this build is still available offline.
     if !ShoveyLiveLoadCached(cached, SHOVEY_APPROVED_CAMPAIGN_MARK) ||
     ShoveyLevelBoard(29) != ShoveyLevelData(1) { return 12 }
+    if !ShoveyLiveAlreadyChecked("publication", "publication", SHOVEY_APPROVED_CAMPAIGN_MARK) ||
+    ShoveyLiveAlreadyChecked("new-publication", "publication", SHOVEY_APPROVED_CAMPAIGN_MARK) { return 14 }
     shovey_live_count = 0
     return 0
 }

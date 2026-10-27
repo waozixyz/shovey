@@ -609,6 +609,7 @@ LiveAsk :: (request: string) -> string {
 // restored; with updates on, the node's latest is then fetched once per
 // session.
 LiveCampaignStart :: () {
+    shovey_live_count = 0
     cached := LiveCacheRead()
     if cached != "" { unused ShoveyLiveLoadCached(cached, AppRecordHost("live-campaign-base")) }
     // A campaign shorter than this release's is older than it.
@@ -659,7 +660,8 @@ LiveCampaignPump :: () {
     for at: cast(s64)document_at..end - 1 { mark = ((mark ^ cast(u64)reply[at]) * 16777619) & 4294967295 }
     digits: [24]u8
     mark_text := FormatInteger(cast(s64)mark, digits[:])
-    if mark_text == AppRecordHost("live-campaign-mark") { return }
+    if ShoveyLiveAlreadyChecked(mark_text, AppRecordHost("live-campaign-mark"),
+        AppRecordHost("live-campaign-base")) { return }
     for at: cast(s64)0..mark_text.count - 1 { live_mark[at] = mark_text[at] }
     live_mark[mark_text.count] = 0
     for at: cast(s64)document_at..end - 1 { live_document[at - document_at] = reply[at] }
