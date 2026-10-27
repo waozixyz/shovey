@@ -260,3 +260,16 @@ jobs:
           gh release upload "$tag" build/downloads/*
           gh release edit "$tag" --draft=false --latest
           echo "Published Shovey $VERSION."
+      # Arcade follows this release now, not at its next timer, and Breeze
+      # then publishes it to the node. RELEASE_FOLLOW_TOKEN may only start
+      # workflows in Arcade and Breeze; Game updates takes no input and finds
+      # the newest game releases itself. Without it Arcade's timer follows.
+      - name: Start Arcade's game update
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_FOLLOW_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "No RELEASE_FOLLOW_TOKEN: Arcade's Game updates picks this release up on its timer."
+            exit 0
+          fi
+          gh workflow run game-updates.yml -R waozixyz/arcade --ref master
