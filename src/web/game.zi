@@ -31,22 +31,18 @@ WebDewText :: () -> string {
     return TextUntilNul(web_dew_text[:])
 }
 
-// Classic, Island (coming soon) and the editor, with the cover art apps.json
-// declares for them.
+// Classic and the editor, with the cover art apps.json declares for them.
+// Island stays hidden until it is released.
 WebCovers :: () {
     page := ReadAppUiHost()
     width := cast(float32)page.width
     top := cast(float32)page.top
     bottom := cast(float32)(page.height - page.bottom)
     ShoveyDress(page.session, width, top, bottom)
-    items: [3]CarouselItem = .[
+    items: [2]CarouselItem = .[
     CarouselItem.{.label = AppLocaleHost("shovey_title_art"),
         .portrait = "assets/shovey/title-portrait.png", .landscape = "assets/shovey/title-landscape.png",
         .logo = "assets/shovey/logo.png", .action = AppLocaleHost("shovey_play")},
-    CarouselItem.{.label = AppLocaleHost("shovey_island_art"),
-        .portrait = "assets/shovey/island-portrait.png", .landscape = "assets/shovey/island-landscape.png",
-        .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_island"), .action = AppLocaleHost("shovey_coming_soon"),
-        .disabled = true},
     CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
         .portrait = "assets/shovey/editor-portrait.png", .landscape = "assets/shovey/editor-landscape.png",
         .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_editor"), .action = AppLocaleHost("shovey_open")}
@@ -55,9 +51,9 @@ WebCovers :: () {
             .bounds = Rectangle.{0.0, top, width, bottom - top}, .now = page.now, .key_pressed = AppKeyHost(),
             .dark = true, .label = AppLocaleHost("shovey_title_art"), .previous_label = AppLocaleHost("shovey_page_previous"),
             .next_label = AppLocaleHost("shovey_page_next")}, items[:], *web_covers)
-    if entered == 0 || entered == 2 {
+    if entered == 0 || entered == 1 {
         web_covers_open = false
-        web_editor_open = entered == 2
+        web_editor_open = entered == 1
     }
     // The account's Dew beside the Profile: a drop and the number.
     if AppSupports("entity.dew") {
