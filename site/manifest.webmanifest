@@ -1,0 +1,11 @@
+{
+  "name": "Shovey — Push. Solve. Come home.",
+  "short_name": "Shovey",
+  "description": "A puzzle game about finding a path home.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#173226",
+  "theme_color": "#173226",
+  "icons": [{"src": "icon.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any"}]
+}

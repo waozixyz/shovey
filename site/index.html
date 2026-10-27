@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Shovey — Push. Solve. Come home.</title>
+  <meta name="description" content="Push. Solve. Come home. Play Shovey's Classic puzzles in your browser with touch or arrow keys, saved progress and a level editor.">
+  <meta name="theme-color" content="#173226">
+  <meta name="application-name" content="Shovey">
+  <meta name="author" content="Waozi">
+  <link rel="canonical" href="https://shovey.waozi.xyz/">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Shovey">
+  <meta property="og:url" content="https://shovey.waozi.xyz/">
+  <meta property="og:title" content="Shovey — Push. Solve. Come home.">
+  <meta property="og:description" content="A little green friend, clever puzzles and a path home. Play the Classic levels with touch or arrow keys, and make your own puzzles.">
+  <meta property="og:image" content="https://shovey.waozi.xyz/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Shovey, the little green puzzle hero, beside a wooden crate in a sunny garden, beneath the Shovey logo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@waozixyz">
+  <meta name="twitter:image" content="https://shovey.waozi.xyz/og.png">
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #10231d; color: #edf7f0; }
+    canvas { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
+    #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding-bottom: 12vh; background: #173226 center / cover no-repeat url(title-landscape.png); font: 600 16px/1.4 system-ui, sans-serif; transition: opacity .3s ease; }
+    @media (max-aspect-ratio: 1/1) { #loading { background-image: url(title-portrait.png); } }
+    #loading.done { opacity: 0; pointer-events: none; }
+    #loading img { width: min(70vw, 480px); height: auto; }
+    #loading .track { width: min(280px, 70vw); height: 6px; border-radius: 3px; background: #ffffff40; overflow: hidden; }
+    #loading .bar { width: 0; height: 100%; background: #58c467; transition: width .2s ease; }
+    #loading .failed { display: none; text-align: center; padding: 8px 24px; border-radius: 12px; background: #10231dd9; color: #ffb4a8; }
+    #loading.error .failed { display: block; }
+    #loading.error .track { display: none; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" tabindex="0"></canvas>
+  <div id="loading" role="status" aria-live="polite" aria-label="Loading Shovey">
+    <img src="logo.png" alt="Shovey" width="1200" height="410">
+    <div class="track"><div class="bar"></div></div>
+    <p class="failed">Shovey could not start. Reload the page to try again.</p>
+  </div>
+  <script>
+    // The released Shovey player, the same shovey.zx and shovey.json as the
+    // downloads, runs in Arcade's browser host.
+    (function () {
+      var loading = document.getElementById('loading');
+      var bar = loading.querySelector('.bar');
+      function failed() { loading.classList.add('error'); }
+      // The Profile reports ready once the game is about to draw.
+      function watch() {
+        if (window.Module && Module.profileReady) { loading.classList.add('done'); return; }
+        requestAnimationFrame(watch);
+      }
+      window.Module = {
+        canvas: document.getElementById('canvas'),
+        setStatus: function (text) {
+          var match = /\((\d+(?:\.\d+)?)\/(\d+)\)/.exec(text || '');
+          if (match) bar.style.width = Math.min(100, 100 * match[1] / match[2]) + '%';
+        },
+        onAbort: failed,
+        onExit: function (code) { if (code !== 0) failed(); }
+      };
+      Promise.all([
+        fetch('arcade.json', { cache: 'no-cache' }).then(function (response) {
+          if (!response.ok) throw new Error(response.status);
+          return response.text();
+        }),
+        fetch('apps.zx').then(function (response) {
+          return response.ok ? response.arrayBuffer() : null;
+        })
+      ]).then(function (loaded) {
+        Module.arcadeReceipt = loaded[0];
+        if (loaded[1]) {
+          Module.preRun = [].concat(Module.preRun || [], function () {
+            FS.writeFile('/apps.zx', new Uint8Array(loaded[1]));
+          });
+        }
+        var script = document.createElement('script');
+        script.src = 'runtime.js';
+        script.onerror = failed;
+        document.body.appendChild(script);
+        watch();
+      }).catch(failed);
+    })();
+  </script>
+</body>
+</html>
