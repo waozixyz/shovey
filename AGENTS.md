@@ -13,6 +13,12 @@ them after the node verifies each purchase. Keep Play Billing in Play builds
 and offer no other way to buy Dew there. Earning Dew rewards is separate from
 buying Dew. Store declarations must describe the actual Play build.
 
+Owner instruction, 2026-10-27: GitHub releases everything. Every published
+Shovey release goes to Google Play's internal testing track from the Downloads
+workflow (`play-bundle.yml`), which also creates or updates the Dew packs. Do
+not upload to Google Play from a session or a local machine; fix the workflow
+instead.
+
 ## Web deployment
 
 Owner instruction, 2026-10-22: the playable web game lives at

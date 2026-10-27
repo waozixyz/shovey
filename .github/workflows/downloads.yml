@@ -273,3 +273,13 @@ jobs:
             exit 0
           fi
           gh workflow run game-updates.yml -R waozixyz/arcade --ref master
+
+  # The same release goes to Google Play's internal testing track as the
+  # Google Play edition, with its Dew packs.
+  google-play:
+    needs: [due, release]
+    if: needs.due.outputs.release_due == 'true'
+    uses: ./.github/workflows/play-bundle.yml
+    with:
+      revision: ${{ needs.due.outputs.revision }}
+    secrets: inherit

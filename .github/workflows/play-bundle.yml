@@ -1,12 +1,25 @@
-name: Google Play testing bundle
+name: Google Play
 
+# Every published Shovey release goes to Google Play's internal testing track
+# as the Google Play edition, which sells Dew through Google Play. Downloads
+# calls this after publishing a release; a dispatch uploads one release
+# again (choose its tag as the ref).
 on:
+  workflow_call:
+    inputs:
+      revision:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
-      arcade_revision:
-        description: Full Arcade host commit to build
+      revision:
+        description: Full Shovey release commit (defaults to this run's commit)
         type: string
-        required: true
+        required: false
+      arcade_revision:
+        description: Full Arcade host commit (defaults to the Android host pin)
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -15,18 +28,24 @@ jobs:
   bundle:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    concurrency:
+      group: shovey-google-play
+      cancel-in-progress: false
     defaults:
       run:
         working-directory: waozixyz/shovey
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.revision || github.sha }}
           path: waozixyz/shovey
-      - name: Validate the fixed host revision
+      - name: Validate the fixed revisions
         env:
+          REVISION: ${{ inputs.revision || github.sha }}
           ARCADE_REVISION: ${{ inputs.arcade_revision }}
         run: |
-          python3 -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}", os.environ["ARCADE_REVISION"]), "Use a full Arcade commit"'
+          python3 -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}", os.environ["REVISION"]), "Use a full Shovey commit"'
+          python3 -c 'import os,re; assert re.fullmatch("([0-9a-f]{40})?", os.environ["ARCADE_REVISION"]), "Use a full Arcade commit"'
       - uses: ./waozixyz/shovey/.github/actions/arcade
         with:
           packages: build-essential cmake pkg-config python3-pil python3-numpy
@@ -42,7 +61,8 @@ jobs:
           "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
       - name: Build the Google Play edition bundle
         run: make -C ../arcade android-shovey-bundle
-      - name: Sign and verify testing candidate
+      - name: Sign and verify the bundle
+        id: sign
         env:
           KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
           PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
@@ -61,9 +81,48 @@ jobs:
             --version "$version" --output "build/android/shovey-v$version-gplay.aab" \
             --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
             --bundletool "$RUNNER_TEMP/bundletool.jar"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: shovey-play-testing
           path: waozixyz/shovey/build/android/*.aab
           if-no-files-found: error
           retention-days: 14
+      - name: Write the release notes
+        env:
+          VERSION: ${{ steps.sign.outputs.version }}
+        run: |
+          mkdir -p build/play-notes
+          python3 - > build/play-notes/whatsnew-en-US <<'PY'
+          import os, re
+          text = open('src/CHANGELOG.md').read()
+          section = re.search(r'^## \[' + re.escape(os.environ['VERSION']) + r'\] - .*?\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+          notes = section[1].strip()
+          # Play keeps at most 500 characters of notes per language.
+          print(notes if len(notes) <= 500 else notes[:499] + '…')
+          PY
+          cat build/play-notes/whatsnew-en-US
+      - name: Upload to Google Play internal testing
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: xyz.waozi.shovey
+          releaseFiles: waozixyz/shovey/build/android/shovey-v${{ steps.sign.outputs.version }}-gplay.aab
+          releaseName: ${{ steps.sign.outputs.version }}
+          track: internal
+          status: completed
+          whatsNewDirectory: waozixyz/shovey/build/play-notes
+      # Entity's tool prices dew_100 … dew_5000 from the node's Dew price
+      # plus 10%, rounded up to a clean amount in each local currency.
+      - name: Sell the Dew packs at Google Play prices
+        env:
+          ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          test -n "$ACCOUNT"
+          umask 077
+          trap 'rm -f "$RUNNER_TEMP/play-account.json"' EXIT
+          printf '%s' "$ACCOUNT" > "$RUNNER_TEMP/play-account.json"
+          entity=$(cd ../arcade && "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" pkg path entity)
+          python3 "$entity/tools/play_dew_products.py" "$RUNNER_TEMP/play-account.json" xyz.waozi.shovey --apply | tee build/play-dew.log
+          # The tool reports each pack's save and activation; all eight must succeed.
+          test "$(grep -cE '^  (save|activate) 200 ok$' build/play-dew.log)" = 8
