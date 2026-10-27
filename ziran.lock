@@ -3,7 +3,7 @@
   "packages": [
     {
       "commit": "dc1cfe389905c63c0bb453727d06d72afc1fa0b0",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "p39132f61dd28d78f"},
+      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "p3127065409ca96f6"},
       "id": "p00b93f1ddcd2802f",
       "name": "Apps",
       "ref": "master",
@@ -18,17 +18,9 @@
       "url": "https://github.com/ziranlang/qrcode.git"
     },
     {
-      "commit": "3bbd805f73823151f36d999566d93230e99a2e68",
-      "dependencies": {"daochi_client": "p9972fcdd2d5ba999", "kryon": "p39132f61dd28d78f", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
-      "id": "p1672c45c54533fed",
-      "name": "Entity",
-      "ref": "master",
-      "url": "https://github.com/waozixyz/entity.git"
-    },
-    {
-      "commit": "68f2e8d30b8d2f28b29c1d8875193b33bea44ead",
+      "commit": "0931212f92d5f1a3f8b1be80abab7a9695bda50e",
       "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "p39132f61dd28d78f",
+      "id": "p3127065409ca96f6",
       "name": "kryon",
       "ref": "master",
       "url": "https://github.com/kryonlabs/kryon.git"
@@ -41,6 +33,14 @@
       "ref": "main",
       "source": true,
       "url": "https://github.com/open-quantum-safe/liboqs.git"
+    },
+    {
+      "commit": "ca637d08b0d6b54ab6bb56bbfd9a25d7fb70f56c",
+      "dependencies": {"daochi_client": "p9972fcdd2d5ba999", "kryon": "p3127065409ca96f6", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
+      "id": "p52862c0351d05875",
+      "name": "Entity",
+      "ref": "master",
+      "url": "https://github.com/waozixyz/entity.git"
     },
     {
       "commit": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e",
@@ -94,7 +94,7 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "p00b93f1ddcd2802f", "entity": "p1672c45c54533fed", "kryon": "p39132f61dd28d78f", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "p00b93f1ddcd2802f", "entity": "p52862c0351d05875", "kryon": "p3127065409ca96f6", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {

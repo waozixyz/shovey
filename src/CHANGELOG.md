@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [0.6.155] - 2026-10-27
+
+- Set an account alias with capitals, an @ or spaces; a taken alias now says so.
+
 ## [0.6.154] - 2026-10-26
 
 - Keep opened chests open across restarts and account sync; show the blue Dew diamond only while their reward is unclaimed.
