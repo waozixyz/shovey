@@ -111,7 +111,14 @@ def main():
         subprocess.run([sys.executable, 'scripts/build-web.py', '--shovey', str(release),
                         '--site', str(site), '--output', str(args.output.resolve())],
                        cwd=args.arcade, check=True)
-    (args.output / 'build.json').write_text(json.dumps({'version': version}) + '\n')
+    # Arcade's build names the runtime files' cache revision; the site
+    # adds the Shovey release it runs.
+    receipt = args.output / 'build.json'
+    build = json.loads(receipt.read_text()) if receipt.is_file() else {}
+    if 'source_revision' in build:
+        build['arcade_revision'] = build.pop('source_revision')
+    build['version'] = version
+    receipt.write_text(json.dumps(build) + '\n')
     print(f'shovey.waozi.xyz runs the released Shovey {version} in {args.output}')
 
 

@@ -17,8 +17,16 @@ const profile = await mkdtemp(join(tmpdir(), 'shovey-release-'));
 const types = {'.wasm': 'application/wasm', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json'};
 const server = createServer(async (request, response) => {
   try {
-    const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    const url = new URL(request.url, 'http://localhost');
+    const path = decodeURIComponent(url.pathname);
     if (path.includes('..')) throw Error('Invalid path');
+    // A browser may still hold an older runtime under its plain URL for
+    // hours; the page must ask for its own build's revision.
+    if (path === '/runtime.js' && !url.searchParams.has('v')) {
+      response.writeHead(200, {'Content-Type': 'text/javascript', 'Cache-Control': 'public, max-age=14400'});
+      response.end('console.error("Stale cached Shovey runtime"); Module.onAbort();');
+      return;
+    }
     const body = await readFile(join(root, path === '/' ? 'index.html' : path));
     response.setHeader('Content-Type', types[path.slice(path.lastIndexOf('.'))] || 'text/html');
     response.end(body);
@@ -104,6 +112,12 @@ try {
   await call('Page.navigate', {url: `http://127.0.0.1:${server.address().port}/`});
   await wait(`!!(globalThis.Module && Module.profileReady) || !!document.getElementById('loading')?.classList.contains('error')`);
   assert(!await evaluate(`document.getElementById('loading').classList.contains('error')`), 'The page could not start Shovey');
+  const runtime = (await evaluate(`performance.getEntriesByType('resource').map(entry => entry.name)`)).map(name => new URL(name))
+    .filter(url => /\/(runtime\.(js|wasm|data)(\.gz)?|arcade\.json|apps\.zx(\.gz)?)$/.test(url.pathname));
+  const revisions = new Set(runtime.map(url => url.searchParams.get('v')));
+  assert(runtime.some(url => url.pathname === '/runtime.js') && runtime.some(url => url.pathname === '/runtime.wasm') &&
+    revisions.size === 1 && /^[0-9a-f]{64}$/.test([...revisions][0]),
+  'The runtime files did not share one cache revision: ' + runtime.map(url => url.pathname + url.search).join(' '));
   await wait(`Module.FS.analyzePath('/tmp/test-driver').exists`);
   await delay(1500);
   await press('Not now');

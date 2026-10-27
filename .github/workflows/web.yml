@@ -1,9 +1,16 @@
 name: Play online
 
+# shovey.waozi.xyz is the released game: the newest published release's own
+# shovey.zx, shovey.json and entity.zx, in Arcade's browser host, with their
+# programs compiled into the page (scripts/build-site.py). Pushes rebuild it,
+# and so does each finished Downloads run that published a new version.
 on:
   push:
     branches: [master]
   pull_request:
+  workflow_run:
+    workflows: [Downloads]
+    types: [completed]
   workflow_dispatch:
     inputs:
       revision:
@@ -20,6 +27,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     outputs:
@@ -87,30 +95,100 @@ jobs:
           path: waozixyz/shovey/build/campaign-publisher
           if-no-files-found: error
           retention-days: 1
-      # The website serves the game compiled to WebAssembly, which stays
-      # smooth on slow phones.
-      - name: Build the compiled web game
-        run: make web ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
-      - name: Play the compiled game in a private browser
-        run: |
-          export CHROMIUM="$(command -v google-chrome || command -v chromium)"
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_assets_test.mjs
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_mini_test.mjs
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_tap_beside_board_test.mjs
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_copy_test.mjs
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_live_campaign_test.mjs
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_selector_latest_test.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: shovey-web
-          path: waozixyz/shovey/build/web
-          retention-days: 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: web-browser-check
           path: waozixyz/shovey/build/web-test
+          retention-days: 1
+
+  site:
+    name: Build the site from the newest release
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      publish: ${{ steps.due.outputs.publish }}
+      version: ${{ steps.due.outputs.version }}
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+          ref: ${{ github.event_name == 'workflow_run' && 'master' || inputs.revision || github.sha }}
+      # Arcade's host runs the release; its lock names the toolchain.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: waozixyz/arcade
+          ref: master
+          path: waozixyz/arcade
+      - name: Check for a release the site does not have yet
+        id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --repo waozixyz/shovey --limit 20 --exclude-drafts --json tagName,isPrerelease \
+            -q '[.[] | select(.isPrerelease | not) | .tagName | select(startswith("v"))][0]')
+          test -n "$tag"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          live=$(curl -fsS https://shovey.waozi.xyz/build.json | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' || true)
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ] && [ "$live" = "${tag#v}" ]; then
+            echo "::notice title=Site::shovey.waozi.xyz already runs Shovey $live"
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Read Arcade's locked toolchain
+        if: steps.due.outputs.publish == 'true'
+        id: toolchain
+        working-directory: waozixyz/arcade
+        run: |
+          python3 -c 'import json,os; open(os.environ["GITHUB_OUTPUT"],"a").write("commit="+json.load(open("ziran.lock"))["toolchain"]["commit"]+"\n")'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        if: steps.due.outputs.publish == 'true'
+        with:
+          repository: ziranlang/ziran
+          ref: ${{ steps.toolchain.outputs.commit }}
+          path: ziranlang/ziran
+      - uses: actions/setup-node@v4
+        if: steps.due.outputs.publish == 'true'
+        with:
+          node-version: 22
+      - name: Install build dependencies
+        if: steps.due.outputs.publish == 'true'
+        working-directory: .
+        run: sh ziranlang/ziran/scripts/ci_packages.sh build-essential cmake pkg-config python3-pil
+      - uses: mymindstorm/setup-emsdk@v14
+        if: steps.due.outputs.publish == 'true'
+        with:
+          version: '6.0.6'
+          actions-cache-folder: emsdk-cache
+      - name: Build the locked toolchain and fetch Arcade's packages
+        if: steps.due.outputs.publish == 'true'
+        working-directory: waozixyz/arcade
+        run: |
+          make -j2 -C ../../ziranlang/ziran
+          echo "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin" >> "$GITHUB_PATH"
+          printf '[overrides]\nziran = "../../ziranlang/ziran"\n' > ziran.local.toml
+          ../../ziranlang/ziran/build/bin/ziran fetch
+      - name: Build the site from the release
+        if: steps.due.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/build-site.py --arcade ../arcade --tag "v${{ steps.due.outputs.version }}" --output build/web-site
+      - name: Play the release in a private browser
+        if: steps.due.outputs.publish == 'true'
+        run: |
+          export CHROMIUM="$(command -v google-chrome || command -v chromium)"
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_release_test.mjs build/web-site
+      - uses: actions/upload-artifact@v4
+        if: steps.due.outputs.publish == 'true'
+        with:
+          name: shovey-site
+          path: waozixyz/shovey/build/web-site
+          if-no-files-found: error
           retention-days: 1
 
   campaign:
@@ -156,8 +234,8 @@ jobs:
           python3 scripts/publish-campaign.py --key-file "$key" --solver build/campaign-publisher/shovey-solve-classic
 
   deploy:
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && needs.site.outputs.publish == 'true'
+    needs: site
     runs-on: ubuntu-24.04
     environment:
       name: cloudflare-pages
@@ -165,19 +243,30 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: shovey-web
-          path: build/web
+          name: shovey-site
+          path: build/web-site
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy build/web --project-name=shovey --branch=master --commit-hash=${{ needs.build.outputs.revision }}
+          command: pages deploy build/web-site --project-name=shovey --branch=master --commit-hash=${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      - name: Check that shovey.waozi.xyz serves the release
+        env:
+          VERSION: ${{ needs.site.outputs.version }}
+        run: |
+          for attempt in $(seq 30); do
+            live=$(curl -fsS -H 'Cache-Control: no-cache' "https://shovey.waozi.xyz/build.json?$attempt" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' || true)
+            test "$live" = "$VERSION" && curl -fsS -o /dev/null https://shovey.waozi.xyz/runtime.wasm && exit 0
+            sleep 10
+          done
+          echo "::error::shovey.waozi.xyz serves '$live', not Shovey $VERSION"
+          exit 1
 
   itch:
     name: Publish itch.io
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
-    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && needs.site.outputs.publish == 'true'
+    needs: site
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
@@ -194,8 +283,8 @@ jobs:
           fi
       - uses: actions/download-artifact@v4
         with:
-          name: shovey-web
-          path: build/web
+          name: shovey-site
+          path: build/web-site
       - name: Install Butler
         run: |
           curl --fail --show-error --location --retry 3 \
@@ -207,18 +296,16 @@ jobs:
           echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
       - name: Publish the tested browser build
         env:
-          SHOVEY_SOURCE_REVISION: ${{ needs.build.outputs.revision }}
+          SHOVEY_VERSION: ${{ needs.site.outputs.version }}
           BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
         run: |
-          version=$(python3 - <<'PY'
+          python3 - <<'PY'
           import json, os
           from pathlib import Path
-          root = Path('build/web')
+          root = Path('build/web-site')
           build = json.loads((root / 'build.json').read_text())
-          assert build['revision'] == os.environ['SHOVEY_SOURCE_REVISION'], 'The web artifact belongs to another revision'
-          for name in ('index.html', 'index.js', 'index.wasm', 'index.data'):
+          assert build['version'] == os.environ['SHOVEY_VERSION'], 'The site artifact belongs to another release'
+          for name in ('index.html', 'arcade.json', 'runtime.js', 'runtime.wasm', 'runtime.data'):
               assert (root / name).is_file(), f'Missing web asset: {name}'
-          print(build['version'] + '-' + build['revision'])
           PY
-          )
-          butler push build/web waozi/shovey:html5 --userversion "$version"
+          butler push build/web-site waozi/shovey:html5 --userversion "$SHOVEY_VERSION"
