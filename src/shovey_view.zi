@@ -1038,12 +1038,18 @@ EndingScreen :: (width: float32, top: float32, bottom: float32, key: s32) {
 // dialog never marks that reward as claimed.
 RewardCard :: (width: float32, bottom: float32) {
     if reward_card < 0 { return }
-    title := AppLocaleHost(ifx reward_card_empty then "shovey_chest_empty" else
-        ifx reward_card == REWARD_CHEST then "shovey_chest_found" else "shovey_campaign_reward")
+    campaign := reward_card == REWARD_CAMPAIGN
+    // Claimed on another device before the player asked here: nothing to say.
+    if campaign && reward_card_empty && !reward_asked[reward_card] {
+        reward_card = -1
+        return
+    }
+    title := AppLocaleHost(ifx campaign then "shovey_campaign_reward" else
+        ifx reward_card_empty then "shovey_chest_empty" else "shovey_chest_found")
     detail: Vec(u8)
     defer { VecFree(detail) }
     if reward_card_empty {
-        BuilderPrint(*detail, "%", AppLocaleHost("shovey_chest_empty_detail"))
+        BuilderPrint(*detail, "%", AppLocaleHost(ifx campaign then "shovey_reward_claimed" else "shovey_chest_empty_detail"))
     } else if reward_card_signin {
         BuilderPrint(*detail, "%", AppLocaleHost("shovey_reward_signin"))
     } else if reward_card_amount[0] != 0 {
@@ -1147,6 +1153,9 @@ ShoveyFrame :: () {
     // Finishing every level earns the campaign's reward, also for players
     // who finished before it existed.
     if !RewardEarned(REWARD_CAMPAIGN) && ShoveyAllDone() { RewardEarn(REWARD_CAMPAIGN, frame.now) }
+    // Its modal asks the player to claim it, after the boat has sailed off.
+    last_won := game.won && game.level == ShoveyLevelCount()
+    if !help_open && (!last_won || ending_at > 0.0) { RewardOffer(REWARD_CAMPAIGN) }
     RewardsPump(frame.now)
     shared_change := SharedProgressPump(*shared_progress, frame.now, ShoveySecret(game.level) || (game.moves > 0 && !game.won))
     if shared_change == 2 { loaded = false; shared_account_changed = true; return }
@@ -1272,6 +1281,7 @@ ShoveyFrame :: () {
             End(frame.session)
         }
         LevelReplayPump(24)
+        RewardCard(width, bottom)
         return
     }
     if game.won && game.level < ShoveyLevelCount() { WinPause() }

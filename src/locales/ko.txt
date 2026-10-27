@@ -763,6 +763,9 @@ Dew를 받는 중…
 [shovey_reward_unclaimed]
 Dew 보상을 받으세요.
 ---
+[shovey_reward_claimed]
+이 Dew는 이미 받았어요.
+---
 [shovey_reward_claim]
 보상 받기
 ---

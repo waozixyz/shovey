@@ -12,6 +12,8 @@ malformed_answer: bool;
 already_claimed: bool;
 ineligible: bool;
 claim_requests: s32;
+campaign_requests: s32;
+campaign_pending: bool;
 record_rewards: [16]u8;
 record_flags: [REWARD_COUNT * 2]bool;
 
@@ -24,6 +26,16 @@ FakeService :: (name: string, request: string) -> string {
         claim_requests += 1
         claimed = true
         return "{\"status\":\"pending\"}"
+    }
+    if request == "claim:shovey.campaign-complete" {
+        if !signed_in { return "{\"status\":\"signin\"}" }
+        campaign_requests += 1
+        campaign_pending = true
+        return "{\"status\":\"pending\"}"
+    }
+    if request == "claim-status" && campaign_pending {
+        campaign_pending = false
+        return "{\"status\":\"done\",\"reward\":\"shovey.campaign-complete\",\"credited\":true,\"units\":100000000,\"balance\":100000000,\"place\":1}"
     }
     if request == "claim-status" && claimed {
         if ineligible { return "{\"status\":\"ineligible\",\"reward\":\"shovey.secret-chest\"}" }
@@ -140,6 +152,31 @@ Check :: () -> s32 {
     reward_card = -1
     RewardsPump(200.0)
     if reward_card != -1 || reward_state[REWARD_CAMPAIGN] != 1 { return 9 }
+    // Its modal opens once a session and claims nothing until Claim.
+    if campaign_requests != 0 { return 24 }
+    RewardOffer(REWARD_CAMPAIGN)
+    if reward_card != REWARD_CAMPAIGN || reward_card_empty || reward_card_signin { return 25 }
+    reward_card = -1
+    RewardOffer(REWARD_CAMPAIGN)
+    if reward_card != -1 { return 26 }
+    signed_in = true
+    RewardsPump(210.0)
+    if campaign_requests != 0 || reward_state[REWARD_CAMPAIGN] != 1 { return 27 }
+    // Claim without an account asks for one, then claims once it is there.
+    signed_in = false
+    reward_card = REWARD_CAMPAIGN
+    RewardRetry(REWARD_CAMPAIGN, 220.0)
+    RewardsPump(220.0)
+    if !reward_card_signin || campaign_requests != 0 { return 28 }
+    signed_in = true
+    RewardsPump(226.0)
+    if campaign_requests != 1 || reward_claiming != REWARD_CAMPAIGN || reward_card_signin { return 29 }
+    RewardsPump(227.0)
+    if !RewardClaimed(REWARD_CAMPAIGN) || reward_card != REWARD_CAMPAIGN || TextUntilNul(reward_card_amount[:]) != "100" { return 30 }
+    RewardOffer(REWARD_CAMPAIGN)
+    RewardsPump(240.0)
+    if campaign_requests != 1 { return 31 }
+    signed_in = false
     // Another device's opening arrives after launch, without a local visit.
     record_rewards = .{}
     record_flags = .{}

@@ -763,6 +763,9 @@ Dein Dew wird angefordert…
 [shovey_reward_unclaimed]
 Hole dir deine Dew-Belohnung.
 ---
+[shovey_reward_claimed]
+Du hast diesen Dew bereits erhalten.
+---
 [shovey_reward_claim]
 Belohnung abholen
 ---

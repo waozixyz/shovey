@@ -763,6 +763,9 @@ Vyzvedávání Dew…
 [shovey_reward_unclaimed]
 Vyzvedni si svou odměnu Dew.
 ---
+[shovey_reward_claimed]
+Tuhle Dew už máš.
+---
 [shovey_reward_claim]
 Vyzvednout odměnu
 ---

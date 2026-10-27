@@ -763,6 +763,9 @@ Récupération de ton Dew…
 [shovey_reward_unclaimed]
 Récupère ta récompense Dew.
 ---
+[shovey_reward_claimed]
+Tu as déjà récupéré ce Dew.
+---
 [shovey_reward_claim]
 Récupérer la récompense
 ---

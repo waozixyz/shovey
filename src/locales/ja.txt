@@ -763,6 +763,9 @@ Dewを受け取り中…
 [shovey_reward_unclaimed]
 Dew報酬を受け取ろう。
 ---
+[shovey_reward_claimed]
+このDewはもう受け取りました。
+---
 [shovey_reward_claim]
 報酬を受け取る
 ---

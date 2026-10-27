@@ -4,7 +4,8 @@
 // so naming it again is safe and credits nothing. A reward earned here is
 // kept in the "rewards" record until the node has answered for it. Without a
 // connected account the claim waits, and the view asks the player to connect
-// one, without stopping play.
+// one, without stopping play. The campaign's reward pays by finishing place,
+// so its modal opens and the claim waits for the player's Claim.
 #import "json_scan"
 #import "text_buffer"
 #import "std/c_string"
@@ -29,6 +30,10 @@ reward_local_allowed: bool = true;
 // A reward earned in this session; its claim tells the player when an
 // account is missing.
 reward_fresh: [REWARD_COUNT]bool;
+// Claim pressed in the modal, for a reward that waits for it; its modal is
+// offered once a session.
+reward_asked: [REWARD_COUNT]bool;
+reward_offered: [REWARD_COUNT]bool;
 // The reward being claimed, -1 for none, and when to ask the host again.
 reward_claiming: s32 = -1;
 reward_next_at: float64;
@@ -43,6 +48,10 @@ reward_card_ineligible: bool;
 
 RewardName :: (reward: s32) -> string {
     return ifx reward == REWARD_CHEST then "shovey.secret-chest" else "shovey.campaign-complete"
+}
+
+RewardWaitsForClaim :: (reward: s32) -> bool {
+    return reward == REWARD_CAMPAIGN
 }
 
 RewardFlagRecord :: (reward: s32, claimed: bool) -> string {
@@ -115,6 +124,8 @@ RewardsSync :: (now: float64) {
         if TextUntilNul(reward_shared_owner[:]) != "" {
             reward_state = .{}
             reward_fresh = .{}
+            reward_asked = .{}
+            reward_offered = .{}
             reward_card = -1
             reward_claiming = -1
             reward_local_allowed = false
@@ -186,7 +197,22 @@ RewardRetry :: (reward: s32, now: float64) {
     reward_card_failed = false
     reward_card_ineligible = false
     reward_fresh[reward] = true
+    reward_asked[reward] = true
     reward_next_at = now
+}
+
+// Opens the modal of an earned reward that waits for its Claim, once a
+// session, when no other modal is open.
+RewardOffer :: (reward: s32) {
+    if !RewardWaitsForClaim(reward) || reward_offered[reward] || reward_card >= 0 { return }
+    if !RewardEarned(reward) || RewardClaimed(reward) { return }
+    reward_offered[reward] = true
+    reward_card = reward
+    reward_card_empty = false
+    reward_card_signin = false
+    reward_card_amount = .{}
+    reward_card_failed = false
+    reward_card_ineligible = false
 }
 
 // Earns a reward on this device; its claim starts at once.
@@ -266,6 +292,7 @@ RewardsPump :: (now: float64) {
     }
     for reward: cast(s32)0..REWARD_COUNT - 1 {
         if reward_state[reward] != 1 { continue }
+        if RewardWaitsForClaim(reward) && !reward_asked[reward] { continue }
         request: Vec(u8)
         BuilderPrint(*request, "claim:%", RewardName(reward))
         answer := DewService(TextView(VecSlice(request, 0, request.count)))

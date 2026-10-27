@@ -763,6 +763,9 @@ Reclamando tu Dew…
 [shovey_reward_unclaimed]
 Reclama tu recompensa de Dew.
 ---
+[shovey_reward_claimed]
+Ya reclamaste este Dew.
+---
 [shovey_reward_claim]
 Reclamar recompensa
 ---

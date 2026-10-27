@@ -763,6 +763,9 @@ Mengklaim Dew…
 [shovey_reward_unclaimed]
 Klaim hadiah Dew-mu.
 ---
+[shovey_reward_claimed]
+Kamu sudah mengklaim Dew ini.
+---
 [shovey_reward_claim]
 Klaim hadiah
 ---

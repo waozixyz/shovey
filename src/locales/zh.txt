@@ -763,6 +763,9 @@ Shovey
 [shovey_reward_unclaimed]
 领取你的 Dew 奖励。
 ---
+[shovey_reward_claimed]
+你已经领取过这份 Dew。
+---
 [shovey_reward_claim]
 领取奖励
 ---

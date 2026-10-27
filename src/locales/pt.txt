@@ -763,6 +763,9 @@ Resgatando seu Dew…
 [shovey_reward_unclaimed]
 Resgate sua recompensa Dew.
 ---
+[shovey_reward_claimed]
+Você já resgatou este Dew.
+---
 [shovey_reward_claim]
 Resgatar recompensa
 ---

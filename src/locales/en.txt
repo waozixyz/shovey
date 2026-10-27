@@ -763,6 +763,9 @@ Claiming your Dew…
 [shovey_reward_unclaimed]
 Claim your Dew reward.
 ---
+[shovey_reward_claimed]
+You have already claimed this Dew.
+---
 [shovey_reward_claim]
 Claim reward
 ---

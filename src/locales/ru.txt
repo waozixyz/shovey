@@ -763,6 +763,9 @@ Dew
 [shovey_reward_unclaimed]
 Получи свою награду Dew.
 ---
+[shovey_reward_claimed]
+Ты уже получил этот Dew.
+---
 [shovey_reward_claim]
 Получить награду
 ---
