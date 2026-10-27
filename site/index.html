@@ -9,9 +9,12 @@
   <meta name="application-name" content="Shovey">
   <meta name="author" content="Waozi">
   <link rel="canonical" href="https://shovey.waozi.xyz/">
-  <link rel="icon" type="image/png" href="icon.png">
-  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <!-- The runtime downloads while the page fetches the game's files. -->
+  <link rel="preload" href="runtime.js" as="script">
+  <link rel="preload" href="runtime.wasm" as="fetch" type="application/wasm" crossorigin>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Shovey">
   <meta property="og:url" content="https://shovey.waozi.xyz/">
@@ -27,8 +30,8 @@
   <style>
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #10231d; color: #edf7f0; }
     canvas { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
-    #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding-bottom: 12vh; background: #173226 center / cover no-repeat url(title-landscape.png); font: 600 16px/1.4 system-ui, sans-serif; transition: opacity .3s ease; }
-    @media (max-aspect-ratio: 1/1) { #loading { background-image: url(title-portrait.png); } }
+    #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding-bottom: 12vh; background: #173226 center / cover no-repeat url(title-landscape.jpg); font: 600 16px/1.4 system-ui, sans-serif; transition: opacity .3s ease; }
+    @media (max-aspect-ratio: 1/1) { #loading { background-image: url(title-portrait.jpg); } }
     #loading.done { opacity: 0; pointer-events: none; }
     #loading img { width: min(70vw, 480px); height: auto; }
     #loading .track { width: min(280px, 70vw); height: 6px; border-radius: 3px; background: #ffffff40; overflow: hidden; }
@@ -41,7 +44,7 @@
 <body>
   <canvas id="canvas" tabindex="0"></canvas>
   <div id="loading" role="status" aria-live="polite" aria-label="Loading Shovey">
-    <img src="logo.png" alt="Shovey" width="1200" height="410">
+    <img src="logo.png" alt="Shovey" width="720" height="246">
     <div class="track"><div class="bar"></div></div>
     <p class="failed">Shovey could not start. Reload the page to try again.</p>
   </div>
@@ -66,20 +69,44 @@
         onAbort: failed,
         onExit: function (code) { if (code !== 0) failed(); }
       };
+      // The game travels gzip-compressed beside its plain copy (17.5 MB, or
+      // 6.8 MB packed): Cloudflare does not compress binary files. Browsers
+      // without DecompressionStream, or a missing .gz, take the plain file.
+      function plain(name) {
+        return fetch(name).then(function (response) {
+          return response.ok ? response.arrayBuffer() : null;
+        });
+      }
+      function bundle(name) {
+        if (typeof DecompressionStream !== 'function') return plain(name);
+        return fetch(name + '.gz').then(function (response) {
+          if (!response.ok) throw new Error(response.status);
+          return response.arrayBuffer();
+        }).then(function (packed) {
+          var head = new Uint8Array(packed, 0, Math.min(2, packed.byteLength));
+          // A server that already decoded it hands over the plain bytes.
+          if (head[0] !== 0x1f || head[1] !== 0x8b) return packed;
+          return new Response(new Blob([packed]).stream()
+            .pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+        }).catch(function () { return plain(name); });
+      }
       Promise.all([
         fetch('arcade.json', { cache: 'no-cache' }).then(function (response) {
           if (!response.ok) throw new Error(response.status);
           return response.text();
         }),
-        fetch('apps.zx').then(function (response) {
-          return response.ok ? response.arrayBuffer() : null;
-        })
+        bundle('apps.zx'),
+        bundle('runtime.data')
       ]).then(function (loaded) {
         Module.arcadeReceipt = loaded[0];
         if (loaded[1]) {
           Module.preRun = [].concat(Module.preRun || [], function () {
             FS.writeFile('/apps.zx', new Uint8Array(loaded[1]));
           });
+        }
+        // The game's file package, already here, is not fetched again.
+        if (loaded[2]) {
+          Module.getPreloadedPackage = function () { return loaded[2]; };
         }
         function start() {
           var script = document.createElement('script');
