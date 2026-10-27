@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [0.6.158] - 2026-10-27
+
+- In the Google Play version, buy Dew in Profile through Google Play.
+- Pip explains wooden doors when Shovey walks up to one, rather than when the level starts.
+
 ## [0.6.157] - 2026-10-27
 
 - Pip's tips keep what he points at in view: his card moves under the top bar when it would cover it, such as the home in level 1.
