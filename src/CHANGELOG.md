@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [0.6.159] - 2026-10-28
+
+- Buy a small 10 Dew pack in the Google Play edition and see each larger pack’s savings per Dew.
+
 ## [0.6.158] - 2026-10-27
 
 - In the Google Play version, buy Dew in Profile through Google Play.
