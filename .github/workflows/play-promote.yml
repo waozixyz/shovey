@@ -25,8 +25,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Validate the release and read the locked Play integration
-        id: release
+      - name: Validate the published release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
@@ -40,16 +39,12 @@ jobs:
           release = json.loads(subprocess.check_output(
               ['gh', 'release', 'view', 'v' + version, '--json', 'isDraft,publishedAt'], text=True))
           assert not release['isDraft'] and release['publishedAt'], 'The version must already be published on GitHub'
-          lock = json.load(open('ziran.lock'))
-          entity = next(p for p in lock['packages'] if p['url'] == 'https://github.com/waozixyz/entity.git')
-          assert re.fullmatch(r'[0-9a-f]{40}', entity['commit'])
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('entity=' + entity['commit'] + '\n')
           PY
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: waozixyz/entity
-          ref: ${{ steps.release.outputs.entity }}
+          # Play administration tools are newer than the game's runtime pin.
+          ref: 2062597cecba5ce1bf54a20e6d5a2bdda148a06b
           path: play-entity
           persist-credentials: false
       - name: Test promotion boundaries
