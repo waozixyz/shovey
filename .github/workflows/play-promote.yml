@@ -1,0 +1,64 @@
+name: Google Play Production promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact published version already completed on internal testing
+        required: true
+        type: string
+      version_code:
+        description: Exact version code of that internal release
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shovey-google-play
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Validate the release and read the locked Play integration
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          version = os.environ['VERSION']
+          assert re.fullmatch(r'\d+\.\d+\.\d+', version), 'Use a numeric release version'
+          assert re.fullmatch(r'[1-9][0-9]*', os.environ['VERSION_CODE']), 'Use a positive version code'
+          release = json.loads(subprocess.check_output(
+              ['gh', 'release', 'view', 'v' + version, '--json', 'isDraft,publishedAt'], text=True))
+          assert not release['isDraft'] and release['publishedAt'], 'The version must already be published on GitHub'
+          lock = json.load(open('ziran.lock'))
+          entity = next(p for p in lock['packages'] if p['url'] == 'https://github.com/waozixyz/entity.git')
+          assert re.fullmatch(r'[0-9a-f]{40}', entity['commit'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('entity=' + entity['commit'] + '\n')
+          PY
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: waozixyz/entity
+          ref: ${{ steps.release.outputs.entity }}
+          path: play-entity
+          persist-credentials: false
+      - name: Test promotion boundaries
+        run: python3 tests/play_promotion_test.py
+      - name: Promote only the approved existing internal release
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          VERSION: ${{ inputs.version }}
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          python3 scripts/promote-play-release.py --version "$VERSION" \
+            --version-code "$VERSION_CODE" --entity-tools play-entity/tools
