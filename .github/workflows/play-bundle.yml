@@ -24,6 +24,11 @@ on:
         description: Repair Dew products after a successful bundle upload (no bundle upload)
         type: boolean
         default: false
+      product_pack:
+        description: Dew pack to provision (choose 10 to leave existing prices unchanged)
+        type: choice
+        options: [all, '10']
+        default: all
 
 permissions:
   contents: read
@@ -129,7 +134,9 @@ jobs:
         shell: bash
         env:
           ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          PRODUCT_PACK: ${{ inputs.product_pack }}
         run: |
+          set -euo pipefail
           test -n "$ACCOUNT"
           umask 077
           trap 'rm -f "$RUNNER_TEMP/play-account.json"' EXIT
@@ -138,9 +145,15 @@ jobs:
           mkdir -p build
           # Saving a fixed product ID and activating its buy option can be
           # repeated after a temporary Play API failure. Never repeat the upload.
+          products=(--apply)
+          case "$PRODUCT_PACK" in
+            ''|all) ;;
+            10) products+=(--pack 10) ;;
+            *) echo '::error::Unknown Dew pack'; exit 2 ;;
+          esac
           for attempt in 1 2 3; do
-            if python3 "$entity/tools/play_dew_products.py" "$RUNNER_TEMP/play-account.json" xyz.waozi.shovey --apply | tee build/play-dew.log &&
-                [ "$(grep -cE '^  (save|activate) 200 ok$' build/play-dew.log)" = 8 ]; then
+            # The provisioner reads every active buy option back from Play.
+            if python3 "$entity/tools/play_dew_products.py" "$RUNNER_TEMP/play-account.json" xyz.waozi.shovey "${products[@]}" | tee build/play-dew.log; then
               exit 0
             fi
             if [ "$attempt" -lt 3 ]; then
