@@ -2,17 +2,17 @@
   "format": 1,
   "packages": [
     {
-      "commit": "9216224da7316aa892b63f83d278a89a96f289bf",
+      "commit": "02601a6696691a228d998130c68de60c0cade8f8",
       "dependencies": {},
-      "id": "p6e3dca94882a1ef7",
+      "id": "p988dc884b71e9000",
       "name": "host",
-      "ref": "9216224da7316aa892b63f83d278a89a96f289bf",
+      "ref": "02601a6696691a228d998130c68de60c0cade8f8",
       "source": true,
       "url": "https://github.com/waozixyz/arcade.git"
     }
   ],
   "root": {
-    "dependencies": {"host": "p6e3dca94882a1ef7"},
+    "dependencies": {"host": "p988dc884b71e9000"},
     "name": "ShoveyAndroid"
   },
   "toolchain": {

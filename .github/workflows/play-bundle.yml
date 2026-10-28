@@ -10,6 +10,10 @@ on:
       revision:
         required: true
         type: string
+      product_pack:
+        type: string
+        default: '10'
+        required: false
   workflow_dispatch:
     inputs:
       revision:
@@ -28,7 +32,7 @@ on:
         description: Dew pack to provision (choose 10 to leave existing prices unchanged)
         type: choice
         options: [all, '10']
-        default: all
+        default: '10'
 
 permissions:
   contents: read
@@ -128,8 +132,8 @@ jobs:
           track: internal
           status: completed
           whatsNewDirectory: waozixyz/shovey/build/play-notes
-      # Entity's tool prices dew_100 … dew_5000 from the node's Dew price
-      # plus 10%, rounded up to a clean amount in each local currency.
+      # Add the 10 Dew pack at a 20% premium, rounded up locally.
+      # Larger pack prices change only when explicitly selected.
       - name: Sell the Dew packs at Google Play prices
         shell: bash
         env:
@@ -147,8 +151,8 @@ jobs:
           # repeated after a temporary Play API failure. Never repeat the upload.
           products=(--apply)
           case "$PRODUCT_PACK" in
-            ''|all) ;;
-            10) products+=(--pack 10) ;;
+            all) ;;
+            ''|10) products+=(--pack 10) ;;
             *) echo '::error::Unknown Dew pack'; exit 2 ;;
           esac
           for attempt in 1 2 3; do

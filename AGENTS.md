@@ -5,8 +5,13 @@
 Owner instruction, 2026-10-27, replacing the 2026-10-26 rule that disabled
 Dew buying in Play builds: every app has a normal edition (no suffix), an
 `-fdroid` and a `-gplay` edition. The Google Play edition sells the same Dew
-through Google Play Billing, at 10% above the base price rounded up to a
-clean amount in each local currency; the direct and F-Droid editions buy Dew
+through Google Play Billing. Owner instruction, 2026-10-28: the 10 Dew pack
+uses a 20% premium above the base price, rounded up to a clean local amount.
+Larger packs retain their bulk premiums: 100 Dew at 15%, 500 Dew at 10%,
+1,000 Dew at 5%, and 5,000 Dew at the base price. Show whole-percent savings
+per Dew against the 10 Dew pack using actual same-currency Play prices,
+rounded down. Provisioning the new small pack must preserve existing larger
+pack prices. The direct and F-Droid editions buy Dew
 with Monero at dew.waozi.xyz. Arcade builds the Play bundle as Kryon's
 `gplay` edition, so Entity's Profile Dew page lists the Play packs and credits
 them after the node verifies each purchase. Keep Play Billing in Play builds
