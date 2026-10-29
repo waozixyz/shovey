@@ -3,7 +3,7 @@
 ## [0.2.145] - 2026-10-29
 
 - Place mirrors, lasers and receivers, and the new forest pieces.
-- Runs in Breeze 2.1.62's smaller app format.
+- Runs in Breeze 2.1.61's smaller app format.
 
 ## [0.2.144] - 2026-10-26
 

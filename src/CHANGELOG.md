@@ -4,7 +4,7 @@
 
 - Push mirrors to turn laser beams onto their receivers.
 - New forest scenery: pines, fallen logs, mossy boulders, ferns and forest floor.
-- Runs in Breeze 2.1.62's smaller app format.
+- Runs in Breeze 2.1.61's smaller app format.
 
 ## [0.6.159] - 2026-10-28
 
