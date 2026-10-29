@@ -196,9 +196,8 @@ def native(name):
 # ---------------------------------------------------------------- drawn tiles
 
 
-# The original pits are flat pure colours; each keeps the original pattern
-# (the dark dithered rim top left, the white glint) with its colour and rim
-# pulled halfway towards the body and shade of the ball it takes.
+# Each pit's body and rim are pulled halfway towards the body and shade of
+# the ball it takes.
 PIT_COLOURS = {
     'red': ((255, 0, 0), (132, 0, 0), (230, 0, 0), (167, 0, 0)),
     'blue': ((0, 0, 255), (0, 0, 132), (24, 99, 220), (7, 44, 130)),
@@ -210,12 +209,23 @@ PIT_COLOURS = {
 
 
 def pit(colour, pull=0.5):
+    """A coloured pit filling its tile, sunk below the floor: its far walls
+    lie in shadow along the top and left, and its near lip catches the light."""
     pit_body, pit_rim, ball_body, ball_shade = PIT_COLOURS[colour]
     mix = lambda a, b: tuple(round(x + (y - x) * pull) for x, y in zip(a, b)) + (255,)
-    swap = {(255, 0, 0, 255): mix(pit_body, ball_body), (132, 0, 0, 255): mix(pit_rim, ball_shade)}
-    image = native('pit-red-original').resize((SIZE, SIZE), Image.Resampling.NEAREST)
-    image.putdata([swap.get(pixel, pixel) for pixel in image.getdata()])
-    return image
+    body, rim = mix(pit_body, ball_body), mix(pit_rim, ball_shade)
+    image = Image.new('RGBA', (SIZE, SIZE), body)
+    px = image.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            wall = max(0.0, 1 - min(x, y) / 8) * 0.8
+            corner = max(0.0, 1 - (x + y) / 16)
+            depth = min(1.0, max(wall, corner))
+            colour = tuple(round(body[i] * (1 - depth) + rim[i] * depth) for i in range(3)) + (255,)
+            if (x >= SIZE - 2 or y >= SIZE - 2) and min(x, y) > 2:
+                colour = shade(body, 1.16)
+            px[x, y] = colour
+    return grain(image, sum(body), dark=0.94, light=1.04, share=0.3)
 
 
 def shade(colour, factor):

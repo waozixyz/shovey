@@ -19,3 +19,33 @@ __pycache__/
 
 # Cloudflare Wrangler keeps its local cache here.
 /.wrangler/
+
+# Island stays private, only in the local folder.
+/src/island/
+/src/island_levels.zi
+/src/solver/island_rules.zi
+/src/editor/coast.zi
+/levels/island.json
+/assets/shovey-island/
+/assets/shovey-island-landscape/
+/assets/shovey/island-landscape.png
+/assets/shovey/island-portrait.png
+/tools/editor/island_editor.zi
+/tools/editor/island_save.zi
+/tools/solver/island_api.zi
+/tools/art/island.js
+/tools/art/island.zi
+/tools/art/art.zi
+/tools/art/kit.zi
+/tools/art/cards.js
+/tools/art/classic.js
+/tools/art/kit.js
+/tools/art/main.js
+/tools/art/page.html
+/tools/art/render.mjs
+/tools/art/shovey.js
+/tools/art/package.json
+/tools/art/package-lock.json
+/tools/art/node_modules/
+/tests/island_behavior.zi
+/tests/island_shared_progress_behavior.zi
