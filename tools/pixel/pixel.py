@@ -1438,6 +1438,7 @@ def sprites():
         'tile-163': ('cave floor: dark packed rock and gravel', native('cave-floor')),
         'tile-164': ('cave wall: a block of rough dark cave rock; blocks movement and laser beams', native('cave-wall')),
         'tile-165': ('crystals: glowing cyan cave crystals on a rock; block movement and laser beams', native('crystals')),
+        'tile-166': ('lava: molten rock; Shovey falls in and nothing can be pushed there', native('lava')),
         'tile-140': ('flower pot: terracotta pot of pink, yellow and white flowers; blocks movement', native('flower-pot')),
         'tile-141': ('barrel: an upright wooden barrel with iron hoops; blocks movement', native('barrel')),
         'tile-142': ('tree stump: a cut stump with rings and a green sprout; blocks movement', native('tree-stump')),

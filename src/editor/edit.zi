@@ -224,13 +224,13 @@ EditPaint :: (board: *EditBoard, kind: s32, at: s32) -> bool {
         if !ShoveyDecoration(decoration) || board.decorations[at] == cast(u8)decoration { return false }
         if ShoveyBlockingDecoration(decoration) && board.ground[at] != 0 { return false }
         tile := cast(s32)board.tiles[at]
-        if ShoveyBlockingDecoration(decoration) && (tile == 12 || ShoveyMossColor(tile) >= 0 || tile == SHOVEY_PIT || ShoveySolidDecor(tile)) { board.tiles[at] = 0 }
+        if ShoveyBlockingDecoration(decoration) && (tile == 12 || ShoveyMossColor(tile) >= 0 || ShoveyDrop(tile) || ShoveySolidDecor(tile)) { board.tiles[at] = 0 }
         board.decorations[at] = cast(u8)decoration
         return true
     }
     if kind >= EDIT_TILE_BRUSH {
         tile := kind - EDIT_TILE_BRUSH
-        if tile == SHOVEY_PIT {
+        if ShoveyDrop(tile) {
             if board.tiles[at] == cast(u8)tile && board.ground[at] == 0 && board.decorations[at] == 0 { return false }
             board.tiles[at] = cast(u8)tile
             board.ground[at] = 0

@@ -1148,6 +1148,11 @@
       "sha256": "a987745d53b92050011ee7851db2927fcdf1fe7c7325e958cda43c6c2fb46132"
     },
     {
+      "path": "sprites/tile-166.png",
+      "depicts": "landscape presentation of lava: molten rock; Shovey falls in and nothing can be pushed there",
+      "sha256": "fc83de6b181f54e92c119296a93b369462e22a0edc1339c6242a479795ad1d72"
+    },
+    {
       "path": "sprites/tile-17.png",
       "depicts": "landscape presentation of green paint puddle",
       "sha256": "852c0c22671dee01a2cfb21337b5d6f2ba27749ee899d6b11edc928e738d1004"

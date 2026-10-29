@@ -101,7 +101,7 @@ GuideKind :: (kind: s32) -> u64 {
     if kind == 35 { return GuideBit(GUIDE_SLIDE) }
     if kind == 20 || kind == 22 || kind == 23 || kind == 24 || kind == 41 || kind == 42 { return GuideBit(GUIDE_SENSOR) }
     if ShoveyClosedDoor(kind) || ShoveyOpenDoor(kind) { return GuideBit(GUIDE_DOOR) }
-    if kind == SHOVEY_PIT { return GuideBit(GUIDE_ABYSS) }
+    if ShoveyDrop(kind) { return GuideBit(GUIDE_ABYSS) }
     if ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER { return GuideBit(GUIDE_LASER) }
     return 0
 }

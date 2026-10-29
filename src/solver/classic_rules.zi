@@ -206,7 +206,7 @@ solve_classic_door_needed: bool;
 // Doors only while shut. Apples, paint, pickups and locks can go away.
 SolveClassicLasting :: (ground: s32, piece: s32, shut: bool) -> bool {
     if ground == 64 && solve_classic_water_may_bridge { return false }
-    if ground == 12 || ground == 23 || ground == SHOVEY_PIT || ShoveySolidDecor(ground) { return true }
+    if ground == 12 || ground == 23 || ShoveyDrop(ground) || ShoveySolidDecor(ground) { return true }
     if ground == 14 { return shut }
     if piece == 10 { return false }
     if ShoveyHome(ground) || ground == 8 || ground == 11 || ground == 27 { return true }

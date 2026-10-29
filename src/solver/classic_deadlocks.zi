@@ -10,8 +10,8 @@ SolveWaterMayBridge :: (game: *ShoveyGame) -> bool {
 }
 
 SolveTrailWall :: (kind: s32, water_may_bridge: bool) -> bool {
-    return kind == 12 || kind == 63 || (kind == 64 && !water_may_bridge) || kind == SHOVEY_PIT || kind == 76 ||
-        ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98)
+    return kind == 12 || kind == 63 || (kind == 64 && !water_may_bridge) || ShoveyDrop(kind) || kind == 76 ||
+        ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98) || kind == SHOVEY_CAVE_WALL
 }
 
 SolveTrailBallsBlocked :: (game: *ShoveyGame) -> bool {

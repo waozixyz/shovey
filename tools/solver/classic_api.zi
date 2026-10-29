@@ -68,7 +68,7 @@ classic_area: [SHOVEY_CELLS]s32;
 // Lasting walls for optimistic reachability. Water can become a bridge when
 // the loaded board has a wooden crate. Exact moves still run in the engine.
 ClassicApiPermanentWall :: (ground: s32) -> bool {
-    return ground == 12 || ground == 63 || (ground == 64 && !classic_water_may_bridge) || ground == SHOVEY_PIT || ground == 76 ||
+    return ground == 12 || ground == 63 || (ground == 64 && !classic_water_may_bridge) || ShoveyDrop(ground) || ground == 76 ||
         ShoveyBlockingDecoration(ground) || (ground >= 95 && ground <= 98) || ground == SHOVEY_CAVE_WALL || ShoveyLaserEmitter(ground) || ground == SHOVEY_LASER_RECEIVER
 }
 

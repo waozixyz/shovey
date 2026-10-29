@@ -213,6 +213,9 @@ SHOVEY_FOREST_FLOOR :: 162
 SHOVEY_CAVE_FLOOR :: 163
 SHOVEY_CAVE_WALL :: 164
 SHOVEY_CRYSTALS :: 165
+// Lava: like the abyss, Shovey falls in and nothing can be pushed there.
+SHOVEY_LAVA :: 166
+ShoveyDrop :: (kind: s32) -> bool { return kind == SHOVEY_PIT || kind == SHOVEY_LAVA }
 ShoveyMossColor :: (kind: s32) -> s32 {
     if kind == 14 { return 0 }
     if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return kind - SHOVEY_MOSS_WALL + 1 }
@@ -296,7 +299,7 @@ ShoveyLoad :: (game: *ShoveyGame, level: s32) -> bool {
 ShoveyTerrain :: (kind: s32) -> bool {
     return kind == 0 || kind == 12 || ShoveyMossColor(kind) >= 0 || ShoveyPitColor(kind) > 0 ||
     kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 103) ||
-    (kind >= SHOVEY_FOREST_FLOOR && kind <= SHOVEY_CAVE_WALL)
+    (kind >= SHOVEY_FOREST_FLOOR && kind <= SHOVEY_CAVE_WALL) || kind == SHOVEY_LAVA
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
@@ -458,7 +461,7 @@ ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     if ShoveyMossColor(kind) >= 0 { return ShoveyDoorOpen(game, position) }
     if ShoveyGateColor(kind) >= 0 { return ShoveyGateOpen(game, position) }
     if ShoveyDecorFloor(kind) || kind == SHOVEY_ICE || kind == SHOVEY_CRACKED_FLOOR { return true }
-    if kind == SHOVEY_PIT { return player }
+    if ShoveyDrop(kind) { return player }
     arrow := ShoveyArrow(kind)
     if arrow >= 0 { return shovey_enter < 0 || shovey_enter == arrow }
     if ShoveyColorPortal(kind) { return player }
@@ -610,7 +613,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     game.moves += 1
     // Cracked floor gives way once Shovey has stepped off it.
     if from != to && game.ground[from] == SHOVEY_CRACKED_FLOOR { game.ground[from] = SHOVEY_PIT }
-    if kind == SHOVEY_PIT { game.lost = true }
+    if ShoveyDrop(kind) { game.lost = true }
     if kind == 11 { game.powers = game.powers | SHOVEY_TRAIL }
     if kind == 25 { game.powers = game.powers | SHOVEY_REVERSE; game.ground[to] = 0 }
     if kind == 26 { game.powers = game.powers | SHOVEY_AMMO; game.ground[to] = 0 }
@@ -982,7 +985,7 @@ ShoveyRestore :: (game: *ShoveyGame, text: string) -> bool {
         object := ShoveyByte(text, 34 + at * 6)
         source := ShoveyByte(text, 36 + at * 6)
         // Ground holds a cell kind, a blocking decoration or a wall tile such as the cave wall.
-        if ground < 0 || (!ShoveyCellKind(ground) && !ShoveyBlockingDecoration(ground) && ground != SHOVEY_CAVE_WALL) ||
+        if ground < 0 || (!ShoveyCellKind(ground) && !ShoveyBlockingDecoration(ground) && ground != SHOVEY_CAVE_WALL && ground != SHOVEY_LAVA) ||
         object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
         if ShoveyMovable(ground) || ground == 10 || ground == 22 || ground == 24 || ground == 32 { return false }
         restored.ground[at] = ground; restored.objects[at] = object; restored.light_from[at] = source
