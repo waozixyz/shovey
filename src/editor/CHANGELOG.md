@@ -1,6 +1,6 @@
 # Shovey Editor changelog
 
-## [Unreleased]
+## [0.2.146] - 2026-10-29
 
 - Paint lava, cave floor, cave walls and crystals.
 

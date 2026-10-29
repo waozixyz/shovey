@@ -1,6 +1,6 @@
 # Shovey changelog
 
-## [Unreleased]
+## [0.6.161] - 2026-10-29
 
 - Lava in the caves: step in and you fall, and nothing can be pushed there.
 - New and harder levels: a frozen pond, a forest lake, reversed dens and a lava ring at 118.
