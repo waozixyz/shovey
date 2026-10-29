@@ -1,0 +1,124 @@
+// Prepares Daochi's map registration JSON from an approved campaign
+// snapshot, on standard output only:
+//
+//     ziran run --target=c scripts/game_maps.zi -- --approved FILE --source-version VERSION
+//
+// Registration uses the publisher's existing admin authorization separately.
+// Keep each source snapshot: a changed map has a different identity, while
+// changing its stored solution does not.
+#import "std/file"
+#import "std/json_document"
+#import "std/stdio_linux"
+#import "std/text_tools"
+#import "shovey_tools"
+
+GAME_MAPS_GAME :: "shovey.classic";
+GAME_MAPS_DOMAIN :: "shovey.classic.map.v1\n";
+
+// The map identity: SHA-256 of the domain, the level number and the board's
+// three original layers, LF-delimited, before the engine interprets them.
+MapHash :: (number: s64, board: string) -> string {
+    preimage: Vec(u8)
+    BuilderAppend(preimage, GAME_MAPS_DOMAIN)
+    BuilderPrint(*preimage, "%\n%", number, board)
+    return Sha256Text(BuilderFinish(preimage))
+}
+
+// A board of 1440 lowercase hex characters.
+ValidMap :: (board: string) -> bool { return board.count == 1440 && TextIsLowerHex(board) }
+
+// Builds the registration of every approved level in CAMPAIGN's root into
+// OUTPUT and returns its root, or sets ERROR and returns -1.
+GameMapRegistration :: (campaign: *JsonDocument, source_version: string, output: *JsonDocument, error: *string) -> s32 {
+    if TextTrim(source_version).count == 0 { <<error = "An explicit source version is required"; return -1 }
+    levels := JsonMember(campaign, campaign.root, "levels")
+    if JsonKindOf(campaign, campaign.root) != .Object || JsonKindOf(campaign, levels) != .Array {
+        <<error = "Approved snapshot must contain a levels array"
+        return -1
+    }
+    payload := JsonNewObject(output)
+    JsonSet(output, payload, "game", JsonNewString(output, GAME_MAPS_GAME))
+    JsonSet(output, payload, "source_version", JsonNewString(output, source_version))
+    maps := JsonNewArray(output)
+    JsonSet(output, payload, "maps", maps)
+    seen: [4097]bool
+    level := JsonFirst(campaign, levels)
+    while level >= 0 {
+        if JsonKindOf(campaign, level) != .Object { <<error = "Each approved map must be an object"; return -1 }
+        number, whole := JsonInteger(campaign, JsonMember(campaign, level, "number"))
+        if !whole || number < 1 || number > 4096 { <<error = "Map level must be an integer from 1 to 4096"; return -1 }
+        if seen[number] {
+            message: Vec(u8)
+            BuilderPrint(*message, "Duplicate map level %", number)
+            <<error = BuilderFinish(message)
+            return -1
+        }
+        seen[number] = true
+        board: Vec(u8)
+        names: [3]string = .["cells", "tiles", "decorations"]
+        for names {
+            rows := JsonMember(campaign, level, it)
+            valid := JsonKindOf(campaign, rows) == .Array && JsonCount(campaign, rows) == 20
+            row := JsonFirst(campaign, rows)
+            while valid && row >= 0 {
+                text := JsonString(campaign, row)
+                valid = JsonKindOf(campaign, row) == .String && text.count == 24 && TextIsLowerHex(text)
+                BuilderAppend(board, text)
+                row = JsonNext(campaign, row)
+            }
+            if !valid {
+                message: Vec(u8)
+                BuilderPrint(*message, "Map %: % needs 20 rows of 24 lowercase hex characters", number, it)
+                <<error = BuilderFinish(message)
+                return -1
+            }
+        }
+        text := BuilderFinish(board)
+        item := JsonNewObject(output)
+        JsonSet(output, item, "level", JsonNewInteger(output, number))
+        JsonSet(output, item, "map_hash", JsonNewString(output, MapHash(number, text)))
+        JsonSet(output, item, "map", JsonNewString(output, text))
+        JsonAppend(output, maps, item)
+        level = JsonNext(campaign, level)
+    }
+    return payload
+}
+
+GameMapsUsage :: (message: string) -> s32 {
+    text: Vec(u8)
+    BuilderPrint(*text, "usage: game_maps --approved APPROVED --source-version SOURCE_VERSION\ngame_maps: error: %\n", message)
+    PrintError(BuilderFinish(text))
+    return 2
+}
+
+main :: (argc: s32, argv: **u8) -> s32 {
+    arguments := ToolArguments(argc, argv)
+    approved := ""
+    source_version := ""
+    have_version := false
+    index: s64 = 0
+    while index < arguments.count {
+        name := arguments[index]
+        if (name == "--approved" || name == "--source-version") && index + 1 < arguments.count {
+            if name == "--approved" { approved = arguments[index + 1] } else { source_version = arguments[index + 1]; have_version = true }
+            index += 2
+            continue
+        }
+        return GameMapsUsage("unrecognized arguments")
+    }
+    if approved.count == 0 || !have_version {
+        return GameMapsUsage("the following arguments are required: --approved, --source-version")
+    }
+    text, found := ReadEntireFile(approved)
+    if !found { return GameMapsUsage("cannot read the approved snapshot") }
+    campaign: JsonDocument
+    if !JsonRead(*campaign, text) { return GameMapsUsage("the approved snapshot is not JSON") }
+    output: JsonDocument
+    error := ""
+    payload := GameMapRegistration(*campaign, source_version, *output, *error)
+    if payload < 0 { return GameMapsUsage(error) }
+    result: Vec(u8)
+    BuilderPrint(*result, "%\n", JsonWrite(*output, payload, JsonPythonStyle(2, false)))
+    WriteOutput(BuilderFinish(result))
+    return 0
+}

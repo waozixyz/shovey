@@ -1,0 +1,157 @@
+// Every translated string of one edition, as staged locale files and as
+// Ziran code: older hosts only know their own locale files. build_bundles and
+// prepare_web share it.
+//
+// A locale file holds blocks separated by "---" lines; a block whose first
+// line is "[PREFIXkey]" is that key's text in the file's language.
+#import "std/file"
+#import "std/file_tree_linux"
+#import "std/json_document"
+#import "std/text_tools"
+
+// Native builds escape every non-ASCII byte of a literal, and a statement
+// must stay under 4 KiB there: long texts are copied in once, in pieces.
+LOCALE_PIECE :: 800;
+
+LocaleFile :: struct {
+    // The file's name, such as de.txt, and its blocks for this edition.
+    name: string
+    blocks: string
+}
+
+LocaleTranslations :: struct {
+    files: Vec(LocaleFile)
+    code: string
+    error: string
+}
+
+#scope_file
+// One language's keys in first-seen order; a repeated key keeps its first
+// place and its last text, as a Python dict does.
+Language :: struct {
+    name: string
+    keys: Vec(string)
+    values: Vec(string)
+}
+
+// The index of KEY in KEYS, or -1.
+Find :: (keys: *Vec(string), key: string) -> s64 {
+    for index: 0..keys.count - 1 { if (<<keys)[index] == key { return index } }
+    return -1
+}
+
+Quote :: (output: *Vec(u8), value: string, ascii: bool) { JsonQuoteInto(output, value, ascii) }
+
+Failure :: (message: string) -> LocaleTranslations {
+    failed: LocaleTranslations
+    failed.error = message
+    return failed
+}
+
+#scope_export
+// The locale files in LOCALES (a folder of NAME.txt files) for keys that
+// start with PREFIX, and the GameLocaleText function over all of them.
+LocaleCode :: (locales: string, prefix: string) -> LocaleTranslations {
+    names: Vec(string)
+    if !ListDirectory(locales, *names) { return Failure("cannot list the locale files") }
+    result: LocaleTranslations
+    marker: Vec(u8)
+    BuilderPrint(*marker, "[%", prefix)
+    opening := BuilderFinish(marker)
+    language_names: Vec(string)
+    all_keys: Vec(string)
+    all_values: Vec(string)
+    starts: Vec(s64)
+    for name_index: 0..names.count - 1 {
+        file_name := names[name_index]
+        if PathSuffix(file_name) != ".txt" { continue }
+        text, found := ReadEntireFile(JoinPath(locales, file_name))
+        if !found { return Failure("cannot read a locale file") }
+        blocks: Vec(u8)
+        keys: Vec(string)
+        values: Vec(string)
+        pieces := TextSplit(text, "---\n")
+        for piece: 0..pieces.count - 1 {
+            block := pieces[piece]
+            lines := TextLines(block)
+            if lines.count == 0 || !TextHasPrefix(lines[0], opening) { continue }
+            BuilderAppend(blocks, TextTrimEnd(block))
+            BuilderAppend(blocks, "\n---\n")
+            first := lines[0]
+            key := first[1:first.count - 1]
+            value: Vec(u8)
+            for line: 1..lines.count - 1 {
+                if line > 1 { VecPush(value, cast(u8)10) }
+                BuilderAppend(value, lines[line])
+            }
+            text_value := TextTrimEnd(BuilderFinish(value))
+            known := Find(*keys, key)
+            if known >= 0 {
+                values[known] = text_value
+            } else {
+                VecPush(keys, key)
+                VecPush(values, text_value)
+            }
+        }
+        file: LocaleFile = .{name = file_name, blocks = BuilderFinish(blocks)}
+        VecPush(result.files, file)
+        VecPush(language_names, PathStem(file_name))
+        VecPush(starts, all_keys.count)
+        for index: 0..keys.count - 1 {
+            VecPush(all_keys, keys[index])
+            VecPush(all_values, values[index])
+        }
+    }
+    VecPush(starts, all_keys.count)
+    code: Vec(u8)
+    BuilderAppend(code, "#import \"std/vec\"\nGameLocaleText :: (language: string, key: string) -> string {\n")
+    longs: Vec(string)
+    // Every other language in name order, then English as the fallback.
+    order: Vec(s64)
+    for index: 0..language_names.count - 1 { if language_names[index] != "en" { VecPush(order, index) } }
+    for index: 0..language_names.count - 1 { if language_names[index] == "en" { VecPush(order, index) } }
+    for position: 0..order.count - 1 {
+        language := order[position]
+        english := language_names[language] == "en"
+        indent := ifx english then "    " else "        "
+        if !english {
+            BuilderAppend(code, "    if language == ")
+            Quote(*code, language_names[language], true)
+            BuilderAppend(code, " {\n")
+        }
+        for index: starts[language]..starts[language + 1] - 1 {
+            value := all_values[index]
+            BuilderAppend(code, indent)
+            BuilderAppend(code, "if key == ")
+            Quote(*code, all_keys[index], true)
+            BuilderAppend(code, " { return ")
+            if value.count <= LOCALE_PIECE {
+                Quote(*code, value, false)
+            } else {
+                BuilderPrint(*code, "GameLocaleTextLong%()", longs.count)
+                VecPush(longs, value)
+            }
+            BuilderAppend(code, " }\n")
+        }
+        if !english { BuilderAppend(code, "    }\n") }
+    }
+    BuilderAppend(code, "    return \"\"\n}\n")
+    for index: 0..longs.count - 1 {
+        value := longs[index]
+        BuilderPrint(*code, "GameLocaleTextLong%Text: string;\n", index)
+        BuilderPrint(*code, "GameLocaleTextLong% :: () -> string {\n    if GameLocaleTextLong%Text.count == 0 {\n        built: Vec(u8)\n", index, index)
+        start: s64 = 0
+        while start < value.count {
+            end := ifx start + LOCALE_PIECE < value.count then start + LOCALE_PIECE else value.count
+            // Never split a UTF-8 character.
+            while end < value.count && (value[end] & 192) == 128 { end -= 1 }
+            BuilderAppend(code, "        BuilderPrint(*built, \"%\", ")
+            Quote(*code, value[start:end], false)
+            BuilderAppend(code, ")\n")
+            start = end
+        }
+        BuilderPrint(*code, "        GameLocaleTextLong%Text = BuilderFinish(built)\n    }\n    return GameLocaleTextLong%Text\n}\n", index, index)
+    }
+    result.code = BuilderFinish(code)
+    return result
+}

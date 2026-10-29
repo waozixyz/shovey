@@ -1,0 +1,170 @@
+// Shared pieces of Shovey's browser tests: a private headless Chromium on
+// the web build, and the game's own test driver reached through the page's
+// file system, so tests find and press widgets by label.
+#import "kryon/devtools_linux"
+#import "kryon/test_driver_client"
+#import "std/environment_linux"
+#import "std/json_scan"
+#import "std/format"
+#import "std/file"
+#import "std/timer_linux"
+#import, file "test_support.zi";
+
+// Turns on the game's widget test driver before even a cached runtime starts.
+WEB_DRIVER_SETUP :: #string END
+  let testModule;
+  Object.defineProperty(globalThis, 'Module', {
+    configurable: true,
+    get() { return testModule; },
+    set(value) {
+      testModule = value;
+      if (!value || value.privateDriverPrepared) return;
+      value.privateDriverPrepared = true;
+      const previous = value.preRun || [];
+      value.preRun = [function() {
+        ENV.KRYON_TEST_DRIVER = '/tmp/test-driver';
+        value.FS.mkdirTree('/tmp/test-driver');
+      }, ...(Array.isArray(previous) ? previous : [previous])];
+    }
+  });
+END;
+
+// The build under test: WEB_TEST_ROOT, else build/web.
+WebRoot :: () -> string {
+    root := EnvironmentText("WEB_TEST_ROOT")
+    return ifx root.count > 0 then root else "build/web"
+}
+
+// Serves the build and opens a private browser with its profile under
+// build/t/NAME, at WIDTH x HEIGHT CSS pixels, as a phone when MOBILE.
+WebOpen :: (browser: *Browser, name: string, width: s32, height: s32, mobile: bool) -> bool {
+    unused CreateDirectory("build/t")
+    profile: Vec(u8)
+    BuilderPrint(*profile, "build/t/%", name)
+    if !BrowserServe(browser, WebRoot()) { return false }
+    if !BrowserOpen(browser, BuilderFinish(profile)) { return false }
+    return BrowserCall(browser, "Runtime.enable", "{}") && BrowserCall(browser, "Page.enable", "{}") &&
+        BrowserViewport(browser, width, height, 1.0, mobile)
+}
+
+// Opens PATH from the build with the game's widget driver turned on.
+WebLoad :: (browser: *Browser, path: string) -> bool {
+    return BrowserScriptOnLoad(browser, WEB_DRIVER_SETUP) &&
+        BrowserCall(browser, "Page.navigate", BrowserParams1("url", BrowserUrl(browser, path)))
+}
+
+web_serial: s64;
+
+// Sends one command to the game's widget driver; its reply's nodes are then
+// in NODES.nodes.
+WebDriver :: (browser: *Browser, nodes: *TestDriverClient, command: string) -> bool {
+    web_serial += 1
+    line: Vec(u8)
+    BuilderPrint(*line, "%\t", web_serial)
+    Append(*line, command)
+    Append(*line, "\n")
+    write: Vec(u8)
+    Append(*write, "Module.FS.writeFile('/tmp/test-driver/command', ")
+    Append(*write, JsonQuote(BuilderFinish(line)))
+    Append(*write, ")")
+    if !BrowserEvaluate(browser, BuilderFinish(write)) { return false }
+    if !BrowserWait(browser, "Module.FS.analyzePath('/tmp/test-driver/reply').exists", 30000) { return false }
+    reply := BrowserText(browser, "(() => { const text = Module.FS.readFile('/tmp/test-driver/reply', {encoding: 'utf8'}); Module.FS.unlink('/tmp/test-driver/reply'); return text })()")
+    DriverParse(nodes, reply)
+    if !nodes.ok { print("FAIL: the game's driver refused %: %\n", command, nodes.error); Failed() }
+    return nodes.ok
+}
+
+// Every widget in the game's tree.
+WebTree :: (browser: *Browser, nodes: *TestDriverClient) -> bool {
+    return WebDriver(browser, nodes, "tree")
+}
+
+// Every label in the game's tree, one per line.
+WebLabels :: (browser: *Browser) -> string {
+    nodes: TestDriverClient
+    if !WebTree(browser, *nodes) { return "" }
+    text: Vec(u8)
+    for index: 0..nodes.nodes.count - 1 { BuilderPrint(*text, "%\n", nodes.nodes[index].label) }
+    return BuilderFinish(text)
+}
+
+// Whether the tree has a widget labelled exactly LABEL.
+WebHas :: (browser: *Browser, label: string) -> bool {
+    nodes: TestDriverClient
+    if !WebTree(browser, *nodes) { return false }
+    for index: 0..nodes.nodes.count - 1 { if nodes.nodes[index].label == label { return true } }
+    return false
+}
+
+// Whether some label in the tree contains PART.
+WebHasPart :: (browser: *Browser, part: string) -> bool {
+    return Contains(WebLabels(browser), part)
+}
+
+Contains :: (text: string, part: string) -> bool {
+    if part.count > text.count { return false }
+    for at: 0..text.count - part.count {
+        if text[at:at + part.count] == part { return true }
+    }
+    return false
+}
+
+// A person's click at X, Y: down, a short hold, up, then a pause.
+WebClick :: (browser: *Browser, x: float64, y: float64) -> bool {
+    if !BrowserMouse(browser, "mousePressed", x, y, 0.0) { return false }
+    BrowserSleep(browser, 100)
+    if !BrowserMouse(browser, "mouseReleased", x, y, 0.0) { return false }
+    BrowserSleep(browser, 400)
+    return true
+}
+
+// Clicks the middle of the button labelled LABEL.
+WebPress :: (browser: *Browser, label: string) -> bool {
+    nodes: TestDriverClient
+    if !WebTree(browser, *nodes) { return false }
+    buttons: Vec(u8)
+    for index: 0..nodes.nodes.count - 1 {
+        node := nodes.nodes[index]
+        if node.role != "button" && node.kind != "button" { continue }
+        if node.label == label { return WebClick(browser, node.x + node.width / 2.0, node.y + node.height / 2.0) }
+        BuilderPrint(*buttons, "%|", node.label)
+    }
+    print("FAIL: no button %; buttons: %\n", label, BuilderFinish(buttons))
+    Failed()
+    return false
+}
+
+// Waits for EXPRESSION; on failure, reports it with the page's exceptions.
+WebWait :: (browser: *Browser, expression: string, timeout_ms: s64) -> bool {
+    if BrowserWait(browser, expression, timeout_ms) { return true }
+    Failed()
+    return false
+}
+
+// Ends a browser test: closes the browser and reports the result.
+WebFinish :: (browser: *Browser, passed: string) -> s32 {
+    BrowserClose(browser)
+    if browser.failed || TestFailures() > 0 { return 1 }
+    print("%\n", passed)
+    return 0
+}
+
+// TEXT in ASCII lower case.
+Lower :: (text: string) -> string {
+    out: Vec(u8)
+    for byte: text {
+        unused VecPush(out, ifx byte >= #char "A" && byte <= #char "Z" then byte + 32 else byte)
+    }
+    return BuilderFinish(out)
+}
+
+// Whether a line of LINES starts with PREFIX.
+LineStarts :: (lines: string, prefix: string) -> bool {
+    return Contains(BuilderJoin("\n", lines, ""), BuilderJoin("\n", prefix, ""))
+}
+
+// Whether LINES has a line that is exactly LINE.
+HasLine :: (lines: string, line: string) -> bool {
+    return Contains(BuilderJoin("\n", lines, ""), BuilderJoin("\n", line, "\n"))
+}

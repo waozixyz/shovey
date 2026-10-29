@@ -1,0 +1,170 @@
+// Source snapshots and route evidence share stable, versioned map
+// identities: scripts/game_maps.zi's registration and its command.
+//
+//   game_maps_test ZIRAN
+//
+// ZIRAN is the pinned compiler, which runs the command.
+#import, file "../scripts/game_maps.zi";
+#import, file "test_support.zi";
+#import "std/byte_text_linux"
+#import "std/file"
+#import "std/json_document"
+#import "std/process_run_linux"
+#import "std/text_tools"
+
+Repeat :: (text: string, count: s32) -> string {
+    out: Vec(u8)
+    for index: 1..count { BuilderAppend(out, text) }
+    return BuilderFinish(out)
+}
+
+// The rows of a 240-cell layer.
+Rows :: (layer: string) -> string {
+    out: Vec(u8)
+    VecPush(out, #char "[")
+    for row: 0..19 {
+        if row > 0 { VecPush(out, #char ",") }
+        BuilderPrint(*out, "\"%\"", layer[row * 24:row * 24 + 24])
+    }
+    VecPush(out, #char "]")
+    return BuilderFinish(out)
+}
+
+CELLS :: "000000000000000000000000000a";
+
+Concat :: (first: string, rest: string) -> string {
+    out: Vec(u8)
+    BuilderAppend(out, first)
+    BuilderAppend(out, rest)
+    return BuilderFinish(out)
+}
+
+// One level's object. NUMBER, TILES and new first bytes of the layers stand
+// in for the Python test's edits.
+Level :: (number: string = "1", tiles: string = "", solution: string = "0123",
+          cells_first: string = "", tiles_first: string = "", decorations_first: string = "") -> string {
+    zero := Repeat("00", 240)
+    layers: [3]string
+    layers[0] = Concat(CELLS, Repeat("00", 226))
+    layers[1] = zero
+    layers[2] = zero
+    firsts: [3]string = .[cells_first, tiles_first, decorations_first]
+    for layer: 0..2 {
+        if firsts[layer].count > 0 { layers[layer] = Concat(firsts[layer], layers[layer][2:480]) }
+    }
+    text: Vec(u8)
+    BuilderPrint(*text, "{\"number\": %, \"solution\": \"%\", \"cells\": %, \"tiles\": %, \"decorations\": %}",
+        number, solution, Rows(layers[0]), ifx tiles.count > 0 then tiles else Rows(layers[1]), Rows(layers[2]))
+    return BuilderFinish(text)
+}
+
+// An approved campaign of LEVELS and an unapproved draft.
+Campaign :: (levels: string) -> string {
+    text: Vec(u8)
+    BuilderPrint(*text, "{\"levels\": [%], \"pending\": {\"2\": \"unapproved draft\"}}", levels)
+    return BuilderFinish(text)
+}
+
+// The registration JSON for TEXT and VERSION, or "" with ERROR set.
+Register :: (text: string, version: string, error: *string) -> string {
+    campaign: JsonDocument
+    if !Check(JsonRead(*campaign, text), "test campaign reads") { return "" }
+    output: JsonDocument
+    payload := GameMapRegistration(*campaign, version, *output, error)
+    if payload < 0 { return "" }
+    return JsonWrite(*output, payload, JsonPythonStyle(2, false))
+}
+
+Rejects :: (text: string, version: string, label: string) {
+    error := ""
+    result := Register(text, version, *error)
+    Check(result.count == 0 && error.count > 0, label)
+}
+
+main :: (argc: s32, argv: **u8) -> s32 {
+    error := ""
+    first := Register(Campaign(Level()), "v1", *error)
+    output: JsonDocument
+    Check(JsonRead(*output, first), "registration is JSON")
+    root := output.root
+    Check(JsonCount(*output, root) == 3 && JsonIs(*output, JsonMember(*output, root, "game"), "shovey.classic") &&
+        JsonIs(*output, JsonMember(*output, root, "source_version"), "v1"), "payload names the game and source")
+    maps := JsonMember(*output, root, "maps")
+    item := JsonFirst(*output, maps)
+    board := JsonString(*output, JsonMember(*output, item, "map"))
+    Check(JsonCount(*output, maps) == 1 && JsonCount(*output, item) == 3 &&
+        JsonNumberText(*output, JsonMember(*output, item, "level")) == "1", "one map for level 1")
+    Check(board.count == 1440 && board[26:28] == "0a", "the map holds the original board")
+    // Independently verified with OpenSSL on the LF-delimited preimage.
+    Check(JsonIs(*output, JsonMember(*output, item, "map_hash"), "24d2379cda5857ca231fcce8e05ad74bdf39389ed07e29f21ae8a356ea0e3eee"),
+        "cross-language hash vector")
+    Check(!TextContains(first, "solution") && !TextContains(first, "unapproved draft"), "routes and drafts stay out")
+
+    // The solution and source version do not change map identity.
+    second := Register(Campaign(Level(solution = "3333")), "v2", *error)
+    other: JsonDocument
+    JsonRead(*other, second)
+    Check(JsonWrite(*output, maps, JsonCompactStyle()) == JsonWrite(*other, JsonMember(*other, other.root, "maps"), JsonCompactStyle()) &&
+        !JsonIs(*other, JsonMember(*other, other.root, "source_version"), "v1"), "maps keep their identity")
+
+    // Each changed layer gets a new identity.
+    edits: [3]string = .[Level(cells_first = "01"), Level(tiles_first = "01"), Level(decorations_first = "01")]
+    for edits {
+        changed := Register(Campaign(it), "v2", *error)
+        Check(changed.count > 0 && !TextContains(changed, "24d2379cda5857ca231fcce8e05ad74bdf39389ed07e29f21ae8a356ea0e3eee"),
+            "a changed layer changes the map identity")
+    }
+    // The level number is part of the identity.
+    Check(MapHash(28, board) != "24d2379cda5857ca231fcce8e05ad74bdf39389ed07e29f21ae8a356ea0e3eee", "level number in the identity")
+
+    // The original layer bytes are kept before the engine interprets them.
+    zero := Repeat("00", 240)
+    kept := Register(Campaign(Level(cells_first = "3e", tiles_first = "47", decorations_first = "4f")), "v1", *error)
+    stored: JsonDocument
+    JsonRead(*stored, kept)
+    map := JsonString(*stored, JsonMember(*stored, JsonFirst(*stored, JsonMember(*stored, stored.root, "maps")), "map"))
+    Check(map[0:2] == "3e" && map[480:482] == "47" && map[960:962] == "4f", "layers keep their bytes")
+
+    // Malformed or ambiguous snapshots are rejected.
+    numbers: [5]string = .["null", "true", "0", "4097", "\"1\""]
+    for numbers { Rejects(Campaign(Level(number = it)), "v1", "a bad level number is rejected") }
+    rows: [5]string
+    rows[0] = "null"
+    quoted: Vec(u8)
+    BuilderPrint(*quoted, "\"%\"", zero)
+    rows[1] = BuilderFinish(quoted)
+    rows[2] = TextReplace(Rows(zero), ",\"000000000000000000000000\"]", "]")
+    rows[3] = Rows(Repeat("0A", 240))
+    rows[4] = TextReplace(Rows(zero), "\"000000000000000000000000\"", "\"0000000000000000000000\"")
+    for rows { Rejects(Campaign(Level(tiles = it)), "v1", "a bad layer is rejected") }
+    pair: Vec(u8)
+    BuilderPrint(*pair, "%, %", Level(), Level())
+    Rejects(Campaign(BuilderFinish(pair)), "v1", "a duplicate level is rejected")
+    Rejects(Campaign(Level()), "", "an empty source version is rejected")
+    Rejects(Campaign(Level()), "  ", "a blank source version is rejected")
+    Rejects("{}", "v1", "a snapshot without levels is rejected")
+    Rejects("{\"levels\": null}", "v1", "null levels are rejected")
+    Rejects("{\"levels\": [null]}", "v1", "a null level is rejected")
+
+    // The command uses only the explicit snapshot and version.
+    if Check(argc > 1, "game_maps_test needs the pinned ziran") {
+        ziran := TextFromCString(argv[1])
+        snapshot := "build/tests/game_maps_test/approved-v1.json"
+        WriteEntireFile(snapshot, Campaign(Level()))
+        command: [7]string = .[ziran, "run", "--target=c", "scripts/game_maps.zi", "--", "--approved", snapshot]
+        full: Vec(string)
+        for command { VecPush(full, it) }
+        VecPush(full, "--source-version")
+        VecPush(full, "v1")
+        options: ProcessOptions = .{arguments = VecSlice(full, 0, full.count), capture_output = true}
+        run: ProcessRun
+        Check(RunProcess(options, *run) && run.code == 0, "the command succeeds")
+        expected: Vec(u8)
+        BuilderPrint(*expected, "%\n", first)
+        Check(BuilderFinish(run.output) == BuilderFinish(expected), "the command prints the registration")
+        rejected: ProcessOptions = .{arguments = command[:], capture_output = true, error_path = "/dev/null"}
+        refused: ProcessRun
+        Check(RunProcess(rejected, *refused) && refused.code == 2 && refused.output.count == 0, "missing arguments are refused")
+    }
+    return TestFailures()
+}

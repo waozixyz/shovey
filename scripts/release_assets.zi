@@ -1,0 +1,134 @@
+// Limits a release bundle's Classic previews to the approved campaign and
+// draws them from the approved snapshots, keeping the sources intact:
+//
+//     ziran run --target=c scripts/release_assets.zi -- RESOURCES
+//
+// build_bundles calls PrepareReleaseAssets for every SHOVEY_RELEASE edition.
+#import "std/file"
+#import "std/file_tree_linux"
+#import "std/image"
+#import "std/json_document"
+#import "std/png_linux"
+#import "std/text_tools"
+#import "shovey_tools"
+
+#scope_file
+SPRITE_SLOTS :: 257;
+PLAYER_SLOT :: 256;
+
+// The sprites of one edition, scaled to 16 pixels and kept in one sheet:
+// slot N holds tile-N, the last slot player-up.
+SpriteSet :: struct {
+    folder: string
+    sheet: Image
+    loaded: [257]bool
+    missing: bool
+}
+
+Load :: (set: *SpriteSet, slot: s32) -> bool {
+    if set.loaded[slot] { return true }
+    name: Vec(u8)
+    if slot == PLAYER_SLOT { BuilderAppend(name, "player-up.png") } else { BuilderPrint(*name, "tile-%.png", slot) }
+    picture := ReadPNGFile(JoinPath(set.folder, BuilderFinish(name)))
+    if !ImageValid(*picture) { return false }
+    small := ResizeNearest(*picture, 16, 16)
+    base := cast(s64)slot * 1024
+    for index: 0..1023 { set.sheet.pixels[base + index] = small.pixels[index] }
+    set.loaded[slot] = true
+    return true
+}
+
+Draw :: (picture: *Image, set: *SpriteSet, slot: s32, x: s32, y: s32) {
+    if !Load(set, slot) { set.missing = true; return }
+    AlphaComposite(picture, *set.sheet, x, y, 0, slot * 16, 16, 16)
+}
+
+Kind :: (layer: string, at: s64) -> s32 {
+    return TextHexDigit(layer[at * 2]) * 16 + TextHexDigit(layer[at * 2 + 1])
+}
+
+// One approved board drawn upright, or turned for landscape.
+Preview :: (document: *JsonDocument, level: s32, set: *SpriteSet, landscape: bool) -> Image {
+    layers: [3]string
+    names: [3]string = .["cells", "tiles", "decorations"]
+    for index: 0..2 {
+        rows := JsonMember(document, level, names[index])
+        text: Vec(u8)
+        if JsonKindOf(document, rows) == .Missing {
+            for row: 1..20 { BuilderAppend(text, "000000000000000000000000") }
+        } else {
+            row := JsonFirst(document, rows)
+            while row >= 0 { BuilderAppend(text, JsonString(document, row)); row = JsonNext(document, row) }
+        }
+        layers[index] = BuilderFinish(text)
+    }
+    columns: s32 = ifx landscape then 20 else 12
+    picture := NewImage(columns * 16, (240 / columns) * 16)
+    for at: 0..239 {
+        display := ifx landscape then (11 - at % 12) * 20 + at / 12 else at
+        x := cast(s32)(display % columns) * 16
+        y := cast(s32)(display / columns) * 16
+        Draw(*picture, set, Kind(layers[1], at), x, y)
+        order: [2]s32 = .[2, 0]
+        for layer: order {
+            kind := Kind(layers[layer], at)
+            if kind != 0 { Draw(*picture, set, ifx kind == 10 then PLAYER_SLOT else kind, x, y) }
+        }
+    }
+    return picture
+}
+
+#scope_export
+// Removes the island and unapproved previews under RESOURCES and draws the
+// approved ones again from levels/approved.json; then lists only the files
+// that remain in RESOURCES/art.json, each with its SHA-256. Empty, or why it
+// failed.
+PrepareReleaseAssets :: (resources: string) -> string {
+    approved: JsonDocument
+    levels := ApprovedLevels(*approved)
+    if levels < 0 { return "levels/approved.json has no levels" }
+    count := cast(s64)JsonCount(*approved, levels)
+    files: Vec(string)
+    if !WalkFiles(resources, *files) { return "cannot list the release assets" }
+    for files {
+        parent := PathName(PathParent(it))
+        stem := PathStem(it)
+        if PathSuffix(it) != ".png" || (parent != "levels" && parent != "levels-landscape") || !TextIsDecimal(stem) { continue }
+        number, ok := TextInteger(stem)
+        relative := it[resources.count:it.count]
+        if TextContains(relative, "/island/") || number > count { RemoveTree(it) }
+    }
+    targets: [4]string = .["levels", "levels-landscape", "landscape/levels", "classic/levels"]
+    turned: [4]bool = .[false, true, true, false]
+    for index: 0..3 {
+        target := JoinPath(resources, targets[index])
+        if !IsDirectory(target) { continue }
+        landscape := turned[index]
+        sheet := NewImage(16, SPRITE_SLOTS * 16)
+        set: SpriteSet = .{folder = ifx landscape then "assets/shovey-landscape/sprites" else "assets/shovey/sprites",
+            sheet = sheet}
+        level := JsonFirst(*approved, levels)
+        while level >= 0 {
+            picture := Preview(*approved, level, *set, landscape)
+            if set.missing { return "a level sprite is missing" }
+            // Pillow quantizes by method without dithering, whatever dither asks.
+            palette := QuantizeImage(*picture, 192, false)
+            name: Vec(u8)
+            BuilderPrint(*name, "%.png", JsonNumberText(*approved, JsonMember(*approved, level, "number")))
+            if !WriteIndexedPNGFile(JoinPath(target, BuilderFinish(name)), *palette) { return "cannot write a level preview" }
+            level = JsonNext(*approved, level)
+        }
+    }
+    manifest := JoinPath(resources, "art.json")
+    if IsFile(manifest) && !RewriteArtManifest(manifest, true) { return "cannot rewrite art.json" }
+    return ""
+}
+
+main :: (argc: s32, argv: **u8) -> s32 {
+    arguments := ToolArguments(argc, argv)
+    if arguments.count != 1 { return Fail("usage: release_assets RESOURCES") }
+    if !InShovey() { return Fail("Run release_assets from Shovey's folder") }
+    error := PrepareReleaseAssets(arguments[0])
+    if error.count > 0 { return Fail(error) }
+    return 0
+}

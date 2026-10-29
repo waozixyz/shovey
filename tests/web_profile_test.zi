@@ -1,0 +1,151 @@
+// The web build's Profile through input, the game's widget tree and private
+// storage: account creation and persistence, or a refused storage write
+// (WEB_FAIL_STORAGE), and device-only level navigation that writes no
+// unearned account progress. No pixel captures.
+#import "kryon/devtools_linux"
+#import "kryon/test_driver_client"
+#import "std/environment_linux"
+#import "std/format"
+#import "std/timer_linux"
+#import, file "test_support.zi";
+#import, file "web_support.zi";
+
+PROGRESS :: #string END
+window.accountProgress = () => {
+  const found = [];
+  const walk = path => {
+    for (const name of Module.FS.readdir(path)) {
+      if (name === '.' || name === '..') continue;
+      const child = path + '/' + name;
+      if (Module.FS.isDir(Module.FS.stat(child).mode)) walk(child);
+      else if (child.includes('/game-progress/')) {
+        const text = Module.FS.readFile(child, {encoding: 'utf8'});
+        if (text.includes('"game":"shovey.classic"')) found.push([child, text]);
+      }
+    }
+  };
+  walk('/kryon-apps');
+  return JSON.stringify(found.sort((a, b) => a[0].localeCompare(b[0])));
+}
+END;
+
+CAMPAIGN :: "Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding: 'utf8'})"
+
+// Whether a line of LINES is a Dew amount such as "12 Dew" or "1.5 Dew".
+HasDewAmount :: (lines: string) -> bool {
+    start: s64 = 0
+    for at: 0..lines.count {
+        if at < lines.count && lines[at] != #char "\n" { continue }
+        line := lines[start:at]
+        start = at + 1
+        if line.count < 5 || line[line.count - 4:] != " Dew" { continue }
+        digits := true
+        for byte: line[0:line.count - 4] { if !(byte >= #char "0" && byte <= #char "9") && byte != #char "." { digits = false } }
+        if digits && line[0] != #char "." { return true }
+    }
+    return false
+}
+
+Play :: (browser: *Browser) {
+    fail_storage := EnvironmentText("WEB_FAIL_STORAGE").count > 0
+    if !WebWait(browser, "globalThis.Module?.profileReady && document.querySelector('#loading-screen').classList.contains('is-hidden')", 45000) { return }
+    unused Check(BrowserTrue(browser, "Module.FS.analyzePath('/tmp/test-driver').exists"), "the game's test driver is ready")
+    unused WebClick(browser, 352.0, 31.0)
+    if !WebWait(browser, "Module.profileVisible", 45000) { return }
+    BrowserSleep(browser, 600)
+    labels := WebLabels(browser)
+    unused Check(HasLine(labels, "Not signed in"), "Profile starts signed out")
+    unused Check(!HasLine(labels, "Name") && !HasLine(labels, "Intention"), "Profile asks no name or intention")
+    if fail_storage {
+        unused BrowserEvaluate(browser, "Module.FS.syncfs = function(populate, callback) { setTimeout(() => callback(new Error('Storage fixture refused the write')), 0); }")
+    }
+    if !WebPress(browser, "Create account") { return }
+    connected := false
+    refused := false
+    deadline := MonotonicMilliseconds() + 20000
+    while MonotonicMilliseconds() < deadline {
+        text := WebLabels(browser)
+        if LineStarts(text, "Account connected") { connected = true; break }
+        lower := Lower(text)
+        if Contains(lower, "could not") || Contains(lower, "couldn't") || Contains(lower, "failed") { refused = true; break }
+        BrowserSleep(browser, 20)
+    }
+    if fail_storage {
+        unused Check(refused && !connected, "a refused storage write is not reported as connected")
+        unused Check(!BrowserTrue(browser, "Module.FS.analyzePath('/kryon-apps/profile/account.key').exists"), "failed account creation leaves no replacement key")
+        return
+    }
+    if !Check(connected, "account creation finishes") { return }
+    if !BrowserCall(browser, "Page.reload", "{}") || !WebWait(browser, "globalThis.Module?.profileReady", 45000) { Failed(); return }
+    unused Check(BrowserTrue(browser, "Module.FS.analyzePath('/kryon-apps/profile/account.key').exists"), "the confirmed account survives an immediate reload")
+    unused WebClick(browser, 352.0, 31.0)
+    if !WebWait(browser, "Module.profileVisible", 45000) { return }
+    labels = WebLabels(browser)
+    unused Check(HasLine(labels, "Dew balance"), "Profile shows the Dew balance")
+    unused Check(!HasLine(labels, "Not signed in"), "the persisted account is restored")
+    if EnvironmentText("WEB_VERIFY_NODE").count > 0 {
+        confirmed := false
+        node_deadline := MonotonicMilliseconds() + 25000
+        while !confirmed && MonotonicMilliseconds() < node_deadline {
+            confirmed = HasDewAmount(WebLabels(browser))
+            if !confirmed { BrowserSleep(browser, 150) }
+        }
+        unused Check(confirmed, "the node confirms the inline Dew balance")
+    }
+    // A new account has no earned game record. Entering a puzzle and
+    // browsing levels must keep that record unchanged.
+    unused BrowserEvaluate(browser, PROGRESS)
+    earned := BrowserText(browser, "accountProgress()")
+    unused Check(earned == "[]", "a new account has no game progress")
+    unused WebClick(browser, 40.0, 28.0)
+    if !WebWait(browser, "!Module.profileVisible", 20000) || !WebPress(browser, "Play") { return }
+    if !WebWait(browser, "Module.FS.analyzePath('/kryon-apps/shovey/local.campaign').exists", 45000) { return }
+    labels = WebLabels(browser)
+    if HasLine(labels, "Download new levels when they come out?") { unused WebPress(browser, "Not now") }
+    if HasLine(WebLabels(browser), "How do you want to move?") { unused WebPress(browser, "Swipe and tap") }
+    campaign := BrowserText(browser, CAMPAIGN)
+    unused Check(BrowserTrue(browser, BuilderJoin("(c => /^C[1-5]/.test(c) && parseInt(c.slice(2, c.startsWith('C5') ? 6 : 4), 16) === 1)(", CAMPAIGN, ")")),
+        "Classic saves its device campaign at level 1")
+    unused Check(BrowserText(browser, "accountProgress()") == earned, "opening Classic writes no unearned account progress")
+    if !WebPress(browser, "Levels") { return }
+    unused Check(Contains(WebLabels(browser), "Level"), "the level selector opens")
+    unused BrowserMouse(browser, "mouseWheel", 195.0, 500.0, 2200.0)
+    BrowserSleep(browser, 500)
+    unused Check(BrowserText(browser, CAMPAIGN) == campaign, "scrolling keeps the device campaign")
+    unused Check(BrowserText(browser, "accountProgress()") == earned, "scrolling writes no account progress")
+    // The editor reads the browser's Classic save, keeps the device's
+    // unlocks out of earned account progress and keeps future levels locked.
+    if !WebPress(browser, "Back") || !WebPress(browser, "Back") { return }
+    fixture := BrowserText(browser, BuilderJoin("(c => { const header = c.startsWith('C5') ? 6 : 4; return c.slice(0, 2) + (2).toString(16).padStart(header - 2, '0') + c.slice(header) })(", CAMPAIGN, ")"))
+    unused BrowserEvaluate(browser, BuilderJoin("Module.FS.writeFile('/kryon-apps/shovey/local.campaign', ", JsonQuote(fixture), ")"))
+    for cover: 0..2 {
+        if HasLine(WebLabels(browser), "Open") { break }
+        unused WebPress(browser, "Next")
+    }
+    if !WebPress(browser, "Open") || !WebPress(browser, "Levels") { return }
+    nodes: TestDriverClient
+    if !WebTree(browser, *nodes) { return }
+    unlocked := false
+    still_locked := false
+    future_locked := false
+    for index: 0..nodes.nodes.count - 1 {
+        node := nodes.nodes[index]
+        if node.key == 260009 && node.label == "2" { unlocked = true }
+        if node.key == 260011 { still_locked = true }
+        if node.key == 260015 { future_locked = true }
+    }
+    unused Check(unlocked && !still_locked, "the editor shows device-unlocked level 2")
+    unused Check(future_locked, "future level 3 stays locked")
+    unused Check(BrowserText(browser, CAMPAIGN) == fixture, "the editor keeps Classic progress")
+    unused Check(BrowserText(browser, "accountProgress()") == earned, "the editor publishes no device-only unlocks")
+}
+
+#program_export
+main :: () -> s32 {
+    browser: Browser
+    name := ifx EnvironmentText("WEB_FAIL_STORAGE").count > 0 then "web-profile-refused" else "web-profile"
+    if WebOpen(*browser, name, 390, 844, true) && WebLoad(*browser, "/index.html") { Play(*browser) }
+    passed := "Web Profile, account persistence and device-only level navigation passed without writing unearned account progress"
+    if EnvironmentText("WEB_FAIL_STORAGE").count > 0 { passed = "Web Profile: a refused browser storage write stays disconnected and removes the unsaved key" }
+    return WebFinish(*browser, passed)
+}

@@ -1,0 +1,197 @@
+// What Shovey's build, release and editor programs share: their arguments,
+// error messages, the changelog's release, the approved campaign's boards,
+// Git, and SHA-256 digests. The programs run from Shovey's folder:
+//
+//     ziran run --target=c scripts/stamp_web.zi -- --deployed
+#import "std/byte_text_linux"
+#import "std/file"
+#import "std/file_tree_linux"
+#import "std/json_document"
+#import "std/process_run_linux"
+#import "std/stdio_linux"
+#import "std/text_tools"
+#import "crypto/sha256"
+
+// The program's arguments after its own name.
+ToolArguments :: (argc: s32, argv: **u8) -> Vec(string) {
+    arguments: Vec(string)
+    index: s32 = 1
+    while index < argc {
+        VecPush(arguments, TextFromCString(argv[index]))
+        index += 1
+    }
+    return arguments
+}
+
+// A copy of TEXT that outlives the buffer it was read from.
+Owned :: (text: string) -> string {
+    bytes: Vec(u8)
+    BuilderAppend(bytes, text)
+    return BuilderFinish(bytes)
+}
+
+// Reports MESSAGE on standard error and returns the failing status.
+Fail :: (message: string) -> s32 {
+    line: Vec(u8)
+    BuilderAppend(line, message)
+    VecPush(line, cast(u8)10)
+    PrintError(BuilderFinish(line))
+    return 1
+}
+
+// Whether the program runs in Shovey's folder, where every path is relative.
+InShovey :: () -> bool {
+    return IsFile("ziran.toml") && IsFile("levels/approved.json") && IsFile("src/CHANGELOG.md")
+}
+
+ReadJsonFile :: (path: string, document: *JsonDocument) -> bool {
+    text, found := ReadEntireFile(path)
+    if !found { return false }
+    return JsonRead(document, text)
+}
+
+Release :: struct {
+    version: string
+    date: string
+    found: bool
+}
+
+// The newest dated release in a changelog: its first "## [1.2.3] -
+// YYYY-MM-DD" heading. With dated false, the first numbered heading, dated
+// or not. Unreleased entries are skipped either way.
+ChangelogRelease :: (path: string, dated: bool = true) -> Release {
+    release: Release
+    text, found := ReadEntireFile(path)
+    if !found { return release }
+    lines := TextLines(text)
+    index: s64 = 0
+    while index < lines.count {
+        line := lines[index]
+        index += 1
+        if !TextHasPrefix(line, "## [") { continue }
+        close := TextFind(line, "]", 4)
+        if close < 0 || !NumericVersion(line[4:close]) { continue }
+        rest := line[close + 1:line.count]
+        has_date := TextHasPrefix(rest, " - ") && rest.count >= 13 && ValidDate(rest[3:13])
+        if dated && !has_date { continue }
+        release.version = Owned(line[4:close])
+        if has_date { release.date = Owned(rest[3:13]) }
+        release.found = true
+        return release
+    }
+    return release
+}
+
+// Digits separated by single dots, with at least one dot: 0.6.162.
+NumericVersion :: (version: string) -> bool {
+    parts := TextSplit(version, ".")
+    if parts.count < 2 { return false }
+    index: s64 = 0
+    while index < parts.count {
+        if !TextIsDecimal(parts[index]) { return false }
+        index += 1
+    }
+    return true
+}
+
+ValidDate :: (text: string) -> bool {
+    return text.count == 10 && TextIsDecimal(text[0:4]) && text[4] == #char "-" &&
+        TextIsDecimal(text[5:7]) && text[7] == #char "-" && TextIsDecimal(text[8:10])
+}
+
+// A command's standard output with trailing whitespace removed, and
+// whether it ran and succeeded.
+CommandOutput :: (arguments: []string, directory: string = "") -> (text: string, ok: bool) {
+    options: ProcessOptions = .{arguments = arguments, directory = directory, capture_output = true}
+    run: ProcessRun
+    if !RunProcess(options, *run) || run.code != 0 { return "", false }
+    return TextTrimEnd(BuilderFinish(run.output)), true
+}
+
+// Runs a command with its output on this program's; whether it succeeded.
+RunCommand :: (arguments: []string, directory: string = "") -> bool {
+    options: ProcessOptions = .{arguments = arguments, directory = directory}
+    run: ProcessRun
+    return RunProcess(options, *run) && run.code == 0
+}
+
+GitRevision :: (directory: string = "") -> string {
+    command: [3]string = .["git", "rev-parse", "HEAD"]
+    revision, ok := CommandOutput(command[:], directory)
+    return ifx ok then revision else ""
+}
+
+Sha256Text :: (text: string) -> string {
+    digest := Sha256Of(text)
+    return TextHex(digest[:])
+}
+
+// A level's board: its cells, tiles and decorations rows, joined.
+LevelBoard :: (document: *JsonDocument, level: s32) -> string {
+    board: Vec(u8)
+    names: [3]string = .["cells", "tiles", "decorations"]
+    for names {
+        rows := JsonMember(document, level, it)
+        row := JsonFirst(document, rows)
+        while row >= 0 {
+            BuilderAppend(board, JsonString(document, row))
+            row = JsonNext(document, row)
+        }
+    }
+    return BuilderFinish(board)
+}
+
+// The approved campaign's levels array in levels/approved.json.
+ApprovedLevels :: (document: *JsonDocument) -> s32 {
+    if !ReadJsonFile("levels/approved.json", document) { return -1 }
+    levels := JsonMember(document, document.root, "levels")
+    if JsonKindOf(document, levels) != .Array { return -1 }
+    return levels
+}
+
+// Every file under FOLDER, recursively, as paths joined onto FOLDER, in
+// name order within each folder.
+WalkFiles :: (folder: string, files: *Vec(string)) -> bool {
+    names: Vec(string)
+    if !ListDirectory(folder, *names) { return false }
+    index: s64 = 0
+    while index < names.count {
+        path := JoinPath(folder, names[index])
+        kind := PathStatus(path, false).kind
+        if kind == .Directory {
+            if !WalkFiles(path, files) { return false }
+        } else if kind == .File {
+            VecPush(<<files, path)
+        }
+        index += 1
+    }
+    return true
+}
+
+// Rewrites an art.json manifest to list only the files that exist beside it,
+// each with its SHA-256 when REHASH, keeping Python's json.dumps(indent=2).
+RewriteArtManifest :: (path: string, rehash: bool) -> bool {
+    art: JsonDocument
+    if !ReadJsonFile(path, *art) { return false }
+    files := JsonMember(*art, art.root, "files")
+    folder := PathParent(path)
+    kept := JsonNewArray(*art)
+    item := JsonFirst(*art, files)
+    while item >= 0 {
+        next := JsonNext(*art, item)
+        file := JoinPath(folder, JsonString(*art, JsonMember(*art, item, "path")))
+        if IsFile(file) {
+            if rehash {
+                bytes, found := ReadEntireFile(file)
+                if !found { return false }
+                JsonSet(*art, item, "sha256", JsonNewString(*art, Sha256Text(bytes)))
+            }
+            JsonAppend(*art, kept, item)
+        }
+        item = next
+    }
+    JsonSet(*art, art.root, "files", kept)
+    text: Vec(u8)
+    BuilderPrint(*text, "%\n", JsonWrite(*art, art.root, JsonPythonStyle(2)))
+    return WriteEntireFile(path, BuilderFinish(text))
+}

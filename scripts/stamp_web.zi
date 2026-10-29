@@ -1,0 +1,79 @@
+// Identifies the built web game and keeps browser caches on the same
+// revision: fills the page's revision, level count, release and runtime size,
+// and writes build.json beside it.
+//
+//     ziran run --target=c scripts/stamp_web.zi [-- --deployed]
+//
+// SHOVEY_WEB_OUT names the page's folder (build/web by default). With
+// --deployed every file must also fit Cloudflare Pages' 25 MiB limit.
+#import "std/environment_linux"
+#import "std/file"
+#import "std/file_tree_linux"
+#import "std/json_document"
+#import "std/text_tools"
+#import "shovey_tools"
+
+PAGES_FILE_LIMIT :: 26214400;
+
+main :: (argc: s32, argv: **u8) -> s32 {
+    arguments := ToolArguments(argc, argv)
+    deployed := false
+    for arguments {
+        if it == "--deployed" { deployed = true } else { return Fail("usage: stamp_web [--deployed]") }
+    }
+    if !InShovey() { return Fail("Run stamp_web from Shovey's folder") }
+    revision := GitRevision()
+    if revision.count != 40 { return Fail("Cannot read the Git revision") }
+    approved: JsonDocument
+    levels := ApprovedLevels(*approved)
+    if levels < 0 { return Fail("levels/approved.json has no levels") }
+    output := EnvironmentText("SHOVEY_WEB_OUT")
+    if output.count == 0 { output = "build/web" }
+    // Only the compiled game is deployed (make web); the ZX edition is
+    // built and played in a browser check.
+    if deployed {
+        names: Vec(string)
+        if !ListDirectory(output, *names) { return Fail("The web build is missing") }
+        for names {
+            info := PathStatus(JoinPath(output, it))
+            if info.kind == .File && info.size > PAGES_FILE_LIMIT {
+                message: Vec(u8)
+                BuilderPrint(*message, "% exceeds the Cloudflare Pages file size limit", it)
+                return Fail(BuilderFinish(message))
+            }
+        }
+    }
+    release := ChangelogRelease("src/CHANGELOG.md")
+    if !release.found { return Fail("The game needs a numeric release and date") }
+    // The ZX player's runtime, or the compiled game.
+    runtime := JoinPath(output, "runtime.wasm")
+    if !IsFile(runtime) { runtime = JoinPath(output, "index.wasm") }
+    wasm := PathStatus(runtime)
+    if wasm.kind != .File { return Fail("The web build has no WebAssembly runtime") }
+    page_path := JoinPath(output, "index.html")
+    page, found := ReadEntireFile(page_path)
+    if !found { return Fail("The web build has no index.html") }
+    count: Vec(u8)
+    BuilderPrint(*count, "%", JsonCount(*approved, levels))
+    level_count := BuilderFinish(count)
+    size: Vec(u8)
+    BuilderPrint(*size, "%", wasm.size)
+    wasm_bytes := BuilderFinish(size)
+    page = TextReplace(page, "__SHOVEY_REVISION__", revision)
+    page = TextReplace(page, "__SHOVEY_LEVEL_COUNT__", level_count)
+    page = TextReplace(page, "__SHOVEY_VERSION__", release.version)
+    page = TextReplace(page, "__SHOVEY_RELEASE_DATE__", release.date)
+    page = TextReplace(page, "__SHOVEY_WASM_BYTES__", wasm_bytes)
+    if !WriteEntireFile(page_path, page) { return Fail("Cannot write index.html") }
+    build: JsonDocument
+    receipt := JsonNewObject(*build)
+    JsonSet(*build, receipt, "revision", JsonNewString(*build, revision))
+    JsonSet(*build, receipt, "classic_levels", JsonNewNumber(*build, level_count))
+    JsonSet(*build, receipt, "version", JsonNewString(*build, release.version))
+    JsonSet(*build, receipt, "release_date", JsonNewString(*build, release.date))
+    JsonSet(*build, receipt, "wasm_bytes", JsonNewNumber(*build, wasm_bytes))
+    text: Vec(u8)
+    BuilderPrint(*text, "%\n", JsonWrite(*build, receipt, JsonPythonStyle()))
+    if !WriteEntireFile(JoinPath(output, "build.json"), BuilderFinish(text)) { return Fail("Cannot write build.json") }
+    return 0
+}

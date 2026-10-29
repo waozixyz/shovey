@@ -1,0 +1,244 @@
+// Builds every app apps.json declares into a portable app bundle,
+// build/games/NAME.zx:
+//
+//     ziran run --target=c scripts/build_bundles.zi -- --toolchain DIR --kryon DIR --apps DIR --mingcute DIR
+//
+// Each catalog.json names its entry, source, assets and locales. Hosts such
+// as Arcade read the same apps.json and build the same bundles from this
+// package. A bundle may hold only its own assets/NAME/ folder; a game that
+// draws another's pictures lists copies in shared_assets.json beside its
+// catalog. What a bundle leaves out of its staged folder, which the web page
+// and the private editors still use whole, is listed in bundle.json beside
+// the catalog; Arcade's game build reads the same file.
+#import "std/file"
+#import "std/file_tree_linux"
+#import "std/json_document"
+#import "std/process_run_linux"
+#import "std/stdio_linux"
+#import "std/text_tools"
+#import "shovey_tools"
+#import "locale_code"
+#import "release_assets"
+
+#scope_file
+// A package's folder through the pinned compiler, asked from DIRECTORY.
+PackagePath :: (ziran: string, name: string, directory: string, locked: bool) -> string {
+    command: Vec(string)
+    VecPush(command, ziran)
+    VecPush(command, "pkg")
+    VecPush(command, "path")
+    VecPush(command, name)
+    if locked { VecPush(command, "--locked") }
+    path, ok := CommandOutput(VecSlice(command, 0, command.count), directory)
+    return ifx ok then ResolvePath(path) else ""
+}
+
+// The top-level asset names the bundle leaves out, from bundle.json beside
+// the catalog: leave_out, and release_leave_out for release builds.
+LeftOut :: (manifest: string, release: bool, resources: string, names: *Vec(string)) -> bool {
+    rules_path := JoinPath(PathParent(manifest), "bundle.json")
+    if !IsFile(rules_path) { return true }
+    rules: JsonDocument
+    if !ReadJsonFile(rules_path, *rules) { return false }
+    patterns: Vec(string)
+    lists: [2]string = .["leave_out", "release_leave_out"]
+    for list: 0..1 {
+        if list == 1 && !release { continue }
+        pattern := JsonFirst(*rules, JsonMember(*rules, rules.root, lists[list]))
+        while pattern >= 0 { VecPush(patterns, JsonString(*rules, pattern)); pattern = JsonNext(*rules, pattern) }
+    }
+    if patterns.count == 0 { return true }
+    entries: Vec(string)
+    if !ListDirectory(resources, *entries) { return false }
+    for index: 0..entries.count - 1 {
+        name := entries[index]
+        if name[0] == #char "." { continue }
+        for pattern: 0..patterns.count - 1 {
+            if MatchName(name, patterns[pattern]) { VecPush(<<names, name); break }
+        }
+    }
+    return true
+}
+
+// The asset folder the bundle packs: the staged one, or a copy without what
+// the bundle leaves out, its manifest listing only what remains.
+BundleAssets :: (manifest: string, name: string, staged: string, release: bool, folder: *string) -> bool {
+    resources := JoinPath(JoinPath(staged, "assets"), name)
+    left_out: Vec(string)
+    if !LeftOut(manifest, release, resources, *left_out) { return false }
+    if left_out.count == 0 {
+        <<folder = JoinPath(staged, "assets")
+        return true
+    }
+    kept := JoinPath("build/game-bundle-assets", name)
+    if !RemoveTree(kept) { return false }
+    target := JoinPath(JoinPath(kept, "assets"), name)
+    if !CreateDirectories(target) { return false }
+    entries: Vec(string)
+    if !ListDirectory(resources, *entries) { return false }
+    for index: 0..entries.count - 1 {
+        entry := entries[index]
+        skip := false
+        for out: 0..left_out.count - 1 { if left_out[out] == entry { skip = true } }
+        if skip { continue }
+        from := JoinPath(resources, entry)
+        to := JoinPath(target, entry)
+        ok := ifx IsDirectory(from) then CopyTree(from, to) else CopyFile(from, to)
+        if !ok { return false }
+    }
+    art := JoinPath(target, "art.json")
+    if IsFile(art) && !RewriteArtManifest(art, false) { return false }
+    <<folder = JoinPath(kept, "assets")
+    return true
+}
+
+Text :: (document: *JsonDocument, key: string) -> string {
+    return JsonString(document, JsonMember(document, document.root, key))
+}
+
+HasDefine :: (document: *JsonDocument, define: string) -> bool {
+    item := JsonFirst(document, JsonMember(document, document.root, "build_defines"))
+    while item >= 0 {
+        if JsonIs(document, item, define) { return true }
+        item = JsonNext(document, item)
+    }
+    return false
+}
+
+// Stages, translates and bundles one edition. Empty, or why it failed.
+BuildEdition :: (apps: *JsonDocument, app: s32, toolchain: string, kryon: string, apps_dir: string,
+                 mingcute: string, entity: string, daochi: string, crypto: string) -> string {
+    manifest := JsonString(apps, JsonMember(apps, app, "manifest"))
+    descriptor: JsonDocument
+    if !ReadJsonFile(manifest, *descriptor) { return "cannot read an edition's catalog" }
+    name := Text(*descriptor, "name")
+    staged := JoinPath("build/game-assets", name)
+    resources := JoinPath(JoinPath(staged, "assets"), name)
+    if !RemoveTree(staged) || !CreateDirectories(PathParent(resources)) { return "cannot stage the edition's assets" }
+    if !CopyTree(Text(*descriptor, "assets"), resources) { return "cannot copy the edition's assets" }
+    shared_path := JoinPath(PathParent(manifest), "shared_assets.json")
+    if IsFile(shared_path) {
+        shared: JsonDocument
+        if !ReadJsonFile(shared_path, *shared) { return "cannot read shared_assets.json" }
+        copy := JsonFirst(*shared, JsonMember(*shared, shared.root, "copies"))
+        while copy >= 0 {
+            source := JsonString(*shared, JsonMember(*shared, copy, "from"))
+            target := JoinPath(resources, JsonString(*shared, JsonMember(*shared, copy, "to")))
+            if !CreateDirectories(PathParent(target)) { return "cannot stage a shared copy" }
+            ok := ifx IsDirectory(source) then CopyTree(source, target) else CopyFile(source, target)
+            if !ok { return "cannot copy a shared asset" }
+            copy = JsonNext(*shared, copy)
+        }
+    }
+    catalog: JsonDocument
+    catalog_root := JsonCopy(*catalog, *descriptor, descriptor.root)
+    JsonRemove(*catalog, catalog_root, "build_defines")
+    catalog_text: Vec(u8)
+    BuilderPrint(*catalog_text, "%\n", JsonWrite(*catalog, catalog_root, JsonPythonStyle(2)))
+    if !WriteEntireFile(JoinPath(resources, "catalog.json"), BuilderFinish(catalog_text)) { return "cannot write catalog.json" }
+    release := HasDefine(*descriptor, "SHOVEY_RELEASE")
+    if release {
+        error := PrepareReleaseAssets(resources)
+        if error.count > 0 { return error }
+    }
+    translations := LocaleCode(Text(*descriptor, "locales"), Text(*descriptor, "locale_prefix"))
+    if translations.error.count > 0 { return translations.error }
+    locales := JoinPath(resources, "locales")
+    if !CreateDirectories(locales) { return "cannot stage the locale files" }
+    for index: 0..translations.files.count - 1 {
+        file := translations.files[index]
+        if !WriteEntireFile(JoinPath(locales, file.name), file.blocks) { return "cannot write a locale file" }
+    }
+    generated := JoinPath("build/game-generated", name)
+    if !CreateDirectories(generated) || !WriteEntireFile(JoinPath(generated, "translations.zi"), translations.code) {
+        return "cannot write the edition's translations"
+    }
+    if !CreateDirectories("build/games") { return "cannot create build/games" }
+    bundle: Vec(u8)
+    BuilderPrint(*bundle, "build/games/%.zx", name)
+    bundle_path := BuilderFinish(bundle)
+    assets := ""
+    if !BundleAssets(manifest, name, staged, release, *assets) { return "cannot stage the bundle's assets" }
+    root := WorkingDirectory()
+    command: Vec(string)
+    VecPush(command, JoinPath(toolchain, "build/bin/zi2zx"))
+    VecPush(command, "bundle")
+    Add(*command, "--root", root)
+    Add(*command, "--module-path", ResolvePath(generated))
+    Add(*command, "--module-path", JoinPath(kryon, "src/ui"))
+    Add(*command, "--module-path", Joined("kryon=", JoinPath(kryon, "src/ui")))
+    Add(*command, "--module-path", Joined("kryon=", JoinPath(kryon, "src/backend")))
+    Add(*command, "--module-path", Joined("std=", JoinPath(toolchain, "std")))
+    Add(*command, "--module-path", JoinPath(toolchain, "std"))
+    Add(*command, "--module-path", Joined("apps=", JoinPath(apps_dir, "src")))
+    Add(*command, "--module-path", Joined("mingcute=", JoinPath(mingcute, "src")))
+    Add(*command, "--module-path", Joined("entity=", JoinPath(entity, "src")))
+    Add(*command, "--module-path", Joined("daochi_client=", daochi))
+    Add(*command, "--module-path", Joined("crypto=", JoinPath(crypto, "src")))
+    define := JsonFirst(*descriptor, JsonMember(*descriptor, descriptor.root, "build_defines"))
+    while define >= 0 { Add(*command, "--define", JsonString(*descriptor, define)); define = JsonNext(*descriptor, define) }
+    entry := JsonFirst(apps, JsonMember(apps, app, "library_entries"))
+    while entry >= 0 { Add(*command, "--retain", JsonString(apps, entry)); entry = JsonNext(apps, entry) }
+    Add(*command, "--define", "KRYON_HOSTED_UI")
+    Add(*command, "--asset-dir", Joined("assets=", JoinPath(root, assets)))
+    Add(*command, "--entry", Text(*descriptor, "entry"))
+    Add(*command, "-o", JoinPath(root, bundle_path))
+    VecPush(command, JoinPath(root, Text(*descriptor, "source")))
+    if !RunCommand(VecSlice(command, 0, command.count)) { return "the bundle did not build" }
+    preview: Vec(u8)
+    BuilderPrint(*preview, "build/games/%-preview.png", name)
+    if !CopyFile(Text(*descriptor, "preview"), BuilderFinish(preview)) { return "cannot copy the edition's preview" }
+    report: Vec(u8)
+    BuilderPrint(*report, "built % (% KiB)\n", bundle_path, PathStatus(bundle_path).size / 1024)
+    WriteOutput(BuilderFinish(report))
+    return ""
+}
+
+Add :: (command: *Vec(string), flag: string, value: string) {
+    VecPush(<<command, flag)
+    VecPush(<<command, value)
+}
+
+Joined :: (first: string, second: string) -> string {
+    text: Vec(u8)
+    BuilderAppend(text, first)
+    BuilderAppend(text, second)
+    return BuilderFinish(text)
+}
+
+#scope_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    arguments := ToolArguments(argc, argv)
+    names: [4]string = .["--toolchain", "--kryon", "--apps", "--mingcute"]
+    values: [4]string
+    index: s64 = 0
+    while index < arguments.count {
+        found := false
+        for name: 0..3 {
+            if arguments[index] == names[name] && index + 1 < arguments.count {
+                values[name] = ResolvePath(arguments[index + 1])
+                found = true
+            }
+        }
+        if !found { return Fail("usage: build_bundles --toolchain DIR --kryon DIR --apps DIR --mingcute DIR") }
+        index += 2
+    }
+    for value: values { if value.count == 0 { return Fail("usage: build_bundles --toolchain DIR --kryon DIR --apps DIR --mingcute DIR") } }
+    if !InShovey() { return Fail("Run build_bundles from Shovey's folder") }
+    toolchain := values[0]
+    ziran := JoinPath(toolchain, "build/bin/ziran")
+    locked := !IsFile("ziran.local.toml")
+    entity := PackagePath(ziran, "entity", "", locked)
+    daochi := PackagePath(ziran, "daochi_client", entity, locked)
+    crypto := PackagePath(ziran, "crypto", daochi, locked)
+    if entity.count == 0 || daochi.count == 0 || crypto.count == 0 { return Fail("Cannot find the entity, daochi_client and crypto packages") }
+    apps: JsonDocument
+    if !ReadJsonFile("apps.json", *apps) { return Fail("Cannot read apps.json") }
+    app := JsonFirst(*apps, JsonMember(*apps, apps.root, "apps"))
+    while app >= 0 {
+        error := BuildEdition(*apps, app, toolchain, values[1], values[2], values[3], entity, daochi, crypto)
+        if error.count > 0 { return Fail(error) }
+        app = JsonNext(*apps, app)
+    }
+    return 0
+}

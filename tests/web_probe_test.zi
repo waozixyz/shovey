@@ -1,0 +1,37 @@
+#import "kryon/devtools_linux"
+#import "kryon/test_driver_client"
+#import "std/environment_linux"
+#import "std/format"
+#import "std/json_scan"
+#import "std/timer_linux"
+#import, file "test_support.zi";
+#import, file "web_support.zi";
+probe_c :: #system_library "c";
+Flush :: (stream: *void) -> s32 #foreign probe_c "fflush";
+#program_export
+main :: () -> s32 {
+    browser: Browser
+    mode := EnvironmentText("PROBE_MODE")
+    if !WebOpen(*browser, "web-probe", 390, 844, true) { return 1 }
+    if mode != "nodriver" { unused BrowserScriptOnLoad(*browser, WEB_DRIVER_SETUP) }
+    if mode == "create" {
+        browser.session = ""
+        if !BrowserCall(*browser, "Target.createTarget", BrowserParams1("url", BrowserUrl(*browser, "/index.html"))) { return 2 }
+        target := DevtoolsString(browser.result, 0, "targetId")
+        if !BrowserCall(*browser, "Target.attachToTarget", BrowserJoinParams(target)) { return 3 }
+        browser.session = DevtoolsString(browser.result, 0, "sessionId")
+        unused BrowserCall(*browser, "Runtime.enable", "{}")
+        if mode != "nodriver" { unused BrowserScriptOnLoad(*browser, WEB_DRIVER_SETUP) }
+    } else {
+        unused BrowserCall(*browser, "Page.navigate", BrowserParams1("url", BrowserUrl(*browser, "/index.html")))
+    }
+    start := MonotonicMilliseconds()
+    for step: 0..5 {
+        BrowserSleep(*browser, 2000)
+        ok := BrowserCallTimed(*browser, "Runtime.evaluate", "{\"expression\":\"String(globalThis.Module?.profileReady)+' '+document.readyState\",\"returnByValue\":true}", 8000)
+        print("% ms: % %\n", MonotonicMilliseconds() - start, ok, browser.result)
+        unused Flush(null)
+    }
+    BrowserClose(*browser)
+    return 0
+}
