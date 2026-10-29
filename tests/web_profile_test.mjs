@@ -11,13 +11,15 @@ import {driverSetup} from './web_driver.mjs';
 
 const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-profile-'));
+// Files the page asked for and did not get, reported when a wait times out.
+const missing = [];
 const server = createServer(async (request, response) => {
   try {
     const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
     if (path.includes('..')) throw Error('Invalid path');
     response.setHeader('Content-Type', path.endsWith('.wasm') ? 'application/wasm' : path.endsWith('.js') ? 'text/javascript' : path.endsWith('.png') ? 'image/png' : 'text/html');
     response.end(await readFile(join(root, path === '/' ? 'index.html' : path)));
-  } catch { response.writeHead(404).end(); }
+  } catch { missing.push(request.url); response.writeHead(404).end(); }
 });
 if (!process.env.WEB_TEST_URL) await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const target = process.env.WEB_TEST_URL || `http://127.0.0.1:${server.address().port}/index.html`;
@@ -36,10 +38,14 @@ try {
   const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
   socket = new WebSocket(pages.find(page => page.type === 'page').webSocketDebuggerUrl);
   await new Promise(resolve => socket.addEventListener('open', resolve, {once: true}));
-  const pending = new Map(), failures = [];
+  const pending = new Map(), failures = [], consoleLines = [];
   socket.addEventListener('message', event => {
     const message = JSON.parse(event.data);
     if (message.method === 'Runtime.exceptionThrown') failures.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);
+    if (message.method === 'Runtime.consoleAPICalled') {
+      consoleLines.push(message.params.type + ': ' + message.params.args.map(arg => arg.value ?? arg.description ?? '').join(' ').slice(0, 300));
+      consoleLines.splice(0, consoleLines.length - 20);
+    }
     if (pending.has(message.id)) { pending.get(message.id)(message); pending.delete(message.id); }
   });
   async function call(method, params = {}) {
@@ -63,8 +69,14 @@ try {
       if (await evaluate(expression)) return;
       await delay(100);
     }
-    const state = await evaluate(`JSON.stringify({ready:globalThis.Module?.profileReady,status:document.querySelector('#status')?.textContent,result:document.querySelector('#result')?.textContent})`);
-    throw Error('Timed out: ' + expression + '; state: ' + state + '; errors: ' + failures.join('|'));
+    // What the loading screen waits for: the game's pictures, a sized
+    // canvas, its save folder and the Profile.
+    const state = await evaluate(`(() => { const fs = globalThis.Module?.FS, has = path => { try { return fs?.analyzePath(path).exists; } catch (_) { return 'error'; } }, canvas = document.getElementById('canvas');
+      return JSON.stringify({ready:globalThis.Module?.profileReady,status:document.querySelector('#status')?.textContent,result:document.querySelector('#result')?.textContent,
+        host:document.querySelector('#zib-controls span')?.textContent,canvas:canvas && [canvas.width, canvas.height],fs:!!fs,
+        pictures:has('/assets/shovey/catalog.json'),appPictures:has('/kryon-apps/shovey/assets/shovey/catalog.json'),saves:has('/kryon-apps/shovey')}); })()`);
+    throw Error('Timed out: ' + expression + '; state: ' + state + '; errors: ' + failures.join('|') +
+      '; console: ' + consoleLines.join(' | ') + '; missing: ' + missing.join(' '));
   }
   async function click(x, y) {
     await call('Input.dispatchMouseEvent', {type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1});
