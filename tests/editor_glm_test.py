@@ -250,28 +250,6 @@ class Variations(unittest.TestCase):
         self.assertEqual(actions.too_easy(target, dict(tier=0, moves=40, pushes=14, goals=4)), '')
         self.assertIn('mechanics', actions.too_easy(dict(target, mechanics=4), dict(tier=2, moves=100, pushes=14, goals=4, mechanics=1)))
 
-    def test_deadlock_rules_preserve_existing_winning_routes(self):
-        generated = ROOT / 'build/solver/classic/c'
-        output = ROOT / 'build/solver-state-test'
-        output.mkdir(exist_ok=True)
-        toolchain = Path(actions.subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
-        binary = output / 'state-test'
-        command = ['cc', '-std=c11', '-O2', '-I' + str(toolchain / 'include'), '-iquote', str(generated),
-                   str(ROOT / 'tests/solver_state_test.c')]
-        command += [str(path) for path in generated.glob('*.c')]
-        command += [str(ROOT / 'build/ziran/libziran.a'), '-lm', '-lpthread', '-o', str(binary)]
-        actions.subprocess.run(command, check=True, capture_output=True)
-        actions.subprocess.run([str(binary)], check=True, capture_output=True)
-        checked = 0
-        for level in json.loads((ROOT / 'levels/classic.json').read_text())['levels']:
-            route = level.get('solution', '')
-            candidate = actions.board_hex(level)
-            if not actions.verify_route(level['number'], candidate, route): continue
-            run = actions.subprocess.run([str(binary), candidate, route], capture_output=True, text=True)
-            self.assertEqual(run.returncode, 0, f'Level {level["number"]}: {run.stderr}')
-            checked += 1
-        self.assertGreater(checked, 100)
-
     def test_crates_can_bridge_water_before_a_ball_is_reachable(self):
         cells = [12] * 240
         # Both bridges are needed before the red ball can move. Pruning after
@@ -287,24 +265,6 @@ class Variations(unittest.TestCase):
                     capture_output=True, text=True, timeout=10)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertTrue(actions.verify_route(1, candidate, result.stdout.strip()))
-
-    def test_spare_crates_do_not_distract_from_the_solution(self):
-        generated = ROOT / 'build/solver/classic/c'
-        output = ROOT / 'build/solver-focus-test'
-        output.mkdir(exist_ok=True)
-        toolchain = Path(actions.subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
-        binary = output / 'focus-test'
-        command = ['cc', '-std=c11', '-O2', '-I' + str(toolchain / 'include'), '-iquote', str(generated),
-                   str(ROOT / 'tests/solver_focus_test.c')]
-        command += [str(path) for path in generated.glob('*.c')]
-        command += [str(ROOT / 'build/ziran/libziran.a'), '-lm', '-lpthread', '-o', str(binary)]
-        actions.subprocess.run(command, check=True, capture_output=True)
-        actions.subprocess.run([str(binary)], check=True, capture_output=True)
-        candidate = json.loads((ROOT / 'tests/fixtures/spare-crates.json').read_text())['board']
-        result = actions.subprocess.run([str(actions.SOLVER), 'solve', '--seconds', '15',
-            '--only', 'greedy', '--max-mb', '128', candidate], capture_output=True, text=True, timeout=25)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue(actions.verify_route(1, candidate, result.stdout.strip()))
 
     def test_prettify_preserves_buttons_moss_and_blocking_decoration(self):
         def edit(layer, x, y, before, after):

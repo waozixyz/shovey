@@ -12,6 +12,20 @@ COMPLETION_MODULES = --module-path 'daochi_client=$(DAOCHI_CLIENT)' --module-pat
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
+# Ziran test programs: $(call ziran_test,NAME,ARGUMENTS) builds tests/NAME.zi
+# into build/tests/NAME and runs it from the repository root, without the
+# desktop's display or session.
+ZIRAN_TEST_MODULES = --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+	--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
+	--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
+	--module-path 'mingcute=$(MINGCUTE)/src'
+define ziran_test
+rm -rf build/tests/$(1)
+'$(TOOLCHAIN)/build/bin/zi2c' --exe --root tests $(ZIRAN_TEST_MODULES) --entry $(1):main -o build/tests/$(1) tests/$(1).zi
+env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+	build/tests/$(1)/$(1) $(2)
+endef
+
 .PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zx web-zx-test
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test star-merge-test
@@ -23,12 +37,13 @@ editor-server-test:
 
 editor-glm-test: solver
 	python3 tests/editor_glm_test.py
+	$(call ziran_test,solver_test)
 
 editor-save-test: editor solver
 	python3 tests/developer_editor_save_test.py
 
 star-merge-test: editor
-	ZIRAN_TOOLCHAIN='$(TOOLCHAIN)' EDITOR_GENERATED='$(EDITOR_OUT)/c' python3 tests/star_merge_behavior_test.py
+	$(call ziran_test,board_effects_test)
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/star_merge_ui_test.py --binary '$(EDITOR_OUT)/shovey-level-editor'
 
@@ -275,6 +290,7 @@ public-test: solver laws game-maps-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
+	$(call ziran_test,board_effects_test)
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
@@ -305,6 +321,7 @@ test: solver laws game-maps-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
+	$(call ziran_test,board_effects_test)
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
@@ -318,6 +335,7 @@ test: solver laws game-maps-test
 	python3 tests/classic_variety_test.py
 	python3 tests/assets_test.py
 	sh tests/engine_test.sh '$(TOOLCHAIN)'
+	$(call ziran_test,solver_test)
 	sh tests/controls_test.sh '$(TOOLCHAIN)'
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'

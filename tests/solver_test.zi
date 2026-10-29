@@ -1,0 +1,169 @@
+// The Classic solver's rules in the shipped engine: crates bridging water,
+// paint resources, door and crate deadlocks, crates on the objective routes,
+// every saved winning route surviving deadlock pruning, and a board with
+// spare crates solved without being distracted by them.
+//
+//   solver_test [SOLVER [LEVELS]]
+//
+// SOLVER defaults to build/solver/shovey-solve-classic (make solver), and
+// LEVELS to the private levels/classic.json, else levels/approved.json.
+#import, file "../src/engine.zi";
+#import, file "../tools/solver/classic_api.zi";
+#import, file "test_support.zi";
+#import "std/file"
+#import "c_string"
+#import "byte_text_linux"
+
+ACTIONS :: "0123ft"
+
+Kind :: (board: []u8, at: s32, value: s32) {
+    digits := "0123456789abcdef"
+    board[at * 2] = digits[(value >> 4) & 15]
+    board[at * 2 + 1] = digits[value & 15]
+}
+
+Load :: (board: []u8) -> bool {
+    return ClassicApiLoad(*board[0], 1) == 1
+}
+
+Action :: (step: u8) -> s32 {
+    for at: 0..5 { if ACTIONS[at] == step { return cast(s32)at } }
+    return -1
+}
+
+// Crates bridge both stretches of water before the ball can roll home,
+// with and without a trail; without crates the ball is trapped at once.
+WaterBridges :: () {
+    board: [481]u8
+    for at: 0..239 { Kind(board[:], cast(s32)at, 12) }
+    row: [8]s32 = .[10, 9, 64, 9, 64, 1, 4, 7]
+    for x: 0..7 { Kind(board[:], 61 + cast(s32)x, row[x]) }
+    for trail: 0..1 {
+        if !Check(Load(board[:]), "water board loads") { return }
+        if trail == 1 { classic_game.powers |= SHOVEY_TRAIL }
+        for step: 0..6 {
+            unused Check(ClassicApiDead() == 0, "water route is not dead early")
+            unused Check(ClassicApiAct(2) == 1, "water route step is accepted")
+        }
+        unused Check(ClassicApiWon() == 1, "both crates bridge the water")
+        unused Check(classic_game.ground[63] == SHOVEY_FLOATING_CRATE && classic_game.ground[65] == SHOVEY_FLOATING_CRATE,
+            "both crates float in the water")
+    }
+    Kind(board[:], 62, 0)
+    Kind(board[:], 64, 0)
+    unused Check(Load(board[:]) && ClassicApiDead() == 1, "without crates the ball is trapped")
+}
+
+// Paint resources and permanent walls.
+PaintAndDoors :: () {
+    board: [1441]u8
+    for at: 0..1439 { board[at] = #char "0" }
+    Kind(board[:], 13, 10)
+    Kind(board[:], 70, 7)
+    if !Check(Load(board[:]), "paint board loads") { return }
+    classic_game.objects[58] = 3
+    classic_game.objects[59] = 2
+    classic_game.ground[60] = 6
+    classic_game.ground[61] = 17
+    unused Check(ClassicApiDead() == 0, "the blue ball can still be painted green")
+    classic_game.ground[61] = 0
+    unused Check(ClassicApiDead() == 1, "spending the last green paint dooms blue")
+    classic_game.objects[59] = 0
+    unused Check(ClassicApiDead() == 0, "without the blue ball nothing is doomed")
+    doors: [21]s32 = .[14, 92, 104, 105, 107, 110, 113, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 130]
+    for door: doors { unused Check(!ClassicApiPermanentWall(door), "doors and moss are not permanent walls") }
+    unused Check(!ClassicApiPermanentWall(62), "a bomb can break a cracked wall")
+    unused Check(ClassicApiPermanentWall(65), "nothing can fill the abyss")
+}
+
+// The crate on the way to the goal is on an objective route; a spare crate
+// is not, but pushing it remains available at a higher cost.
+Focus :: () {
+    board: [1441]u8
+    for at: 0..1439 { board[at] = #char "0" }
+    for at: 0..239 {
+        x := at % 12
+        y := at / 12
+        if x == 0 || x == 11 || at < 12 || at >= 228 || (y == 2 && x != 8) { Kind(board[480:], cast(s32)at, 12) }
+    }
+    cells: [4]s32 = .[13, 17, 22, 122]
+    kinds: [4]s32 = .[10, 9, 7, 9]
+    for i: 0..3 { Kind(board[:], cells[i], kinds[i]) }
+    if !Check(Load(board[:]), "focus board loads") { return }
+    ClassicApiFocus()
+    unused Check(classic_focus[17] && !classic_focus[122], "only the crate on the goal route is in focus")
+    ClassicApiSetWalker(16 * 4)
+    ClassicApiReset()
+    unused Check(ClassicApiActionCost(2) == 1, "pushing the objective crate costs one")
+    ClassicApiSetWalker(123 * 4)
+    ClassicApiReset()
+    unused Check(ClassicApiActionCost(0) > 1, "pushing a spare crate costs more")
+    unused Check(ClassicApiAct(0) == 1 && classic_game.objects[121] == 9, "the spare crate can still be pushed")
+}
+
+route_board: [1441]u8;
+
+// Replays ROUTE; 0 when it wins without ever looking dead first, 1 when the
+// route does not win at all, 2 when a winning route was pruned as dead.
+Replay :: (board: string, route: string) -> s32 {
+    if board.count != 1440 { return 1 }
+    for at: 0..1439 { route_board[at] = board[at] }
+    route_board[1440] = 0
+    if !Load(route_board[:]) { return 1 }
+    dead := false
+    for at: 0..route.count - 1 {
+        if ClassicApiWon() == 1 { break }
+        if ClassicApiDead() == 1 { dead = true }
+        action := Action(route[at])
+        if action < 0 { return 1 }
+        unused ClassicApiAct(action)
+    }
+    if ClassicApiWon() != 1 { return 1 }
+    return ifx dead then 2 else 0
+}
+
+// Every saved winning route still wins while the deadlock rules watch it.
+SavedRoutes :: (levels: string) {
+    path := levels
+    if path == "" { path = ifx PathExists("levels/classic.json") then "levels/classic.json" else "levels/approved.json" }
+    text := ReadText(path)
+    positions: [1024]s32
+    count := LevelPositions(text, "levels", positions[:])
+    checked := 0
+    for index: 0..count - 1 {
+        level := positions[index]
+        result := Replay(LevelBoard(text, level), JsonText(text, level, "solution"))
+        if result == 2 {
+            print("FAIL: level %: winning route incorrectly pruned as a deadlock\n", JsonInteger(text, level, "number", 0))
+            Failed()
+        }
+        if result == 0 { checked += 1 }
+    }
+    if !Check(checked > 100, "more than 100 saved routes replayed") { print("  replayed % of %\n", checked, count) }
+}
+
+// The greedy search solves a board with spare crates; its route wins.
+SpareCrates :: (solver: string) {
+    board := JsonText(ReadText("tests/fixtures/spare-crates.json"), 0, "board")
+    arguments: [9]string = .[solver, "solve", "--seconds", "15", "--only", "greedy", "--max-mb", "128", board]
+    result := RunCapture(arguments[:])
+    if !Check(result.ok && result.code == 0, "the solver solves the spare-crate board") { return }
+    unused Check(Replay(board, Trimmed(result.output)) == 0, "the spare-crate route wins")
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    solver := "build/solver/shovey-solve-classic"
+    if argc > 1 { solver = TextFromCString(argv[1]) }
+    levels := ""
+    if argc > 2 { levels = TextFromCString(argv[2]) }
+    WaterBridges()
+    PaintAndDoors()
+    Focus()
+    SavedRoutes(levels)
+    SpareCrates(solver)
+    failures := TestFailures()
+    if failures > 0 { print("Solver: % failures\n", failures); return 1 }
+    print("Solver: water bridges, paint resources, door/crate deadlocks, objective focus, saved routes and spare crates passed\n")
+    return 0
+}

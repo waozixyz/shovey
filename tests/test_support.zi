@@ -1,0 +1,156 @@
+// Shared pieces of Shovey's Ziran tests: failure reporting, the level files
+// and their boards, and running a program for its output.
+#import "std/file"
+#import "std/json_scan"
+#import "std/format"
+#import "std/process_capture_linux"
+
+test_failures: s32;
+
+// Reports a failed expectation and counts it; the test exits with the count.
+Check :: (condition: bool, message: string) -> bool {
+    if !condition {
+        print("FAIL: %\n", message)
+        test_failures += 1
+    }
+    return condition
+}
+
+TestFailures :: () -> s32 { return test_failures }
+
+// Counts a failure whose message the caller has printed.
+Failed :: () { test_failures += 1 }
+
+// A whole text file; a missing one fails the test.
+ReadText :: (path: string) -> string {
+    text, ok := ReadEntireFile(path)
+    if !ok { print("FAIL: cannot read %\n", path); Failed() }
+    return text
+}
+
+// The decoded string member NAME of the JSON object at OBJECT, or "".
+JsonText :: (text: string, object: s32, name: string) -> string {
+    at := FieldAt(text, object, name)
+    if at < 0 { return "" }
+    value := ReadStringValue(text, at, 16777216)
+    if !value.valid { return "" }
+    return BuilderFinish(value.value)
+}
+
+// The integer member NAME of the JSON object at OBJECT, or FALLBACK.
+JsonInteger :: (text: string, object: s32, name: string, fallback: s64) -> s64 {
+    at := FieldAt(text, object, name)
+    if at < 0 { return fallback }
+    number := ReadNumber(text, at)
+    if !number.valid { return fallback }
+    return cast(s64)number.value
+}
+
+// The JSON array of strings member NAME, joined, as a level layer stores its
+// rows; "" when it is missing or empty.
+JsonJoined :: (text: string, object: s32, name: string) -> string {
+    at := FieldAt(text, object, name)
+    if at < 0 { return "" }
+    joined: Vec(u8)
+    count := ArrayCount(text, at)
+    for index: 0..count - 1 {
+        element := ElementAt(text, at, index)
+        value := ReadStringValue(text, element, 1048576)
+        if value.valid { unused BuilderAppend(joined, BuilderFinish(value.value)) }
+    }
+    return BuilderFinish(joined)
+}
+
+// The 1440-digit hex board the solver and engine take: cells, tiles and
+// decorations. A level without tiles gets the editor's default ground under
+// each cell, and one without decorations gets none.
+LevelBoard :: (text: string, level: s32) -> string {
+    cells := JsonJoined(text, level, "cells")
+    tiles := JsonJoined(text, level, "tiles")
+    decorations := JsonJoined(text, level, "decorations")
+    board: Vec(u8)
+    unused BuilderAppend(board, cells)
+    if tiles.count > 0 { unused BuilderAppend(board, tiles) }
+    else {
+        at: s64 = 0
+        while at + 1 < cells.count && at < 480 {
+            AppendHex(*board, DefaultTile(HexValue(cells[at]) * 16 + HexValue(cells[at + 1])))
+            at += 2
+        }
+    }
+    if decorations.count > 0 { unused BuilderAppend(board, decorations) }
+    else { for at: 0..239 { unused BuilderAppend(board, "00") } }
+    return BuilderFinish(board)
+}
+
+DefaultTile :: (kind: s32) -> s32 {
+    if kind == 0 || kind == 4 || kind == 5 || kind == 6 || kind == 12 || kind == 14 ||
+       kind == 47 || kind == 48 || kind == 49 || kind == 60 || kind == 61 || kind == 63 ||
+       kind == 64 || kind == 65 || kind == 70 || kind == 76 || kind == 77 || kind == 78 ||
+       (kind >= 95 && kind <= 103) || (kind >= 127 && kind <= 130) { return kind }
+    if kind == 7 { return 77 }
+    if kind >= 89 && kind <= 91 { return 64 }
+    if kind == 62 { return 12 }
+    return 0
+}
+
+HexValue :: (digit: u8) -> s32 {
+    if digit >= #char "0" && digit <= #char "9" { return cast(s32)(digit - #char "0") }
+    if digit >= #char "a" && digit <= #char "f" { return cast(s32)(digit - #char "a") + 10 }
+    if digit >= #char "A" && digit <= #char "F" { return cast(s32)(digit - #char "A") + 10 }
+    return 0
+}
+
+AppendHex :: (out: *Vec(u8), value: s32) {
+    digits := "0123456789abcdef"
+    VecPush(<<out, digits[(value >> 4) & 15])
+    VecPush(<<out, digits[value & 15])
+}
+
+// Each layer value of a 480-digit hex layer.
+LayerValues :: (hex: string, output: []s32) -> s32 {
+    count: s32 = 0
+    at: s64 = 0
+    while at + 1 < hex.count && count < cast(s32)output.count {
+        output[count] = HexValue(hex[at]) * 16 + HexValue(hex[at + 1])
+        count += 1
+        at += 2
+    }
+    return count
+}
+
+// The levels array of a level file, with its element positions.
+LevelPositions :: (text: string, member: string, output: []s32) -> s32 {
+    at := FieldAt(text, 0, member)
+    if at < 0 { return 0 }
+    count := ArrayPositions(text, at, output)
+    if count < 0 { return 0 }
+    return ifx count > cast(s32)output.count then cast(s32)output.count else count
+}
+
+// Runs ARGUMENTS without a shell and returns its standard output.
+Captured :: struct {
+    code: s32
+    output: string
+    ok: bool
+}
+
+capture_buffer: [1048576]u8;
+
+RunCapture :: (arguments: []string) -> Captured {
+    result := CaptureOutput(arguments, capture_buffer[:])
+    captured: Captured
+    captured.code = result.code
+    captured.ok = !result.error && !result.truncated
+    copy: Vec(u8)
+    unused BuilderAppend(copy, TextView(capture_buffer[0:result.length]))
+    captured.output = BuilderFinish(copy)
+    return captured
+}
+
+// TEXT without trailing line breaks and spaces.
+Trimmed :: (text: string) -> string {
+    end := text.count
+    while end > 0 && (text[end - 1] == #char "\n" || text[end - 1] == #char "\r" || text[end - 1] == #char " ") { end -= 1 }
+    return text[0:end]
+}

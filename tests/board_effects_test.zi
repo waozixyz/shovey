@@ -1,0 +1,155 @@
+// Real engine moves observed by the shipped board animation code: stars
+// joining in each direction and in groups, and the first electric pickup.
+#import, file "../src/engine.zi";
+#import, file "../src/shovey_board.zi";
+#import, file "test_support.zi";
+
+// The one star-merge pulse, or -1; two pulses fail the test.
+Merge :: () -> s32 {
+    found: s32 = -1
+    for i: 0..BOARD_EFFECTS - 1 {
+        if board_effects[i].kind == 5 {
+            unused Check(found < 0, "one star group makes one pulse")
+            found = cast(s32)i
+        }
+    }
+    return found
+}
+
+Load :: (board: []u8) -> bool {
+    loaded: ShoveyGame
+    return ShoveyLoadData(*loaded, 1, TextView(board))
+}
+
+// Stars may not start side by side; a row boundary does not touch.
+StarStarts :: () {
+    board: [480]u8
+    for at: 0..479 { board[at] = #char "0" }
+    board[1] = #char "a"
+    board[26] = #char "1"; board[27] = #char "3"
+    board[28] = #char "1"; board[29] = #char "3"
+    unused Check(!Load(board[:]), "stars side by side are refused")
+    board[28] = #char "0"; board[29] = #char "0"
+    board[50] = #char "1"; board[51] = #char "3"
+    unused Check(!Load(board[:]), "stars one above the other are refused")
+    board[50] = #char "0"; board[51] = #char "0"
+    board[30] = #char "1"; board[31] = #char "3"
+    unused Check(Load(board[:]), "stars two cells apart load")
+    board[26] = #char "0"; board[27] = #char "0"; board[30] = #char "0"; board[31] = #char "0"
+    board[22] = #char "1"; board[24] = #char "1"; board[23] = #char "3"; board[25] = #char "3"
+    unused Check(Load(board[:]), "stars across a row boundary do not touch")
+}
+
+StarMerges :: () {
+    for direction: cast(s32)0..3 {
+        meeting: s32 = 100
+        mover := ShoveyNeighbor(meeting, (direction + 2) % 4)
+        player := ShoveyNeighbor(mover, (direction + 2) % 4)
+        partner := ShoveyNeighbor(meeting, direction)
+        initial := ShoveyGame.{.level = 1, .player = player}
+        initial.objects[mover] = 19
+        initial.objects[partner] = 19
+        game := initial
+        board_seen = false
+        BoardEffectsNotice(*game, 10.0)
+        unused Check(Merge() < 0, "no pulse before the push")
+        unused Check(ShoveyMove(*game, direction), "the star is pushed")
+        unused Check(game.objects[meeting] == 0 && game.objects[partner] == 0, "the joined stars disappear")
+        BoardEffectsNotice(*game, 10.1)
+        merge := Merge()
+        if Check(merge >= 0, "the join pulses") {
+            unused Check(board_effects[merge].at == meeting && board_effects[merge].stars == (1 << direction), "the pulse is where the stars met")
+            unused Check(board_effects[merge].start == 10.1, "the pulse starts on the frame it was seen")
+        }
+        BoardEffectsNotice(*game, 10.2)
+        merge = Merge()
+        unused Check(merge >= 0 && board_effects[merge].start == 10.1, "an unchanged frame does not replay the pulse")
+        game = initial
+        BoardEffectsNotice(*game, 10.3)
+        unused Check(Merge() < 0, "undo and restart clear the old pulse")
+
+        // A push can join three stars; the whole group pulses once.
+        side := (direction + 1) % 4
+        extra := ShoveyNeighbor(meeting, side)
+        game = initial
+        game.objects[extra] = 19
+        board_seen = false
+        BoardEffectsNotice(*game, 11.0)
+        unused Check(ShoveyMove(*game, direction), "the star joins a group")
+        BoardEffectsNotice(*game, 11.1)
+        merge = Merge()
+        unused Check(merge >= 0 && board_effects[merge].stars == ((1 << direction) | (1 << side)), "the whole group pulses")
+
+        // Moving a star without contact does not animate a disappearance.
+        game = initial
+        game.objects[partner] = 0
+        board_seen = false
+        BoardEffectsNotice(*game, 12.0)
+        unused Check(ShoveyMove(*game, direction), "a lone star moves")
+        BoardEffectsNotice(*game, 12.1)
+        unused Check(Merge() < 0 && game.objects[meeting] == 19, "a lone star does not pulse")
+    }
+}
+
+ChargeEffects :: () -> s32 {
+    count: s32 = 0
+    for i: 0..BOARD_EFFECTS - 1 { if board_effects[i].kind == 4 { count += 1 } }
+    return count
+}
+
+FirstCharge :: () {
+    start := ShoveyGame.{.level = 1, .player = 13}
+    start.ground[14] = 27
+    start.ground[15] = 27
+    game := start
+    board_seen = false
+    BoardEffectsNotice(*game, 10.0)
+    unused Check(ChargeEffects() == 0, "no burst before the pickup")
+    unused Check(ShoveyMove(*game, 2) && !game.lost && (game.powers & SHOVEY_CHARGED) != 0, "the first touch charges Shovey")
+    BoardEffectsNotice(*game, 10.1)
+    unused Check(ChargeEffects() == 1 && board_effects[0].at == 14 && board_effects[0].start == 10.1, "the pickup bursts")
+    BoardEffectsNotice(*game, 10.2)
+    unused Check(ChargeEffects() == 1 && board_effects[0].start == 10.1, "an unchanged frame keeps the burst")
+
+    // The next touch loses and replaces the pickup with the fatal shock.
+    unused Check(ShoveyMove(*game, 2) && game.lost, "a second touch loses")
+    BoardEffectsNotice(*game, 10.3)
+    unused Check(ChargeEffects() == 0, "the shock replaces the pickup")
+    unused Check(ShockProgress(*game, 10.3) == 0.0, "the shock starts")
+
+    // Undo and restart clear the burst; a fresh touch shows it again.
+    game = start
+    BoardEffectsNotice(*game, 10.4)
+    unused Check(ChargeEffects() == 0, "restart clears the burst")
+    unused Check(ShoveyMove(*game, 2), "the touch after restart is accepted")
+    BoardEffectsNotice(*game, 10.5)
+    unused Check(ChargeEffects() == 1, "a fresh touch bursts again")
+
+    // A second accepted move before drawing must not hide the pickup.
+    game = start
+    BoardEffectsNotice(*game, 11.0)
+    unused Check(ShoveyMove(*game, 2) && ShoveyMove(*game, 3), "two moves before a frame")
+    BoardEffectsNotice(*game, 11.1)
+    unused Check(ChargeEffects() == 1 && !game.lost, "a skipped frame keeps the pickup")
+
+    // Loading an already charged save, or another level, is not a new touch.
+    board_seen = false
+    BoardEffectsNotice(*game, 12.0)
+    unused Check(ChargeEffects() == 0, "a loaded charged save does not burst")
+    game.level += 1
+    game.moves += 1
+    BoardEffectsNotice(*game, 12.1)
+    unused Check(ChargeEffects() == 0, "another level does not burst")
+    board_seen = false
+}
+
+#program_export
+main :: () -> s32 {
+    StarStarts()
+    StarMerges()
+    FirstCharge()
+    failures := TestFailures()
+    if failures > 0 { print("Board effects: % failures\n", failures); return 1 }
+    print("Board effects: star starts, four push directions, group joins, no false pulse, undo/restart, and the first charge's pickup, loss, restart, skipped frames and loaded saves passed\n")
+    return 0
+}
