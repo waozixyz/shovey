@@ -819,3 +819,6 @@ Masso muschioso
 [editor_fern]
 Felce
 ---
+[editor_forest_floor]
+Sottobosco
+---

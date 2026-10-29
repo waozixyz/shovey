@@ -819,3 +819,6 @@ Island
 [editor_fern]
 Папоротник
 ---
+[editor_forest_floor]
+Лесная подстилка
+---

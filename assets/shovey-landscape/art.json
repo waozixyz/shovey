@@ -1128,6 +1128,11 @@
       "sha256": "ef3e390105e1dea0d88f9ce0ac3fa80ee80812e3fd72be90bb139d0bde627cee"
     },
     {
+      "path": "sprites/tile-162.png",
+      "depicts": "landscape presentation of forest floor: dark ground of fallen pine needles and moss",
+      "sha256": "bd2faffe8f0fe2c92191cd79613691ec5235a4251d9ceb7957b54257c318086f"
+    },
+    {
       "path": "sprites/tile-17.png",
       "depicts": "landscape presentation of green paint puddle",
       "sha256": "852c0c22671dee01a2cfb21337b5d6f2ba27749ee899d6b11edc928e738d1004"

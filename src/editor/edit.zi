@@ -156,7 +156,7 @@ EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
 // ---------------------------------------------------------------------------
 // Pieces
 
-EDIT_CLASSIC_PIECES :: 102
+EDIT_CLASSIC_PIECES :: 103
 EDIT_ISLAND_PIECES :: 82
 // Room for either edition's palette.
 EDIT_MOST_PIECES :: 99
@@ -170,7 +170,7 @@ EditPiecesPrepare :: () {
     // Classic's pieces, in palette order.
     classic_kinds: [EDIT_CLASSIC_PIECES]s32 = .[
     EDIT_TILE_BRUSH, EDIT_TILE_BRUSH + 103, EDIT_TILE_BRUSH + 99,
-    EDIT_TILE_BRUSH + 100, EDIT_TILE_BRUSH + 101, EDIT_TILE_BRUSH + 102,
+    EDIT_TILE_BRUSH + 100, EDIT_TILE_BRUSH + 101, EDIT_TILE_BRUSH + 102, EDIT_TILE_BRUSH + 162,
     EDIT_TILE_BRUSH + 12, EDIT_TILE_BRUSH + 14, EDIT_TILE_BRUSH + 95, EDIT_TILE_BRUSH + 127,
     EDIT_TILE_BRUSH + 96, EDIT_TILE_BRUSH + 128, EDIT_TILE_BRUSH + 97, EDIT_TILE_BRUSH + 129, EDIT_TILE_BRUSH + 98, EDIT_TILE_BRUSH + 130,
     10, 7, 9, 18, 1, 2, 3, 4, 5, 6,
@@ -182,7 +182,7 @@ EditPiecesPrepare :: () {
     150, 151, 152, 153, 154, 155, 156, 0]
     classic_names: [EDIT_CLASSIC_PIECES]string = .[
     "editor_floor", "editor_mossy_floor", "editor_slate_floor",
-    "editor_brick_floor", "editor_sandstone_floor", "editor_timber_floor",
+    "editor_brick_floor", "editor_sandstone_floor", "editor_timber_floor", "editor_forest_floor",
     "editor_wall", "editor_mossy_wall", "editor_slate_wall", "editor_mossy_slate_wall",
     "editor_brick_wall", "editor_mossy_brick_wall", "editor_sandstone_wall", "editor_mossy_sandstone_wall", "editor_timber_wall", "editor_mossy_timber_wall",
     "editor_shovey", "editor_home", "editor_crate", "editor_crate_goal",

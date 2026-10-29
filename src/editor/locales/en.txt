@@ -819,3 +819,6 @@ Mossy boulder
 [editor_fern]
 Fern
 ---
+[editor_forest_floor]
+Forest floor
+---

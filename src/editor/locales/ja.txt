@@ -819,3 +819,6 @@ Shovey
 [editor_fern]
 シダ
 ---
+[editor_forest_floor]
+森の地面
+---

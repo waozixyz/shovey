@@ -47,7 +47,7 @@ for level in classic:
     board = cells(level['cells'])
     tiles = cells(level['tiles']) if 'tiles' in level else [0] * CELLS
     decorations = cells(level['decorations']) if 'decorations' in level else [0] * CELLS
-    assert all(kind in {0, *range(57, 72), 12, 14, 4, 5, 6, 47, 48, 49, 76, 77, 78, *range(95, 104), *range(127,131)} for kind in tiles)
+    assert all(kind in {0, *range(57, 72), 12, 14, 4, 5, 6, 47, 48, 49, 76, 77, 78, *range(95, 104), *range(127,131), 162} for kind in tiles)
     assert all(kind in {0, 57, 58, 59, 84, 106, 122, *range(135, 143), *range(158, 162)} for kind in decorations)
     assert board.count(10) == 1, f'Classic {level["number"]}: one Shovey'
     assert board.count(7) + board.count(148) >= 1, f'Classic {level["number"]}: a home or a boat'

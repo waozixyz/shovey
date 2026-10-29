@@ -819,3 +819,6 @@ Shovey
 [editor_fern]
 고사리
 ---
+[editor_forest_floor]
+숲 바닥
+---

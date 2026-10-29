@@ -204,6 +204,8 @@ SHOVEY_STUMP :: 142
 SHOVEY_PINE :: 158
 SHOVEY_MOSSY_BOULDER :: 160
 SHOVEY_FERN :: 161
+// Dark forest ground: a floor like grass, drawn under woods.
+SHOVEY_FOREST_FLOOR :: 162
 ShoveyMossColor :: (kind: s32) -> s32 {
     if kind == 14 { return 0 }
     if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return kind - SHOVEY_MOSS_WALL + 1 }
@@ -285,7 +287,8 @@ ShoveyLoad :: (game: *ShoveyGame, level: s32) -> bool {
 // 480 digits of independent floor tiles. Tiles never change puzzle rules.
 ShoveyTerrain :: (kind: s32) -> bool {
     return kind == 0 || kind == 12 || ShoveyMossColor(kind) >= 0 || ShoveyPitColor(kind) > 0 ||
-    kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 103)
+    kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 103) ||
+    kind == SHOVEY_FOREST_FLOOR
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
@@ -293,7 +296,9 @@ ShoveyDecoration :: (kind: s32) -> bool {
     return kind == 0 || (kind >= 57 && kind <= 59) || (kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_LILY_PADS) || kind == SHOVEY_FERN ||
     ShoveyBlockingDecoration(kind)
 }
-ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) }
+ShoveyCosmeticTile :: (kind: s32) -> bool {
+    return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) || kind == SHOVEY_FOREST_FLOOR
+}
 ShoveyDefaultTile :: (kind: s32) -> s32 {
     return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else ifx kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE then 64 else 0
 }

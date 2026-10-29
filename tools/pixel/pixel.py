@@ -1434,6 +1434,7 @@ def sprites():
         'tile-159': ('fallen log: a mossy fallen tree trunk; blocks movement and laser beams', native('fallen-log')),
         'tile-160': ('mossy boulder: a grey stone capped with moss; blocks movement and laser beams', native('mossy-boulder')),
         'tile-161': ('ferns: a low clump of green fern fronds on the floor (decoration)', native('fern')),
+        'tile-162': ('forest floor: dark ground of fallen pine needles and moss', native('forest-floor')),
         'tile-140': ('flower pot: terracotta pot of pink, yellow and white flowers; blocks movement', native('flower-pot')),
         'tile-141': ('barrel: an upright wooden barrel with iron hoops; blocks movement', native('barrel')),
         'tile-142': ('tree stump: a cut stump with rings and a green sprout; blocks movement', native('tree-stump')),

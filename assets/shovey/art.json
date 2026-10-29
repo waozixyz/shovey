@@ -623,6 +623,11 @@
       "sha256": "ef3e390105e1dea0d88f9ce0ac3fa80ee80812e3fd72be90bb139d0bde627cee"
     },
     {
+      "path": "sprites/tile-162.png",
+      "depicts": "forest floor: dark ground of fallen pine needles and moss",
+      "sha256": "bd2faffe8f0fe2c92191cd79613691ec5235a4251d9ceb7957b54257c318086f"
+    },
+    {
       "path": "sprites/tile-140.png",
       "depicts": "flower pot: terracotta pot of pink, yellow and white flowers; blocks movement",
       "sha256": "157b6c4085773cf62db2b2c3c19a3d5bf9ef102cddf9e88fee5750ccc8948958"

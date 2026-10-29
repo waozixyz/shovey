@@ -819,3 +819,6 @@ Roca con musgo
 [editor_fern]
 Helecho
 ---
+[editor_forest_floor]
+Suelo de bosque
+---

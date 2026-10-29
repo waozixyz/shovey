@@ -745,7 +745,7 @@ PrivateSprite :: (kind: s32) -> s32 {
     if ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER { return SPRITE_LASER + kind - SHOVEY_MIRROR_NE }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
-    if kind >= SHOVEY_PINE && kind <= SHOVEY_FERN { return SPRITE_FOREST + kind - SHOVEY_PINE }
+    if kind >= SHOVEY_PINE && kind <= SHOVEY_FOREST_FLOOR { return SPRITE_FOREST + kind - SHOVEY_PINE }
     color := ShoveyGateColor(kind)
     if color >= 0 {
         open := ShoveyGateStartsOpen(kind)
@@ -2626,9 +2626,9 @@ Palette :: (area: Rectangle) {
             selected = ifx tab == 0 then 256 else 0
         }
     }
-    tile_kinds: [29]s32 = .[0,103,99,100,101,102,77,78,60,61,70,64,65,4,5,6,47,48,49,12,14,95,127,96,128,97,129,98,130]
-    tile_names: [29]string = .["Stone floor","Mossy floor","Slate floor","Brick floor","Sandstone floor","Timber floor","Grass","Sand","Checker","Stripes","Ice","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Stone wall","Mossy stone","Slate wall","Mossy slate","Brick wall","Mossy brick","Sandstone wall","Mossy sand","Timber wall","Mossy timber"]
-    count: s32 = ifx palette_tab == 0 then 29 else PALETTE
+    tile_kinds: [30]s32 = .[0,103,99,100,101,102,77,162,78,60,61,70,64,65,4,5,6,47,48,49,12,14,95,127,96,128,97,129,98,130]
+    tile_names: [30]string = .["Stone floor","Mossy floor","Slate floor","Brick floor","Sandstone floor","Timber floor","Grass","Forest floor","Sand","Checker","Stripes","Ice","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Stone wall","Mossy stone","Slate wall","Mossy slate","Brick wall","Mossy brick","Sandstone wall","Mossy sand","Timber wall","Mossy timber"]
+    count: s32 = ifx palette_tab == 0 then 30 else PALETTE
     visible_count: s32 = 0
     for index: cast(s32)0..count - 1 {
         kind := ifx palette_tab == 0 then tile_kinds[index] else palette_kinds[index]

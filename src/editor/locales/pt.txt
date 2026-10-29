@@ -819,3 +819,6 @@ Pedra com musgo
 [editor_fern]
 Samambaia
 ---
+[editor_forest_floor]
+Chão de floresta
+---
