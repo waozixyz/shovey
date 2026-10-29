@@ -129,7 +129,8 @@ jobs:
           test -n "$tag"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
           live=$(curl -fsS https://shovey.waozi.xyz/build.json | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' || true)
-          if [ "$GITHUB_EVENT_NAME" = workflow_run ] && [ "$live" = "${tag#v}" ]; then
+          # The site changes with each release; a manual run rebuilds it anyway.
+          if [ "$GITHUB_EVENT_NAME" != workflow_dispatch ] && [ "$live" = "${tag#v}" ]; then
             echo "::notice title=Site::shovey.waozi.xyz already runs Shovey $live"
             echo 'publish=false' >> "$GITHUB_OUTPUT"
           else
