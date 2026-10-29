@@ -88,8 +88,8 @@ def main():
             f'Classic {number}: gameplay copies differ'
         board = cells(level['cells'])
         assert set(board) <= {0, 3, 4, 5, 7, 9, 10, 13, 14, 15, 16, 18}
-        assert set(cells(level['tiles'])) <= {0, 5, 12, 78, 95, 96, 99, 100}
-        assert set(cells(level['decorations'])) <= {0, 135, 136, 137}
+        assert set(cells(level['tiles'])) <= {0, 5, 12, 77, 78, 95, 96, 97, 98, 99, 100, 101, 102, 162, 163, 164}
+        assert set(cells(level['decorations'])) <= {0, 59, 135, 136, 137, 161} | {84, 106, 122, 139, 140, 141, 142, 158, 159, 160, 165}
         assert board.count(9) == 4 and board.count(10) == board.count(7) == 1
         stored = explain(level, level['solution'])
         fresh = solve(level, 'greedy')

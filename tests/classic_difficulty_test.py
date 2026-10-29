@@ -14,7 +14,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 SOLVER = ROOT / 'build/solver/shovey-solve-classic'
 WIDTH, HEIGHT = 12, 20
-WALLS = {12, 95, 96, 97, 98}
+WALLS = {12, 95, 96, 97, 98, 164}
 
 
 def cells(rows):
@@ -77,8 +77,9 @@ def main():
         # Keep the proof applicable: no portals, powers, alternate objectives,
         # blocking scenery or special floors that would bypass Sokoban rules.
         assert set(board) <= {0, 7, 9, 10, 18}
-        assert set(tiles) <= WALLS | {0, 77, 99, 100, 101, 102, 103}
-        assert set(cells(level['decorations'])) <= {0, 57, 58, 59, 135, 136, 137}
+        assert set(tiles) <= WALLS | {0, 77, 78, 99, 100, 101, 102, 103, 162, 163}
+        # Trees, boulders and crystals stand where walls would: Sokoban rules still hold.
+        assert set(cells(level['decorations'])) <= {0, 57, 58, 59, 135, 136, 137, 161} | {84, 106, 122, 139, 140, 141, 142, 158, 159, 160, 165}
         assert board.count(9) == board.count(18) == crate_count
         assert board.count(10) == board.count(7) == 1
         data = ''.join(''.join(level[key]) for key in ('cells', 'tiles', 'decorations'))

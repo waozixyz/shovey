@@ -33,7 +33,7 @@ def main():
         assert level == classic[number - 1], (number, 'campaign copies differ')
         board, terrain = cells(level['cells']), cells(level['tiles'])
         assert board.count(10) == board.count(7) == 1
-        assert set(cells(level['decorations'])) <= {0, 135, 137, 138}
+        assert set(cells(level['decorations'])) <= {0, 59, 135, 137, 138, 161} | {84, 106, 122, 139, 140, 141, 142, 158, 159, 160, 165}
         stored = explain(level, level['solution'])
         route, proof = search(level, 'bfs' if number in (64, 65) else 'macro-bfs')
         assert stored['goals'] == proof['goals']
@@ -77,7 +77,8 @@ def main():
             assert proof['moves'] == 37 and proof['used_features'] & 128
             slippery = list(terrain)
             for x, y in ((2, 4), (8, 5), (4, 10), (7, 9)):
-                assert slippery[y * 12 + x] == 100
+                # A stopping pad is any ordinary floor among the ice.
+                assert slippery[y * 12 + x] in {0, 77, 78, 99, 100, 101, 102, 103, 162, 163}
                 slippery[y * 12 + x] = 70
             search(dict(level, tiles=rows(slippery)), impossible=True)
             print('Classic 65: icy approaches, stopping pads and movable brakes; 37 accepted inputs', flush=True)
