@@ -1,11 +1,11 @@
 {
   "generator": "tools/pixel/editor_card.zi (make editor-card)",
-  "method": "Composed with Kryon from Shovey Classic's sprites and Shovey Island's tiles, drawn on a private display and captured as PNG.",
+  "method": "Composed with Kryon from Shovey Classic's sprites, drawn on a private display and captured as PNG.",
   "files": [
     {
       "path": "preview.png",
-      "sha256": "1846b823110fffe82a3dbb319960ce768eefc16699d507d48b8608151eaff430",
-      "depicts": "Shovey Editor card: a Classic courtyard being built, with crates, balls, pits, a key and its lock, its palette of pieces below with the crate chosen, and a small island with meadow, a statue and a hut beside its own palette"
+      "sha256": "bcbf63563187f9dcdb6c7580f638e2fb2770b221240ee5699e54dc3c00be172c",
+      "depicts": "Shovey Editor card: a Classic courtyard being built, with crates, balls, pits, a key and its lock, its palette of pieces below with the crate chosen, and more of the palette beside it"
     }
   ]
 }

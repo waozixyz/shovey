@@ -18,9 +18,6 @@
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 Твои уровни: {n}
 ---
@@ -171,9 +168,6 @@ Island
 [editor_ready_classic]
 Всё готово. Иди домой!
 ---
-[editor_ready_island]
-Все цели выполнены. Войди в хижину снизу.
----
 [editor_copy]
 Копировать
 ---
@@ -191,9 +185,6 @@ Island
 ---
 [editor_classic_levels]
 Мои уровни Classic
----
-[editor_island_levels]
-Мои уровни Island
 ---
 [editor_publish_note]
 Поделись своими доказанными уровнями одной коллекцией.
@@ -447,14 +438,8 @@ Island
 [editor_mirror_shovey]
 Зеркальный Пуши
 ---
-[editor_hut]
-Хижина
----
 [editor_water]
 Вода
----
-[editor_sand]
-Песок
 ---
 [editor_meadow]
 Луг
@@ -462,224 +447,14 @@ Island
 [editor_clear]
 Убрать предмет
 ---
-[editor_pebbles]
-Галька
----
-[editor_jade_bed]
-Клумба с нефритовыми цветами
----
-[editor_red_bed]
-Клумба с красными цветами
----
-[editor_barrel_spot]
-Место для бочки
----
-[editor_red_spot]
-Место для красной статуи
----
-[editor_blue_spot]
-Место для синей статуи
----
-[editor_green_spot]
-Место для зелёной статуи
----
-[editor_sunken_crate]
-Затонувший ящик
----
-[editor_spike_plate]
-Плита с шипами
----
-[editor_well]
-Колодец
----
-[editor_farm]
-Грядка
----
-[editor_planted]
-Засеянная грядка
----
-[editor_blast_spot]
-Место взрыва
----
-[editor_item_teleporter]
-Телепорт для предметов
----
-[editor_raft]
-Плот
----
-[editor_ice]
-Тонкий лёд
----
-[editor_watch_plate]
-Плита-страж
----
-[editor_hidden_path]
-Скрытая тропа
----
-[editor_channel]
-Желоб для кокосов
----
-[editor_channel_end]
-Конец желоба
----
-[editor_yellow_ring]
-Кольцо жёлтых цветов
----
-[editor_red_ring]
-Кольцо красных цветов
----
 [editor_barrel]
 Бочка
----
-[editor_red_statue]
-Красная статуя
----
-[editor_blue_statue]
-Синяя статуя
----
-[editor_green_statue]
-Зелёная статуя
----
-[editor_palm]
-Пальма
----
-[editor_coconut_palm]
-Кокосовая пальма
 ---
 [editor_boulder]
 Валун
 ---
-[editor_snail]
-Улитка
----
-[editor_buoy]
-Буй
----
-[editor_sea_star]
-Морская звезда
----
-[editor_baby_crab]
-Крабик
----
-[editor_mother_crab]
-Мама-краб
----
-[editor_happy_crab]
-Довольная мама-краб
----
-[editor_chest]
-Сундук с сокровищами
----
-[editor_seed]
-Семя
----
-[editor_bottle]
-Бутылка
----
-[editor_coconut]
-Кокос
----
-[editor_coconut_hole]
-Яма для кокоса
----
-[editor_bomb]
-Бомба
----
-[editor_spring]
-Цветок-пружина
----
-[editor_slingshot]
-Рогатка
----
-[editor_leaf_up]
-Лист вверх
----
-[editor_leaf_right]
-Лист вправо
----
-[editor_leaf_down]
-Лист вниз
----
-[editor_leaf_left]
-Лист влево
----
-[editor_turner_up]
-Поворот листьев, вверх
----
-[editor_turner_right]
-Поворот листьев, вправо
----
-[editor_turner_down]
-Поворот листьев, вниз
----
-[editor_turner_left]
-Поворот листьев, влево
----
-[editor_pearl]
-Жемчужина
----
 [editor_lantern]
 Каменный фонарь
----
-[editor_clam]
-Моллюск
----
-[editor_coin]
-Монета
----
-[editor_pirate]
-Пират
----
-[editor_stall]
-Лавка пирата
----
-[editor_spikes]
-Шипы
----
-[editor_red_shell]
-Сердитая красная ракушка
----
-[editor_blue_shell]
-Сонная синяя ракушка
----
-[editor_yellow_shell]
-Весёлая жёлтая ракушка
----
-[editor_stone_1]
-Камень с числом 1
----
-[editor_stone_2]
-Камень с числом 2
----
-[editor_stone_3]
-Камень с числом 3
----
-[editor_stone_4]
-Камень с числом 4
----
-[editor_stone_5]
-Камень с числом 5
----
-[editor_yellow_flower]
-Жёлтый цветок
----
-[editor_red_flower]
-Красный цветок
----
-[editor_octopus]
-Осьминог
----
-[editor_string_post]
-Столбик для нити
----
-[editor_shell_turning]
-Ракушка меняет цвет
----
-[editor_yellow_turning]
-Ракушка желтеет
----
-[editor_ground]
-Местность
 ---
 [editor_object]
 Предмет

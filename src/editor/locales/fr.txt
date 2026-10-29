@@ -18,9 +18,6 @@ Choisis l’édition dont tu veux voir, créer ou modifier les niveaux.
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 Tes niveaux : {n}
 ---
@@ -171,9 +168,6 @@ Trop de charge ! Recommence ou annule.
 [editor_ready_classic]
 Tout est prêt. Rentre à la maison !
 ---
-[editor_ready_island]
-Objectifs remplis. Entre dans la hutte par le bas.
----
 [editor_copy]
 Copier
 ---
@@ -191,9 +185,6 @@ Trop de niveaux pour un seul export.
 ---
 [editor_classic_levels]
 Mes niveaux Classic
----
-[editor_island_levels]
-Mes niveaux Island
 ---
 [editor_publish_note]
 Partage tes niveaux prouvés en une collection.
@@ -447,14 +438,8 @@ Bloc vert
 [editor_mirror_shovey]
 Shovey miroir
 ---
-[editor_hut]
-Hutte
----
 [editor_water]
 Eau
----
-[editor_sand]
-Sable
 ---
 [editor_meadow]
 Prairie
@@ -462,224 +447,14 @@ Prairie
 [editor_clear]
 Retirer l’objet
 ---
-[editor_pebbles]
-Galets
----
-[editor_jade_bed]
-Parterre de fleurs jade
----
-[editor_red_bed]
-Parterre de fleurs rouges
----
-[editor_barrel_spot]
-Emplacement de tonneau
----
-[editor_red_spot]
-Emplacement de statue rouge
----
-[editor_blue_spot]
-Emplacement de statue bleue
----
-[editor_green_spot]
-Emplacement de statue verte
----
-[editor_sunken_crate]
-Caisse coulée
----
-[editor_spike_plate]
-Plaque à pointes
----
-[editor_well]
-Puits
----
-[editor_farm]
-Champ
----
-[editor_planted]
-Champ planté
----
-[editor_blast_spot]
-Point d’explosion
----
-[editor_item_teleporter]
-Téléporteur d’objets
----
-[editor_raft]
-Radeau
----
-[editor_ice]
-Glace fine
----
-[editor_watch_plate]
-Plaque de guet
----
-[editor_hidden_path]
-Chemin caché
----
-[editor_channel]
-Rigole à noix de coco
----
-[editor_channel_end]
-Bout de rigole
----
-[editor_yellow_ring]
-Cercle de fleurs jaunes
----
-[editor_red_ring]
-Cercle de fleurs rouges
----
 [editor_barrel]
 Tonneau
----
-[editor_red_statue]
-Statue rouge
----
-[editor_blue_statue]
-Statue bleue
----
-[editor_green_statue]
-Statue verte
----
-[editor_palm]
-Palmier
----
-[editor_coconut_palm]
-Cocotier
 ---
 [editor_boulder]
 Rocher
 ---
-[editor_snail]
-Escargot
----
-[editor_buoy]
-Bouée
----
-[editor_sea_star]
-Étoile de mer
----
-[editor_baby_crab]
-Bébé crabe
----
-[editor_mother_crab]
-Maman crabe
----
-[editor_happy_crab]
-Maman crabe heureuse
----
-[editor_chest]
-Coffre au trésor
----
-[editor_seed]
-Graine
----
-[editor_bottle]
-Bouteille
----
-[editor_coconut]
-Noix de coco
----
-[editor_coconut_hole]
-Trou à noix de coco
----
-[editor_bomb]
-Bombe
----
-[editor_spring]
-Fleur ressort
----
-[editor_slingshot]
-Lance-pierre
----
-[editor_leaf_up]
-Feuille vers le haut
----
-[editor_leaf_right]
-Feuille vers la droite
----
-[editor_leaf_down]
-Feuille vers le bas
----
-[editor_leaf_left]
-Feuille vers la gauche
----
-[editor_turner_up]
-Tourne-feuille, haut
----
-[editor_turner_right]
-Tourne-feuille, droite
----
-[editor_turner_down]
-Tourne-feuille, bas
----
-[editor_turner_left]
-Tourne-feuille, gauche
----
-[editor_pearl]
-Perle
----
 [editor_lantern]
 Lanterne de pierre
----
-[editor_clam]
-Huître perlière
----
-[editor_coin]
-Pièce
----
-[editor_pirate]
-Pirate
----
-[editor_stall]
-Étal du pirate
----
-[editor_spikes]
-Pointes
----
-[editor_red_shell]
-Coquillage rouge grognon
----
-[editor_blue_shell]
-Coquillage bleu endormi
----
-[editor_yellow_shell]
-Coquillage jaune joyeux
----
-[editor_stone_1]
-Pierre numérotée 1
----
-[editor_stone_2]
-Pierre numérotée 2
----
-[editor_stone_3]
-Pierre numérotée 3
----
-[editor_stone_4]
-Pierre numérotée 4
----
-[editor_stone_5]
-Pierre numérotée 5
----
-[editor_yellow_flower]
-Fleur jaune
----
-[editor_red_flower]
-Fleur rouge
----
-[editor_octopus]
-Pieuvre
----
-[editor_string_post]
-Poteau de ficelle
----
-[editor_shell_turning]
-Coquillage qui change de couleur
----
-[editor_yellow_turning]
-Coquillage qui devient jaune
----
-[editor_ground]
-Terrain
 ---
 [editor_object]
 Objet

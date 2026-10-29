@@ -240,12 +240,6 @@
 [shovey_editor_art]
 Шови собирает поле из парящих ящиков, шаров и плиток
 ---
-[shovey_island]
-Остров
----
-[shovey_island_art]
-Shovey на тропическом пляже с крабом и кокосом
----
 [shovey_coming_soon]
 Скоро
 ---

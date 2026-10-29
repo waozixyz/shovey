@@ -615,7 +615,7 @@
 
 ## [0.6.39] - 2026-10-22
 
-- The integrated editor follows screen orientation while painting and testing Classic and Island levels.
+- The integrated editor follows screen orientation while painting and testing levels.
 - Keep controls aligned with the board when rotating.
 ## [0.6.38] - 2026-10-22
 
@@ -774,7 +774,7 @@
 
 - Use the Back button to return from play or level selection.
 - Older Inner Breeze versions keep their existing Back button.
-- The approved Classic campaign ends at level 19; Island remains unavailable.
+- The approved Classic campaign ends at level 19.
 ## [0.6.10] - 2026-10-21
 
 - Return to the Shovey chooser with a clearly labelled Back button from the board or level selector.

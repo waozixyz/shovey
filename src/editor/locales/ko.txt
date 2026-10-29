@@ -18,9 +18,6 @@
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 내 단계: {n}
 ---
@@ -171,9 +168,6 @@ Classic을 플레이해 이 레벨을 잠금 해제하세요.
 [editor_ready_classic]
 준비 끝. 집으로 가세요!
 ---
-[editor_ready_island]
-목표를 모두 이뤘습니다. 오두막에 아래쪽에서 들어가세요.
----
 [editor_copy]
 복사
 ---
@@ -191,9 +185,6 @@ Classic을 플레이해 이 레벨을 잠금 해제하세요.
 ---
 [editor_classic_levels]
 내 Classic 단계
----
-[editor_island_levels]
-내 Island 단계
 ---
 [editor_publish_note]
 증명된 단계를 하나의 모음으로 공유합니다.
@@ -447,14 +438,8 @@ Shovey
 [editor_mirror_shovey]
 거울 Shovey
 ---
-[editor_hut]
-오두막
----
 [editor_water]
 물
----
-[editor_sand]
-모래
 ---
 [editor_meadow]
 풀밭
@@ -462,224 +447,14 @@ Shovey
 [editor_clear]
 물건 치우기
 ---
-[editor_pebbles]
-조약돌
----
-[editor_jade_bed]
-비취색 꽃밭
----
-[editor_red_bed]
-빨간 꽃밭
----
-[editor_barrel_spot]
-통 자리
----
-[editor_red_spot]
-빨간 조각상 자리
----
-[editor_blue_spot]
-파란 조각상 자리
----
-[editor_green_spot]
-초록 조각상 자리
----
-[editor_sunken_crate]
-가라앉은 상자
----
-[editor_spike_plate]
-가시 판
----
-[editor_well]
-우물
----
-[editor_farm]
-밭
----
-[editor_planted]
-씨 뿌린 밭
----
-[editor_blast_spot]
-폭발 지점
----
-[editor_item_teleporter]
-물건 순간이동기
----
-[editor_raft]
-뗏목
----
-[editor_ice]
-얇은 얼음
----
-[editor_watch_plate]
-감시 판
----
-[editor_hidden_path]
-숨은 길
----
-[editor_channel]
-코코넛 도랑
----
-[editor_channel_end]
-도랑 끝
----
-[editor_yellow_ring]
-노란 꽃 고리
----
-[editor_red_ring]
-빨간 꽃 고리
----
 [editor_barrel]
 통
----
-[editor_red_statue]
-빨간 조각상
----
-[editor_blue_statue]
-파란 조각상
----
-[editor_green_statue]
-초록 조각상
----
-[editor_palm]
-야자나무
----
-[editor_coconut_palm]
-코코넛 야자
 ---
 [editor_boulder]
 바위
 ---
-[editor_snail]
-달팽이
----
-[editor_buoy]
-부표
----
-[editor_sea_star]
-불가사리
----
-[editor_baby_crab]
-아기 게
----
-[editor_mother_crab]
-엄마 게
----
-[editor_happy_crab]
-기뻐하는 엄마 게
----
-[editor_chest]
-보물 상자
----
-[editor_seed]
-씨앗
----
-[editor_bottle]
-병
----
-[editor_coconut]
-코코넛
----
-[editor_coconut_hole]
-코코넛 구멍
----
-[editor_bomb]
-폭탄
----
-[editor_spring]
-용수철 꽃
----
-[editor_slingshot]
-새총
----
-[editor_leaf_up]
-위쪽 잎
----
-[editor_leaf_right]
-오른쪽 잎
----
-[editor_leaf_down]
-아래쪽 잎
----
-[editor_leaf_left]
-왼쪽 잎
----
-[editor_turner_up]
-잎 돌리개, 위
----
-[editor_turner_right]
-잎 돌리개, 오른쪽
----
-[editor_turner_down]
-잎 돌리개, 아래
----
-[editor_turner_left]
-잎 돌리개, 왼쪽
----
-[editor_pearl]
-진주
----
 [editor_lantern]
 석등
----
-[editor_clam]
-조개
----
-[editor_coin]
-동전
----
-[editor_pirate]
-해적
----
-[editor_stall]
-해적 가판대
----
-[editor_spikes]
-가시
----
-[editor_red_shell]
-심술난 빨간 조개껍데기
----
-[editor_blue_shell]
-졸린 파란 조개껍데기
----
-[editor_yellow_shell]
-신난 노란 조개껍데기
----
-[editor_stone_1]
-숫자 돌 1
----
-[editor_stone_2]
-숫자 돌 2
----
-[editor_stone_3]
-숫자 돌 3
----
-[editor_stone_4]
-숫자 돌 4
----
-[editor_stone_5]
-숫자 돌 5
----
-[editor_yellow_flower]
-노란 꽃
----
-[editor_red_flower]
-빨간 꽃
----
-[editor_octopus]
-문어
----
-[editor_string_post]
-실 말뚝
----
-[editor_shell_turning]
-색이 바뀌는 조개껍데기
----
-[editor_yellow_turning]
-노랗게 바뀌는 조개껍데기
----
-[editor_ground]
-지형
 ---
 [editor_object]
 물건

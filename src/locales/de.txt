@@ -240,12 +240,6 @@ Editor
 [shovey_editor_art]
 Shovey baut ein Rätselbrett aus schwebenden Kisten, Kugeln und Platten
 ---
-[shovey_island]
-Insel
----
-[shovey_island_art]
-Shovey an einem tropischen Strand mit einer Krabbe und einer Kokosnuss
----
 [shovey_coming_soon]
 Demnächst
 ---

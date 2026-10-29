@@ -1,7 +1,6 @@
-// Draws the Shovey Editor's game card from the editions' own pictures: a
-// Classic board being built beside its pieces, and a small island with
-// its pieces. Run from Shovey's root on a display (make editor-card runs it
-// on a private one):
+// Draws the Shovey Editor's game card from Classic's own pictures: a board
+// being built beside its pieces. Run from Shovey's root on a display (make
+// editor-card runs it on a private one):
 //
 //     KRYON_CAPTURE_PATH=assets/shovey-editor/preview.png build/card/editor-card
 #import "c_string"
@@ -19,9 +18,6 @@
 #import "tile_map"
 #import, file "../../src/engine.zi";
 #import, file "../../src/shovey_board.zi";
-#import, file "../../src/island/island_engine.zi";
-#import, file "../../src/island/island_board.zi";
-#import, file "../../src/editor/coast.zi";
 #import, file "../../src/editor/edit.zi";
 
 CARD_WIDTH :: 480
@@ -29,14 +25,12 @@ CARD_HEIGHT :: 288
 
 session: Session;
 classic: ShoveyGame;
-island: IslandGame;
 names: [SPRITE_COUNT]string;
-island_names: [ISLAND_PICTURES]string;
 
 // A courtyard half built: crates for their corners, balls for their pits,
 // a key for its lock, and Shovey on the way.
 ClassicCard :: () {
-    board := EditNewBoard(false)
+    board := EditNewBoard()
     pieces: [16]s32 = .[9, 23, 18, 36, 9, 63, 18, 96, 1, 66, 4, 112, 2, 129, 5, 133]
     for at: cast(s32)0..7 { unused EditPaint(*board, pieces[at * 2], pieces[at * 2 + 1]) }
     walls: [10]s32 = .[47, 67, 87, 107, 127, 52, 72, 92, 172, 173]
@@ -51,23 +45,6 @@ ClassicCard :: () {
         if kind == CLASSIC_SHOVEY { classic.player = at }
         else if ShoveyMovable(kind) { classic.objects[at] = kind }
         else { classic.ground[at] = kind }
-    }
-}
-
-// The editor's new island with a meadow, a statue for its spot and a palm.
-IslandCard :: () {
-    board := EditNewBoard(true)
-    for at: cast(s32)108..110 { unused EditPaint(*board, 13, at) }
-    unused EditPaint(*board, 1, 75)
-    unused EditPaint(*board, 1, 76)
-    unused EditPaint(*board, 26, 166)
-    unused EditPaint(*board, 61, 146)
-    unused EditPaint(*board, 51, 86)
-    island = IslandGame.{.player = -1, .direction = 3, .spike = -1, .spike_switch = -1, .water_switch = -1}
-    for at: cast(s32)0..EDIT_CELLS - 1 {
-        island.terrain[at] = cast(s32)board.ground[at]
-        object := cast(s32)board.objects[at]
-        if object == ISLAND_SHOVEY { island.player = at } else { island.objects[at] = object }
     }
 }
 
@@ -100,10 +77,10 @@ Draw :: () -> bool {
             .fill = Color.{255, 196, 110, 140}, .radius = 2.0})
     classic_pieces: [7]string = .[SpriteFile(9), SpriteFile(18), SpriteFile(1), SpriteFile(4), SpriteFile(12), SpriteFile(33), SpriteFile(21)]
     Palette(4000, 13.0, 222.0, 7, classic_pieces[:], SpriteFile(0), 0)
-    unused IslandBoard(session, *island, Rectangle.{340.0, 10.0, 130.0, 78.0}, cast(u64)6000, island_names[:], true)
-    island_pieces: [6]string = .[IslandPictureFile(1), IslandPictureFile(13), IslandPictureFile(61), IslandPictureFile(26),
-    IslandPictureFile(51), IslandPictureFile(75)]
-    Palette(8000, 351.0, 104.0, 3, island_pieces[:], IslandPictureFile(1), 1)
+    // More of the palette beside the board: walls, doors, keys and scenery.
+    more_pieces: [12]string = .[SpriteFile(2), SpriteFile(5), SpriteFile(3), SpriteFile(6), SpriteFile(7), SpriteFile(19),
+    SpriteFile(34), SpriteFile(36), SpriteFile(38), SpriteFile(15), SpriteFile(16), SpriteFile(17)]
+    Palette(8000, 351.0, 22.0, 3, more_pieces[:], SpriteFile(0), 4)
     if EndFrame(session) != FrameStatus.FrameOk { return false }
     return EndDesktopFrame()
 }
@@ -112,7 +89,6 @@ Draw :: () -> bool {
 main :: (argc: s32, argv: **u8) -> s32 {
     board_guides = false
     ClassicCard()
-    IslandCard()
     if !OpenDesktopSized(CARD_WIDTH, CARD_HEIGHT) {
         CloseDesktop()
         return 1

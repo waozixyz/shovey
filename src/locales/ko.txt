@@ -240,12 +240,6 @@
 [shovey_editor_art]
 쇼비가 떠다니는 상자와 공, 타일로 퍼즐 판을 만들고 있어요
 ---
-[shovey_island]
-아일랜드
----
-[shovey_island_art]
-게와 코코넛이 있는 열대 해변의 Shovey
----
 [shovey_coming_soon]
 출시 예정
 ---

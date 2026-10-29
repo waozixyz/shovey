@@ -18,9 +18,6 @@ Choose the edition whose levels you want to view, make or edit.
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 Your levels: {n}
 ---
@@ -171,9 +168,6 @@ Too much charge! Restart or undo.
 [editor_ready_classic]
 Everything is ready. Go home!
 ---
-[editor_ready_island]
-All goals met. Enter the hut from below.
----
 [editor_copy]
 Copy
 ---
@@ -191,9 +185,6 @@ Too many levels for one export.
 ---
 [editor_classic_levels]
 My Classic levels
----
-[editor_island_levels]
-My Island levels
 ---
 [editor_publish_note]
 Share your proven levels as one collection.
@@ -447,14 +438,8 @@ Green block
 [editor_mirror_shovey]
 Mirror Shovey
 ---
-[editor_hut]
-Hut
----
 [editor_water]
 Water
----
-[editor_sand]
-Sand
 ---
 [editor_meadow]
 Meadow
@@ -462,224 +447,14 @@ Meadow
 [editor_clear]
 Remove object
 ---
-[editor_pebbles]
-Pebbles
----
-[editor_jade_bed]
-Jade flower bed
----
-[editor_red_bed]
-Red flower bed
----
-[editor_barrel_spot]
-Barrel spot
----
-[editor_red_spot]
-Red statue spot
----
-[editor_blue_spot]
-Blue statue spot
----
-[editor_green_spot]
-Green statue spot
----
-[editor_sunken_crate]
-Sunken crate
----
-[editor_spike_plate]
-Spike plate
----
-[editor_well]
-Well
----
-[editor_farm]
-Farm field
----
-[editor_planted]
-Planted field
----
-[editor_blast_spot]
-Blast spot
----
-[editor_item_teleporter]
-Item teleporter
----
-[editor_raft]
-Raft
----
-[editor_ice]
-Thin ice
----
-[editor_watch_plate]
-Watch plate
----
-[editor_hidden_path]
-Hidden path
----
-[editor_channel]
-Coconut channel
----
-[editor_channel_end]
-Channel end
----
-[editor_yellow_ring]
-Yellow flower ring
----
-[editor_red_ring]
-Red flower ring
----
 [editor_barrel]
 Barrel
----
-[editor_red_statue]
-Red statue
----
-[editor_blue_statue]
-Blue statue
----
-[editor_green_statue]
-Green statue
----
-[editor_palm]
-Palm tree
----
-[editor_coconut_palm]
-Coconut palm
 ---
 [editor_boulder]
 Boulder
 ---
-[editor_snail]
-Snail
----
-[editor_buoy]
-Buoy
----
-[editor_sea_star]
-Sea star
----
-[editor_baby_crab]
-Baby crab
----
-[editor_mother_crab]
-Mother crab
----
-[editor_happy_crab]
-Happy mother crab
----
-[editor_chest]
-Treasure chest
----
-[editor_seed]
-Seed
----
-[editor_bottle]
-Bottle
----
-[editor_coconut]
-Coconut
----
-[editor_coconut_hole]
-Coconut hole
----
-[editor_bomb]
-Bomb
----
-[editor_spring]
-Spring flower
----
-[editor_slingshot]
-Slingshot
----
-[editor_leaf_up]
-Leaf pointing up
----
-[editor_leaf_right]
-Leaf pointing right
----
-[editor_leaf_down]
-Leaf pointing down
----
-[editor_leaf_left]
-Leaf pointing left
----
-[editor_turner_up]
-Leaf turner, up
----
-[editor_turner_right]
-Leaf turner, right
----
-[editor_turner_down]
-Leaf turner, down
----
-[editor_turner_left]
-Leaf turner, left
----
-[editor_pearl]
-Pearl
----
 [editor_lantern]
 Stone lantern
----
-[editor_clam]
-Clam
----
-[editor_coin]
-Coin
----
-[editor_pirate]
-Pirate
----
-[editor_stall]
-Pirate stall
----
-[editor_spikes]
-Spikes
----
-[editor_red_shell]
-Grumpy red shell
----
-[editor_blue_shell]
-Sleepy blue shell
----
-[editor_yellow_shell]
-Happy yellow shell
----
-[editor_stone_1]
-Numbered stone 1
----
-[editor_stone_2]
-Numbered stone 2
----
-[editor_stone_3]
-Numbered stone 3
----
-[editor_stone_4]
-Numbered stone 4
----
-[editor_stone_5]
-Numbered stone 5
----
-[editor_yellow_flower]
-Yellow flower
----
-[editor_red_flower]
-Red flower
----
-[editor_octopus]
-Octopus
----
-[editor_string_post]
-String post
----
-[editor_shell_turning]
-Shell changing colour
----
-[editor_yellow_turning]
-Shell turning yellow
----
-[editor_ground]
-Ground
 ---
 [editor_object]
 Object

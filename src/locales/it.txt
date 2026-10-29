@@ -240,12 +240,6 @@ Apri
 [shovey_editor_art]
 Shovey costruisce un tabellone con casse, palle e piastrelle sospese
 ---
-[shovey_island]
-Isola
----
-[shovey_island_art]
-Shovey su una spiaggia tropicale con un granchio e una noce di cocco
----
 [shovey_coming_soon]
 Prossimamente
 ---

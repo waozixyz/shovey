@@ -240,12 +240,6 @@
 [shovey_editor_art]
 ショーヴィーが浮かぶ木箱やボールやタイルでパズル盤を作っている
 ---
-[shovey_island]
-アイランド
----
-[shovey_island_art]
-カニとココナッツのいる南国のビーチのShovey
----
 [shovey_coming_soon]
 近日公開
 ---

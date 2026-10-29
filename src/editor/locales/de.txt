@@ -18,9 +18,6 @@ Wähle die Ausgabe, deren Level du ansehen, bauen oder bearbeiten möchtest.
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 Deine Level: {n}
 ---
@@ -171,9 +168,6 @@ Zu viel Ladung! Neu starten oder rückgängig machen.
 [editor_ready_classic]
 Alles erledigt. Geh nach Hause!
 ---
-[editor_ready_island]
-Alle Aufgaben erfüllt. Geh von unten in die Hütte.
----
 [editor_copy]
 Kopieren
 ---
@@ -191,9 +185,6 @@ Zu viele Level für einen Export.
 ---
 [editor_classic_levels]
 Meine Classic-Level
----
-[editor_island_levels]
-Meine Island-Level
 ---
 [editor_publish_note]
 Teile deine bewiesenen Level als eine Sammlung.
@@ -447,14 +438,8 @@ Grüner Block
 [editor_mirror_shovey]
 Spiegel-Shovey
 ---
-[editor_hut]
-Hütte
----
 [editor_water]
 Wasser
----
-[editor_sand]
-Sand
 ---
 [editor_meadow]
 Wiese
@@ -462,224 +447,14 @@ Wiese
 [editor_clear]
 Objekt entfernen
 ---
-[editor_pebbles]
-Kiesel
----
-[editor_jade_bed]
-Jadegrünes Blumenbeet
----
-[editor_red_bed]
-Rotes Blumenbeet
----
-[editor_barrel_spot]
-Fassplatz
----
-[editor_red_spot]
-Platz für rote Statue
----
-[editor_blue_spot]
-Platz für blaue Statue
----
-[editor_green_spot]
-Platz für grüne Statue
----
-[editor_sunken_crate]
-Versenkte Kiste
----
-[editor_spike_plate]
-Stachelplatte
----
-[editor_well]
-Brunnen
----
-[editor_farm]
-Acker
----
-[editor_planted]
-Bepflanzter Acker
----
-[editor_blast_spot]
-Sprengstelle
----
-[editor_item_teleporter]
-Gegenstand-Teleporter
----
-[editor_raft]
-Floß
----
-[editor_ice]
-Dünnes Eis
----
-[editor_watch_plate]
-Wächterplatte
----
-[editor_hidden_path]
-Verborgener Weg
----
-[editor_channel]
-Kokosrinne
----
-[editor_channel_end]
-Rinnenende
----
-[editor_yellow_ring]
-Gelber Blumenring
----
-[editor_red_ring]
-Roter Blumenring
----
 [editor_barrel]
 Fass
----
-[editor_red_statue]
-Rote Statue
----
-[editor_blue_statue]
-Blaue Statue
----
-[editor_green_statue]
-Grüne Statue
----
-[editor_palm]
-Palme
----
-[editor_coconut_palm]
-Kokospalme
 ---
 [editor_boulder]
 Felsbrocken
 ---
-[editor_snail]
-Schnecke
----
-[editor_buoy]
-Boje
----
-[editor_sea_star]
-Seestern
----
-[editor_baby_crab]
-Krabbenbaby
----
-[editor_mother_crab]
-Krabbenmutter
----
-[editor_happy_crab]
-Glückliche Krabbenmutter
----
-[editor_chest]
-Schatztruhe
----
-[editor_seed]
-Samen
----
-[editor_bottle]
-Flasche
----
-[editor_coconut]
-Kokosnuss
----
-[editor_coconut_hole]
-Kokosloch
----
-[editor_bomb]
-Bombe
----
-[editor_spring]
-Sprungblume
----
-[editor_slingshot]
-Schleuder
----
-[editor_leaf_up]
-Blatt nach oben
----
-[editor_leaf_right]
-Blatt nach rechts
----
-[editor_leaf_down]
-Blatt nach unten
----
-[editor_leaf_left]
-Blatt nach links
----
-[editor_turner_up]
-Blattdreher, oben
----
-[editor_turner_right]
-Blattdreher, rechts
----
-[editor_turner_down]
-Blattdreher, unten
----
-[editor_turner_left]
-Blattdreher, links
----
-[editor_pearl]
-Perle
----
 [editor_lantern]
 Steinlaterne
----
-[editor_clam]
-Perlmuschel
----
-[editor_coin]
-Münze
----
-[editor_pirate]
-Pirat
----
-[editor_stall]
-Piratenstand
----
-[editor_spikes]
-Stacheln
----
-[editor_red_shell]
-Mürrische rote Muschel
----
-[editor_blue_shell]
-Schläfrige blaue Muschel
----
-[editor_yellow_shell]
-Fröhliche gelbe Muschel
----
-[editor_stone_1]
-Zahlenstein 1
----
-[editor_stone_2]
-Zahlenstein 2
----
-[editor_stone_3]
-Zahlenstein 3
----
-[editor_stone_4]
-Zahlenstein 4
----
-[editor_stone_5]
-Zahlenstein 5
----
-[editor_yellow_flower]
-Gelbe Blume
----
-[editor_red_flower]
-Rote Blume
----
-[editor_octopus]
-Krake
----
-[editor_string_post]
-Schnurpfosten
----
-[editor_shell_turning]
-Muschel wechselt die Farbe
----
-[editor_yellow_turning]
-Muschel wird gelb
----
-[editor_ground]
-Gelände
 ---
 [editor_object]
 Objekt

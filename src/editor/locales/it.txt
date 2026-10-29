@@ -18,9 +18,6 @@ Scegli l’edizione di cui vuoi vedere, creare o modificare i livelli.
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 I tuoi livelli: {n}
 ---
@@ -171,9 +168,6 @@ Troppa carica! Ricomincia o annulla.
 [editor_ready_classic]
 Tutto pronto. Torna a casa!
 ---
-[editor_ready_island]
-Obiettivi raggiunti. Entra nella capanna dal basso.
----
 [editor_copy]
 Copia
 ---
@@ -191,9 +185,6 @@ Troppi livelli per un’unica esportazione.
 ---
 [editor_classic_levels]
 I miei livelli Classic
----
-[editor_island_levels]
-I miei livelli Island
 ---
 [editor_publish_note]
 Condividi i tuoi livelli dimostrati come una raccolta.
@@ -447,14 +438,8 @@ Blocco verde
 [editor_mirror_shovey]
 Shovey specchio
 ---
-[editor_hut]
-Capanna
----
 [editor_water]
 Acqua
----
-[editor_sand]
-Sabbia
 ---
 [editor_meadow]
 Prato
@@ -462,224 +447,14 @@ Prato
 [editor_clear]
 Togli oggetto
 ---
-[editor_pebbles]
-Ciottoli
----
-[editor_jade_bed]
-Aiuola di fiori giada
----
-[editor_red_bed]
-Aiuola di fiori rossi
----
-[editor_barrel_spot]
-Posto per il barile
----
-[editor_red_spot]
-Posto per la statua rossa
----
-[editor_blue_spot]
-Posto per la statua blu
----
-[editor_green_spot]
-Posto per la statua verde
----
-[editor_sunken_crate]
-Cassa affondata
----
-[editor_spike_plate]
-Piastra con punte
----
-[editor_well]
-Pozzo
----
-[editor_farm]
-Campo
----
-[editor_planted]
-Campo seminato
----
-[editor_blast_spot]
-Punto di esplosione
----
-[editor_item_teleporter]
-Teletrasporto per oggetti
----
-[editor_raft]
-Zattera
----
-[editor_ice]
-Ghiaccio sottile
----
-[editor_watch_plate]
-Piastra di vedetta
----
-[editor_hidden_path]
-Sentiero nascosto
----
-[editor_channel]
-Canale per noci di cocco
----
-[editor_channel_end]
-Fine del canale
----
-[editor_yellow_ring]
-Anello di fiori gialli
----
-[editor_red_ring]
-Anello di fiori rossi
----
 [editor_barrel]
 Barile
----
-[editor_red_statue]
-Statua rossa
----
-[editor_blue_statue]
-Statua blu
----
-[editor_green_statue]
-Statua verde
----
-[editor_palm]
-Palma
----
-[editor_coconut_palm]
-Palma da cocco
 ---
 [editor_boulder]
 Masso
 ---
-[editor_snail]
-Lumaca
----
-[editor_buoy]
-Boa
----
-[editor_sea_star]
-Stella marina
----
-[editor_baby_crab]
-Granchietto
----
-[editor_mother_crab]
-Mamma granchio
----
-[editor_happy_crab]
-Mamma granchio felice
----
-[editor_chest]
-Forziere
----
-[editor_seed]
-Seme
----
-[editor_bottle]
-Bottiglia
----
-[editor_coconut]
-Noce di cocco
----
-[editor_coconut_hole]
-Buca per noci di cocco
----
-[editor_bomb]
-Bomba
----
-[editor_spring]
-Fiore a molla
----
-[editor_slingshot]
-Fionda
----
-[editor_leaf_up]
-Foglia verso l’alto
----
-[editor_leaf_right]
-Foglia verso destra
----
-[editor_leaf_down]
-Foglia verso il basso
----
-[editor_leaf_left]
-Foglia verso sinistra
----
-[editor_turner_up]
-Girafoglie, alto
----
-[editor_turner_right]
-Girafoglie, destra
----
-[editor_turner_down]
-Girafoglie, basso
----
-[editor_turner_left]
-Girafoglie, sinistra
----
-[editor_pearl]
-Perla
----
 [editor_lantern]
 Lanterna di pietra
----
-[editor_clam]
-Vongola
----
-[editor_coin]
-Moneta
----
-[editor_pirate]
-Pirata
----
-[editor_stall]
-Bancarella del pirata
----
-[editor_spikes]
-Punte
----
-[editor_red_shell]
-Conchiglia rossa scontrosa
----
-[editor_blue_shell]
-Conchiglia blu assonnata
----
-[editor_yellow_shell]
-Conchiglia gialla allegra
----
-[editor_stone_1]
-Pietra numerata 1
----
-[editor_stone_2]
-Pietra numerata 2
----
-[editor_stone_3]
-Pietra numerata 3
----
-[editor_stone_4]
-Pietra numerata 4
----
-[editor_stone_5]
-Pietra numerata 5
----
-[editor_yellow_flower]
-Fiore giallo
----
-[editor_red_flower]
-Fiore rosso
----
-[editor_octopus]
-Polpo
----
-[editor_string_post]
-Paletto dello spago
----
-[editor_shell_turning]
-Conchiglia che cambia colore
----
-[editor_yellow_turning]
-Conchiglia che diventa gialla
----
-[editor_ground]
-Terreno
 ---
 [editor_object]
 Oggetto

@@ -18,9 +18,6 @@ Vyber edici, jejíž úrovně chceš prohlížet, tvořit nebo upravovat.
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 Tvoje úrovně: {n}
 ---
@@ -171,9 +168,6 @@ Příliš velký náboj! Začni znovu nebo vrať tah.
 [editor_ready_classic]
 Vše je hotovo. Jdi domů!
 ---
-[editor_ready_island]
-Všechny cíle splněny. Vejdi do chýše zespodu.
----
 [editor_copy]
 Kopírovat
 ---
@@ -191,9 +185,6 @@ Na jeden export je to příliš mnoho úrovní.
 ---
 [editor_classic_levels]
 Moje úrovně Classic
----
-[editor_island_levels]
-Moje úrovně Island
 ---
 [editor_publish_note]
 Sdílej své prokázané úrovně jako jednu sbírku.
@@ -447,14 +438,8 @@ Zelený blok
 [editor_mirror_shovey]
 Zrcadlový Shovey
 ---
-[editor_hut]
-Chýše
----
 [editor_water]
 Voda
----
-[editor_sand]
-Písek
 ---
 [editor_meadow]
 Louka
@@ -462,224 +447,14 @@ Louka
 [editor_clear]
 Odebrat předmět
 ---
-[editor_pebbles]
-Oblázky
----
-[editor_jade_bed]
-Záhon nefritových květin
----
-[editor_red_bed]
-Záhon červených květin
----
-[editor_barrel_spot]
-Místo pro sud
----
-[editor_red_spot]
-Místo pro červenou sochu
----
-[editor_blue_spot]
-Místo pro modrou sochu
----
-[editor_green_spot]
-Místo pro zelenou sochu
----
-[editor_sunken_crate]
-Potopená bedna
----
-[editor_spike_plate]
-Deska s bodci
----
-[editor_well]
-Studna
----
-[editor_farm]
-Pole
----
-[editor_planted]
-Oseté pole
----
-[editor_blast_spot]
-Místo výbuchu
----
-[editor_item_teleporter]
-Teleport pro předměty
----
-[editor_raft]
-Vor
----
-[editor_ice]
-Tenký led
----
-[editor_watch_plate]
-Strážní deska
----
-[editor_hidden_path]
-Skrytá cesta
----
-[editor_channel]
-Žlab na kokosy
----
-[editor_channel_end]
-Konec žlabu
----
-[editor_yellow_ring]
-Kruh žlutých květin
----
-[editor_red_ring]
-Kruh červených květin
----
 [editor_barrel]
 Sud
----
-[editor_red_statue]
-Červená socha
----
-[editor_blue_statue]
-Modrá socha
----
-[editor_green_statue]
-Zelená socha
----
-[editor_palm]
-Palma
----
-[editor_coconut_palm]
-Kokosová palma
 ---
 [editor_boulder]
 Balvan
 ---
-[editor_snail]
-Šnek
----
-[editor_buoy]
-Bóje
----
-[editor_sea_star]
-Hvězdice
----
-[editor_baby_crab]
-Krabík
----
-[editor_mother_crab]
-Krabí maminka
----
-[editor_happy_crab]
-Šťastná krabí maminka
----
-[editor_chest]
-Truhla s pokladem
----
-[editor_seed]
-Semínko
----
-[editor_bottle]
-Láhev
----
-[editor_coconut]
-Kokos
----
-[editor_coconut_hole]
-Jamka na kokos
----
-[editor_bomb]
-Bomba
----
-[editor_spring]
-Pružinová květina
----
-[editor_slingshot]
-Prak
----
-[editor_leaf_up]
-List nahoru
----
-[editor_leaf_right]
-List doprava
----
-[editor_leaf_down]
-List dolů
----
-[editor_leaf_left]
-List doleva
----
-[editor_turner_up]
-Otáčeč listů, nahoru
----
-[editor_turner_right]
-Otáčeč listů, doprava
----
-[editor_turner_down]
-Otáčeč listů, dolů
----
-[editor_turner_left]
-Otáčeč listů, doleva
----
-[editor_pearl]
-Perla
----
 [editor_lantern]
 Kamenná lucerna
----
-[editor_clam]
-Škeble
----
-[editor_coin]
-Mince
----
-[editor_pirate]
-Pirát
----
-[editor_stall]
-Pirátský stánek
----
-[editor_spikes]
-Bodce
----
-[editor_red_shell]
-Mrzutá červená mušle
----
-[editor_blue_shell]
-Ospalá modrá mušle
----
-[editor_yellow_shell]
-Veselá žlutá mušle
----
-[editor_stone_1]
-Číslovaný kámen 1
----
-[editor_stone_2]
-Číslovaný kámen 2
----
-[editor_stone_3]
-Číslovaný kámen 3
----
-[editor_stone_4]
-Číslovaný kámen 4
----
-[editor_stone_5]
-Číslovaný kámen 5
----
-[editor_yellow_flower]
-Žlutá květina
----
-[editor_red_flower]
-Červená květina
----
-[editor_octopus]
-Chobotnice
----
-[editor_string_post]
-Kolík na provázek
----
-[editor_shell_turning]
-Mušle mění barvu
----
-[editor_yellow_turning]
-Mušle žloutne
----
-[editor_ground]
-Terén
 ---
 [editor_object]
 Předmět

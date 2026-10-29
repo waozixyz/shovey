@@ -18,9 +18,6 @@ Pilih edisi yang levelnya ingin kamu lihat, buat, atau ubah.
 [editor_classic]
 Classic
 ---
-[editor_island]
-Island
----
 [editor_custom_count]
 Levelmu: {n}
 ---
@@ -171,9 +168,6 @@ Muatan terlalu banyak! Ulangi atau urungkan.
 [editor_ready_classic]
 Semua siap. Pulanglah!
 ---
-[editor_ready_island]
-Semua tujuan tercapai. Masuk ke pondok dari bawah.
----
 [editor_copy]
 Salin
 ---
@@ -191,9 +185,6 @@ Terlalu banyak level untuk satu ekspor.
 ---
 [editor_classic_levels]
 Level Classic-ku
----
-[editor_island_levels]
-Level Island-ku
 ---
 [editor_publish_note]
 Bagikan level-levelmu yang terbukti sebagai satu koleksi.
@@ -447,14 +438,8 @@ Balok hijau
 [editor_mirror_shovey]
 Shovey cermin
 ---
-[editor_hut]
-Pondok
----
 [editor_water]
 Air
----
-[editor_sand]
-Pasir
 ---
 [editor_meadow]
 Padang rumput
@@ -462,224 +447,14 @@ Padang rumput
 [editor_clear]
 Singkirkan benda
 ---
-[editor_pebbles]
-Kerikil
----
-[editor_jade_bed]
-Petak bunga giok
----
-[editor_red_bed]
-Petak bunga merah
----
-[editor_barrel_spot]
-Tempat tong
----
-[editor_red_spot]
-Tempat patung merah
----
-[editor_blue_spot]
-Tempat patung biru
----
-[editor_green_spot]
-Tempat patung hijau
----
-[editor_sunken_crate]
-Peti tenggelam
----
-[editor_spike_plate]
-Pelat duri
----
-[editor_well]
-Sumur
----
-[editor_farm]
-Ladang
----
-[editor_planted]
-Ladang bertanam
----
-[editor_blast_spot]
-Titik ledakan
----
-[editor_item_teleporter]
-Teleporter benda
----
-[editor_raft]
-Rakit
----
-[editor_ice]
-Es tipis
----
-[editor_watch_plate]
-Pelat pengintai
----
-[editor_hidden_path]
-Jalan tersembunyi
----
-[editor_channel]
-Saluran kelapa
----
-[editor_channel_end]
-Ujung saluran
----
-[editor_yellow_ring]
-Lingkaran bunga kuning
----
-[editor_red_ring]
-Lingkaran bunga merah
----
 [editor_barrel]
 Tong
----
-[editor_red_statue]
-Patung merah
----
-[editor_blue_statue]
-Patung biru
----
-[editor_green_statue]
-Patung hijau
----
-[editor_palm]
-Pohon palem
----
-[editor_coconut_palm]
-Pohon kelapa
 ---
 [editor_boulder]
 Batu besar
 ---
-[editor_snail]
-Siput
----
-[editor_buoy]
-Pelampung
----
-[editor_sea_star]
-Bintang laut
----
-[editor_baby_crab]
-Bayi kepiting
----
-[editor_mother_crab]
-Induk kepiting
----
-[editor_happy_crab]
-Induk kepiting yang senang
----
-[editor_chest]
-Peti harta
----
-[editor_seed]
-Benih
----
-[editor_bottle]
-Botol
----
-[editor_coconut]
-Kelapa
----
-[editor_coconut_hole]
-Lubang kelapa
----
-[editor_bomb]
-Bom
----
-[editor_spring]
-Bunga pegas
----
-[editor_slingshot]
-Ketapel
----
-[editor_leaf_up]
-Daun ke atas
----
-[editor_leaf_right]
-Daun ke kanan
----
-[editor_leaf_down]
-Daun ke bawah
----
-[editor_leaf_left]
-Daun ke kiri
----
-[editor_turner_up]
-Pemutar daun, atas
----
-[editor_turner_right]
-Pemutar daun, kanan
----
-[editor_turner_down]
-Pemutar daun, bawah
----
-[editor_turner_left]
-Pemutar daun, kiri
----
-[editor_pearl]
-Mutiara
----
 [editor_lantern]
 Lentera batu
----
-[editor_clam]
-Kerang mutiara
----
-[editor_coin]
-Koin
----
-[editor_pirate]
-Bajak laut
----
-[editor_stall]
-Lapak bajak laut
----
-[editor_spikes]
-Duri
----
-[editor_red_shell]
-Kerang merah yang cemberut
----
-[editor_blue_shell]
-Kerang biru yang mengantuk
----
-[editor_yellow_shell]
-Kerang kuning yang ceria
----
-[editor_stone_1]
-Batu bernomor 1
----
-[editor_stone_2]
-Batu bernomor 2
----
-[editor_stone_3]
-Batu bernomor 3
----
-[editor_stone_4]
-Batu bernomor 4
----
-[editor_stone_5]
-Batu bernomor 5
----
-[editor_yellow_flower]
-Bunga kuning
----
-[editor_red_flower]
-Bunga merah
----
-[editor_octopus]
-Gurita
----
-[editor_string_post]
-Tiang tali
----
-[editor_shell_turning]
-Kerang berganti warna
----
-[editor_yellow_turning]
-Kerang menjadi kuning
----
-[editor_ground]
-Medan
 ---
 [editor_object]
 Benda
