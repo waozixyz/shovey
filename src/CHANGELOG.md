@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.160] - 2026-10-29
+
+- Push mirrors to turn laser beams onto their receivers.
+- New forest scenery: pines, fallen logs, mossy boulders, ferns and forest floor.
+- Runs in Breeze 2.1.62's smaller app format.
+
 ## [0.6.159] - 2026-10-28
 
 - Buy a small 10 Dew pack in the Google Play edition and see each larger pack’s savings per Dew.
