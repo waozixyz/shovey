@@ -2431,9 +2431,16 @@ RefreshMap :: (now: s64) {
 // to edge, or a card per place coloured by its release state with its number.
 // A click opens that place.
 SELECTOR_COLUMNS :: 15
+ISLAND_EDITOR_SCRIPT :: "backup/island-private/open-island-editor.sh"
 SelectorScreen :: (area: Rectangle) {
     rows := (ALL_PLACES + SELECTOR_COLUMNS - 1) / SELECTOR_COLUMNS
     legend_height: float32 = 28.0
+    // The Island editor is private: its button shows only where its script is.
+    if PathExists(ISLAND_EDITOR_SCRIPT) &&
+    Control(62, Rectangle.{area.x + area.width - 300.0, area.y, 96.0, legend_height - 4.0}, "Island", false) {
+        Shell("setsid sh backup/island-private/open-island-editor.sh > backup/island-editor.log 2>&1 < /dev/null &")
+        ActionMessage("Opening the Island editor")
+    }
     if Control(60, Rectangle.{area.x + area.width - 200.0, area.y, 96.0, legend_height - 4.0}, "Map", selector_map) { selector_map = true }
     if Control(61, Rectangle.{area.x + area.width - 100.0, area.y, 96.0, legend_height - 4.0}, "Levels", !selector_map) { selector_map = false }
     if selector_map {
