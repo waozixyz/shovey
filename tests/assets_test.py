@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 143), *range(148, 167))]
 classic += ['gate-open', 'gate-open-0', 'gate-open-1', 'gate-open-2'] + [f'abyss-edge-{mask}' for mask in range(16)]
-classic += [f'lava-edge-{mask}' for mask in range(16)]
+classic += [f'lava-edge-{mask}' for mask in range(16)] + [f'lava-edge-{mask}-{frame}' for mask in range(16) for frame in range(1, 4)]
 classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for facing in ('left', 'up', 'right', 'down')]
 classic += [f'water-{frame}' for frame in range(4)]
 classic += [f'fish-{fish}-{frame}-{facing}' for fish in ('gold', 'koi', 'minnow') for frame in range(4) for facing in ('left', 'up', 'right', 'down')]

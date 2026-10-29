@@ -994,10 +994,14 @@ def hole():
     return abyss_edge(15)
 
 
-def lava_edge(mask):
+LAVA_GLOW = (1.0, 1.08, 1.14, 1.07)
+
+
+def lava_edge(mask, frame=0):
     """Lava deep in a pit: the abyss's cliffs and lips, with molten rock
-    glowing dimly far below instead of darkness."""
-    image = abyss_edge(mask, floor=lava_floor())
+    glowing dimly far below instead of darkness. The four frames drift the
+    molten surface and swell its glow; the rock stays still."""
+    image = abyss_edge(mask, floor=lava_floor(frame))
     # Depth: the lava darkens in the shadow of every rock wall around it.
     px = image.load()
     for y in range(SIZE):
@@ -1015,14 +1019,21 @@ def lava_edge(mask):
     return image
 
 
-def lava_floor():
+def lava_floor(frame=0):
     """The molten surface as seen from the pit's rim: darker and calmer."""
-    lava = native('lava').convert('RGBA')
+    source = native('lava').convert('RGBA')
+    # The texture repeats, so it can drift a little each frame.
+    lava = Image.new('RGBA', (SIZE, SIZE))
+    dx, dy = frame * 2, frame
+    for ox in (-SIZE, 0):
+        for oy in (-SIZE, 0):
+            lava.alpha_composite(source, ((dx % SIZE) + ox, (dy % SIZE) + oy))
+    glow = LAVA_GLOW[frame % len(LAVA_GLOW)]
     px = lava.load()
     for y in range(SIZE):
         for x in range(SIZE):
             r, g, b, a = px[x, y]
-            px[x, y] = (round(r * 0.55), round(g * 0.40), round(b * 0.34), 255)
+            px[x, y] = (min(255, round(r * 0.55 * glow)), min(255, round(g * 0.40 * glow)), min(255, round(b * 0.34 * glow)), 255)
     return lava
 
 
@@ -1524,6 +1535,8 @@ def sprites():
         out[f'abyss-corner-{mask}'] = ('an abyss inner corner: rock walls running on down and the near lip turning', abyss_corner(mask))
         out[f'abyss-edge-{mask}'] = ('abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge', abyss_edge(mask))
         out[f'lava-edge-{mask}'] = ('lava pit: the abyss cliffs with dim molten rock far below', lava_edge(mask))
+        for frame in range(1, 4):
+            out[f'lava-edge-{mask}-{frame}'] = (f'lava pit, molten surface frame {frame + 1} of 4', lava_edge(mask, frame))
     for frame in range(6):
         out[f'burst-{frame}'] = (f'a target struck by a shot, frame {frame + 1} of 6', burst(frame))
     for frame in range(8):

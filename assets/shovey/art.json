@@ -1238,6 +1238,21 @@
       "sha256": "40e74e874cd5a126cfadbe8b78929474dcacadc4cbb9feafd443da3993f45786"
     },
     {
+      "path": "sprites/lava-edge-0-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "b7b14ceb1f94e0928df74a14b98388351d08b0fcb7a79c7eca9c662f61e1749b"
+    },
+    {
+      "path": "sprites/lava-edge-0-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "e06e0382f2ba12ef4822088325064deb7217a30309d4bd34208af7858385c771"
+    },
+    {
+      "path": "sprites/lava-edge-0-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "b591de053b3083e6fade2a7a04700c0065c63461ac1a3084cfad746bc9a57929"
+    },
+    {
       "path": "sprites/grass-edge-1.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "233981030eebb55fdcfa1243b34c1ded889015b7594466600a7bceafc428647f"
@@ -1256,6 +1271,21 @@
       "path": "sprites/lava-edge-1.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "90772914d176a8f5f9a90916c7ee5613730ca33d89f3c4d95651da74b4c085d9"
+    },
+    {
+      "path": "sprites/lava-edge-1-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "d53932d019649d63b5502c0f91ea52054bd77686dc293c3fccd7c20f6ac85f3e"
+    },
+    {
+      "path": "sprites/lava-edge-1-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "5eec73fe758ee5146dabc5a70ebf3cbbe7d81c142bb3d91e5286601b00a90804"
+    },
+    {
+      "path": "sprites/lava-edge-1-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "5eae858025ce4249e3436fd178133b8b3adc75796bf07a75980b55c5b1cf680b"
     },
     {
       "path": "sprites/grass-edge-2.png",
@@ -1278,6 +1308,21 @@
       "sha256": "aab656948d57c6f24c8e43d132693d77831b54fb7e9db47d2cbce6ee8b3c22d8"
     },
     {
+      "path": "sprites/lava-edge-2-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "67cda6ce4dbdac354cb93e440a23012b2f79bcddd751c222cfa238ce543f422a"
+    },
+    {
+      "path": "sprites/lava-edge-2-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "282d476fae4f2842d75d969f590898f51792a0c1e087e682cdd178714203d34f"
+    },
+    {
+      "path": "sprites/lava-edge-2-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "9024dda28677c7c14485e7aac6f41a6e3e0111eca56fc53b2aef53828ca62150"
+    },
+    {
       "path": "sprites/grass-edge-3.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "1c075a52bf73f6bff314be9e434261e4f1c5fd46f2debac0a7b09d5ddfec69a3"
@@ -1296,6 +1341,21 @@
       "path": "sprites/lava-edge-3.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "56000701c5d8271df6e88ca8f13acd3450fc84693322ea83733e69af0170db52"
+    },
+    {
+      "path": "sprites/lava-edge-3-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "5f13b9833964050223394078f0d52c99e24508ba5e46cde4d1fb3d94da11645d"
+    },
+    {
+      "path": "sprites/lava-edge-3-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "23afd075fda7d8c15c70595ffd135072bf9a7efdd4a1157b587b2952ec8ed8fe"
+    },
+    {
+      "path": "sprites/lava-edge-3-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "753a5e5a14e4da5ed16c5bd9d6a15344749ff44cee0559c2813e2728dd8db053"
     },
     {
       "path": "sprites/grass-edge-4.png",
@@ -1318,6 +1378,21 @@
       "sha256": "2807d48b7a0a2e21061d066f3da782760853888a1cc61a013903f73ba39ff3e2"
     },
     {
+      "path": "sprites/lava-edge-4-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "4a76b0cf4723d7ac4ec102d704c137ef34e688741405cb6ac530f16495220db6"
+    },
+    {
+      "path": "sprites/lava-edge-4-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "1dec1d32048ea1858c8f51b78a940ec83f0ab707ac946d7b4e5f327a9b18b12c"
+    },
+    {
+      "path": "sprites/lava-edge-4-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "dd7069df7af611abc51c5d08ff5fac4ed2ed4d379dbe5d3869e568fbb457d590"
+    },
+    {
       "path": "sprites/grass-edge-5.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "7de761abd447f7acefb2190e74a4b3bb03be10b85b9fd538908c6a494533862a"
@@ -1336,6 +1411,21 @@
       "path": "sprites/lava-edge-5.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "c94eedd6ee557fafdfeff259ff5743e50197009e38aaca70e5268cb1bc3feda2"
+    },
+    {
+      "path": "sprites/lava-edge-5-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "533be5b2b06d043b757cffc733543dba2fc41f4dd0651631ab15a35f94fc169e"
+    },
+    {
+      "path": "sprites/lava-edge-5-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "4d2833e75afdf49be5d4b47469a358e5c5c39baba8e3d665bd4fbedee132fb07"
+    },
+    {
+      "path": "sprites/lava-edge-5-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "2ff33da196b20923704d3a5f9a6d13d573db4ff6eb5d588ad8e6a7a99514cce5"
     },
     {
       "path": "sprites/grass-edge-6.png",
@@ -1358,6 +1448,21 @@
       "sha256": "54b31cd9d6fc5e41f02069f5712f386d9462fe6625d9d54cc68dc99fce7a9e56"
     },
     {
+      "path": "sprites/lava-edge-6-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "3c349898cb192792c6935f8481416f839c832e3a0b157b5e27184fdadfd0c135"
+    },
+    {
+      "path": "sprites/lava-edge-6-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "5acf50c180d1295587fb1da356f9c4fb1d0be9f9d3a7cf77233e0c5bbd2abff6"
+    },
+    {
+      "path": "sprites/lava-edge-6-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "e374e5e1e1884f79a33b2169d046fea213c05fb6b1819c6a71d98b2abfda1e32"
+    },
+    {
       "path": "sprites/grass-edge-7.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "c2efdc1cc96f6b62e3ba95c31d517d11194cf88242c347c0b82a20985dcd3330"
@@ -1376,6 +1481,21 @@
       "path": "sprites/lava-edge-7.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "5fe83d640c69cdaa10346509f042ded1ed10d2abd6119c127af32a9ca0286f59"
+    },
+    {
+      "path": "sprites/lava-edge-7-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "bb1f78bc478f51704021e09f8614238c6d9b9639c69bf16e8b95f390e253fab6"
+    },
+    {
+      "path": "sprites/lava-edge-7-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "b84855a2d8191b22648255aec50d20f4f8580490faf8763ca5d9e864478bdc06"
+    },
+    {
+      "path": "sprites/lava-edge-7-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "53495e747780e73e1fe419c4d070e0b892b18126a87655ce6b397c2a5305e828"
     },
     {
       "path": "sprites/grass-edge-8.png",
@@ -1398,6 +1518,21 @@
       "sha256": "f02c99d504d2a530c15f68de9df635110703bee1e0f3b64142a3145729e63d3e"
     },
     {
+      "path": "sprites/lava-edge-8-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "e577fa56df5ca523c423633e9f1298df724a40199233b2c43ee74bcab580f2fb"
+    },
+    {
+      "path": "sprites/lava-edge-8-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "63ada19c78b6e33077f3e418d67de400ec0b1d0c0b5698d0b643183d472a6456"
+    },
+    {
+      "path": "sprites/lava-edge-8-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "277069bf135561417e6be37ad2cfc189f99a1c63b73cc8f71015ca81d03d468f"
+    },
+    {
       "path": "sprites/grass-edge-9.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "8310248343b59f0d4687209f1cb3dc4ce7f4b5a123fb68b5386f89ce7f7e3513"
@@ -1416,6 +1551,21 @@
       "path": "sprites/lava-edge-9.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "3272e03e82c790958a59011ed986e96610f12920f441a7e49903fccbde476442"
+    },
+    {
+      "path": "sprites/lava-edge-9-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "5df5fe0497afc161390f0ffc4d4bb9194ad1c140704c566bf4ce4e2403900475"
+    },
+    {
+      "path": "sprites/lava-edge-9-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "15c6b1067f0cb211e5b2365550dc85d54cb34adae95072232534826698d0e764"
+    },
+    {
+      "path": "sprites/lava-edge-9-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "c0f3d00e5f57ae987498a8a2027f460f8736c8524a398bbd1ea8ab4812c94c9c"
     },
     {
       "path": "sprites/grass-edge-10.png",
@@ -1438,6 +1588,21 @@
       "sha256": "eba321a72c0cd86c86b7b73b263f13fff24bed94e8f4adc0323ef72250043384"
     },
     {
+      "path": "sprites/lava-edge-10-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "741855e6754b31245dc2660da350100a6a2392cfa26eb5e477242f82ae30975b"
+    },
+    {
+      "path": "sprites/lava-edge-10-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "1b1837f81312b684fadf45be1dcc734194008b7233cadbdfe96b551bf7a8b2b0"
+    },
+    {
+      "path": "sprites/lava-edge-10-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "114caae22fb1f932db73136e3fa001046227876ad10a03714ee4e33dd451f710"
+    },
+    {
       "path": "sprites/grass-edge-11.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "7d82b14bb259d3714c989a50206d3970fbe0604e8c1471d30a8696b7d348ed9e"
@@ -1456,6 +1621,21 @@
       "path": "sprites/lava-edge-11.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "52407093457e2b2e4709c396ca13da2639d687fcc6311dba2ecd66cad5ee8c5f"
+    },
+    {
+      "path": "sprites/lava-edge-11-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "d4a46dafc2a4a3e38cbbdac5dc63ed20aff9282f8b88cddf20f63657d35df8c6"
+    },
+    {
+      "path": "sprites/lava-edge-11-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "d20b9a8838059a4ba95e24a05fbb4478a662512c1668bd5d9452bb14c0748027"
+    },
+    {
+      "path": "sprites/lava-edge-11-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "e28d8a458b92f71de1127d24eed94549af8a77d736ab25e002042cd9137076f7"
     },
     {
       "path": "sprites/grass-edge-12.png",
@@ -1478,6 +1658,21 @@
       "sha256": "de46c004bed7434eb80023243fb7b9c78ca8a02eb3d8eea01e6d97c1b381c7b1"
     },
     {
+      "path": "sprites/lava-edge-12-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "d55edbb8699be91b7ff03b2369e0e0d36075e3686a21b123a383f688fae0b685"
+    },
+    {
+      "path": "sprites/lava-edge-12-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "99463eba2d444b720e916c793407b20b16c13e6a339938595f9b6d2225108a50"
+    },
+    {
+      "path": "sprites/lava-edge-12-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "33f23a41d13a9e33ba4aadeaa3a8961d3a6bba3202e858c12e38ed725200ac48"
+    },
+    {
       "path": "sprites/grass-edge-13.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "609272d8631ce381d48fa2c87308f384b23a59f917e391702fb0ae1401a11b2f"
@@ -1496,6 +1691,21 @@
       "path": "sprites/lava-edge-13.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "67b8bfa7f8f0e01eb4a224157a125d6d4484364215445f2c36c529442ab6eaf8"
+    },
+    {
+      "path": "sprites/lava-edge-13-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "1b93b5b699d8d515ae7d032d5ed78ffb0cf357267b1531e5a29a0655176f8ca7"
+    },
+    {
+      "path": "sprites/lava-edge-13-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "d5e2eaaa1de9c5304f9cc340aea6add89e58da2375b9b1e8e1d033fe4e690485"
+    },
+    {
+      "path": "sprites/lava-edge-13-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "2c78a5b259efddbc7198077c0775ed00082e25b98fb9db23069a08095310b829"
     },
     {
       "path": "sprites/grass-edge-14.png",
@@ -1518,6 +1728,21 @@
       "sha256": "8cb70b6b209469f72f16d9de08d23180a137d6580b8973e7ad9688d471a05cad"
     },
     {
+      "path": "sprites/lava-edge-14-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "2c8deec2b5ec99529bde32f193cbaacc7f0650f368ec04932517a177ef89164f"
+    },
+    {
+      "path": "sprites/lava-edge-14-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "81ea4fee7415d10131f3a0978272a1a0765ec9e6ed78efb641b2ce9bcffcba09"
+    },
+    {
+      "path": "sprites/lava-edge-14-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "ca1e5e7000b41d3aff8656670b14121d704d75fe0561f25bf5c58660f28772c7"
+    },
+    {
       "path": "sprites/grass-edge-15.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "3ddcb0d692edc75895c65bbdeec93a35aa6e75a7fc5c84bb8d4860f180de11f9"
@@ -1536,6 +1761,21 @@
       "path": "sprites/lava-edge-15.png",
       "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
       "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
+    },
+    {
+      "path": "sprites/lava-edge-15-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "ac6ffc31ac67b37f66a154b0099b8bde5d98a390d916111c166e9136af08b42d"
+    },
+    {
+      "path": "sprites/lava-edge-15-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "919aa9e6cf4faa2819d71277ddc0bc107304f752176991e6c311a87cc774c9ca"
+    },
+    {
+      "path": "sprites/lava-edge-15-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "1fba483b9a5d7f7aef570d0e98c9fa299c7ebc5f2cfd131a2eb98b898a6f09ad"
     },
     {
       "path": "sprites/burst-0.png",

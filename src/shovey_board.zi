@@ -70,9 +70,10 @@ SPRITE_CHEST :: 292
 SPRITE_LASER :: 295
 // Forest decorations 158 to 161, the forest floor 162, the cave pieces 163 to 165 and lava 166.
 SPRITE_FOREST :: 303
-// Lava pits joined by screen direction, like the abyss.
+// Lava pits joined by screen direction, like the abyss: 16 edge masks for
+// each of four molten frames.
 SPRITE_LAVA_EDGE :: 312
-SPRITE_COUNT :: 328
+SPRITE_COUNT :: 376
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -461,6 +462,12 @@ SpritesPrepare :: () {
         lava: Vec(u8)
         BuilderPrint(*lava, "lava-edge-%", FormatInteger(cast(s64)mask, digits[:]))
         SpritePath(SPRITE_LAVA_EDGE + mask, BuilderFinish(lava))
+        for frame_number: cast(s32)1..3 {
+            molten: Vec(u8)
+            frame_digits: [24]u8
+            BuilderPrint(*molten, "lava-edge-%-%", FormatInteger(cast(s64)mask, digits[:]), FormatInteger(cast(s64)frame_number, frame_digits[:]))
+            SpritePath(SPRITE_LAVA_EDGE + frame_number * 16 + mask, BuilderFinish(molten))
+        }
         corner: Vec(u8)
         BuilderPrint(*corner, "abyss-corner-%", FormatInteger(cast(s64)mask, digits[:]))
         SpritePath(SPRITE_ABYSS_CORNER + mask, BuilderFinish(corner))
@@ -679,7 +686,7 @@ BoardCacheKeep :: (game: *ShoveyGame, landscape: bool) {
         board_cache_decorations[at] = game.decorations[at]
         board_cache_gliding[at] = board_gliding[at]
         ground := game.ground[at]
-        if game.tiles[at] == 64 || ground == 22 || ground == 24 || ground == 41 || ground == 42 {
+        if game.tiles[at] == 64 || game.tiles[at] == SHOVEY_LAVA || ground == 22 || ground == 24 || ground == 41 || ground == 42 {
             board_cache_animated[board_cache_animated_count] = at
             board_cache_animated_count += 1
         }
@@ -958,11 +965,12 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     }
     cached := BoardCacheCurrent(game, landscape)
     if cached {
-        // Only water ripples and sensors move.
+        // Only water ripples, lava and sensors move.
         for index: cast(s32)0..board_cache_animated_count - 1 {
             at := board_cache_animated[index]
             display := BoardDisplayIndex(at, landscape)
             if game.tiles[at] == 64 { board_layers[display] = KindSprite(game, 64, at, now, landscape) }
+            if game.tiles[at] == SHOVEY_LAVA { board_layers[display] = BoardLavaSprite(game, at, now, landscape) }
             ground := game.ground[at]
             if ground == 22 || ground == 24 || ground == 41 || ground == 42 {
                 board_layers[SHOVEY_CELLS + display] = KindSprite(game, ground, at, now, landscape)
@@ -996,6 +1004,17 @@ BoardArrowFloor :: (game: *ShoveyGame, at: s32) -> s32 {
 
 // The board's four picture layers: floor, ground, decorations and pieces.
 // Animals gliding to a cell are drawn by the board itself while `glides`.
+// A lava cell's picture: its edges by screen direction, in the molten frame
+// of the moment.
+BoardLavaSprite :: (game: *ShoveyGame, at: s32, now: float64, landscape: bool) -> s32 {
+    mask: s32 = 0
+    for side: cast(s32)0..3 {
+        neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
+        if neighbor < 0 || game.tiles[neighbor] != SHOVEY_LAVA { mask |= 1 << side }
+    }
+    return SPRITE_LAVA_EDGE + cast(s32)(cast(s64)(now * 1.5) % 4) * 16 + mask
+}
+
 BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: bool, glides: bool) {
     for at: cast(s32)0..SHOVEY_CELLS - 1 { board_abyss_open[at] = BoardAbyss(game, at); board_lava_open[at] = game.tiles[at] == SHOVEY_LAVA }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
@@ -1018,12 +1037,7 @@ BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: b
             layers[SHOVEY_CELLS + display] = ifx corners != 0 then SPRITE_ABYSS_CORNER + corners else -1
         } else if base == SHOVEY_LAVA {
             // Lava lies deep in a pit with the abyss's rock walls around it.
-            mask: s32 = 0
-            for side: cast(s32)0..3 {
-                neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
-                if neighbor < 0 || game.tiles[neighbor] != SHOVEY_LAVA { mask |= 1 << side }
-            }
-            layers[display] = SPRITE_LAVA_EDGE + mask
+            layers[display] = BoardLavaSprite(game, at, now, landscape)
             corners := BoardAbyssCorners(at, landscape, board_lava_open)
             layers[SHOVEY_CELLS + display] = ifx corners != 0 then SPRITE_ABYSS_CORNER + corners else -1
         } else if base == 77 {
