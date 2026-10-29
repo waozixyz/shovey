@@ -1,9 +1,10 @@
 name: Play online
 
 # shovey.waozi.xyz is the released game: the newest published release's own
-# shovey.zx, shovey.json and entity.zx, in Arcade's browser host, with their
-# programs compiled into the page (scripts/build-site.py). Pushes rebuild it,
-# and so does each finished Downloads run that published a new version.
+# shovey.zx, shovey.json and entity.zx, in Shovey's player compiled for the
+# browser, with their programs compiled into the page (scripts/build-site.py).
+# Pushes rebuild it, and so does each finished Downloads run that published a
+# new version.
 on:
   push:
     branches: [master]
@@ -118,12 +119,6 @@ jobs:
         with:
           path: waozixyz/shovey
           ref: ${{ github.event_name == 'workflow_run' && 'master' || inputs.revision || github.sha }}
-      # Arcade's host runs the release; its lock names the toolchain.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          repository: waozixyz/arcade
-          ref: master
-          path: waozixyz/arcade
       - name: Check for a release the site does not have yet
         id: due
         env:
@@ -140,44 +135,30 @@ jobs:
           else
             echo 'publish=true' >> "$GITHUB_OUTPUT"
           fi
-      - name: Read Arcade's locked toolchain
+      # The player is built from this checkout's lock; the locked compiler
+      # comes prebuilt and Ubuntu packages from the canonical archive.
+      - name: Set up the locked Ziran, its packages and the build tools
         if: steps.due.outputs.publish == 'true'
-        id: toolchain
-        working-directory: waozixyz/arcade
-        run: |
-          python3 -c 'import json,os; open(os.environ["GITHUB_OUTPUT"],"a").write("commit="+json.load(open("ziran.lock"))["toolchain"]["commit"]+"\n")'
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        if: steps.due.outputs.publish == 'true'
+        uses: ziranlang/ziran/.github/actions/setup@979159a55bcf1f9edb9eb8f26ea10aca421412e2
         with:
-          repository: ziranlang/ziran
-          ref: ${{ steps.toolchain.outputs.commit }}
+          project: waozixyz/shovey
           path: ziranlang/ziran
+          fetch: true
+          packages: build-essential cmake pkg-config python3-pil
       - uses: actions/setup-node@v4
         if: steps.due.outputs.publish == 'true'
         with:
           node-version: 22
-      - name: Install build dependencies
-        if: steps.due.outputs.publish == 'true'
-        working-directory: .
-        run: sh ziranlang/ziran/scripts/ci_packages.sh build-essential cmake pkg-config python3-pil
       - uses: mymindstorm/setup-emsdk@v14
         if: steps.due.outputs.publish == 'true'
         with:
           version: '6.0.6'
           actions-cache-folder: emsdk-cache
-      - name: Build the locked toolchain and fetch Arcade's packages
-        if: steps.due.outputs.publish == 'true'
-        working-directory: waozixyz/arcade
-        run: |
-          make -j2 -C ../../ziranlang/ziran
-          echo "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin" >> "$GITHUB_PATH"
-          printf '[overrides]\nziran = "../../ziranlang/ziran"\n' > ziran.local.toml
-          ../../ziranlang/ziran/build/bin/ziran fetch
       - name: Build the site from the release
         if: steps.due.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/build-site.py --arcade ../arcade --tag "v${{ steps.due.outputs.version }}" --output build/web-site
+        run: python3 scripts/build-site.py --tag "v${{ steps.due.outputs.version }}" --output build/web-site
       - name: Play the release in a private browser
         if: steps.due.outputs.publish == 'true'
         run: |

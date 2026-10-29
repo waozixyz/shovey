@@ -1,7 +1,7 @@
 name: Prepare the Android build
 description: >
   Install what F-Droid's recipe installs, plus Java and the Android SDK parts
-  the pinned Arcade host locks, for make android-fdroid.
+  Kryon's Android host needs, for make android-fdroid.
 
 runs:
   using: composite
@@ -17,7 +17,7 @@ runs:
       with:
         distribution: temurin
         java-version: '21'
-    - name: Install the Android SDK parts the host locks
+    - name: Install the Android SDK parts Kryon's Android host needs
       shell: sh
       run: |
         sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"

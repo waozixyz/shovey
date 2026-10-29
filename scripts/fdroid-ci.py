@@ -9,7 +9,6 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_ID = 'xyz.waozi.shovey'
@@ -29,12 +28,11 @@ def main():
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     version = subprocess.check_output(['python3', '-c', 'import re; print(re.search(r"^## \\[([0-9.]+)\\]", '
                                        'open("src/CHANGELOG.md").read(), re.M)[1])'], cwd=ROOT, text=True).strip()
-    # The pinned Arcade host's ledger holds the Android version code.
-    host = json.loads((ROOT / 'packaging/android/ziran.lock').read_text())['packages'][0]['commit']
-    with urllib.request.urlopen(f'https://raw.githubusercontent.com/waozixyz/arcade/{host}/apps/versions.json') as answer:
-        release = json.load(answer)['node_apps']['shovey']
+    # version.json holds the Android version code (update_version.sh).
+    release = json.loads((ROOT / 'version.json').read_text())
     if release['version'] != version:
-        raise SystemExit(f'The pinned Arcade host records Shovey {release["version"]}, not {version}')
+        raise SystemExit(f'version.json names Shovey {release["version"]}, not {version}: run update_version.sh')
+    release['sequence'] = release['version_code']
     from fdroidserver import metadata
     # Build exactly the recipe submitted to fdroiddata, at this commit. The
     # signed release is compared separately, as it may not be published yet.

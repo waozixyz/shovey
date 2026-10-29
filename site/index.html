@@ -82,8 +82,7 @@
       // The game travels gzip-compressed beside its plain copy (17.5 MB, or
       // 6.8 MB packed): Cloudflare does not compress binary files. Browsers
       // without DecompressionStream, or a missing .gz, take the plain file.
-      // Cloudflare answers a file the site does not have, such as the Apps
-      // controller a release carries itself, with this page.
+      // Cloudflare answers a file the site does not have with this page.
       function found(response) {
         return response.ok && !/text\/html/.test(response.headers.get('Content-Type') || '');
       }
@@ -110,18 +109,12 @@
           if (!response.ok) throw new Error(response.status);
           return response.text();
         }),
-        bundle('apps.zx'),
         bundle('runtime.data')
       ]).then(function (loaded) {
         Module.arcadeReceipt = loaded[0];
-        if (loaded[1]) {
-          Module.preRun = [].concat(Module.preRun || [], function () {
-            FS.writeFile('/apps.zx', new Uint8Array(loaded[1]));
-          });
-        }
         // The game's file package, already here, is not fetched again.
-        if (loaded[2]) {
-          Module.getPreloadedPackage = function () { return loaded[2]; };
+        if (loaded[1]) {
+          Module.getPreloadedPackage = function () { return loaded[1]; };
         }
         function start() {
           var script = document.createElement('script');

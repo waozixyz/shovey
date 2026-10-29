@@ -4,9 +4,10 @@ name: Downloads
 # checks the signed Android APK, also published as shovey-VERSION-fdroid.apk
 # once F-Droid's own build of the commit matches it, and the Linux and Windows
 # downloads, then publishes them as that version's release, like Inner
-# Breeze. Pushes of a released version only check that nothing needs
-# releasing. A manual run retries an unreleased version. No release is left as
-# a draft.
+# Breeze. Every download is Shovey's player (scripts/player.py), built from
+# this repository's own lock; Arcade follows the release afterwards. Pushes of
+# a released version only check that nothing needs releasing. A manual run
+# retries an unreleased version. No release is left as a draft.
 on:
   push:
     branches: [master]
@@ -68,8 +69,8 @@ jobs:
         with:
           ref: ${{ needs.due.outputs.revision }}
       - uses: ./.github/actions/android
-      # The build F-Droid's recipe runs, from the Arcade host pinned in
-      # packaging/android; it has no self-update, so one APK serves both.
+      # The build F-Droid's recipe runs; it has no self-update, so one APK
+      # serves both.
       - name: Build the release APK
         run: make android-fdroid
       - name: Sign and check the APK
@@ -107,41 +108,55 @@ jobs:
     timeout-minutes: 45
     defaults:
       run:
-        working-directory: waozixyz/arcade
+        working-directory: waozixyz/shovey
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ needs.due.outputs.revision }}
           path: waozixyz/shovey
-      - uses: ./waozixyz/shovey/.github/actions/arcade
+      # The locked compiler comes prebuilt, the package checkouts cached, and
+      # Ubuntu packages from the canonical archive.
+      - name: Set up the locked Ziran, its packages and the build tools
+        uses: ziranlang/ziran/.github/actions/setup@979159a55bcf1f9edb9eb8f26ea10aca421412e2
         with:
+          project: waozixyz/shovey
+          path: ziranlang/ziran
+          fetch: true
           packages: >-
             build-essential cmake pkg-config python3-pil python3-numpy libsdl2-dev libcairo2-dev
             libfreetype-dev libfontconfig-dev libpango1.0-dev libgtk-3-dev libcurl4-openssl-dev
             libx11-dev xvfb xauth xdotool imagemagick
+      # The UI tests drive the player through Inner Breeze's test driver client.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: waozixyz/breeze
+          ref: fa9c8acab237278d81c9929fa97b3f2545842310
+          path: waozixyz/breeze
+          sparse-checkout: tests/ui_driver.py
+          sparse-checkout-cone-mode: false
       - name: Build and pack the Linux download
-        run: make shovey-linux-download
+        run: make player-linux
       - name: Play the unpacked download on a private display
         run: |
           rm -rf build/linux-check
           mkdir -p build/linux-check
           tar -xzf build/downloads/shovey-v*-linux-x86_64.tar.gz -C build/linux-check
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
-            YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 240s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
+            YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 300s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
             python3 tests/shovey_standalone_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
-            --inbe-source "$(./scripts/ziran.sh pkg path inbe)"
+            --inbe-source "$GITHUB_WORKSPACE/waozixyz/breeze"
       - name: Reopen unclaimed and empty chests in the packaged game
         run: |
-          make -C ../shovey chest-fixture
+          make chest-fixture
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
             YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
-            python3 ../shovey/tests/chest_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
-            --fixture ../shovey/build/chest-test/fixture.txt --driver-source "$(./scripts/ziran.sh pkg path inbe)" \
+            python3 tests/chest_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --fixture build/chest-test/fixture.txt --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze" \
             --output build/chest-ui-test
       - uses: actions/upload-artifact@v4
         with:
           name: shovey-linux
-          path: waozixyz/arcade/build/downloads/*.tar.gz
+          path: waozixyz/shovey/build/downloads/*.tar.gz
           if-no-files-found: error
           retention-days: 7
 
@@ -152,19 +167,30 @@ jobs:
     timeout-minutes: 60
     defaults:
       run:
-        working-directory: waozixyz/arcade
+        working-directory: waozixyz/shovey
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ needs.due.outputs.revision }}
           path: waozixyz/shovey
-      - uses: ./waozixyz/shovey/.github/actions/arcade
+      - name: Set up the locked Ziran, its packages and the build tools
+        uses: ziranlang/ziran/.github/actions/setup@979159a55bcf1f9edb9eb8f26ea10aca421412e2
         with:
+          project: waozixyz/shovey
+          path: ziranlang/ziran
+          fetch: true
           packages: >-
             build-essential cmake pkg-config python3-pil python3-numpy gcc-mingw-w64-x86-64-win32
             binutils-mingw-w64-x86-64 libz-mingw-w64-dev wine wine64 xvfb xauth unzip
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: waozixyz/breeze
+          ref: fa9c8acab237278d81c9929fa97b3f2545842310
+          path: waozixyz/breeze
+          sparse-checkout: tests/ui_driver.py
+          sparse-checkout-cone-mode: false
       - name: Cross-build and pack the Windows download
-        run: make shovey-windows-download
+        run: make player-windows
       - name: Play the unpacked download under Wine on a private display
         run: |
           rm -rf build/windows-check
@@ -173,11 +199,11 @@ jobs:
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
             WINEPREFIX="$RUNNER_TEMP/wine" timeout 900s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
             python3 tests/shovey_windows_ui_test.py --program "$PWD/build/windows-check/Shovey/shovey.exe" \
-            --inbe-source "$(./scripts/ziran.sh pkg path inbe)"
+            --inbe-source "$GITHUB_WORKSPACE/waozixyz/breeze"
       - uses: actions/upload-artifact@v4
         with:
           name: shovey-windows
-          path: waozixyz/arcade/build/downloads/*.zip
+          path: waozixyz/shovey/build/downloads/*.zip
           if-no-files-found: error
           retention-days: 7
 

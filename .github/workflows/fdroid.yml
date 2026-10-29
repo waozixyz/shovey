@@ -10,7 +10,9 @@ on:
     branches: [master]
     paths:
       - scripts/android-build.sh
+      - scripts/player.py
       - scripts/fdroid-ci.py
+      - packaging/android/**
       - packaging/fdroid/metadata/**
       - .github/actions/android/**
       - .github/workflows/fdroid.yml
@@ -62,7 +64,7 @@ jobs:
           ref: ${{ inputs.revision || github.sha }}
           path: build/xyz.waozi.shovey
           persist-credentials: false
-      - name: Install the Android SDK parts the host locks
+      - name: Install the Android SDK parts Kryon's Android host needs
         run: sdkmanager --sdk_root=/opt/android-sdk 'ndk;28.2.13676358' 'build-tools;36.0.0' 'platforms;android-36' 'cmake;3.22.1'
       - name: Build with F-Droid
         run: python3 build/xyz.waozi.shovey/scripts/fdroid-ci.py

@@ -38,8 +38,8 @@ def verify(apk, version, tools):
     with zipfile.ZipFile(apk) as archive:
         abis = sorted(p.split('/')[1] for p in archive.namelist() if re.fullmatch(r'lib/[^/]+/libmain\.so', p))
         assert abis == ['arm64-v8a', 'armeabi-v7a'], 'Both supported ARM architectures must be present'
-        metadata = json.loads(archive.read('assets/arcade.json'))
-        payload = archive.read('assets/arcade.zx')
+        metadata = json.loads(archive.read('assets/shovey.json'))
+        payload = archive.read('assets/shovey.zx')
         assert metadata['id'] == 'arcade.shovey-player' and metadata['version'] == version
         assert metadata['sha256'] == hashlib.sha256(payload).hexdigest(), 'Embedded game collection differs from its receipt'
     return dict(version=version, version_code=int(package[2]), package=package[1], abis=abis,
@@ -67,9 +67,9 @@ def verify_bundle(bundle, version, bundletool):
     found = re.findall(r'SHA256:\s*([A-Fa-f0-9:]+)', certificates)
     assert found and {item.replace(':', '').lower() for item in found} == {expected}, 'Play bundle signer differs from Shovey release key'
     with zipfile.ZipFile(bundle) as archive:
-        metadata = json.loads(archive.read('base/assets/arcade.json'))
+        metadata = json.loads(archive.read('base/assets/shovey.json'))
         assert metadata['version'] == version and metadata['id'] == 'arcade.shovey-player'
-        assert metadata['sha256'] == hashlib.sha256(archive.read('base/assets/arcade.zx')).hexdigest()
+        assert metadata['sha256'] == hashlib.sha256(archive.read('base/assets/shovey.zx')).hexdigest()
         abis = {name.split('/')[2] for name in archive.namelist() if name.startswith('base/lib/') and name.endswith('.so')}
         assert abis == {'arm64-v8a', 'armeabi-v7a'}
         dex = b''.join(archive.read(name) for name in archive.namelist() if name.startswith('base/dex/'))

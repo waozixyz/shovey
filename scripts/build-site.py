@@ -2,52 +2,22 @@
 """Build shovey.waozi.xyz from a published Shovey release.
 
 The page runs that release's own shovey.zx, shovey.json and entity.zx from its
-Linux download, unchanged, in Arcade's browser host, as arcade.waozi.xyz runs
-the published Arcade. It is the game players download, with the same covers.
-Without --download the newest published release is fetched with gh.
+Linux download, unchanged, in Shovey's player compiled for the browser
+(scripts/player.py site). It is the game players download, with the same
+covers. Without --download the newest published release is fetched with gh.
 """
 import argparse
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
 
-from PIL import Image
-
 ROOT = Path(__file__).resolve().parents[1]
-# The page's own files beside site/: published name, source in this checkout.
-PAGE_FILES = {
-    'privacy.html': 'src/web/privacy.html',
-    'og.png': 'assets/branding/shovey-social.png',
-}
-# Pictures the loading screen shows, as small copies: (published name,
-# source, longest edge). The title art is a JPEG; the logo and icon keep
-# their transparency or crisp edges as PNG.
-PAGE_PICTURES = [
-    ('icon.png', 'assets/branding/shovey-icon.png', 512),
-    ('icon-192.png', 'assets/branding/shovey-icon.png', 192),
-    ('logo.png', 'assets/shovey/logo.png', 720),
-    ('title-landscape.jpg', 'assets/shovey/title-landscape.png', 1280),
-    ('title-portrait.jpg', 'assets/shovey/title-portrait.png', 1280),
-]
+sys.path.insert(0, str(ROOT / 'scripts'))
+import player
 
-
-def small_picture(source, target, longest):
-    with Image.open(source) as image:
-        image.load()
-        alpha = 'A' in image.getbands()
-        image = image.convert('RGBA' if alpha else 'RGB')
-        scale = min(1.0, longest / max(image.size))
-        if scale < 1.0:
-            image = image.resize((round(image.width * scale), round(image.height * scale)),
-                                 Image.Resampling.LANCZOS)
-        if target.suffix == '.jpg':
-            image.save(target, 'JPEG', quality=82, optimize=True, progressive=True)
-        else:
-            image.save(target, 'PNG', optimize=True)
 RELEASE_FILES = ('shovey.zx', 'shovey.json', 'entity.zx')
 
 
@@ -80,7 +50,6 @@ def download(tag, work):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--arcade', type=Path, help="Arcade's checkout, whose host runs the game")
     parser.add_argument('--download', type=Path, help='an unpacked release folder (shovey.zx, shovey.json, entity.zx)')
     parser.add_argument('--tag', help='the release to fetch, by default the newest published one')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/web-site')
@@ -88,12 +57,8 @@ def main():
                         help="only write the loading screen's small pictures into this folder (make web)")
     args = parser.parse_args()
     if args.pictures:
-        args.pictures.mkdir(parents=True, exist_ok=True)
-        for name, source, longest in PAGE_PICTURES:
-            small_picture(ROOT / source, args.pictures / name, longest)
+        player.page_pictures(args.pictures)
         return
-    if not args.arcade:
-        parser.error('--arcade is required to build the site')
     (ROOT / 'build').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=ROOT / 'build') as temporary:
         work = Path(temporary)
@@ -102,24 +67,7 @@ def main():
         version = json.loads((release / 'shovey.json').read_text())['version']
         if tag and tag != 'v' + version:
             raise SystemExit(f'{tag} carries Shovey {version}')
-        site = work / 'site'
-        shutil.copytree(ROOT / 'site', site)
-        for name, source in PAGE_FILES.items():
-            shutil.copyfile(ROOT / source, site / name)
-        for name, source, longest in PAGE_PICTURES:
-            small_picture(ROOT / source, site / name, longest)
-        subprocess.run([sys.executable, 'scripts/build-web.py', '--shovey', str(release),
-                        '--site', str(site), '--output', str(args.output.resolve())],
-                       cwd=args.arcade, check=True)
-    # Arcade's build names the runtime files' cache revision; the site
-    # adds the Shovey release it runs.
-    receipt = args.output / 'build.json'
-    build = json.loads(receipt.read_text()) if receipt.is_file() else {}
-    if 'source_revision' in build:
-        build['arcade_revision'] = build.pop('source_revision')
-    build['version'] = version
-    receipt.write_text(json.dumps(build) + '\n')
-    print(f'shovey.waozi.xyz runs the released Shovey {version} in {args.output}')
+        player.site(release, args.output)
 
 
 if __name__ == '__main__':

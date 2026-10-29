@@ -20,10 +20,6 @@ on:
         description: Full Shovey release commit (defaults to this run's commit)
         type: string
         required: false
-      arcade_revision:
-        description: Full Arcade host commit (defaults to the Android host pin)
-        type: string
-        required: false
       products_only:
         description: Repair Dew products after a successful bundle upload (no bundle upload)
         type: boolean
@@ -52,17 +48,20 @@ jobs:
         with:
           ref: ${{ inputs.revision || github.sha }}
           path: waozixyz/shovey
-      - name: Validate the fixed revisions
+      - name: Validate the fixed revision
         env:
           REVISION: ${{ inputs.revision || github.sha }}
-          ARCADE_REVISION: ${{ inputs.arcade_revision }}
         run: |
           python3 -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}", os.environ["REVISION"]), "Use a full Shovey commit"'
-          python3 -c 'import os,re; assert re.fullmatch("([0-9a-f]{40})?", os.environ["ARCADE_REVISION"]), "Use a full Arcade commit"'
-      - uses: ./waozixyz/shovey/.github/actions/arcade
+      # The locked compiler comes prebuilt, the package checkouts cached, and
+      # Ubuntu packages from the canonical archive.
+      - name: Set up the locked Ziran, its packages and the build tools
+        uses: ziranlang/ziran/.github/actions/setup@979159a55bcf1f9edb9eb8f26ea10aca421412e2
         with:
+          project: waozixyz/shovey
+          path: ziranlang/ziran
+          fetch: true
           packages: build-essential cmake pkg-config python3-pil python3-numpy
-          revision: ${{ inputs.arcade_revision }}
       - uses: actions/setup-java@v4
         if: ${{ !inputs.products_only }}
         with:
@@ -76,7 +75,7 @@ jobs:
           "$sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
       - name: Build the Google Play edition bundle
         if: ${{ !inputs.products_only }}
-        run: make -C ../arcade android-shovey-bundle
+        run: make player-bundle
       - name: Sign and verify the bundle
         if: ${{ !inputs.products_only }}
         id: sign
@@ -93,8 +92,8 @@ jobs:
           trap 'rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"' EXIT
           printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
           printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
-          version=$(python3 -c 'import json; print(json.load(open("../arcade/build/shovey.json"))["version"])')
-          python3 scripts/android-release.py sign ../arcade/build/shovey-unsigned.aab \
+          version=$(python3 -c 'import json; print(json.load(open("build/player/shovey.json"))["version"])')
+          python3 scripts/android-release.py sign build/player/android/shovey-unsigned.aab \
             --version "$version" --output "build/android/shovey-v$version-gplay.aab" \
             --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
             --bundletool "$RUNNER_TEMP/bundletool.jar"
@@ -145,7 +144,7 @@ jobs:
           umask 077
           trap 'rm -f "$RUNNER_TEMP/play-account.json"' EXIT
           printf '%s' "$ACCOUNT" > "$RUNNER_TEMP/play-account.json"
-          entity=$(cd ../arcade && "$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" pkg path entity)
+          entity=$("$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran" pkg path entity --locked)
           mkdir -p build
           # Saving a fixed product ID and activating its buy option can be
           # repeated after a temporary Play API failure. Never repeat the upload.
