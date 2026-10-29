@@ -1,0 +1,154 @@
+#import "std/c_string"
+#import "std/byte_text_linux"
+#import "std/timer_linux"
+#import "kryon/Desktop"
+#import "kryon/Widgets"
+#import "kryon/Frame"
+#import "kryon/test_driver"
+#import "kryon/ScrollDevice"
+#import "player_platform"
+#import "player_host"
+#import "player_entity"
+#import "entity/model"
+#import "kryon/carousel"
+
+sdl :: #system_library "SDL2";
+SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
+
+// The desktop player: Shovey's collection in a window, with the Profile.
+// First show small RGB/RGBA previews. The collection replaces them with its
+// original artwork when ready, using the same layout and coloured logo.
+DrawStartup :: (session: Session, directory: string) -> bool {
+    if !PollDesktop() || WindowTakeCloseRequestHost() { return false }
+    BeginDesktopFrame()
+    viewport := DesktopViewport()
+    art := Join(directory, ifx viewport.height > viewport.width then
+        "startup/shovey/title-portrait.png" else "startup/shovey/title-landscape.png")
+    logo := Join(directory, "startup/shovey/logo.png")
+    defer { EntityFree(art); EntityFree(logo) }
+    if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { return false }
+    unused CarouselArtwork(session, viewport, cast(u64)48000, art, logo, "Shovey")
+    if EndFrame(session) != FrameStatus.FrameOk { return false }
+    ok := EndDesktopFrame()
+    TestDriverFrame(session)
+    return ok
+}
+
+Draw :: (session: Session) -> bool {
+    BeginDesktopFrame()
+    KeyboardModifiersSend(session, DesktopModifiers())
+    key := DesktopPressedKey()
+    for candidate: cast(s32)0..269 {
+        if TestDriverKeyPressed(candidate) { key = candidate; break }
+    }
+    if key == 256 && CollectionBack() { key = 0 }
+    KeyboardSend(session, key)
+    // Text typed on the keyboard reaches the game's focused field.
+    codepoint := DesktopTypedCodepoint()
+    while codepoint != 0 {
+        unused TypedCodepointSend(session, codepoint)
+        codepoint = DesktopTypedCodepoint()
+    }
+    viewport := DesktopViewport()
+    pointer := TestDriverPointer(session, PollPointer())
+    TreePointerUpdate(session, pointer)
+    TreeSecondaryPointerUpdate(session, PollSecondaryPointer())
+    wheel := TestDriverWheel(DesktopWheelMove())
+    PointerWheelSend(session, pointer.x, pointer.y, wheel)
+    BeginScrollFrame(session, Vector2.{pointer.x, pointer.y}, pointer.pressed,
+        pointer.down, pointer.released, wheel,
+        cast(float64)MonotonicMilliseconds() / 1000.0)
+    if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { return false }
+    collection := CollectionFrame(session, viewport, key, DesktopModifiers())
+    if !collection {
+        TreeCancel(session)
+        Report("collection frame returned false\n")
+        return false
+    }
+    frame_status := EndFrame(session)
+    if frame_status != FrameStatus.FrameOk {
+        Report("end frame failed\n")
+        Report(FrameStatusMessage(cast(s32)frame_status))
+        Report("\n")
+        return false
+    }
+    unused DesktopCursor(session)
+    ok := EndDesktopFrame()
+    TestDriverFrame(session)
+    CollectionCollect()
+    if !ok { Report("end desktop frame failed\n") }
+    return ok
+}
+
+// The games of Shovey's collection that --list names and --app opens: the
+// ID of a game named by its name or ID, or "".
+PlayerGame :: (name: string) -> string {
+    if name == "shovey" || name == "arcade.shovey" { return "arcade.shovey" }
+    if name == "shovey-editor" || name == "arcade.shovey-editor" { return "arcade.shovey-editor" }
+    return ""
+}
+
+#program_export
+main :: (argc: s32, argv: **u8) -> s32 {
+    if argc == 2 && TextFromCString(argv[1]) == "--list" {
+        Report("arcade.shovey\narcade.shovey-editor\n")
+        return 0
+    }
+    first := ""
+    if argc != 1 {
+        if argc != 3 || TextFromCString(argv[1]) != "--app" {
+            Report("Usage: shovey [--list | --app GAME]\n")
+            return 1
+        }
+        first = PlayerGame(TextFromCString(argv[2]))
+        if first == "" {
+            Report("Shovey: unknown game\n")
+            return 1
+        }
+    }
+    directory := ExecutableDirectory()
+    data := DataDirectory()
+    if data == "" {
+        Report("Shovey: no private data directory\n")
+        return 1
+    }
+    if !OpenDesktopSized(480, 820) || !WindowInterceptCloseHost(true) {
+        CloseDesktop()
+        return 1
+    }
+    defer { CloseDesktop() }
+    title: [16]u8
+    unused CopyCString("Shovey", title[:])
+    SetTitle(window, *title[0])
+    session := SessionOpen()
+    if !SessionValid(session) { return 1 }
+    defer { SessionClose(session) }
+    if !DrawStartup(session, directory) { return 0 }
+    // It opens on Shovey's covers, or straight into a named game.
+    opened := CollectionOpenShovey(directory, data)
+    if opened && !DrawStartup(session, directory) { unused CollectionClose(); return 0 }
+    opened = opened && (first == "" || CollectionOpenGame(first))
+    if !opened {
+        Report("Shovey: could not open collection or game\n")
+        unused CollectionClose()
+        return 1
+    }
+    if !DrawStartup(session, directory) { unused CollectionClose(); return 0 }
+    if !EntityOpenFile(directory, data) {
+        Report("Could not open Entity\n")
+        unused CollectionClose()
+        return 1
+    }
+    ok := true
+    if CaptureRequested() {
+        ok = Draw(session) && Draw(session) && CaptureConfigured()
+    } else {
+        while ok && PollDesktop() {
+            ok = Draw(session)
+            if WindowTakeCloseRequestHost() { break }
+            if ok { PauseDesktop() }
+        }
+    }
+    if !CollectionClose() { ok = false }
+    return ifx ok then 0 else 1
+}

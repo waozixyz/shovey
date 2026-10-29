@@ -1,0 +1,88 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Shovey's Android player (scripts/player.py android): Kryon's Android host
+// with Shovey's collection and the account Profile as assets. The player
+// copies this file over the droid/app/build.gradle Kryon's scaffold makes.
+def envOrProp = { String envName, String propName ->
+    System.getenv(envName) ?: project.findProperty(propName)
+}
+def kryonDir = envOrProp('KRYON_DIR', 'kryon.dir')
+def ziranDir = envOrProp('ZIRAN_DIR', 'ziran.dir')
+def raylibDir = envOrProp('RAYLIB_DIR', 'raylib.dir')
+if (kryonDir == null || ziranDir == null || raylibDir == null) {
+    throw new GradleException('Build through scripts/player.py android')
+}
+def androidAbis = (project.findProperty('app.abis') ?: 'arm64-v8a,armeabi-v7a').split(',').toList()
+def shoveyVersion = new groovy.json.JsonSlurper().parse(file('../../version.json'))
+
+// Kryon's three editions: -Papp.edition=direct (the default), fdroid or gplay.
+// The Google Play edition adds Kryon's Play Billing (kryon/play_billing), so
+// Entity sells Dew through Google Play; it needs Android 6 and AndroidX
+// (-Pandroid.useAndroidX=true). Native code sees GOOGLE_PLAY or FDROID.
+def appEdition = (project.findProperty('app.edition') ?: 'direct').toString()
+if (!(appEdition in ['direct', 'fdroid', 'gplay'])) {
+    throw new GradleException('app.edition must be direct, fdroid or gplay')
+}
+def googlePlay = appEdition == 'gplay'
+def requestedMinSdk = Integer.parseInt((project.findProperty('app.minSdk') ?: '21').toString())
+def verificationOutput = project.findProperty('app.outputDir')
+if (verificationOutput != null) { buildDir = file(verificationOutput) }
+
+android {
+    namespace 'xyz.waozi.shovey'
+    compileSdk 36
+    ndkVersion '28.2.13676358'
+
+    defaultConfig {
+        applicationId project.findProperty('app.id') ?: 'xyz.waozi.shovey'
+        minSdk googlePlay ? Math.max(requestedMinSdk, 23) : requestedMinSdk
+        targetSdk 36
+        versionCode Integer.parseInt((project.findProperty('app.versionCode') ?: shoveyVersion.version_code).toString())
+        versionName project.findProperty('app.versionName') ?: shoveyVersion.version
+        manifestPlaceholders = [nativeLaunchMode: 'standard']
+        ndk {
+            abiFilters += androidAbis
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DKRYON_DIR=' + kryonDir,
+                    '-DZIRAN_DIR=' + ziranDir,
+                    '-DRAYLIB_DIR=' + raylibDir,
+                    '-DAPP_EDITION=' + appEdition
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+            version '3.22.1'
+            if (verificationOutput != null) { buildStagingDirectory file("${verificationOutput}/cxx") }
+        }
+    }
+
+    // The collection, its receipt, the Profile and the font, staged by the player build.
+    sourceSets.main.assets.srcDir "${rootProject.projectDir}/../build/player/android/assets"
+    sourceSets.main.res.srcDir "${rootProject.projectDir}/../packaging/android/res"
+
+    if (googlePlay) {
+        sourceSets.main.java.srcDir 'src/gplay/java'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    if (googlePlay) {
+        implementation 'com.android.billingclient:billing:9.1.0'
+        // Billing's AndroidX libraries mix Kotlin 1.6 and 1.8 standard
+        // libraries; one Kotlin version keeps their classes from colliding.
+        implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
+    }
+}

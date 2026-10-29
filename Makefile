@@ -117,7 +117,40 @@ inbe-ui-test:
 
 all: bundles
 
-.PHONY: android-fdroid
+# Shovey's player, the standalone game people download, built from this
+# package's own lock (scripts/player.py): its collection, then the Linux and
+# Windows downloads and the Google Play edition's bundle. The F-Droid recipe
+# builds the APK with android-fdroid.
+.PHONY: player player-linux player-windows player-bundle android-fdroid
+player: levels landscape
+	python3 scripts/player.py collection
+
+player-linux: player
+	python3 scripts/player.py linux
+
+# Cross-builds with MinGW (x86_64-w64-mingw32-gcc, -windres and CMake).
+player-windows: player
+	python3 scripts/player.py windows
+
+player-bundle: player
+	python3 scripts/player.py android --bundle
+
+# Installs the Linux player for this user, as Arcade installed Shovey before;
+# saves and the account stay in ~/.local/share/arcade.
+BIN_DIR ?= $(HOME)/.local/bin
+LIB_DIR ?= $(HOME)/.local/lib/shovey
+DATA_DIR ?= $(if $(XDG_DATA_HOME),$(XDG_DATA_HOME),$(HOME)/.local/share)
+.PHONY: install
+install: player-linux
+	mkdir -p '$(BIN_DIR)' '$(LIB_DIR)/startup/shovey' '$(DATA_DIR)/applications' '$(DATA_DIR)/icons/hicolor/256x256/apps'
+	install -m 0644 build/player/linux/startup/shovey/*.png '$(LIB_DIR)/startup/shovey/'
+	install -m 0644 build/player/linux/shovey.zx build/player/linux/shovey.json build/player/linux/entity.zx '$(LIB_DIR)/'
+	install -m 0755 build/player/linux/shovey '$(LIB_DIR)/shovey.new'
+	mv -f '$(LIB_DIR)/shovey.new' '$(LIB_DIR)/shovey'
+	ln -sfn '$(LIB_DIR)/shovey' '$(BIN_DIR)/shovey'
+	install -m 0644 build/player/linux/shovey-icon.png '$(DATA_DIR)/icons/hicolor/256x256/apps/xyz.waozi.shovey.png'
+	install -m 0644 packaging/linux/xyz.waozi.shovey.desktop '$(DATA_DIR)/applications/'
+
 android-fdroid:
 	sh scripts/android-build.sh
 

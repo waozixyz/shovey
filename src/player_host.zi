@@ -1,0 +1,733 @@
+// Shovey's player: the native provider for the shared Apps runtime that
+// runs the Shovey collection (src/player_collection.zi and its games) on
+// Linux, Windows, Android and the web. It is the host Arcade's standalone
+// Shovey had, with the same collection identity and record folders, so
+// players keep their progress. The covers belong to apps.zx.
+#import "std/file"
+#import "std/bundle_host"
+#import "std/vec"
+#import "std/option"
+#import "std/c_string"
+#import "std/json_scan"
+#import "std/text_buffer"
+#import "std/byte_text_linux"
+#import "std/date_time_linux"
+#import "std/timer_linux"
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/control_props"
+#import "kryon/box_widget"
+#import "kryon/box_props"
+#import "kryon/text_widget"
+#import "kryon/text_props"
+#import "kryon/button_widget"
+#import "kryon/button_props"
+#import "kryon/hosted_values"
+#import "kryon/hosted_app"
+#import "kryon/widget_host"
+#import "kryon/app_files"
+#import "kryon/app_protocol"
+#import "kryon/app_context_host"
+#import "kryon/key_input"
+#import "kryon/system_clipboard"
+#import "apps/host"
+#import "apps/tree"
+#import "apps/catalog"
+#import "apps/protocol"
+Rules :: #import "apps/protocol";
+Node :: #import "apps/node_types";
+Codec :: #import "apps/node_codec";
+#import "player_platform"
+#import "player_sound"
+#import "player_entity"
+#import "entity/publications_read"
+#import "entity/entity_records"
+#import "entity/entity_dew"
+#import "entity/leaderboard_native"
+#import "kryon/widget_palette"
+#import "kryon/image_raster"
+#import "kryon/loading_indicator"
+#import "player_loading"
+#import "shovey_theme"
+ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
+DewIcon :: #import "mingcute/mingcute_filled_drop";
+collection_dew_text: [32]u8;
+
+using HostValueKind;
+
+CollectionRecords :: struct {
+    id: string
+    root: string
+    files: AppFiles
+    text: string
+    next: *CollectionRecords
+}
+
+CollectionImage :: struct {
+    packed: string
+    absolute: string
+    next: *CollectionImage
+}
+
+collection_host: AppHost;
+collection_records: *CollectionRecords;
+collection_directory: string;
+collection_resources: AppFiles;
+collection_resource_root: string;
+collection_images: *CollectionImage;
+collection_frame_paths: Vec(string);
+collection_widget_node: *AppNode;
+collection_toolbar_visible: bool = true;
+collection_person_codec: Codec.WidgetAppPersonCodec;
+collection_shared_codec: Codec.WidgetAppSharedCodec;
+collection_item_codec: Codec.WidgetAppSharedItemCodec;
+collection_invitation_codec: Codec.WidgetAppInvitationCodec;
+collection_ready: bool;
+collection_loading: CollectionLoading;
+collection_pictures_missing: bool;
+collection_leave_to_library: bool;
+// Whether games download new levels when they come out: asked once on the
+// covers and passed to the games as arcade.updates. -1 unread, 0 off, 1 on,
+// 2 not answered yet.
+collection_updates: s32 = -1;
+
+CollectionTouchFirst :: () -> bool {
+    #if #defined(PLATFORM_DESKTOP) {
+        return false
+    }
+    return true
+}
+
+CollectionRecordsFor :: (id: string) -> *CollectionRecords {
+    saved := collection_records
+    while saved != null {
+        if saved.id == id { return saved }
+        saved = saved.next
+    }
+    saved = New(CollectionRecords)
+    if saved == null { return null }
+    id_bytes: Vec(u8)
+    BuilderPrint(*id_bytes, "%", id)
+    saved.id = BuilderFinish(id_bytes)
+    games := Join(collection_directory, "games")
+    game := Join(games, id)
+    saved.root = Join(game, "records")
+    AppFileFree(games)
+    AppFileFree(game)
+    opened := AppFilesOpen(*saved.files, saved.root)
+    if !opened {
+        AppFileFree(saved.root)
+        AppFileFree(saved.id)
+        CollectionFree(cast(*void)saved)
+        return null
+    }
+    saved.next = collection_records
+    collection_records = saved
+    return saved
+}
+
+CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
+    return name == "AppRecordHost" || name == "SaveAppRecordHost" ||
+    name == "AppFriendHost" || name == "AppSharedHost" || name == "AppSharedItemHost" ||
+    name == "AppInvitationHost" || name == "RefreshAppSharedHost" || name == "SendAppSharedHost" ||
+    name == "SmoothFramesHost" || name == "AppLocaleHost" || name == "AppSoundHost" ||
+    name == "tile_map.sampling" || name == "arcade.controls" || name == "arcade.sound" || name == "arcade.navigation" ||
+    name == "arcade.updates" ||
+    name == PUBLICATIONS_READ_SERVICE || name == ENTITY_RECORDS_SERVICE || name == ENTITY_DEW_SERVICE ||
+    name == "entity.profile" || name == "leaderboard"
+}
+
+CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
+    arguments: *HostValue, count: s32, result: *HostValue) -> s32 {
+    name := TextFromCString(function)
+    if name == "AppRecordHost" && count == 1 &&
+    HostScalarValid(arguments[0], "string", cast(s32)HostString) {
+        record := AppArgumentText(arguments[0])
+        saved := CollectionRecordsFor(TextUntilNul(node.identity.id[:]))
+        if saved == null || !AppFileNameValid(record) || record.count >= 64 { return 0 }
+        AppFileFree(saved.text)
+        saved.text = AppFileRead(*saved.files, record)
+        if saved.files.status == -1 || saved.text.count >= 65536 { return 0 }
+        result.* = AppHostText(saved.text)
+        return 1
+    }
+    if name == "SaveAppRecordHost" && count == 2 &&
+    HostScalarValid(arguments[0], "string", cast(s32)HostString) &&
+    HostScalarValid(arguments[1], "string", cast(s32)HostString) {
+        record := AppArgumentText(arguments[0])
+        text := AppArgumentText(arguments[1])
+        saved := CollectionRecordsFor(TextUntilNul(node.identity.id[:]))
+        ok := saved != null && AppFileNameValid(record) && record.count < 64 &&
+        text.count < 65536 && AppFileWrite(*saved.files, record, text)
+        result.* = HostScalar("bool", ifx ok then 1 else 0)
+        return 1
+    }
+    // A game plays only its own verified packed sounds.
+    if name == "AppSoundHost" && count == 1 && HostScalarValid(arguments[0], "string", cast(s32)HostString) {
+        asset := AppHostAsset(node, AppArgumentText(arguments[0]))
+        result.* = HostScalar("bool", ifx asset.found && SoundPlay(asset.data) then 1 else 0)
+        return 1
+    }
+    if name == "SmoothFramesHost" && count == 1 {
+        result.* = HostScalar("bool", 1)
+        return 1
+    }
+    if name == "AppServiceHost" && count == 2 &&
+    HostScalarValid(arguments[0], "string", cast(s32)HostString) &&
+    HostScalarValid(arguments[1], "string", cast(s32)HostString) {
+        service := AppArgumentText(arguments[0])
+        request := AppArgumentText(arguments[1])
+        if service == "leaderboard" {
+            saved := EntityLeaderboardReport("arcade", "Arcade", TextUntilNul(node.identity.id[:]),
+                TextUntilNul(node.entry.title[:]), request)
+            result.* = AppHostText(ifx saved then "{\"status\":\"saved\"}" else "{\"status\":\"rejected\"}")
+            return 1
+        }
+        // Public level collections, such as a game's live campaign.
+        if service == PUBLICATIONS_READ_SERVICE {
+            result.* = AppHostText(PublicationsReadAnswer(request))
+            return 1
+        }
+        // The account's own records, such as level drafts, kept and synced
+        // by the outer native app's Entity host.
+        if service == ENTITY_RECORDS_SERVICE {
+            result.* = AppHostText(EntityRecordsAnswer(request))
+            return 1
+        }
+        // The account's Dew to show and rewards a game claims from the node.
+        if service == ENTITY_DEW_SERVICE {
+            result.* = AppHostText(EntityDewAnswer(request))
+            return 1
+        }
+        if service == "entity.profile" && request == "open" {
+            result.* = AppHostText(ifx EntityShow() then "queued" else "unavailable")
+            return 1
+        }
+        // A game leaves for the cover that opened it after its frame.
+        if service == "arcade.navigation" && request == "back" {
+            collection_leave_to_library = true
+            result.* = AppHostText("queued")
+            return 1
+        }
+        if service == "arcade.sound" {
+            saved := CollectionRecordsFor("arcade.shovey-player")
+            if saved == null { return 0 }
+            if request == "get" {
+                AppFileFree(saved.text)
+                saved.text = AppFileRead(*saved.files, "sound")
+                muted := saved.text == "muted"
+                SoundSetMuted(muted)
+                result.* = AppHostText(ifx muted then "muted" else "on")
+                return 1
+            }
+            value := ifx request == "mute" then "muted" else ifx request == "unmute" then "on" else ""
+            if value == "" || !AppFileWrite(*saved.files, "sound", value) { return 0 }
+            SoundSetMuted(value == "muted")
+            result.* = AppHostText(value)
+            return 1
+        }
+        if service == "arcade.updates" {
+            if request == "get" {
+                updates := CollectionUpdates()
+                result.* = AppHostText(ifx updates == 1 then "on" else ifx updates == 0 then "off" else "unset")
+                return 1
+            }
+            if (request != "set-on" && request != "set-off") || !CollectionUpdatesSet(request == "set-on") { return 0 }
+            result.* = AppHostText(request[4:])
+            return 1
+        }
+        if service != "arcade.controls" { return 0 }
+        saved := CollectionRecordsFor("arcade.shovey-player")
+        if saved == null { return 0 }
+        if request == "mode" {
+            mode := ifx CollectionTouchFirst() then "touch" else "desktop"
+            result.* = AppHostText(mode)
+            return 1
+        }
+        if request == "get" {
+            AppFileFree(saved.text)
+            saved.text = AppFileRead(*saved.files, "controls")
+            value := ifx saved.text == "on" || saved.text == "off" then saved.text else "auto"
+            result.* = AppHostText(value)
+            return 1
+        }
+        value := ""
+        if request == "set-auto" { value = "auto" }
+        if request == "set-on" { value = "on" }
+        if request == "set-off" { value = "off" }
+        if value == "" || !AppFileWrite(*saved.files, "controls", value) { return 0 }
+        result.* = AppHostText(value)
+        return 1
+    }
+    if name == "AppLocaleHost" && count == 1 {
+        result.* = AppHostText(AppArgumentText(arguments[0]))
+        return 1
+    }
+    if name == "AppFriendHost" && count == 1 {
+        result.* = Codec.WidgetEncodeAppPerson(Node.AppPerson.{}, *collection_person_codec)
+        return 1
+    }
+    if name == "AppSharedHost" && count == 1 {
+        result.* = Codec.WidgetEncodeAppShared(Node.AppShared.{}, *collection_shared_codec)
+        return 1
+    }
+    if name == "AppSharedItemHost" && count == 2 {
+        result.* = Codec.WidgetEncodeAppSharedItem(Node.AppSharedItem.{}, *collection_item_codec)
+        return 1
+    }
+    if name == "AppInvitationHost" && count == 1 {
+        result.* = Codec.WidgetEncodeAppInvitation(Node.AppInvitation.{}, *collection_invitation_codec)
+        return 1
+    }
+    if (name == "RefreshAppSharedHost" && count == 0) ||
+    (name == "SendAppSharedHost" && count == 2) {
+        result.* = HostScalar("bool", 0)
+        return 1
+    }
+    return 0
+}
+
+CollectionAssetAllowed :: (path: string) -> bool {
+    return path == "" || (collection_widget_node != null && (AppHostAsset(collection_widget_node, path).found ||
+        AppHostAssetPending(collection_widget_node, path)))
+}
+
+CollectionAssetPath :: (path: string) -> string {
+    if path == "" { return "" }
+    if collection_widget_node == null { return "" }
+    asset := AppHostAsset(collection_widget_node, path)
+    if !asset.found { collection_pictures_missing = true; return "" }
+    relative := Join(TextUntilNul(collection_widget_node.entry.sha256[:]), path)
+    defer { AppFileFree(relative) }
+    cached := collection_images
+    while cached != null {
+        if cached.packed == relative { break }
+        cached = cached.next
+    }
+    if cached == null {
+        cached = New(CollectionImage)
+        if cached == null { return "" }
+        if !AppFileWrite(*collection_resources, relative, asset.data) {
+            CollectionFree(cast(*void)cached)
+            return ""
+        }
+        copy: Vec(u8)
+        BuilderPrint(*copy, "%", relative)
+        cached.packed = BuilderFinish(copy)
+        cached.next = collection_images
+        collection_images = cached
+    }
+    // Own this queued path through paint, independently of mutable cache links.
+    absolute := Join(collection_resources.root, relative)
+    if !VecPush(collection_frame_paths, absolute) { AppFileFree(absolute); return "" }
+    return absolute
+}
+
+CollectionWidgets :: (context: *void, node: *AppNode, module: *u8, function: *u8,
+    arguments: *HostValue, count: s32, result: *HostValue) -> s32 {
+    collection_widget_node = node
+    return WidgetHostCall(context, module, function, arguments, count, result)
+}
+
+// Check the same saved install state and verified download plan as Apps.
+// A cached payload or an old score alone is never installed membership.
+CollectionLeaderboardInstalled :: (game: string) -> bool {
+    if !collection_ready { return false }
+    for slot: cast(s64)0..collection_host.tree.nodes.count - 1 {
+        parent := collection_host.tree.nodes[slot].node
+        if parent == null || !parent.collection { continue }
+        index := AppCatalogFind(*parent.catalog, game)
+        if index < 0 { continue }
+        entry := AppCatalogAt(*parent.catalog, index)
+        identity := AppIdentity.{.authority = parent.identity.authority, .id = entry.id}
+        state: AppState
+        plan: AppInstallPlan
+        if CollectionState(null, "local", *identity, *state) && state.installed &&
+        AppHostInstallPlan(*collection_host, parent, entry, *plan) && plan.count == 0 {
+            return true
+        }
+    }
+    return false
+}
+
+CollectionSave :: (context: *void, node: *AppNode) -> bool {
+    saved := collection_records
+    while saved != null {
+        if saved.files.status == -1 { return false }
+        saved = saved.next
+    }
+    return true
+}
+
+CollectionState :: (context: *void, account: string, identity: *AppIdentity, state: *AppState) -> bool {
+    if account != "local" || TextUntilNul(identity.authority[:]) != "arcade.local" ||
+    !Rules.AppIdValid(TextUntilNul(identity.id[:])) { return false }
+    // Native control records live outside every guest's game-record root and
+    // outside the digest-prefixed image cache. Bundled bytes/saves are retained.
+    path := CollectionStatePath(identity)
+    defer { AppFileFree(path) }
+    text := AppFileRead(*collection_resources, path)
+    defer { AppFileFree(text) }
+    state.* = AppState.{.installed = true, .actions_known = true,
+        .actions = (cast(u64)1 << APPS_OPEN) | (cast(u64)1 << APPS_INSTALL) |
+        (cast(u64)1 << APPS_UNINSTALL) | (cast(u64)1 << APPS_PIN) | (cast(u64)1 << APPS_UNPIN)}
+    if text == "" { return true }
+    fields: [3]string = .["v", "installed", "favorite"]
+    installed := ReadNumber(text, FieldAt(text, 0, "installed"))
+    favorite := ReadNumber(text, FieldAt(text, 0, "favorite"))
+    if !AppsObjectValid(text, 0, fields[:]) || Space(text, ValueEnd(text, 0, 0)) != text.count ||
+    ReadNumber(text, FieldAt(text, 0, "v")).value != 1.0 ||
+    !installed.valid || !favorite.valid ||
+    (installed.value != 0.0 && installed.value != 1.0) ||
+    (favorite.value != 0.0 && favorite.value != 1.0) ||
+    (favorite.value == 1.0 && installed.value != 1.0) { return false }
+    state.installed = installed.value == 1.0
+    state.favorite = favorite.value == 1.0
+    return true
+}
+
+CollectionStatePath :: (identity: *AppIdentity) -> string {
+    bytes: Vec(u8)
+    BuilderPrint(*bytes, "state/%.json", TextUntilNul(identity.id[:]))
+    return BuilderFinish(bytes)
+}
+
+CollectionEffect :: (context: *void, account: string, locator: *AppLocator,
+    operation: s32, reply: *AppsReply) -> bool {
+    state: AppState
+    if !CollectionState(context, account, *locator.identity, *state) { return false }
+    if operation == APPS_INSTALL { state.installed = true }
+    else if operation == APPS_UNINSTALL { state.installed = false; state.favorite = false }
+    else if operation == APPS_PIN && state.installed { state.favorite = true }
+    else if operation == APPS_UNPIN { state.favorite = false }
+    else { return false }
+    path := CollectionStatePath(*locator.identity)
+    defer { AppFileFree(path) }
+    bytes: Vec(u8)
+    BuilderPrint(*bytes, "{\"v\":1,\"installed\":%,\"favorite\":%}",
+        ifx state.installed then 1 else 0, ifx state.favorite then 1 else 0)
+    text := BuilderFinish(bytes)
+    defer { AppFileFree(text) }
+    if !AppFileWrite(*collection_resources, path, text) { return false }
+    reply.status = APPS_APPLIED
+    return true
+}
+
+// The player needs only the collection's payload and metadata. Its stable
+// identity and record folders are those Arcade's standalone Shovey used.
+CollectionOpenShovey :: (directory: string, data: string) -> bool {
+    if collection_ready { return false }
+    payload_path := Join(directory, "shovey.zx")
+    metadata_path := Join(directory, "shovey.json")
+    defer { AppFileFree(payload_path); AppFileFree(metadata_path) }
+    bytes, found := ReadEntireFile(payload_path)
+    metadata, metadata_found := ReadEntireFile(metadata_path)
+    defer { AppFileFree(bytes); AppFileFree(metadata) }
+    return found && metadata_found && CollectionOpenShoveyBytes(bytes, metadata, data)
+}
+
+CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> bool {
+    if collection_ready { return false }
+    leaderboard_installed = CollectionLeaderboardInstalled
+    id: [128]u8
+    digest: [65]u8
+    harness: [65]u8
+    if bytes.count > 67108864 || metadata.count > 65536 ||
+    !AppsReadText(metadata, 0, "id", id[:]) || TextUntilNul(id[:]) != "arcade.shovey-player" ||
+    !AppsReadText(metadata, 0, "sha256", digest[:]) ||
+    !AppsReadText(metadata, 0, "apps_sha256", harness[:]) { return false }
+    collection_directory = data
+    collection_resource_root = Join(data, "resources")
+    if !AppFilesOpen(*collection_resources, collection_resource_root) { return false }
+    locale := EnvironmentText("LANG")
+    language := ifx locale.count >= 2 then locale[:2] else "en"
+    platform := AppPlatform.{.allows = CollectionAllows, .call = CollectionCall,
+        .widgets = CollectionWidgets, .save = CollectionSave, .state = CollectionState,
+        .effect = CollectionEffect}
+    collection_ready = AppHostStart(*collection_host, bytes, "arcade.local", "arcade.shovey-player",
+        "shovey", TextUntilNul(digest[:]), "local", platform, TextUntilNul(harness[:]), language)
+    return collection_ready
+}
+
+// Steps back from a game to its library, as Android's Back key does. At the
+// library it is unused, so the app closes.
+CollectionBack :: () -> bool {
+    if EntityBack() { return true }
+    return AppHostBack(*collection_host) > 0
+}
+
+CollectionCollect :: () {
+    if entity_ready { EntityPump() }
+    PublicationsReadPump()
+    AppHostCollect(*collection_host)
+    for path: collection_frame_paths { AppFileFree(path) }
+    while collection_frame_paths.count > 0 { unused VecPop(collection_frame_paths) }
+    collection_widget_node = null
+}
+
+CollectionClose :: () -> bool {
+    if !EntityClose() { return false }
+    if collection_ready && !AppHostStop(*collection_host) { return false }
+    collection_ready = false
+    collection_loading = .{}
+    CollectionCollect()
+    VecFree(collection_frame_paths)
+    while collection_images != null {
+        image := collection_images
+        collection_images = image.next
+        AppFileFree(image.packed)
+        AppFileFree(image.absolute)
+        CollectionFree(cast(*void)image)
+    }
+    while collection_records != null {
+        saved := collection_records
+        collection_records = saved.next
+        AppFilesClose(*saved.files)
+        AppFileFree(saved.root)
+        AppFileFree(saved.text)
+        AppFileFree(saved.id)
+        CollectionFree(cast(*void)saved)
+    }
+    AppFilesClose(*collection_resources)
+    AppFileFree(collection_resource_root)
+    collection_resource_root = ""
+    return true
+}
+
+CollectionPending :: (request: s64) -> bool {
+    for index: cast(s64)0..collection_host.tree.pending.count - 1 {
+        pending := collection_host.tree.pending[index]
+        if pending.reply.request == request { return !pending.complete }
+    }
+    return false
+}
+
+CollectionOpenGame :: (id: string) -> bool {
+    root := AppTreeNode(*collection_host.tree, collection_host.tree.active)
+    if root == null || !root.collection { Report("Shovey: no collection is open to start "); Report(id); Report("\n"); return false }
+    entry := AppCatalogAt(*root.catalog, AppCatalogFind(*root.catalog, id))
+    plan: AppInstallPlan
+    if entry != null && AppHostInstallPlan(*collection_host, root, entry, *plan) && plan.count > 0 {
+        unused CopyCString(id, collection_host.platform.presentation.download_id[:])
+        collection_host.platform.presentation.download_request += 1
+        return true
+    }
+    request: AppsRequest
+    request.operation = APPS_OPEN
+    if !CopyCString(id, request.id[:]) { return false }
+    queued := AppTreeQueue(*collection_host.tree, collection_host.tree.active, request)
+    if queued.status != APPS_QUEUED {
+        Report("Shovey: could not queue "); Report(id); Report(": "); Report(TextUntilNul(queued.reason[:])); Report("\n")
+        return false
+    }
+    if !AppTreeDrain(*collection_host.tree) { Report("Shovey: the apps host stopped while starting "); Report(id); Report("\n"); return false }
+    // Games that share code are verified in the background; wait for it.
+    started := MonotonicMilliseconds()
+    while CollectionPending(queued.request) && MonotonicMilliseconds() - started < 60000 {
+        unused SleepMilliseconds(5)
+        if !AppTreeDrain(*collection_host.tree) { Report("Shovey: the apps host stopped while starting "); Report(id); Report("\n"); return false }
+    }
+    for index: cast(s64)0..collection_host.tree.pending.count - 1 {
+        reply := collection_host.tree.pending[index].reply
+        if reply.request == queued.request && reply.status == APPS_REJECTED {
+            Report("Shovey: could not open "); Report(id); Report(": "); Report(TextUntilNul(reply.reason[:])); Report("\n")
+            return false
+        }
+    }
+    runtime := AppHostActiveRuntime(*collection_host)
+    if runtime == null || TextUntilNul(runtime.node.identity.id[:]) != id {
+        Report("Shovey: "); Report(id); Report(" did not start\n")
+        return false
+    }
+    if !AppHostRoute(*collection_host) { Report("Shovey: "); Report(id); Report(" could not be shown\n"); return false }
+    return true
+}
+
+collection_typed: [1024]u8;
+collection_pasted: [16384]u8;
+
+// The answer kept with the other game settings. Shovey Classic asked in its
+// first level before, and its answer counts until the covers ask.
+CollectionUpdates :: () -> s32 {
+    if collection_updates >= 0 { return collection_updates }
+    collection_updates = 2
+    ids: [2]string = .["arcade.shovey-player", "arcade.shovey"]
+    for id: ids {
+        saved := CollectionRecordsFor(id)
+        if saved == null { continue }
+        AppFileFree(saved.text)
+        saved.text = AppFileRead(*saved.files, "level-updates")
+        if saved.text == "on" || saved.text == "off" {
+            collection_updates = ifx saved.text == "on" then 1 else 0
+            break
+        }
+    }
+    return collection_updates
+}
+
+CollectionUpdatesSet :: (on: bool) -> bool {
+    saved := CollectionRecordsFor("arcade.shovey-player")
+    if saved == null || !AppFileWrite(*saved.files, "level-updates", ifx on then "on" else "off") { return false }
+    collection_updates = ifx on then 1 else 0
+    return true
+}
+
+// Asked once over the covers, before a game opens; nothing behind it takes
+// input until it is answered.
+CollectionUpdatesQuestion :: (session: Session, viewport: Rectangle) {
+    question := "Download new levels when they come out?"
+    Box(session, BoxProps.{.key = cast(u64)49300, .bounds = viewport, .fill = Color.{0, 0, 0, 160}})
+    unused Button(session, ButtonProps.{.key = cast(u64)49301, .id = 49301, .label = question,
+            .bounds = viewport, .invisible = true})
+    width := ifx viewport.width - 24.0 < 480.0 then viewport.width - 24.0 else 480.0
+    height: float32 = 200.0
+    x := viewport.x + (viewport.width - width) / 2.0
+    y := viewport.y + (viewport.height - height) / 2.0
+    Box(session, BoxProps.{.key = cast(u64)49302, .bounds = Rectangle.{x, y, width, height},
+            .fill = Color.{59, 64, 63, 255}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+    Text(session, TextProps.{.key = cast(u64)49303, .text = question, .font = 20, .wrap = TextWrap.TextWrapAuto,
+            .bounds = Rectangle.{x + 16.0, y + 16.0, width - 32.0, 60.0}})
+    Text(session, TextProps.{.key = cast(u64)49304, .text = "You can change this anytime in a game's Help.", .font = 14,
+            .wrap = TextWrap.TextWrapAuto, .bounds = Rectangle.{x + 16.0, y + 80.0, width - 32.0, 44.0}})
+    button_width := (width - 48.0 - 12.0) / 2.0
+    if Button(session, ButtonProps.{.key = cast(u64)49305, .id = 49305, .label = "Not now",
+            .bounds = Rectangle.{x + 24.0, y + 136.0, button_width, 44.0},
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        unused CollectionUpdatesSet(false)
+    }
+    if Button(session, ButtonProps.{.key = cast(u64)49306, .id = 49306, .label = "Download",
+            .bounds = Rectangle.{x + 36.0 + button_width, y + 136.0, button_width, 44.0},
+            .tone = ButtonTone.ButtonToneAccent}) != 0 {
+        unused CollectionUpdatesSet(true)
+    }
+}
+
+CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
+    collection_toolbar_visible = true
+    defer { CollectionToolbar(session, viewport) }
+    if entity_visible { return EntityFrame(session, viewport, key, modifiers) }
+    runtime := AppHostActiveRuntime(*collection_host)
+    if runtime == null { Report("Shovey: no app is running\n"); return false }
+    opening := !runtime.node.collection && (!collection_loading.shown ||
+        collection_loading.slot != collection_host.tree.active.slot ||
+        collection_loading.generation != collection_host.tree.active.generation)
+    if opening { key = 0 }
+    nested := runtime.node.parent.generation != 0 && !runtime.node.collection
+    // An app opened from its cover fills the screen with its own navigation.
+    // Other apps get a bar with Back and their title; the library and that
+    // bar keep Profile at the top right.
+    covered := runtime.node.entry.cover.portrait[0] != 0
+    collection_toolbar_visible = !covered
+    // The covers ask about new levels once; the question takes every key.
+    asking := runtime.node.collection && !collection_host.platform.presentation.cover_grid && CollectionUpdates() == 2
+    if asking { key = 0 }
+    top: s32 = ifx !covered && !runtime.node.collection && (entity_ready || nested) then 56 else 0
+    now := cast(float64)MonotonicMilliseconds() / 1000.0
+    runtime.app.session = session
+    runtime.app.bounds = Rectangle.{viewport.x, viewport.y + cast(float32)top, viewport.width, viewport.height - cast(float32)top}
+    runtime.app.scale = 1.0
+    runtime.app.font = 16
+    runtime.app.key = key
+    runtime.app.modifiers = modifiers
+    // A focused text field in the game edits with what was typed this frame,
+    // as a native Kryon field does: text, editing keys and paste.
+    typed := TypedTextTake(session, collection_typed[:])
+    runtime.app.input = TextFieldInputFor(key, modifiers, typed)
+    runtime.app.area_input = TextAreaInputFor(key, modifiers, typed)
+    if runtime.app.input.paste {
+        pasted := SystemClipboardText(collection_pasted[:])
+        runtime.app.input.paste_text = pasted
+        runtime.app.area_input.paste_text = pasted
+    }
+    if runtime.protocol == APPS_NODE_PROTOCOL {
+        runtime.legacy.message = Node.AppMessage.{.locale = TextUntilNul(collection_host.locale[:]),
+            .shared_status = Node.APP_SHARED_UNAVAILABLE, .time = UnixNow()}
+        runtime.legacy.frame = Node.AppUiFrame.{.session = session,
+            .width = cast(s32)(viewport.x + viewport.width), .height = cast(s32)(viewport.y + viewport.height),
+            .top = cast(s32)viewport.y + top,
+            .scale = 1.0, .font = 16, .now = now}
+    }
+    WidgetHostBegin(session, CollectionAssetAllowed, CollectionAssetPath)
+    collection_pictures_missing = false
+    drawn := AppHostRun(*collection_host, APP_FRAME)
+    WidgetHostEnd()
+    if !drawn {
+        Report("collection frame failed\n")
+        return false
+    }
+    if collection_leave_to_library {
+        collection_leave_to_library = false
+        unused AppHostBack(*collection_host)
+        return true
+    }
+    if opening {
+        pictures_ready := !collection_pictures_missing
+        // Query every path, including those first requested by this frame's
+        // TileMap. Android decodes them asynchronously on its render thread.
+        for path: collection_frame_paths {
+            if AssetWidth(path) < 0 { pictures_ready = false }
+        }
+        if CollectionNeedsCover(*collection_loading, collection_host.tree.active.slot,
+            collection_host.tree.active.generation, pictures_ready) {
+            collection_toolbar_visible = false
+            Box(session, BoxProps.{.key = cast(u64)49400, .bounds = viewport,
+                    .fill = ColorFromPacked(ShoveyPalette().background)})
+            unused Button(session, ButtonProps.{.key = cast(u64)49401, .id = 49401,
+                    .bounds = viewport, .invisible = true})
+            LoadingIndicator(session, LoadingIndicatorProps.{.key = cast(u64)49402,
+                    .bounds = viewport, .now = now, .scale = 1.5})
+            return true
+        }
+    } else if runtime.node.collection {
+        collection_loading = .{}
+    }
+    if asking {
+        unused WidgetPaletteUse(session, ShoveyPalette())
+        CollectionUpdatesQuestion(session, viewport)
+        unused WidgetPaletteRestore(session)
+        return true
+    }
+    if nested && !covered {
+        title_bytes: Vec(u8)
+        BuilderPrint(*title_bytes, "%", TextUntilNul(runtime.node.entry.title[:]))
+        title := BuilderFinish(title_bytes)
+        if !VecPush(collection_frame_paths, title) { AppFileFree(title); return false }
+        Box(session, BoxProps.{.key = cast(u64)6, .bounds = Rectangle.{viewport.x, viewport.y, viewport.width, 56.0},
+                .fill = Color.{128, 140, 136, 40}})
+        if Button(session, ButtonProps.{.key = cast(u64)7, .id = 7, .label = "Back",
+                .bounds = Rectangle.{viewport.x + 8.0, viewport.y + 6.0, 76.0, 44.0},
+                .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+            unused AppHostBack(*collection_host)
+        }
+        Text(session, TextProps.{.key = cast(u64)8,
+                .text = title, .font = 20,
+                .bounds = Rectangle.{viewport.x + 100.0, viewport.y + 12.0, viewport.width - 116.0, 36.0}})
+    }
+    return true
+}
+
+CollectionToolbar :: (session: Session, viewport: Rectangle) {
+    if !entity_ready || !collection_toolbar_visible { return }
+    unused WidgetPaletteUse(session, ShoveyPalette())
+    defer { unused WidgetPaletteRestore(session) }
+    // The account's Dew beside the Profile: a drop and the number, 0 until an
+    // account is connected; it opens the Profile too.
+    dew := EntityDewBalanceText(collection_dew_text[:])
+    dew_width := 52.0 + 10.0 * cast(float32)dew.count
+    if Button(session, ButtonProps.{.key = cast(u64)49201, .id = 49201, .label = dew,
+            .bounds = Rectangle.{viewport.x + viewport.width - 64.0 - dew_width, viewport.y + 6.0, dew_width, 44.0},
+            .icon_shape = DewIcon.Shape, .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        unused EntityShow()
+    }
+    if Button(session, ButtonProps.{.key = cast(u64)49200, .id = 49200, .label = "Profile",
+            .bounds = Rectangle.{viewport.x + viewport.width - 56.0, viewport.y + 6.0, 44.0, 44.0},
+            .icon_shape = ProfileIcon.Shape, .icon_only = true,
+            .selected = entity_visible,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        unused EntityShow()
+    }
+}
+
+c :: #system_library "c";
+CollectionFree :: (memory: *void) #foreign c "free";

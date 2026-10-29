@@ -1,6 +1,8 @@
 [package]
 name = "Shovey"
 module_roots = ["src"]
+# Kryon's Android host draws the player's Frame in src/app.zi.
+bridge_modules = ["app"]
 
 [toolchain]
 git = "https://github.com/ziranlang/ziran.git"
@@ -24,3 +26,9 @@ shovey_theme = "src/shovey_theme.zi"
 [dependencies.entity]
 git = "https://github.com/waozixyz/entity.git"
 ref = "master"
+
+# The Windows player's network library, built with MinGW over Windows TLS.
+[dependencies.curl]
+git = "https://github.com/curl/curl.git"
+ref = "19b299005fbe2d895f4ad525cfdae62a2220c3ea"
+source = true

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Shovey
+Comment=Logic puzzles with Shovey
+Exec=shovey
+Icon=xyz.waozi.shovey
+Terminal=false
+Categories=Game;LogicGame;
