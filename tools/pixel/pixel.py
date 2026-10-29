@@ -994,7 +994,39 @@ def hole():
     return abyss_edge(15)
 
 
-def abyss_edge(mask):
+def lava_edge(mask):
+    """Lava deep in a pit: the abyss's cliffs and lips, with molten rock
+    glowing dimly far below instead of darkness."""
+    image = abyss_edge(mask, floor=lava_floor())
+    # Depth: the lava darkens in the shadow of every rock wall around it.
+    px = image.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            dist = SIZE
+            if mask & 1: dist = min(dist, x)
+            if mask & 2: dist = min(dist, y - 10)
+            if mask & 4: dist = min(dist, SIZE - 1 - x)
+            if mask & 8: dist = min(dist, SIZE - 1 - y)
+            if dist >= 10: continue
+            shade_factor = 0.45 + 0.55 * max(0, dist) / 10
+            r, g, b, a = px[x, y]
+            if (mask & 2 and y < 12) or dist < 3 and (r + g + b) > 360 and abs(r - g) < 30: continue   # the rock itself
+            px[x, y] = (round(r * shade_factor), round(g * shade_factor), round(b * shade_factor), a)
+    return image
+
+
+def lava_floor():
+    """The molten surface as seen from the pit's rim: darker and calmer."""
+    lava = native('lava').convert('RGBA')
+    px = lava.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            r, g, b, a = px[x, y]
+            px[x, y] = (round(r * 0.55), round(g * 0.40), round(b * 0.34), 255)
+    return lava
+
+
+def abyss_edge(mask, floor=None):
     """A drop into darkness, seen from above and a little from the front.
     mask bits 0-3 (left, top, right, bottom on screen) mark solid ground on
     that side. Under ground at the top, the far cliff shows: a soil lip, then
@@ -1002,11 +1034,12 @@ def abyss_edge(mask):
     rock wall; ground at the bottom, the near lip with its shadow. Open sides
     join the next abyss cell seamlessly."""
     rng = random.Random(6500 + mask)
-    image = Image.new('RGBA', (SIZE, SIZE))
+    image = Image.new('RGBA', (SIZE, SIZE)) if floor is None else floor.copy()
     px = image.load()
     # The dark: near black with a cold tint and a faint grain.
     for y in range(SIZE):
         for x in range(SIZE):
+            if floor is not None: break
             n = rng.randint(-2, 2)
             px[x, y] = (6 + n, 9 + n, 13 + n, 255)
     # Grey stone, the colour of the paving and walls around most drops.
@@ -1438,7 +1471,7 @@ def sprites():
         'tile-163': ('cave floor: dark packed rock and gravel', native('cave-floor')),
         'tile-164': ('cave wall: a block of rough dark cave rock; blocks movement and laser beams', native('cave-wall')),
         'tile-165': ('crystals: glowing cyan cave crystals on a rock; block movement and laser beams', native('crystals')),
-        'tile-166': ('lava: molten rock; Shovey falls in and nothing can be pushed there', native('lava')),
+        'tile-166': ('lava: molten rock deep in a pit; Shovey falls in and nothing can be pushed there', lava_edge(15)),
         'tile-140': ('flower pot: terracotta pot of pink, yellow and white flowers; blocks movement', native('flower-pot')),
         'tile-141': ('barrel: an upright wooden barrel with iron hoops; blocks movement', native('barrel')),
         'tile-142': ('tree stump: a cut stump with rings and a green sprout; blocks movement', native('tree-stump')),
@@ -1490,6 +1523,7 @@ def sprites():
         out[f'grass-edge-{mask}'] = ('grass blending into adjacent paving with connected corners', grass_edge(mask))
         out[f'abyss-corner-{mask}'] = ('an abyss inner corner: rock walls running on down and the near lip turning', abyss_corner(mask))
         out[f'abyss-edge-{mask}'] = ('abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge', abyss_edge(mask))
+        out[f'lava-edge-{mask}'] = ('lava pit: the abyss cliffs with dim molten rock far below', lava_edge(mask))
     for frame in range(6):
         out[f'burst-{frame}'] = (f'a target struck by a shot, frame {frame + 1} of 6', burst(frame))
     for frame in range(8):

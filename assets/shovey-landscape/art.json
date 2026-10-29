@@ -683,6 +683,86 @@
       "sha256": "9e186aeeb632180283bcd0c98d42e0e805730f27ca44b37e9e025d863d330918"
     },
     {
+      "path": "sprites/lava-edge-0.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "40e74e874cd5a126cfadbe8b78929474dcacadc4cbb9feafd443da3993f45786"
+    },
+    {
+      "path": "sprites/lava-edge-1.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "90772914d176a8f5f9a90916c7ee5613730ca33d89f3c4d95651da74b4c085d9"
+    },
+    {
+      "path": "sprites/lava-edge-10.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "eba321a72c0cd86c86b7b73b263f13fff24bed94e8f4adc0323ef72250043384"
+    },
+    {
+      "path": "sprites/lava-edge-11.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "52407093457e2b2e4709c396ca13da2639d687fcc6311dba2ecd66cad5ee8c5f"
+    },
+    {
+      "path": "sprites/lava-edge-12.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "de46c004bed7434eb80023243fb7b9c78ca8a02eb3d8eea01e6d97c1b381c7b1"
+    },
+    {
+      "path": "sprites/lava-edge-13.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "67b8bfa7f8f0e01eb4a224157a125d6d4484364215445f2c36c529442ab6eaf8"
+    },
+    {
+      "path": "sprites/lava-edge-14.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "8cb70b6b209469f72f16d9de08d23180a137d6580b8973e7ad9688d471a05cad"
+    },
+    {
+      "path": "sprites/lava-edge-15.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
+    },
+    {
+      "path": "sprites/lava-edge-2.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "aab656948d57c6f24c8e43d132693d77831b54fb7e9db47d2cbce6ee8b3c22d8"
+    },
+    {
+      "path": "sprites/lava-edge-3.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "56000701c5d8271df6e88ca8f13acd3450fc84693322ea83733e69af0170db52"
+    },
+    {
+      "path": "sprites/lava-edge-4.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "2807d48b7a0a2e21061d066f3da782760853888a1cc61a013903f73ba39ff3e2"
+    },
+    {
+      "path": "sprites/lava-edge-5.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "c94eedd6ee557fafdfeff259ff5743e50197009e38aaca70e5268cb1bc3feda2"
+    },
+    {
+      "path": "sprites/lava-edge-6.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "54b31cd9d6fc5e41f02069f5712f386d9462fe6625d9d54cc68dc99fce7a9e56"
+    },
+    {
+      "path": "sprites/lava-edge-7.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "5fe83d640c69cdaa10346509f042ded1ed10d2abd6119c127af32a9ca0286f59"
+    },
+    {
+      "path": "sprites/lava-edge-8.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "f02c99d504d2a530c15f68de9df635110703bee1e0f3b64142a3145729e63d3e"
+    },
+    {
+      "path": "sprites/lava-edge-9.png",
+      "depicts": "landscape presentation of lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "3272e03e82c790958a59011ed986e96610f12920f441a7e49903fccbde476442"
+    },
+    {
       "path": "sprites/moss-lowered-0.png",
       "depicts": "landscape presentation of slate wall lowered into a flat slab with a recessed mossy seam",
       "sha256": "9c677a6c975e5766a07d6375ebbf0fca6315c65d848f337691386aa50010a4ec"
@@ -1149,8 +1229,8 @@
     },
     {
       "path": "sprites/tile-166.png",
-      "depicts": "landscape presentation of lava: molten rock; Shovey falls in and nothing can be pushed there",
-      "sha256": "fc83de6b181f54e92c119296a93b369462e22a0edc1339c6242a479795ad1d72"
+      "depicts": "landscape presentation of lava: molten rock deep in a pit; Shovey falls in and nothing can be pushed there",
+      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
     },
     {
       "path": "sprites/tile-17.png",

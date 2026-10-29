@@ -644,8 +644,8 @@
     },
     {
       "path": "sprites/tile-166.png",
-      "depicts": "lava: molten rock; Shovey falls in and nothing can be pushed there",
-      "sha256": "fc83de6b181f54e92c119296a93b369462e22a0edc1339c6242a479795ad1d72"
+      "depicts": "lava: molten rock deep in a pit; Shovey falls in and nothing can be pushed there",
+      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
     },
     {
       "path": "sprites/tile-140.png",
@@ -1233,6 +1233,11 @@
       "sha256": "5de09768d768da0b9a9676a09ba9fa4d14b6576a02dea8716409cd58d3ef22ae"
     },
     {
+      "path": "sprites/lava-edge-0.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "40e74e874cd5a126cfadbe8b78929474dcacadc4cbb9feafd443da3993f45786"
+    },
+    {
       "path": "sprites/grass-edge-1.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "233981030eebb55fdcfa1243b34c1ded889015b7594466600a7bceafc428647f"
@@ -1246,6 +1251,11 @@
       "path": "sprites/abyss-edge-1.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "d36c334f3655f825a138d7d5b001a9eeab57ccd09fd88c2d3dd1fc0d6ea525de"
+    },
+    {
+      "path": "sprites/lava-edge-1.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "90772914d176a8f5f9a90916c7ee5613730ca33d89f3c4d95651da74b4c085d9"
     },
     {
       "path": "sprites/grass-edge-2.png",
@@ -1263,6 +1273,11 @@
       "sha256": "eaaad53e5062c70e05f8ba2ce8c4f953827ddad0e0ccf69d71a8c191375a16d6"
     },
     {
+      "path": "sprites/lava-edge-2.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "aab656948d57c6f24c8e43d132693d77831b54fb7e9db47d2cbce6ee8b3c22d8"
+    },
+    {
       "path": "sprites/grass-edge-3.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "1c075a52bf73f6bff314be9e434261e4f1c5fd46f2debac0a7b09d5ddfec69a3"
@@ -1276,6 +1291,11 @@
       "path": "sprites/abyss-edge-3.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "b51bf4be7d937bd9a49248199f0bbda5719ae82aa5435cf8f608a53f8b88fc78"
+    },
+    {
+      "path": "sprites/lava-edge-3.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "56000701c5d8271df6e88ca8f13acd3450fc84693322ea83733e69af0170db52"
     },
     {
       "path": "sprites/grass-edge-4.png",
@@ -1293,6 +1313,11 @@
       "sha256": "727e80d148f84bd3ee552b3292fd08981cd54938ceb635df02cd0252ded381ec"
     },
     {
+      "path": "sprites/lava-edge-4.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "2807d48b7a0a2e21061d066f3da782760853888a1cc61a013903f73ba39ff3e2"
+    },
+    {
       "path": "sprites/grass-edge-5.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "7de761abd447f7acefb2190e74a4b3bb03be10b85b9fd538908c6a494533862a"
@@ -1306,6 +1331,11 @@
       "path": "sprites/abyss-edge-5.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "9cda1cb7fda0524d6dec46e7e74db99a299cbc32410e5ef08ca79e5ef01a53e4"
+    },
+    {
+      "path": "sprites/lava-edge-5.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "c94eedd6ee557fafdfeff259ff5743e50197009e38aaca70e5268cb1bc3feda2"
     },
     {
       "path": "sprites/grass-edge-6.png",
@@ -1323,6 +1353,11 @@
       "sha256": "bda847980362f20372746f0bad37ca53689c929f39df14a238bb655a506f5f65"
     },
     {
+      "path": "sprites/lava-edge-6.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "54b31cd9d6fc5e41f02069f5712f386d9462fe6625d9d54cc68dc99fce7a9e56"
+    },
+    {
       "path": "sprites/grass-edge-7.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "c2efdc1cc96f6b62e3ba95c31d517d11194cf88242c347c0b82a20985dcd3330"
@@ -1336,6 +1371,11 @@
       "path": "sprites/abyss-edge-7.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "24ee54bda9e0f6fc8caf5a07a8cdcd1247bb2fc961c7f75a81319f8bf70224c5"
+    },
+    {
+      "path": "sprites/lava-edge-7.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "5fe83d640c69cdaa10346509f042ded1ed10d2abd6119c127af32a9ca0286f59"
     },
     {
       "path": "sprites/grass-edge-8.png",
@@ -1353,6 +1393,11 @@
       "sha256": "63fdfb340f687b88c1899444b6b812a0a8100ea2b9c178b3192d54e7dfe9e5f7"
     },
     {
+      "path": "sprites/lava-edge-8.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "f02c99d504d2a530c15f68de9df635110703bee1e0f3b64142a3145729e63d3e"
+    },
+    {
       "path": "sprites/grass-edge-9.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "8310248343b59f0d4687209f1cb3dc4ce7f4b5a123fb68b5386f89ce7f7e3513"
@@ -1366,6 +1411,11 @@
       "path": "sprites/abyss-edge-9.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "9a7970d376bd803fa57f7b259c154a1c4b5185d91502c143e6bf6ebff4520205"
+    },
+    {
+      "path": "sprites/lava-edge-9.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "3272e03e82c790958a59011ed986e96610f12920f441a7e49903fccbde476442"
     },
     {
       "path": "sprites/grass-edge-10.png",
@@ -1383,6 +1433,11 @@
       "sha256": "2046e055251cbb1be5771e4a397adb7765f0d33961f7f32333c04db78b955944"
     },
     {
+      "path": "sprites/lava-edge-10.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "eba321a72c0cd86c86b7b73b263f13fff24bed94e8f4adc0323ef72250043384"
+    },
+    {
       "path": "sprites/grass-edge-11.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "7d82b14bb259d3714c989a50206d3970fbe0604e8c1471d30a8696b7d348ed9e"
@@ -1396,6 +1451,11 @@
       "path": "sprites/abyss-edge-11.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "b05f4402cd881cf6eb2133fdff7a5b1cf48694b72ec368a53b9140f52336bd87"
+    },
+    {
+      "path": "sprites/lava-edge-11.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "52407093457e2b2e4709c396ca13da2639d687fcc6311dba2ecd66cad5ee8c5f"
     },
     {
       "path": "sprites/grass-edge-12.png",
@@ -1413,6 +1473,11 @@
       "sha256": "871f13ae66da4eb65445ed753cb99e10a37d7ab72db3b46351a9017e4a02808e"
     },
     {
+      "path": "sprites/lava-edge-12.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "de46c004bed7434eb80023243fb7b9c78ca8a02eb3d8eea01e6d97c1b381c7b1"
+    },
+    {
       "path": "sprites/grass-edge-13.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "609272d8631ce381d48fa2c87308f384b23a59f917e391702fb0ae1401a11b2f"
@@ -1426,6 +1491,11 @@
       "path": "sprites/abyss-edge-13.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "d4c21429acee5f5eba14f9f6d9b4f44ffa9e561ab0bee2471033f60d15ddc0e1"
+    },
+    {
+      "path": "sprites/lava-edge-13.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "67b8bfa7f8f0e01eb4a224157a125d6d4484364215445f2c36c529442ab6eaf8"
     },
     {
       "path": "sprites/grass-edge-14.png",
@@ -1443,6 +1513,11 @@
       "sha256": "94ffb9c08a4ac970e75feea69f8473dc8bb0b151f8f03a4ced0cdb4525fff4b8"
     },
     {
+      "path": "sprites/lava-edge-14.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "8cb70b6b209469f72f16d9de08d23180a137d6580b8973e7ad9688d471a05cad"
+    },
+    {
       "path": "sprites/grass-edge-15.png",
       "depicts": "grass blending into adjacent paving with connected corners",
       "sha256": "3ddcb0d692edc75895c65bbdeec93a35aa6e75a7fc5c84bb8d4860f180de11f9"
@@ -1456,6 +1531,11 @@
       "path": "sprites/abyss-edge-15.png",
       "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
       "sha256": "d4ec6e4bfc7f41fd0ca00c46066197c1b90b393303e8a5bdc27570c85530b8ff"
+    },
+    {
+      "path": "sprites/lava-edge-15.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
     },
     {
       "path": "sprites/burst-0.png",

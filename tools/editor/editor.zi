@@ -773,9 +773,13 @@ PrivateSprite :: (kind: s32) -> s32 {
 }
 
 hex_abyss_open: [SHOVEY_CELLS]bool;
+hex_lava_open: [SHOVEY_CELLS]bool;
 
 HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string, chest: bool = false) -> TileMapResult {
-    for at: cast(s32)0..SHOVEY_CELLS - 1 { hex_abyss_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        hex_abyss_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT
+        hex_lava_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_LAVA
+    }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         kind := KindAt(board, at)
         display := BoardDisplayIndex(at, landscape)
@@ -793,6 +797,14 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
             }
             layers[display] = SPRITE_ABYSS + mask
         }
+        if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_LAVA {
+            mask: s32 = 0
+            for side: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
+                if neighbor < 0 || KindAt(board, SHOVEY_CELLS + neighbor) != SHOVEY_LAVA { mask |= 1 << side }
+            }
+            layers[display] = SPRITE_LAVA_EDGE + mask
+        }
         if KindAt(board, SHOVEY_CELLS + at) == 77 {
             mask: s32 = 0
             for direction: cast(s32)0..3 {
@@ -807,6 +819,10 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         layers[SHOVEY_CELLS + display] = ifx decoration == 0 then -1 else PrivateSprite(decoration)
         if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT && decoration == 0 {
             corners := BoardAbyssCorners(at, landscape, hex_abyss_open)
+            if corners != 0 { layers[SHOVEY_CELLS + display] = SPRITE_ABYSS_CORNER + corners }
+        }
+        if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_LAVA && decoration == 0 {
+            corners := BoardAbyssCorners(at, landscape, hex_lava_open)
             if corners != 0 { layers[SHOVEY_CELLS + display] = SPRITE_ABYSS_CORNER + corners }
         }
         layers[SHOVEY_CELLS * 2 + display] = ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, landscape) else ifx kind > 0 && ShoveyCellKind(kind) then PrivateSprite(kind) else -1
