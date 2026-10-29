@@ -12,11 +12,20 @@ Larger packs retain their bulk premiums: 100 Dew at 15%, 500 Dew at 10%,
 per Dew against the 10 Dew pack using actual same-currency Play prices,
 rounded down. Provisioning the new small pack must preserve existing larger
 pack prices. The direct and F-Droid editions buy Dew
-with Monero at dew.waozi.xyz. Arcade builds the Play bundle as Kryon's
-`gplay` edition, so Entity's Profile Dew page lists the Play packs and credits
-them after the node verifies each purchase. Keep Play Billing in Play builds
-and offer no other way to buy Dew there. Earning Dew rewards is separate from
-buying Dew. Store declarations must describe the actual Play build.
+with Monero at dew.waozi.xyz. Shovey's player builds the Play bundle and the
+`-gplay` APK as Kryon's `gplay` edition, so Entity's Profile Dew page lists the
+Play packs and credits them after the node verifies each purchase. Keep Play
+Billing in Play builds and offer no other way to buy Dew there. Earning Dew
+rewards is separate from buying Dew. Store declarations must describe the
+actual Play build.
+
+Owner law, 2026-10-29: only the `-gplay` edition may contain Google libraries.
+The normal APK, published again as `-fdroid` (it has no self-update), names
+none, in the APK or in the Gradle files its build reads: Play Billing comes
+only from Kryon's `templates/android-gplay.gradle`, which
+`packaging/android/build.gradle` applies for `-Papp.edition=gplay`. Downloads
+and F-Droid check the Gradle files and every APK with Kryon's `google-free`
+action and fail on a Google library; the `-gplay` APK must show Play Billing.
 
 Owner instruction, 2026-10-27: GitHub releases everything. Every published
 Shovey release goes to Google Play's internal testing track from the Downloads

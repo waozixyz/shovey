@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Sign and verify the standalone Shovey Android download."""
+"""Sign and verify the standalone Shovey Android downloads: the normal APK
+(also the F-Droid edition), which holds no Google library, and the Google
+Play edition's APK and bundle, the only ones with Play Billing."""
 import argparse
 import hashlib
 import json
@@ -21,7 +23,7 @@ def build_tools():
     return next(p for p in reversed(folders) if all((p / name).is_file() for name in ('aapt', 'apksigner', 'zipalign')))
 
 
-def verify(apk, version, tools):
+def verify(apk, version, tools, edition='direct'):
     assert re.fullmatch(r'\d+\.\d+\.\d+', version), 'A numeric release version is required'
     changelog = (ROOT / 'src/CHANGELOG.md').read_text()
     assert re.search(r'^## \[' + re.escape(version) + r'\] - ', changelog, re.M), 'Release version is absent from the changelog'
@@ -29,6 +31,9 @@ def verify(apk, version, tools):
     package = re.search(r"^package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'", badging, re.M)
     assert package and package[1] == 'xyz.waozi.shovey' and package[3] == version, 'APK identity or version differs'
     assert 'application-debuggable' not in badging, 'A debug build cannot be published'
+    google_play = edition == 'gplay'
+    assert ("'com.android.vending.BILLING'" in badging) == google_play, \
+        'Only the Google Play edition may ask for Play Billing'
     certificate = subprocess.check_output(['openssl', 'x509', '-in', str(ROOT / 'packaging/android/certificate.pem'), '-outform', 'DER'])
     expected = hashlib.sha256(certificate).hexdigest()
     signature = subprocess.check_output([str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)], text=True)
@@ -42,7 +47,10 @@ def verify(apk, version, tools):
         payload = archive.read('assets/shovey.zx')
         assert metadata['id'] == 'arcade.shovey-player' and metadata['version'] == version
         assert metadata['sha256'] == hashlib.sha256(payload).hexdigest(), 'Embedded game collection differs from its receipt'
-    return dict(version=version, version_code=int(package[2]), package=package[1], abis=abis,
+        dex = b''.join(archive.read(name) for name in archive.namelist() if re.fullmatch(r'classes\d*\.dex', name))
+        for marker in (b'Lorg/kryonlabs/play/PlayBilling;', b'Lcom/android/billingclient/'):
+            assert (marker in dex) == google_play, 'Only the Google Play edition may include Play Billing'
+    return dict(version=version, version_code=int(package[2]), package=package[1], abis=abis, edition=edition,
                 sha256=hashlib.sha256(apk.read_bytes()).hexdigest(), certificate_sha256=expected,
                 payload_sha256=metadata['sha256'], bytes=apk.stat().st_size)
 
@@ -99,6 +107,8 @@ def main():
     parser.add_argument('--password-file', type=Path, default=ROOT / 'backup/android-signing/password')
     parser.add_argument('--alias', default='shovey')
     parser.add_argument('--bundletool', type=Path, help='Google bundletool JAR, required for .aab files')
+    parser.add_argument('--edition', choices=('direct', 'gplay'), default='direct',
+                        help='direct: the normal and F-Droid APK; gplay: the Google Play APK')
     args = parser.parse_args()
     tools = build_tools()
     apk = args.apk.resolve(strict=True)
@@ -137,14 +147,15 @@ def main():
         finally:
             # Only the signed APK belongs beside the output.
             aligned.unlink(missing_ok=True)
-        result = verify(temporary, args.version, tools)
+        result = verify(temporary, args.version, tools, args.edition)
         temporary.replace(output)
         result['apk'] = str(output)
         records = ROOT / 'backup/android-release'
         records.mkdir(parents=True, exist_ok=True)
-        (records / 'verification.json').write_text(json.dumps(result, indent=2) + '\n')
+        name = 'gplay-verification.json' if args.edition == 'gplay' else 'verification.json'
+        (records / name).write_text(json.dumps(result, indent=2) + '\n')
     else:
-        verify(apk, args.version, tools)
+        verify(apk, args.version, tools, args.edition)
     print(f'Shovey {args.version}: release APK identity, signer, alignment and embedded games verified')
 
 

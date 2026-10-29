@@ -2,9 +2,10 @@ name: Downloads
 
 # A push whose changelog names a version that is not released yet builds and
 # checks the signed Android APK, also published as shovey-VERSION-fdroid.apk
-# once F-Droid's own build of the commit matches it, and the Linux and Windows
-# downloads, then publishes them as that version's release, like Inner
-# Breeze. Every download is Shovey's player (scripts/player.py), built from
+# once F-Droid's own build of the commit matches it, the Google Play edition's
+# APK (shovey-vVERSION-gplay.apk, the only one with a Google library), and the
+# Linux and Windows downloads, then publishes them as that version's release,
+# like Inner Breeze. Every download is Shovey's player (scripts/player.py), built from
 # this repository's own lock; Arcade follows the release afterwards. Pushes of
 # a released version only check that nothing needs releasing. A manual run
 # retries an unreleased version. No release is left as a draft.
@@ -69,10 +70,19 @@ jobs:
         with:
           ref: ${{ needs.due.outputs.revision }}
       - uses: ./.github/actions/android
+      # Only the Google Play edition may name a Google library, in its build
+      # files as in its APK.
+      - name: Keep Google libraries out of the normal and F-Droid build files
+        uses: kryonlabs/kryon/.github/actions/google-free@7217475dfa7f462939e47e3f0bc918aef248b179
       # The build F-Droid's recipe runs; it has no self-update, so one APK
       # serves both.
       - name: Build the release APK
         run: make android-fdroid
+      - name: Keep Google libraries out of the normal and F-Droid APK
+        uses: kryonlabs/kryon/.github/actions/google-free@7217475dfa7f462939e47e3f0bc918aef248b179
+        with:
+          packages: build/fdroid/shovey.apk
+          source: ''
       - name: Sign and check the APK
         env:
           KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
@@ -90,6 +100,46 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: shovey-android
+          path: build/downloads/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  android-gplay:
+    needs: due
+    if: needs.due.outputs.release_due == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.due.outputs.revision }}
+      - uses: ./.github/actions/android
+      - name: Build the Google Play edition's APK
+        run: make android-gplay
+      # The Google check must still recognise Play Billing, or its passes on
+      # the other editions prove nothing.
+      - name: Find Play Billing in the Google Play APK
+        uses: kryonlabs/kryon/.github/actions/google-free@7217475dfa7f462939e47e3f0bc918aef248b179
+        with:
+          packages: build/fdroid/shovey-gplay.apk
+          source: ''
+          expect-google: 'true'
+      - name: Sign and check the APK
+        env:
+          KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
+          PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+          VERSION: ${{ needs.due.outputs.version }}
+        run: |
+          umask 077
+          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
+          printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
+          python3 scripts/android-release.py sign build/fdroid/shovey-gplay.apk --edition gplay --version "$VERSION" \
+            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
+            --output "build/downloads/shovey-v$VERSION-gplay.apk"
+          rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shovey-android-gplay
           path: build/downloads/*.apk
           if-no-files-found: error
           retention-days: 7
@@ -208,7 +258,7 @@ jobs:
           retention-days: 7
 
   release:
-    needs: [due, android, fdroid, linux, windows]
+    needs: [due, android, android-gplay, fdroid, linux, windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -239,13 +289,14 @@ jobs:
           apk=$(ls build/downloads/shovey-v*.apk)
           version=${apk##*/shovey-v}
           version=${version%.apk}
-          for file in "shovey-v$version.apk" "shovey-$version-fdroid.apk" "shovey-v$version-linux-x86_64.tar.gz" "shovey-v$version-windows-x86_64.zip"; do
+          for file in "shovey-v$version.apk" "shovey-$version-fdroid.apk" "shovey-v$version-gplay.apk" "shovey-v$version-linux-x86_64.tar.gz" "shovey-v$version-windows-x86_64.zip"; do
             test -f "build/downloads/$file" || { echo "Missing $file" >&2; exit 1; }
           done
-          test "$(ls build/downloads | wc -l)" = 4 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
+          test "$(ls build/downloads | wc -l)" = 5 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
           test "$version" = "$CHANGELOG_VERSION" || { echo "The downloads are $version but the changelog names $CHANGELOG_VERSION" >&2; exit 1; }
           python3 scripts/android-release.py verify "build/downloads/shovey-v$version.apk" --version "$version"
           python3 scripts/android-release.py verify "build/downloads/shovey-$version-fdroid.apk" --version "$version"
+          python3 scripts/android-release.py verify "build/downloads/shovey-v$version-gplay.apk" --edition gplay --version "$version"
           # F-Droid copies this signature onto its own build of the recipe, so
           # that rebuild must match the signed APK byte for byte.
           sudo apt-get update
@@ -274,7 +325,7 @@ jobs:
             exit 0
           fi
           # The downloads go up on a draft first, so the release appears
-          # only once all three are there.
+          # only once all of them are there.
           if [ "$state" = missing ]; then
             gh release create "$tag" --draft --target "$RELEASE_REVISION" --title "Shovey $VERSION" --notes-file build/release-notes.md
           else

@@ -1,8 +1,11 @@
 #!/bin/sh
 # Build the release APK from this checkout and its own lock. F-Droid and the
 # Downloads workflow both run this build, so the signed
-# shovey-VERSION-fdroid.apk reproduces byte for byte.
+# shovey-VERSION-fdroid.apk reproduces byte for byte. With "gplay" it builds
+# the Google Play edition's APK instead, the only one with Play Billing.
 set -eu
+edition=${1:-}
+case $edition in '' | gplay) ;; *) echo "usage: android-build.sh [gplay]" >&2; exit 2 ;; esac
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 mkdir -p "$root/build/fdroid"
 # Fetch every package into this build's own cache, never a shared one.
@@ -26,6 +29,13 @@ fi
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES
 make -j1 -C "$root" levels landscape
 python3 "$root/scripts/player.py" collection
+if [ "$edition" = gplay ]; then
+    env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS \
+        python3 "$root/scripts/player.py" android --gplay
+    cp "$root/build/player/android/shovey-gplay-unsigned.apk" "$root/build/fdroid/shovey-gplay.apk"
+    printf '%s\n' "Google Play edition APK: $root/build/fdroid/shovey-gplay.apk"
+    exit 0
+fi
 env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS \
     python3 "$root/scripts/player.py" android --release
 cp "$root/build/player/android/shovey-unsigned.apk" "$root/build/fdroid/shovey.apk"

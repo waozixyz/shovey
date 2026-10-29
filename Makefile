@@ -136,6 +136,10 @@ install: player-linux
 android-fdroid:
 	sh scripts/android-build.sh
 
+# The Google Play edition's APK, the only APK with Play Billing.
+android-gplay:
+	sh scripts/android-build.sh gplay
+
 # The JSON level files are the source; the game reads the generated code.
 levels: src/levels.zi
 

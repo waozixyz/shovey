@@ -5,6 +5,7 @@
 - Push mirrors to turn laser beams onto their receivers.
 - New forest scenery: pines, fallen logs, mossy boulders, ferns and forest floor.
 - Runs in Breeze 2.1.61's smaller app format.
+- The Google Play edition is also an APK download.
 
 ## [0.6.159] - 2026-10-28
 

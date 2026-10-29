@@ -68,6 +68,13 @@ jobs:
         run: sdkmanager --sdk_root=/opt/android-sdk 'ndk;28.2.13676358' 'build-tools;36.0.0' 'platforms;android-36' 'cmake;3.22.1'
       - name: Build with F-Droid
         run: python3 build/xyz.waozi.shovey/scripts/fdroid-ci.py
+      # F-Droid's scanner checked the source; its APK must hold no Google
+      # library either.
+      - name: Keep Google libraries out of F-Droid's APK
+        uses: kryonlabs/kryon/.github/actions/google-free@7217475dfa7f462939e47e3f0bc918aef248b179
+        with:
+          packages: tmp/*.apk
+          source: ''
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:

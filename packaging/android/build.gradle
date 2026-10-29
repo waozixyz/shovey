@@ -18,8 +18,9 @@ def androidAbis = (project.findProperty('app.abis') ?: 'arm64-v8a,armeabi-v7a').
 def shoveyVersion = new groovy.json.JsonSlurper().parse(file('../../version.json'))
 
 // Kryon's three editions: -Papp.edition=direct (the default), fdroid or gplay.
-// The Google Play edition adds Kryon's Play Billing (kryon/play_billing), so
-// Entity sells Dew through Google Play; it needs Android 6 and AndroidX
+// Only the Google Play edition carries a Google library: Kryon's
+// android-gplay.gradle adds Play Billing (kryon/play_billing), so Entity sells
+// Dew through Google Play; it needs Android 6 and AndroidX
 // (-Pandroid.useAndroidX=true). Native code sees GOOGLE_PLAY or FDROID.
 def appEdition = (project.findProperty('app.edition') ?: 'direct').toString()
 if (!(appEdition in ['direct', 'fdroid', 'gplay'])) {
@@ -67,10 +68,6 @@ android {
     sourceSets.main.assets.srcDir "${rootProject.projectDir}/../build/player/android/assets"
     sourceSets.main.res.srcDir "${rootProject.projectDir}/../packaging/android/res"
 
-    if (googlePlay) {
-        sourceSets.main.java.srcDir 'src/gplay/java'
-    }
-
     buildTypes {
         release {
             minifyEnabled false
@@ -78,11 +75,6 @@ android {
     }
 }
 
-dependencies {
-    if (googlePlay) {
-        implementation 'com.android.billingclient:billing:9.1.0'
-        // Billing's AndroidX libraries mix Kotlin 1.6 and 1.8 standard
-        // libraries; one Kotlin version keeps their classes from colliding.
-        implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
-    }
+if (googlePlay) {
+    apply from: new File(kryonDir, 'templates/android-gplay.gradle')
 }

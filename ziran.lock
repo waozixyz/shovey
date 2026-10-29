@@ -11,7 +11,7 @@
     },
     {
       "commit": "cabc0424e45a4a8ef652944b5e2226e9375177c3",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "p90e41bf3b3f07588"},
+      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "p467c268f7db8fab2"},
       "id": "p1065a3c915ffa1e1",
       "name": "Apps",
       "ref": "master",
@@ -27,8 +27,16 @@
       "url": "https://github.com/curl/curl.git"
     },
     {
+      "commit": "7217475dfa7f462939e47e3f0bc918aef248b179",
+      "dependencies": {"raylib": "p5a77c9c35110e925"},
+      "id": "p467c268f7db8fab2",
+      "name": "kryon",
+      "ref": "master",
+      "url": "https://github.com/kryonlabs/kryon.git"
+    },
+    {
       "commit": "02a1dfbba9eef37c8ac9f201eb583b097ccf12d8",
-      "dependencies": {"daochi_client": "pf7b24c15869d6839", "kryon": "p90e41bf3b3f07588", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
+      "dependencies": {"daochi_client": "pf7b24c15869d6839", "kryon": "p467c268f7db8fab2", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
       "id": "p4fd05d3b01b94ee1",
       "name": "Entity",
       "ref": "master",
@@ -70,14 +78,6 @@
       "url": "https://github.com/LoupVaillant/Monocypher.git"
     },
     {
-      "commit": "fba0d52baf9fc2d72334861a14375a9bab1d3502",
-      "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "p90e41bf3b3f07588",
-      "name": "kryon",
-      "ref": "master",
-      "url": "https://github.com/kryonlabs/kryon.git"
-    },
-    {
       "commit": "944826f70779a6b6cd53f6b06a75b36f4d8a2558",
       "dependencies": {},
       "id": "pc23fbf455e97614d",
@@ -103,7 +103,7 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "p1065a3c915ffa1e1", "curl": "p1ca0e8d3c19dbe4c", "entity": "p4fd05d3b01b94ee1", "kryon": "p90e41bf3b3f07588", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "p1065a3c915ffa1e1", "curl": "p1ca0e8d3c19dbe4c", "entity": "p4fd05d3b01b94ee1", "kryon": "p467c268f7db8fab2", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {

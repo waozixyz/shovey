@@ -12,7 +12,7 @@ landscape` first; `make player-*` does.
     python3 scripts/player.py collection  build/player/shovey.zx, shovey.json, entity.zx
     python3 scripts/player.py linux       build/player/linux and its download
     python3 scripts/player.py windows     build/player/windows and its download (MinGW)
-    python3 scripts/player.py android [--release | --bundle]
+    python3 scripts/player.py android [--release | --gplay | --bundle]
     python3 scripts/player.py site --release DIR [--output DIR]
 """
 import argparse
@@ -704,8 +704,9 @@ def pack(platform, folder, version):
 
 
 def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=None):
-    """The APK (the direct and F-Droid edition) or the Google Play edition's
-    App Bundle, on Kryon's Android host from this package's lock."""
+    """The APK (the normal and F-Droid edition, Google-free) or the Google
+    Play edition's APK or App Bundle, on Kryon's Android host from this
+    package's lock."""
     receipt = checked_collection()
     version = release()
     kryon, compiler, raylib = package('kryon'), toolchain(), package('raylib')
@@ -737,12 +738,14 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
     env = environment()
     env.update(ANDROID_HOME=str(sdk), ANDROID_SDK_ROOT=str(sdk), LIBOQS_DIR=str(package('liboqs')),
                MONOCYPHER_DIR=str(package('monocypher')), CMAKE_BUILD_PARALLEL_LEVEL='1')
-    task = {'debug': 'assembleDebug', 'release': 'assembleRelease', 'bundle': 'bundleRelease'}[mode]
+    task = {'debug': 'assembleDebug', 'release': 'assembleRelease', 'gplay': 'assembleRelease',
+            'bundle': 'bundleRelease'}[mode]
     command = ['sh', droid / 'gradlew', '-p', droid, '--no-daemon', '--max-workers=1', '-Papp.abis=' + abis,
                '-Pkryon.dir=' + str(kryon), '-Pziran.dir=' + str(compiler), '-Praylib.dir=' + str(raylib / 'src'),
                '-Pandroid.aapt2FromMavenOverride=' + str(sdk / 'build-tools/36.0.0/aapt2')]
-    # Kryon's Google Play edition adds Play Billing, so Dew is bought through Play.
-    if mode == 'bundle':
+    # Kryon's Google Play edition adds Play Billing, so Dew is bought through
+    # Play; only it may carry a Google library.
+    if mode in ('gplay', 'bundle'):
         command += ['-Papp.edition=gplay', '-Pandroid.useAndroidX=true']
     if application_id:
         command.append('-Papp.id=' + application_id)
@@ -755,8 +758,9 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
     if mode == 'bundle':
         output = folder / f'shovey{test}-unsigned.aab'
         shutil.copyfile(app_output / 'outputs/bundle/release/app-release.aab', output)
-    elif mode == 'release':
-        output = folder / f'shovey{test}-unsigned.apk'
+    elif mode in ('release', 'gplay'):
+        edition = '-gplay' if mode == 'gplay' else ''
+        output = folder / f'shovey{test}{edition}-unsigned.apk'
         shutil.copyfile(app_output / 'outputs/apk/release/app-release-unsigned.apk', output)
     else:
         output = folder / f'shovey{test}.apk'
@@ -861,6 +865,7 @@ def main():
     droid = commands.add_parser('android')
     kind = droid.add_mutually_exclusive_group()
     kind.add_argument('--release', action='store_true', help='the unsigned release APK for the signer')
+    kind.add_argument('--gplay', action='store_true', help="the Google Play edition's unsigned release APK")
     kind.add_argument('--bundle', action='store_true', help="the Google Play edition's unsigned App Bundle")
     droid.add_argument('--application-id', help='an isolated package for device tests')
     droid.add_argument('--abis', default='arm64-v8a,armeabi-v7a')
@@ -881,7 +886,7 @@ def main():
     elif args.command == 'windows':
         windows(args.tools)
     elif args.command == 'android':
-        android('bundle' if args.bundle else 'release' if args.release else 'debug',
+        android('bundle' if args.bundle else 'gplay' if args.gplay else 'release' if args.release else 'debug',
                 args.application_id, args.abis, args.build_dir)
     elif args.command == 'site':
         site(args.release, args.output)
