@@ -981,7 +981,9 @@ ShoveyRestore :: (game: *ShoveyGame, text: string) -> bool {
         ground := ShoveyByte(text, 32 + at * 6)
         object := ShoveyByte(text, 34 + at * 6)
         source := ShoveyByte(text, 36 + at * 6)
-        if ground < 0 || (!ShoveyCellKind(ground) && !ShoveyBlockingDecoration(ground)) || object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
+        // Ground holds a cell kind, a blocking decoration or a wall tile such as the cave wall.
+        if ground < 0 || (!ShoveyCellKind(ground) && !ShoveyBlockingDecoration(ground) && ground != SHOVEY_CAVE_WALL) ||
+        object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
         if ShoveyMovable(ground) || ground == 10 || ground == 22 || ground == 24 || ground == 32 { return false }
         restored.ground[at] = ground; restored.objects[at] = object; restored.light_from[at] = source
     }
