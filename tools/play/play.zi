@@ -2,15 +2,15 @@
 // level can be won. Every move runs in Shovey's own engines, and a win is
 // replayed from the start before its route is saved. Run from the Shovey root:
 //
-//     build/play/shovey-play LIST ROUTES [CLASSIC_LEVELS ISLAND_LEVELS]
+//     build/play/shovey-play LIST ROUTES [LEVELS]
 //
-// LIST names the boards, one "classic 57" or "island 24" per line. Routes go
-// to ROUTES/classic/057.txt and unfinished attempts to ROUTES/attempts, so
+// LIST names the boards, one "classic 57" per line. Routes go to
+// ROUTES/classic/057.txt and unfinished attempts to ROUTES/attempts, so
 // closing the player keeps them. The boards come from level code shaped like
-// src/levels.zi; the last two arguments replace the shipped levels.
+// src/levels.zi; the last argument replaces the shipped levels.
 //
-// Arrows or WASD move, Space throws (Classic), Z or Backspace undoes, R
-// restarts, N and P change level.
+// Arrows or WASD move, Space throws, Z or Backspace undoes, R restarts, N and
+// P change level.
 #import "c_string"
 #import "byte_text_linux"
 #import "file"
@@ -39,8 +39,6 @@
 #import, file "../../src/engine.zi";
 #import, file "../../src/orientation.zi";
 #import, file "../../src/shovey_board.zi";
-#import, file "../../src/island/island_engine.zi";
-#import, file "../../src/island/island_board.zi";
 
 sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
@@ -51,14 +49,11 @@ LEVELS_MAX :: 256
 ROUTE_MAX :: 60000
 CLASSIC_LETTERS :: "0123ft"
 
-// Edition 0 is Classic, 1 is Island.
-level_editions: [LEVELS_MAX]s32;
 level_numbers: [LEVELS_MAX]s32;
 level_count: s32;
 current: s32;
 
 classic: ShoveyGame;
-island: IslandGame;
 board_hex: [1024]u8;
 board_length: s32;
 route: [ROUTE_MAX]u8;
@@ -71,12 +66,10 @@ session: Session;
 
 title_bytes: [256]u8;
 status_bytes: [256]u8;
-counter_bytes: [256]u8;
 path_bytes: [1024]u8;
 list_file: string;
 routes_dir: string;
 classic_file: string;
-island_file: string;
 
 AppendText :: (bytes: []u8, length: *s32, text: string) {
     if length.* + text.count > bytes.count { return }
@@ -91,16 +84,14 @@ AppendNumber :: (bytes: []u8, length: *s32, number: s32) {
     AppendText(bytes, length, FormatInteger(cast(s64)number, digits[:]))
 }
 
-Edition :: () -> s32 { return level_editions[current] }
 Number :: () -> s32 { return level_numbers[current] }
 
 // ROUTES/classic/057.txt, or ROUTES/attempts/classic-057.txt for an attempt.
 LevelPath :: (index: s32, attempt: bool) -> string {
     length: s32 = 0
-    name := ifx level_editions[index] == 0 then "classic" else "island"
     AppendText(path_bytes[:], *length, routes_dir)
     AppendText(path_bytes[:], *length, ifx attempt then "/attempts/" else "/")
-    AppendText(path_bytes[:], *length, name)
+    AppendText(path_bytes[:], *length, "classic")
     AppendText(path_bytes[:], *length, ifx attempt then "-" else "/")
     number := level_numbers[index]
     if number < 100 { AppendText(path_bytes[:], *length, "0") }
@@ -112,22 +103,20 @@ LevelPath :: (index: s32, attempt: bool) -> string {
 
 Saved :: (index: s32) -> bool { return PathExists(LevelPath(index, false)) }
 
-// Lines like "classic 57" or "island 24".
+// Lines like "classic 57".
 LoadLevels :: () -> bool {
     text, found := ReadEntireFile(list_file)
     if !found { return false }
     at: s64 = 0
     while at < text.count && level_count < LEVELS_MAX {
-        edition: s32 = -1
-        if at + 8 <= text.count && text[at:at + 8] == "classic " { edition = 0; at += 8 }
-        else if at + 7 <= text.count && text[at:at + 7] == "island " { edition = 1; at += 7 }
+        classic_line := at + 8 <= text.count && text[at:at + 8] == "classic "
+        if classic_line { at += 8 }
         number: s32 = 0
         while at < text.count && text[at] >= cast(u8)48 && text[at] <= cast(u8)57 {
             number = number * 10 + cast(s32)(text[at] - cast(u8)48)
             at += 1
         }
-        if edition >= 0 && number > 0 {
-            level_editions[level_count] = edition
+        if classic_line && number > 0 {
             level_numbers[level_count] = number
             level_count += 1
         }
@@ -139,8 +128,7 @@ LoadLevels :: () -> bool {
 
 // The board's hex from the level code: the text between `number == N { return "` and the next quote.
 LoadHex :: () -> bool {
-    path := ifx Edition() == 0 then classic_file else island_file
-    text, found := ReadEntireFile(path)
+    text, found := ReadEntireFile(classic_file)
     if !found { return false }
     marker: [48]u8
     length: s32 = 0
@@ -168,29 +156,22 @@ LoadHex :: () -> bool {
 Board :: () -> string { return TextView(board_hex[:board_length]) }
 
 // One action on the open board: 0..3 press left, up, right, down; 4 throws
-// and 5 ticks the moving block (Classic only).
+// and 5 ticks the moving block.
 Act :: (action: s32) -> bool {
-    if Edition() == 0 {
-        if action <= 3 { return ShoveyMove(*classic, action) }
-        if action == 4 { return ShoveyFire(*classic) }
-        return ShoveyTick(*classic)
-    }
-    if action <= 3 { return IslandMove(*island, action) }
-    return false
+    if action <= 3 { return ShoveyMove(*classic, action) }
+    if action == 4 { return ShoveyFire(*classic) }
+    return ShoveyTick(*classic)
 }
 
-Won :: () -> bool { return ifx Edition() == 0 then classic.won else island.won }
-Lost :: () -> bool { return Edition() == 0 && classic.lost }
+Won :: () -> bool { return classic.won }
+Lost :: () -> bool { return classic.lost }
 
-Remaining :: () -> s32 {
-    return ifx Edition() == 0 then ShoveyRemaining(*classic) else IslandRemaining(*island)
-}
+Remaining :: () -> s32 { return ShoveyRemaining(*classic) }
 
-// Loads the board and plays the recorded route from the start. Classic
-// boards load as level 1: no level number changes the rules.
+// Loads the board and plays the recorded route from the start. Boards load
+// as level 1: no level number changes the rules.
 Replay :: () -> bool {
-    loaded := ifx Edition() == 0 then ShoveyLoadData(*classic, 1, Board()) else IslandLoadData(*island, Number(), Board())
-    if !loaded { return false }
+    if !ShoveyLoadData(*classic, 1, Board()) { return false }
     for index: cast(s32)0..route_length - 1 {
         letter := route[index]
         action: s32 = -1
@@ -234,7 +215,6 @@ NextUnsaved :: () -> s32 {
 
 Record :: (action: s32) {
     if Won() || Lost() || route_length >= ROUTE_MAX { return }
-    if action == 4 && Edition() != 0 { return }
     accepted := Act(action)
     // A refused tick changes nothing; a refused press can still turn Shovey.
     if action == 5 && !accepted { return }
@@ -285,23 +265,6 @@ Control :: (id: s32, bounds: Rectangle, label: string) -> bool {
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
-// What Shovey carries on an island, under the board.
-IslandCounters :: (board: Rectangle) {
-    length: s32 = 0
-    names: [6]string = .["Keys ", "Seeds ", "Crabs ", "Pearls ", "Shots ", "Coins "]
-    values: [6]s32 = .[island.keys, island.seeds, island.crabs, island.pearls, island.ammunition, island.coins]
-    for index: cast(s32)0..5 {
-        if values[index] == 0 { continue }
-        AppendText(counter_bytes[:], *length, names[index])
-        AppendNumber(counter_bytes[:], *length, values[index])
-        AppendText(counter_bytes[:], *length, "    ")
-    }
-    if length > 0 {
-        Caption(cast(u64)99997, Rectangle.{board.x + 8.0, board.y + board.height - 32.0, board.width - 16.0, 28.0},
-            TextView(counter_bytes[:length]), 16)
-    }
-}
-
 Screen :: (viewport: Rectangle, key: s32) {
     now := MonotonicMilliseconds()
     if key == 263 || key == 65 { Record(0) }
@@ -314,7 +277,7 @@ Screen :: (viewport: Rectangle, key: s32) {
     if key == 78 { Open(current + 1) }
     if key == 80 { Open(current - 1) }
     // The moving block runs on its own timer, as in the game.
-    if Edition() == 0 && now - last_tick >= 1000 {
+    if now - last_tick >= 1000 {
         last_tick = now
         moving := false
         for at: cast(s32)0..SHOVEY_CELLS - 1 { if classic.ground[at] == 29 { moving = true } }
@@ -328,7 +291,7 @@ Screen :: (viewport: Rectangle, key: s32) {
     done: s32 = 0
     for index: cast(s32)0..level_count - 1 { if Saved(index) { done += 1 } }
     length: s32 = 0
-    AppendText(title_bytes[:], *length, ifx Edition() == 0 then "Classic level " else "Island level ")
+    AppendText(title_bytes[:], *length, "Classic level ")
     AppendNumber(title_bytes[:], *length, Number())
     AppendText(title_bytes[:], *length, "    ")
     AppendNumber(title_bytes[:], *length, current + 1)
@@ -358,8 +321,7 @@ Screen :: (viewport: Rectangle, key: s32) {
     area := Rectangle.{8.0, 84.0, width - 16.0, viewport.height - 84.0 - 40.0}
     names: [1]string
     landscape := BoardLandscape(area.width, area.height)
-    if Edition() == 0 { unused ShoveyBoard(session, *classic, area, cast(u64)100000, cast(float64)now / 1000.0, names[0:0], landscape) }
-    else { IslandCounters(IslandBoard(session, *island, area, cast(u64)100000, names[0:0], landscape).board) }
+    unused ShoveyBoard(session, *classic, area, cast(u64)100000, cast(float64)now / 1000.0, names[0:0], landscape)
 }
 
 Draw :: () -> bool {
@@ -388,21 +350,19 @@ Folder :: (name: string) {
 
 #program_export
 main :: (argc: s32, argv: **u8) -> s32 {
-    if argc != 3 && argc != 5 {
-        Report("usage: shovey-play LIST ROUTES [CLASSIC_LEVELS ISLAND_LEVELS]\n")
+    if argc != 3 && argc != 4 {
+        Report("usage: shovey-play LIST ROUTES [LEVELS]\n")
         return 2
     }
     list_file = TextFromCString(argv[1])
     routes_dir = TextFromCString(argv[2])
-    classic_file = ifx argc == 5 then TextFromCString(argv[3]) else "src/levels.zi"
-    island_file = ifx argc == 5 then TextFromCString(argv[4]) else "src/island_levels.zi"
+    classic_file = ifx argc == 4 then TextFromCString(argv[3]) else "src/levels.zi"
     if !LoadLevels() {
         Report("shovey-play: LIST names no boards\n")
         return 2
     }
     unused CreateDirectory(routes_dir)
     Folder("classic")
-    Folder("island")
     Folder("attempts")
     current = level_count - 1
     Open(NextUnsaved())

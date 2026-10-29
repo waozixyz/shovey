@@ -15,8 +15,6 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 COPIES = (
     ('assets/shovey/sprites', 'assets/shovey-landscape/sprites'),
-    ('assets/shovey-island/tiles', 'assets/shovey-island-landscape/tiles'),
-    ('assets/shovey-island/player', 'assets/shovey-island-landscape/player'),
 )
 
 
@@ -25,15 +23,9 @@ LASER_LANDSCAPE = {'tile-150': 'tile-151', 'tile-151': 'tile-150', 'tile-152': '
 
 
 def turns_with_board(path):
-    if path.parent.name == 'player':
-        return True
-    if path.parent.name == 'sprites':
-        # Abyss edges are chosen by screen direction, so they stay upright.
-        return (path.stem.startswith(('player-', 'charged-', 'dog-', 'turtle-', 'crab-', 'fish-', 'grass-edge-')) or
-                path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69'))
-    kind = int(path.stem)
-    return (2 <= kind <= 9 or 11 <= kind <= 12 or 14 <= kind <= 23
-            or 85 <= kind <= 88 or 117 <= kind <= 120)
+    # Abyss edges are chosen by screen direction, so they stay upright.
+    return (path.stem.startswith(('player-', 'charged-', 'dog-', 'turtle-', 'crab-', 'fish-', 'grass-edge-')) or
+            path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69'))
 
 
 def landscape_bytes(path):

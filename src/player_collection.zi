@@ -1,5 +1,5 @@
-// Shovey's collection, which the player opens on its covers. Classic, Island
-// and Editor keep the independent verified identities they have in Arcade.
+// Shovey's collection, which the player opens on its covers. Classic and the
+// Editor keep the independent verified identities they have in Arcade.
 #import "kryon/app_context"
 #import "kryon/app_protocol"
 

@@ -12,7 +12,7 @@ rm -rf "$out/collection" "$out/player"
 mkdir -p "$out/collection/assets/apps" "$out/collection/assets/arcade/games" "$out/collection/assets/arcade/previews" "$out/player"
 cp "$arcade/build/shovey-collection/assets/apps/apps.zx" "$out/collection/assets/apps/apps.zx"
 children=""
-for name in shovey shovey-island shovey-editor; do
+for name in shovey shovey-editor; do
     "$ziran/build/bin/zi2zx" bundle --root "$shovey" \
         --module-path "$shovey/build/game-generated/$name" \
         --module-path "$kryon/src/ui" --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
@@ -28,8 +28,7 @@ import hashlib, json, sys
 from pathlib import Path
 out = Path(sys.argv[1])
 children = []
-for name, ident, title in [('shovey', 'arcade.shovey', 'Shovey Classic'), ('shovey-island', 'arcade.shovey-island', 'Shovey Island'),
-                           ('shovey-editor', 'arcade.shovey-editor', 'Shovey Editor')]:
+for name, ident, title in [('shovey', 'arcade.shovey', 'Shovey Classic'), ('shovey-editor', 'arcade.shovey-editor', 'Shovey Editor')]:
     bundle = out / f'collection/assets/arcade/games/{name}.zx'
     children.append(dict(id=ident, title=title, bundle=f'assets/arcade/games/{name}.zx', protocol='node/2',
                          expected_id=name, version='0.0.1', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),

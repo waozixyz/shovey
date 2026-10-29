@@ -79,7 +79,7 @@ Preview :: (document: *JsonDocument, level: s32, set: *SpriteSet, landscape: boo
 }
 
 #scope_export
-// Removes the island and unapproved previews under RESOURCES and draws the
+// Removes the unapproved previews under RESOURCES and draws the
 // approved ones again from levels/approved.json; then lists only the files
 // that remain in RESOURCES/art.json, each with its SHA-256. Empty, or why it
 // failed.
@@ -95,8 +95,7 @@ PrepareReleaseAssets :: (resources: string) -> string {
         stem := PathStem(it)
         if PathSuffix(it) != ".png" || (parent != "levels" && parent != "levels-landscape") || !TextIsDecimal(stem) { continue }
         number, ok := TextInteger(stem)
-        relative := it[resources.count:it.count]
-        if TextContains(relative, "/island/") || number > count { RemoveTree(it) }
+        if number > count { RemoveTree(it) }
     }
     targets: [4]string = .["levels", "levels-landscape", "landscape/levels", "classic/levels"]
     turned: [4]bool = .[false, true, true, false]

@@ -1,11 +1,10 @@
-// The puzzle solver for both Shovey editions, in Ziran, so it runs inside the
-// game's bundle as well as in native tools. All rules run in the shipped
-// engines through classic_rules.zi and island_rules.zi; this module only
-// searches. It is the counterpart of tools/solver/solver.c, and it works in
+// Shovey's puzzle solver, in Ziran, so it runs inside the game's bundle as
+// well as in native tools. All rules run in the shipped engine through
+// classic_rules.zi; this module only searches. It is the counterpart of tools/solver/solver.c, and it works in
 // slices: SolverRun does a bounded amount of work and returns, so a game can
 // check a board a little every frame while it stays responsive.
 //
-//   SolverStart(island, board)   loads a board of hex digits and starts
+//   SolverStart(board)           loads a board of hex digits and starts
 //   SolverRun(budget)            works about budget units, then returns
 //   SolverStatus()               SOLVER_RUNNING until it knows more
 //   SolverRoute()                the winning route once SOLVER_WON
@@ -13,8 +12,8 @@
 // One unit is about a hundred engine statements. The searches run in turn
 // until one wins, each within its own number of states, quickest first:
 //
-//   greedy  best-first search over macro actions, ordered by the edition's
-//           goal estimate.
+//   greedy  best-first search over macro actions, ordered by the goal
+//           estimate.
 //   chain   one goal at a time, as a person plays: a best-first search
 //           collects up to four different states with one more goal done,
 //           and the chain goes on from the most promising, falling back to
@@ -26,7 +25,7 @@
 //
 // A macro action is any action other than a free walk, taken from any cell
 // Shovey can reach by free walks. A free walk is a move after which the state
-// differs only in Shovey's cell (and facing, when the edition keeps one); it
+// differs only in Shovey's cell and facing; it
 // is detected by running the engine, never assumed. Every state whose Shovey
 // region has already been expanded is skipped, so rooms full of crates
 // collapse to their crate layouts. The macro searches prove nothing when
@@ -37,17 +36,14 @@
 // rules modules), stored in an arena and deduplicated by an open-addressing
 // table, each linked to its parent with the walk and action that reached it.
 //
-// Route letters: '0'..'3' press left, up, right, down; Classic adds 'f' to
-// throw and 't' for one tick of the moving block (ground 29). The block runs
+// Route letters: '0'..'3' press left, up, right, down, 'f' throws and 't'
+// is one tick of the moving block (ground 29). The block runs
 // on a timer and Shovey may act any number of times between ticks, so a tick
 // is an optional action wherever it is taken.
 #import "std/text_buffer"
 #import, file "../engine.zi";
-#import, file "../island/island_engine.zi";
 #import, file "../levels.zi";
-#import, file "../island_levels.zi";
 #import, file "classic_rules.zi";
-#import, file "island_rules.zi";
 
 SOLVER_NODES :: 32768
 SOLVER_TABLE :: 65536
@@ -93,7 +89,6 @@ SolverDefaultLimits :: () -> SolverLimits {
     return SolverLimits.{.bfs = 3000, .greedy = 32000, .chain_goal = 8000, .chain = 120000, .macro = 24000}
 }
 
-solver_island: bool;
 solver_status: s32;
 solver_search: s32;
 solver_started: bool;
@@ -203,9 +198,9 @@ solver_verify_at: s32;
 solver_found_by: s32;
 
 // ---------------------------------------------------------------------------
-// The edition's rules
+// The rules
 
-SolverWork :: () -> s64 { return solve_classic_work + solve_island_work }
+SolverWork :: () -> s64 { return solve_classic_work }
 
 SolverLetter :: (action: s32) -> u8 {
     letters := "0123ft"
@@ -214,87 +209,73 @@ SolverLetter :: (action: s32) -> u8 {
 
 SolverActionOf :: (letter: u8) -> s32 {
     if letter >= #char "0" && letter <= #char "3" { return cast(s32)(letter - #char "0") }
-    if !solver_island && letter == #char "f" { return 4 }
-    if !solver_island && letter == #char "t" { return 5 }
+    if letter == #char "f" { return 4 }
+    if letter == #char "t" { return 5 }
     return -1
 }
 
 // The current game's key against the search's root.
 SolverKeyNow :: () -> s32 {
-    if solver_island { return SolveIslandKey(*solve_island_game, *solve_island_root, solver_key[:]) }
     return SolveClassicKey(*solve_classic_game, *solve_classic_root, solver_key[:])
 }
 
 SolverDecode :: (key: string, walker: s32) {
-    if solver_island { SolveIslandDecode(key, *solve_island_root, solve_island_root_octopus, walker) }
-    else { SolveClassicDecode(key, *solve_classic_root, solve_classic_root_shadows, walker) }
+    SolveClassicDecode(key, *solve_classic_root, solve_classic_root_shadows, walker)
 }
 
 SolverReset :: () {
-    if solver_island { SolveIslandReset() } else { SolveClassicReset() }
+    SolveClassicReset()
 }
 
 SolverAct :: (action: s32) -> bool {
-    if solver_island { return SolveIslandAct(action) }
     return SolveClassicAct(action)
 }
 
-SolverWon :: () -> bool { return ifx solver_island then solve_island_game.won else solve_classic_game.won }
+SolverWon :: () -> bool { return solve_classic_game.won }
 
-SolverLost :: () -> bool { return !solver_island && solve_classic_game.lost }
+SolverLost :: () -> bool { return solve_classic_game.lost }
 
 SolverRemaining :: () -> s32 {
-    if solver_island { solve_island_work += 4; return IslandRemaining(*solve_island_game) }
     solve_classic_work += 4
     return ShoveyRemaining(*solve_classic_game)
 }
 
-SolverWalker :: () -> s32 { return ifx solver_island then SolveIslandWalker() else SolveClassicWalker() }
+SolverWalker :: () -> s32 { return SolveClassicWalker() }
 
 SolverSetWalker :: (walker: s32) {
-    if solver_island { SolveIslandSetWalker(walker) } else { SolveClassicSetWalker(walker) }
+    SolveClassicSetWalker(walker)
 }
 
 SolverPlainStep :: (direction: s32) -> s32 {
-    if solver_island { return SolveIslandPlainStep(direction) }
     return SolveClassicPlainStep(direction)
 }
 
-SolverWalkerFree :: (action: s32) -> bool { return !solver_island && SolveClassicWalkerFree(action) }
+SolverWalkerFree :: (action: s32) -> bool { return SolveClassicWalkerFree(action) }
 
-SolverDead :: () -> bool { return !solver_island && SolveClassicDead() }
+SolverDead :: () -> bool { return SolveClassicDead() }
 
 SolverEstimate :: () -> s32 {
-    if solver_island { return SolveIslandEstimate() }
     return SolveClassicEstimate()
 }
 
 // The root becomes the decoded base state.
 SolverRootFromBase :: () {
-    if solver_island {
-        state := solve_island_base
-        SolveIslandSetRoot(*state)
-    } else {
-        state := solve_classic_base
-        SolveClassicSetRoot(*state)
-    }
+    state := solve_classic_base
+    SolveClassicSetRoot(*state)
 }
 
 // The root becomes the loaded board.
 SolverRootInitial :: () {
-    if solver_island { SolveIslandSetRoot(*solve_island_initial) }
-    else { SolveClassicSetRoot(*solve_classic_initial) }
+    SolveClassicSetRoot(*solve_classic_initial)
 }
 
 // The current game's key against the loaded board, into out.
 SolverKeyInitial :: (out: []u8) -> s32 {
-    if solver_island { return SolveIslandKey(*solve_island_game, *solve_island_initial, out) }
     return SolveClassicKey(*solve_classic_game, *solve_classic_initial, out)
 }
 
 SolverDecodeInitial :: (key: string, walker: s32) {
-    if solver_island { SolveIslandDecode(key, *solve_island_initial, solve_island_initial_octopus, walker) }
-    else { SolveClassicDecode(key, *solve_classic_initial, solve_classic_initial_shadows, walker) }
+    SolveClassicDecode(key, *solve_classic_initial, solve_classic_initial_shadows, walker)
 }
 
 // ---------------------------------------------------------------------------
@@ -426,7 +407,7 @@ SolverHeapPop :: () -> s32 {
 SolverPriority :: (depth: s32) -> u64 {
     weight := ifx solver_greedy_alt then 3 else 5
     estimate := SolverEstimate()
-    if solver_search == SOLVER_CHAIN && !solver_island && solver_chain_target >= 0 {
+    if solver_search == SOLVER_CHAIN && solver_chain_target >= 0 {
         estimate += SolveClassicPlateEstimate(solver_chain_target)
     }
     priority := cast(u64)estimate * cast(u64)weight + cast(u64)depth
@@ -592,14 +573,8 @@ SolverSameBoard :: (left: string, right: string) -> bool {
 }
 
 SolverStoryRoute :: () -> string {
-    if solver_island {
-        for number: cast(s32)1..ISLAND_LEVEL_COUNT {
-            if SolverSameBoard(solver_board, IslandLevelData(number)) { return IslandLevelSolution(number) }
-        }
-    } else {
-        for number: cast(s32)1..SHOVEY_LEVEL_COUNT {
-            if SolverSameBoard(solver_board, ShoveyLevelData(number)) { return ShoveyLevelSolution(number) }
-        }
+    for number: cast(s32)1..SHOVEY_LEVEL_COUNT {
+        if SolverSameBoard(solver_board, ShoveyLevelData(number)) { return ShoveyLevelSolution(number) }
     }
     return ""
 }
@@ -841,11 +816,8 @@ SolverChainStep :: () {
                 SolverReset()
                 solver_goal = SolverRemaining()
                 if solver_goal < 0 { solver_goal = 0 }
-                solver_chain_target = -1
-                if !solver_island {
-                    solver_chain_target = SolveClassicHardestPlate()
-                    if solver_chain_target < 0 { solver_chain_target = SolveClassicNearestPlate() }
-                }
+                solver_chain_target = SolveClassicHardestPlate()
+                if solver_chain_target < 0 { solver_chain_target = SolveClassicNearestPlate() }
                 SolverMacroBegin(solver_limits.chain_goal, true, true)
                 solver_chain_begun[level] = true
             }
@@ -917,25 +889,23 @@ SolverVerifyStep :: () {
 // ---------------------------------------------------------------------------
 // The interface
 
-// Loads a board, 480 hex digits for Classic or 960 (terrain, then objects)
-// for Island, and starts checking it. False when the engine rejects it.
-SolverStart :: (island: bool, board: string, limits: SolverLimits = SolverDefaultLimits()) -> bool {
-    solver_island = island
+// Loads a board of hex digits and starts checking it. False when the engine
+// rejects it.
+SolverStart :: (board: string, limits: SolverLimits = SolverDefaultLimits()) -> bool {
     solver_limits = limits
     solver_search = SOLVER_GREEDY
     solver_started = false
     solver_chain_target = -1
     solver_greedy_alt = false
     solver_greedy_full = false
-    solver_greedy_alt_ok = !solver_island
+    solver_greedy_alt_ok = true
     solver_seen = 0
     solver_board = board
     solver_found_by = SOLVER_GREEDY
     solver_route_length = 0
-    solver_actions = ifx island then 4 else 6
-    solver_facings = ifx island then 1 else 4
-    loaded := ifx island then SolveIslandLoad(board) else SolveClassicLoad(board)
-    if !loaded { solver_status = SOLVER_INVALID; return false }
+    solver_actions = 6
+    solver_facings = 4
+    if !SolveClassicLoad(board) { solver_status = SOLVER_INVALID; return false }
     if solver_greedy_alt_ok {
         for at: cast(s32)0..SHOVEY_CELLS - 1 {
             if ShoveyButtonColor(solve_classic_initial.ground[at]) >= 0 || ShoveyMossColor(solve_classic_initial.ground[at]) >= 0 { solver_greedy_alt_ok = false; break }

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Builds build/solver/shovey-solve-classic and build/solver/shovey-solve-island:
-# each edition's engine and wrapper compiled to C, linked with solver.c.
+# Builds build/solver/shovey-solve-classic: the engine and its wrapper
+# compiled to C, linked with solver.c.
 #
 #   tools/solver/build.sh
 #
@@ -13,14 +13,12 @@ lib="$root/build/ziran/libziran.a"
 set --
 if [ "${SHOVEY_ADMIN:-0}" = 1 ]; then set -- --define SHOVEY_ADMIN; fi
 
-# The engines import their boards from the generated level code.
-for file in levels.zi island_levels.zi; do
-    [ -f "$root/src/$file" ] || { echo "missing src/$file; run make levels" >&2; exit 1; }
-done
+# The engine imports its boards from the generated level code.
+[ -f "$root/src/levels.zi" ] || { echo "missing src/levels.zi; run make levels" >&2; exit 1; }
 
 [ -f "$lib" ] || make -s -C "$toolchain" BUILD_DIR="$root/build/ziran" "$lib"
 
-for edition in classic island; do
+for edition in classic; do
     work="$out/$edition"
     rm -rf "$work"
     mkdir -p "$work/c"
@@ -47,4 +45,4 @@ temporary = out / 'fingerprint.new'
 temporary.write_text(digest.hexdigest())
 temporary.replace(out / 'fingerprint')
 PY
-echo "built $out/shovey-solve-classic and $out/shovey-solve-island"
+echo "built $out/shovey-solve-classic"

@@ -97,15 +97,14 @@ main :: (argc: s32, argv: **u8) -> s32 {
     path := TextView(path_bytes[0:path_writer.length])
     text, found := ReadEntireFile(path)
     if !found { return Fail("the level file cannot be read") }
-    if !StoredRead(*stored[0], false, text) { return Fail(ImportError()) }
+    if !StoredRead(*stored, text) { return Fail(ImportError()) }
     for index: cast(s32)0..count - 1 {
         number := numbers[index]
-        if number > stored[0].count { return Fail("there is no such level", number) }
-        level := *stored[0].levels[number - 1]
+        if number > stored.count { return Fail("there is no such level", number) }
+        level := *stored.levels[number - 1]
         if level.fresh >= 0 { return Fail("it is named twice", number) }
         if !level.has_solution { return Fail("it has no route to keep", number) }
         incoming := *import_levels[index]
-        incoming.island = false
         incoming.number = number
         incoming.name_length = 0
         if !SceneryStoredBoard(text, level, *incoming.level.board) { return Fail("its board cannot be read", number) }
@@ -127,7 +126,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
         Say(1, " blocking pieces; the route still wins\n")
     }
     writer := EditWriter.{.bytes = level_out[:]}
-    StoredWrite(*writer, *stored[0], text)
+    StoredWrite(*writer, *stored, text)
     if writer.full { return Fail("the level file grew too large") }
     // The developer editor saves into the same file; never overwrite a save
     // made while dressing.

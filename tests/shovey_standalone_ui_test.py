@@ -1,5 +1,5 @@
 """Run the standalone Shovey app privately: its covers, Classic and Editor
-opening directly from them, Island staying unavailable, and independent saves."""
+opening directly from them, and independent saves."""
 import argparse
 import contextlib
 import json
@@ -74,7 +74,6 @@ def main():
             driver.attach(child, log_path)
             try:
                 driver.wait(label='Play', role='button')
-                assert not driver.find(label='Shovey Island', role='button'), 'Island must stay unavailable'
                 driver.wait(label='Next', role='button')
                 yield child
             finally:
@@ -312,8 +311,6 @@ def main():
             driver.wait(label='New level', role='text')
             driver.press(label='Levels', role='button')
             driver.wait(label='Story levels', role='text')
-            # Island stays unavailable in the editor until it is offered for sale.
-            assert not driver.find(label='Island', role='button'), 'The editor offers Island'
             # Only levels Classic has unlocked can be a starting point.
             assert driver.find(label='Play Classic to unlock this level.', role='button'), 'Locked story levels can be edited'
             driver.press(label='1', role='button')

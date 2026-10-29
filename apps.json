@@ -19,10 +19,6 @@
       }
     },
     {
-      "manifest": "src/island/catalog.json",
-      "enabled": false
-    },
-    {
       "manifest": "src/editor/catalog.json",
       "shared_code": true,
       "cover": {

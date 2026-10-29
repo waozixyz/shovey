@@ -3,12 +3,8 @@
 //
 //     ziran run --target=c scripts/prepare_web.zi
 //
-// The editor offers only Classic until Island is for sale, so the browser
-// build leaves Island's pictures out; that keeps runtime.data under the
-// Cloudflare Pages file limit. The developer's private Island editor keeps
-// them (SHOVEY_ISLAND_EDITOR=1). The editor reads Classic's pictures and
-// sounds from Shovey's own folder on the page, so its packed copies stay out.
-#import "std/environment_linux"
+// The editor reads Classic's pictures and sounds from Shovey's own folder on
+// the page, so its packed copies stay out.
 #import "std/file"
 #import "std/file_tree_linux"
 #import "std/json_document"
@@ -26,7 +22,6 @@ main :: (argc: s32, argv: **u8) -> s32 {
         staged := JoinPath(JoinPath(JoinPath("build/game-assets", it), "assets"), it)
         if !CopyTree(staged, JoinPath(assets, it)) { return Fail("Build the bundles before preparing the web build") }
     }
-    if EnvironmentText("SHOVEY_ISLAND_EDITOR") != "1" { RemoveTree(JoinPath(assets, "shovey-editor/island")) }
     RemoveTree(JoinPath(assets, "shovey-editor/classic"))
     code: Vec(u8)
     manifests: [2]string = .["src/catalog.json", "src/editor/catalog.json"]

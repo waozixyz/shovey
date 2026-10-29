@@ -1,33 +1,24 @@
 // The level editor's rules, apart from drawing: boards and painting, the
-// pieces each edition offers, stroke-wise undo, the records custom levels
-// are kept in, the export for the developer, and testing a board with the
-// real engines while recording the winning route.
+// pieces the palette offers, stroke-wise undo, the records custom levels are
+// kept in, the export for the developer, and testing a board with the real
+// engine while recording the winning route.
 #import "std/number_text"
 #import "std/text_buffer"
 #import, file "../engine.zi";
-#import, file "../island/island_engine.zi";
 #import, file "../levels.zi";
-#import, file "../island_levels.zi";
-#import, file "coast.zi";
 
 EDIT_CELLS :: 240
 EDIT_WIDTH :: 12
 EDIT_HEIGHT :: 20
-// Pieces with no kind of their own: Island's eraser for objects.
-EDIT_CLEAR :: 255
 CLASSIC_SHOVEY :: 10
 CLASSIC_WALL :: 12
-ISLAND_SHOVEY :: 56
-ISLAND_HOME :: 75
 
-// Classic keeps pieces in ground and independent cosmetic floor in tiles.
-// Island keeps terrain in ground and objects (including Shovey) in objects.
+// Pieces in ground, independent cosmetic floor in tiles and scenery in
+// decorations.
 EditBoard :: struct {
-    island: bool
     tiles: [EDIT_CELLS]u8
     decorations: [EDIT_CELLS]u8
     ground: [EDIT_CELLS]u8
-    objects: [EDIT_CELLS]u8
 }
 
 // ---------------------------------------------------------------------------
@@ -40,17 +31,17 @@ EditHexValue :: (byte: u8) -> s32 {
     return -1
 }
 
-// Classic accepts 480 legacy digits or 960 (pieces, tiles); Island uses
-// 960 (terrain, objects). False when malformed.
-EditBoardRead :: (board: *EditBoard, island: bool, hex: string) -> bool {
-    layers: s32 = ifx !island && hex.count == EDIT_CELLS * 6 then 3 else ifx island || hex.count == EDIT_CELLS * 4 then 2 else 1
+// A board accepts 480 legacy digits, 960 (pieces, tiles) or 1440 (pieces,
+// tiles, decorations). False when malformed.
+EditBoardRead :: (board: *EditBoard, hex: string) -> bool {
+    layers: s32 = ifx hex.count == EDIT_CELLS * 6 then 3 else ifx hex.count == EDIT_CELLS * 4 then 2 else 1
     if hex.count != cast(s64)(EDIT_CELLS * 2 * layers) { return false }
-    read := EditBoard.{.island = island}
+    read: EditBoard
     for at: cast(s32)0..EDIT_CELLS * layers - 1 {
         high := EditHexValue(hex[at * 2]); low := EditHexValue(hex[at * 2 + 1])
         if high < 0 || low < 0 { return false }
         value := cast(u8)(high * 16 + low)
-        if at < EDIT_CELLS { read.ground[at] = value } else if island { read.objects[at - EDIT_CELLS] = value } else if at >= EDIT_CELLS * 2 {
+        if at < EDIT_CELLS { read.ground[at] = value } else if at >= EDIT_CELLS * 2 {
             if value >= cast(u8)79 && value <= cast(u8)81 { value = 0 }
             if !ShoveyDecoration(cast(s32)value) { return false }
             read.decorations[at - EDIT_CELLS * 2] = value
@@ -59,7 +50,7 @@ EditBoardRead :: (board: *EditBoard, island: bool, hex: string) -> bool {
             read.tiles[at - EDIT_CELLS] = value
         }
     }
-    if !island && layers == 1 {
+    if layers == 1 {
         for at: cast(s32)0..EDIT_CELLS - 1 { read.tiles[at] = cast(u8)ShoveyDefaultTile(cast(s32)read.ground[at]) }
     }
     board.* = read
@@ -70,7 +61,6 @@ EditBoardRead :: (board: *EditBoard, island: bool, hex: string) -> bool {
 EDIT_TILE_BRUSH :: 256
 EDIT_DECO_BRUSH :: 512
 EditLayered :: (board: *EditBoard) -> bool {
-    if board.island { return true }
     for at: cast(s32)0..EDIT_CELLS - 1 {
         if board.decorations[at] != 0 || board.tiles[at] != cast(u8)ShoveyDefaultTile(cast(s32)board.ground[at]) { return true }
     }
@@ -78,9 +68,7 @@ EditLayered :: (board: *EditBoard) -> bool {
 }
 
 EditLayers :: (board: *EditBoard) -> s32 {
-    if !board.island {
-        for at: cast(s32)0..EDIT_CELLS - 1 { if board.decorations[at] != 0 { return 3 } }
-    }
+    for at: cast(s32)0..EDIT_CELLS - 1 { if board.decorations[at] != 0 { return 3 } }
     return ifx EditLayered(board) then 2 else 1
 }
 
@@ -91,64 +79,52 @@ EditBoardHex :: (board: *EditBoard) -> string {
     alphabet := "0123456789abcdef"
     layers := EditLayers(board)
     for at: cast(s32)0..EDIT_CELLS * layers - 1 {
-        value := cast(s32)(ifx at < EDIT_CELLS then board.ground[at] else ifx board.island then board.objects[at - EDIT_CELLS] else ifx at < EDIT_CELLS * 2 then board.tiles[at - EDIT_CELLS] else board.decorations[at - EDIT_CELLS * 2])
+        value := cast(s32)(ifx at < EDIT_CELLS then board.ground[at] else ifx at < EDIT_CELLS * 2 then board.tiles[at - EDIT_CELLS] else board.decorations[at - EDIT_CELLS * 2])
         edit_hex[at * 2] = alphabet[value >> 4]
         edit_hex[at * 2 + 1] = alphabet[value & 15]
     }
     return TextView(edit_hex[0:EDIT_CELLS * 2 * layers])
 }
 
-// One row of a layer (0 ground or terrain, 1 objects) as 24 hex digits.
+// One row of a layer (0 pieces, 1 tiles, 2 decorations) as 24 hex digits.
 EditBoardRow :: (board: *EditBoard, layer: s32, row: s32) -> string {
     hex := EditBoardHex(board)
     start := (layer * EDIT_CELLS + row * EDIT_WIDTH) * 2
     return hex[start:start + EDIT_WIDTH * 2]
 }
 
-EditStoryCount :: (island: bool) -> s32 { return ifx island then IslandLevelCount() else ShoveyLevelCount() }
+EditStoryCount :: () -> s32 { return ShoveyLevelCount() }
 
 // A shipped (story) level's board. False for a number with none.
-EditStoryBoard :: (board: *EditBoard, island: bool, number: s32) -> bool {
-    if number < 1 || number > EditStoryCount(island) { return false }
-    return EditBoardRead(board, island, ifx island then IslandLevelData(number) else ShoveyLevelData(number))
+EditStoryBoard :: (board: *EditBoard, number: s32) -> bool {
+    if number < 1 || number > EditStoryCount() { return false }
+    return EditBoardRead(board, ShoveyLevelData(number))
 }
 
-// A fresh level: Classic's walled courtyard, or a small sandy island, each
-// with Shovey and a home.
-EditNewBoard :: (island: bool) -> EditBoard {
-    board := EditBoard.{.island = island}
-    if !island {
-        for at: cast(s32)0..EDIT_CELLS - 1 {
-            x := at % EDIT_WIDTH; y := at / EDIT_WIDTH
-            board.ground[at] = cast(u8)(ifx x == 0 || y == 0 || x == EDIT_WIDTH - 1 || y == EDIT_HEIGHT - 1 then CLASSIC_WALL else 0)
-        }
-        board.ground[4 * EDIT_WIDTH + 6] = cast(u8)CLASSIC_SHOVEY
-        board.ground[15 * EDIT_WIDTH + 6] = 7
-        for at: cast(s32)0..EDIT_CELLS - 1 { board.tiles[at] = cast(u8)ShoveyDefaultTile(cast(s32)board.ground[at]) }
-        return board
+// A fresh level: a walled courtyard with Shovey and a home.
+EditNewBoard :: () -> EditBoard {
+    board: EditBoard
+    for at: cast(s32)0..EDIT_CELLS - 1 {
+        x := at % EDIT_WIDTH; y := at / EDIT_WIDTH
+        board.ground[at] = cast(u8)(ifx x == 0 || y == 0 || x == EDIT_WIDTH - 1 || y == EDIT_HEIGHT - 1 then CLASSIC_WALL else 0)
     }
-    for y: cast(s32)5..14 {
-        for x: cast(s32)3..8 { board.ground[y * EDIT_WIDTH + x] = 1 }
-    }
-    CoastAll(board.ground[:])
-    board.objects[7 * EDIT_WIDTH + 5] = cast(u8)ISLAND_SHOVEY
-    board.objects[12 * EDIT_WIDTH + 7] = cast(u8)ISLAND_HOME
+    board.ground[4 * EDIT_WIDTH + 6] = cast(u8)CLASSIC_SHOVEY
+    board.ground[15 * EDIT_WIDTH + 6] = 7
+    for at: cast(s32)0..EDIT_CELLS - 1 { board.tiles[at] = cast(u8)ShoveyDefaultTile(cast(s32)board.ground[at]) }
     return board
 }
 
 // Shovey's cell, or -1.
 EditShovey :: (board: *EditBoard) -> s32 {
     for at: cast(s32)0..EDIT_CELLS - 1 {
-        if board.island && board.objects[at] == cast(u8)ISLAND_SHOVEY { return at }
-        if !board.island && board.ground[at] == cast(u8)CLASSIC_SHOVEY { return at }
+        if board.ground[at] == cast(u8)CLASSIC_SHOVEY { return at }
     }
     return -1
 }
 
 EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
-    if a.island != b.island { return false }
     for at: cast(s32)0..EDIT_CELLS - 1 {
-        if a.ground[at] != b.ground[at] || a.objects[at] != b.objects[at] || a.tiles[at] != b.tiles[at] || a.decorations[at] != b.decorations[at] { return false }
+        if a.ground[at] != b.ground[at] || a.tiles[at] != b.tiles[at] || a.decorations[at] != b.decorations[at] { return false }
     }
     return true
 }
@@ -157,17 +133,12 @@ EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
 // Pieces
 
 EDIT_CLASSIC_PIECES :: 106
-EDIT_ISLAND_PIECES :: 82
-// Room for either edition's palette.
-EDIT_MOST_PIECES :: 106
 edit_classic_kinds: [EDIT_CLASSIC_PIECES]s32;
 edit_classic_names: [EDIT_CLASSIC_PIECES]string;
-edit_island_kinds: [EDIT_ISLAND_PIECES]s32;
-edit_island_names: [EDIT_ISLAND_PIECES]string;
 edit_pieces_ready: bool;
 
 EditPiecesPrepare :: () {
-    // Classic's pieces, in palette order.
+    // The pieces, in palette order.
     classic_kinds: [EDIT_CLASSIC_PIECES]s32 = .[
     EDIT_TILE_BRUSH, EDIT_TILE_BRUSH + 103, EDIT_TILE_BRUSH + 99,
     EDIT_TILE_BRUSH + 100, EDIT_TILE_BRUSH + 101, EDIT_TILE_BRUSH + 102, EDIT_TILE_BRUSH + 162, EDIT_TILE_BRUSH + 163, EDIT_TILE_BRUSH + 164,
@@ -202,72 +173,35 @@ EditPiecesPrepare :: () {
     "editor_green_block_goal", "editor_mirror_shovey", "editor_floating_crate",
     "editor_mirror_ne", "editor_mirror_nw", "editor_laser_left", "editor_laser_up",
     "editor_laser_right", "editor_laser_down", "editor_laser_receiver", "editor_clear"]
-    // Island's terrain (kinds below 50), then objects. Sand and meadow take
-    // their coast tiles by themselves; EDIT_CLEAR erases an object.
-    island_kinds: [EDIT_ISLAND_PIECES]s32 = .[
-    56, 75, 0, 1, 13, EDIT_CLEAR, 46, 10, 35, 25, 26, 27,
-    28, 29, 30, 31, 32, 33, 36, 37, 39, 38, 40, 41,
-    43, 44, 45, 47, 48, 57, 116, 61, 62, 63, 51, 55,
-    54, 53, 91, 65, 66, 73, 60, 58, 64, 67, 70, 71,
-    72, 76, 80, 83, 85, 86, 87, 88, 117, 118, 119, 120,
-    81, 52, 94, 82, 90, 92, 89, 97, 98, 99, 101, 102,
-    103, 104, 105, 111, 112, 114, 122, 100, 113, 74]
-    island_names: [EDIT_ISLAND_PIECES]string = .[
-    "editor_shovey", "editor_hut", "editor_water", "editor_sand",
-    "editor_meadow", "editor_clear", "editor_pebbles", "editor_jade_bed",
-    "editor_red_bed", "editor_barrel_spot", "editor_red_spot", "editor_blue_spot",
-    "editor_green_spot", "editor_sunken_crate", "editor_spike_plate", "editor_well",
-    "editor_farm", "editor_planted", "editor_blast_spot", "editor_teleporter",
-    "editor_item_teleporter", "editor_raft", "editor_ice", "editor_watch_plate",
-    "editor_hidden_path", "editor_channel", "editor_channel_end", "editor_yellow_ring",
-    "editor_red_ring", "editor_crate", "editor_barrel", "editor_red_statue",
-    "editor_blue_statue", "editor_green_statue", "editor_palm", "editor_coconut_palm",
-    "editor_boulder", "editor_snail", "editor_buoy", "editor_sea_star",
-    "editor_baby_crab", "editor_mother_crab", "editor_key", "editor_chest",
-    "editor_seed", "editor_bottle", "editor_coconut", "editor_coconut_hole",
-    "editor_bomb", "editor_spring", "editor_ammo", "editor_slingshot",
-    "editor_leaf_up", "editor_leaf_right", "editor_leaf_down", "editor_leaf_left",
-    "editor_turner_up", "editor_turner_right", "editor_turner_down", "editor_turner_left",
-    "editor_pearl", "editor_lantern", "editor_clam", "editor_coin",
-    "editor_pirate", "editor_stall", "editor_spikes", "editor_red_shell",
-    "editor_blue_shell", "editor_yellow_shell", "editor_stone_1", "editor_stone_2",
-    "editor_stone_3", "editor_stone_4", "editor_stone_5", "editor_yellow_flower",
-    "editor_red_flower", "editor_octopus", "editor_string_post", "editor_shell_turning",
-    "editor_yellow_turning", "editor_happy_crab"]
     for at: cast(s32)0..EDIT_CLASSIC_PIECES - 1 { edit_classic_kinds[at] = classic_kinds[at]; edit_classic_names[at] = classic_names[at] }
-    for at: cast(s32)0..EDIT_ISLAND_PIECES - 1 { edit_island_kinds[at] = island_kinds[at]; edit_island_names[at] = island_names[at] }
     edit_pieces_ready = true
 }
 
-EditPieceCount :: (island: bool) -> s32 { return ifx island then EDIT_ISLAND_PIECES else EDIT_CLASSIC_PIECES }
+EditPieceCount :: () -> s32 { return EDIT_CLASSIC_PIECES }
 
 // The kind of palette piece `index`.
-EditPieceKind :: (island: bool, index: s32) -> s32 {
+EditPieceKind :: (index: s32) -> s32 {
     if !edit_pieces_ready { EditPiecesPrepare() }
-    return ifx island then edit_island_kinds[index] else edit_classic_kinds[index]
+    return edit_classic_kinds[index]
 }
 
 // The translated name's key of palette piece `index`.
-EditPieceKey :: (island: bool, index: s32) -> string {
+EditPieceKey :: (index: s32) -> string {
     if !edit_pieces_ready { EditPiecesPrepare() }
-    return ifx island then edit_island_names[index] else edit_classic_names[index]
+    return edit_classic_names[index]
 }
 
 // A piece's name key, also for kinds the palette leaves out.
-EditPieceName :: (island: bool, kind: s32) -> string {
-    for index: cast(s32)0..EditPieceCount(island) - 1 {
-        piece := EditPieceKind(island, index)
-        if piece == kind { return EditPieceKey(island, index) }
+EditPieceName :: (kind: s32) -> string {
+    for index: cast(s32)0..EditPieceCount() - 1 {
+        piece := EditPieceKind(index)
+        if piece == kind { return EditPieceKey(index) }
     }
-    if !island {
-        for index: cast(s32)0..EditPieceCount(false) - 1 {
-            piece := EditPieceKind(false, index)
-            if piece >= EDIT_TILE_BRUSH && piece < EDIT_DECO_BRUSH && piece - EDIT_TILE_BRUSH == kind { return EditPieceKey(false, index) }
-        }
+    for index: cast(s32)0..EditPieceCount() - 1 {
+        piece := EditPieceKind(index)
+        if piece >= EDIT_TILE_BRUSH && piece < EDIT_DECO_BRUSH && piece - EDIT_TILE_BRUSH == kind { return EditPieceKey(index) }
     }
-    if island && CoastSand(kind) { return "editor_sand" }
-    if island && CoastMeadow(kind) { return "editor_meadow" }
-    return ifx island && kind < 50 then "editor_ground" else "editor_object"
+    return "editor_object"
 }
 
 // ---------------------------------------------------------------------------
@@ -280,89 +214,58 @@ EditBorder :: (at: s32) -> bool {
 }
 
 // Paints piece kind on cell at. Exactly one Shovey: painting Shovey moves it,
-// and nothing paints over it. Island's sand and meadow choose their shores;
-// water and the eraser clear objects. Returns whether the board changed.
+// and nothing paints over it. Returns whether the board changed.
 EditPaint :: (board: *EditBoard, kind: s32, at: s32) -> bool {
     if at < 0 || at >= EDIT_CELLS { return false }
-    if !board.island && kind == SHOVEY_BOAT { return false }
+    if kind == SHOVEY_BOAT { return false }
     shovey := EditShovey(board)
-    if !board.island {
-        if kind >= EDIT_DECO_BRUSH {
-            decoration := kind - EDIT_DECO_BRUSH
-            if !ShoveyDecoration(decoration) || board.decorations[at] == cast(u8)decoration { return false }
-            if ShoveyBlockingDecoration(decoration) && board.ground[at] != 0 { return false }
-            tile := cast(s32)board.tiles[at]
-            if ShoveyBlockingDecoration(decoration) && (tile == 12 || ShoveyMossColor(tile) >= 0 || tile == SHOVEY_PIT || ShoveySolidDecor(tile)) { board.tiles[at] = 0 }
-            board.decorations[at] = cast(u8)decoration
-            return true
-        }
-        if kind >= EDIT_TILE_BRUSH {
-            tile := kind - EDIT_TILE_BRUSH
-            if tile == SHOVEY_PIT {
-                if board.tiles[at] == cast(u8)tile && board.ground[at] == 0 && board.decorations[at] == 0 { return false }
-                board.tiles[at] = cast(u8)tile
-                board.ground[at] = 0
-                board.decorations[at] = 0
-                return true
-            }
-            if ShoveyFish(cast(s32)board.ground[at]) && tile != 64 { return false }
-            if !ShoveyTile(tile) || board.tiles[at] == cast(u8)tile { return false }
+    if kind >= EDIT_DECO_BRUSH {
+        decoration := kind - EDIT_DECO_BRUSH
+        if !ShoveyDecoration(decoration) || board.decorations[at] == cast(u8)decoration { return false }
+        if ShoveyBlockingDecoration(decoration) && board.ground[at] != 0 { return false }
+        tile := cast(s32)board.tiles[at]
+        if ShoveyBlockingDecoration(decoration) && (tile == 12 || ShoveyMossColor(tile) >= 0 || tile == SHOVEY_PIT || ShoveySolidDecor(tile)) { board.tiles[at] = 0 }
+        board.decorations[at] = cast(u8)decoration
+        return true
+    }
+    if kind >= EDIT_TILE_BRUSH {
+        tile := kind - EDIT_TILE_BRUSH
+        if tile == SHOVEY_PIT {
+            if board.tiles[at] == cast(u8)tile && board.ground[at] == 0 && board.decorations[at] == 0 { return false }
             board.tiles[at] = cast(u8)tile
-            return true
-        }
-        if !ShoveyCellKind(kind) || kind == 22 || kind == 24 || kind == 32 || kind == 41 || kind == 42 || kind == 43 { return false }
-        if kind != 0 && ShoveyBlockingDecoration(cast(s32)board.decorations[at]) { return false }
-        if EditBorder(at) || at == shovey { return false }
-        if kind == 0 && board.decorations[at] != 0 {
             board.ground[at] = 0
             board.decorations[at] = 0
             return true
         }
-        tile := cast(s32)board.tiles[at]
-        replaced_wall := false
-        if ShoveyFish(kind) && tile != 64 { board.tiles[at] = 64; replaced_wall = true }
-        else if !ShoveyFish(kind) && kind != 0 && kind != 71 &&
-        !((ShoveyClosedDoor(kind) || ShoveyOpenDoor(kind)) && ShoveyWallFloor(tile) >= 0) &&
-        (tile == CLASSIC_WALL || ShoveyMossColor(tile) >= 0 || ShoveySolidDecor(tile)) { board.tiles[at] = 0; replaced_wall = true }
-        if board.ground[at] == cast(u8)kind { return replaced_wall }
-        if kind == CLASSIC_SHOVEY && shovey >= 0 { board.ground[shovey] = 0 }
-        board.ground[at] = cast(u8)kind
+        if ShoveyFish(cast(s32)board.ground[at]) && tile != 64 { return false }
+        if !ShoveyTile(tile) || board.tiles[at] == cast(u8)tile { return false }
+        board.tiles[at] = cast(u8)tile
         return true
     }
-    if kind == EDIT_CLEAR {
-        if at == shovey || board.objects[at] == 0 { return false }
-        board.objects[at] = 0
+    if !ShoveyCellKind(kind) || kind == 22 || kind == 24 || kind == 32 || kind == 41 || kind == 42 || kind == 43 { return false }
+    if kind != 0 && ShoveyBlockingDecoration(cast(s32)board.decorations[at]) { return false }
+    if EditBorder(at) || at == shovey { return false }
+    if kind == 0 && board.decorations[at] != 0 {
+        board.ground[at] = 0
+        board.decorations[at] = 0
         return true
     }
-    if kind < 50 {
-        if kind < 0 || kind > 48 || kind == 24 || kind == 34 || kind == 42 { return false }
-        // Shovey starts on land.
-        if at == shovey && CoastWater(kind) { return false }
-        before := board.*
-        board.ground[at] = cast(u8)kind
-        if kind == 0 && at != shovey { board.objects[at] = 0 }
-        CoastAround(board.ground[:], at)
-        return !EditSame(*before, board)
-    }
-    if kind > 124 || kind == 78 || kind == 79 || kind == 123 || kind == 124 || at == shovey || board.objects[at] == cast(u8)kind { return false }
-    if kind == ISLAND_SHOVEY {
-        if CoastWater(cast(s32)board.ground[at]) { return false }
-        if shovey >= 0 { board.objects[shovey] = 0 }
-    }
-    board.objects[at] = cast(u8)kind
+    tile := cast(s32)board.tiles[at]
+    replaced_wall := false
+    if ShoveyFish(kind) && tile != 64 { board.tiles[at] = 64; replaced_wall = true }
+    else if !ShoveyFish(kind) && kind != 0 && kind != 71 &&
+    !((ShoveyClosedDoor(kind) || ShoveyOpenDoor(kind)) && ShoveyWallFloor(tile) >= 0) &&
+    (tile == CLASSIC_WALL || ShoveyMossColor(tile) >= 0 || ShoveySolidDecor(tile)) { board.tiles[at] = 0; replaced_wall = true }
+    if board.ground[at] == cast(u8)kind { return replaced_wall }
+    if kind == CLASSIC_SHOVEY && shovey >= 0 { board.ground[shovey] = 0 }
+    board.ground[at] = cast(u8)kind
     return true
 }
 
-// The piece under at, as the palette names it: Island's object, or its
-// terrain with any shore as plain sand or meadow.
+// The piece under at, as the palette names it.
 EditPick :: (board: *EditBoard, at: s32) -> s32 {
     if at < 0 || at >= EDIT_CELLS { return -1 }
-    if !board.island { return cast(s32)board.ground[at] }
-    if board.objects[at] != 0 { return cast(s32)board.objects[at] }
-    terrain := cast(s32)board.ground[at]
-    if CoastSand(terrain) { return 1 }
-    if CoastMeadow(terrain) { return 13 }
-    return terrain
+    return cast(s32)board.ground[at]
 }
 
 // ---------------------------------------------------------------------------
@@ -437,11 +340,10 @@ EditPutJson :: (writer: *EditWriter, text: string) {
     EditPutByte(writer, #char "\"")
 }
 
-// A board's layers as JSON arrays of row strings, the level files' layout:
-// "cells" for Classic, "terrain" and "objects" for Island.
+// A board's layers as JSON arrays of row strings, the level files' layout.
 EditPutRows :: (writer: *EditWriter, board: *EditBoard, indent: string) {
     layers := EditLayers(board)
-    names: [3]string = .[ifx board.island then "terrain" else "cells", ifx board.island then "objects" else "tiles", "decorations"]
+    names: [3]string = .["cells", "tiles", "decorations"]
     for layer: cast(s32)0..layers - 1 {
         if layer > 0 { EditPut(writer, ",") }
         EditPut(writer, "\n")
@@ -461,7 +363,7 @@ EditPutRows :: (writer: *EditWriter, board: *EditBoard, indent: string) {
 // ---------------------------------------------------------------------------
 // Custom levels and their records
 //
-// Each edition keeps an index record, "classic-levels" or "island-levels":
+// The editor keeps an index record, "classic-levels":
 //
 //   I1
 //   next 8
@@ -471,7 +373,7 @@ EditPutRows :: (writer: *EditWriter, board: *EditBoard, indent: string) {
 // for none), how it was proven (- not yet, s solver, p played, d a
 // downloaded route that replayed to a win), 1 once won in play, the author's
 // alias for downloaded levels (- for none), and its name. Each level keeps
-// its board and winning route in "classic-3" (or "island-3"):
+// its board and winning route in "classic-3":
 //
 //   E1
 //   board <hex>
@@ -502,7 +404,6 @@ EditSummary :: struct {
 }
 
 EditCatalog :: struct {
-    island: bool
     next: s32
     count: s32
     levels: [EDIT_LEVELS]EditSummary
@@ -534,20 +435,18 @@ EditSetAuthor :: (summary: *EditSummary, author: string) {
     summary.author_length = EditSetField(summary.author[:], author)
 }
 
-EditRecordPrefix :: (island: bool) -> string { return ifx island then "island" else "classic" }
-
 edit_record_name: [64]u8;
 
 // The record of a custom level, borrowed until the next call.
-EditLevelRecord :: (island: bool, id: s32) -> string {
+EditLevelRecord :: (id: s32) -> string {
     writer := EditWriter.{.bytes = edit_record_name[:]}
-    EditPut(*writer, EditRecordPrefix(island))
+    EditPut(*writer, "classic")
     EditPut(*writer, "-")
     EditPutNumber(*writer, cast(s64)id)
     return TextView(edit_record_name[0:writer.length])
 }
 
-EditIndexRecord :: (island: bool) -> string { return ifx island then "island-levels" else "classic-levels" }
+EditIndexRecord :: () -> string { return "classic-levels" }
 
 EditFind :: (catalog: *EditCatalog, id: s32) -> s32 {
     for at: cast(s32)0..catalog.count - 1 {
@@ -637,8 +536,8 @@ EditNumber :: (word: string) -> s32 {
 
 // Reads an index record. An empty record is an empty catalog; anything
 // malformed is refused and leaves the catalog as it was.
-EditIndexRead :: (catalog: *EditCatalog, island: bool, text: string) -> bool {
-    read := EditCatalog.{.island = island, .next = 1}
+EditIndexRead :: (catalog: *EditCatalog, text: string) -> bool {
+    read := EditCatalog.{.next = 1}
     if text.count == 0 { catalog.* = read; return true }
     at: s64 = 0
     first := true
@@ -708,8 +607,8 @@ EditLevelText :: (level: *EditLevel) -> string {
     return TextView(edit_level_bytes[0:writer.length])
 }
 
-// Reads a level record of an edition. False when malformed.
-EditLevelRead :: (level: *EditLevel, island: bool, text: string) -> bool {
+// Reads a level record. False when malformed.
+EditLevelRead :: (level: *EditLevel, text: string) -> bool {
     if EditLine(text, 0) != "E1" { return false }
     at: s64 = 3
     board_found := false
@@ -720,7 +619,7 @@ EditLevelRead :: (level: *EditLevel, island: bool, text: string) -> bool {
         cursor: s64 = 0
         word := EditWord(line, *cursor)
         if word == "board" {
-            if !EditBoardRead(*level.board, island, line[cursor:]) { return false }
+            if !EditBoardRead(*level.board, line[cursor:]) { return false }
             board_found = true
         } else if word == "route" { route = line[cursor:] }
         else if line.count > 0 { return false }
@@ -733,9 +632,7 @@ EditLevelRead :: (level: *EditLevel, island: bool, text: string) -> bool {
 //
 //   {"format": "shovey-edits-1", "levels": [
 //    {"edition": "classic", "number": 12, "name": "...", "route": "...",
-//     "cells": [...20 rows of 24 hex digits...]},
-//    {"edition": "island", "name": "...", "route": "...",
-//     "terrain": [...], "objects": [...]}]}
+//     "cells": [...20 rows of 24 hex digits...]}]}
 //
 // "number" names the story level a copy came from; new levels have none.
 // tools/levels/import_edits.zi reads it.
@@ -748,7 +645,7 @@ EditExportBegin :: (writer: *EditWriter) {
 EditExportLevel :: (writer: *EditWriter, summary: *EditSummary, level: *EditLevel, first: bool, fallback: string) {
     EditPut(writer, ifx first then "\n {" else ",\n {")
     EditPut(writer, "\"edition\": ")
-    EditPutJson(writer, EditRecordPrefix(level.board.island))
+    EditPutJson(writer, "classic")
     if summary.from > 0 {
         EditPut(writer, ", \"number\": ")
         EditPutNumber(writer, cast(s64)summary.from)
@@ -770,15 +667,12 @@ EditExportEnd :: (writer: *EditWriter) { EditPut(writer, "]}\n") }
 EDIT_PLAY_UNDO :: 120
 
 EditPlay :: struct {
-    island: bool
     classic: ShoveyGame
-    isle: IslandGame
     start: EditBoard
     route: [EDIT_ROUTE]u8
     route_length: s32
     // Before each of the last moves: the game and how long the route was.
     classic_undo: [EDIT_PLAY_UNDO]ShoveyGame
-    isle_undo: [EDIT_PLAY_UNDO]IslandGame
     route_undo: [EDIT_PLAY_UNDO]s32
     undo_count: s32
     undo_next: s32
@@ -788,15 +682,12 @@ EditPlay :: struct {
 
 // Starts playing board from its beginning. False when the engine refuses it.
 EditPlayStart :: (play: *EditPlay, board: *EditBoard) -> bool {
-    play.island = board.island
     play.start = board.*
     play.route_length = 0
     play.undo_count = 0
     play.undo_next = 0
     play.overflow = false
-    hex := EditBoardHex(board)
-    if board.island { return IslandLoadData(*play.isle, 0, hex) }
-    return ShoveyLoadData(*play.classic, 0, hex)
+    return ShoveyLoadData(*play.classic, 0, EditBoardHex(board))
 }
 
 EditPlayRestart :: (play: *EditPlay) -> bool {
@@ -804,9 +695,9 @@ EditPlayRestart :: (play: *EditPlay) -> bool {
     return EditPlayStart(play, *start)
 }
 
-EditPlayWon :: (play: *EditPlay) -> bool { return ifx play.island then play.isle.won else play.classic.won }
+EditPlayWon :: (play: *EditPlay) -> bool { return play.classic.won }
 
-EditPlayLost :: (play: *EditPlay) -> bool { return !play.island && play.classic.lost }
+EditPlayLost :: (play: *EditPlay) -> bool { return play.classic.lost }
 
 EditPlayRecord :: (play: *EditPlay, letter: u8) {
     if play.route_length >= EDIT_ROUTE { play.overflow = true; return }
@@ -815,28 +706,17 @@ EditPlayRecord :: (play: *EditPlay, letter: u8) {
 }
 
 EditPlayRemember :: (play: *EditPlay) {
-    if play.island { play.isle_undo[play.undo_next] = play.isle }
-    else { play.classic_undo[play.undo_next] = play.classic }
+    play.classic_undo[play.undo_next] = play.classic
     play.route_undo[play.undo_next] = play.route_length
     play.undo_next = (play.undo_next + 1) % EDIT_PLAY_UNDO
     if play.undo_count < EDIT_PLAY_UNDO { play.undo_count += 1 }
 }
 
-// Moves (direction 0..3) or, in Classic, throws (direction -1), and records
-// it in the route. A refused Classic move that turns an armed Shovey is kept
-// too: the facing decides where the next throw flies.
+// Moves (direction 0..3) or throws (direction -1), and records it in the
+// route. A refused move that turns an armed Shovey is kept too: the facing
+// decides where the next throw flies.
 EditPlayAct :: (play: *EditPlay, direction: s32) -> bool {
     if EditPlayWon(play) || EditPlayLost(play) { return false }
-    if play.island {
-        before := play.isle
-        if direction < 0 || !IslandMove(*play.isle, direction) { return false }
-        play.isle_undo[play.undo_next] = before
-        play.route_undo[play.undo_next] = play.route_length
-        play.undo_next = (play.undo_next + 1) % EDIT_PLAY_UNDO
-        if play.undo_count < EDIT_PLAY_UNDO { play.undo_count += 1 }
-        EditPlayRecord(play, #char "0" + cast(u8)direction)
-        return true
-    }
     before := play.classic
     changed := false
     if direction < 0 { changed = ShoveyFire(*play.classic) } else { changed = ShoveyMove(*play.classic, direction) }
@@ -850,9 +730,9 @@ EditPlayAct :: (play: *EditPlay, direction: s32) -> bool {
     return changed
 }
 
-// One timer tick of Classic's moving block, recorded when it did something.
+// One timer tick of the moving block, recorded when it did something.
 EditPlayTick :: (play: *EditPlay) -> bool {
-    if play.island || !ShoveyTick(*play.classic) { return false }
+    if !ShoveyTick(*play.classic) { return false }
     EditPlayRecord(play, #char "t")
     return true
 }
@@ -862,8 +742,7 @@ EditPlayUndo :: (play: *EditPlay) -> bool {
     if play.undo_count == 0 { return false }
     play.undo_next = (play.undo_next + EDIT_PLAY_UNDO - 1) % EDIT_PLAY_UNDO
     play.undo_count -= 1
-    if play.island { play.isle = play.isle_undo[play.undo_next] }
-    else { play.classic = play.classic_undo[play.undo_next] }
+    play.classic = play.classic_undo[play.undo_next]
     play.route_length = play.route_undo[play.undo_next]
     return true
 }
@@ -889,10 +768,7 @@ EditReplay :: (play: *EditPlay, board: *EditBoard, route: string, at: *s32, step
         at.* += 1
         done += 1
         if EditPlayWon(play) || EditPlayLost(play) { return 0 }
-        if play.island {
-            if letter < #char "0" || letter > #char "3" { return 0 }
-            unused IslandMove(*play.isle, cast(s32)(letter - #char "0"))
-        } else if letter >= #char "0" && letter <= #char "3" { unused ShoveyMove(*play.classic, cast(s32)(letter - #char "0")) }
+        if letter >= #char "0" && letter <= #char "3" { unused ShoveyMove(*play.classic, cast(s32)(letter - #char "0")) }
         else if letter == #char "f" { unused ShoveyFire(*play.classic) }
         else if letter == #char "t" { unused ShoveyTick(*play.classic) }
         else { return 0 }

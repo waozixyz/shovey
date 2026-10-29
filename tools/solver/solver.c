@@ -1,7 +1,6 @@
-// Puzzle solver for both Shovey editions. All rules run in the shipped Ziran
-// engine through a thin wrapper (classic_api.zi or island_api.zi); this file
-// only searches. Build once per edition with -DSHOVEY_CLASSIC or
-// -DSHOVEY_ISLAND (see build.sh).
+// Shovey's puzzle solver. All rules run in the shipped Ziran engine through a
+// thin wrapper (classic_api.zi); this file only searches. Build it with
+// -DSHOVEY_CLASSIC (see build.sh).
 //
 //   solve  [options] BOARDHEX          prints the action string or "unsolved"
 //   verify [--level N] BOARDHEX ROUTE   exits 0 only when ROUTE wins
@@ -48,13 +47,8 @@
 #define API(name) ClassicApi##name
 static const char EDITION[] = "classic";
 static const char LETTERS[] = "0123ft";
-#elif defined(SHOVEY_ISLAND)
-#include "island_api.h"
-#define API(name) IslandApi##name
-static const char EDITION[] = "island";
-static const char LETTERS[] = "0123";
 #else
-#error "Define SHOVEY_CLASSIC or SHOVEY_ISLAND"
+#error "Define SHOVEY_CLASSIC"
 #endif
 
 #define ACTIONS ((int)(sizeof LETTERS - 1))

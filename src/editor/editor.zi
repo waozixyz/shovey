@@ -2,8 +2,8 @@
 #import "apps/node_app"
 #import, file "editor_view.zi";
 
-// The level editor for both Shovey editions, its own game beside Classic and
-// Island: it keeps custom levels in its own records.
+// Shovey's level editor, its own game beside Classic: it keeps custom levels
+// in its own records.
 #program_export "ShoveyEditorMain"
 Main :: () -> s32 { return RunNodeApp(EditorNodeFrame, EditorNodeBack) }
 

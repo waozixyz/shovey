@@ -32,9 +32,7 @@ levels_tool = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(levels_tool)
 classic = levels_tool.load('classic')
 published = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
-island = levels_tool.load('island')
 assert [level['number'] for level in classic] == list(range(1, len(classic) + 1))
-assert [level['number'] for level in island] == list(range(1, len(island) + 1))
 
 checks = []
 hidden = json.loads((ROOT / 'levels/approved.json').read_text()).get('hidden_levels', [])
@@ -68,20 +66,8 @@ for level in json.loads(secret.read_text())['levels'] if secret.exists() else []
     assert level['solution'], f'Secret {level["name"]}: solution'
     checks.append(('classic', 1, ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', [])), level['solution']))
 
-names = [level['name'] for level in island]
-assert all(names) and len(set(names)) == len(island), 'Every island has its own name'
-for level in island:
-    terrain, objects = cells(level['terrain']), cells(level['objects'])
-    assert objects.count(56) == 1, f'Island {level["number"]}: one Shovey'
-    assert objects.count(75) >= 1, f'Island {level["number"]}: a hut'
-    assert all(kind <= 48 for kind in terrain) and all(kind <= 124 and kind not in (50, 79) for kind in objects)
-    assert (ROOT / f'assets/shovey-island/levels/{level["number"]}.png').is_file()
-    assert (ROOT / f'assets/shovey-island/levels-landscape/{level["number"]}.png').is_file()
-    assert set(level['solution']) <= set('0123') and level['solution'], f'Island {level["number"]}: solution'
-    checks.append(('island', level['number'], ''.join(level['terrain']) + ''.join(level['objects']), level['solution']))
-
 with ThreadPoolExecutor(8) as pool:
     results = list(pool.map(lambda check: (check[0],) + verify(*check), checks))
 failed = [f'{edition} {level}' for edition, level, ok in results if not ok]
 assert not failed, 'Stored solutions that do not win: ' + ', '.join(failed)
-print(f'Levels: {len(classic)} Classic and {len(island)} Island boards, pictures, and {len(checks)} solutions won through the engine')
+print(f'Levels: {len(classic)} Classic boards, pictures, and {len(checks)} solutions won through the engine')

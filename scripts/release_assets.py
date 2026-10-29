@@ -10,7 +10,7 @@ def prepare_release_assets(source, resources):
     for path in resources.rglob('*.png'):
         if path.parent.name not in ('levels', 'levels-landscape') or not path.stem.isdecimal():
             continue
-        if 'island' in path.parts or int(path.stem) > approved:
+        if int(path.stem) > approved:
             path.unlink()
     # Approved snapshots may differ from the board currently being edited.
     # Compose their previews from those same snapshots, not authoring files.

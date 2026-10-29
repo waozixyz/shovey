@@ -26,7 +26,7 @@ env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u S
 	build/tests/$(1)/$(1) $(2)
 endef
 
-.PHONY: all levels bundles landscape previews art solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zx web-zx-test
+.PHONY: all levels bundles landscape previews solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zx web-zx-test
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test star-merge-test
 editor-server-test:
@@ -76,24 +76,6 @@ editor: levels build/ziran/libziran.a
 		$$(pkg-config --libs sdl2 cairo freetype2 fontconfig pangocairo) -lm -lpthread \
 		-o $(EDITOR_OUT)/shovey-level-editor.new
 	mv $(EDITOR_OUT)/shovey-level-editor.new $(EDITOR_OUT)/shovey-level-editor
-
-# Island's private level editor: each place beside its original, saving
-# won boards into levels/island.json.
-ISLAND_EDITOR_OUT ?= build/island-editor
-.PHONY: island-editor
-island-editor: levels build/ziran/libziran.a
-	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
-		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
-		--module-path 'mingcute=$(MINGCUTE)/src' \
-		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
-		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--entry island_editor:main -o $(ISLAND_EDITOR_OUT)/c tools/editor/island_editor.zi
-	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
-		$$(find $(ISLAND_EDITOR_OUT)/c -type d -printf ' -iquote %p') $$(find $(ISLAND_EDITOR_OUT)/c -name '*.c') \
-		build/ziran/libziran.a -Wl,--gc-sections \
-		$$(pkg-config --libs sdl2 cairo freetype2 fontconfig pangocairo) -lm -lpthread \
-		-o $(ISLAND_EDITOR_OUT)/shovey-island-editor.new
-	mv $(ISLAND_EDITOR_OUT)/shovey-island-editor.new $(ISLAND_EDITOR_OUT)/shovey-island-editor
 
 .PHONY: admin-editor
 admin-editor:
@@ -155,11 +137,11 @@ android-fdroid:
 	sh scripts/android-build.sh
 
 # The JSON level files are the source; the game reads the generated code.
-levels: src/levels.zi src/island_levels.zi
+levels: src/levels.zi
 
-# levels/classic.json and levels/island.json are private; without them the
-# published campaign in levels/approved.json is built.
-src/levels.zi src/island_levels.zi: $(wildcard levels/classic.json levels/island.json levels/secret.json) levels/approved.json tools/levels/levels.py
+# levels/classic.json is private; without it the published campaign in
+# levels/approved.json is built.
+src/levels.zi: $(wildcard levels/classic.json levels/secret.json) levels/approved.json tools/levels/levels.py
 	python3 tools/levels/levels.py generate
 	python3 tools/levels/levels.py previews
 
@@ -284,9 +266,6 @@ web-zx-test: web-zx
 previews:
 	python3 tools/levels/levels.py previews
 
-art:
-	cd tools/art && npm ci && node render.mjs
-
 build/ziran/libziran.a:
 	$(MAKE) -C '$(TOOLCHAIN)' BUILD_DIR='$(abspath build/ziran)' '$(abspath $@)'
 
@@ -294,7 +273,7 @@ solver: levels build/ziran/libziran.a
 	ZIRAN_TOOLCHAIN='$(TOOLCHAIN)' sh tools/solver/build.sh
 
 # The Ziran solver run natively over the story levels:
-#   build/solver/shovey-bench classic|island [FIRST [LAST [BUDGET]]]
+#   build/solver/shovey-bench [FIRST [LAST [BUDGET]]]
 bench: levels build/ziran/libziran.a
 	rm -rf build/solver/bench
 	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
@@ -377,7 +356,7 @@ test: solver laws game-maps-test
 	$(MAKE) bundles
 
 # A desktop player that records a winning route for each board it is given:
-#   build/play/shovey-play LIST ROUTES [CLASSIC_LEVELS ISLAND_LEVELS]
+#   build/play/shovey-play LIST ROUTES [LEVELS]
 play: levels build/ziran/libziran.a
 	rm -rf build/play/c
 	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root tools/play \

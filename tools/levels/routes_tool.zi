@@ -113,21 +113,20 @@ main :: (argc: s32, argv: **u8) -> s32 {
     path := TextView(path_bytes[0:path_writer.length])
     text, found := ReadEntireFile(path)
     if !found { return Fail("the level file cannot be read") }
-    if !StoredRead(*stored[0], false, text) { return Fail(ImportError()) }
+    if !StoredRead(*stored, text) { return Fail(ImportError()) }
     if count == 0 {
-        for number: cast(s32)1..stored[0].count {
-            if stored[0].levels[number - 1].has_solution && count < IMPORT_PLACES { numbers[count] = number; count += 1 }
+        for number: cast(s32)1..stored.count {
+            if stored.levels[number - 1].has_solution && count < IMPORT_PLACES { numbers[count] = number; count += 1 }
         }
     }
     changed: s32 = 0
     saved: s64 = 0
     for index: cast(s32)0..count - 1 {
         number := numbers[index]
-        if number > stored[0].count { return Fail("there is no such level") }
-        level := *stored[0].levels[number - 1]
+        if number > stored.count { return Fail("there is no such level") }
+        level := *stored.levels[number - 1]
         if !level.has_solution || level.fresh >= 0 { continue }
         incoming := *import_levels[changed]
-        incoming.island = false
         incoming.number = number
         incoming.name_length = 0
         if !SceneryStoredBoard(text, level, *incoming.level.board) { return Fail("a board cannot be read") }
@@ -151,7 +150,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
         return 0
     }
     writer := EditWriter.{.bytes = level_out[:]}
-    StoredWrite(*writer, *stored[0], text)
+    StoredWrite(*writer, *stored, text)
     if writer.full { return Fail("the level file grew too large") }
     // The developer editor saves into the same file; never overwrite a save
     // made meanwhile.

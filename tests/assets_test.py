@@ -24,10 +24,6 @@ classic += ['chest-closed', 'chest-open', 'chest-empty']
 classic += [f'moss-lowered-{style}' for style in range(4)]
 expected = [f'assets/shovey/sprites/{name}.png' for name in classic]
 expected += [f'assets/shovey-landscape/sprites/{name}.png' for name in classic]
-expected += [f'assets/shovey-island/tiles/{kind}.png' for kind in range(125) if kind not in (50, 79)]
-expected += [f'assets/shovey-island-landscape/tiles/{kind}.png' for kind in range(125) if kind not in (50, 79)]
-expected += [f'assets/shovey-island/player/{facing}.png' for facing in range(1, 5)]
-expected += [f'assets/shovey-island-landscape/player/{facing}.png' for facing in range(1, 5)]
 for path in expected:
     with Image.open(ROOT / path) as image:
         assert image.size == (128, 128) and image.mode == 'RGBA', path
@@ -81,15 +77,7 @@ for facing, dx, dy in (('left', -1, 0), ('up', 0, -1), ('right', 1, 0), ('down',
     bill = max(components, key=len)
     assert sum((x - 15.5) * dx + (y - 15.5) * dy for x, y in bill) / len(bill) > 0.25, f'Duck faces away from {facing}'
 
-for index, facing in enumerate(('up', 'right', 'down', 'left'), 1):
-    classic_player = ROOT / f'assets/shovey/sprites/player-{facing}.png'
-    island_player = ROOT / f'assets/shovey-island/player/{index}.png'
-    assert classic_player.read_bytes() == island_player.read_bytes(), \
-        f'Island must use Classic\'s exact player facing {facing}'
-assert (ROOT / 'assets/shovey-island/tiles/56.png').read_bytes() == \
-    (ROOT / 'assets/shovey/sprites/player-up.png').read_bytes(), \
-    'Island\'s editor marker must use the same player'
-for path in ('assets/shovey/preview.png', 'assets/shovey-island/preview.png', 'assets/shovey-editor/preview.png'):
+for path in ('assets/shovey/preview.png', 'assets/shovey-editor/preview.png'):
     with Image.open(ROOT / path) as image:
         assert image.size == (480, 288), path
 for path in (ROOT / 'assets/shovey/levels').glob('*.png'):
@@ -98,18 +86,11 @@ for path in (ROOT / 'assets/shovey/levels').glob('*.png'):
 for path in (ROOT / 'assets/shovey/levels-landscape').glob('*.png'):
     with Image.open(path) as image:
         assert image.size == (320, 192), path
-for path in (ROOT / 'assets/shovey-island/levels').glob('*.png'):
-    with Image.open(path) as image:
-        assert image.size == (192, 320), path
-for path in (ROOT / 'assets/shovey-island/levels-landscape').glob('*.png'):
-    with Image.open(path) as image:
-        assert image.size == (320, 192), path
 
 # Screen rotation changes the board layout, without tipping houses, readable
 # numbers or ordinary objects sideways. Directional art still follows the board.
 for folder, names in (
-        ('shovey/sprites', ('tile-0', 'tile-7', 'tile-21', 'tile-156', 'tile-157', *(f'tile-{kind}' for kind in range(158, 166)))),
-        ('shovey-island/tiles', ('51', '58', '75', '106'))):
+        ('shovey/sprites', ('tile-0', 'tile-7', 'tile-21', 'tile-156', 'tile-157', *(f'tile-{kind}' for kind in range(158, 166)))),):
     for name in names:
         source = ROOT / 'assets' / folder / (name + '.png')
         target = ROOT / 'assets' / folder.replace('/', '-landscape/', 1) / (name + '.png')
@@ -117,8 +98,7 @@ for folder, names in (
             assert portrait.convert('RGBA').tobytes() == landscape.convert('RGBA').tobytes(), \
                 f'{name}: fixed artwork must stay upright'
 for folder, names in (
-        ('shovey/sprites', tuple(f'{animal}-{facing}' for animal in ('player', 'turtle', 'crab', 'fish-gold-0', 'fish-koi-0', 'fish-minnow-0') for facing in ('up', 'right', 'down', 'left'))),
-        ('shovey-island/tiles', ('2', '6', '8', '85', '117'))):
+        ('shovey/sprites', tuple(f'{animal}-{facing}' for animal in ('player', 'turtle', 'crab', 'fish-gold-0', 'fish-koi-0', 'fish-minnow-0') for facing in ('up', 'right', 'down', 'left'))),):
     for name in names:
         source = ROOT / 'assets' / folder / (name + '.png')
         target = ROOT / 'assets' / folder.replace('/', '-landscape/', 1) / (name + '.png')
@@ -142,8 +122,7 @@ for index, facing in enumerate(facings):
     assert portrait.read_bytes() == landscape.read_bytes(), f'Duck {facing} was rotated instead of redrawn'
 
 listed = set()
-for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-island',
-               'assets/shovey-island-landscape', 'assets/shovey-editor'):
+for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-editor'):
     art = json.loads((ROOT / folder / 'art.json').read_text())
     for item in art['files']:
         data = (ROOT / folder / item['path']).read_bytes()
@@ -153,15 +132,10 @@ for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-island
 missing = set(expected) - listed
 assert not missing, f'Not described in art.json: {sorted(missing)[:5]}'
 
-island_shared = json.loads((ROOT / 'src/island/shared_assets.json').read_text())['copies']
-assert {item['from'] for item in island_shared} == {
-    'assets/shovey-island-landscape/tiles', 'assets/shovey-island-landscape/player'
-}, 'Island must package its rotated sprites with its hosted bundle'
-
-# Every sound a view plays is a short mono 16-bit 22050 Hz WAV in its
-# edition's folder, described in that folder's sounds.json.
-views = (ROOT / 'src/shovey_view.zi').read_text() + (ROOT / 'src/island/island_view.zi').read_text()
-played = sorted(set(re.findall(r'assets/shovey(?:-island)?/sounds/[a-z]+\.wav', views)))
+# Every sound the view plays is a short mono 16-bit 22050 Hz WAV, described
+# in its folder's sounds.json.
+views = (ROOT / 'src/shovey_view.zi').read_text()
+played = sorted(set(re.findall(r'assets/shovey/sounds/[a-z]+\.wav', views)))
 assert played, 'No sounds played'
 for path in played:
     folder, name = path.split('/sounds/')
@@ -172,4 +146,4 @@ for path in played:
     with wave.open(str(ROOT / path)) as sound:
         assert (sound.getnchannels(), sound.getsampwidth(), sound.getframerate()) == (1, 2, 22050), path
         assert 0.1 <= sound.getnframes() / 22050 <= 1.5, path
-print(f'Assets: {len(expected)} sprites, three cards and {len(played)} sounds present, sized and described')
+print(f'Assets: {len(expected)} sprites, two cards and {len(played)} sounds present, sized and described')

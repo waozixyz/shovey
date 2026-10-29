@@ -23,7 +23,6 @@ libc :: #system_library "libc";
 WriteError :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
 
 classic_out: [IMPORT_FILE]u8;
-island_out: [IMPORT_FILE]u8;
 input_bytes: [1048576]u8;
 output_bytes: [65536]u8;
 path_bytes: [3][1024]u8;
@@ -90,24 +89,20 @@ main :: (argc: s32, argv: **u8) -> s32 {
     }
     export, read := ReadStream(ifx source == "-" then "/dev/stdin" else source)
     classic_path := Join(0, levels, "classic.json")
-    island_path := Join(1, levels, "island.json")
     classic_text, classic_found := ReadEntireFile(classic_path)
-    island_text, island_found := ReadEntireFile(island_path)
-    if !read || !classic_found || !island_found {
-        Say(2, "import-edits: cannot read the export or the level files\n")
+    if !read || !classic_found {
+        Say(2, "import-edits: cannot read the export or the level file\n")
         return 2
     }
     classic_writer := EditWriter.{.bytes = classic_out[:]}
-    island_writer := EditWriter.{.bytes = island_out[:]}
-    if !ImportEdits(export, classic_text, island_text, append, *classic_writer, *island_writer) {
+    if !ImportEdits(export, classic_text, append, *classic_writer) {
         Say(2, "import-edits: nothing imported: ")
         Say(2, ImportError())
         Say(2, "\n")
         return 1
     }
-    if !WriteEntireFile(classic_path, TextView(classic_out[0:classic_writer.length])) ||
-    !WriteEntireFile(island_path, TextView(island_out[0:island_writer.length])) {
-        Say(2, "import-edits: cannot write the level files\n")
+    if !WriteEntireFile(classic_path, TextView(classic_out[0:classic_writer.length])) {
+        Say(2, "import-edits: cannot write the level file\n")
         return 2
     }
     digits: [24]u8

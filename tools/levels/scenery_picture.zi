@@ -107,9 +107,9 @@ main :: (argc: s32, argv: **u8) -> s32 {
     path := ifx argc > 2 then TextFromCString(argv[2]) else "levels/classic.json"
     text, found := ReadEntireFile(path)
     if !found { return Fail("cannot read the level file") }
-    if !StoredRead(*stored[0], false, text) { return Fail(ImportError()) }
-    if number < 1 || number > stored[0].count { return Fail("no such level") }
-    level := *stored[0].levels[number - 1]
+    if !StoredRead(*stored, text) { return Fail(ImportError()) }
+    if number < 1 || number > stored.count { return Fail("no such level") }
+    level := *stored.levels[number - 1]
     board: EditBoard
     if !SceneryStoredBoard(text, level, *board) || !level.has_solution { return Fail("the level has no board or route") }
     route := text[level.solution.start:level.solution.end]

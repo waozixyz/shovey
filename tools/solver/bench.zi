@@ -1,7 +1,7 @@
 // Runs the Ziran solver (src/solver) natively over story levels and
 // prints, for each, what it found, the states it saw, its work and the time.
 //
-//   build/solver/shovey-bench classic|island [FIRST [LAST [BUDGET]]]
+//   build/solver/shovey-bench [FIRST [LAST [BUDGET]]]
 //
 // BUDGET is the solver's work units per level (default 40000000).
 #import "c_string"
@@ -10,7 +10,6 @@
 #import "timer_linux"
 #import, file "../../src/solver/solver.zi";
 #import, file "../../src/levels.zi";
-#import, file "../../src/island_levels.zi";
 
 libc :: #system_library "libc";
 WriteOut :: (fd: s32, bytes: *u8, count: usize) -> isize #foreign libc "write";
@@ -35,15 +34,13 @@ Number :: (text: string) -> s64 {
 
 #program_export
 main :: (argc: s32, argv: **u8) -> s32 {
-    if argc < 2 { Say("usage: shovey-bench classic|island [FIRST [LAST [BUDGET]]]\n"); return 2 }
-    island := TextFromCString(argv[1]) == "island"
-    count: s64 = ifx island then cast(s64)ISLAND_LEVEL_COUNT else cast(s64)SHOVEY_LEVEL_COUNT
+    count := cast(s64)SHOVEY_LEVEL_COUNT
     first: s64 = 1
-    last := ifx island then count else count - 1
+    last := count - 1
     budget: s64 = 40000000
-    if argc >= 3 { first = Number(TextFromCString(argv[2])) }
-    if argc >= 4 { last = Number(TextFromCString(argv[3])) }
-    if argc >= 5 { budget = Number(TextFromCString(argv[4])) }
+    if argc >= 2 { first = Number(TextFromCString(argv[1])) }
+    if argc >= 3 { last = Number(TextFromCString(argv[2])) }
+    if argc >= 4 { budget = Number(TextFromCString(argv[3])) }
     if last > count { last = count }
     names: [6]string = .["idle", "running", "won", "never", "unknown", "invalid"]
     searches: [5]string = .["greedy", "chain", "bfs", "macro", "verify"]
@@ -53,11 +50,11 @@ main :: (argc: s32, argv: **u8) -> s32 {
     last_ways: s32 = -1
     started := MonotonicMilliseconds()
     for number: first..last {
-        board := ifx island then IslandLevelData(cast(s32)number) else ShoveyLevelData(cast(s32)number)
+        board := ShoveyLevelData(cast(s32)number)
         begin := MonotonicMilliseconds()
         // Benchmark the searches themselves, not the editor's bundled story-route hint.
         work := SolverWork()
-        unused SolverStart(island, board)
+        unused SolverStart(board)
         solver_board = ""
         while SolverStatus() == SOLVER_RUNNING && SolverWork() - work < budget {
             SolverRun(20000)

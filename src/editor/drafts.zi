@@ -26,7 +26,7 @@ DRAFTS_SCHEMA :: "entity.levels.v1"
 // records so the copy happens once: "M1", then lines of "<edition> <id>".
 DRAFTS_MOVED_RECORD :: "entity-moved"
 
-DraftsPutLevel :: (writer: *EditWriter, record: string, island: bool, summary: *EditSummary, level: *EditLevel,
+DraftsPutLevel :: (writer: *EditWriter, record: string, summary: *EditSummary, level: *EditLevel,
     name: string) {
     EditPut(writer, "{\"operation\":\"put\",\"kind\":\"levels\",\"schema\":\"entity.levels.v1\"")
     if record.count > 0 {
@@ -34,7 +34,7 @@ DraftsPutLevel :: (writer: *EditWriter, record: string, island: bool, summary: *
         EditPutJson(writer, record)
     }
     EditPut(writer, ",\"document\":{\"format\":\"shovey-levels-1\",\"edition\":")
-    EditPutJson(writer, EditRecordPrefix(island))
+    EditPutJson(writer, "classic")
     EditPut(writer, ",\"title\":")
     EditPutJson(writer, EditField(summary.name[:], summary.name_length))
     EditPut(writer, ",\"from\":")
@@ -88,9 +88,8 @@ DraftsPutRead :: (text: string, record: []u8) -> bool {
     return length == 32 && DraftsRecordValid(TextView(record[0:32]))
 }
 
-// One custom level of a list reply: its edition and order, and its summary.
+// One custom level of a list reply: its order and its summary.
 DraftsEntry :: struct {
-    island: bool
     order: s64
     summary: EditSummary
 }
@@ -118,9 +117,8 @@ DraftsListRead :: (text: string, entries: []DraftsEntry) -> s32 {
         if format_length < 0 || TextView(format[0:format_length]) != SHARING_FORMAT || edition_length < 0 ||
             record_length != 32 || FieldAt(text, at, "campaign") >= 0 { continue }
         name := TextView(edition[0:edition_length])
-        if name != "classic" && name != "island" { continue }
+        if name != "classic" { continue }
         entry: DraftsEntry
-        entry.island = name == "island"
         entry.order = cast(s64)SharingNumber(text, at, "order")
         summary := *entry.summary
         summary.from = cast(s32)SharingNumber(text, at, "from")
@@ -152,31 +150,28 @@ DraftsListRead :: (text: string, entries: []DraftsEntry) -> s32 {
 
 // Reads a get reply's level into level. A draft may have no route yet.
 // False when the record is missing or malformed.
-DraftsLevelRead :: (text: string, island: bool, level: *EditLevel) -> bool {
+DraftsLevelRead :: (text: string, level: *EditLevel) -> bool {
     status: [16]u8
     if DraftsStatus(text, status[:]) != "done" { return false }
     at := FieldAt(text, 0, "document")
     if at < 0 { return false }
     document: SharingDocument
-    if !SharingDocumentRead(text, at, *document) || document.island != island || document.count < 1 { return false }
+    if !SharingDocumentRead(text, at, *document) || document.count < 1 { return false }
     level_at := document.positions[0]
-    if island {
-        if !SharingRows(text, FieldAt(text, level_at, "terrain"), sharing_hex[:], 0) ||
-        !SharingRows(text, FieldAt(text, level_at, "objects"), sharing_hex[:], EDIT_CELLS * 2) { return false }
-    } else if !SharingRows(text, FieldAt(text, level_at, "cells"), sharing_hex[:], 0) { return false }
-    layered := !island && FieldAt(text, level_at, "tiles") >= 0
+    if !SharingRows(text, FieldAt(text, level_at, "cells"), sharing_hex[:], 0) { return false }
+    layered := FieldAt(text, level_at, "tiles") >= 0
     if layered && !SharingRows(text, FieldAt(text, level_at, "tiles"), sharing_hex[:], EDIT_CELLS * 2) { return false }
-    decorated := !island && FieldAt(text, level_at, "decorations") >= 0
+    decorated := FieldAt(text, level_at, "decorations") >= 0
     if decorated && (!layered || !SharingRows(text, FieldAt(text, level_at, "decorations"), sharing_hex[:], EDIT_CELLS * 4)) { return false }
-    layers: s32 = ifx decorated then 3 else ifx island || layered then 2 else 1
-    if !EditBoardRead(*level.board, island, TextView(sharing_hex[0:EDIT_CELLS * 2 * layers])) || EditShovey(*level.board) < 0 { return false }
+    layers: s32 = ifx decorated then 3 else ifx layered then 2 else 1
+    if !EditBoardRead(*level.board, TextView(sharing_hex[0:EDIT_CELLS * 2 * layers])) || EditShovey(*level.board) < 0 { return false }
     route_at := FieldAt(text, level_at, "route")
     span := ReadString(text, route_at)
     if route_at < 0 || !span.valid || span.end - span.start > EDIT_ROUTE { return false }
     route := text[span.start:span.end]
     for letter: route {
         move := letter >= #char "0" && letter <= #char "3"
-        if !move && (island || (letter != #char "f" && letter != #char "t")) { return false }
+        if !move && letter != #char "f" && letter != #char "t" { return false }
     }
     return EditSetRoute(level, route)
 }
@@ -186,7 +181,6 @@ DraftsLevelRead :: (text: string, island: bool, level: *EditLevel) -> bool {
 
 DraftsMoved :: struct {
     count: s32
-    island: [EDIT_LEVELS * 2]bool
     id: [EDIT_LEVELS * 2]s32
 }
 
@@ -200,23 +194,21 @@ DraftsMovedRead :: (text: string, moved: *DraftsMoved) {
         cursor: s64 = 0
         edition := EditWord(line, *cursor)
         id := EditNumber(EditWord(line, *cursor))
-        if (edition != "classic" && edition != "island") || id < 1 { continue }
-        moved.island[moved.count] = edition == "island"
+        if edition != "classic" || id < 1 { continue }
         moved.id[moved.count] = id
         moved.count += 1
     }
 }
 
-DraftsMovedHas :: (moved: *DraftsMoved, island: bool, id: s32) -> bool {
-    for at: cast(s32)0..moved.count - 1 { if moved.island[at] == island && moved.id[at] == id { return true } }
+DraftsMovedHas :: (moved: *DraftsMoved, id: s32) -> bool {
+    for at: cast(s32)0..moved.count - 1 { if moved.id[at] == id { return true } }
     return false
 }
 
 DraftsMovedText :: (writer: *EditWriter, moved: *DraftsMoved) {
     EditPut(writer, "M1\n")
     for at: cast(s32)0..moved.count - 1 {
-        EditPut(writer, EditRecordPrefix(moved.island[at]))
-        EditPut(writer, " ")
+        EditPut(writer, "classic ")
         EditPutNumber(writer, cast(s64)moved.id[at])
         EditPut(writer, "\n")
     }
@@ -224,11 +216,11 @@ DraftsMovedText :: (writer: *EditWriter, moved: *DraftsMoved) {
 
 // The record id an old custom level is copied to: the same on every device
 // that holds the same level, so copies from two devices make one record.
-DraftsMovedRecord :: (island: bool, id: s32, level: *EditLevel, output: []u8) -> string {
+DraftsMovedRecord :: (id: s32, level: *EditLevel, output: []u8) -> string {
     first: u64 = 0xcbf29ce484222325
     second: u64 = 0x84222325cbf29ce4
     digits: [24]u8
-    parts: [4]string = .[EditRecordPrefix(island), FormatInteger(cast(s64)id, digits[:]), EditBoardHex(*level.board),
+    parts: [4]string = .["classic", FormatInteger(cast(s64)id, digits[:]), EditBoardHex(*level.board),
         EditField(level.route[:], level.route_length)]
     for part: parts {
         for byte: part {
