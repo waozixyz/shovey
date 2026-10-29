@@ -1,3 +1,20 @@
+[shovey_tip_lasers]
+Spingi uno specchio finché il laser raggiunge il ricevitore.
+---
+[shovey_piece_mirror_ne]
+Specchio /
+[shovey_piece_mirror_nw]
+Specchio \
+[shovey_piece_laser_left]
+Laser sinistra
+[shovey_piece_laser_up]
+Laser sopra
+[shovey_piece_laser_right]
+Laser destra
+[shovey_piece_laser_down]
+Laser sotto
+[shovey_piece_laser_receiver]
+Ricevitore laser
 [shovey_level]
 Livello
 ---

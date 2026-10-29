@@ -713,6 +713,56 @@ def floating_crate():
     return image
 
 
+def mirror_panel(northeast):
+    """A pushable silver panel; its bright diagonal shows the beam's turn."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((5, 23, 28, 29), fill=(0, 0, 0, 55))
+    draw.rectangle((6, 5, 25, 25), fill=(61, 69, 74, 255), outline=(25, 30, 34, 255))
+    draw.polygon([(9, 8), (22, 8), (22, 12), (12, 12), (12, 22), (9, 22)], fill=(110, 119, 124, 255))
+    points = [(7, 24), (24, 7)] if northeast else [(7, 7), (24, 24)]
+    draw.line(points, fill=(224, 244, 250, 255), width=4)
+    draw.line(points, fill=(255, 255, 255, 190), width=1)
+    draw.ellipse((7, 7, 10, 10), fill=(222, 236, 240, 255))
+    draw.ellipse((21, 21, 24, 24), fill=(222, 236, 240, 255))
+    return image
+
+
+def laser_emitter(direction):
+    """A fixed emitter standing on whatever floor is under it; its short beam
+    points left, up, right or down."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((7, 23, 27, 29), fill=(0, 0, 0, 70))
+    draw.rectangle((10, 10, 21, 21), fill=(46, 52, 56, 255), outline=(20, 24, 27, 255))
+    draw.rectangle((12, 12, 19, 19), fill=(80, 90, 94, 255))
+    centers = ((4, 15), (15, 4), (27, 15), (15, 27))
+    cx, cy = centers[direction]
+    draw.line([(15, 15), (cx, cy)], fill=(255, 68, 58, 210), width=4)
+    draw.line([(15, 15), (cx, cy)], fill=(255, 172, 158, 220), width=1)
+    draw.rectangle((13, 13, 18, 18), fill=(214, 58, 47, 255))
+    draw.rectangle((15, 15, 17, 17), fill=(255, 180, 168, 255))
+    return image
+
+
+def laser_receiver(lit):
+    """A receiver socket standing on whatever floor is under it."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((6, 22, 27, 29), fill=(0, 0, 0, 70))
+    draw.ellipse((7, 6, 25, 24), fill=(46, 52, 56, 255), outline=(20, 24, 27, 255))
+    draw.ellipse((10, 9, 22, 21), fill=(80, 90, 94, 255))
+    if lit:
+        draw.ellipse((11, 10, 21, 20), fill=(239, 181, 33, 255))
+        draw.ellipse((13, 12, 19, 18), fill=(255, 239, 151, 255))
+        for x, y in ((8, 6), (24, 6), (8, 24), (24, 24)):
+            draw.line([(15, 15), (x, y)], fill=(255, 214, 83, 190), width=2)
+    else:
+        draw.ellipse((11, 10, 21, 20), fill=(111, 39, 38, 255))
+        draw.ellipse((14, 13, 18, 17), fill=(163, 59, 54, 255))
+    return image
+
+
 def shadow_shovey():
     """The mirror shadow: a pink Shovey filling the whole tile, with bigger
     eyes than the original's, looking up."""
@@ -1317,6 +1367,14 @@ def sprites():
         **{f'boat-wake-{frame}': (f'water breaking on the big boat\'s bow and foam along its waterline, frame {frame + 1} of 4',
                                   boat_wake(frame)) for frame in range(4)},
         'tile-149': ('floating crate: a crate pushed into water, floating low; Shovey can walk on it', floating_crate()),
+        'tile-150': ('pushable mirror, / orientation: a silver panel turns a laser beam', mirror_panel(True)),
+        'tile-151': ('pushable mirror, \\ orientation: a silver panel turns a laser beam', mirror_panel(False)),
+        'tile-152': ('fixed laser emitter facing left, with its short red beam', laser_emitter(0)),
+        'tile-153': ('fixed laser emitter facing up, with its short red beam', laser_emitter(1)),
+        'tile-154': ('fixed laser emitter facing right, with its short red beam', laser_emitter(2)),
+        'tile-155': ('fixed laser emitter facing down, with its short red beam', laser_emitter(3)),
+        'tile-156': ('unlit laser receiver: a dark socket with a red gem', laser_receiver(False)),
+        'tile-157': ('lit laser receiver: a bright yellow gem with four light rays', laser_receiver(True)),
         'chest-closed': ('secret chest: a small wooden treasure chest with iron bands and a golden lock', native('chest-closed')),
         'chest-open': ('secret chest opened: gold coins and a blue Dew drop inside', native('chest-open')),
         'tile-40': ('mirror Shovey (pink)', mirror),
@@ -1372,6 +1430,10 @@ def sprites():
         'tile-137': ('bluebells: blue bell flowers on the floor (decoration)', native('bluebells')),
         'tile-138': ('lily pads with a pink lotus, floating on water (decoration)', native('lily-pads')),
         'tile-139': ('berry bush: a round leafy bush with red berries; blocks movement', native('berry-bush')),
+        'tile-158': ('pine: a dark green fir tree; blocks movement and laser beams', native('pine')),
+        'tile-159': ('fallen log: a mossy fallen tree trunk; blocks movement and laser beams', native('fallen-log')),
+        'tile-160': ('mossy boulder: a grey stone capped with moss; blocks movement and laser beams', native('mossy-boulder')),
+        'tile-161': ('ferns: a low clump of green fern fronds on the floor (decoration)', native('fern')),
         'tile-140': ('flower pot: terracotta pot of pink, yellow and white flowers; blocks movement', native('flower-pot')),
         'tile-141': ('barrel: an upright wooden barrel with iron hoops; blocks movement', native('barrel')),
         'tile-142': ('tree stump: a cut stump with rings and a green sprout; blocks movement', native('tree-stump')),
@@ -1497,6 +1559,10 @@ def build():
         data = (SPRITES / f'tile-{kind}.png').read_bytes()
         manifest.append({'path': f'sprites/tile-{kind}.png', 'depicts': depicts,
                          'sha256': hashlib.sha256(data).hexdigest()})
+    chest_empty = SPRITES / 'chest-empty.png'
+    manifest.append({'path': 'sprites/chest-empty.png',
+                     'depicts': 'secret chest opened and claimed: empty dark wooden interior, with no Dew diamond or treasure',
+                     'sha256': hashlib.sha256(chest_empty.read_bytes()).hexdigest()})
     # Keep what other tools describe in the same folder, such as the card.
     art_path = ROOT / 'assets/shovey/art.json'
     art = json.loads(art_path.read_text())

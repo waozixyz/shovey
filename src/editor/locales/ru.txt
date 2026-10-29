@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Зеркало /
+[editor_mirror_nw]
+Зеркало \
+[editor_laser_left]
+Лазер влево
+[editor_laser_up]
+Лазер вверх
+[editor_laser_right]
+Лазер вправо
+[editor_laser_down]
+Лазер вниз
+[editor_laser_receiver]
+Приёмник лазера
 [editor_choose]
 Выбери выпуск, уровни которого хочешь посмотреть, создать или изменить.
 ---
@@ -792,4 +806,16 @@ Island
 ---
 [editor_tree_stump]
 Пень
+---
+[editor_pine]
+Сосна
+---
+[editor_fallen_log]
+Упавшее бревно
+---
+[editor_mossy_boulder]
+Замшелый валун
+---
+[editor_fern]
+Папоротник
 ---

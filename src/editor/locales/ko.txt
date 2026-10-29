@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+거울 /
+[editor_mirror_nw]
+거울 \
+[editor_laser_left]
+왼쪽 레이저
+[editor_laser_up]
+위쪽 레이저
+[editor_laser_right]
+오른쪽 레이저
+[editor_laser_down]
+아래쪽 레이저
+[editor_laser_receiver]
+레이저 수신기
 [editor_choose]
 단계를 보거나 만들거나 고칠 에디션을 고르세요.
 ---
@@ -792,4 +806,16 @@ Shovey
 ---
 [editor_tree_stump]
 나무 그루터기
+---
+[editor_pine]
+소나무
+---
+[editor_fallen_log]
+쓰러진 통나무
+---
+[editor_mossy_boulder]
+이끼 낀 바위
+---
+[editor_fern]
+고사리
 ---

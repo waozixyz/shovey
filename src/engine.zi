@@ -135,7 +135,8 @@ ShoveyGoalDone :: (ground: s32, object: s32) -> bool {
 
 // A kind a board cell may start with.
 ShoveyCellKind :: (kind: s32) -> bool {
-    return (kind >= 0 && kind <= SHOVEY_LAST_BUTTON) || ShoveyColorGoal(kind) || kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE
+    return (kind >= 0 && kind <= SHOVEY_LAST_BUTTON) || ShoveyColorGoal(kind) || kind == SHOVEY_BOAT ||
+    kind == SHOVEY_FLOATING_CRATE || ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER
 }
 
 // Where a level ends: the house, or the boat.
@@ -145,7 +146,10 @@ ShoveyHome :: (kind: s32) -> bool { return kind == 7 || kind == SHOVEY_BOAT }
 // walls. Cracked wall (62) is the one wall a bomb crate (72) can break.
 ShoveyMaterialFloor :: (kind: s32) -> bool { return kind >= 99 && kind <= 103 }
 ShoveyDecorFloor :: (kind: s32) -> bool { return (kind >= 57 && kind <= 61) || ShoveyMaterialFloor(kind) }
-ShoveyBlockingDecoration :: (kind: s32) -> bool { return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN || kind == SHOVEY_BOULDER || (kind >= SHOVEY_BUSH && kind <= SHOVEY_STUMP) }
+ShoveyBlockingDecoration :: (kind: s32) -> bool {
+    return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN || kind == SHOVEY_BOULDER || (kind >= SHOVEY_BUSH && kind <= SHOVEY_STUMP) ||
+    (kind >= SHOVEY_PINE && kind <= SHOVEY_MOSSY_BOULDER)
+}
 ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98) }
 SHOVEY_CRACKED_WALL :: 62
 SHOVEY_PIT :: 65
@@ -178,13 +182,28 @@ SHOVEY_GREEN_GOAL :: 147
 // into water floats there and can be walked on.
 SHOVEY_BOAT :: 148
 SHOVEY_FLOATING_CRATE :: 149
-SHOVEY_LAST_KIND :: 149
+SHOVEY_MIRROR_NE :: 150
+SHOVEY_MIRROR_NW :: 151
+SHOVEY_LASER_LEFT :: 152
+SHOVEY_LASER_UP :: 153
+SHOVEY_LASER_RIGHT :: 154
+SHOVEY_LASER_DOWN :: 155
+SHOVEY_LASER_RECEIVER :: 156
+SHOVEY_LAST_KIND :: 156
+
+ShoveyMirror :: (kind: s32) -> bool { return kind == SHOVEY_MIRROR_NE || kind == SHOVEY_MIRROR_NW }
+ShoveyLaserEmitter :: (kind: s32) -> bool { return kind >= SHOVEY_LASER_LEFT && kind <= SHOVEY_LASER_DOWN }
 // Decorations on top of tiles: mushrooms, fallen leaves, bluebells and lily
 // pads are walked over; a bush, flower pot, barrel and stump block.
 SHOVEY_MUSHROOMS :: 135
 SHOVEY_LILY_PADS :: 138
 SHOVEY_BUSH :: 139
 SHOVEY_STUMP :: 142
+// Forest decorations: a pine, a fallen log and a mossy boulder block the
+// way and beams; ferns are walked over.
+SHOVEY_PINE :: 158
+SHOVEY_MOSSY_BOULDER :: 160
+SHOVEY_FERN :: 161
 ShoveyMossColor :: (kind: s32) -> s32 {
     if kind == 14 { return 0 }
     if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return kind - SHOVEY_MOSS_WALL + 1 }
@@ -237,7 +256,7 @@ shovey_enter: s32 = -1;
 
 ShoveyMovable :: (kind: s32) -> bool {
     return ShoveyBallColor(kind) > 0 || kind == 9 || kind == 19 || kind == 28 ||
-    ShoveyColorBlock(kind) || kind == 40 || kind == SHOVEY_BOMB
+    ShoveyColorBlock(kind) || kind == 40 || kind == SHOVEY_BOMB || ShoveyMirror(kind)
 }
 
 ShoveyHasIce :: (game: *ShoveyGame) -> bool {
@@ -270,7 +289,10 @@ ShoveyTerrain :: (kind: s32) -> bool {
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
-ShoveyDecoration :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 59) || (kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_LILY_PADS) || ShoveyBlockingDecoration(kind) }
+ShoveyDecoration :: (kind: s32) -> bool {
+    return kind == 0 || (kind >= 57 && kind <= 59) || (kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_LILY_PADS) || kind == SHOVEY_FERN ||
+    ShoveyBlockingDecoration(kind)
+}
 ShoveyCosmeticTile :: (kind: s32) -> bool { return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) }
 ShoveyDefaultTile :: (kind: s32) -> s32 {
     return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else ifx kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE then 64 else 0
@@ -357,11 +379,58 @@ ShoveyRemaining :: (game: *ShoveyGame) -> s32 {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         object := game.objects[at]; ground := game.ground[at]
         if ShoveyBallColor(object) > 0 || object == 19 || object == 28 || object == 40 || ground == 21 || ground == 56 ||
-        (ground == 18 && object != 9) || (ShoveyColorGoal(ground) && !ShoveyGoalDone(ground, object)) || ground == 29 || ground == 30 {
+        (ground == 18 && object != 9) || (ShoveyColorGoal(ground) && !ShoveyGoalDone(ground, object)) || ground == 29 || ground == 30 ||
+        (ground == SHOVEY_LASER_RECEIVER && !ShoveyLaserLit(game, at)) {
             remaining += 1
         }
     }
     return remaining
+}
+
+// A mirror turns a beam: / swaps left with down and up with right, \ swaps
+// left with up and right with down.
+ShoveyLaserReflect :: (mirror: s32, direction: s32) -> s32 {
+    if mirror == SHOVEY_MIRROR_NE { return 3 - direction }
+    return ifx direction % 2 == 0 then direction + 1 else direction - 1
+}
+
+// A beam crosses floor, water, pits, ice and open gates or doors. Crates
+// and every other piece, walls, trees, closed gates and doors stop it.
+ShoveyBeamStops :: (game: *ShoveyGame, at: s32) -> bool {
+    ground := game.ground[at]
+    if game.objects[at] != 0 { return true }
+    if ShoveyMossColor(ground) >= 0 { return !ShoveyDoorOpen(game, at) }
+    if ShoveyGateColor(ground) >= 0 { return !ShoveyGateOpen(game, at) }
+    return ground == 12 || ground == 62 || ground == 63 || ground == 76 || (ground >= 95 && ground <= 98) ||
+    ShoveyBlockingDecoration(ground) || ShoveyClosedDoor(ground) || ShoveyLever(ground) || ShoveyLaserEmitter(ground) || ground == 34
+}
+
+// The next cell of a beam leaving `at`, and the way it then travels, or -1
+// where the beam ends: past the board, at a receiver or at something solid.
+ShoveyBeamStep :: (game: *ShoveyGame, at: s32, direction: *s32) -> s32 {
+    if game.ground[at] == SHOVEY_LASER_RECEIVER { return -1 }
+    next := ShoveyNeighbor(at, direction.*)
+    if next < 0 { return -1 }
+    if game.ground[next] == SHOVEY_LASER_RECEIVER { return next }
+    mirror := game.objects[next]
+    if ShoveyMirror(mirror) { direction.* = ShoveyLaserReflect(mirror, direction.*); return next }
+    return ifx ShoveyBeamStops(game, next) then -1 else next
+}
+
+// Whether a beam from any emitter reaches the receiver at `receiver`.
+ShoveyLaserLit :: (game: *ShoveyGame, receiver: s32) -> bool {
+    for source: cast(s32)0..SHOVEY_CELLS - 1 {
+        emitter := game.ground[source]
+        if !ShoveyLaserEmitter(emitter) { continue }
+        direction := emitter - SHOVEY_LASER_LEFT
+        at := source
+        for step: cast(s32)0..SHOVEY_CELLS * 4 {
+            at = ShoveyBeamStep(game, at, *direction)
+            if at < 0 { break }
+            if at == receiver { return true }
+        }
+    }
+    return false
 }
 
 ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
@@ -611,6 +680,7 @@ ShoveyShotStops :: (game: *ShoveyGame, at: s32) -> bool {
     if object == 28 { return false }
     return ShoveyBallColor(object) > 0 || object == 9 || object == 19 ||
     ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ShoveyMossColor(ground) >= 0 ||
+    ShoveyLaserEmitter(ground) || ground == SHOVEY_LASER_RECEIVER ||
     ground == 26 || ground == 33 || ground == 34 || ShoveyGateColor(ground) >= 0 || ShoveyClosedDoor(ground) || ShoveyLever(ground)
 }
 

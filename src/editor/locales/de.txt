@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Spiegel /
+[editor_mirror_nw]
+Spiegel \
+[editor_laser_left]
+Laser links
+[editor_laser_up]
+Laser oben
+[editor_laser_right]
+Laser rechts
+[editor_laser_down]
+Laser unten
+[editor_laser_receiver]
+Laser-Empfänger
 [editor_choose]
 Wähle die Ausgabe, deren Level du ansehen, bauen oder bearbeiten möchtest.
 ---
@@ -792,4 +806,16 @@ Blumentopf
 ---
 [editor_tree_stump]
 Baumstumpf
+---
+[editor_pine]
+Kiefer
+---
+[editor_fallen_log]
+Umgestürzter Baumstamm
+---
+[editor_mossy_boulder]
+Moosiger Felsbrocken
+---
+[editor_fern]
+Farn
 ---

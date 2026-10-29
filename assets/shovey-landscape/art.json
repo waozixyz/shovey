@@ -1063,9 +1063,69 @@
       "sha256": "3a225f623a8a87a1610e4aa39dab41455fea433887f8e14699785af7221ba96e"
     },
     {
+      "path": "sprites/tile-150.png",
+      "depicts": "landscape presentation of pushable mirror, / orientation: a silver panel turns a laser beam",
+      "sha256": "5b5ff6417bc0be03df773608db31746b3b6b962bb03ef50f66bded3259f4975d"
+    },
+    {
+      "path": "sprites/tile-151.png",
+      "depicts": "landscape presentation of pushable mirror, \\ orientation: a silver panel turns a laser beam",
+      "sha256": "37f097fed9ef822e5748f9e12fb179d208258572f82710197c9667e29306614e"
+    },
+    {
+      "path": "sprites/tile-152.png",
+      "depicts": "landscape presentation of fixed laser emitter facing left, with its short red beam",
+      "sha256": "4fbf489b6e007d62480274e53a19cf7e3d9689b29c63c6bf0c8b09ba24aebb69"
+    },
+    {
+      "path": "sprites/tile-153.png",
+      "depicts": "landscape presentation of fixed laser emitter facing up, with its short red beam",
+      "sha256": "37ea75cd06c38f392084f165e624ce94d27322006ba861db6935c590fd0b2767"
+    },
+    {
+      "path": "sprites/tile-154.png",
+      "depicts": "landscape presentation of fixed laser emitter facing right, with its short red beam",
+      "sha256": "698acffa98d232ed3dcdc86e333b5bb6e5f8533632cce63a6451e627d01cb89c"
+    },
+    {
+      "path": "sprites/tile-155.png",
+      "depicts": "landscape presentation of fixed laser emitter facing down, with its short red beam",
+      "sha256": "80f61ecda845eb7d32425eb409991faa9a9cae3a5d3ac880a10860ccf7392bde"
+    },
+    {
+      "path": "sprites/tile-156.png",
+      "depicts": "landscape presentation of unlit laser receiver: a dark socket with a red gem",
+      "sha256": "7b9f12489ea14fa38648dc54f0533e073546b8c704771cb85bde7a9babe6f6de"
+    },
+    {
+      "path": "sprites/tile-157.png",
+      "depicts": "landscape presentation of lit laser receiver: a bright yellow gem with four light rays",
+      "sha256": "c70b80364d6bd62662ac9308f540e03b6aedb8c225492477a813fec8edf5f825"
+    },
+    {
+      "path": "sprites/tile-158.png",
+      "depicts": "landscape presentation of pine: a dark green fir tree; blocks movement and laser beams",
+      "sha256": "034c9452941f079c187adfd0dc2fe1b21c6b95864cc0f914bdc82d777223f39a"
+    },
+    {
+      "path": "sprites/tile-159.png",
+      "depicts": "landscape presentation of fallen log: a mossy fallen tree trunk; blocks movement and laser beams",
+      "sha256": "f89658448c106d6c7e59d4a1d1aa92a44b12a87ad7e209012da29c0bfe2eb6e1"
+    },
+    {
       "path": "sprites/tile-16.png",
       "depicts": "landscape presentation of blue paint puddle, matching the other paint silhouettes",
       "sha256": "edc29b0ee59b98ea6fe7d8b5aadb40cd0b51c5c17bda962af29097d565eaccc8"
+    },
+    {
+      "path": "sprites/tile-160.png",
+      "depicts": "landscape presentation of mossy boulder: a grey stone capped with moss; blocks movement and laser beams",
+      "sha256": "2570069d7642e95e23050055c57e43b54e8e73b33801c3a4c144daef107222d2"
+    },
+    {
+      "path": "sprites/tile-161.png",
+      "depicts": "landscape presentation of ferns: a low clump of green fern fronds on the floor (decoration)",
+      "sha256": "ef3e390105e1dea0d88f9ce0ac3fa80ee80812e3fd72be90bb139d0bde627cee"
     },
     {
       "path": "sprites/tile-17.png",

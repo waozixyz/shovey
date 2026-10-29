@@ -220,6 +220,25 @@ CherryChecks :: () -> s32 {
     return 0
 }
 
+// A mirror is pushable, a fixed emitter and receiver are solid, and only the
+// matching diagonal delivers this rightward beam to the receiver above it.
+LaserChecks :: () -> s32 {
+    game := Floor()
+    game.ground[24] = SHOVEY_LASER_RIGHT
+    game.ground[14] = SHOVEY_LASER_RECEIVER
+    game.objects[27] = SHOVEY_MIRROR_NE
+    game.player = 28
+    if ShoveyRemaining(*game) != 1 || ShoveyCanEnter(*game, 24, 10) || ShoveyCanEnter(*game, 14, 10) { return 190 }
+    if !ShoveyMove(*game, 0) || game.objects[26] != SHOVEY_MIRROR_NE || ShoveyRemaining(*game) != 0 { return 191 }
+    game = Floor()
+    game.ground[24] = SHOVEY_LASER_RIGHT
+    game.ground[14] = SHOVEY_LASER_RECEIVER
+    game.objects[27] = SHOVEY_MIRROR_NW
+    game.player = 28
+    if ShoveyRemaining(*game) != 1 || !ShoveyMove(*game, 0) || game.objects[26] != SHOVEY_MIRROR_NW || ShoveyRemaining(*game) != 1 { return 192 }
+    return 0
+}
+
 // The abyss ends the game for Shovey, rejects every object and stays open;
 // arrows only admit one way, cracked floor falls once left, ice carries Shovey,
 // a bomb crate breaks a cracked wall, and portals pair by colour.
@@ -527,6 +546,8 @@ Check :: () -> s32 {
     result = ColorChecks()
     if result != 0 { return result }
     result = CherryChecks()
+    if result != 0 { return result }
+    result = LaserChecks()
     if result != 0 { return result }
     result = TileChecks()
     if result != 0 { return result }

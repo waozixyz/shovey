@@ -21,6 +21,11 @@ from editor_server import remember_verified
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / 'backup/editor-drafts'
 ACTIVE_IDS = []
+# The editor may run as a desktop service whose PATH lacks the user's own
+# tools; ziran and the package scripts live in ~/.local/bin.
+_local_bin = str(Path.home() / '.local/bin')
+if _local_bin not in os.environ.get('PATH', '').split(os.pathsep):
+    os.environ['PATH'] = _local_bin + os.pathsep + os.environ.get('PATH', '')
 
 
 def atomic(path, value):
@@ -41,6 +46,21 @@ def status(message, phase=None):
 def fingerprint():
     value = json.loads((ROOT / 'levels/approved.json').read_text())
     return hashlib.sha256(json.dumps(value['levels'], sort_keys=True).encode()).hexdigest()
+
+
+def project(value):
+    """A repository the publisher config names. Projects moved into org
+    folders (games/, apps/), so a path that no longer exists falls back to
+    the same folder one level down."""
+    path = Path(value)
+    if path.exists():
+        return path.resolve()
+    org = ROOT.parents[1]
+    if path.is_relative_to(org):
+        relative = path.relative_to(org)
+        for candidate in sorted(org.glob('*/' + str(relative))):
+            return candidate.resolve()
+    raise FileNotFoundError(f'{value} is missing; update backup/editor-publish.json')
 
 
 def publication_status():
@@ -98,6 +118,36 @@ def publish_live(output, campaign_path=None):
         reason = (answer.stdout.strip().splitlines() or ['no answer'])[-1]
         raise RuntimeError(f'Live campaign not updated ({campaign.stat().st_size} bytes): {reason}')
     return True
+
+
+LIVE_MARK = ROOT / 'backup/campaign-publisher/live.sha256'
+
+
+def publish_live_now():
+    """Players load the approved campaign from the node at their next start.
+    Every update uploads it first, before any release build and without
+    waiting for a release that is still running. Returns whether the node
+    now serves this campaign."""
+    with (STATE / 'live.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        source = (ROOT / 'levels/approved.json').read_bytes()
+        approved = json.loads(source)['levels']
+        boards = [''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved]
+        digest = hashlib.sha256(source).hexdigest()
+        if LIVE_MARK.is_file() and LIVE_MARK.read_text().strip() == digest:
+            Queue(ROOT).live_boards(boards)
+            return True
+        atomic(STATE / 'publish-status', 'Updating live levels')
+        with (ROOT / 'backup/approved-publication.log').open('a') as output:
+            try:
+                live = publish_live(output)
+            except Exception as error:
+                Queue(ROOT).fail_waiting(boards, error)
+                raise
+        if live:
+            atomic(LIVE_MARK, digest + '\n')
+            Queue(ROOT).live_boards(boards)
+        return live
 
 
 def commit_paths(repository, paths, message, output):
@@ -257,7 +307,7 @@ def github_release(config, receipt, arcade, output):
 
 def complete_release(config, receipt, output):
     """Resume the exact checked artifact, even after an uncertain upload."""
-    arcade = Path(config['arcade']).resolve(strict=True)
+    arcade = project(config['arcade'])
     if 'key' not in config:
         release = github_release(config, receipt, arcade, output)
         finish_release(config, receipt, output, arcade, release, release['artifacts'][0]['sha256'])
@@ -325,9 +375,9 @@ def finish_release(config, receipt, output, arcade, release, digest):
 def publish_campaign():
     global ACTIVE_IDS
     config = json.loads((ROOT / 'backup/editor-publish.json').read_text())
-    arcade = Path(config['arcade']).resolve(strict=True)
-    inbe = Path(config['inbe_source']).resolve(strict=True)
-    inbe_binary = Path(config['inbe_binary']).resolve(strict=True)
+    arcade = project(config['arcade'])
+    inbe = project(config['inbe_source'])
+    inbe_binary = project(config['inbe_binary'])
     toolchain = Path(subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
     log = ROOT / 'backup/approved-publication.log'
     receipt_path = ROOT / 'backup/approved-publication.json'
@@ -360,9 +410,18 @@ def publish_campaign():
             # Players get the approved levels within seconds; the release with
             # the same levels built in follows after its checks.
             status('Updating live levels', 'building')
-            receipt['live'] = publish_live(output)
+            receipt['live'] = publish_live_now()
             atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
             if receipt['live']: Queue(ROOT).live(ACTIVE_IDS)
+            # A hold (backup/editor-drafts/release-hold, its reason inside)
+            # keeps releases off the node, such as while installed hosts
+            # cannot read the bundle format this checkout builds.
+            hold = STATE / 'release-hold'
+            if hold.is_file() and receipt['live']:
+                Queue(ROOT).hold(ACTIVE_IDS, hold.read_text().strip() or 'Release on hold')
+                receipt['phase'] = 'held'
+                atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
+                return 0
             status('Building campaign', 'building')
             changelog(ROOT / 'src/CHANGELOG.md', versions['shovey'],
                       f'- Play the approved Classic campaign through level {len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Keep your progress and use the integrated level editor.', True)
@@ -441,14 +500,17 @@ def publish_campaign():
 
 def main(force=False):
     global ACTIVE_IDS
+    if force:
+        approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
+        Queue(ROOT).enqueue(approved, available=len(approved))
+    # The live campaign never waits for a release build.
+    publish_live_now()
     # Requests are durable before a worker starts. Waiting workers take the
     # same lock, then see whether the previous worker already handled them.
     with (STATE / 'publish.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         try:
             approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
-            if force:
-                Queue(ROOT).enqueue(approved, available=len(approved))
             boards = [''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved]
             ACTIVE_IDS = Queue(ROOT).claim(boards)
             if not ACTIVE_IDS:

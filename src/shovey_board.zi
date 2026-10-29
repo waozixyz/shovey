@@ -66,7 +66,11 @@ SPRITE_BIG_BOAT :: 286
 SPRITE_BOAT_WAKE :: 288
 // A secret chest, closed, opened with Dew, and claimed empty.
 SPRITE_CHEST :: 292
-SPRITE_COUNT :: 295
+// Laser mirrors 150 and 151, emitters 152 to 155, the receiver and its lit state.
+SPRITE_LASER :: 295
+// Forest decorations 158 to 161.
+SPRITE_FOREST :: 303
+SPRITE_COUNT :: 307
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -326,6 +330,18 @@ SpritesPrepare :: () {
     SpritePath(SPRITE_CHERRY, "tile-56")
     SpritePath(SPRITE_BOAT, "tile-148")
     SpritePath(SPRITE_BOAT + 1, "tile-149")
+    for kind: cast(s32)SHOVEY_MIRROR_NE..SHOVEY_LASER_RECEIVER + 1 {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(SPRITE_LASER + kind - SHOVEY_MIRROR_NE, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
+    for kind: cast(s32)SHOVEY_PINE..SHOVEY_FERN {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(SPRITE_FOREST + kind - SHOVEY_PINE, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
     SpritePath(SPRITE_BIG_BOAT, "boat-big")
     SpritePath(SPRITE_BIG_BOAT + 1, "boat-big-hull")
     SpritePath(SPRITE_CHEST, "chest-closed")
@@ -486,7 +502,7 @@ OnFloor :: (kind: s32) -> bool {
     return (kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46) || kind == 9 ||
     (kind >= 15 && kind <= 17) || (kind >= 50 && kind <= 52) || kind == 19 ||
     kind == 21 || kind == 56 || (kind >= 25 && kind <= 29) || kind == 32 || (kind >= 33 && kind <= 38) ||
-    (kind >= 53 && kind <= 55) || kind == 40 || kind == 72
+    (kind >= 53 && kind <= 55) || kind == 40 || kind == 72 || ShoveyMirror(kind)
 }
 
 // The floor drawn under a piece: the moving block's path, plain floor, or
@@ -511,8 +527,14 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_BUTTON { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind >= SHOVEY_BLUE_GOAL && kind <= SHOVEY_GREEN_GOAL { return SPRITE_BLOCK_GOAL + kind - SHOVEY_BLUE_GOAL }
     if kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE { return SPRITE_BOAT + kind - SHOVEY_BOAT }
+    if kind == SHOVEY_MIRROR_NE || kind == SHOVEY_MIRROR_NW { return SPRITE_LASER + kind - SHOVEY_MIRROR_NE }
+    if ShoveyLaserEmitter(kind) { return SPRITE_LASER + kind - SHOVEY_MIRROR_NE }
+    if kind == SHOVEY_LASER_RECEIVER {
+        return SPRITE_LASER + (kind - SHOVEY_MIRROR_NE) + (ifx position >= 0 && ShoveyLaserLit(game, position) then 1 else 0)
+    }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
+    if kind >= SHOVEY_PINE && kind <= SHOVEY_FERN { return SPRITE_FOREST + kind - SHOVEY_PINE }
     color := ShoveyGateColor(kind)
     if color >= 0 {
         open := ifx position >= 0 then ShoveyGateOpen(game, position) else ShoveyGateStartsOpen(kind)
@@ -1122,9 +1144,56 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u6
 }
 
 // Shovey, gliding animals, effects and guides over the board's tiles.
+BOARD_BEAM_SEGMENTS :: 240
+
+// One straight piece of a beam, between two cell centres.
+BoardBeamSegment :: (session: Session, key: u64, part: s32, from: Rectangle, to: Rectangle) {
+    ax := from.x + from.width / 2.0; ay := from.y + from.height / 2.0
+    bx := to.x + to.width / 2.0; by := to.y + to.height / 2.0
+    left := ifx ax < bx then ax else bx; top := ifx ay < by then ay else by
+    width := (ifx ax < bx then bx - ax else ax - bx); height := (ifx ay < by then by - ay else ay - by)
+    glow := from.width * 0.2; core := from.width * 0.07
+    unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 2000 + part * 2), .bounds = Rectangle.{left - glow / 2.0, top - glow / 2.0,
+                width + glow, height + glow}, .fill = Color.{255, 64, 48, 90}, .radius = glow / 2.0})
+    unused Box(session, BoxProps.{.key = BoardOverlayKey(key, 2001 + part * 2), .bounds = Rectangle.{left - core / 2.0, top - core / 2.0,
+                width + core, height + core}, .fill = Color.{255, 214, 196, 235}, .radius = core / 2.0})
+}
+
+// Each emitter's beam as the engine traces it: it turns at mirrors, lights
+// a receiver and ends against whatever stops it.
+BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u64, landscape: bool) {
+    part: s32 = 0
+    for source: cast(s32)0..SHOVEY_CELLS - 1 {
+        if !ShoveyLaserEmitter(game.ground[source]) { continue }
+        direction := game.ground[source] - SHOVEY_LASER_LEFT
+        at := source
+        for step: cast(s32)0..SHOVEY_CELLS * 4 {
+            if part >= BOARD_BEAM_SEGMENTS || game.ground[at] == SHOVEY_LASER_RECEIVER { break }
+            here := TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            heading := direction
+            next := ShoveyBeamStep(game, at, *direction)
+            if next < 0 {
+                // Up to the edge of whatever stopped it.
+                beyond := ShoveyNeighbor(at, heading)
+                if beyond >= 0 {
+                    there := TileMapCell(grid, BoardDisplayIndex(beyond, landscape))
+                    edge := Rectangle.{(here.x + there.x) / 2.0, (here.y + there.y) / 2.0, here.width, here.height}
+                    BoardBeamSegment(session, key, part, here, edge)
+                    part += 1
+                }
+                break
+            }
+            BoardBeamSegment(session, key, part, here, TileMapCell(grid, BoardDisplayIndex(next, landscape)))
+            part += 1
+            at = next
+        }
+    }
+}
+
 ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u64, now: float64, names: []string,
     landscape: bool) -> TileMapResult {
     BoardBoats(session, game, grid, key, now, landscape)
+    BoardBeams(session, game, grid, key, landscape)
     glide_files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         index := board_gliding[at]

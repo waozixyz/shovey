@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Espejo /
+[editor_mirror_nw]
+Espejo \
+[editor_laser_left]
+Láser izquierda
+[editor_laser_up]
+Láser arriba
+[editor_laser_right]
+Láser derecha
+[editor_laser_down]
+Láser abajo
+[editor_laser_receiver]
+Receptor láser
 [editor_choose]
 Elige la edición cuyos niveles quieres ver, crear o editar.
 ---
@@ -792,4 +806,16 @@ Maceta
 ---
 [editor_tree_stump]
 Tocón
+---
+[editor_pine]
+Pino
+---
+[editor_fallen_log]
+Tronco caído
+---
+[editor_mossy_boulder]
+Roca con musgo
+---
+[editor_fern]
+Helecho
 ---

@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Zrcadlo /
+[editor_mirror_nw]
+Zrcadlo \
+[editor_laser_left]
+Laser vlevo
+[editor_laser_up]
+Laser nahoru
+[editor_laser_right]
+Laser vpravo
+[editor_laser_down]
+Laser dolů
+[editor_laser_receiver]
+Přijímač laseru
 [editor_choose]
 Vyber edici, jejíž úrovně chceš prohlížet, tvořit nebo upravovat.
 ---
@@ -792,4 +806,16 @@ Květináč
 ---
 [editor_tree_stump]
 Pařez
+---
+[editor_pine]
+Borovice
+---
+[editor_fallen_log]
+Padlý kmen
+---
+[editor_mossy_boulder]
+Mechový balvan
+---
+[editor_fern]
+Kapradina
 ---

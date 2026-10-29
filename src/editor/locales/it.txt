@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Specchio /
+[editor_mirror_nw]
+Specchio \
+[editor_laser_left]
+Laser sinistra
+[editor_laser_up]
+Laser sopra
+[editor_laser_right]
+Laser destra
+[editor_laser_down]
+Laser sotto
+[editor_laser_receiver]
+Ricevitore laser
 [editor_choose]
 Scegli l’edizione di cui vuoi vedere, creare o modificare i livelli.
 ---
@@ -792,4 +806,16 @@ Vaso di fiori
 ---
 [editor_tree_stump]
 Ceppo
+---
+[editor_pine]
+Pino
+---
+[editor_fallen_log]
+Tronco caduto
+---
+[editor_mossy_boulder]
+Masso muschioso
+---
+[editor_fern]
+Felce
 ---

@@ -20,6 +20,10 @@ COPIES = (
 )
 
 
+LASER_LANDSCAPE = {'tile-150': 'tile-151', 'tile-151': 'tile-150', 'tile-152': 'tile-155',
+                   'tile-153': 'tile-152', 'tile-154': 'tile-153', 'tile-155': 'tile-154'}
+
+
 def turns_with_board(path):
     if path.parent.name == 'player':
         return True
@@ -38,9 +42,15 @@ def landscape_bytes(path):
         facing = path.stem.removeprefix('dog-')
         # Map board-relative direction onto a separately drawn upright view.
         return path.with_name('dog-' + facings[(facings.index(facing) + 3) % 4] + '.png').read_bytes()
+    if path.parent.name == 'sprites' and path.stem in LASER_LANDSCAPE:
+        # Turning the board turns a / mirror into a \ one and points each
+        # emitter a quarter turn on; the upright pictures keep their shadows
+        # below them.
+        return path.with_name(LASER_LANDSCAPE[path.stem] + '.png').read_bytes()
     if not turns_with_board(path):
         return path.read_bytes()
-    with Image.open(path) as image:
+    source = path.read_bytes()
+    with Image.open(io.BytesIO(source)) as image:
         turned = image.transpose(Image.Transpose.ROTATE_90).convert('RGBA')
     output = io.BytesIO()
     turned.save(output, format='PNG', optimize=True)

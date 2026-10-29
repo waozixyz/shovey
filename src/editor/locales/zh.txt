@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+镜子 /
+[editor_mirror_nw]
+镜子 \
+[editor_laser_left]
+左向激光
+[editor_laser_up]
+上向激光
+[editor_laser_right]
+右向激光
+[editor_laser_down]
+下向激光
+[editor_laser_receiver]
+激光接收器
 [editor_choose]
 选择你要查看、制作或编辑关卡的版本。
 ---
@@ -792,4 +806,16 @@ Shovey
 ---
 [editor_tree_stump]
 树桩
+---
+[editor_pine]
+松树
+---
+[editor_fallen_log]
+倒下的原木
+---
+[editor_mossy_boulder]
+长苔藓的巨石
+---
+[editor_fern]
+蕨类
 ---

@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Mirror /
+[editor_mirror_nw]
+Mirror \
+[editor_laser_left]
+Left laser
+[editor_laser_up]
+Up laser
+[editor_laser_right]
+Right laser
+[editor_laser_down]
+Down laser
+[editor_laser_receiver]
+Laser receiver
 [editor_choose]
 Choose the edition whose levels you want to view, make or edit.
 ---
@@ -792,4 +806,16 @@ Flower pot
 ---
 [editor_tree_stump]
 Tree stump
+---
+[editor_pine]
+Pine
+---
+[editor_fallen_log]
+Fallen log
+---
+[editor_mossy_boulder]
+Mossy boulder
+---
+[editor_fern]
+Fern
 ---

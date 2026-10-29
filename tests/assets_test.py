@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
-classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 143))]
+classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 143), *range(148, 162))]
 classic += ['gate-open', 'gate-open-0', 'gate-open-1', 'gate-open-2'] + [f'abyss-edge-{mask}' for mask in range(16)]
 classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for facing in ('left', 'up', 'right', 'down')]
 classic += [f'water-{frame}' for frame in range(4)]
@@ -41,7 +41,7 @@ for folder in ('shovey', 'shovey-landscape'):
 # Objects and decorations must reveal whichever tile is beneath them.
 for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
              28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,
-             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 143)):
+             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 143), *range(150, 162)):
     with Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png') as picture:
         assert picture.getpixel((0, 0))[3] == 0, f'{kind}: object has an attached background'
 
@@ -108,7 +108,7 @@ for path in (ROOT / 'assets/shovey-island/levels-landscape').glob('*.png'):
 # Screen rotation changes the board layout, without tipping houses, readable
 # numbers or ordinary objects sideways. Directional art still follows the board.
 for folder, names in (
-        ('shovey/sprites', ('tile-0', 'tile-7', 'tile-21')),
+        ('shovey/sprites', ('tile-0', 'tile-7', 'tile-21', 'tile-156', 'tile-157', *(f'tile-{kind}' for kind in range(158, 162)))),
         ('shovey-island/tiles', ('51', '58', '75', '106'))):
     for name in names:
         source = ROOT / 'assets' / folder / (name + '.png')
@@ -126,6 +126,13 @@ for folder, names in (
             expected_turn = portrait.transpose(Image.Transpose.ROTATE_90).convert('RGBA')
             assert expected_turn.tobytes() == landscape.convert('RGBA').tobytes(), \
                 f'{name}: directional artwork must follow the board'
+
+# Turning the board turns a / mirror into a \\ one and each laser a quarter
+# turn on; landscape shows the upright picture of that piece, shadow below.
+for kind, shown in ((150, 151), (151, 150), (152, 155), (153, 152), (154, 153), (155, 154)):
+    portrait = ROOT / f'assets/shovey/sprites/tile-{shown}.png'
+    landscape = ROOT / f'assets/shovey-landscape/sprites/tile-{kind}.png'
+    assert portrait.read_bytes() == landscape.read_bytes(), f'tile-{kind}: landscape must show tile-{shown} upright'
 
 # Landscape maps direction to an upright, separately drawn duck view.
 facings = ('left', 'up', 'right', 'down')

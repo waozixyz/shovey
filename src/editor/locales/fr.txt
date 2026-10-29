@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Miroir /
+[editor_mirror_nw]
+Miroir \
+[editor_laser_left]
+Laser gauche
+[editor_laser_up]
+Laser haut
+[editor_laser_right]
+Laser droite
+[editor_laser_down]
+Laser bas
+[editor_laser_receiver]
+Récepteur laser
 [editor_choose]
 Choisis l’édition dont tu veux voir, créer ou modifier les niveaux.
 ---
@@ -792,4 +806,16 @@ Pot de fleurs
 ---
 [editor_tree_stump]
 Souche
+---
+[editor_pine]
+Pin
+---
+[editor_fallen_log]
+Tronc tombé
+---
+[editor_mossy_boulder]
+Rocher moussu
+---
+[editor_fern]
+Fougère
 ---

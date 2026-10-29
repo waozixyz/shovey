@@ -1,3 +1,20 @@
+[shovey_tip_lasers]
+Posuň zrcadlo, aby laser zasáhl přijímač.
+---
+[shovey_piece_mirror_ne]
+Zrcadlo /
+[shovey_piece_mirror_nw]
+Zrcadlo \
+[shovey_piece_laser_left]
+Laser vlevo
+[shovey_piece_laser_up]
+Laser nahoru
+[shovey_piece_laser_right]
+Laser vpravo
+[shovey_piece_laser_down]
+Laser dolů
+[shovey_piece_laser_receiver]
+Přijímač laseru
 [shovey_level]
 Úroveň
 ---

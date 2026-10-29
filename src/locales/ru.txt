@@ -1,3 +1,20 @@
+[shovey_tip_lasers]
+Толкай зеркало так, чтобы лазер попал в приёмник.
+---
+[shovey_piece_mirror_ne]
+Зеркало /
+[shovey_piece_mirror_nw]
+Зеркало \
+[shovey_piece_laser_left]
+Лазер влево
+[shovey_piece_laser_up]
+Лазер вверх
+[shovey_piece_laser_right]
+Лазер вправо
+[shovey_piece_laser_down]
+Лазер вниз
+[shovey_piece_laser_receiver]
+Приёмник лазера
 [shovey_level]
 Уровень
 ---

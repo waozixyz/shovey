@@ -44,6 +44,7 @@ class Queue:
             active = [j for j in latest.values() if j['state'] in BUSY]
             queued = [j for j in latest.values() if j['state'] in WAITING]
             failed = [j for j in latest.values() if j['state'] == 'failed']
+            held = [j for j in latest.values() if j['state'] == 'held']
             if active and all(j.get('live') for j in active):
                 # Players already load these boards; only the release is still on its way.
                 message = (f"Level {active[0]['level']}: live · {active[0]['state']} release" if len(active) == 1 else
@@ -55,8 +56,14 @@ class Queue:
                            f"{active[0]['state'].capitalize()} {len(active)} levels")
                 if queued:
                     message += f' · {len(queued)} queued'
+            elif queued and all(j.get('live') for j in queued):
+                message = (f"Level {queued[0]['level']}: live · release queued" if len(queued) == 1 else
+                           f"{len(queued)} levels live · release queued")
             elif queued:
                 message = f'{len(queued)} queued'
+            elif held and not failed:
+                message = (f"Level {held[-1]['level']}: live · release on hold" if len(held) == 1 else
+                           f"{len(held)} levels live · release on hold")
             elif failed:
                 message = (f"Level {failed[-1]['level']}: live; release failed. Retry." if failed[-1].get('live') else
                            f"Level {failed[-1]['level']}: update failed. Retry.")
@@ -133,6 +140,30 @@ class Queue:
             for job in data['jobs']:
                 if job['id'] in ids and job['state'] in BUSY:
                     job['live'] = True
+
+    def live_boards(self, boards):
+        """Every request whose board the live campaign now serves, whether a
+        release worker has taken it yet or not."""
+        with self.transaction() as data:
+            for job in data['jobs']:
+                if job['state'] in BUSY | WAITING and job['level'] <= len(boards) and boards[job['level'] - 1] == job['board']:
+                    job['live'] = True
+
+    def fail_waiting(self, boards, error):
+        """The live upload failed before any worker took these requests."""
+        with self.transaction() as data:
+            for job in data['jobs']:
+                if job['state'] in WAITING and job['level'] <= len(boards) and boards[job['level'] - 1] == job['board']:
+                    job['error'] = str(error)[:1200]
+                    self.event(data, job, 'failed', job['error'])
+
+    def hold(self, ids, reason):
+        """Players have these boards live; the release waits for the hold to lift."""
+        with self.transaction() as data:
+            for job in data['jobs']:
+                if job['id'] in ids and job['state'] in BUSY:
+                    job['error'] = str(reason)[:1200]
+                    self.event(data, job, 'held', job['error'])
 
     def fail(self, ids, error):
         with self.transaction() as data:

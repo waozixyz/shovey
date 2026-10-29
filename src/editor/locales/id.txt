@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Cermin /
+[editor_mirror_nw]
+Cermin \
+[editor_laser_left]
+Laser kiri
+[editor_laser_up]
+Laser atas
+[editor_laser_right]
+Laser kanan
+[editor_laser_down]
+Laser bawah
+[editor_laser_receiver]
+Penerima laser
 [editor_choose]
 Pilih edisi yang levelnya ingin kamu lihat, buat, atau ubah.
 ---
@@ -792,4 +806,16 @@ Pot bunga
 ---
 [editor_tree_stump]
 Tunggul pohon
+---
+[editor_pine]
+Pinus
+---
+[editor_fallen_log]
+Batang tumbang
+---
+[editor_mossy_boulder]
+Batu berlumut
+---
+[editor_fern]
+Pakis
 ---

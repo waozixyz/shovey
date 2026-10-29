@@ -1,3 +1,17 @@
+[editor_mirror_ne]
+Espelho /
+[editor_mirror_nw]
+Espelho \
+[editor_laser_left]
+Laser à esquerda
+[editor_laser_up]
+Laser para cima
+[editor_laser_right]
+Laser à direita
+[editor_laser_down]
+Laser para baixo
+[editor_laser_receiver]
+Receptor laser
 [editor_choose]
 Escolha a edição cujos níveis você quer ver, criar ou editar.
 ---
@@ -792,4 +806,16 @@ Vaso de flores
 ---
 [editor_tree_stump]
 Toco de árvore
+---
+[editor_pine]
+Pinheiro
+---
+[editor_fallen_log]
+Tronco caído
+---
+[editor_mossy_boulder]
+Pedra com musgo
+---
+[editor_fern]
+Samambaia
 ---

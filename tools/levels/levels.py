@@ -22,7 +22,7 @@ WIDTH, HEIGHT = 12, 20
 CELLS = WIDTH * HEIGHT
 
 # Classic kinds that are pieces standing on the floor rather than floor.
-CLASSIC_PIECES = {1, 2, 3, 9, 19, 28, 36, 37, 38, 40, 72}
+CLASSIC_PIECES = {1, 2, 3, 9, 19, 28, 36, 37, 38, 40, 72, 150, 151}
 CLASSIC_ON_FLOOR = {15, 16, 17, 21, 25, 26, 27, 33, 34, 35}
 CLASSIC_PLAYER = 10
 CLASSIC_WALL_FLOORS = {12: 0, 14: 0, 62: 0, 63: 0, 76: 0,
@@ -61,7 +61,7 @@ def classic_functions(levels):
         if 'tiles' in level:
             assert all(kind in {0,4,5,6,12,14,47,48,49,*range(57,79),*range(95,104),*range(127,131)} for kind in cells(level['tiles']))
         if 'decorations' in level:
-            assert 'tiles' in level and all(kind in {0, 57, 58, 59, 84, 106, 122, *range(135, 143)} for kind in cells(level['decorations']))
+            assert 'tiles' in level and all(kind in {0, 57, 58, 59, 84, 106, 122, *range(135, 143), *range(158, 162)} for kind in cells(level['decorations']))
         data = ''.join(level['cells']) + ''.join(level.get('tiles', [])) + ''.join(level.get('decorations', []))
         lines.append(f'    if number == {level["number"]} {{ return "{data}" }}')
     lines += ['    return ""', '}', '', 'ShoveyLevelSolution :: (number: s32) -> string {']

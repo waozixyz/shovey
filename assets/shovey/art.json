@@ -288,6 +288,46 @@
       "sha256": "6bdaf7c3b18641d0aaaffcb263b30466c4aff2d7711dc97b62f44908d3096dc1"
     },
     {
+      "path": "sprites/tile-150.png",
+      "depicts": "pushable mirror, / orientation: a silver panel turns a laser beam",
+      "sha256": "37f097fed9ef822e5748f9e12fb179d208258572f82710197c9667e29306614e"
+    },
+    {
+      "path": "sprites/tile-151.png",
+      "depicts": "pushable mirror, \\ orientation: a silver panel turns a laser beam",
+      "sha256": "5b5ff6417bc0be03df773608db31746b3b6b962bb03ef50f66bded3259f4975d"
+    },
+    {
+      "path": "sprites/tile-152.png",
+      "depicts": "fixed laser emitter facing left, with its short red beam",
+      "sha256": "37ea75cd06c38f392084f165e624ce94d27322006ba861db6935c590fd0b2767"
+    },
+    {
+      "path": "sprites/tile-153.png",
+      "depicts": "fixed laser emitter facing up, with its short red beam",
+      "sha256": "698acffa98d232ed3dcdc86e333b5bb6e5f8533632cce63a6451e627d01cb89c"
+    },
+    {
+      "path": "sprites/tile-154.png",
+      "depicts": "fixed laser emitter facing right, with its short red beam",
+      "sha256": "80f61ecda845eb7d32425eb409991faa9a9cae3a5d3ac880a10860ccf7392bde"
+    },
+    {
+      "path": "sprites/tile-155.png",
+      "depicts": "fixed laser emitter facing down, with its short red beam",
+      "sha256": "4fbf489b6e007d62480274e53a19cf7e3d9689b29c63c6bf0c8b09ba24aebb69"
+    },
+    {
+      "path": "sprites/tile-156.png",
+      "depicts": "unlit laser receiver: a dark socket with a red gem",
+      "sha256": "7b9f12489ea14fa38648dc54f0533e073546b8c704771cb85bde7a9babe6f6de"
+    },
+    {
+      "path": "sprites/tile-157.png",
+      "depicts": "lit laser receiver: a bright yellow gem with four light rays",
+      "sha256": "c70b80364d6bd62662ac9308f540e03b6aedb8c225492477a813fec8edf5f825"
+    },
+    {
       "path": "sprites/chest-closed.png",
       "depicts": "secret chest: a small wooden treasure chest with iron bands and a golden lock",
       "sha256": "5df8390d8f332ee694151366de31ceaa4de1f04d9c3285a69a8e0aee0442aecc"
@@ -561,6 +601,26 @@
       "path": "sprites/tile-139.png",
       "depicts": "berry bush: a round leafy bush with red berries; blocks movement",
       "sha256": "f8a5d900751768a0bf052d2268ba2afc8f3f74f3b1f6eec4ee62ce150c431832"
+    },
+    {
+      "path": "sprites/tile-158.png",
+      "depicts": "pine: a dark green fir tree; blocks movement and laser beams",
+      "sha256": "034c9452941f079c187adfd0dc2fe1b21c6b95864cc0f914bdc82d777223f39a"
+    },
+    {
+      "path": "sprites/tile-159.png",
+      "depicts": "fallen log: a mossy fallen tree trunk; blocks movement and laser beams",
+      "sha256": "f89658448c106d6c7e59d4a1d1aa92a44b12a87ad7e209012da29c0bfe2eb6e1"
+    },
+    {
+      "path": "sprites/tile-160.png",
+      "depicts": "mossy boulder: a grey stone capped with moss; blocks movement and laser beams",
+      "sha256": "2570069d7642e95e23050055c57e43b54e8e73b33801c3a4c144daef107222d2"
+    },
+    {
+      "path": "sprites/tile-161.png",
+      "depicts": "ferns: a low clump of green fern fronds on the floor (decoration)",
+      "sha256": "ef3e390105e1dea0d88f9ce0ac3fa80ee80812e3fd72be90bb139d0bde627cee"
     },
     {
       "path": "sprites/tile-140.png",
@@ -1533,6 +1593,11 @@
       "sha256": "2040ff590a279a1f22c434e40ece5091cd102265ade5e485da37ec1eadea10a1"
     },
     {
+      "path": "sprites/chest-empty.png",
+      "depicts": "secret chest opened and claimed: empty dark wooden interior, with no Dew diamond or treasure",
+      "sha256": "a3a6edd466e315e87ecbc9051f97acf89f3af9c1da370a372645fb7e9053b002"
+    },
+    {
       "path": "title-landscape.png",
       "depicts": "title screen art: a glossy 3D Shovey pushes a wooden crate across a sunny garden courtyard, home behind",
       "sha256": "40c01eb8300e4c5db52b2d75373e17cdaf7f68140c33c0a225613fc174660747"
@@ -1566,11 +1631,6 @@
       "path": "island-portrait.png",
       "depicts": "Shovey Island title art for phones: the green Shovey on a tropical beach with a crab and palm trees",
       "sha256": "c019dcbb7265bdc207afd8ab968a487fbb0558fc1df489e4f6fa33cdf5ced86a"
-    },
-    {
-      "path": "sprites/chest-empty.png",
-      "depicts": "secret chest opened and claimed: empty dark wooden interior, with no Dew diamond or treasure",
-      "sha256": "a3a6edd466e315e87ecbc9051f97acf89f3af9c1da370a372645fb7e9053b002"
     }
   ]
 }
