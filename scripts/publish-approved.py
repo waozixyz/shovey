@@ -202,6 +202,11 @@ def changelog(path, version, notes, brackets=False):
         return
     date = time.strftime('%Y-%m-%d')
     heading = f'## [{version}] - {date}' if brackets else f'## {version}'
+    # Changes collected under Unreleased become this release's notes.
+    unreleased = re.search(r'^## \[?Unreleased\]?[^\n]*$', text, re.M)
+    if unreleased:
+        atomic(path, text[:unreleased.start()] + heading + text[unreleased.end():])
+        return
     first, rest = text.split('\n', 1)
     atomic(path, first + '\n\n' + heading + '\n\n' + notes + '\n' + rest.lstrip('\n'))
 

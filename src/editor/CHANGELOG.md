@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [Unreleased]
+
+- Paint lava, cave floor, cave walls and crystals.
+
 ## [0.2.145] - 2026-10-29
 
 - Place mirrors, lasers and receivers, and the new forest pieces.

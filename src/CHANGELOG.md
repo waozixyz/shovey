@@ -1,5 +1,10 @@
 # Shovey changelog
 
+## [Unreleased]
+
+- Lava in the caves: step in and you fall, and nothing can be pushed there.
+- New and harder levels: a frozen pond, a forest lake, reversed dens and a lava ring at 118.
+
 ## [0.6.160] - 2026-10-29
 
 - Push mirrors to turn laser beams onto their receivers.
