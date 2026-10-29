@@ -57,9 +57,7 @@ SharedProgressSave :: (session: *SharedProgressSession, level: s32, won: bool) -
 // local campaign write and never enters this service.
 SharedProgressPut :: (session: *SharedProgressSession) -> bool {
     put: Vec(u8)
-    BuilderPrint(*put, "{\"operation\":\"put\",\"kind\":\"game-progress\",\"schema\":\"entity.game-progress.v1\",\"document\":")
-    Progress.GameProgressWrite(*session.record, *put)
-    BuilderPrint(*put, "}")
+    Progress.GameProgressPutRequest(*session.record, *put)
     saved := ProgressAccountService(TextView(VecSlice(put, 0, put.count)))
     VecFree(put)
     if !SharedProgressStatusField(saved, "status", "done") { return false }
@@ -99,15 +97,12 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     session.owner_known = true
     synced := SharedProgressStatusField(status, "sync", "synced")
     request: Vec(u8)
-    BuilderPrint(*request, "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"%\"}", TextUntilNul(session.record.game[:]))
+    Progress.GameProgressGetRequest(TextUntilNul(session.record.game[:]), *request)
     reply := ProgressAccountService(TextView(VecSlice(request, 0, request.count)))
     VecFree(request)
     before := session.record
     remote: Progress.GameProgressRecord
-    at := FieldAt(reply, 0, "document")
-    end := ValueEnd(reply, at, 0)
-    found := SharedProgressStatusField(reply, "status", "done") && at >= 0 && end > at &&
-    Progress.GameProgressRead(reply[at:end], *remote)
+    found := SharedProgressStatusField(reply, "status", "done") && Progress.GameProgressReply(reply, *remote)
     if found { unused Progress.GameProgressMerge(*session.record, *remote) }
     changed := !Progress.GameProgressSame(*before, *session.record)
     if found && Progress.GameProgressSame(*session.record, *remote) { session.dirty = false }

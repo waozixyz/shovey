@@ -10,12 +10,7 @@ ShoveySharedRecord :: (progress: *ShoveyProgress) -> Progress.GameProgressRecord
     value: Progress.GameProgressRecord
     unused CopyCString("shovey.classic", value.game[:])
     value.unlocked = progress.unlocked
-    count: s32 = 0
-    for index: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 {
-        value.completed[index] = ifx progress.completed[index] then #char "1" else #char "0"
-        if progress.completed[index] { count = index + 1 }
-    }
-    value.completed[count] = 0
+    Progress.GameProgressSetLevels(*value, progress.completed[:])
     return value
 }
 
@@ -23,8 +18,5 @@ ShoveySharedRestore :: (progress: *ShoveyProgress, value: *Progress.GameProgress
     incoming := value.unlocked
     if incoming > ShoveyLevelLimit() { incoming = ShoveyLevelLimit() }
     if incoming > progress.unlocked { progress.unlocked = incoming }
-    marks := TextUntilNul(value.completed[:])
-    for index: cast(s32)0..SHOVEY_PROGRESS_LEVELS - 1 {
-        if index < marks.count && marks[index] == #char "1" { progress.completed[index] = true }
-    }
+    Progress.GameProgressMarkLevels(value, progress.completed[:])
 }

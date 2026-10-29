@@ -1,21 +1,18 @@
 #import "apps/node_types"
+#import "apps/node_app"
 #import, file "shovey_view.zi";
-host_api :: #system_library "host_api";
-ReadAppHost :: () -> AppMessage #foreign host_api;
-WriteAppHost :: (message: AppMessage) #foreign host_api;
 
 #program_export "ShoveyMain"
-Main :: () -> s32 {
-    message := ReadAppHost()
-    if message.abi != MODULE_ABI { return -1 }
-    if message.action == MODULE_IDENTIFY { return MODULE_NODE_APP }
-    message.succeeded = message.action == APP_ROUTE
-    if message.action == APP_FRAME {
-        ShoveyFrame()
-        message.succeeded = true
-    }
-    // Back closes the level list or help before it leaves the game.
-    if message.action == APP_BACK { message.succeeded = ShoveyBack() }
-    WriteAppHost(message)
-    return 0
+Main :: () -> s32 { return RunNodeApp(ShoveyNodeFrame, ShoveyNodeBack) }
+
+ShoveyNodeFrame :: (message: AppMessage) -> bool {
+    unused message
+    ShoveyFrame()
+    return true
+}
+
+// Back closes the level list or help before it leaves the game.
+ShoveyNodeBack :: (message: AppMessage) -> bool {
+    unused message
+    return ShoveyBack()
 }
