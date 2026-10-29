@@ -1,6 +1,6 @@
 # Shovey changelog
 
-## [Unreleased]
+## [0.6.162] - 2026-10-29
 
 - Coloured pits have new artwork.
 
