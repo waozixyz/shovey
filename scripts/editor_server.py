@@ -2,7 +2,6 @@
 """Check the live signed release against the exact campaign published by this editor."""
 import fcntl
 import hashlib
-import importlib.util
 import json
 from pathlib import Path
 import re
@@ -57,7 +56,7 @@ def read_json(path):
 
 
 def live_campaign_snapshot(config, answer, verify_route, previous=None):
-    """Verify the campaign players download, independently of the Arcade package."""
+    """Verify the campaign players download, independently of any release."""
     publication = answer.get('publication', {})
     author = publication.get('author', {})
     if (config.get('format') != 'shovey-campaign-1' or
@@ -135,21 +134,9 @@ def check(root=ROOT):
             previous = {}
         try:
             live_config = root / 'backup/campaign-publisher/publication.json'
-            if live_config.is_file():
-                result = read_live_campaign(read_json(live_config), previous)
-            else:
-                spec = importlib.util.spec_from_file_location('approved_publisher', root / 'scripts/publish-approved.py')
-                workflow = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(workflow)
-                config = read_json(config_path)
-                publisher = workflow.release_publisher(Path(config['arcade']))
-                release = publisher.served_release('https://api.waozi.xyz', 'inbe.arcade')
-                pins = read_json(Path(config['inbe_source']) / 'apps/publishers.json')
-                publisher.validate_release(release, 'inbe.arcade', pins)
-                receipt = read_json(root / 'backup/approved-publication.json')
-                history = read_json(history_path(root, release))
-                boards = campaign_boards(release, receipt, previous, history)
-                result = dict(status='verified', checked_at=int(time.time()), release=release, boards=boards)
+            if not live_config.is_file():
+                raise ValueError('No live campaign publisher is set up')
+            result = read_live_campaign(read_json(live_config), previous)
         except Exception as error:
             # Keep the previous authenticated snapshot for a later retry, but
             # do not claim a fresh server match when this check failed.

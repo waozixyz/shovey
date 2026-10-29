@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
-"""Build, verify and publish the exact approved campaign through Arcade's node app."""
+"""Publish the exact approved campaign: live at once, then as a checked Shovey
+release that Shovey's Downloads workflow publishes and Arcade follows."""
 import argparse
 import contextlib
 import fcntl
 import hashlib
-import importlib.util
 import json
 import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
 import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from publication_queue import Queue
-from editor_server import remember_verified
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / 'backup/editor-drafts'
@@ -175,19 +173,22 @@ def commit_paths(repository, paths, message, output):
     return commit
 
 
-def publish_website(receipt, output, arcade):
-    """Commit the published campaign and its release records, Arcade's first,
-    so the website rebuilds the browser game from the same approved levels
-    and the download workflow builds the released version."""
+def push_release(receipt, output):
+    """Commit the approved campaign and its release records and push them.
+    Shovey's Downloads workflow builds, checks and publishes that version,
+    then starts Arcade's game update, so Arcade follows the release."""
     count = len(json.loads((ROOT / 'levels/approved.json').read_text())['levels'])
-    receipt['arcade_records'] = commit_paths(arcade, ['CHANGELOG.md', 'VERSION', 'apps/versions.json'],
-        f'Record Arcade {receipt["versions"]["arcade"]} with approved Shovey Classic levels 1-{count}', output)
-    # The Android APK and F-Droid build from the Arcade commit recording this version.
-    subprocess.run([sys.executable, str(ROOT / 'scripts/pin-android-host.py'), '--arcade', str(arcade),
-                    receipt['arcade_records']], stdout=output, stderr=subprocess.STDOUT, check=True)
-    receipt['website'] = commit_paths(ROOT, ['levels/approved.json', 'src/CHANGELOG.md', 'src/editor/CHANGELOG.md',
-        'packaging/android/ziran.toml', 'packaging/android/ziran.lock'],
-        f'Publish the approved campaign of {count} Classic levels on the website', output)
+    receipt['release_commit'] = commit_paths(ROOT, ['levels/approved.json', 'src/CHANGELOG.md',
+        'src/editor/CHANGELOG.md', 'version.json'],
+        f'Release Shovey {receipt["versions"]["shovey"]} with approved Classic levels 1-{count}', output)
+
+
+def current_version(changelog):
+    """The newest numeric release a changelog names."""
+    match = re.search(r'^## \[?([0-9]+\.[0-9]+\.[0-9]+)\]?', changelog.read_text(), re.M)
+    if match is None:
+        raise ValueError(f'{changelog} needs a numeric release entry')
+    return match[1]
 
 
 def next_version(value):
@@ -205,179 +206,51 @@ def changelog(path, version, notes, brackets=False):
     atomic(path, first + '\n\n' + heading + '\n\n' + notes + '\n' + rest.lstrip('\n'))
 
 
-def release_publisher(arcade):
-    apps = Path(subprocess.check_output([str(arcade / 'scripts/ziran.sh'), 'pkg', 'path', 'apps'], cwd=arcade, text=True).strip())
-    spec = importlib.util.spec_from_file_location('node_release', apps / 'scripts/node_release.py')
-    publisher = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(publisher)
-    return publisher
-
-
-# The package key lives only in Breeze's GitHub secrets, so Breeze's Node app
-# release workflow signs and publishes the checked bundle; this machine never
-# holds the key.
-RELEASE_WORKFLOW_REPOSITORY = 'waozixyz/breeze'
-RELEASE_WORKFLOW = 'node-app-release.yml'
-
-
-def github_release(config, receipt, arcade, output):
-    """Hands the exact checked Arcade bundle to the Node app release workflow
-    and waits until the node serves it. The workflow signs the ledger entry
-    of the Arcade commit recording this version, so that commit is pushed
-    first; the bundle travels as an asset of a GitHub release there."""
-    version, digest = receipt['versions']['arcade'], receipt['sha256']
-    publisher = release_publisher(arcade)
-    origin = 'https://api.waozi.xyz'
-
-    def served():
-        public = publisher.served_release(origin, 'inbe.arcade')
-        if public and public['version'] == version and public['artifacts'][0]['sha256'] == digest:
-            return public
+def released(version):
+    """Whether GitHub has published this version's release."""
+    answer = subprocess.run(['gh', 'release', 'view', 'v' + version, '--repo', 'waozixyz/shovey',
+                             '--json', 'isDraft,tagName,url'], cwd=ROOT, capture_output=True, text=True)
+    if answer.returncode != 0:
         return None
-
-    public = served()
-    if public:
-        return public
-    bundle = arcade / 'build/arcade.zx'
-    if hashlib.sha256(bundle.read_bytes()).hexdigest() != digest:
-        raise ValueError('The checked release artifact changed; nothing was handed to GitHub')
-    if not receipt.get('arcade_records'):
-        count = len(json.loads((ROOT / 'levels/approved.json').read_text())['levels'])
-        receipt['arcade_records'] = commit_paths(arcade, ['CHANGELOG.md', 'VERSION', 'apps/versions.json'],
-            f'Record Arcade {version} with approved Shovey Classic levels 1-{count}', output)
-        atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
-    repository = config.get('github_repository', 'waozixyz/arcade')
-    tag = f'node-arcade-{version}'
-    gh = lambda *arguments, **options: subprocess.run(['gh', *arguments], cwd=arcade, text=True, **options)
-    staging = ROOT / 'build/approved-releases/github'
-    staging.mkdir(parents=True, exist_ok=True)
-    asset = staging / 'arcade.zx'
-    asset.write_bytes(bundle.read_bytes())
-    if gh('release', 'view', tag, '--repo', repository, capture_output=True).returncode != 0:
-        status('Handing the release to GitHub', 'publishing')
-        gh('release', 'create', tag, '--repo', repository, '--target', receipt['arcade_records'],
-           '--title', f'Arcade {version}', '--notes',
-           f'The Arcade bundle Shovey\'s publisher built and checked (SHA-256 {digest}); '
-           'Breeze\'s Node app release workflow signs and publishes it to Waozi\'s node.',
-           stdout=output, stderr=subprocess.STDOUT, check=True)
-
-    def attached():
-        # The asset counts once GitHub has all of it: its size, and its
-        # digest where GitHub reports one.
-        assets = json.loads(gh('release', 'view', tag, '--repo', repository, '--json', 'assets',
-                               capture_output=True, check=True).stdout)['assets']
-        return any(item['name'] == 'arcade.zx' and item['size'] == asset.stat().st_size and
-                   item.get('digest', 'sha256:' + digest) == 'sha256:' + digest for item in assets)
-
-    # A large upload can time out on a slow line; try again, replacing any
-    # partial copy, until GitHub holds the whole bundle.
-    for attempt in range(4):
-        if attached():
-            break
-        gh('release', 'upload', tag, str(asset), '--repo', repository, '--clobber',
-           stdout=output, stderr=subprocess.STDOUT)
-    if not attached():
-        raise RuntimeError(f'GitHub release {tag} could not take the checked bundle')
-    started = time.time()
-    gh('workflow', 'run', RELEASE_WORKFLOW, '--repo', RELEASE_WORKFLOW_REPOSITORY, '-f', 'app=arcade',
-       '-f', f'repository={repository}', '-f', f'commit={receipt["arcade_records"]}', '-f', f'tag={tag}',
-       '-f', f'sha256={digest}', stdout=output, stderr=subprocess.STDOUT, check=True)
-    status('Publishing release on GitHub', 'publishing')
-    run_id = None
-    for _ in range(30):
-        time.sleep(4)
-        runs = json.loads(gh('run', 'list', '--repo', RELEASE_WORKFLOW_REPOSITORY, '--workflow', RELEASE_WORKFLOW,
-                             '--event', 'workflow_dispatch', '--limit', '10', '--json', 'databaseId,createdAt',
-                             capture_output=True, check=True).stdout)
-        recent = [run for run in runs if time.mktime(time.strptime(run['createdAt'], '%Y-%m-%dT%H:%M:%SZ')) - time.timezone >= started - 30]
-        if recent:
-            run_id = str(max(recent, key=lambda run: run['createdAt'])['databaseId'])
-            break
-    if run_id is None:
-        raise RuntimeError('The Node app release workflow did not start')
-    receipt['github_run'] = run_id
-    atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
-    gh('run', 'watch', run_id, '--repo', RELEASE_WORKFLOW_REPOSITORY, '--exit-status', '--interval', '15',
-       stdout=output, stderr=subprocess.STDOUT, check=True)
-    public = served()
-    if not public:
-        raise RuntimeError(f'GitHub run {run_id} finished, but the node does not serve Arcade {version}')
-    return public
+    release = json.loads(answer.stdout)
+    return None if release['isDraft'] else release
 
 
 def complete_release(config, receipt, output):
-    """Resume the exact checked artifact, even after an uncertain upload."""
-    arcade = project(config['arcade'])
-    if 'key' not in config:
-        release = github_release(config, receipt, arcade, output)
-        finish_release(config, receipt, output, arcade, release, release['artifacts'][0]['sha256'])
-        return
-    store = ROOT / 'build/approved-releases'
-    release = json.loads((store / 'inbe.arcade/latest-v2.json').read_text())
-    artifact = release['artifacts'][0]
-    payload = store / 'inbe.arcade' / (artifact['sha256'] + '.zx')
-    if (release['version'] != receipt['versions']['arcade'] or artifact['sha256'] != receipt['sha256'] or
-            payload.stat().st_size != artifact['size'] or hashlib.sha256(payload.read_bytes()).hexdigest() != artifact['sha256']):
-        raise ValueError('The checked release artifact changed; no upload was attempted')
-    publisher = release_publisher(arcade)
-    origin = 'https://api.waozi.xyz'
-    # Use Apps' existing public downloader and its normal User-Agent. A
-    # server-side urllib request was denied even after a successful upload.
-    public = publisher.served_release(origin, 'inbe.arcade')
-    if public != release:
-        target, remote_store = config['ssh_target'], config['remote_store']
-        ssh = ['ssh', '-F', '/dev/null', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=10', target]
-        inspect_code = "import pathlib,sys; p=pathlib.Path(sys.argv[1])/'inbe.arcade/latest-v2.json'; print(p.read_text() if p.exists() else '{}')"
-        served = json.loads(subprocess.check_output([*ssh, shlex.join(['python3', '-c', inspect_code, remote_store])], text=True))
-        if served != release:
-            def upload(archive, unused_target, requested_store):
-                if requested_store != remote_store:
-                    raise ValueError('The package store changed')
-                original = shlex.join(['inbe-packages', remote_store])
-                command = shlex.join(['env', 'SSH_ORIGINAL_COMMAND=' + original, 'python3',
-                    '/opt/inbe-packages/package-release.py', '--receive-archive', '--store', remote_store,
-                    '--publishers', '/opt/inbe-packages/publishers.json'])
-                with archive.open('rb') as stream:
-                    subprocess.run([*ssh, command], stdin=stream, stdout=output, stderr=subprocess.STDOUT, check=True)
-            publisher.upload = upload
-            status('Publishing release', 'publishing')
-            publisher.publish_node_app(store, 'arcade', target, remote_store)
-    status('Verifying server release', 'verifying')
-    with contextlib.redirect_stdout(output):
-        publisher.verify_node_app(store, 'arcade', origin)
-    finish_release(config, receipt, output, arcade, release, artifact['sha256'])
-
-
-def finish_release(config, receipt, output, arcade, release, digest):
-    """After the node serves the release: receipts, local install and website."""
-    receipt.update(phase='published', release=release)
+    """Wait until Shovey's Downloads workflow publishes the pushed version."""
+    version = receipt['versions']['shovey']
+    status('Releasing Shovey ' + version, 'publishing')
+    deadline = time.monotonic() + 3 * 3600
+    while (release := released(version)) is None:
+        if time.monotonic() > deadline:
+            raise RuntimeError(f'GitHub has not published Shovey {version}; see its Downloads workflow')
+        time.sleep(60)
+    receipt.update(phase='published', release=dict(tag=release['tagName'], url=release['url']))
     atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
-    if receipt.get('approved_boards'):
-        remember_verified(ROOT, receipt)
+    finish_release(config, receipt, output)
+
+
+def finish_release(config, receipt, output):
+    """After GitHub publishes the release: receipts and the local install."""
     if config.get('install_local') and not receipt.get('local_installed'):
-        built = arcade / 'build/arcade.zx'
-        if hashlib.sha256(built.read_bytes()).hexdigest() != digest:
+        built = ROOT / 'build/player/shovey.zx'
+        if hashlib.sha256(built.read_bytes()).hexdigest() != receipt['sha256']:
             raise ValueError('The local build changed after checking; the published release was preserved')
-        # All release gates already passed for these outputs. Installation
-        # must use them rather than silently rebuilding a different artifact.
-        subprocess.run(['make', '-o', 'all', 'install'], cwd=arcade, stdout=output, stderr=subprocess.STDOUT, check=True)
+        # The checked player, installed as it was checked.
+        subprocess.run(['make', '-o', 'player-linux', 'install'], cwd=ROOT, stdout=output,
+                       stderr=subprocess.STDOUT, check=True)
         receipt['local_installed'] = True
     receipt['phase'] = 'verified'
     atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
     record_published(receipt)
-    if receipt.get('website') is None:
-        status('Updating website', 'publishing')
-        publish_website(receipt, output, arcade)
-        atomic(ROOT / 'backup/approved-publication.json', json.dumps(receipt, indent=2) + '\n')
     status(publication_status())
 
 
 def publish_campaign():
     global ACTIVE_IDS
     config = json.loads((ROOT / 'backup/editor-publish.json').read_text())
-    arcade = project(config['arcade'])
+    # Inner Breeze's checkout supplies the UI tests' driver.
     inbe = project(config['inbe_source'])
-    inbe_binary = project(config['inbe_binary'])
     toolchain = Path(subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
     log = ROOT / 'backup/approved-publication.log'
     receipt_path = ROOT / 'backup/approved-publication.json'
@@ -393,17 +266,18 @@ def publish_campaign():
             if not ACTIVE_IDS:
                 return 0
             prior = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
-            if prior.get('phase') in ('uploading', 'published'):
+            if prior.get('phase') in ('pushed', 'published') and prior.get('release_commit'):
                 status('Resuming checked release', 'verifying')
                 complete_release(config, prior, output)
                 if fingerprint() == approved_hash:
                     return 0
                 continue
-            ledger = json.loads((arcade / 'apps/versions.json').read_text())['node_apps']
-            if prior.get('approved_sha256') == approved_hash and prior.get('phase') != 'verified':
+            if prior.get('approved_sha256') == approved_hash and prior.get('phase') != 'verified' and \
+                    'arcade' not in prior.get('versions', {}):
                 versions = prior['versions']
             else:
-                versions = {name: next_version(ledger[name]['version']) for name in ('arcade', 'shovey', 'shovey-editor')}
+                versions = {name: next_version(current_version(ROOT / path)) for name, path in
+                            (('shovey', 'src/CHANGELOG.md'), ('shovey-editor', 'src/editor/CHANGELOG.md'))}
             receipt = dict(approved_sha256=approved_hash, approved_levels=len(approved), versions=versions, phase='building',
                            approved_boards=[''.join(level['cells'] + level['tiles'] + level['decorations']) for level in approved])
             atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
@@ -427,9 +301,7 @@ def publish_campaign():
                       f'- Play the approved Classic campaign through level {len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Keep your progress and use the integrated level editor.', True)
             changelog(ROOT / 'src/editor/CHANGELOG.md', versions['shovey-editor'],
                       '- All objects stop at the abyss when testing Classic levels.\n- Create your own Classic levels; story examples follow the approved Classic campaign.', True)
-            changelog(arcade / 'CHANGELOG.md', versions['arcade'],
-                      f'- Shovey includes approved Classic levels 1–{len(approved)}.\n- All objects stop at the abyss and leave it open.\n- Existing Shovey saves and completed levels are retained.')
-            run([arcade / 'update_version.sh'], arcade)
+            run(['sh', ROOT / 'update_version.sh'])
             run(['python3', 'tools/levels/levels.py', 'generate'])
             run(['python3', 'tools/pixel/pixel.py', 'build'])
             run(['python3', 'tools/levels/landscape.py'])
@@ -447,51 +319,35 @@ def publish_campaign():
                 run([ROOT / 'build/solver/shovey-solve-classic', 'verify', '--level', level['number'], board, level['solution']])
                 proven.add(proof)
             atomic(proven_path, json.dumps(sorted(proven)) + '\n')
-            status('Building Arcade release', 'checking')
+            status('Building Shovey release', 'checking')
             run(['sh', 'tests/release_test.sh', toolchain])
             run(['python3', 'tests/assets_test.py'])
-            run(['make', 'all'], arcade)
+            run(['make', 'player-linux'])
             status('Checking game screens', 'checking')
             private = [
                 'env', '-u', 'DISPLAY', '-u', 'WAYLAND_DISPLAY', '-u', 'XAUTHORITY', '-u', 'DBUS_SESSION_BUS_ADDRESS',
                 '-u', 'SESSION_MANAGER', 'YUE_DESKTOP_RECOVERY=0', 'SDL_AUDIODRIVER=dummy',
                 'xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1600x1100x24']
-            screens = [
-                ([*private, 'python3', arcade / 'tests/collection_ui_test.py', '--binary', arcade / 'build/arcade', '--inbe-source', inbe], arcade),
-                ([*private, 'python3', arcade / 'tests/shovey_standalone_ui_test.py', '--binary', arcade / 'build/shovey', '--inbe-source', inbe], arcade),
-                ([*private, 'python3', ROOT / 'tests/inbe_navigation_ui_test.py', '--binary', inbe_binary,
-                  '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'], ROOT),
-                ([*private, 'python3', ROOT / 'tests/level_change_ui_test.py', '--binary', inbe_binary,
-                  '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'], ROOT)]
-            if len(approved) >= 28:
-                screens.append(([*private, 'python3', ROOT / 'tests/abyss_ui_test.py', '--binary', inbe_binary,
-                                 '--inbe-source', inbe, '--bundle', arcade / 'build/arcade.zx'], ROOT))
-            for command, cwd in screens:
-                try:
-                    run(command, cwd)
-                except subprocess.CalledProcessError:
-                    # The screen checks read the level count from approved.json;
-                    # an approval during this build makes them expect the next
-                    # campaign, which the rebuild below checks.
-                    if fingerprint() == approved_hash:
-                        raise
-                    break
+            try:
+                run([*private, 'python3', ROOT / 'tests/shovey_standalone_ui_test.py',
+                     '--binary', ROOT / 'build/player/linux/shovey', '--inbe-source', inbe])
+            except subprocess.CalledProcessError:
+                # The screen check reads the level count from approved.json;
+                # an approval during this build makes it expect the next
+                # campaign, which the rebuild below checks.
+                if fingerprint() == approved_hash:
+                    raise
             if fingerprint() != approved_hash:
                 # Requests for this snapshot join the next campaign build.
                 Queue(ROOT).advance(ACTIVE_IDS, 'building', 'Campaign changed; rebuilding')
                 continue
-            bundle = arcade / 'build/arcade.zx'
+            bundle = ROOT / 'build/player/shovey.zx'
             receipt.update(phase='checked', sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
-                           checks=['approved routes', 'release boundary and saves', 'assets', 'Arcade UI', 'standalone Shovey UI', 'Inbe UI'])
-            if len(approved) >= 28:
-                receipt['checks'].append('level 28 abyss pixels at fractional scales')
+                           checks=['approved routes', 'release boundary and saves', 'assets', 'Shovey UI'])
             atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
-            if 'key' in config:
-                publisher = release_publisher(arcade)
-                store = ROOT / 'build/approved-releases'
-                publisher.stage_node_app(store, 'arcade', Path(config['key']), config['key_id'],
-                    inbe / 'apps/publishers.json', ledger_path=arcade / 'apps/versions.json', bundle_directory=arcade / 'build')
-            receipt['phase'] = 'uploading'
+            status('Pushing release', 'publishing')
+            push_release(receipt, output)
+            receipt['phase'] = 'pushed'
             atomic(receipt_path, json.dumps(receipt, indent=2) + '\n')
             complete_release(config, receipt, output)
             if fingerprint() == approved_hash:
