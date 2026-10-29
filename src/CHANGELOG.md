@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [Unreleased]
+
+- Coloured pits have new artwork.
+
 ## [0.6.161] - 2026-10-29
 
 - Lava in the caves: step in and you fall, and nothing can be pushed there.
