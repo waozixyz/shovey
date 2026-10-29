@@ -1,12 +1,9 @@
 # Shovey changelog
 
-## [Unreleased]
-
-- On a computer, play starts without asking how to move.
-
 ## [0.6.162] - 2026-10-29
 
 - Coloured pits have new artwork.
+- On a computer, play starts without asking how to move.
 
 ## [0.6.161] - 2026-10-29
 
