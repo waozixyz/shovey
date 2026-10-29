@@ -98,7 +98,7 @@
     "name": "Shovey"
   },
   "toolchain": {
-    "commit": "8c9665bf12665944ad705dd914259dcf4bacc497",
+    "commit": "f87bf147fcc21d4d29334ac23a864ae844d07d2f",
     "ref": "master",
     "url": "https://github.com/ziranlang/ziran.git"
   }
