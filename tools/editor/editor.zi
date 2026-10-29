@@ -219,14 +219,14 @@ layers_edit: [SHOVEY_CELLS * 3]s32;
 names: [1]string;
 
 // Palette: board kinds in the order a level is usually built.
-PALETTE :: 128
-palette_kinds: [128]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
+PALETTE :: 129
+palette_kinds: [129]s32 = .[10, 0, 12, 7, 9, 57, 58, 122, 84, 18, 1, 2, 3, 4, 5, 6,
 44, 45, 46, 47, 48, 49, 15, 16, 17, 50, 51, 52, 19, 21, 56, 13, 131, 132, 133, 134, 14, 92, 123, 93, 107, 124, 108, 110, 125, 111, 113, 126, 114,
 104, 116, 118, 120, 106, 33, 34, 8, 73, 74, 75, 85, 86, 87, 11, 25, 26, 28, 27, 29, 30, 31, 20, 23,
 35, 36, 37, 38, 53, 54, 55, 39, 143, 144, 145, 146, 147, 40, 148, 149, 150, 151, 152, 153, 154, 155, 156,
 65, 66, 67, 68, 69, 70, 71, 72, 62, 60, 61, 63, 64, 76, 82, 83, 88, 89, 90, 91,
-135, 136, 137, 138, 139, 140, 141, 142, 158, 159, 160, 161];
-palette_names: [128]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
+135, 136, 137, 138, 139, 140, 141, 142, 158, 159, 160, 161, 165];
+palette_names: [129]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flowers", "Grass tufts", "Boulder", "Tree", "Crate goal",
 "Red ball", "Blue ball", "Green ball", "Red pit", "Blue pit", "Green pit",
 "Cyan ball", "Purple ball", "Yellow ball", "Cyan pit", "Purple pit", "Yellow pit",
 "Red paint", "Blue paint", "Green paint", "Cyan paint", "Purple paint", "Yellow paint",
@@ -239,7 +239,7 @@ palette_names: [128]string = .["Shovey", "Floor", "Wall", "Home", "Crate", "Flow
 "Pit", "Arrow left", "Arrow up", "Arrow right", "Arrow down", "Ice", "Cracked floor", "Bomb crate",
 "Cracked wall", "Checker floor", "Striped floor", "Mossy wall", "Water", "Torch wall", "Duck", "Turtle", "Crab", "Goldfish", "Koi", "Minnow",
 "Mushrooms", "Fallen leaves", "Bluebells", "Lily pads", "Berry bush", "Flower pot", "Barrel", "Tree stump",
-"Pine", "Fallen log", "Mossy boulder", "Fern"];
+"Pine", "Fallen log", "Mossy boulder", "Fern", "Crystals"];
 
 AppendText :: (bytes: []u8, length: *s32, text: string) {
     if length.* + cast(s32)text.count > cast(s32)bytes.count { return }
@@ -745,7 +745,7 @@ PrivateSprite :: (kind: s32) -> s32 {
     if ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER { return SPRITE_LASER + kind - SHOVEY_MIRROR_NE }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
-    if kind >= SHOVEY_PINE && kind <= SHOVEY_FOREST_FLOOR { return SPRITE_FOREST + kind - SHOVEY_PINE }
+    if kind >= SHOVEY_PINE && kind <= SHOVEY_CRYSTALS { return SPRITE_FOREST + kind - SHOVEY_PINE }
     color := ShoveyGateColor(kind)
     if color >= 0 {
         open := ShoveyGateStartsOpen(kind)
@@ -2626,9 +2626,9 @@ Palette :: (area: Rectangle) {
             selected = ifx tab == 0 then 256 else 0
         }
     }
-    tile_kinds: [30]s32 = .[0,103,99,100,101,102,77,162,78,60,61,70,64,65,4,5,6,47,48,49,12,14,95,127,96,128,97,129,98,130]
-    tile_names: [30]string = .["Stone floor","Mossy floor","Slate floor","Brick floor","Sandstone floor","Timber floor","Grass","Forest floor","Sand","Checker","Stripes","Ice","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Stone wall","Mossy stone","Slate wall","Mossy slate","Brick wall","Mossy brick","Sandstone wall","Mossy sand","Timber wall","Mossy timber"]
-    count: s32 = ifx palette_tab == 0 then 30 else PALETTE
+    tile_kinds: [32]s32 = .[0,103,99,100,101,102,77,162,163,78,60,61,70,64,65,4,5,6,47,48,49,12,14,95,127,96,128,97,129,98,130,164]
+    tile_names: [32]string = .["Stone floor","Mossy floor","Slate floor","Brick floor","Sandstone floor","Timber floor","Grass","Forest floor","Cave floor","Sand","Checker","Stripes","Ice","Water","Abyss","Red pit","Blue pit","Green pit","Cyan pit","Purple pit","Yellow pit","Stone wall","Mossy stone","Slate wall","Mossy slate","Brick wall","Mossy brick","Sandstone wall","Mossy sand","Timber wall","Mossy timber","Cave wall"]
+    count: s32 = ifx palette_tab == 0 then 32 else PALETTE
     visible_count: s32 = 0
     for index: cast(s32)0..count - 1 {
         kind := ifx palette_tab == 0 then tile_kinds[index] else palette_kinds[index]

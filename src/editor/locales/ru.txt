@@ -822,3 +822,12 @@ Island
 [editor_forest_floor]
 Лесная подстилка
 ---
+[editor_cave_floor]
+Пол пещеры
+---
+[editor_cave_wall]
+Стена пещеры
+---
+[editor_crystals]
+Кристаллы
+---

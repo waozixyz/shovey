@@ -822,3 +822,12 @@ Shovey
 [editor_forest_floor]
 숲 바닥
 ---
+[editor_cave_floor]
+동굴 바닥
+---
+[editor_cave_wall]
+동굴 벽
+---
+[editor_crystals]
+수정
+---

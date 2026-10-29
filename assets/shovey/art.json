@@ -628,6 +628,21 @@
       "sha256": "bd2faffe8f0fe2c92191cd79613691ec5235a4251d9ceb7957b54257c318086f"
     },
     {
+      "path": "sprites/tile-163.png",
+      "depicts": "cave floor: dark packed rock and gravel",
+      "sha256": "eb00e29c0624b2ee5cf1b14449503b26f410bc388f85d48dc03e70fce74eef56"
+    },
+    {
+      "path": "sprites/tile-164.png",
+      "depicts": "cave wall: a block of rough dark cave rock; blocks movement and laser beams",
+      "sha256": "33cd60b9accbab4c283f0bdfd4cacc065e608252321beded99098a0ea40eb5e7"
+    },
+    {
+      "path": "sprites/tile-165.png",
+      "depicts": "crystals: glowing cyan cave crystals on a rock; block movement and laser beams",
+      "sha256": "a987745d53b92050011ee7851db2927fcdf1fe7c7325e958cda43c6c2fb46132"
+    },
+    {
       "path": "sprites/tile-140.png",
       "depicts": "flower pot: terracotta pot of pink, yellow and white flowers; blocks movement",
       "sha256": "157b6c4085773cf62db2b2c3c19a3d5bf9ef102cddf9e88fee5750ccc8948958"

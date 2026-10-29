@@ -148,9 +148,11 @@ ShoveyMaterialFloor :: (kind: s32) -> bool { return kind >= 99 && kind <= 103 }
 ShoveyDecorFloor :: (kind: s32) -> bool { return (kind >= 57 && kind <= 61) || ShoveyMaterialFloor(kind) }
 ShoveyBlockingDecoration :: (kind: s32) -> bool {
     return kind == SHOVEY_TREE || kind == SHOVEY_LANTERN || kind == SHOVEY_BOULDER || (kind >= SHOVEY_BUSH && kind <= SHOVEY_STUMP) ||
-    (kind >= SHOVEY_PINE && kind <= SHOVEY_MOSSY_BOULDER)
+    (kind >= SHOVEY_PINE && kind <= SHOVEY_MOSSY_BOULDER) || kind == SHOVEY_CRYSTALS
 }
-ShoveySolidDecor :: (kind: s32) -> bool { return (kind >= 62 && kind <= 64) || kind == 76 || ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98) }
+ShoveySolidDecor :: (kind: s32) -> bool {
+    return (kind >= 62 && kind <= 64) || kind == 76 || ShoveyBlockingDecoration(kind) || (kind >= 95 && kind <= 98) || kind == SHOVEY_CAVE_WALL
+}
 SHOVEY_CRACKED_WALL :: 62
 SHOVEY_PIT :: 65
 SHOVEY_ICE :: 70
@@ -206,6 +208,11 @@ SHOVEY_MOSSY_BOULDER :: 160
 SHOVEY_FERN :: 161
 // Dark forest ground: a floor like grass, drawn under woods.
 SHOVEY_FOREST_FLOOR :: 162
+// Caves: a rock floor, a rock wall like the other walls, and crystals that
+// block the way and beams.
+SHOVEY_CAVE_FLOOR :: 163
+SHOVEY_CAVE_WALL :: 164
+SHOVEY_CRYSTALS :: 165
 ShoveyMossColor :: (kind: s32) -> s32 {
     if kind == 14 { return 0 }
     if kind >= SHOVEY_MOSS_WALL && kind < SHOVEY_MOSS_BUTTON { return kind - SHOVEY_MOSS_WALL + 1 }
@@ -220,6 +227,7 @@ ShoveyMossFloor :: (kind: s32) -> s32 { return ifx kind == 14 then 0 else 99 + k
 ShoveyWallFloor :: (kind: s32) -> s32 {
     if ShoveyMossColor(kind) >= 0 { return ShoveyMossFloor(kind) }
     if kind >= 95 && kind <= 98 { return 99 + kind - 95 }
+    if kind == SHOVEY_CAVE_WALL { return SHOVEY_CAVE_FLOOR }
     if kind == 12 || kind == 62 || kind == 63 || kind == 76 { return 0 }
     return -1
 }
@@ -288,7 +296,7 @@ ShoveyLoad :: (game: *ShoveyGame, level: s32) -> bool {
 ShoveyTerrain :: (kind: s32) -> bool {
     return kind == 0 || kind == 12 || ShoveyMossColor(kind) >= 0 || ShoveyPitColor(kind) > 0 ||
     kind == 60 || kind == 61 || (kind >= 63 && kind <= 65) || kind == 70 || kind == 76 || kind == 77 || kind == 78 || (kind >= 95 && kind <= 103) ||
-    kind == SHOVEY_FOREST_FLOOR
+    (kind >= SHOVEY_FOREST_FLOOR && kind <= SHOVEY_CAVE_WALL)
 }
 
 ShoveyTile :: (kind: s32) -> bool { return ShoveyTerrain(kind) || (kind >= 57 && kind <= 59) || (kind >= 66 && kind <= 69) || kind == 62 || kind == 71 }
@@ -297,7 +305,7 @@ ShoveyDecoration :: (kind: s32) -> bool {
     ShoveyBlockingDecoration(kind)
 }
 ShoveyCosmeticTile :: (kind: s32) -> bool {
-    return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) || kind == SHOVEY_FOREST_FLOOR
+    return kind == 0 || (kind >= 57 && kind <= 61) || kind == 77 || kind == 78 || ShoveyMaterialFloor(kind) || kind == SHOVEY_FOREST_FLOOR || kind == SHOVEY_CAVE_FLOOR
 }
 ShoveyDefaultTile :: (kind: s32) -> s32 {
     return ifx kind == 62 then 12 else ifx ShoveyFish(kind) then 64 else ifx ShoveyTerrain(kind) then kind else ifx kind == 7 then 77 else ifx kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE then 64 else 0
@@ -406,7 +414,7 @@ ShoveyBeamStops :: (game: *ShoveyGame, at: s32) -> bool {
     if game.objects[at] != 0 { return true }
     if ShoveyMossColor(ground) >= 0 { return !ShoveyDoorOpen(game, at) }
     if ShoveyGateColor(ground) >= 0 { return !ShoveyGateOpen(game, at) }
-    return ground == 12 || ground == 62 || ground == 63 || ground == 76 || (ground >= 95 && ground <= 98) ||
+    return ground == 12 || ground == 62 || ground == 63 || ground == 76 || (ground >= 95 && ground <= 98) || ground == SHOVEY_CAVE_WALL ||
     ShoveyBlockingDecoration(ground) || ShoveyClosedDoor(ground) || ShoveyLever(ground) || ShoveyLaserEmitter(ground) || ground == 34
 }
 

@@ -822,3 +822,12 @@ Felce
 [editor_forest_floor]
 Sottobosco
 ---
+[editor_cave_floor]
+Pavimento di grotta
+---
+[editor_cave_wall]
+Parete di grotta
+---
+[editor_crystals]
+Cristalli
+---

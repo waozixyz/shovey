@@ -822,3 +822,12 @@ Shovey
 [editor_forest_floor]
 森の地面
 ---
+[editor_cave_floor]
+洞窟の床
+---
+[editor_cave_wall]
+洞窟の壁
+---
+[editor_crystals]
+水晶
+---

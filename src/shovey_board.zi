@@ -68,9 +68,9 @@ SPRITE_BOAT_WAKE :: 288
 SPRITE_CHEST :: 292
 // Laser mirrors 150 and 151, emitters 152 to 155, the receiver and its lit state.
 SPRITE_LASER :: 295
-// Forest decorations 158 to 161 and the forest floor, 162.
+// Forest decorations 158 to 161, the forest floor 162 and the cave pieces 163 to 165.
 SPRITE_FOREST :: 303
-SPRITE_COUNT :: 308
+SPRITE_COUNT :: 311
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -336,7 +336,7 @@ SpritesPrepare :: () {
         SpritePath(SPRITE_LASER + kind - SHOVEY_MIRROR_NE, TextView(VecSlice(bytes, 0, bytes.count)))
         VecFree(bytes)
     }
-    for kind: cast(s32)SHOVEY_PINE..SHOVEY_FOREST_FLOOR {
+    for kind: cast(s32)SHOVEY_PINE..SHOVEY_CRYSTALS {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
         SpritePath(SPRITE_FOREST + kind - SHOVEY_PINE, TextView(VecSlice(bytes, 0, bytes.count)))
@@ -517,7 +517,7 @@ FloorSprite :: (kind: s32) -> s32 {
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
     if position >= 0 && ShoveyOpenDoor(game.ground[position]) {
         floor := ShoveyWallFloor(kind)
-        if floor >= 0 { return ifx floor == 0 then 0 else SPRITE_MATERIAL_FLOOR + floor - 99 }
+        if floor >= 0 { return ifx floor == 0 then 0 else ifx floor >= SHOVEY_PINE then SPRITE_FOREST + floor - SHOVEY_PINE else SPRITE_MATERIAL_FLOOR + floor - 99 }
     }
     moss := ShoveyMossColor(kind)
     if moss >= 0 {
@@ -534,7 +534,7 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
-    if kind >= SHOVEY_PINE && kind <= SHOVEY_FOREST_FLOOR { return SPRITE_FOREST + kind - SHOVEY_PINE }
+    if kind >= SHOVEY_PINE && kind <= SHOVEY_CRYSTALS { return SPRITE_FOREST + kind - SHOVEY_PINE }
     color := ShoveyGateColor(kind)
     if color >= 0 {
         open := ifx position >= 0 then ShoveyGateOpen(game, position) else ShoveyGateStartsOpen(kind)

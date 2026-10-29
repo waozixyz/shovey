@@ -26,13 +26,13 @@ DRAFTS = ROOT / 'backup/editor-drafts'
 SOLVER = ROOT / 'build/solver/shovey-solve-classic'
 LAYERS = ('cells', 'tiles', 'decorations')
 COSMETIC = {0, 57, 58, 59, 60, 61, 77, 78, *range(99, 104)}
-WALLS = {12, 62, 63, 76, 95, 96, 97, 98}
+WALLS = {12, 62, 63, 76, 95, 96, 97, 98, 164}
 MOSS_WALLS = {14, *range(127, 131)}
 DOORS = {104, 105, *range(116, 122)}
 ALLOWED = (
     ({0, *range(1, 77), *range(82, 135)} - {22, 24, 32, 41, 42, 43}),
-    {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104), *range(127, 131), 162},
-    {0, 57, 58, 59, 84, 106, 122, *range(135, 143), *range(158, 162)},
+    {0, 4, 5, 6, 12, 14, 47, 48, 49, *range(57, 72), 76, 77, 78, *range(95, 104), *range(127, 131), 162, 163, 164},
+    {0, 57, 58, 59, 84, 106, 122, *range(135, 143), *range(158, 162), 165},
 )
 BLOCKING_DECORATIONS = {84, 106, 122, *range(139, 143)}
 
