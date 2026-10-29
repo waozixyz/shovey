@@ -159,7 +159,7 @@ EditSame :: (a: *EditBoard, b: *EditBoard) -> bool {
 EDIT_CLASSIC_PIECES :: 106
 EDIT_ISLAND_PIECES :: 82
 // Room for either edition's palette.
-EDIT_MOST_PIECES :: 99
+EDIT_MOST_PIECES :: 106
 edit_classic_kinds: [EDIT_CLASSIC_PIECES]s32;
 edit_classic_names: [EDIT_CLASSIC_PIECES]string;
 edit_island_kinds: [EDIT_ISLAND_PIECES]s32;
