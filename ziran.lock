@@ -2,14 +2,6 @@
   "format": 1,
   "packages": [
     {
-      "commit": "6c274894cd98cd37f727c06ed7a5bce768a0cbda",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "p3127065409ca96f6"},
-      "id": "p00b93f1ddcd2802f",
-      "name": "Apps",
-      "ref": "master",
-      "url": "https://github.com/waozixyz/apps.git"
-    },
-    {
       "commit": "2944b2e668e735438d8ce24e47a39be3f5c36af5",
       "dependencies": {},
       "id": "p0dfa70137405b096",
@@ -18,29 +10,37 @@
       "url": "https://github.com/ziranlang/qrcode.git"
     },
     {
-      "commit": "0931212f92d5f1a3f8b1be80abab7a9695bda50e",
+      "commit": "6c274894cd98cd37f727c06ed7a5bce768a0cbda",
+      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "p31868b412b407f25"},
+      "id": "p1e4e4f044a26528c",
+      "name": "Apps",
+      "ref": "master",
+      "url": "https://github.com/waozixyz/apps.git"
+    },
+    {
+      "commit": "16fede501eaab8aedfe2d184813317be08554f6e",
       "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "p3127065409ca96f6",
+      "id": "p31868b412b407f25",
       "name": "kryon",
       "ref": "master",
       "url": "https://github.com/kryonlabs/kryon.git"
     },
     {
-      "commit": "e1f480f382d9443c4412133b55948374c77a5c21",
+      "commit": "02a1dfbba9eef37c8ac9f201eb583b097ccf12d8",
+      "dependencies": {"daochi_client": "pf7b24c15869d6839", "kryon": "p31868b412b407f25", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
+      "id": "p4fd05d3b01b94ee1",
+      "name": "Entity",
+      "ref": "master",
+      "url": "https://github.com/waozixyz/entity.git"
+    },
+    {
+      "commit": "9fb80ab00d4b37503e66eb7ee7cdec6b305adf8e",
       "dependencies": {},
-      "id": "p4b0a50b49959e674",
+      "id": "p563eec337af1337e",
       "name": "liboqs",
       "ref": "main",
       "source": true,
       "url": "https://github.com/open-quantum-safe/liboqs.git"
-    },
-    {
-      "commit": "02a1dfbba9eef37c8ac9f201eb583b097ccf12d8",
-      "dependencies": {"daochi_client": "p9972fcdd2d5ba999", "kryon": "p3127065409ca96f6", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
-      "id": "p6feeecb5bfff3686",
-      "name": "Entity",
-      "ref": "master",
-      "url": "https://github.com/waozixyz/entity.git"
     },
     {
       "commit": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e",
@@ -53,7 +53,7 @@
     },
     {
       "commit": "22d2ddbdc236796953c905a05a2cebf5ab1b4ff3",
-      "dependencies": {"liboqs": "p4b0a50b49959e674"},
+      "dependencies": {"liboqs": "p563eec337af1337e"},
       "id": "p7098ac9cd92f7e5f",
       "name": "Oqs",
       "ref": "master",
@@ -67,14 +67,6 @@
       "ref": "master",
       "source": true,
       "url": "https://github.com/LoupVaillant/Monocypher.git"
-    },
-    {
-      "commit": "25d9f649c43a8de44a5fea602d2835e33e6ca999",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "oqs": "p7098ac9cd92f7e5f"},
-      "id": "p9972fcdd2d5ba999",
-      "name": "DaochiClient",
-      "ref": "master",
-      "url": "https://github.com/ziranlang/daochi-client.git"
     },
     {
       "commit": "944826f70779a6b6cd53f6b06a75b36f4d8a2558",
@@ -91,14 +83,22 @@
       "name": "mingcute",
       "ref": "master",
       "url": "https://github.com/kryonlabs/mingcute.git"
+    },
+    {
+      "commit": "e948c3f280e2e3fa3ef7317dfaca27bd36a4900b",
+      "dependencies": {"crypto": "pc23fbf455e97614d", "oqs": "p7098ac9cd92f7e5f"},
+      "id": "pf7b24c15869d6839",
+      "name": "DaochiClient",
+      "ref": "master",
+      "url": "https://github.com/ziranlang/daochi-client.git"
     }
   ],
   "root": {
-    "dependencies": {"apps": "p00b93f1ddcd2802f", "entity": "p6feeecb5bfff3686", "kryon": "p3127065409ca96f6", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "p1e4e4f044a26528c", "entity": "p4fd05d3b01b94ee1", "kryon": "p31868b412b407f25", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {
-    "commit": "6c952032c6f337fba5a6b41bd1acbf114ed84fb4",
+    "commit": "8c9665bf12665944ad705dd914259dcf4bacc497",
     "ref": "master",
     "url": "https://github.com/ziranlang/ziran.git"
   }
