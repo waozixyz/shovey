@@ -30,9 +30,14 @@
     // The page's documents already keep both choices (see above).
     ControlsRecord :: (name: string) -> string { return "" }
     ControlsSaveRecord :: (name: string, text: string) -> bool { return false }
+    // A page cannot tell a desktop from a phone, so it keeps asking.
+    InputDesktop :: () -> bool { return false }
 } else {
     host_api :: #system_library "host_api";
     AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+    AppSupportsHost :: (capability: string) -> bool #foreign host_api;
+    // On a desktop the keyboard and mouse steer, so there is nothing to ask.
+    InputDesktop :: () -> bool { return AppSupportsHost("kryon.input.desktop") }
     // The edition's own records, for hosts without Arcade's services.
     AppRecordHost :: (name: string) -> string #foreign host_api;
     SaveAppRecordHost :: (name: string, text: string) -> bool #foreign host_api;
@@ -168,7 +173,7 @@ ControlsLoad :: () {
     if controls_pad >= 0 { return }
     value := ChoiceRead("arcade.controls", "controls")
     controls_pad = ifx value == "on" then 1 else 0
-    controls_chosen = value == "on" || value == "off"
+    controls_chosen = value == "on" || value == "off" || InputDesktop()
 }
 
 ControlsPad :: () -> bool {

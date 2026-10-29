@@ -9,6 +9,7 @@ mkdir -p "$work"
     --bind controls:AppServiceHost=controls_behavior:FakeService \
     --bind controls:AppRecordHost=controls_behavior:FakeRecord \
     --bind controls:SaveAppRecordHost=controls_behavior:FakeSave \
+    --bind controls:AppSupportsHost=controls_behavior:FakeSupports \
     --entry controls_behavior:Check -o "$work/controls.zx" "$root/tests/controls_behavior.zi"
 test "$("$toolchain/build/bin/ziran" run "$work/controls.zx")" = 42
 echo 'Controls: the movement choice and sound survive a relaunch, from records or Arcade services'

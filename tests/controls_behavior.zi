@@ -41,6 +41,12 @@ FakeSave :: (name: string, text: string) -> bool {
     return false
 }
 
+// Whether the host reports a keyboard-and-mouse desktop.
+desktop: bool;
+
+#program_export
+FakeSupports :: (capability: string) -> bool { return desktop && capability == "kryon.input.desktop" }
+
 Relaunch :: () {
     controls_pad = -1
     controls_chosen = false
@@ -72,5 +78,15 @@ Check :: () -> s32 {
     ControlsSetPad(false)
     Relaunch()
     if ControlsPad() || TextUntilNul(service_controls[:]) != "off" || TextUntilNul(record_controls[:]) != "off" { return 6 }
+    // A desktop host: nothing chosen yet, yet nothing to ask; swipe and tap.
+    service_open = false
+    record_controls[0] = 0
+    desktop = true
+    Relaunch()
+    if !ControlsChosen() || ControlsPad() { return 7 }
+    // A touch host with nothing chosen still asks.
+    desktop = false
+    Relaunch()
+    if ControlsChosen() { return 8 }
     return 42
 }
