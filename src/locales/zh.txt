@@ -3,18 +3,25 @@
 ---
 [shovey_piece_mirror_ne]
 镜子 /
+---
 [shovey_piece_mirror_nw]
 镜子 \
+---
 [shovey_piece_laser_left]
 左向激光
+---
 [shovey_piece_laser_up]
 上向激光
+---
 [shovey_piece_laser_right]
 右向激光
+---
 [shovey_piece_laser_down]
 下向激光
+---
 [shovey_piece_laser_receiver]
 激光接收器
+---
 [shovey_level]
 关卡
 ---

@@ -7,6 +7,7 @@
 ## [0.6.163] - 2026-10-29
 
 - Keep named collections in the Editor, share them with friends or everyone, and add new private collections from Explore.
+- Mirror and laser names and the level heading display correctly in every language.
 
 ## [0.6.162] - 2026-10-29
 

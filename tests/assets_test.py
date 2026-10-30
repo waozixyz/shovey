@@ -12,6 +12,30 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
+expected_locales = {'cs', 'de', 'en', 'es', 'fr', 'id', 'it', 'ja', 'ko', 'pt', 'ru', 'zh'}
+laser_locale_keys = {
+    'shovey_piece_mirror_ne', 'shovey_piece_mirror_nw',
+    'shovey_piece_laser_left', 'shovey_piece_laser_up',
+    'shovey_piece_laser_right', 'shovey_piece_laser_down',
+    'shovey_piece_laser_receiver', 'shovey_level',
+}
+locale_paths = sorted((ROOT / 'src/locales').glob('*.txt'))
+assert {path.stem for path in locale_paths} == expected_locales
+for path in locale_paths:
+    entries = {}
+    for section in re.split(r'(?m)^---\n', path.read_text()):
+        if not section.strip():
+            continue
+        lines = section.splitlines()
+        heading = next((line for line in lines if line), '')
+        key = re.fullmatch(r'\[(shovey_[^\]]+)\]', heading)
+        assert key, f'{path.name}: invalid locale heading {heading!r}'
+        value = '\n'.join(lines[lines.index(heading) + 1:]).rstrip()
+        assert not re.search(r'^\[shovey_[^\]]+\]$', value, re.MULTILINE), \
+            f'{path.name}: {key.group(1)} contains another locale heading'
+        entries[key.group(1)] = value
+    assert laser_locale_keys <= entries.keys(), f'{path.name}: missing {sorted(laser_locale_keys - entries.keys())}'
+
 classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 143), *range(148, 167))]
 classic += ['gate-open', 'gate-open-0', 'gate-open-1', 'gate-open-2'] + [f'abyss-edge-{mask}' for mask in range(16)]
 classic += [f'lava-edge-{mask}' for mask in range(16)] + [f'lava-edge-{mask}-{frame}' for mask in range(16) for frame in range(1, 4)]

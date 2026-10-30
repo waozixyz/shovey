@@ -3,18 +3,25 @@ Pousse un miroir pour que le laser atteigne son récepteur.
 ---
 [shovey_piece_mirror_ne]
 Miroir /
+---
 [shovey_piece_mirror_nw]
 Miroir \
+---
 [shovey_piece_laser_left]
 Laser gauche
+---
 [shovey_piece_laser_up]
 Laser haut
+---
 [shovey_piece_laser_right]
 Laser droite
+---
 [shovey_piece_laser_down]
 Laser bas
+---
 [shovey_piece_laser_receiver]
 Récepteur laser
+---
 [shovey_level]
 Niveau
 ---

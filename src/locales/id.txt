@@ -3,18 +3,25 @@ Dorong cermin agar laser mengenai penerimanya.
 ---
 [shovey_piece_mirror_ne]
 Cermin /
+---
 [shovey_piece_mirror_nw]
 Cermin \
+---
 [shovey_piece_laser_left]
 Laser kiri
+---
 [shovey_piece_laser_up]
 Laser atas
+---
 [shovey_piece_laser_right]
 Laser kanan
+---
 [shovey_piece_laser_down]
 Laser bawah
+---
 [shovey_piece_laser_receiver]
 Penerima laser
+---
 [shovey_level]
 Level
 ---

@@ -3,18 +3,25 @@ Empuja un espejo para que el láser llegue a su receptor.
 ---
 [shovey_piece_mirror_ne]
 Espejo /
+---
 [shovey_piece_mirror_nw]
 Espejo \
+---
 [shovey_piece_laser_left]
 Láser izquierda
+---
 [shovey_piece_laser_up]
 Láser arriba
+---
 [shovey_piece_laser_right]
 Láser derecha
+---
 [shovey_piece_laser_down]
 Láser abajo
+---
 [shovey_piece_laser_receiver]
 Receptor láser
+---
 [shovey_level]
 Nivel
 ---

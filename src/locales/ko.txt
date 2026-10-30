@@ -3,18 +3,25 @@
 ---
 [shovey_piece_mirror_ne]
 거울 /
+---
 [shovey_piece_mirror_nw]
 거울 \
+---
 [shovey_piece_laser_left]
 왼쪽 레이저
+---
 [shovey_piece_laser_up]
 위쪽 레이저
+---
 [shovey_piece_laser_right]
 오른쪽 레이저
+---
 [shovey_piece_laser_down]
 아래쪽 레이저
+---
 [shovey_piece_laser_receiver]
 레이저 수신기
+---
 [shovey_level]
 단계
 ---

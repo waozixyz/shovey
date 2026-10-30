@@ -3,18 +3,25 @@ Push a mirror so the laser reaches its receiver.
 ---
 [shovey_piece_mirror_ne]
 Mirror /
+---
 [shovey_piece_mirror_nw]
 Mirror \
+---
 [shovey_piece_laser_left]
 Left laser
+---
 [shovey_piece_laser_up]
 Up laser
+---
 [shovey_piece_laser_right]
 Right laser
+---
 [shovey_piece_laser_down]
 Down laser
+---
 [shovey_piece_laser_receiver]
 Laser receiver
+---
 [shovey_level]
 Level
 ---

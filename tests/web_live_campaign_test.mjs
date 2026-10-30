@@ -108,15 +108,12 @@ try {
   }
   async function count(expected) {
     for (let end = Date.now() + 30000; Date.now() < end;) {
-      const header = (await labels()).map(label => label.trim()).find(label => /^\d+\s+\/\s+\d+$/.test(label));
-      if (header) {
-        const [current, total] = header.split('/').map(value => Number(value.trim()));
-        if (current >= 1 && current <= total && total === expected) return;
-      }
+      const header = (await labels()).find(label => /^Level \d+ \/ \d+$/.test(label));
+      if (header && header.endsWith('/ ' + expected)) return;
       await delay(250);
     }
     const files = await evaluate(`JSON.stringify(Module.FS.readdir('/kryon-apps/shovey').filter(name => name.startsWith('live')))`);
-    throw Error('The game never showed ' + expected + ' levels: ' + (await labels()).filter(label => /^\d+\s+\/\s+\d+$/.test(label.trim())).join('|') + '; served ' + served + '; records ' + files);
+    throw Error('The game never showed ' + expected + ' levels: ' + (await labels()).filter(label => label.startsWith('Level')).join('|') + '; served ' + served + '; records ' + files);
   }
   async function open() {
     await call('Page.navigate', {url: target + '?mini'});

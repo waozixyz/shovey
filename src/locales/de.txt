@@ -3,18 +3,25 @@ Schiebe den Spiegel, damit der Laser den Empfänger trifft.
 ---
 [shovey_piece_mirror_ne]
 Spiegel /
+---
 [shovey_piece_mirror_nw]
 Spiegel \
+---
 [shovey_piece_laser_left]
 Laser links
+---
 [shovey_piece_laser_up]
 Laser oben
+---
 [shovey_piece_laser_right]
 Laser rechts
+---
 [shovey_piece_laser_down]
 Laser unten
+---
 [shovey_piece_laser_receiver]
 Laser-Empfänger
+---
 [shovey_level]
 Level
 ---

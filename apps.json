@@ -7,6 +7,7 @@
       "shared_records": ["local.campaign", "campaign"],
       "library_entries": [
         "json_scan:ArrayPositions",
+        "json_scan:ElementAt",
         "json_scan:ReadStringValue",
         "levels:ShoveyLevelSolution"
       ],
