@@ -606,3 +606,15 @@ Dinding gua
 [editor_crystals]
 Kristal
 ---
+[editor_new_collection]
+Koleksi baru
+---
+[editor_delete_collection]
+Ketuk “Hapus sekarang” untuk menghapus koleksi ini. Level-levelnya tetap milikmu.
+---
+[editor_collection_deleted]
+Koleksi dihapus.
+---
+[editor_imported]
+{n} level ditambahkan sebagai koleksi pribadi baru. {s}
+---

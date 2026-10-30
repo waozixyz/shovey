@@ -606,3 +606,15 @@ Cave wall
 [editor_crystals]
 Crystals
 ---
+[editor_new_collection]
+New collection
+---
+[editor_delete_collection]
+Tap Delete now to remove this collection. Its levels stay yours.
+---
+[editor_collection_deleted]
+Collection deleted.
+---
+[editor_imported]
+Added {n} levels as a new private collection. {s}
+---

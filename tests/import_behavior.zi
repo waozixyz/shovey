@@ -3,6 +3,7 @@
 #import "std/file"
 #import "std/json_scan"
 #import "std/text_buffer"
+#import "std/vec"
 #import, file "../src/editor/edit.zi";
 #import, file "../src/editor/sharing.zi";
 #import, file "../tools/levels/edits.zi";
@@ -76,14 +77,16 @@ Check :: () -> s32 {
     ImportError() != "level 1: its route does not win" { return 30 }
     if ImportEdits("{\"format\":\"other\",\"levels\":[]}", classic, false, *out) { return 31 }
     // A shared collection is added after the story.
-    writer := EditWriter.{.bytes = export_bytes[:]}
-    SharingDocumentBegin(*writer, "Shared")
+    shared: Vec(u8)
+    SharingDocumentBegin(*shared, "Shared")
     level.board = EditNewBoard()
     unused EditSetRoute(*level, "33333333333")
-    SharingDocumentLevel(*writer, "Shared courtyard", *level, true)
-    SharingDocumentEnd(*writer)
+    if !SharingDocumentLevel(*shared, "Shared courtyard", *level, true) { return 32 }
+    SharingDocumentEnd(*shared)
     out = EditWriter.{.bytes = merged_bytes[:]}
-    if !ImportEdits(TextView(export_bytes[0:writer.length]), classic, false, *out) { return 32 }
+    imported := ImportEdits(TextView(VecSlice(shared, 0, shared.count)), classic, false, *out)
+    VecFree(shared)
+    if !imported { return 32 }
     if Count(TextView(merged_bytes[0:out.length])) != classics + 1 { return 33 }
     return 0
 }

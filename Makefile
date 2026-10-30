@@ -359,7 +359,7 @@ test: solver laws game-maps-test
 	python3 tests/classic_73_74_test.py
 	python3 tests/classic_variety_test.py
 	python3 tests/assets_test.py
-	sh tests/engine_test.sh '$(TOOLCHAIN)'
+	sh tests/engine_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	$(call ziran_test,solver_test)
 	sh tests/controls_test.sh '$(TOOLCHAIN)'
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'

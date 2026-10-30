@@ -606,3 +606,15 @@ Parete di grotta
 [editor_crystals]
 Cristalli
 ---
+[editor_new_collection]
+Nuova raccolta
+---
+[editor_delete_collection]
+Tocca «Elimina ora» per cancellare questa raccolta. I suoi livelli restano tuoi.
+---
+[editor_collection_deleted]
+Raccolta eliminata.
+---
+[editor_imported]
+{n} livelli aggiunti come nuova raccolta privata. {s}
+---

@@ -1,91 +1,83 @@
-// Custom levels kept in the account's own records: the host's
-// "entity.records" service (Daochi docs/entity-data.md) holds each custom
-// level as one private record of kind "levels", a collection of one level,
-// so every app and device of the account sees the same drafts. Only text is
-// built and read here; the editor's view sends it with
-// AppServiceHost("entity.records", request) where the host offers the
-// service, and keeps its own records elsewhere.
+// Custom levels and the player's own collections, kept in the account's own
+// records: the host's "entity.records" service (Daochi docs/entity-data.md),
+// through Entity's level collections (entity/level_collections), so every
+// app and device of the account sees the same drafts. Only text is built and
+// read here; the editor's view sends it where the host offers the service,
+// and keeps custom levels in its own records elsewhere.
 //
-// A record's document:
-//   {"format":"shovey-levels-1","edition":"classic","title":"My crates",
-//    "from":12,"proof":"s","completed":false,"author":"","order":3,
-//    "levels":[{"name":"My crates","route":"…","cells":[…],…}]}
-// from, proof, completed and author are the custom level's index line (see
-// edit.zi); order keeps the levels in the order they were made. A level
-// copied from the developer's campaign carries "campaign" and stays out of
-// these lists. Publishing stays the separate publications request.
+// Each custom level is one private record of kind "levels", a collection of
+// one level that also carries the level's index line (see edit.zi):
+//   {"order":3,"format":"shovey-levels-1","edition":"classic","title":"My crates",
+//    "levels":[{"name":"My crates","route":"…","cells":[…],…}],
+//    "from":12,"proof":"s","completed":false,"author":""}
+// order keeps the levels in the order they were made. A level copied from
+// the developer's campaign carries "campaign" and stays out of these lists.
+//
+// Each collection of the player's is a private record of the same kind and
+// format, edition "collection": its title, the records of its levels and
+// where it is published.
+//   {"order":0,"format":"shovey-levels-1","edition":"collection","title":"Weekend",
+//    "levels":[],"members":["<record>",…],"publication":"p-1","visibility":"private"}
+// The published copy holds the levels themselves and never the publication
+// or visibility. Older editors list only edition "classic" and pass
+// collections by.
 #import "std/json_scan"
+#import "std/json_document"
 #import "std/number_text"
+#import "std/text_buffer"
+#import "std/vec"
+Collections :: #import "entity/level_collections";
 #import, file "edit.zi";
 #import, file "sharing.zi";
 
-DRAFTS_SERVICE :: "entity.records"
-DRAFTS_KIND :: "levels"
-DRAFTS_SCHEMA :: "entity.levels.v1"
+DRAFTS_COLLECTION_EDITION :: "collection"
+DRAFTS_COLLECTIONS :: 64
 // Which old custom levels were already copied, kept in the editor's own
 // records so the copy happens once: "M1", then lines of "<edition> <id>".
 DRAFTS_MOVED_RECORD :: "entity-moved"
+// The older editor's one publication, and the id of the one already moved
+// into a collection of its own.
+DRAFTS_PUBLICATION_RECORD :: "classic-publication"
+DRAFTS_PUBLICATION_MOVED :: "classic-publication-moved"
 
-DraftsPutLevel :: (writer: *EditWriter, record: string, summary: *EditSummary, level: *EditLevel,
-    name: string) {
-    EditPut(writer, "{\"operation\":\"put\",\"kind\":\"levels\",\"schema\":\"entity.levels.v1\"")
-    if record.count > 0 {
-        EditPut(writer, ",\"id\":")
-        EditPutJson(writer, record)
-    }
-    EditPut(writer, ",\"document\":{\"format\":\"shovey-levels-1\",\"edition\":")
-    EditPutJson(writer, "classic")
-    EditPut(writer, ",\"title\":")
-    EditPutJson(writer, EditField(summary.name[:], summary.name_length))
-    EditPut(writer, ",\"from\":")
-    EditPutNumber(writer, cast(s64)summary.from)
-    EditPut(writer, ",\"proof\":")
-    EditPutJson(writer, EditProofLetter(summary.proof))
-    EditPut(writer, ifx summary.completed then ",\"completed\":true,\"author\":" else ",\"completed\":false,\"author\":")
-    EditPutJson(writer, EditField(summary.author[:], summary.author_length))
-    EditPut(writer, ",\"order\":")
-    EditPutNumber(writer, cast(s64)summary.id)
-    EditPut(writer, ",\"levels\":[{\"name\":")
-    EditPutJson(writer, name)
-    EditPut(writer, ",\"route\":")
-    EditPutJson(writer, EditField(level.route[:], level.route_length))
-    EditPut(writer, ",")
-    EditPutRows(writer, *level.board, "")
-    EditPut(writer, "}]}}")
+DraftsNumber :: (text: string, at: s32, name: string) -> float64 {
+    value := FieldAt(text, at, name)
+    if value < 0 { return -1.0 }
+    number := ReadNumber(text, value)
+    return ifx number.valid then number.value else -1.0
 }
 
-DraftsListRequest :: (writer: *EditWriter) {
-    EditPut(writer, "{\"operation\":\"list\",\"kind\":\"levels\",\"fields\":[\"format\",\"edition\",\"title\",\"from\",\"proof\",\"completed\",\"author\",\"order\",\"campaign\"]}")
-}
-
-DraftsRecordRequest :: (writer: *EditWriter, operation: string, record: string) {
-    EditPut(writer, "{\"operation\":")
-    EditPutJson(writer, operation)
-    EditPut(writer, ",\"kind\":\"levels\",\"id\":")
-    EditPutJson(writer, record)
-    EditPut(writer, "}")
-}
-
-// The status of a reply: "done", "missing", "rejected", or "" when malformed.
-DraftsStatus :: (text: string, output: []u8) -> string {
-    length := SharingText(text, 0, "status", output)
-    return ifx length < 0 then "" else TextView(output[0:length])
-}
-
-DraftsRecordValid :: (record: string) -> bool {
-    if record.count != 32 { return false }
-    for byte: record {
-        if !((byte >= #char "0" && byte <= #char "9") || (byte >= #char "a" && byte <= #char "f")) { return false }
-    }
-    return true
-}
-
-// The id a done put answers into record. False when there is none.
-DraftsPutRead :: (text: string, record: []u8) -> bool {
+// Whether a reply says done.
+DraftsDone :: (text: string) -> bool {
     status: [16]u8
-    if DraftsStatus(text, status[:]) != "done" { return false }
-    length := SharingText(text, 0, "id", record)
-    return length == 32 && DraftsRecordValid(TextView(record[0:32]))
+    length := EditJsonText(text, 0, "status", status[:])
+    return length == 4 && TextView(status[0:4]) == "done"
+}
+
+// The put of a custom level as its record. False when the level is too
+// large to write; out is left as it was.
+DraftsPutLevel :: (out: *Vec(u8), record: string, summary: *EditSummary, level: *EditLevel, name: string) -> bool {
+    document: Vec(u8)
+    SharingDocumentBegin(*document, EditField(summary.name[:], summary.name_length))
+    written := SharingDocumentLevel(*document, name, level, true)
+    BuilderPrint(*document, "], \"from\": %, \"proof\": ", summary.from)
+    JsonQuoteInto(*document, EditProofLetter(summary.proof), false)
+    if summary.completed { BuilderPrint(*document, ", \"completed\": true, \"author\": ") }
+    else { BuilderPrint(*document, ", \"completed\": false, \"author\": ") }
+    JsonQuoteInto(*document, EditField(summary.author[:], summary.author_length), false)
+    BuilderPrint(*document, "}")
+    if written {
+        Collections.CollectionDraftPut(out, record, TextView(VecSlice(document, 0, document.count)), cast(s64)summary.id)
+    }
+    VecFree(document)
+    return written
+}
+
+// Entity's list asks for the collection fields; custom levels also need
+// their index line.
+DraftsListRequest :: (out: *Vec(u8)) {
+    BuilderPrint(out, "{\"operation\":\"list\",\"kind\":\"%\",\"fields\":[\"format\",\"edition\",\"title\",\"order\",\"campaign\",\"visibility\",\"from\",\"proof\",\"completed\",\"author\"]}",
+        Collections.COLLECTIONS_KIND)
 }
 
 // One custom level of a list reply: its order and its summary.
@@ -94,86 +86,195 @@ DraftsEntry :: struct {
     summary: EditSummary
 }
 
-// Reads a list reply's custom levels into entries, in the order they were
-// made. Returns how many, or -1 when the reply is malformed.
-DraftsListRead :: (text: string, entries: []DraftsEntry) -> s32 {
-    status: [16]u8
-    if DraftsStatus(text, status[:]) != "done" { return -1 }
-    list := FieldAt(text, 0, "records")
-    if list < 0 { return -1 }
-    positions: [EDIT_LEVELS * 2 + 1]s32
-    count := ArrayPositions(text, list, positions[:])
+DRAFTS_RECORDS :: EDIT_LEVELS * 2 + DRAFTS_COLLECTIONS
+drafts_found: [DRAFTS_RECORDS]Collections.CollectionDraft;
+drafts_places: [DRAFTS_RECORDS]s32;
+drafts_ids: [DRAFTS_RECORDS][33]u8;
+
+// Reads a list reply: the custom levels into entries, in the order they
+// were made, and the player's collections into collections, in the order
+// they were made. Returns how many custom levels, or -1 when the reply is
+// malformed.
+DraftsListRead :: (text: string, entries: []DraftsEntry, collections: []Collections.CollectionDraft,
+    collection_count: *s32) -> s32 {
+    collection_count.* = 0
+    count := Collections.CollectionDraftListRead(text, SHARING_FORMAT, drafts_found[:])
     if count < 0 { return -1 }
+    // Where each record is in the reply, for the index lines.
+    places := ArrayPositions(text, FieldAt(text, 0, "records"), drafts_places[:])
+    if places > DRAFTS_RECORDS { places = DRAFTS_RECORDS }
+    for index: cast(s32)0..places - 1 {
+        if ReadStringText(text, FieldAt(text, drafts_places[index], "id"), drafts_ids[index][:]) != 32 { drafts_ids[index][0] = 0 }
+    }
     found: s32 = 0
+    // Records mostly come in the order they are listed, so each search
+    // starts after the last one found.
+    last: s32 = -1
     for index: cast(s32)0..count - 1 {
-        if index >= positions.count || cast(s64)found >= entries.count { break }
-        at := positions[index]
-        format: [24]u8
-        edition: [16]u8
-        format_length := SharingText(text, at, "format", format[:])
-        edition_length := SharingText(text, at, "edition", edition[:])
-        record: [40]u8
-        record_length := SharingText(text, at, "id", record[:])
-        if format_length < 0 || TextView(format[0:format_length]) != SHARING_FORMAT || edition_length < 0 ||
-            record_length != 32 || FieldAt(text, at, "campaign") >= 0 { continue }
-        name := TextView(edition[0:edition_length])
-        if name != "classic" { continue }
-        entry: DraftsEntry
-        entry.order = cast(s64)SharingNumber(text, at, "order")
-        summary := *entry.summary
-        summary.from = cast(s32)SharingNumber(text, at, "from")
-        if summary.from < 0 || summary.from > 100000 { summary.from = 0 }
-        proof: [4]u8
-        proof_length := SharingText(text, at, "proof", proof[:])
-        letter := TextView(proof[0:ifx proof_length < 0 then 0 else proof_length])
-        if letter == "s" { summary.proof = EDIT_PROOF_SOLVER }
-        else if letter == "p" { summary.proof = EDIT_PROOF_PLAYED }
-        else if letter == "d" { summary.proof = EDIT_PROOF_DOWNLOAD }
-        completed := FieldAt(text, at, "completed")
-        summary.completed = completed >= 0 && MatchLiteral(text, completed, "true")
-        summary.name_length = SharingText(text, at, "title", summary.name[:])
-        if summary.name_length < 0 { summary.name_length = 0 }
-        summary.author_length = SharingText(text, at, "author", summary.author[:])
-        if summary.author_length < 0 { summary.author_length = 0 }
-        for byte, place: TextView(record[0:32]) { summary.record[place] = byte }
-        // Insertion keeps the made order; records without one go last.
-        place := found
-        while place > 0 && entries[place - 1].order > entry.order && entry.order >= 0 {
-            entries[place] = entries[place - 1]
-            place -= 1
+        draft := *drafts_found[index]
+        edition := TextUntilNul(draft.edition[:])
+        if edition == DRAFTS_COLLECTION_EDITION {
+            if cast(s64)collection_count.* < collections.count {
+                collections[collection_count.*] = draft.*
+                collection_count.* += 1
+            }
+            continue
         }
-        entries[place] = entry
+        if edition != SHARING_EDITION || cast(s64)found >= entries.count { continue }
+        record := TextView(draft.record[0:32])
+        at: s32 = -1
+        for step: cast(s32)0..places - 1 {
+            place := (last + 1 + step) % places
+            if TextView(drafts_ids[place][0:32]) == record { at = drafts_places[place]; last = place; break }
+        }
+        if at < 0 { continue }
+        entry := *entries[found]
+        entry.order = draft.order
+        entry.summary = EditSummary.{}
+        DraftsIndexRead(text, at, *entry.summary)
+        EditSetName(*entry.summary, TextUntilNul(draft.title[:]))
+        for byte, place: record { entry.summary.record[place] = byte }
         found += 1
     }
     return found
 }
 
-// Reads a get reply's level into level. A draft may have no route yet.
-// False when the record is missing or malformed.
+// The index line of the custom level at `at` of a list reply.
+DraftsIndexRead :: (text: string, at: s32, summary: *EditSummary) {
+    summary.from = cast(s32)DraftsNumber(text, at, "from")
+    if summary.from < 0 || summary.from > 100000 { summary.from = 0 }
+    proof: [4]u8
+    proof_length := EditJsonText(text, at, "proof", proof[:])
+    letter := TextView(proof[0:ifx proof_length < 0 then 0 else proof_length])
+    if letter == "s" { summary.proof = EDIT_PROOF_SOLVER }
+    else if letter == "p" { summary.proof = EDIT_PROOF_PLAYED }
+    else if letter == "d" { summary.proof = EDIT_PROOF_DOWNLOAD }
+    completed := FieldAt(text, at, "completed")
+    summary.completed = completed >= 0 && MatchLiteral(text, completed, "true")
+    summary.author_length = EditJsonText(text, at, "author", summary.author[:])
+    if summary.author_length < 0 { summary.author_length = 0 }
+}
+
+// Reads a get reply's custom level into level. A draft may have no route
+// yet. False when the record is missing or malformed.
 DraftsLevelRead :: (text: string, level: *EditLevel) -> bool {
-    status: [16]u8
-    if DraftsStatus(text, status[:]) != "done" { return false }
+    if !DraftsDone(text) { return false }
     at := FieldAt(text, 0, "document")
-    if at < 0 { return false }
-    document: SharingDocument
-    if !SharingDocumentRead(text, at, *document) || document.count < 1 { return false }
-    level_at := document.positions[0]
-    if !SharingRows(text, FieldAt(text, level_at, "cells"), sharing_hex[:], 0) { return false }
-    layered := FieldAt(text, level_at, "tiles") >= 0
-    if layered && !SharingRows(text, FieldAt(text, level_at, "tiles"), sharing_hex[:], EDIT_CELLS * 2) { return false }
-    decorated := FieldAt(text, level_at, "decorations") >= 0
-    if decorated && (!layered || !SharingRows(text, FieldAt(text, level_at, "decorations"), sharing_hex[:], EDIT_CELLS * 4)) { return false }
-    layers: s32 = ifx decorated then 3 else ifx layered then 2 else 1
-    if !EditBoardRead(*level.board, TextView(sharing_hex[0:EDIT_CELLS * 2 * layers])) || EditShovey(*level.board) < 0 { return false }
-    route_at := FieldAt(text, level_at, "route")
-    span := ReadString(text, route_at)
-    if route_at < 0 || !span.valid || span.end - span.start > EDIT_ROUTE { return false }
-    route := text[span.start:span.end]
-    for letter: route {
-        move := letter >= #char "0" && letter <= #char "3"
-        if !move && letter != #char "f" && letter != #char "t" { return false }
+    document: Collections.CollectionDocument
+    if at < 0 || !SharingDocumentRead(text, at, *document) || document.level_count < 1 { return false }
+    name: [EDIT_NAME]u8
+    name_length: s32
+    return SharingLevelRead(text, Collections.CollectionDocumentLevelAt(text, *document, 0), name[:], *name_length, level, true)
+}
+
+// ---------------------------------------------------------------------------
+// The player's collections
+
+DraftsCollection :: struct {
+    // "" until it is saved.
+    record: [33]u8
+    title: [EDIT_NAME * 2]u8
+    title_length: s32
+    order: s64
+    publication: [96]u8
+    publication_length: s32
+    visibility: s32
+    // False when the record does not say who sees its publication, as for
+    // the older editor's: the editor asks the service.
+    visibility_known: bool
+    count: s32
+    // The records of its levels.
+    members: [EDIT_LEVELS][33]u8
+}
+
+DraftsCollectionPut :: (out: *Vec(u8), collection: *DraftsCollection) {
+    document: Vec(u8)
+    Collections.CollectionDocumentBegin(*document, SHARING_FORMAT, DRAFTS_COLLECTION_EDITION,
+        EditField(collection.title[:], collection.title_length))
+    BuilderPrint(*document, "], \"members\": [")
+    for index: cast(s32)0..collection.count - 1 {
+        if index > 0 { BuilderPrint(*document, ", ") }
+        JsonQuoteInto(*document, TextUntilNul(collection.members[index][:]), false)
     }
-    return EditSetRoute(level, route)
+    BuilderPrint(*document, "], \"publication\": ")
+    JsonQuoteInto(*document, EditField(collection.publication[:], collection.publication_length), false)
+    if collection.visibility_known {
+        BuilderPrint(*document, ", \"visibility\": ")
+        JsonQuoteInto(*document, Collections.CollectionVisibilityName(collection.visibility), false)
+    }
+    BuilderPrint(*document, "}")
+    Collections.CollectionDraftPut(out, TextUntilNul(collection.record[:]), TextView(VecSlice(document, 0, document.count)),
+        collection.order)
+    VecFree(document)
+}
+
+// Reads a get reply of the collection kept as record. False when it is
+// missing or not one of the player's collections.
+DraftsCollectionRead :: (text: string, record: string, collection: *DraftsCollection) -> bool {
+    if !DraftsDone(text) || !Collections.CollectionDraftRecordValid(record) { return false }
+    at := FieldAt(text, 0, "document")
+    document: Collections.CollectionDocument
+    if at < 0 || !Collections.CollectionDocumentRead(text, at, SHARING_FORMAT, *document) ||
+    TextUntilNul(document.edition[:]) != DRAFTS_COLLECTION_EDITION { return false }
+    collection.* = DraftsCollection.{}
+    for byte, place: record { collection.record[place] = byte }
+    collection.title_length = EditSetField(collection.title[:], TextUntilNul(document.title[:]))
+    collection.order = cast(s64)DraftsNumber(text, at, "order")
+    collection.publication_length = EditJsonText(text, at, "publication", collection.publication[:])
+    if collection.publication_length < 0 { collection.publication_length = 0 }
+    visibility: [16]u8
+    visibility_length := EditJsonText(text, at, "visibility", visibility[:])
+    collection.visibility_known = visibility_length >= 0
+    collection.visibility = Collections.CollectionVisibilityRead(TextView(visibility[0:ifx visibility_length < 0 then 0 else visibility_length]))
+    positions: [EDIT_LEVELS + 1]s32
+    count := ArrayPositions(text, FieldAt(text, at, "members"), positions[:])
+    for index: cast(s32)0..count - 1 {
+        if index > EDIT_LEVELS { break }
+        member: [33]u8
+        if ReadStringText(text, positions[index], member[:]) == 32 { unused DraftsCollectionAdd(collection, TextView(member[0:32])) }
+    }
+    return true
+}
+
+DraftsCollectionHas :: (collection: *DraftsCollection, record: string) -> bool {
+    for index: cast(s32)0..collection.count - 1 {
+        if TextView(collection.members[index][0:32]) == record { return true }
+    }
+    return false
+}
+
+// Adds a level's record once. False when it is not a record or the
+// collection is full.
+DraftsCollectionAdd :: (collection: *DraftsCollection, record: string) -> bool {
+    if !Collections.CollectionDraftRecordValid(record) || collection.count >= EDIT_LEVELS { return false }
+    if DraftsCollectionHas(collection, record) { return true }
+    for byte, place: record { collection.members[collection.count][place] = byte }
+    collection.count += 1
+    return true
+}
+
+DraftsCollectionRemove :: (collection: *DraftsCollection, record: string) {
+    for index: cast(s32)0..collection.count - 1 {
+        if TextView(collection.members[index][0:32]) != record { continue }
+        for place: index..collection.count - 2 { collection.members[place] = collection.members[place + 1] }
+        collection.count -= 1
+        return
+    }
+}
+
+// A new collection is private until the player shares it.
+DraftsCollectionNew :: (collection: *DraftsCollection, title: string, order: s64) {
+    collection.* = DraftsCollection.{.order = order, .visibility = Collections.COLLECTION_PRIVATE, .visibility_known = true}
+    collection.title_length = EditSetField(collection.title[:], title)
+}
+
+// The order after every listed collection's.
+DraftsCollectionOrder :: (collections: []Collections.CollectionDraft, count: s32) -> s64 {
+    order: s64 = 0
+    for index: cast(s32)0..count - 1 {
+        if collections[index].order >= order { order = collections[index].order + 1 }
+    }
+    return order
 }
 
 // ---------------------------------------------------------------------------
@@ -221,7 +322,7 @@ DraftsMovedRecord :: (id: s32, level: *EditLevel, output: []u8) -> string {
     second: u64 = 0x84222325cbf29ce4
     digits: [24]u8
     parts: [4]string = .["classic", FormatInteger(cast(s64)id, digits[:]), EditBoardHex(*level.board),
-        EditField(level.route[:], level.route_length)]
+    EditField(level.route[:], level.route_length)]
     for part: parts {
         for byte: part {
             first = (first ^ cast(u64)byte) * 0x100000001b3

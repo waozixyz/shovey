@@ -11,7 +11,6 @@
 #import "std/text_buffer"
 #import, file "../../src/engine.zi";
 #import, file "../../src/editor/edit.zi";
-#import, file "../../src/editor/sharing.zi";
 
 // Saves keep 175 places.
 IMPORT_PLACES :: 175
@@ -60,16 +59,16 @@ ImportReadLevel :: (text: string, at: s32, index: s32) -> bool {
     }
     level.name_length = 0
     if FieldAt(text, at, "name") >= 0 {
-        level.name_length = SharingText(text, at, "name", level.name[:])
+        level.name_length = EditJsonText(text, at, "name", level.name[:])
         if level.name_length < 0 { return ImportFail("its name is not text", index) }
     }
-    if !SharingRows(text, FieldAt(text, at, "cells"), import_hex[:], 0) {
+    if !EditRowsRead(text, FieldAt(text, at, "cells"), import_hex[:], 0) {
         return ImportFail("its cells are not 20 rows of 24 hex digits", index)
     }
     layered := FieldAt(text, at, "tiles") >= 0
-    if layered && !SharingRows(text, FieldAt(text, at, "tiles"), import_hex[:], EDIT_CELLS * 2) { return false }
+    if layered && !EditRowsRead(text, FieldAt(text, at, "tiles"), import_hex[:], EDIT_CELLS * 2) { return false }
     decorated := FieldAt(text, at, "decorations") >= 0
-    if decorated && (!layered || !SharingRows(text, FieldAt(text, at, "decorations"), import_hex[:], EDIT_CELLS * 4)) { return false }
+    if decorated && (!layered || !EditRowsRead(text, FieldAt(text, at, "decorations"), import_hex[:], EDIT_CELLS * 4)) { return false }
     layers: s32 = ifx decorated then 3 else ifx layered then 2 else 1
     // Rows are stored in lower case, as the level files keep them.
     for cell: cast(s32)0..EDIT_CELLS * 2 * layers - 1 {
@@ -91,13 +90,13 @@ ImportReadLevel :: (text: string, at: s32, index: s32) -> bool {
 ImportRead :: (text: string) -> bool {
     import_count = 0
     format: [24]u8
-    length := SharingText(text, 0, "format", format[:])
+    length := EditJsonText(text, 0, "format", format[:])
     kind := TextView(format[0:ifx length < 0 then 0 else length])
     if kind != "shovey-edits-1" && kind != SHARING_FORMAT { return ImportFail("not a Shovey Editor export or level collection") }
     collection := kind == SHARING_FORMAT
     if collection {
         edition: [16]u8
-        edition_length := SharingText(text, 0, "edition", edition[:])
+        edition_length := EditJsonText(text, 0, "edition", edition[:])
         if TextView(edition[0:ifx edition_length < 0 then 0 else edition_length]) != "classic" {
             return ImportFail("the collection is not of Classic levels")
         }
@@ -112,7 +111,7 @@ ImportRead :: (text: string) -> bool {
         at := positions[index]
         if !collection {
             edition: [16]u8
-            edition_length := SharingText(text, at, "edition", edition[:])
+            edition_length := EditJsonText(text, at, "edition", edition[:])
             if TextView(edition[0:ifx edition_length < 0 then 0 else edition_length]) != "classic" {
                 return ImportFail("it is not a Classic level", index)
             }
@@ -174,7 +173,7 @@ import_out: [IMPORT_FILE]u8;
 StoredRead :: (file: *StoredFile, text: string) -> bool {
     file.count = 0
     edition: [16]u8
-    length := SharingText(text, 0, "edition", edition[:])
+    length := EditJsonText(text, 0, "edition", edition[:])
     if length < 0 || TextView(edition[0:length]) != "classic" { return ImportFail("the level file is not Classic's") }
     list := FieldAt(text, 0, "levels")
     positions: [IMPORT_PLACES + 1]s32

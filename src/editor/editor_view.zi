@@ -35,7 +35,9 @@
 #import "std/c_string"
 #import "std/text_buffer"
 #import "std/json_scan"
+#import "std/vec"
 #import "apps/node_types"
+Collections :: #import "entity/level_collections";
 #import, file "../orientation.zi";
 #import, file "../engine.zi";
 #import, file "../shovey_board.zi";
@@ -91,6 +93,8 @@ SHARE_UNPUBLISH :: 2
 SHARE_FIND :: 3
 SHARE_FETCH :: 4
 SHARE_VERIFY :: 5
+// Who sees a publication moved from the older editor.
+SHARE_CHECK :: 6
 
 EditorField :: struct {
     bytes: [128]u8
@@ -173,16 +177,23 @@ editor_share_poll: float64;
 editor_share_status: string;
 editor_share_title: EditorField;
 editor_share_query: EditorField;
-editor_share_visibility: s32;
-editor_share_skip: [EDIT_LEVELS]bool;
-editor_publication: [96]u8;
-editor_publication_length: s32;
-editor_results: [SHARING_RESULTS]SharingMeta;
+editor_share_visibility: s32 = Collections.COLLECTION_PRIVATE;
+// The open collection, with its levels marked by their place in the catalog.
+editor_collection: DraftsCollection;
+editor_collection_open: bool;
+editor_share_member: [EDIT_LEVELS]bool;
+// The player's collections in the account's records.
+editor_collections: [DRAFTS_COLLECTIONS]Collections.CollectionDraft;
+editor_collection_count: s32;
+editor_collection_armed: bool;
+// The open collection is deleted once its unpublish is done.
+editor_collection_deleting: bool;
+editor_collection_checked: bool;
+editor_results: [SHARING_RESULTS]Collections.CollectionMeta;
 editor_result_count: s32;
-editor_request_bytes: [600000]u8;
 editor_reply_bytes: [600000]u8;
 editor_reply_length: s32;
-editor_document: SharingDocument;
+editor_document: Collections.CollectionDocument;
 editor_document_at: s32;
 editor_verify_index: s32;
 editor_verify_at: s32;
@@ -190,6 +201,8 @@ editor_verify_added: s32;
 editor_verify_refused: s32;
 editor_verify_author: [EDIT_ALIAS]u8;
 editor_verify_author_length: s32;
+editor_verify_title: [EDIT_NAME * 2]u8;
+editor_verify_title_length: s32;
 editor_download: EditLevel;
 editor_download_name: [EDIT_NAME]u8;
 editor_download_name_length: s32;
@@ -393,8 +406,11 @@ EditorSaveLevel :: () {
     editor_drafts_fresh = editor_entity
 }
 
-EditorDrafts :: (length: s32) -> string {
-    return AppServiceHost(DRAFTS_SERVICE, TextView(editor_drafts_request[0:length]))
+// Sends a request to the account's records and frees it.
+EditorDrafts :: (request: Vec(u8)) -> string {
+    reply := AppServiceHost(Collections.COLLECTIONS_DRAFTS_SERVICE, TextView(VecSlice(request, 0, request.count)))
+    VecFree(request)
+    return reply
 }
 
 // How much of a custom level's record id is set: 32 once it has a record.
@@ -411,12 +427,11 @@ EditorWriteLevel :: (at: s32, level: *EditLevel) -> bool {
     if at < 0 || at >= catalog.count { return false }
     summary := *catalog.levels[at]
     if !editor_entity { return SaveAppRecordHost(EditLevelRecord(summary.id), EditLevelText(level)) }
-    writer := EditWriter.{.bytes = editor_drafts_request[:]}
-    DraftsPutLevel(*writer, TextView(summary.record[0:EditorRecordLength(summary)]), summary, level,
-        EditField(summary.name[:], summary.name_length))
-    if writer.full { return false }
+    request: Vec(u8)
+    if !DraftsPutLevel(*request, TextView(summary.record[0:EditorRecordLength(summary)]), summary, level,
+        EditField(summary.name[:], summary.name_length)) { VecFree(request); return false }
     record: [40]u8
-    if !DraftsPutRead(EditorDrafts(writer.length), record[:]) { return false }
+    if !Collections.CollectionDraftPutRead(EditorDrafts(request), record[:]) { return false }
     for place: cast(s64)0..31 { summary.record[place] = record[place] }
     return true
 }
@@ -425,24 +440,25 @@ EditorWriteLevel :: (at: s32, level: *EditLevel) -> bool {
 EditorReadLevel :: (summary: *EditSummary, level: *EditLevel) -> bool {
     if !editor_entity { return EditLevelRead(level, AppRecordHost(EditLevelRecord(summary.id))) }
     if EditorRecordLength(summary) != 32 { return false }
-    writer := EditWriter.{.bytes = editor_drafts_request[:]}
-    DraftsRecordRequest(*writer, "get", TextView(summary.record[0:32]))
-    return !writer.full && DraftsLevelRead(EditorDrafts(writer.length), level)
+    request: Vec(u8)
+    Collections.CollectionDraftRecordRequest(*request, "get", TextView(summary.record[0:32]))
+    return DraftsLevelRead(EditorDrafts(request), level)
 }
 
 EditorRemoveLevel :: (summary: *EditSummary) {
     if !editor_entity { unused SaveAppRecordHost(EditLevelRecord(summary.id), ""); return }
     if EditorRecordLength(summary) != 32 { return }
-    writer := EditWriter.{.bytes = editor_drafts_request[:]}
-    DraftsRecordRequest(*writer, "delete", TextView(summary.record[0:32]))
-    if !writer.full { unused EditorDrafts(writer.length) }
+    request: Vec(u8)
+    Collections.CollectionDraftRecordRequest(*request, "delete", TextView(summary.record[0:32]))
+    unused EditorDrafts(request)
 }
 
-// The custom levels from the account's records, in the order they were made.
+// The custom levels from the account's records, in the order they were
+// made, and the player's collections.
 EditorDraftsList :: () {
-    writer := EditWriter.{.bytes = editor_drafts_request[:]}
-    DraftsListRequest(*writer)
-    count := DraftsListRead(EditorDrafts(writer.length), editor_drafts_entries[:])
+    request: Vec(u8)
+    DraftsListRequest(*request)
+    count := DraftsListRead(EditorDrafts(request), editor_drafts_entries[:], editor_collections[:], *editor_collection_count)
     editor_classic = EditCatalog.{.next = 1}
     for index: cast(s32)0..count - 1 {
         entry := *editor_drafts_entries[index]
@@ -453,6 +469,7 @@ EditorDraftsList :: () {
         catalog.count += 1
         catalog.next += 1
     }
+    if editor_collection_open { EditorCollectionMark() }
 }
 
 // The editor's own records are copied into the account's records once,
@@ -482,8 +499,8 @@ EditorDraftsMove :: () {
 EditorDraftsRefresh :: () {
     if !editor_entity || editor_open_id > 0 || editor_frame.now - editor_drafts_checked < 2.0 { return }
     editor_drafts_checked = editor_frame.now
-    status := AppServiceHost(DRAFTS_SERVICE, "{\"operation\":\"status\"}")
-    revision := SharingNumber(status, 0, "revision")
+    status := AppServiceHost(Collections.COLLECTIONS_DRAFTS_SERVICE, "{\"operation\":\"status\"}")
+    revision := DraftsNumber(status, 0, "revision")
     if revision < 0.0 || revision == editor_drafts_revision { return }
     if editor_drafts_revision >= 0.0 { EditorDraftsList() }
     editor_drafts_revision = revision
@@ -502,16 +519,16 @@ EditorLoad :: () {
     EditPiecesPrepare()
     editor_piece = 12
     editor_budget = 1500
-    editor_entity = AppSupportsHost(DRAFTS_SERVICE)
+    editor_entity = AppSupportsHost(Collections.COLLECTIONS_DRAFTS_SERVICE)
     if editor_entity {
         EditorDraftsMove()
         EditorDraftsList()
+        EditorPublicationMove()
     } else {
         editor_index_bad = !EditIndexRead(*editor_classic, AppRecordHost(EditIndexRecord()))
         if editor_index_bad { editor_classic = EditCatalog.{.next = 1} }
     }
-    editor_publication_length = EditSetField(editor_publication[:], AppRecordHost("classic-publication"))
-    editor_sharing = AppSupportsHost(SHARING_SERVICE)
+    editor_sharing = AppSupportsHost(Collections.COLLECTIONS_PUBLISH_SERVICE)
     EditorBlank()
     editor_loaded = true
 }
@@ -595,21 +612,21 @@ EditorUnlocked :: () -> s32 {
             // Read progress without changing the browser editor's draft store
             // or granting account writes to its local drafts.
             account = EditorAccountUnlocked(ProgressAccountService(
-                    "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
+                "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
             device = EditorBrowserDeviceUnlocked(LocalCampaignRecord())
         } else {
-        if AppSupportsHost(DRAFTS_SERVICE) {
-            account = EditorAccountUnlocked(AppServiceHost(DRAFTS_SERVICE,
+            if AppSupportsHost(Collections.COLLECTIONS_DRAFTS_SERVICE) {
+                account = EditorAccountUnlocked(AppServiceHost(Collections.COLLECTIONS_DRAFTS_SERVICE,
                     "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
-        }
-        if AppSupportsHost("apps.records") {
-            device = EditorDeviceUnlocked(AppServiceHost("apps.records",
-                    "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"local.campaign\"}"))
-            if device == 0 {
-                device = EditorDeviceUnlocked(AppServiceHost("apps.records",
-                        "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"campaign\"}"))
             }
-        }
+            if AppSupportsHost("apps.records") {
+                device = EditorDeviceUnlocked(AppServiceHost("apps.records",
+                    "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"local.campaign\"}"))
+                if device == 0 {
+                    device = EditorDeviceUnlocked(AppServiceHost("apps.records",
+                        "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"campaign\"}"))
+                }
+            }
         }
         editor_unlocked = EditorVisibleUnlocked(account, device)
     }
@@ -822,11 +839,7 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
         EditorSay(2, "editor_custom_count", cast(s64)editor_classic.count), 14, true)
     row := bottom - 60.0
     half := (width - 32.0 - gap) / 2.0
-    if EditorControl(120, Rectangle.{16.0, row, half, 48.0}, EditorText("editor_explore")) {
-        editor_list_scroll = 0
-        editor_sharing = AppSupportsHost(SHARING_SERVICE)
-        editor_page = EDITOR_EXPLORE
-    }
+    if EditorControl(120, Rectangle.{16.0, row, half, 48.0}, EditorText("editor_explore")) { EditorExploreOpen() }
     if EditorControl(121, Rectangle.{16.0 + half + gap, row, half, 48.0}, EditorText("editor_export")) { EditorExportOpen() }
 }
 
@@ -863,9 +876,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     foot := bottom - 60.0
     foot_half := (width - 32.0 - gap) / 2.0
     if EditorControl(120, Rectangle.{16.0, foot, foot_half, 48.0}, EditorText("editor_explore")) {
-        editor_list_scroll = 0
-        editor_sharing = AppSupportsHost(SHARING_SERVICE)
-        editor_page = EDITOR_EXPLORE
+        EditorExploreOpen()
         return
     }
     if EditorControl(121, Rectangle.{16.0 + foot_half + gap, foot, foot_half, 48.0}, EditorText("editor_export")) {
@@ -1272,10 +1283,12 @@ EditorExport :: (width: float32, top: float32, bottom: float32) {
 // ---------------------------------------------------------------------------
 // Sharing level collections
 
-EditorShareCall :: (length: s32) -> SharingReply {
-    reply := AppServiceHost(SHARING_SERVICE, TextView(editor_request_bytes[0:length]))
-    read := SharingReplyRead(reply)
-    if read.status == SHARING_DONE || read.status == SHARING_FAILED { EditorShareKeep(reply) }
+// Sends a request to the publications service and frees it.
+EditorShareCall :: (request: Vec(u8)) -> Collections.CollectionReply {
+    reply := AppServiceHost(Collections.COLLECTIONS_PUBLISH_SERVICE, TextView(VecSlice(request, 0, request.count)))
+    VecFree(request)
+    read := Collections.CollectionReplyRead(reply)
+    if read.status == Collections.COLLECTION_DONE || read.status == Collections.COLLECTION_FAILED { EditorShareKeep(reply) }
     return read
 }
 
@@ -1288,9 +1301,9 @@ EditorShareKeep :: (reply: string) {
 }
 
 // Starts a request; the reply says pending with its number, or why not.
-EditorShareStart :: (kind: s32, length: s32) {
-    reply := EditorShareCall(length)
-    if reply.status == SHARING_PENDING && reply.request >= 0 {
+EditorShareStart :: (kind: s32, request: Vec(u8)) {
+    reply := EditorShareCall(request)
+    if reply.status == Collections.COLLECTION_PENDING && reply.request >= 0 {
         editor_share = kind
         editor_share_request = reply.request
         editor_share_poll = editor_frame.now + 1.0
@@ -1298,16 +1311,17 @@ EditorShareStart :: (kind: s32, length: s32) {
         return
     }
     editor_share = SHARE_IDLE
+    editor_collection_deleting = false
     editor_share_status = "editor_share_failed"
-    if reply.status == SHARING_UNAVAILABLE { editor_share_status = "editor_share_unavailable" }
-    if reply.status == SHARING_REJECTED {
-        editor_share_status = ifx reply.error_length > 0 then EditorShareError(*reply) else "editor_share_rejected"
+    if reply.status == Collections.COLLECTION_UNAVAILABLE { editor_share_status = "editor_share_unavailable" }
+    if reply.status == Collections.COLLECTION_REJECTED {
+        editor_share_status = EditorShareError(*reply)
         if editor_share_status == "editor_share_failed" { editor_share_status = "editor_share_rejected" }
     }
 }
 
-EditorShareError :: (reply: *SharingReply) -> string {
-    error := EditField(reply.error[:], reply.error_length)
+EditorShareError :: (reply: *Collections.CollectionReply) -> string {
+    error := TextUntilNul(reply.error[:])
     if error == "signed-out" { return "editor_signed_out" }
     if error == "offline" { return "editor_offline" }
     if error == "not-found" { return "editor_not_found" }
@@ -1326,30 +1340,37 @@ EditorShareStep :: () {
     if editor_share == SHARE_VERIFY { EditorVerifyStep(); return }
     if editor_frame.now < editor_share_poll { return }
     editor_share_poll = editor_frame.now + 1.0
-    writer := EditWriter.{.bytes = editor_request_bytes[:]}
-    SharingStatusRequest(*writer, editor_share_request)
-    reply := EditorShareCall(writer.length)
-    if reply.status == SHARING_PENDING { return }
+    request: Vec(u8)
+    Collections.CollectionStatusRequest(*request, editor_share_request)
+    reply := EditorShareCall(request)
+    if reply.status == Collections.COLLECTION_PENDING { return }
     kind := editor_share
     editor_share = SHARE_IDLE
-    if reply.status != SHARING_DONE {
-        editor_share_status = ifx reply.status == SHARING_FAILED then EditorShareError(*reply) else "editor_share_failed"
+    deleting := editor_collection_deleting
+    editor_collection_deleting = false
+    if reply.status != Collections.COLLECTION_DONE {
+        editor_share_status = ifx reply.status == Collections.COLLECTION_FAILED then EditorShareError(*reply) else "editor_share_failed"
+        // A moved publication that is gone is no longer published.
+        if kind == SHARE_CHECK && editor_share_status == "editor_not_found" { EditorUnpublished() }
         return
     }
     text := TextView(editor_reply_bytes[0:editor_reply_length])
-    if kind == SHARE_PUBLISH {
-        meta: SharingMeta
-        if SharingPublicationRead(text, *meta) {
-            editor_publication_length = EditSetField(editor_publication[:], EditField(meta.id[:], meta.id_length))
-            unused SaveAppRecordHost("classic-publication", EditField(meta.id[:], meta.id_length))
+    if kind == SHARE_PUBLISH || kind == SHARE_CHECK {
+        meta: Collections.CollectionMeta
+        if Collections.CollectionPublicationRead(text, SHARING_FORMAT, *meta) {
+            editor_collection.publication_length = EditSetField(editor_collection.publication[:], TextUntilNul(meta.id[:]))
+            editor_collection.visibility = meta.visibility
+            editor_collection.visibility_known = true
+            editor_share_visibility = meta.visibility
+            unused EditorCollectionSave()
         }
-        editor_share_status = "editor_published"
+        editor_share_status = ifx kind == SHARE_PUBLISH then "editor_published" else ""
     } else if kind == SHARE_UNPUBLISH {
-        editor_publication_length = 0
-        unused SaveAppRecordHost("classic-publication", "")
+        EditorUnpublished()
         editor_share_status = "editor_unpublished"
+        if deleting { EditorCollectionDrop() }
     } else if kind == SHARE_FIND {
-        editor_result_count = SharingFindRead(text, editor_results[:])
+        editor_result_count = Collections.CollectionFindRead(text, SHARING_FORMAT, editor_results[:])
         if editor_result_count < 0 { editor_result_count = 0; editor_share_status = "editor_share_failed" }
         else { editor_share_status = ifx editor_result_count == 0 then "editor_found_none" else "editor_found" }
     } else if kind == SHARE_FETCH {
@@ -1360,6 +1381,15 @@ EditorShareStep :: () {
         editor_verify_at = 0
         editor_verify_added = 0
         editor_verify_refused = 0
+        // The levels that pass become a new private collection of the player's.
+        if editor_entity {
+            EditorCollectionKeep()
+            title := EditField(editor_verify_title[:], editor_verify_title_length)
+            DraftsCollectionNew(*editor_collection, ifx title == "" then EditorText("editor_new_collection") else title,
+                DraftsCollectionOrder(editor_collections[:], editor_collection_count))
+            editor_collection_open = true
+            EditorCollectionShow()
+        }
         editor_share = SHARE_VERIFY
         editor_share_status = "editor_verifying"
     }
@@ -1369,7 +1399,7 @@ EditorShareStep :: () {
 // whose route wins becomes a custom level, any other is refused.
 EditorVerifyStep :: () {
     text := TextView(editor_reply_bytes[0:editor_reply_length])
-    while editor_verify_index < editor_document.count {
+    while editor_verify_index < editor_document.level_count {
         if editor_verify_at == 0 {
             if !SharingDocumentLevelRead(text, *editor_document, editor_verify_index, editor_download_name[:],
                 *editor_download_name_length, *editor_download) {
@@ -1387,66 +1417,317 @@ EditorVerifyStep :: () {
         catalog := *editor_classic
         at := EditAdd(catalog, 0, EditField(editor_download_name[:], editor_download_name_length))
         if at < 0 { editor_verify_refused += 1; continue }
-        catalog.levels[at].proof = EDIT_PROOF_DOWNLOAD
-        EditSetAuthor(*catalog.levels[at], EditField(editor_verify_author[:], editor_verify_author_length))
+        summary := *catalog.levels[at]
+        summary.proof = EDIT_PROOF_DOWNLOAD
+        EditSetAuthor(summary, EditField(editor_verify_author[:], editor_verify_author_length))
         unused EditorWriteLevel(at, *editor_download)
         EditorSaveIndex()
+        editor_share_member[at] = true
+        if editor_entity && EditorRecordLength(summary) == 32 {
+            unused DraftsCollectionAdd(*editor_collection, TextView(summary.record[0:32]))
+        }
         editor_verify_added += 1
         return
     }
     EditorSaveIndex()
     editor_share = SHARE_IDLE
     editor_share_status = "editor_downloaded"
+    if !editor_entity { return }
+    if editor_collection.count == 0 { editor_collection_open = false; return }
+    if EditorCollectionPut() { editor_share_status = "editor_imported" }
+}
+
+// ---------------------------------------------------------------------------
+// The player's collections
+//
+// Where the host keeps the account's records, the player keeps any number
+// of named collections there (drafts.zi), each private until shared.
+// Elsewhere there is one, its publication in the editor's own records, as
+// the older editor kept it.
+
+// The place of the open collection in the list, or -1 while it is unsaved.
+EditorCollectionAt :: () -> s32 {
+    record := TextUntilNul(editor_collection.record[:])
+    if record.count != 32 { return -1 }
+    for at: cast(s32)0..editor_collection_count - 1 {
+        if TextUntilNul(editor_collections[at].record[:]) == record { return at }
+    }
+    return -1
+}
+
+// Marks the open collection's levels by their place in the catalog; in the
+// editor's own records every proven level, as the older editor did.
+EditorCollectionMark :: () {
+    catalog := *editor_classic
+    for at: cast(s32)0..catalog.count - 1 {
+        summary := *catalog.levels[at]
+        if !editor_entity { editor_share_member[at] = summary.proof != EDIT_PROOF_NONE; continue }
+        editor_share_member[at] = EditorRecordLength(summary) == 32 &&
+        DraftsCollectionHas(*editor_collection, TextView(summary.record[0:32]))
+    }
+}
+
+// Shows the open collection: its title, its publication's visibility and
+// its levels.
+EditorCollectionShow :: () {
+    editor_share_title = EditorField.{}
+    editor_share_title.length = EditSetField(editor_share_title.bytes[:],
+        EditField(editor_collection.title[:], editor_collection.title_length))
+    editor_share_visibility = editor_collection.visibility
+    editor_collection_armed = false
+    editor_collection_checked = false
+    EditorCollectionMark()
+}
+
+// Puts the open collection into the account's records and lists it.
+EditorCollectionPut :: () -> bool {
+    request: Vec(u8)
+    DraftsCollectionPut(*request, *editor_collection)
+    record: [40]u8
+    if !Collections.CollectionDraftPutRead(EditorDrafts(request), record[:]) { editor_save_failed = true; return false }
+    for place: cast(s64)0..31 { editor_collection.record[place] = record[place] }
+    at := EditorCollectionAt()
+    if at < 0 {
+        if editor_collection_count >= DRAFTS_COLLECTIONS { return true }
+        at = editor_collection_count
+        editor_collection_count += 1
+    }
+    listed := *editor_collections[at]
+    listed.* = Collections.CollectionDraft.{.order = editor_collection.order, .visibility = editor_collection.visibility}
+    for place: cast(s64)0..31 { listed.record[place] = record[place] }
+    title := EditField(editor_collection.title[:], editor_collection.title_length)
+    for byte, place: title { listed.title[place] = byte }
+    return true
+}
+
+// Saves the open collection under the title typed for it.
+EditorCollectionSave :: () -> bool {
+    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.length))
+    if title.count > 0 { editor_collection.title_length = EditSetField(editor_collection.title[:], title) }
+    if !editor_entity {
+        return SaveAppRecordHost(DRAFTS_PUBLICATION_RECORD,
+            EditField(editor_collection.publication[:], editor_collection.publication_length))
+    }
+    return EditorCollectionPut()
+}
+
+// Saves a renamed collection before it is left.
+EditorCollectionKeep :: () {
+    if !editor_collection_open || !editor_entity { return }
+    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.length))
+    if title.count == 0 || title == EditField(editor_collection.title[:], editor_collection.title_length) { return }
+    unused EditorCollectionSave()
+}
+
+// Opens the collection listed at `at`.
+EditorCollectionGo :: (at: s32) {
+    if at < 0 || at >= editor_collection_count { return }
+    EditorCollectionKeep()
+    record := TextUntilNul(editor_collections[at].record[:])
+    request: Vec(u8)
+    Collections.CollectionDraftRecordRequest(*request, "get", record)
+    if !DraftsCollectionRead(EditorDrafts(request), record, *editor_collection) { editor_share_status = "editor_share_failed"; return }
+    editor_collection_open = true
+    editor_share_status = ""
+    EditorCollectionShow()
+}
+
+// The first collection, or a new one with every proven level, as the older
+// editor offered.
+EditorCollectionFirst :: () {
+    editor_collection_open = false
+    if editor_entity && editor_collection_count > 0 {
+        EditorCollectionGo(0)
+        if editor_collection_open { return }
+    }
+    DraftsCollectionNew(*editor_collection, EditorText("editor_classic_levels"),
+        DraftsCollectionOrder(editor_collections[:], editor_collection_count))
+    if !editor_entity {
+        editor_collection.publication_length = EditSetField(editor_collection.publication[:], AppRecordHost(DRAFTS_PUBLICATION_RECORD))
+        editor_collection.visibility_known = editor_collection.publication_length == 0
+    }
+    catalog := *editor_classic
+    for at: cast(s32)0..catalog.count - 1 {
+        summary := *catalog.levels[at]
+        if summary.proof != EDIT_PROOF_NONE && EditorRecordLength(summary) == 32 {
+            unused DraftsCollectionAdd(*editor_collection, TextView(summary.record[0:32]))
+        }
+    }
+    editor_collection_open = true
+    EditorCollectionShow()
+}
+
+EditorCollectionNew :: () {
+    EditorCollectionKeep()
+    DraftsCollectionNew(*editor_collection, EditorText("editor_new_collection"),
+        DraftsCollectionOrder(editor_collections[:], editor_collection_count))
+    editor_collection_open = true
+    editor_share_status = ""
+    EditorCollectionShow()
+}
+
+// Asks once to be sure, unpublishes a published collection first, then
+// deletes it. Its levels stay the player's.
+EditorCollectionDelete :: () {
+    if !editor_collection_armed {
+        editor_collection_armed = true
+        editor_share_status = "editor_delete_collection"
+        return
+    }
+    editor_collection_armed = false
+    if editor_collection.publication_length > 0 {
+        editor_collection_deleting = true
+        EditorUnpublish()
+        return
+    }
+    EditorCollectionDrop()
+}
+
+EditorCollectionDrop :: () {
+    at := EditorCollectionAt()
+    if at >= 0 {
+        request: Vec(u8)
+        Collections.CollectionDraftRecordRequest(*request, "delete", TextUntilNul(editor_collection.record[:]))
+        if !DraftsDone(EditorDrafts(request)) { editor_share_status = "editor_share_failed"; return }
+        for place: at..editor_collection_count - 2 { editor_collections[place] = editor_collections[place + 1] }
+        editor_collection_count -= 1
+    }
+    EditorCollectionFirst()
+    editor_share_status = "editor_collection_deleted"
+}
+
+EditorUnpublish :: () {
+    request: Vec(u8)
+    Collections.CollectionUnpublishRequest(*request, EditField(editor_collection.publication[:], editor_collection.publication_length))
+    EditorShareStart(SHARE_UNPUBLISH, request)
+}
+
+// The open collection is no longer published; neither is the older
+// editor's record of it.
+EditorUnpublished :: () {
+    if editor_entity {
+        legacy: [96]u8
+        length := EditSetField(legacy[:], AppRecordHost(DRAFTS_PUBLICATION_RECORD))
+        if length > 0 && EditField(legacy[:], length) == EditField(editor_collection.publication[:], editor_collection.publication_length) {
+            unused SaveAppRecordHost(DRAFTS_PUBLICATION_RECORD, "")
+        }
+    }
+    editor_collection.publication_length = 0
+    editor_collection.visibility = Collections.COLLECTION_PRIVATE
+    editor_collection.visibility_known = true
+    editor_share_visibility = Collections.COLLECTION_PRIVATE
+    unused EditorCollectionSave()
+}
+
+// The older editor kept one publication in its own records. It moves once
+// into a collection of its own with every proven level; the record stays
+// for older editors.
+EditorPublicationMove :: () {
+    publication: [96]u8
+    length := EditSetField(publication[:], AppRecordHost(DRAFTS_PUBLICATION_RECORD))
+    if length <= 0 || AppRecordHost(DRAFTS_PUBLICATION_MOVED) == EditField(publication[:], length) { return }
+    DraftsCollectionNew(*editor_collection, EditorText("editor_classic_levels"),
+        DraftsCollectionOrder(editor_collections[:], editor_collection_count))
+    editor_collection.publication_length = EditSetField(editor_collection.publication[:], EditField(publication[:], length))
+    // The older editor never kept who sees it; the Publish page asks.
+    editor_collection.visibility_known = false
+    catalog := *editor_classic
+    for at: cast(s32)0..catalog.count - 1 {
+        summary := *catalog.levels[at]
+        if summary.proof != EDIT_PROOF_NONE && EditorRecordLength(summary) == 32 {
+            unused DraftsCollectionAdd(*editor_collection, TextView(summary.record[0:32]))
+        }
+    }
+    if EditorCollectionPut() { unused SaveAppRecordHost(DRAFTS_PUBLICATION_MOVED, EditField(publication[:], length)) }
+    editor_collection_open = false
 }
 
 EditorPublishOpen :: () {
-    editor_share_title = EditorField.{}
-    title := EditorText("editor_classic_levels")
-    editor_share_title.length = EditSetField(editor_share_title.bytes[:], title)
-    for at: cast(s32)0..EDIT_LEVELS - 1 { editor_share_skip[at] = false }
     editor_share_status = ""
     editor_list_scroll = 0
-    editor_sharing = AppSupportsHost(SHARING_SERVICE)
+    editor_sharing = AppSupportsHost(Collections.COLLECTIONS_PUBLISH_SERVICE)
+    if editor_collection_open { EditorCollectionShow() }
+    else { EditorCollectionFirst() }
     editor_page = EDITOR_PUBLISH
 }
 
-// Publishes the chosen proven levels as one collection.
+// Publishes the open collection's proven levels.
 EditorPublish :: () {
     catalog := EditorCatalog()
-    document := EditWriter.{.bytes = editor_reply_bytes[:]}
     title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.length))
     if title.count == 0 { editor_share_status = "editor_title_needed"; return }
+    document: Vec(u8)
     SharingDocumentBegin(*document, title)
     count: s32 = 0
+    large := false
     for at: cast(s32)0..catalog.count - 1 {
         summary := *catalog.levels[at]
-        if summary.proof == EDIT_PROOF_NONE || editor_share_skip[at] { continue }
+        if summary.proof == EDIT_PROOF_NONE || !editor_share_member[at] { continue }
         if !EditorReadLevel(summary, *editor_download) { continue }
         if editor_download.route_length == 0 { continue }
-        SharingDocumentLevel(*document, EditorLevelName(1, summary), *editor_download, count == 0)
+        if !SharingDocumentLevel(*document, EditorLevelName(1, summary), *editor_download, count == 0) { large = true; break }
         count += 1
     }
     SharingDocumentEnd(*document)
-    if count == 0 { editor_share_status = "editor_publish_none"; return }
-    if document.full || document.length > SHARING_DOCUMENT_MAX { editor_share_status = "editor_too_large"; return }
-    request := EditWriter.{.bytes = editor_request_bytes[:]}
-    SharingPublishRequest(*request, title, editor_share_visibility, TextView(editor_reply_bytes[0:document.length]),
-        EditField(editor_publication[:], editor_publication_length))
-    if request.full { editor_share_status = "editor_too_large"; return }
-    EditorShareStart(SHARE_PUBLISH, request.length)
+    if !large && count == 0 { VecFree(document); editor_share_status = "editor_publish_none"; return }
+    if large || document.count > cast(s64)SHARING_DOCUMENT_MAX { VecFree(document); editor_share_status = "editor_too_large"; return }
+    unused EditorCollectionSave()
+    request: Vec(u8)
+    Collections.CollectionPublishRequest(*request, SHARING_FORMAT, title, editor_share_visibility,
+        TextView(VecSlice(document, 0, document.count)), EditField(editor_collection.publication[:], editor_collection.publication_length))
+    VecFree(document)
+    EditorShareStart(SHARE_PUBLISH, request)
+}
+
+// Asks the service who sees a moved publication, once per showing.
+EditorCollectionCheck :: () {
+    if !editor_sharing || editor_share != SHARE_IDLE || editor_collection_checked || editor_collection.visibility_known ||
+    editor_collection.publication_length == 0 { return }
+    editor_collection_checked = true
+    request: Vec(u8)
+    Collections.CollectionFetchRequest(*request, EditField(editor_collection.publication[:], editor_collection.publication_length))
+    EditorShareStart(SHARE_CHECK, request)
+}
+
+EditorArrow :: (id: s32, bounds: Rectangle, shape: string, disabled: bool) -> bool {
+    return Button(editor_frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .icon_shape = shape,
+            .disabled = disabled, .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
 EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
-    if EditorControl(600, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) { editor_page = EDITOR_LEVELS; return }
+    if EditorControl(600, Rectangle.{8.0, top + 6.0, 96.0, 40.0}, EditorText("editor_back")) {
+        EditorCollectionKeep()
+        editor_page = EDITOR_LEVELS
+        return
+    }
     EditorCaption(601, Rectangle.{112.0, top + 6.0, width - 224.0, 40.0}, EditorText("editor_publish"), 20, true)
+    EditorCollectionCheck()
     busy := editor_share != SHARE_IDLE
     status := EditorText("editor_publish_note")
     if !editor_sharing { status = EditorText("editor_share_unavailable") }
     else if editor_share_status != "" { status = EditorText(editor_share_status) }
     EditorCaption(602, Rectangle.{16.0, top + 52.0, width - 32.0, 44.0}, status, 14)
     y := top + 100.0
-    unused EditorFieldDraw(*editor_share_title, cast(u64)603, Rectangle.{16.0, y, width - 32.0, 40.0},
-        EditorText("editor_collection_title"), EditorText("editor_collection_title"), SHARING_TITLE_MAX)
+    // Where the account's records are kept, the arrows go through the
+    // player's collections and the title renames the open one.
+    title_bounds := Rectangle.{16.0, y, width - 32.0, 40.0}
+    if editor_entity {
+        title_bounds = Rectangle.{68.0, y, width - 136.0, 40.0}
+        at := EditorCollectionAt()
+        previous := ifx at < 0 then editor_collection_count - 1 else at - 1
+        next := ifx at < 0 then -1 else at + 1
+        if EditorArrow(614, Rectangle.{16.0, y, 44.0, 40.0}, "S2rr:M15 5L8 12L15 19", busy || previous < 0) {
+            EditorCollectionGo(previous)
+            return
+        }
+        if EditorArrow(615, Rectangle.{width - 60.0, y, 44.0, 40.0}, "S2rr:M9 5L16 12L9 19",
+            busy || next < 0 || next >= editor_collection_count) {
+            EditorCollectionGo(next)
+            return
+        }
+    }
+    if EditorFieldDraw(*editor_share_title, cast(u64)603, title_bounds, EditorText("editor_collection_title"),
+        EditorText("editor_collection_title"), SHARING_TITLE_MAX) { EditorCollectionKeep() }
     y += 48.0
     names: [3]string = .["editor_public", "editor_friends", "editor_private"]
     third := (width - 32.0 - 16.0) / 3.0
@@ -1455,16 +1736,22 @@ EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
             EditorText(names[choice]), busy, editor_share_visibility == choice) { editor_share_visibility = choice }
     }
     y += 48.0
-    published := editor_publication_length > 0
+    published := editor_collection.publication_length > 0
     half := ifx published then (width - 40.0) / 2.0 else width - 32.0
     if EditorControl(610, Rectangle.{16.0, y, half, 44.0}, EditorText(ifx published then "editor_publish_again" else "editor_publish_now"),
         !editor_sharing || busy) { EditorPublish() }
     if published && EditorControl(611, Rectangle.{24.0 + half, y, half, 44.0}, EditorText("editor_unpublish"), !editor_sharing || busy) {
-        request := EditWriter.{.bytes = editor_request_bytes[:]}
-        SharingUnpublishRequest(*request, EditField(editor_publication[:], editor_publication_length))
-        EditorShareStart(SHARE_UNPUBLISH, request.length)
+        EditorUnpublish()
     }
     y += 52.0
+    if editor_entity {
+        pair := (width - 40.0) / 2.0
+        if EditorControl(616, Rectangle.{16.0, y, pair, 44.0}, EditorText("editor_new_collection"), busy) { EditorCollectionNew() }
+        if EditorControl(617, Rectangle.{24.0 + pair, y, pair, 44.0},
+            EditorText(ifx editor_collection_armed then "editor_delete_confirm" else "editor_delete"),
+            busy || EditorCollectionAt() < 0 || (published && !editor_sharing)) { EditorCollectionDelete() }
+        y += 52.0
+    }
     EditorCaption(612, Rectangle.{16.0, y, width - 32.0, 28.0}, EditorText("editor_publish_levels"), 16)
     y += 32.0
     catalog := EditorCatalog()
@@ -1481,15 +1768,44 @@ EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
             bounds := Rectangle.{scroll.content.x, scroll.content.y + cast(float32)(row * 52), scroll.content.width, 46.0}
             row += 1
             if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
+            member := editor_share_member[at]
             if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(620000 + at * 2), .id = 620000 + at * 2, .bounds = bounds,
-                    .label = EditorLevelName(0, summary), .selected = !editor_share_skip[at], .disabled = busy,
-                    .icon_shape = ifx editor_share_skip[at] then "S2rr:M5 5H19V19H5Z" else "S2rr:M5 12L10 17L19 7",
+                    .label = EditorLevelName(0, summary), .selected = member, .disabled = busy,
+                    .icon_shape = ifx member then "S2rr:M5 12L10 17L19 7" else "S2rr:M5 5H19V19H5Z",
                     .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-                editor_share_skip[at] = !editor_share_skip[at]
+                EditorCollectionToggle(at)
             }
         }
         unused End(editor_frame.session)
     }
+}
+
+// Adds a level to the open collection or takes it out, and keeps the change.
+EditorCollectionToggle :: (at: s32) {
+    editor_share_member[at] = !editor_share_member[at]
+    if !editor_entity { return }
+    summary := *editor_classic.levels[at]
+    if EditorRecordLength(summary) != 32 { return }
+    record := TextView(summary.record[0:32])
+    if editor_share_member[at] { unused DraftsCollectionAdd(*editor_collection, record) }
+    else { DraftsCollectionRemove(*editor_collection, record) }
+    unused EditorCollectionSave()
+}
+
+// Explore lists what the search finds as it opens: nothing typed lists the
+// newest collections.
+EditorExploreOpen :: () {
+    editor_list_scroll = 0
+    editor_sharing = AppSupportsHost(Collections.COLLECTIONS_PUBLISH_SERVICE)
+    editor_page = EDITOR_EXPLORE
+    if editor_sharing && editor_share == SHARE_IDLE { EditorFind() }
+}
+
+EditorFind :: () {
+    request: Vec(u8)
+    Collections.CollectionFindRequest(*request, SHARING_FORMAT, EditField(editor_share_query.bytes[:], editor_share_query.length))
+    editor_result_count = 0
+    EditorShareStart(SHARE_FIND, request)
 }
 
 EditorExplore :: (width: float32, top: float32, bottom: float32) {
@@ -1500,17 +1816,16 @@ EditorExplore :: (width: float32, top: float32, bottom: float32) {
     status := EditorText("editor_explore_note")
     if !editor_sharing { status = EditorText("editor_share_unavailable") }
     else if editor_share == SHARE_VERIFY { status = EditorSay(0, "editor_verifying", cast(s64)editor_verify_added) }
-    else if editor_share_status == "editor_downloaded" { status = EditorSay(0, "editor_downloaded", cast(s64)editor_verify_added, refused) }
+    else if editor_share_status == "editor_downloaded" || editor_share_status == "editor_imported" {
+        status = EditorSay(0, editor_share_status, cast(s64)editor_verify_added, refused)
+    }
     else if editor_share_status != "" { status = EditorText(editor_share_status) }
     EditorCaption(702, Rectangle.{16.0, top + 52.0, width - 32.0, 44.0}, status, 14)
     y := top + 100.0
     search := EditorFieldDraw(*editor_share_query, cast(u64)703, Rectangle.{16.0, y, width - 136.0, 40.0},
         EditorText("editor_search_label"), EditorText("editor_search_hint"), 80)
     if EditorControl(704, Rectangle.{width - 112.0, y, 96.0, 40.0}, EditorText("editor_search"), !editor_sharing || busy) || (search && editor_sharing && !busy) {
-        request := EditWriter.{.bytes = editor_request_bytes[:]}
-        SharingFindRequest(*request, EditField(editor_share_query.bytes[:], editor_share_query.length))
-        editor_result_count = 0
-        EditorShareStart(SHARE_FIND, request.length)
+        EditorFind()
     }
     y += 52.0
     scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)705, .bounds = Rectangle.{16.0, y, width - 32.0, bottom - y - 8.0},
@@ -1522,19 +1837,20 @@ EditorExplore :: (width: float32, top: float32, bottom: float32) {
             meta := *editor_results[index]
             bounds := Rectangle.{scroll.content.x, scroll.content.y + cast(float32)(index * 64), scroll.content.width, 58.0}
             if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
-            detail := EditorSay(index % 2 + 2, "editor_result_detail", cast(s64)meta.levels, EditField(meta.alias[:], meta.alias_length))
+            detail := EditorSay(index % 2 + 2, "editor_result_detail", cast(s64)meta.levels, TextUntilNul(meta.alias[:]))
             if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(700000 + index * 2), .id = 700000 + index * 2, .bounds = bounds,
-                    .label = EditField(meta.title[:], meta.title_length), .detail = detail, .disabled = busy,
+                    .label = TextUntilNul(meta.title[:]), .detail = detail, .disabled = busy,
                     .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { fetch = index }
         }
         unused End(editor_frame.session)
     }
     if fetch >= 0 {
         meta := *editor_results[fetch]
-        editor_verify_author_length = EditSetField(editor_verify_author[:], EditField(meta.alias[:], meta.alias_length))
-        request := EditWriter.{.bytes = editor_request_bytes[:]}
-        SharingFetchRequest(*request, EditField(meta.id[:], meta.id_length))
-        EditorShareStart(SHARE_FETCH, request.length)
+        editor_verify_author_length = EditSetField(editor_verify_author[:], TextUntilNul(meta.alias[:]))
+        editor_verify_title_length = EditSetField(editor_verify_title[:], TextUntilNul(meta.title[:]))
+        request: Vec(u8)
+        Collections.CollectionFetchRequest(*request, TextUntilNul(meta.id[:]))
+        EditorShareStart(SHARE_FETCH, request)
     }
 }
 
@@ -1564,7 +1880,10 @@ EditorBack :: () -> bool {
         return editor_save_failed
     }
     if editor_page == EDITOR_PLAY || editor_page == EDITOR_LEVELS { editor_page = EDITOR_EDIT }
-    else { editor_page = EDITOR_LEVELS }
+    else {
+        if editor_page == EDITOR_PUBLISH { EditorCollectionKeep() }
+        editor_page = EDITOR_LEVELS
+    }
     return true
 }
 

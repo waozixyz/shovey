@@ -606,3 +606,15 @@ Paroi de grotte
 [editor_crystals]
 Cristaux
 ---
+[editor_new_collection]
+Nouvelle collection
+---
+[editor_delete_collection]
+Touche « Supprimer maintenant » pour effacer cette collection. Ses niveaux restent à toi.
+---
+[editor_collection_deleted]
+Collection supprimée.
+---
+[editor_imported]
+{n} niveaux ajoutés dans une nouvelle collection privée. {s}
+---

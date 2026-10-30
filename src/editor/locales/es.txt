@@ -606,3 +606,15 @@ Pared de cueva
 [editor_crystals]
 Cristales
 ---
+[editor_new_collection]
+Colección nueva
+---
+[editor_delete_collection]
+Toca «Borrar ya» para eliminar esta colección. Sus niveles siguen siendo tuyos.
+---
+[editor_collection_deleted]
+Colección eliminada.
+---
+[editor_imported]
+{n} niveles añadidos como una colección privada nueva. {s}
+---

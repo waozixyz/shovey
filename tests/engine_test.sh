@@ -3,7 +3,9 @@
 # the Ziran solver, and runs them.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-toolchain=${1:?usage: engine_test.sh TOOLCHAIN}
+toolchain=${1:?usage: engine_test.sh TOOLCHAIN ENTITY}
+# The editor's drafts and shared collections use Entity's level collections.
+entity=${2:?usage: engine_test.sh TOOLCHAIN ENTITY}
 lib="$root/build/ziran/libziran.a"
 unset DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS
 [ -f "$lib" ] || make -s -C "$toolchain" BUILD_DIR="$root/build/ziran" "$lib"
@@ -12,7 +14,8 @@ for edition in classic editor editor_progress import secret; do
     rm -rf "$work"
     mkdir -p "$work/c"
     "$toolchain/build/bin/ziran" build --target=c --no-main --entry "${edition}_behavior:Check" --root "$root/tests" \
-        --module-path "$toolchain/std" --module-path "std=$toolchain/std" -o "$work/c" "$root/tests/${edition}_behavior.zi"
+        --module-path "$toolchain/std" --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
+        -o "$work/c" "$root/tests/${edition}_behavior.zi"
     cat > "$work/c/main.c" <<C
 #include <stdio.h>
 #include "${edition}_behavior.h"
@@ -46,6 +49,6 @@ PYTEST
     fi
 done
 echo 'Engine: opening the newest level, progress, saves and every board load passed'
-echo 'Editor: painting, undo, records, play proofs, export, shared collections and the Ziran solver passed'
+echo 'Editor: painting, undo, records, drafts, play proofs, export, shared collections and the Ziran solver passed'
 echo 'Import: level files rewritten byte for byte, proven levels merged, unproven ones refused'
 echo 'Hidden 29a: real beach entry, chest route, exact parent return and campaign isolation passed natively'

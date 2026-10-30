@@ -606,3 +606,15 @@ Classic
 [editor_crystals]
 Кристаллы
 ---
+[editor_new_collection]
+Новая коллекция
+---
+[editor_delete_collection]
+Нажми «Удалить сейчас», чтобы удалить эту коллекцию. Её уровни останутся у тебя.
+---
+[editor_collection_deleted]
+Коллекция удалена.
+---
+[editor_imported]
+В новую личную коллекцию добавлено уровней: {n}. {s}
+---

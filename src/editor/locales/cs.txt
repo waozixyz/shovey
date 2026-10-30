@@ -606,3 +606,15 @@ Stěna jeskyně
 [editor_crystals]
 Krystaly
 ---
+[editor_new_collection]
+Nová sbírka
+---
+[editor_delete_collection]
+Klepni na „Smazat hned“ a sbírka bude odstraněna. Její úrovně ti zůstanou.
+---
+[editor_collection_deleted]
+Sbírka smazána.
+---
+[editor_imported]
+Do nové soukromé sbírky přidáno úrovní: {n}. {s}
+---

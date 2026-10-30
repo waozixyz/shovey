@@ -606,3 +606,15 @@ Parede de caverna
 [editor_crystals]
 Cristais
 ---
+[editor_new_collection]
+Nova coleção
+---
+[editor_delete_collection]
+Toque em “Excluir agora” para remover esta coleção. Os níveis continuam seus.
+---
+[editor_collection_deleted]
+Coleção excluída.
+---
+[editor_imported]
+{n} níveis adicionados como uma nova coleção privada. {s}
+---

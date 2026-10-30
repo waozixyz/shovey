@@ -606,3 +606,15 @@ Shovey
 [editor_crystals]
 水晶
 ---
+[editor_new_collection]
+新合集
+---
+[editor_delete_collection]
+点按“立即删除”即可移除这个合集，其中的关卡仍会保留。
+---
+[editor_collection_deleted]
+合集已删除。
+---
+[editor_imported]
+已作为新的私密合集添加 {n} 个关卡。{s}
+---

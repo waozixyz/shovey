@@ -1,13 +1,16 @@
 // The editor's rules apart from drawing: painting, one Shovey, undo, the
 // records custom levels live in, proof by play and by the Ziran solver, the
-// export, and shared collections.
+// export, drafts in the account's records, and shared collections.
 #import "std/json_scan"
 #import "std/text_buffer"
+#import "std/vec"
+Collections :: #import "entity/level_collections";
 #import, file "../src/engine.zi";
 #import, file "../src/progress.zi";
 #import, file "../src/levels.zi";
 #import, file "../src/editor/edit.zi";
 #import, file "../src/editor/sharing.zi";
+#import, file "../src/editor/drafts.zi";
 #import, file "../src/solver/solver.zi";
 #import, file "../src/solver/classic_rules.zi";
 #import, file "fixtures/classic_solver.zi";
@@ -20,8 +23,12 @@ restored: EditCatalog;
 history: EditHistory;
 text_bytes: [300000]u8;
 request_bytes: [300000]u8;
-document: SharingDocument;
-metas: [4]SharingMeta;
+document: Collections.CollectionDocument;
+metas: [4]Collections.CollectionMeta;
+entries: [4]DraftsEntry;
+listed: [2]Collections.CollectionDraft;
+collection: DraftsCollection;
+reread: DraftsCollection;
 
 Count :: (board: *EditBoard, kind: u8) -> s32 {
     count: s32 = 0
@@ -275,23 +282,25 @@ ExportChecks :: () -> s32 {
     if !number.valid || number.value != 12.0 || FieldAt(text, second, "number") >= 0 { return 111 }
     if ArrayCount(text, FieldAt(text, first, "cells")) != 20 || ArrayCount(text, FieldAt(text, second, "cells")) != 20 { return 112 }
     name: [64]u8
-    if SharingText(text, first, "name", name[:]) != 15 || TextView(name[0:15]) != "My \"best\" level" { return 113 }
+    if EditJsonText(text, first, "name", name[:]) != 15 || TextView(name[0:15]) != "My \"best\" level" { return 113 }
     return 0
 }
 
 ShareChecks :: () -> s32 {
     {
-        writer := EditWriter.{.bytes = text_bytes[:]}
-        SharingDocumentBegin(*writer, "Weekend «puzzles»")
+        shared: Vec(u8)
+        SharingDocumentBegin(*shared, "Weekend «puzzles»")
         level.board = EditNewBoard()
         unused EditSetRoute(*level, "33333333333")
-        SharingDocumentLevel(*writer, "First", *level, true)
+        if !SharingDocumentLevel(*shared, "First", *level, true) { return 120 }
         unused EditSetRoute(*level, "2")
-        SharingDocumentLevel(*writer, "Unproven", *level, false)
-        SharingDocumentEnd(*writer)
-        text := TextView(text_bytes[0:writer.length])
-        if writer.full || !SharingDocumentRead(text, 0, *document) || document.count != 2 { return 120 }
-        if TextView(document.title[0:document.title_length]) != "Weekend «puzzles»" { return 121 }
+        if !SharingDocumentLevel(*shared, "Unproven", *level, false) { return 120 }
+        SharingDocumentEnd(*shared)
+        text := TextView(VecSlice(shared, 0, shared.count))
+        if !SharingDocumentRead(text, 0, *document) || document.level_count != 2 { return 120 }
+        if TextUntilNul(document.title[:]) != "Weekend «puzzles»" { return 121 }
+        // Collections read as the older editor wrote them.
+        if !StartsWith(text, "{\"format\": \"shovey-levels-1\", \"edition\": \"classic\", \"title\": \"Weekend «puzzles»\", \"levels\": [\n {\"name\": \"First\", \"route\": \"33333333333\",\n  \"cells\": [") { return 121 }
         name: [EDIT_NAME]u8
         name_length: s32
         if !SharingDocumentLevelRead(text, *document, 0, name[:], *name_length, *other) ||
@@ -304,55 +313,155 @@ ShareChecks :: () -> s32 {
         if EditReplay(*play, *other.board, EditField(other.route[:], other.route_length), *at, 100000) != 0 { return 125 }
         if SharingDocumentLevelRead(text, *document, 2, name[:], *name_length, *other) { return 126 }
         // Publishing embeds the collection as an object.
-        request := EditWriter.{.bytes = request_bytes[:]}
-        SharingPublishRequest(*request, "Weekend", SHARING_FRIENDS, text, "")
-        sent := TextView(request_bytes[0:request.length])
+        request: Vec(u8)
+        Collections.CollectionPublishRequest(*request, SHARING_FORMAT, "Weekend", Collections.COLLECTION_FRIENDS, text, "")
+        sent := TextView(VecSlice(request, 0, request.count))
         embedded := FieldAt(sent, 0, "document")
         if embedded < 0 || !SharingDocumentRead(sent, embedded, *document) || FieldAt(sent, 0, "id") >= 0 { return 127 }
         visibility: [16]u8
-        if SharingText(sent, 0, "visibility", visibility[:]) != 7 || TextView(visibility[0:7]) != "friends" { return 128 }
+        format: [24]u8
+        if EditJsonText(sent, 0, "visibility", visibility[:]) != 7 || TextView(visibility[0:7]) != "friends" ||
+        EditJsonText(sent, 0, "format", format[:]) != 15 || TextView(format[0:15]) != SHARING_FORMAT { return 128 }
+        VecFree(request)
+        VecFree(shared)
     }
     // A collection of another format, edition or shape is refused.
     if SharingDocumentRead("{\"format\":\"other\",\"edition\":\"classic\",\"title\":\"x\",\"levels\":[]}", 0, *document) { return 129 }
     if SharingDocumentRead("{\"format\":\"shovey-levels-1\",\"edition\":\"space\",\"title\":\"x\",\"levels\":[]}", 0, *document) { return 130 }
+    if SharingDocumentRead("{\"format\":\"shovey-levels-1\",\"edition\":\"collection\",\"title\":\"x\",\"levels\":[]}", 0, *document) { return 130 }
     if !SharingDocumentRead("{\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"x\",\"levels\":[{\"name\":\"a\",\"cells\":[\"00\"],\"route\":\"2\"}]}", 0, *document) { return 131 }
     name: [EDIT_NAME]u8
     name_length: s32
     if SharingDocumentLevelRead("{\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"x\",\"levels\":[{\"name\":\"a\",\"cells\":[\"00\"],\"route\":\"2\"}]}", *document, 0, name[:], *name_length, *other) { return 132 }
-    // Requests and replies.
-    writer := EditWriter.{.bytes = request_bytes[:]}
-    SharingFindRequest(*writer, "  @ada  ")
-    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"find\",\"format\":\"shovey-levels-1\",\"query\":\"@ada\"}" { return 133 }
-    writer = EditWriter.{.bytes = request_bytes[:]}
-    SharingStatusRequest(*writer, 42)
-    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"status\",\"request\":42}" { return 134 }
-    writer = EditWriter.{.bytes = request_bytes[:]}
-    SharingFetchRequest(*writer, "p-1")
-    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"fetch\",\"id\":\"p-1\"}" { return 135 }
-    writer = EditWriter.{.bytes = request_bytes[:]}
-    SharingUnpublishRequest(*writer, "p-1")
-    if TextView(request_bytes[0:writer.length]) != "{\"operation\":\"unpublish\",\"id\":\"p-1\"}" { return 136 }
-    reply := SharingReplyRead("{\"status\":\"pending\",\"request\":7}")
-    if reply.status != SHARING_PENDING || reply.request != 7 { return 137 }
-    reply = SharingReplyRead("{\"status\":\"failed\",\"error\":\"signed-out\"}")
-    if reply.status != SHARING_FAILED || EditField(reply.error[:], reply.error_length) != "signed-out" { return 138 }
-    if SharingReplyRead("{\"status\":\"unavailable\"}").status != SHARING_UNAVAILABLE { return 139 }
-    if SharingReplyRead("{\"status\":\"rejected\",\"error\":\"too big\"}").status != SHARING_REJECTED { return 140 }
-    if SharingReplyRead("not json").status != SHARING_MALFORMED || SharingReplyRead("{\"status\":\"maybe\"}").status != SHARING_MALFORMED { return 141 }
+    // Shovey's requests and replies, as Entity writes and reads them.
+    request: Vec(u8)
+    Collections.CollectionFindRequest(*request, SHARING_FORMAT, "  @ada  ")
+    if TextView(VecSlice(request, 0, request.count)) != "{\"operation\":\"find\",\"format\":\"shovey-levels-1\",\"query\":\"@ada\"}" { return 133 }
+    VecFree(request)
+    request = Vec(u8).{}
+    Collections.CollectionFindRequest(*request, SHARING_FORMAT, "")
+    if TextView(VecSlice(request, 0, request.count)) != "{\"operation\":\"find\",\"format\":\"shovey-levels-1\",\"query\":\"\"}" { return 134 }
+    VecFree(request)
+    reply := Collections.CollectionReplyRead("{\"status\":\"failed\",\"error\":\"signed-out\"}")
+    if reply.status != Collections.COLLECTION_FAILED || TextUntilNul(reply.error[:]) != "signed-out" { return 138 }
     found := "{\"status\":\"done\",\"publications\":[{\"id\":\"p-1\",\"author\":{\"alias\":\"ada\",\"public_id\":\"ab12\"},\"format\":\"shovey-levels-1\",\"title\":\"Crates\",\"levels\":3,\"visibility\":\"friends\",\"updated_at\":1760000000,\"mine\":true},{\"id\":\"p-2\",\"author\":{\"alias\":\"bo\",\"public_id\":\"cd\"},\"format\":\"chess-1\",\"title\":\"x\",\"levels\":1,\"visibility\":\"public\",\"updated_at\":1,\"mine\":false}]}"
-    if SharingReplyRead(found).status != SHARING_DONE || SharingFindRead(found, metas[:]) != 1 { return 142 }
-    if EditField(metas[0].id[:], metas[0].id_length) != "p-1" || EditField(metas[0].alias[:], metas[0].alias_length) != "ada" || EditField(metas[0].title[:], metas[0].title_length) != "Crates" ||
-    metas[0].levels != 3 || metas[0].visibility != SHARING_FRIENDS || !metas[0].mine || metas[0].updated_at != 1760000000 { return 143 }
-    if SharingFindRead("{\"status\":\"done\"}", metas[:]) != -1 { return 144 }
-    if !SharingPublicationRead("{\"status\":\"done\",\"publication\":{\"id\":\"p-9\",\"author\":{\"alias\":\"ada\",\"public_id\":\"ab\"},\"format\":\"shovey-levels-1\",\"title\":\"T\",\"levels\":1,\"visibility\":\"private\",\"updated_at\":5,\"mine\":true}}", *metas[1]) ||
-    EditField(metas[1].id[:], metas[1].id_length) != "p-9" || metas[1].visibility != SHARING_PRIVATE { return 145 }
+    if Collections.CollectionReplyRead(found).status != Collections.COLLECTION_DONE ||
+    Collections.CollectionFindRead(found, SHARING_FORMAT, metas[:]) != 1 { return 142 }
+    if TextUntilNul(metas[0].id[:]) != "p-1" || TextUntilNul(metas[0].alias[:]) != "ada" || TextUntilNul(metas[0].title[:]) != "Crates" ||
+    metas[0].levels != 3 || metas[0].visibility != Collections.COLLECTION_FRIENDS || !metas[0].mine || metas[0].updated_at != 1760000000 { return 143 }
+    if Collections.CollectionFindRead("{\"status\":\"done\"}", SHARING_FORMAT, metas[:]) != -1 { return 144 }
+    if !Collections.CollectionPublicationRead("{\"status\":\"done\",\"publication\":{\"id\":\"p-9\",\"author\":{\"alias\":\"ada\",\"public_id\":\"ab\"},\"format\":\"shovey-levels-1\",\"title\":\"T\",\"levels\":1,\"visibility\":\"private\",\"updated_at\":5,\"mine\":true}}", SHARING_FORMAT, *metas[1]) ||
+    TextUntilNul(metas[1].id[:]) != "p-9" || metas[1].visibility != Collections.COLLECTION_PRIVATE { return 145 }
+    return 0
+}
+
+StartsWith :: (text: string, start: string) -> bool {
+    return text.count >= start.count && text[0:start.count] == start
+}
+
+// The put request as the service answers its get: {"status":"done", ...}.
+AsGetReply :: (sent: string, reply: *Vec(u8)) {
+    BuilderPrint(reply, "{\"status\":\"done\",%", sent[1:])
+}
+
+DRAFT_A :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+DRAFT_B :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+DRAFT_C :: "cccccccccccccccccccccccccccccccc"
+
+// Custom levels and the player's collections as records in the account's
+// entity records, through Entity's collections.
+DraftsChecks :: () -> s32 {
+    summary := EditSummary.{.id = 3, .from = 12, .proof = EDIT_PROOF_SOLVER, .completed = true}
+    EditSetName(*summary, "My \"crates\"")
+    EditSetAuthor(*summary, "ada")
+    level.board = EditNewBoard()
+    unused EditSetRoute(*level, "33333333333")
+    request: Vec(u8)
+    if !DraftsPutLevel(*request, "", *summary, *level, "My \"crates\"") { return 150 }
+    sent := TextView(VecSlice(request, 0, request.count))
+    // A new record has no id yet; its document is the level's collection of
+    // one, with the level's index line and its order.
+    kind: [16]u8
+    if FieldAt(sent, 0, "id") >= 0 || EditJsonText(sent, 0, "kind", kind[:]) != 6 || TextView(kind[0:6]) != "levels" { return 151 }
+    at := FieldAt(sent, 0, "document")
+    proof: [4]u8
+    if DraftsNumber(sent, at, "order") != 3.0 || DraftsNumber(sent, at, "from") != 12.0 ||
+    EditJsonText(sent, at, "proof", proof[:]) != 1 || proof[0] != #char "s" { return 152 }
+    reply: Vec(u8)
+    AsGetReply(TextView(VecSlice(request, 0, request.count)), *reply)
+    if !DraftsLevelRead(TextView(VecSlice(reply, 0, reply.count)), *other) || !EditSame(*other.board, *level.board) ||
+    EditField(other.route[:], other.route_length) != "33333333333" { return 153 }
+    VecFree(reply)
+    VecFree(request)
+    // A draft not proven yet opens without a route; a missing record does not.
+    unused EditSetRoute(*level, "")
+    request = Vec(u8).{}
+    if !DraftsPutLevel(*request, DRAFT_A, *summary, *level, "Unproven") { return 154 }
+    reply = Vec(u8).{}
+    AsGetReply(TextView(VecSlice(request, 0, request.count)), *reply)
+    if !DraftsLevelRead(TextView(VecSlice(reply, 0, reply.count)), *other) || other.route_length != 0 { return 154 }
+    if DraftsLevelRead("{\"status\":\"missing\"}", *other) { return 155 }
+    VecFree(reply)
+    VecFree(request)
+    // A list: custom levels in the order they were made with their index
+    // lines, the player's collections apart, campaign copies and other
+    // formats left out.
+    list := "{\"status\":\"done\",\"records\":[{\"id\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"Second\",\"order\":5,\"from\":0,\"proof\":\"p\",\"completed\":true,\"author\":\"ada\"},{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"First\",\"order\":2,\"from\":12,\"proof\":\"s\",\"completed\":false,\"author\":\"\"},{\"id\":\"cccccccccccccccccccccccccccccccc\",\"format\":\"shovey-levels-1\",\"edition\":\"collection\",\"title\":\"Weekend\",\"order\":0,\"visibility\":\"friends\"},{\"id\":\"dddddddddddddddddddddddddddddddd\",\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"Story\",\"order\":1,\"campaign\":\"classic\"},{\"id\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"format\":\"wurm-levels-1\",\"edition\":\"classic\",\"title\":\"Other\",\"order\":0}]}"
+    listed_count: s32
+    if DraftsListRead(list, entries[:], listed[:], *listed_count) != 2 || listed_count != 1 { return 156 }
+    first := *entries[0].summary
+    second := *entries[1].summary
+    if EditField(first.name[:], first.name_length) != "First" || first.from != 12 || first.proof != EDIT_PROOF_SOLVER ||
+    first.completed || first.author_length != 0 || TextView(first.record[0:32]) != DRAFT_A { return 157 }
+    if EditField(second.name[:], second.name_length) != "Second" || second.proof != EDIT_PROOF_PLAYED || !second.completed ||
+    EditField(second.author[:], second.author_length) != "ada" || TextView(second.record[0:32]) != DRAFT_B { return 158 }
+    if TextUntilNul(listed[0].title[:]) != "Weekend" || TextUntilNul(listed[0].record[:]) != DRAFT_C ||
+    listed[0].visibility != Collections.COLLECTION_FRIENDS || DraftsCollectionOrder(listed[:], listed_count) != 1 { return 159 }
+    if DraftsListRead("{\"status\":\"rejected\"}", entries[:], listed[:], *listed_count) != -1 { return 160 }
+    // A new collection is private, keeps its levels' records once, and
+    // reads back with its publication; its levels stay out of the record.
+    DraftsCollectionNew(*collection, "Weekend «puzzles»", 4)
+    if collection.visibility != Collections.COLLECTION_PRIVATE || !collection.visibility_known { return 161 }
+    if !DraftsCollectionAdd(*collection, DRAFT_A) || !DraftsCollectionAdd(*collection, DRAFT_B) ||
+    !DraftsCollectionAdd(*collection, DRAFT_A) || DraftsCollectionAdd(*collection, "p-1") || collection.count != 2 { return 162 }
+    DraftsCollectionRemove(*collection, DRAFT_A)
+    if collection.count != 1 || DraftsCollectionHas(*collection, DRAFT_A) || !DraftsCollectionAdd(*collection, DRAFT_A) ||
+    TextView(collection.members[1][0:32]) != DRAFT_A { return 162 }
+    collection.publication_length = EditSetField(collection.publication[:], "p-1")
+    request = Vec(u8).{}
+    DraftsCollectionPut(*request, *collection)
+    sent = TextView(VecSlice(request, 0, request.count))
+    at = FieldAt(sent, 0, "document")
+    if FieldAt(sent, 0, "id") >= 0 || ArrayCount(sent, FieldAt(sent, at, "levels")) != 0 { return 163 }
+    reply = Vec(u8).{}
+    AsGetReply(TextView(VecSlice(request, 0, request.count)), *reply)
+    if !DraftsCollectionRead(TextView(VecSlice(reply, 0, reply.count)), DRAFT_C, *reread) { return 164 }
+    if EditField(reread.title[:], reread.title_length) != "Weekend «puzzles»" || reread.order != 4 || reread.count != 2 ||
+    !DraftsCollectionHas(*reread, DRAFT_B) || EditField(reread.publication[:], reread.publication_length) != "p-1" ||
+    reread.visibility != Collections.COLLECTION_PRIVATE || !reread.visibility_known || TextUntilNul(reread.record[:]) != DRAFT_C { return 165 }
+    // A custom level's record is no collection.
+    if DraftsCollectionRead("{\"status\":\"done\",\"document\":{\"format\":\"shovey-levels-1\",\"edition\":\"classic\",\"title\":\"x\",\"levels\":[]}}", DRAFT_A, *reread) { return 166 }
+    VecFree(reply)
+    VecFree(request)
+    // The older editor's publication, moved into a collection, does not say
+    // who sees it until the service is asked.
+    collection.visibility_known = false
+    request = Vec(u8).{}
+    DraftsCollectionPut(*request, *collection)
+    sent = TextView(VecSlice(request, 0, request.count))
+    if FieldAt(sent, FieldAt(sent, 0, "document"), "visibility") >= 0 { return 167 }
+    reply = Vec(u8).{}
+    AsGetReply(TextView(VecSlice(request, 0, request.count)), *reply)
+    if !DraftsCollectionRead(TextView(VecSlice(reply, 0, reply.count)), DRAFT_C, *reread) || reread.visibility_known { return 168 }
+    VecFree(reply)
+    VecFree(request)
     return 0
 }
 
 #program_export
 Check :: () -> s32 {
-    checks: [8]s32 = .[LayerChecks(), PaintChecks(), UndoChecks(), RecordChecks(), PlayChecks(), ExportChecks(),
-    ShareChecks(), SolverChecks()]
+    checks: [9]s32 = .[LayerChecks(), PaintChecks(), UndoChecks(), RecordChecks(), PlayChecks(), ExportChecks(),
+    ShareChecks(), DraftsChecks(), SolverChecks()]
     for result: checks {
         if result != 0 { return result }
     }

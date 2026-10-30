@@ -4,6 +4,7 @@
 // engine while recording the winning route.
 #import "std/number_text"
 #import "std/text_buffer"
+#import "std/json_scan"
 #import, file "../engine.zi";
 #import, file "../levels.zi";
 
@@ -358,6 +359,40 @@ EditPutRows :: (writer: *EditWriter, board: *EditBoard, indent: string) {
         }
         EditPut(writer, "]")
     }
+}
+
+// The format of a shared level collection (sharing.zi), which the import
+// tool also reads.
+SHARING_FORMAT :: "shovey-levels-1"
+
+// Reads a JSON string field of the object at `at` into field, cut to fit.
+// Returns its length, or -1 when it is missing or not a string.
+EditJsonText :: (text: string, at: s32, name: string, field: []u8) -> s32 {
+    value := FieldAt(text, at, name)
+    if value < 0 { return -1 }
+    decoded := ReadStringValue(text, value, cast(s32)field.count * 4 + 16)
+    if !decoded.valid { return -1 }
+    bytes := decoded.value
+    length := EditSetField(field, TextView(VecSlice(bytes, 0, bytes.count)))
+    VecFree(bytes)
+    return length
+}
+
+// One layer's rows (20 strings of 24 hex digits) into hex, from the array at `at`.
+EditRowsRead :: (text: string, at: s32, hex: []u8, offset: s32) -> bool {
+    if at < 0 { return false }
+    rows: [EDIT_HEIGHT + 1]s32
+    if ArrayPositions(text, at, rows[:]) != EDIT_HEIGHT { return false }
+    for row: cast(s32)0..EDIT_HEIGHT - 1 {
+        span := ReadString(text, rows[row])
+        if !span.valid || span.end - span.start != EDIT_WIDTH * 2 { return false }
+        for index: cast(s32)0..EDIT_WIDTH * 2 - 1 {
+            byte := text[span.start + index]
+            if EditHexValue(byte) < 0 { return false }
+            hex[offset + row * EDIT_WIDTH * 2 + index] = byte
+        }
+    }
+    return true
 }
 
 // ---------------------------------------------------------------------------

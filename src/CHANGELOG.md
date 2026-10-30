@@ -4,6 +4,10 @@
 
 - A self-contained browser package is available for CrazyGames submission, with local guest play and saved progress.
 
+## [0.6.163] - 2026-10-29
+
+- Keep named collections in the Editor, share them with friends or everyone, and add new private collections from Explore.
+
 ## [0.6.162] - 2026-10-29
 
 - Coloured pits have new artwork.

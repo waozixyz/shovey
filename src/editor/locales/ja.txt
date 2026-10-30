@@ -606,3 +606,15 @@ Shovey
 [editor_crystals]
 水晶
 ---
+[editor_new_collection]
+新しいコレクション
+---
+[editor_delete_collection]
+「今すぐ削除」をタップすると、このコレクションを削除します。レベルはそのまま残ります。
+---
+[editor_collection_deleted]
+コレクションを削除しました。
+---
+[editor_imported]
+新しい非公開コレクションとして {n} 個のレベルを追加しました。{s}
+---

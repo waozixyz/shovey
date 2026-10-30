@@ -606,3 +606,15 @@ Höhlenwand
 [editor_crystals]
 Kristalle
 ---
+[editor_new_collection]
+Neue Sammlung
+---
+[editor_delete_collection]
+Tippe auf „Jetzt löschen“, um diese Sammlung zu entfernen. Ihre Level bleiben deine.
+---
+[editor_collection_deleted]
+Sammlung gelöscht.
+---
+[editor_imported]
+{n} Level als neue private Sammlung hinzugefügt. {s}
+---
