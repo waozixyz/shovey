@@ -1,0 +1,144 @@
+// Exercise the actual editor orchestration with synthetic services and records.
+#import "std/text_buffer"
+#import "std/vec"
+#import "std/json_scan"
+Collections :: #import "entity/level_collections";
+Client :: #import "entity/collection_client";
+#import "apps/node_types"
+#import, file "../src/editor/edit.zi";
+#import, file "../src/editor/sharing.zi";
+#import, file "../src/editor/editor_view.zi";
+owner: string = "alice";
+response: string = "{\"status\":\"pending\",\"request\":37}";
+calls: s32;
+mutations: s32;
+saves: s32;
+switch_during: bool;
+switch_read: bool;
+owner_reads: s32;
+reply: [256]u8;
+fetched_bytes: [20000]u8;
+fetched_length: s32;
+fetch_response: bool;
+
+#program_export
+FakeService :: (service: string, request: string) -> string {
+    if service == Collections.COLLECTIONS_DRAFTS_SERVICE {
+        owner_reads += 1
+        if switch_read && owner_reads == 3 { owner = "bob" }
+        writer := EditWriter.{.bytes = reply[:]}
+        EditPut(*writer, "{\"status\":\"done\",\"account\":")
+        EditPutJson(*writer, owner)
+        EditPut(*writer, "}")
+        return TextView(reply[0:writer.length])
+    }
+    calls += 1
+    if FieldAt(request, 0, "request") < 0 { mutations += 1 }
+    else if ReadNumber(request, FieldAt(request, 0, "request")).value != 37.0 { return "bad request ID" }
+    if switch_during { owner = "bob" }
+    if fetch_response { return TextView(fetched_bytes[0:fetched_length]) }
+    return response
+}
+#program_export
+FakeSave :: (name: string, text: string) -> bool { saves += 1; return true }
+#program_export
+FakeRecord :: (name: string) -> string { return "" }
+#program_export
+FakeLocale :: (key: string) -> string { return key }
+#program_export
+FakeSmooth :: (frames: s32) -> bool { return true }
+
+Start :: (kind: s32 = SHARE_FIND) {
+    request: Vec(u8)
+    if kind == SHARE_FIND { Collections.CollectionFindRequest(*request, SHARING_FORMAT, "") }
+    else { Collections.CollectionFetchRequest(*request, "p-1") }
+    EditorShareStart(kind, request)
+}
+Reset :: () {
+    Client.CollectionClientReset(*editor_share_client)
+    editor_share = SHARE_IDLE
+    editor_frame.now = 0.0
+    owner = "alice"
+    switch_during = false
+    switch_read = false
+    owner_reads = 0
+    response = "{\"status\":\"pending\",\"request\":37}"
+    fetch_response = false
+    calls = 0
+    mutations = 0
+    saves = 0
+}
+#program_export
+Check :: () -> s32 {
+    Reset()
+    Start()
+    if calls != 0 || editor_share != SHARE_FIND { return 1 }
+    EditorShareStep()
+    Start()
+    if editor_share_status != "editor_busy" || calls != 1 { return 2 }
+    EditorShareStep()
+    if calls != 1 { return 3 }
+    editor_frame.now = 1.0
+    response = "{\"status\":\"done\",\"publications\":[]}"
+    EditorShareStep()
+    if calls != 2 || mutations != 1 || editor_share_status != "editor_found_none" { return 4 }
+    EditorShareStep()
+    if calls != 2 { return 5 }
+    Reset(); Start(); owner = "bob"; EditorShareStep()
+    if calls != 0 || editor_share_status != "editor_signed_out" || saves != 0 { return 6 }
+    Reset(); Start(); switch_during = true; EditorShareStep()
+    if editor_share_status != "editor_signed_out" || saves != 0 { return 7 }
+    Reset(); Start(); EditorShareStep(); owner = "bob"; editor_frame.now = 2.0; EditorShareStep()
+    if calls != 1 || editor_share_status != "editor_signed_out" { return 8 }
+    Reset(); Start(); owner_reads = 0; switch_read = true
+    response = "{\"status\":\"done\",\"publications\":[]}"
+    EditorShareStep()
+    if editor_share_status != "editor_signed_out" || editor_reply_length != 0 { return 9 }
+    errors: [5]string = .["invalid JSON", "{\"status\":\"done\"}", "{\"status\":\"failed\",\"error\":\"offline\"}", "{\"status\":\"rejected\",\"error\":\"busy\"}", "{\"status\":\"unavailable\"}"]
+    labels: [5]string = .["editor_share_failed", "editor_share_failed", "editor_offline", "editor_busy", "editor_share_unavailable"]
+    for error, index: errors {
+        Reset(); Start(); response = error; EditorShareStep()
+        if editor_share_status != labels[index] || saves != 0 { return 10 + cast(s32)index }
+    }
+    Reset(); Start(); editor_share_client.reply_limit = 8; EditorShareStep()
+    if editor_share_status != "editor_too_large" || editor_reply_length != 0 { return 15 }
+    editor_share_client.reply_limit = 0
+    Reset()
+    request: Vec(u8)
+    for at: cast(s32)0..Client.COLLECTION_CLIENT_REQUEST_MAX { VecPush(request, cast(u8)32) }
+    EditorShareStart(SHARE_FIND, request)
+    if editor_share_status != "editor_too_large" || calls != 0 { return 16 }
+    // A real fetched document goes through the unchanged winning-route replay
+    // before any record is written. The second route must be refused.
+    Reset()
+    shared: Vec(u8)
+    level: EditLevel
+    level.board = EditNewBoard()
+    SharingDocumentBegin(*shared, "Fixture")
+    unused EditSetRoute(*level, "33333333333")
+    if !SharingDocumentLevel(*shared, "Winning", *level, true) { return 17 }
+    unused EditSetRoute(*level, "2")
+    if !SharingDocumentLevel(*shared, "Losing", *level, false) { return 18 }
+    SharingDocumentEnd(*shared)
+    fetched: Vec(u8)
+    BuilderPrint(*fetched, "{\"status\":\"done\",\"publication\":{},\"document\":%}", TextView(VecSlice(shared, 0, shared.count)))
+    response = ""
+    for byte, at: fetched { fetched_bytes[at] = byte }
+    fetched_length = cast(s32)fetched.count
+    fetch_response = true
+    editor_classic = EditCatalog.{.next = 1}
+    Start(SHARE_FETCH); EditorShareStep()
+    if editor_share != SHARE_VERIFY || saves != 0 { return 19 }
+    for at: cast(s32)0..5 { EditorShareStep() }
+    if editor_verify_added != 1 || editor_verify_refused != 1 || editor_classic.count != 1 || editor_classic.levels[0].proof != EDIT_PROOF_DOWNLOAD { return 20 }
+    // Account switches while replay spans frames also discard local interest.
+    editor_share = SHARE_IDLE
+    Start(SHARE_FETCH); EditorShareStep()
+    before := saves
+    owner = "bob"; EditorShareStep()
+    if editor_share_status != "editor_signed_out" || saves != before || editor_share != SHARE_IDLE { return 21 }
+    VecFree(shared); VecFree(fetched)
+    Client.CollectionClientReset(*editor_share_client)
+
+    return 42
+}

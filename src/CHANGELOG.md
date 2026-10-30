@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Sharing collections cancels safely when accounts change and keeps drafts when requests fail.
 - A self-contained browser package is available for CrazyGames submission, with local guest play and saved progress.
 
 ## [0.6.163] - 2026-10-29

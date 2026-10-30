@@ -38,6 +38,7 @@
 #import "std/vec"
 #import "apps/node_types"
 Collections :: #import "entity/level_collections";
+Client :: #import "entity/collection_client";
 #import, file "../orientation.zi";
 #import, file "../engine.zi";
 #import, file "../shovey_board.zi";
@@ -171,8 +172,8 @@ editor_export_copy: bool;
 
 editor_sharing: bool;
 editor_share: s32;
-editor_share_request: s32;
-editor_share_poll: float64;
+editor_share_client: Client.CollectionClient;
+editor_share_owner: [129]u8;
 // The translated key of the last sharing outcome.
 editor_share_status: string;
 editor_share_title: EditorField;
@@ -191,7 +192,8 @@ editor_collection_deleting: bool;
 editor_collection_checked: bool;
 editor_results: [SHARING_RESULTS]Collections.CollectionMeta;
 editor_result_count: s32;
-editor_reply_bytes: [600000]u8;
+// App-owned text used by incremental route verification.
+editor_reply_bytes: [524288]u8;
 editor_reply_length: s32;
 editor_document: Collections.CollectionDocument;
 editor_document_at: s32;
@@ -1283,52 +1285,57 @@ EditorExport :: (width: float32, top: float32, bottom: float32) {
 // ---------------------------------------------------------------------------
 // Sharing level collections
 
-// Sends a request to the publications service and frees it.
-EditorShareCall :: (request: Vec(u8)) -> Collections.CollectionReply {
-    reply := AppServiceHost(Collections.COLLECTIONS_PUBLISH_SERVICE, TextView(VecSlice(request, 0, request.count)))
-    VecFree(request)
-    read := Collections.CollectionReplyRead(reply)
-    if read.status == Collections.COLLECTION_DONE || read.status == Collections.COLLECTION_FAILED { EditorShareKeep(reply) }
-    return read
+// The records service reports the verified public account without exposing keys.
+// Copy it: host service replies may share scratch storage.
+EditorShareOwner :: (context: *void) -> string {
+    status := AppServiceHost(Collections.COLLECTIONS_DRAFTS_SERVICE, "{\"operation\":\"status\"}")
+    state: [16]u8
+    editor_share_owner[0] = 0
+    if ReadStringText(status, FieldAt(status, 0, "status"), state[:]) < 0 || TextUntilNul(state[:]) != "done" { return "" }
+    count := ReadStringText(status, FieldAt(status, 0, "account"), editor_share_owner[:])
+    if count <= 0 || count > Client.COLLECTION_CLIENT_OWNER_MAX { return "" }
+    return TextView(editor_share_owner[0:count])
 }
 
-// Keeps a reply's text for reading over the next frames.
-EditorShareKeep :: (reply: string) {
-    editor_reply_length = 0
-    if reply.count > cast(s64)editor_reply_bytes.count { return }
-    for at: cast(s64)0..reply.count - 1 { editor_reply_bytes[at] = reply[at] }
-    editor_reply_length = cast(s32)reply.count
+EditorShareService :: (context: *void, service: string, request: string) -> string {
+    return AppServiceHost(service, request)
 }
 
-// Starts a request; the reply says pending with its number, or why not.
+// The client owns request bytes, provider IDs, deadlines and terminal replies.
 EditorShareStart :: (kind: s32, request: Vec(u8)) {
-    reply := EditorShareCall(request)
-    if reply.status == Collections.COLLECTION_PENDING && reply.request >= 0 {
+    if editor_share != SHARE_IDLE {
+        VecFree(request)
+        editor_share_status = "editor_busy"
+        return
+    }
+    editor_share_client.service = EditorShareService
+    editor_share_client.owner = EditorShareOwner
+    operation := Client.CollectionClientOperation.Fetch
+    if kind == SHARE_PUBLISH { operation = Client.CollectionClientOperation.Publish }
+    else if kind == SHARE_UNPUBLISH { operation = Client.CollectionClientOperation.Unpublish }
+    else if kind == SHARE_FIND { operation = Client.CollectionClientOperation.Find }
+    reply := Client.CollectionClientStart(*editor_share_client, operation, TextView(VecSlice(request, 0, request.count)))
+    VecFree(request)
+    editor_reply_length = 0
+    if reply.state == Client.CollectionClientState.Pending {
         editor_share = kind
-        editor_share_request = reply.request
-        editor_share_poll = editor_frame.now + 1.0
         editor_share_status = "editor_share_waiting"
         return
     }
-    editor_share = SHARE_IDLE
     editor_collection_deleting = false
-    editor_share_status = "editor_share_failed"
-    if reply.status == Collections.COLLECTION_UNAVAILABLE { editor_share_status = "editor_share_unavailable" }
-    if reply.status == Collections.COLLECTION_REJECTED {
-        editor_share_status = EditorShareError(*reply)
-        if editor_share_status == "editor_share_failed" { editor_share_status = "editor_share_rejected" }
-    }
+    editor_share_status = EditorShareError(reply)
 }
 
-EditorShareError :: (reply: *Collections.CollectionReply) -> string {
-    error := TextUntilNul(reply.error[:])
-    if error == "signed-out" { return "editor_signed_out" }
-    if error == "offline" { return "editor_offline" }
-    if error == "not-found" { return "editor_not_found" }
-    if error == "forbidden" { return "editor_forbidden" }
-    if error == "too-large" { return "editor_too_large" }
-    if error == "invalid" { return "editor_invalid" }
-    if error == "busy" { return "editor_busy" }
+EditorShareError :: (reply: Client.CollectionClientResult) -> string {
+    if reply.error == Client.CollectionClientError.SignedOut || reply.error == Client.CollectionClientError.OwnerChanged { return "editor_signed_out" }
+    if reply.error == Client.CollectionClientError.Offline { return "editor_offline" }
+    if reply.error == Client.CollectionClientError.NotFound { return "editor_not_found" }
+    if reply.error == Client.CollectionClientError.Forbidden { return "editor_forbidden" }
+    if reply.error == Client.CollectionClientError.TooLarge { return "editor_too_large" }
+    if reply.error == Client.CollectionClientError.Invalid { return "editor_invalid" }
+    if reply.error == Client.CollectionClientError.Busy { return "editor_busy" }
+    if reply.state == Client.CollectionClientState.Unavailable { return "editor_share_unavailable" }
+    if reply.state == Client.CollectionClientState.Rejected { return "editor_share_rejected" }
     return "editor_share_failed"
 }
 
@@ -1337,19 +1344,23 @@ EditorShareError :: (reply: *Collections.CollectionReply) -> string {
 EditorShareStep :: () {
     if editor_share == SHARE_IDLE { return }
     unused SmoothFramesHost(30)
-    if editor_share == SHARE_VERIFY { EditorVerifyStep(); return }
-    if editor_frame.now < editor_share_poll { return }
-    editor_share_poll = editor_frame.now + 1.0
-    request: Vec(u8)
-    Collections.CollectionStatusRequest(*request, editor_share_request)
-    reply := EditorShareCall(request)
-    if reply.status == Collections.COLLECTION_PENDING { return }
+    reply := Client.CollectionClientPump(*editor_share_client, cast(s64)(editor_frame.now * 1000.0))
+    if reply.state == Client.CollectionClientState.Pending { return }
+    // ReadReply checks ownership again, including throughout multi-frame proof
+    // replay. Never import retained text after an account change.
+    retained: Vec(u8)
+    Client.CollectionClientReadReply(*editor_share_client, *retained)
+    editor_reply_length = cast(s32)retained.count
+    for byte, at: retained { editor_reply_bytes[at] = byte }
+    VecFree(retained)
+    reply = editor_share_client.result
+    if editor_share == SHARE_VERIFY && reply.state == Client.CollectionClientState.Done { EditorVerifyStep(); return }
     kind := editor_share
     editor_share = SHARE_IDLE
     deleting := editor_collection_deleting
     editor_collection_deleting = false
-    if reply.status != Collections.COLLECTION_DONE {
-        editor_share_status = ifx reply.status == Collections.COLLECTION_FAILED then EditorShareError(*reply) else "editor_share_failed"
+    if reply.state != Client.CollectionClientState.Done {
+        editor_share_status = EditorShareError(reply)
         // A moved publication that is gone is no longer published.
         if kind == SHARE_CHECK && editor_share_status == "editor_not_found" { EditorUnpublished() }
         return

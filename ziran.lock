@@ -11,28 +11,11 @@
     },
     {
       "commit": "cabc0424e45a4a8ef652944b5e2226e9375177c3",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "p13e45c6bd7dbca34"},
+      "dependencies": {"crypto": "pc23fbf455e97614d", "kryon": "pa65b3130af69e6e0"},
       "id": "p1065a3c915ffa1e1",
       "name": "Apps",
       "ref": "master",
       "url": "https://github.com/waozixyz/apps.git"
-    },
-    {
-      "commit": "edffc8bf8086e4015d2b499d9afce394e45503e8",
-      "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "id": "p13e45c6bd7dbca34",
-      "name": "kryon",
-      "ref": "master",
-      "url": "https://github.com/kryonlabs/kryon.git"
-    },
-    {
-      "commit": "a9ad1876e14c2be093a538aca41fd3468fe3cf19",
-      "dependencies": {},
-      "id": "p1aaef6f156781e69",
-      "name": "liboqs",
-      "ref": "main",
-      "source": true,
-      "url": "https://github.com/open-quantum-safe/liboqs.git"
     },
     {
       "commit": "19b299005fbe2d895f4ad525cfdae62a2220c3ea",
@@ -42,6 +25,14 @@
       "ref": "19b299005fbe2d895f4ad525cfdae62a2220c3ea",
       "source": true,
       "url": "https://github.com/curl/curl.git"
+    },
+    {
+      "commit": "9556e839b6d0e576161622d5c30d9548a9a2156f",
+      "dependencies": {"daochi_client": "p89503086b39ba0fb", "kryon": "pa65b3130af69e6e0", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
+      "id": "p55d98f8f5d85b2a9",
+      "name": "Entity",
+      "ref": "master",
+      "url": "https://github.com/waozixyz/entity.git"
     },
     {
       "commit": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e",
@@ -54,19 +45,11 @@
     },
     {
       "commit": "22d2ddbdc236796953c905a05a2cebf5ab1b4ff3",
-      "dependencies": {"liboqs": "p1aaef6f156781e69"},
+      "dependencies": {"liboqs": "pf9af593c157b8edf"},
       "id": "p7098ac9cd92f7e5f",
       "name": "Oqs",
       "ref": "master",
       "url": "https://github.com/ziranlang/oqs.git"
-    },
-    {
-      "commit": "8250ece58a03f4d9c07cd8434780d659b54f5d7f",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "oqs": "p7098ac9cd92f7e5f"},
-      "id": "p7de54c8ad98fe034",
-      "name": "DaochiClient",
-      "ref": "master",
-      "url": "https://github.com/ziranlang/daochi-client.git"
     },
     {
       "commit": "f5f0a19a5dc6c14a49adb3cd63ea79a60f6ba77b",
@@ -76,6 +59,22 @@
       "ref": "master",
       "source": true,
       "url": "https://github.com/LoupVaillant/Monocypher.git"
+    },
+    {
+      "commit": "256fe6ff049d48a25dfe2a8b0db7ad84477fd282",
+      "dependencies": {"crypto": "pc23fbf455e97614d", "oqs": "p7098ac9cd92f7e5f"},
+      "id": "p89503086b39ba0fb",
+      "name": "DaochiClient",
+      "ref": "master",
+      "url": "https://github.com/ziranlang/daochi-client.git"
+    },
+    {
+      "commit": "f761e3292a2952ab2397032c8628fd85c79e6d5d",
+      "dependencies": {"raylib": "p5a77c9c35110e925"},
+      "id": "pa65b3130af69e6e0",
+      "name": "kryon",
+      "ref": "master",
+      "url": "https://github.com/kryonlabs/kryon.git"
     },
     {
       "commit": "944826f70779a6b6cd53f6b06a75b36f4d8a2558",
@@ -94,16 +93,17 @@
       "url": "https://github.com/kryonlabs/mingcute.git"
     },
     {
-      "commit": "5ccba10b6a4a7d1a75c5af64032dad130e075083",
-      "dependencies": {"daochi_client": "p7de54c8ad98fe034", "kryon": "p13e45c6bd7dbca34", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096"},
-      "id": "pf2f2fbe13ab86f54",
-      "name": "Entity",
-      "ref": "master",
-      "url": "https://github.com/waozixyz/entity.git"
+      "commit": "e77d81dab791c13bf1c4e5d9a7160c403be9bbe0",
+      "dependencies": {},
+      "id": "pf9af593c157b8edf",
+      "name": "liboqs",
+      "ref": "main",
+      "source": true,
+      "url": "https://github.com/open-quantum-safe/liboqs.git"
     }
   ],
   "root": {
-    "dependencies": {"apps": "p1065a3c915ffa1e1", "curl": "p1ca0e8d3c19dbe4c", "entity": "pf2f2fbe13ab86f54", "kryon": "p13e45c6bd7dbca34", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "p1065a3c915ffa1e1", "curl": "p1ca0e8d3c19dbe4c", "entity": "p55d98f8f5d85b2a9", "kryon": "pa65b3130af69e6e0", "mingcute": "pe1027b9d16704793"},
     "name": "Shovey"
   },
   "toolchain": {
