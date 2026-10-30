@@ -1,0 +1,203 @@
+#import "std/file"
+#import "std/file_tree_linux"
+#import "std/json_document"
+#import "std/text_tools"
+#import "std/vec"
+#import "std/zip_file_linux"
+#import "std/byte_text_linux"
+#import "std/process_run_linux"
+#import "std/stdio_linux"
+
+CRAZYGAMES_BYTES_LIMIT :: 52428800;
+CRAZYGAMES_FILE_LIMIT :: 1500;
+
+ToolArguments :: (argc: s32, argv: **u8) -> Vec(string) {
+    arguments: Vec(string)
+    index: s32 = 1
+    while index < argc {
+        VecPush(arguments, TextFromCString(argv[index]))
+        index += 1
+    }
+    return arguments
+}
+
+Fail :: (message: string) -> s32 {
+    line: Vec(u8)
+    BuilderAppend(line, message)
+    VecPush(line, cast(u8)10)
+    PrintError(BuilderFinish(line))
+    return 1
+}
+
+InShovey :: () -> bool {
+    return IsFile("ziran.toml") && IsFile("levels/approved.json") && IsFile("src/CHANGELOG.md")
+}
+
+ReadJsonFile :: (path: string, document: *JsonDocument) -> bool {
+    text, found := ReadEntireFile(path)
+    if !found { return false }
+    return JsonRead(document, text)
+}
+
+GitRevision :: () -> string {
+    command: [3]string = .["git", "rev-parse", "HEAD"]
+    options: ProcessOptions = .{arguments = command[:], capture_output = true}
+    run: ProcessRun
+    if !RunProcess(options, *run) || run.code != 0 { return "" }
+    return TextTrimEnd(BuilderFinish(run.output))
+}
+
+OwnedText :: (text: string) -> string {
+    bytes: Vec(u8)
+    BuilderAppend(bytes, text)
+    return BuilderFinish(bytes)
+}
+
+crazygames_source: string = "build/web";
+crazygames_output: string = "work/crazygames.zip";
+crazygames_error: string;
+
+#scope_export
+ConfigureCrazyGames :: (source: string, output: string) {
+    crazygames_source = source
+    crazygames_output = output
+    crazygames_error = ""
+}
+
+CrazyGamesError :: (message: string) -> bool {
+    crazygames_error = message
+    return false
+}
+
+PortalPageResult :: struct {
+    page: string
+    valid: bool
+}
+
+CrazyGamesPortalPage :: (page: string) -> PortalPageResult {
+    end_marker := "  <!-- End website metadata -->"
+    while true {
+        start := TextFind(page, "  <!-- Website metadata -->")
+        if start < 0 { break }
+        ending := TextFind(page, end_marker, start)
+        if ending < start { return .{valid = false} }
+        ending += end_marker.count
+        kept: Vec(u8)
+        for at: 0..cast(s32)start - 1 { VecPush(kept, page[at]) }
+        for at: cast(s32)ending..page.count - 1 { VecPush(kept, page[at]) }
+        page = BuilderFinish(kept)
+    }
+    runtime_start_marker := "    <!-- Website-only runtime fallback -->"
+    runtime_end_marker := "    <!-- End website-only runtime fallback -->"
+    while true {
+        start := TextFind(page, runtime_start_marker)
+        if start < 0 { break }
+        ending := TextFind(page, runtime_end_marker, start)
+        if ending < start { return .{valid = false} }
+        ending += runtime_end_marker.count
+        kept: Vec(u8)
+        for at: 0..cast(s32)start - 1 { VecPush(kept, page[at]) }
+        for at: cast(s32)ending..page.count - 1 { VecPush(kept, page[at]) }
+        page = BuilderFinish(kept)
+    }
+    portal := page
+    portal = TextReplace(portal, "function gameFile(name) { return fileBase + name + '?v=' + buildRevision; }",
+        "function gameFile(name) { return name + '?v=' + buildRevision; }")
+    portal = TextReplace(portal, "      runtimeScript.onerror = function() {\n        if (loadFromHome()) loadRuntime();\n        else Module.setStatus('Could not download Shovey.');\n      };",
+        "      runtimeScript.onerror = function() { Module.setStatus('Could not download Shovey.'); };")
+    if TextContains(portal, "https://") || TextContains(portal, "gameHome") ||
+       TextContains(portal, "fileBase") || TextContains(portal, "loadFromHome") { return .{valid = false} }
+    return .{page = portal, valid = true}
+}
+
+#scope_export
+#program_export
+PackageCrazyGames :: () -> bool {
+    crazygames_error = ""
+    if !InShovey() { return CrazyGamesError("Run package_crazygames from Shovey's folder") }
+
+    names: [10]string = .["index.html", "index.js", "index.wasm", "index.data",
+        "title-landscape.jpg", "title-portrait.jpg", "logo.png", "icon-192.png",
+        "manifest.webmanifest", "icon.png"]
+    total: s64
+    for index: 0..names.count - 1 {
+        info := PathStatus(JoinPath(crazygames_source, names[index]))
+        if info.kind != .File {
+            message: Vec(u8)
+            BuilderPrint(*message, "The verified web build has no %", names[index])
+            return CrazyGamesError(BuilderFinish(message))
+        }
+        total += info.size
+    }
+    if total > CRAZYGAMES_BYTES_LIMIT { return CrazyGamesError("The CrazyGames package exceeds 50 MiB") }
+    if names.count > CRAZYGAMES_FILE_LIMIT { return CrazyGamesError("The CrazyGames package exceeds 1500 files") }
+
+    receipt: JsonDocument
+    receipt_path := JoinPath(crazygames_source, "build.json")
+    if !ReadJsonFile(receipt_path, *receipt) { return CrazyGamesError("The web build has no receipt") }
+    revision := JsonString(*receipt, JsonMember(*receipt, receipt.root, "revision"))
+    if revision != GitRevision() { return CrazyGamesError("The web build receipt names another revision") }
+
+    page, found := ReadEntireFile(JoinPath(crazygames_source, "index.html"))
+    if !found { return CrazyGamesError("The web build has no index.html") }
+    portal := CrazyGamesPortalPage(page)
+    if !portal.valid { return CrazyGamesError("The web page cannot become relative-only") }
+    page = portal.page
+    if !CreateDirectories(PathParent(crazygames_output)) { return CrazyGamesError("Cannot create the CrazyGames work folder") }
+    if PathExists(crazygames_output) && !RemoveFile(crazygames_output) { return CrazyGamesError("Cannot replace the CrazyGames ZIP") }
+    archive := OpenReplace(crazygames_output)
+    if !archive.valid { return CrazyGamesError("Cannot create the CrazyGames ZIP") }
+
+    records: Vec(ZipFileRecord)
+    directory: u64
+    payload: Vec(u8)
+    for index: 0..names.count - 1 {
+        VecClear(payload)
+        if index == 0 {
+            for byte: page { VecPush(payload, byte) }
+        } else if !ReadFileInto(JoinPath(crazygames_source, names[index]), *payload) {
+            CloseFile(archive)
+            return CrazyGamesError("Cannot read the verified web build")
+        }
+        record := WriteStoredZipFileEntry(archive, directory, names[index], VecSlice(payload, 0, payload.count))
+        if !record.valid || !VecPush(records, record) {
+            CloseFile(archive)
+            return CrazyGamesError("Cannot write the CrazyGames ZIP entries")
+        }
+        directory = StoredZipFileNext(record)
+    }
+    directory_start := directory
+    for index: 0..records.count - 1 {
+        directory = WriteStoredZipFileDirectoryEntry(archive, directory, names[index], records[index])
+        if directory == 0 {
+            CloseFile(archive)
+            return CrazyGamesError("Cannot write the CrazyGames ZIP directory")
+        }
+    }
+    if !FinishStoredZipFile(archive, directory_start, directory, cast(u32)records.count) {
+        CloseFile(archive)
+        return CrazyGamesError("Cannot finish the CrazyGames ZIP")
+    }
+    if !CloseFile(archive) { return CrazyGamesError("Cannot close the CrazyGames ZIP") }
+    return true
+}
+
+main :: (argc: s32, argv: **u8) -> s32 {
+    arguments := ToolArguments(argc, argv)
+    if arguments.count == 0 { ConfigureCrazyGames("build/web", "work/crazygames.zip") }
+    index: s32 = 0
+    while index < arguments.count {
+        if arguments[index] == "--source" && index + 1 < arguments.count {
+            index += 1
+            crazygames_source = OwnedText(arguments[index])
+        } else if arguments[index] == "--output" && index + 1 < arguments.count {
+            index += 1
+            crazygames_output = OwnedText(arguments[index])
+        } else {
+            return Fail("usage: package_crazygames [--source DIR] [--output ZIP]")
+        }
+        index += 1
+    }
+    if !PackageCrazyGames() { return Fail(crazygames_error) }
+    return 0
+}

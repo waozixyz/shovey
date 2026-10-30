@@ -26,7 +26,7 @@ env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u S
 	build/tests/$(1)/$(1) $(2)
 endef
 
-.PHONY: all levels bundles landscape previews solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zx web-zx-test
+.PHONY: all levels bundles landscape previews solver bench test play import-tool scenery-tool routes-tool public-test scenery-pictures editor-card web web-test web-itch web-zx web-zx-test package-crazygames-test web-crazygames
 
 .PHONY: editor editor-ui-test editor-save-test editor-glm-test editor-server-test star-merge-test
 editor-server-test:
@@ -255,6 +255,15 @@ web: bundles
 	cp src/web/manifest.webmanifest src/web/_headers $(WEB_OUT)/
 
 web-itch: web
+
+# CrazyGames Basic Launch: a self-contained relative-only ZIP made from the
+# verified compiled web build, with index.html at the archive root.
+CRAZYGAMES_OUT ?= work/crazygames.zip
+web-crazygames: web
+	'$(ZIRAN)' run --target=c scripts/package_crazygames.zi -- --output '$(CRAZYGAMES_OUT)'
+
+package-crazygames-test:
+	sh tests/package_crazygames_test.sh
 
 web-test: web
 	node tests/web_mini_test.mjs

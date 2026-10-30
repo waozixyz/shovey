@@ -1,4 +1,5 @@
 /build/
+/work/
 # The player's Android project, made from Kryon's template at each build.
 /droid/
 /backup/

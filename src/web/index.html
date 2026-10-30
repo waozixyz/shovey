@@ -8,6 +8,7 @@
   <meta name="application-name" content="Shovey">
   <meta name="author" content="Waozi">
   <title>Shovey — Push. Solve. Come home.</title>
+  <!-- Website metadata -->
   <link rel="canonical" href="https://shovey.waozi.xyz/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Shovey">
@@ -27,12 +28,15 @@
   <meta name="twitter:description" content="Play __SHOVEY_LEVEL_COUNT__ Classic puzzles in your browser. Push balls into matching pits, move crates onto their marks and find your way home.">
   <meta name="twitter:image" content="https://shovey.waozi.xyz/og.png?v=__SHOVEY_REVISION__">
   <meta name="twitter:image:alt" content="Shovey and a wooden crate in a sunny garden, with the Shovey logo.">
+  <!-- End website metadata -->
   <link rel="icon" type="image/png" href="icon-192.png?v=__SHOVEY_REVISION__">
   <link rel="apple-touch-icon" href="icon-192.png?v=__SHOVEY_REVISION__">
   <link rel="manifest" href="manifest.webmanifest?v=__SHOVEY_REVISION__">
   <link rel="preload" as="image" href="title-portrait.jpg?v=__SHOVEY_REVISION__" media="(max-aspect-ratio: 1/1)">
   <link rel="preload" as="image" href="title-landscape.jpg?v=__SHOVEY_REVISION__" media="(min-aspect-ratio: 1/1)">
+  <!-- Website metadata -->
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Shovey","url":"https://shovey.waozi.xyz/","image":"https://shovey.waozi.xyz/og.png?v=__SHOVEY_REVISION__","description":"Push. Solve. Come home. A puzzle game with __SHOVEY_LEVEL_COUNT__ Classic levels, touch and keyboard controls, saved progress and an integrated level editor.","genre":"Puzzle","gamePlatform":"Web browser","operatingSystem":"Any","inLanguage":"en","isAccessibleForFree":true,"softwareVersion":"__SHOVEY_VERSION__","dateModified":"__SHOVEY_RELEASE_DATE__","author":{"@type":"Person","name":"Waozi","url":"https://waozi.xyz/"},"sameAs":["https://waozi.itch.io/shovey","https://github.com/waozixyz/shovey"]}</script>
+  <!-- End website metadata -->
   <style>
     :root {
       --app-background: #10231d;
@@ -183,12 +187,12 @@
     var pageTitle = document.title;
     var wasmBytes = __SHOVEY_WASM_BYTES__;
     var loadingCheck;
+    <!-- Website-only runtime fallback -->
     // A copy of this page on another site (an app store bundle, a saved page)
     // has none of the game's files beside it, so it loads them from the
     // game's home, which serves them to every site.
     var gameHome = 'https://shovey.waozi.xyz/';
     var fileBase = '';
-    function gameFile(name) { return fileBase + name + '?v=' + buildRevision; }
     function loadFromHome() {
       if (fileBase) return false;
       fileBase = gameHome;
@@ -198,6 +202,8 @@
       });
       return true;
     }
+    <!-- End website-only runtime fallback -->
+    function gameFile(name) { return fileBase + name + '?v=' + buildRevision; }
     function startingGame() {
       statusElement.textContent = 'Opening Shovey…';
       progressElement.removeAttribute('value');

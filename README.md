@@ -47,3 +47,12 @@ Shovey also runs inside [Arcade](https://github.com/waozixyz/arcade) and
 · [Report a problem](https://github.com/waozixyz/shovey/issues)
 
 BSD 3-Clause. See [LICENSE](LICENSE).
+
+## CrazyGames submission build
+
+Run `make web-crazygames` to build the guest browser edition and write
+`work/crazygames.zip`. The ZIP uses relative asset paths and keeps local saves;
+it does not include the website's external loading fallback. Run
+`make package-crazygames-test` to verify the packaging rules. This prepares a
+local Basic Launch candidate; uploading and submitting it through the
+[CrazyGames Developer Portal](https://developer.crazygames.com/) is a separate step.

@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [Unreleased]
+
+- A self-contained browser package is available for CrazyGames submission, with local guest play and saved progress.
+
 ## [0.6.162] - 2026-10-29
 
 - Coloured pits have new artwork.

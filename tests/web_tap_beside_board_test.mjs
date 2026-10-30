@@ -19,7 +19,8 @@ const server = createServer(async (request, response) => {
   } catch { response.writeHead(404).end(); }
 });
 if (!process.env.WEB_TEST_URL) await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const target = process.env.WEB_TEST_URL || `http://127.0.0.1:${server.address().port}/index.html`;
+const target = process.env.WEB_TEST_URL ||
+  `http://127.0.0.1:${server.address().port}${process.env.WEB_TEST_PATH || '/index.html'}`;
 const environment = {...process.env};
 for (const key of ['DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER', 'GDK_DISPLAY']) delete environment[key];
 const browser = spawn(process.env.CHROMIUM || 'chromium', ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', '--user-data-dir=' + profile, target], {detached: true, env: environment, stdio: ['ignore', 'ignore', 'pipe']});
@@ -72,7 +73,8 @@ try {
   await call('Runtime.enable');
   await call('Page.enable');
   await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
-  const width = 1280, height = 720;
+  const width = Number(process.env.WEB_TEST_WIDTH || 1280);
+  const height = Number(process.env.WEB_TEST_HEIGHT || 720);
   await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: false});
   await call('Page.reload');
   await wait(`typeof Module !== 'undefined' && Module.FS?.analyzePath('/tmp/test-driver').exists && document.querySelector('#loading-screen').classList.contains('is-hidden')`);
@@ -86,7 +88,12 @@ try {
     assert(reply.ok, JSON.stringify(reply));
     return reply.nodes;
   }
-  const play = (await tree()).find(node => node.label === 'Play' && (node.role === 'button' || node.kind === 'button'));
+  const opening = await tree();
+  const labels = opening.map(node => node.label).filter(Boolean);
+  for (const forbidden of ['Profile', 'Dew', 'Sign in', 'Buy', 'Fullscreen', 'Waozi', 'itch.io'])
+    assert(!labels.some(label => label.toLowerCase().includes(forbidden.toLowerCase())),
+      `${forbidden} appeared in the web UI: ${labels.join('|')}`);
+  const play = opening.find(node => node.label === 'Play' && (node.role === 'button' || node.kind === 'button'));
   assert(play, 'Missing Play on the title screen');
   await click(play.x + play.width / 2, play.y + play.height / 2);
   await wait(`Module.FS.analyzePath('/kryon-apps/shovey/local.campaign').exists`);
@@ -112,6 +119,12 @@ try {
     if (await campaign() !== before) { moved = true; break; }
   }
   assert(moved, 'Pressing beside the board did not step the player');
+  const saved = await campaign();
+  await call('Page.reload');
+  await wait(`typeof Module !== 'undefined' && Module.FS?.analyzePath('/tmp/test-driver').exists &&
+    Module.FS.analyzePath('/kryon-apps/shovey/local.campaign').exists &&
+    document.querySelector('#loading-screen').classList.contains('is-hidden')`);
+  assert.equal(await campaign(), saved, 'The local campaign save did not survive a reload');
   console.log(`PASS: Shovey web ${width}x${height}: pressing beside the board steps the player`);
 } finally {
   socket?.close();
