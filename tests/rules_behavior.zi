@@ -1,0 +1,77 @@
+#import, file "../src/rules.zi";
+#import, file "../src/levels.zi";
+
+RulesTrace :: struct {
+    bytes: [240001]u8
+    count: s32
+}
+
+RulesTraceCell :: (trace: *RulesTrace, cell: s32) {
+    alphabet := "0123456789abcdef"
+    trace.bytes[trace.count] = alphabet[cell >> 4]
+    trace.bytes[trace.count + 1] = alphabet[cell & 15]
+    trace.count += 2
+}
+
+RulesFrame :: (trace: *RulesTrace, previous: *ShoveyGame, next: *ShoveyGame) {
+    entrance := ShoveyNeighbor(previous.player, next.direction)
+    if next.teleports > previous.teleports && entrance >= 0 &&
+    (previous.ground[entrance] == 8 || ShoveyColorPortal(previous.ground[entrance])) {
+        RulesTraceCell(trace, entrance)
+        RulesTraceCell(trace, next.player)
+    } else if previous.player != next.player {
+        RulesTraceCell(trace, next.player)
+    }
+    previous.* = next.*
+}
+
+RulesChecks :: () -> s32 {
+    frames: [SHOVEY_CELLS + 1]ShoveyGame
+    trace: RulesTrace
+    game: ShoveyGame
+    if !ShoveyLoadData(*game, 1, ShoveyLevelData(1)) { return 10 }
+    board := ShoveyLevelData(1)
+    start := game.player
+    RulesTraceCell(*trace, game.player)
+    actions := ShoveyLevelSolution(1)
+    for input: actions {
+        before := game
+        if input == #char "t" { unused ShoveyTick(*game); continue }
+        if input == #char "f" {
+            unused ShoveyFire(*game)
+            frames[0] = game
+            RulesFrame(*trace, *before, *frames[0])
+        } else {
+            direction := cast(s32)input - 48
+            count := ShoveyMoveFrames(*game, direction, frames[:])
+            if count == 0 {
+                unused ShoveyMove(*game, direction)
+                frames[0] = game
+                count = 1
+            } else { game = frames[count - 1] }
+            previous := before
+            for next: frames[:count] { RulesFrame(*trace, *previous, *next) }
+        }
+    }
+    if !game.won || game.lost { return 12 }
+    trace_count := trace.count
+    proof := TextView(trace.bytes[:trace_count])
+    if !ShoveyRulesVerify(1, board, actions, proof, game.moves) { return 13 }
+    if ShoveyRulesVerify(1, board, actions, proof, game.moves + 1) { return 14 }
+    if ShoveyRulesVerify(1, board, actions, proof[:trace_count - 2], game.moves) { return 15 }
+    if trace_count >= 6 {
+        changed := trace
+        if changed.bytes[2] == #char "0" { changed.bytes[2] = #char "1" } else { changed.bytes[2] = #char "0" }
+        if ShoveyRulesVerify(1, board, actions, TextView(changed.bytes[:trace_count]), game.moves) { return 16 }
+    }
+    changed_board: [1441]u8
+    for at: cast(s32)0..board.count - 1 { changed_board[at] = board[at] }
+    if changed_board[start * 2] == #char "0" { changed_board[start * 2] = #char "1" } else { changed_board[start * 2] = #char "0" }
+    if ShoveyRulesVerify(1, TextView(changed_board[:board.count]), actions, proof, game.moves) { return 17 }
+    return 0
+}
+
+#program_export
+Check :: () -> s32 {
+    return RulesChecks()
+}

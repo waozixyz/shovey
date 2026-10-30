@@ -9,7 +9,7 @@ entity=${2:?usage: engine_test.sh TOOLCHAIN ENTITY}
 lib="$root/build/ziran/libziran.a"
 unset DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS
 [ -f "$lib" ] || make -s -C "$toolchain" BUILD_DIR="$root/build/ziran" "$lib"
-for edition in classic editor editor_progress import secret; do
+for edition in classic rules editor editor_progress import secret; do
     work="$root/build/engine-test/$edition"
     rm -rf "$work"
     mkdir -p "$work/c"
@@ -49,6 +49,7 @@ PYTEST
     fi
 done
 echo 'Engine: opening the newest level, progress, saves and every board load passed'
+echo 'Rules: the canonical headless replay accepted the real first-level route and rejected altered proof'
 echo 'Editor: painting, undo, records, drafts, play proofs, export, shared collections and the Ziran solver passed'
 echo 'Import: level files rewritten byte for byte, proven levels merged, unproven ones refused'
 echo 'Hidden 29a: real beach entry, chest route, exact parent return and campaign isolation passed natively'

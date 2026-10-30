@@ -22,6 +22,7 @@ ref = "master"
 
 [exports]
 shovey_theme = "src/shovey_theme.zi"
+rules = "src/rules.zi"
 
 [dependencies.entity]
 git = "https://github.com/waozixyz/entity.git"
