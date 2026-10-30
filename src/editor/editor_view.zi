@@ -35,6 +35,7 @@
 #import "std/c_string"
 #import "std/text_buffer"
 #import "std/json_scan"
+Utf8 :: #import "std/utf8";
 #import "std/vec"
 #import "apps/node_types"
 Collections :: #import "entity/level_collections";
@@ -99,11 +100,7 @@ SHARE_CHECK :: 6
 
 EditorField :: struct {
     bytes: [128]u8
-    length: s32
-    cursor: s32
-    anchor: s32
-    scroll_x: s32
-    focused: bool
+    state: TextFieldState
 }
 
 editor_frame: AppUiFrame;
@@ -553,7 +550,7 @@ EditorNameField :: () {
     summary := EditorSummary()
     if summary != null {
         for at: cast(s32)0..summary.name_length - 1 { editor_name.bytes[at] = summary.name[at] }
-        editor_name.length = summary.name_length
+        editor_name.state.length = summary.name_length
     }
 }
 
@@ -771,40 +768,44 @@ EditorFieldInput :: () -> TextFieldInput { return AppFieldInputHost() }
 // Draws a field and applies its edit. Returns true when Enter committed it.
 EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: string, placeholder: string,
     max_bytes: s32) -> bool {
-    edited: TextFieldResult
-    // The field shows a copy, so its result never views the bytes this edit
-    // rewrites.
+    capacity := cast(s32)field.bytes.count
+    if max_bytes > 0 && max_bytes < capacity { capacity = max_bytes }
+    // Edit a valid display copy, including malformed legacy names. Raw stored
+    // bytes stay untouched until the player makes an accepted changed edit.
     shown: [128]u8
-    for at: cast(s32)0..field.length - 1 { shown[at] = field.bytes[at] }
+    state := field.state
+    state.bytes = shown[:capacity]
+    if field.state.length >= 0 && field.state.length <= field.bytes.count {
+        copied := Utf8.Copy(field.bytes[:field.state.length], state.bytes)
+        state.length = cast(s32)copied.count
+    }
+    accepted: bool
+    committed: bool
+    changed: bool
     {
-        value := EditField(shown[:], field.length)
-        edited = TextField(editor_frame.session, TextFieldProps.{.key = key, .bounds = bounds, .value = value,
-                .label = label, .placeholder = placeholder, .cursor = field.cursor, .anchor = field.anchor,
-                .scroll_x = field.scroll_x, .focused = field.focused, .focus_id = cast(s32)key,
+        props := TextFieldStateProps(state, TextFieldProps.{.key = key, .bounds = bounds,
+                .label = label, .placeholder = placeholder, .focus_id = cast(s32)key,
                 .max_bytes = max_bytes, .max_codepoints = max_bytes,
-                .input = ifx field.focused then EditorFieldInput() else TextFieldInput.{}})
+                .input = ifx field.state.focused then EditorFieldInput() else TextFieldInput.{}})
+        edited := TextField(editor_frame.session, props)
+        accepted = TextFieldStateApplyResult(*state, edited)
+        committed = edited.committed
+        changed = edited.edit.changed
     }
-    if edited.edit.changed {
-        start := edited.edit.start; end := edited.edit.end
-        replacement := edited.edit.replacement
-        if start >= 0 && end >= start && end <= field.length &&
-        cast(s64)(field.length - (end - start)) + replacement.count <= cast(s64)max_bytes {
-            joined: [256]u8
-            length: s32 = 0
-            for at: cast(s32)0..start - 1 { joined[length] = field.bytes[at]; length += 1 }
-            for byte: replacement { joined[length] = byte; length += 1 }
-            for at: cast(s32)end..field.length - 1 { joined[length] = field.bytes[at]; length += 1 }
-            for at: cast(s32)0..length - 1 { field.bytes[at] = joined[at] }
-            field.length = length
+    if accepted {
+        if changed {
+            for at: cast(s32)0..state.length - 1 { field.bytes[at] = shown[at] }
+        } else {
+            // Navigation and Enter alone never normalize a persisted name.
+            state.length = field.state.length
         }
+        // The draw rebuilds this slice; never retain a view of local storage.
+        state.bytes = TextFieldState.{}.bytes
+        field.state = state
     }
-    field.cursor = edited.cursor
-    field.anchor = edited.anchor
-    field.scroll_x = edited.scroll_x
-    field.focused = edited.focused
     // A key typed into the field does nothing else.
-    if field.focused { editor_key = 0 }
-    return edited.committed
+    if field.state.focused { editor_key = 0 }
+    return accepted && committed
 }
 
 // ---------------------------------------------------------------------------
@@ -985,7 +986,7 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
         if summary != null { title = EditorLevelName(0, summary) }
         EditorCaption(301, Rectangle.{112.0, top + 6.0, width - 312.0, 40.0}, title, 17, true)
     }
-    typing := editor_name.focused
+    typing := editor_name.state.focused
     if EditorControl(302, Rectangle.{width - 196.0, top + 6.0, 88.0, 40.0}, EditorText("editor_undo"), editor_history.count == 0) ||
     (!typing && (editor_key == 90 || editor_key == 259) && editor_history.count > 0) { EditorUndo() }
     if EditorControl(303, Rectangle.{width - 104.0, top + 6.0, 96.0, 40.0}, EditorText("editor_play")) {
@@ -1061,9 +1062,9 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
     if custom {
         name_width := bounds.width - 104.0
         if EditorFieldDraw(*editor_name, cast(u64)314, Rectangle.{bounds.x, bounds.y + 48.0, name_width, 40.0},
-            EditorText("editor_name"), EditorText("editor_name_hint"), EDIT_NAME) || !editor_name.focused {
+            EditorText("editor_name"), EditorText("editor_name_hint"), EDIT_NAME) || !editor_name.state.focused {
             summary := EditorSummary()
-            name := EditField(editor_name.bytes[:], editor_name.length)
+            name := EditField(editor_name.bytes[:], editor_name.state.length)
             if summary != null && EditField(summary.name[:], summary.name_length) != name {
                 EditSetName(summary, name)
                 EditorSaveIndex()
@@ -1482,7 +1483,7 @@ EditorCollectionMark :: () {
 // its levels.
 EditorCollectionShow :: () {
     editor_share_title = EditorField.{}
-    editor_share_title.length = EditSetField(editor_share_title.bytes[:],
+    editor_share_title.state.length = EditSetField(editor_share_title.bytes[:],
         EditField(editor_collection.title[:], editor_collection.title_length))
     editor_share_visibility = editor_collection.visibility
     editor_collection_armed = false
@@ -1513,7 +1514,7 @@ EditorCollectionPut :: () -> bool {
 
 // Saves the open collection under the title typed for it.
 EditorCollectionSave :: () -> bool {
-    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.length))
+    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.state.length))
     if title.count > 0 { editor_collection.title_length = EditSetField(editor_collection.title[:], title) }
     if !editor_entity {
         return SaveAppRecordHost(DRAFTS_PUBLICATION_RECORD,
@@ -1525,7 +1526,7 @@ EditorCollectionSave :: () -> bool {
 // Saves a renamed collection before it is left.
 EditorCollectionKeep :: () {
     if !editor_collection_open || !editor_entity { return }
-    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.length))
+    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.state.length))
     if title.count == 0 || title == EditField(editor_collection.title[:], editor_collection.title_length) { return }
     unused EditorCollectionSave()
 }
@@ -1665,7 +1666,7 @@ EditorPublishOpen :: () {
 // Publishes the open collection's proven levels.
 EditorPublish :: () {
     catalog := EditorCatalog()
-    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.length))
+    title := SharingTrim(EditField(editor_share_title.bytes[:], editor_share_title.state.length))
     if title.count == 0 { editor_share_status = "editor_title_needed"; return }
     document: Vec(u8)
     SharingDocumentBegin(*document, title)
@@ -1814,7 +1815,7 @@ EditorExploreOpen :: () {
 
 EditorFind :: () {
     request: Vec(u8)
-    Collections.CollectionFindRequest(*request, SHARING_FORMAT, EditField(editor_share_query.bytes[:], editor_share_query.length))
+    Collections.CollectionFindRequest(*request, SHARING_FORMAT, EditField(editor_share_query.bytes[:], editor_share_query.state.length))
     editor_result_count = 0
     EditorShareStart(SHARE_FIND, request)
 }
@@ -1876,7 +1877,7 @@ EditorBack :: () -> bool {
         if editor_stroke_changed { EditorBoardChanged(); editor_stroke_changed = false; editor_stroke = false }
         summary := EditorSummary()
         if summary != null {
-            name := EditField(editor_name.bytes[:], editor_name.length)
+            name := EditField(editor_name.bytes[:], editor_name.state.length)
             if EditField(summary.name[:], summary.name_length) != name {
                 EditSetName(summary, name)
             }
@@ -1909,7 +1910,7 @@ EditorFrame :: (language: string) {
     EditorNames()
     editor_key = AppKeyHost()
     #if #defined(SHOVEY_WEB) {
-        if editor_key == 256 && editor_page == EDITOR_EDIT && !editor_name.focused {
+        if editor_key == 256 && editor_page == EDITOR_EDIT && !editor_name.state.focused {
             if !EditorBack() { unused AppServiceHost("arcade.navigation", "back") }
             return
         }
@@ -1920,8 +1921,8 @@ EditorFrame :: (language: string) {
     top := cast(float32)editor_frame.top
     bottom := cast(float32)(editor_frame.height - editor_frame.bottom)
     ShoveyDress(editor_frame.session, width, top, bottom)
-    if editor_key == 256 && editor_page != EDITOR_EDIT && !editor_name.focused &&
-    !editor_share_title.focused && !editor_share_query.focused { unused EditorBack() }
+    if editor_key == 256 && editor_page != EDITOR_EDIT && !editor_name.state.focused &&
+    !editor_share_title.state.focused && !editor_share_query.state.focused { unused EditorBack() }
     if editor_page == EDITOR_HOME { EditorHome(width, top, bottom) }
     else if editor_page == EDITOR_LEVELS { EditorLevels(width, top, bottom) }
     else if editor_page == EDITOR_EDIT { EditorEdit(width, top, bottom) }

@@ -1,0 +1,26 @@
+// Baseline: the existing widget can replace malformed legacy editor bytes.
+#import "kryon/session"
+#import "kryon/tree_draw"
+using FrameStatus;
+#import "kryon/tree"
+#import "kryon/geometry"
+#import "kryon/text_field_widget"
+#import "kryon/text_input_props"
+#import "std/text_buffer"
+Host :: #import "editor_field_host";
+
+#program_export
+Check :: () -> s32 {
+    raw: [3]u8 = .[cast(u8)111, cast(u8)255, cast(u8)100]
+    session := SessionOpen()
+    BeginFrame(session, cast(u64)1, Rectangle.{0.0, 0.0, 300.0, 100.0})
+    result := TextField(session, TextFieldProps.{.key = cast(u64)991,
+        .bounds = Rectangle.{20.0, 20.0, 220.0, 40.0}, .value = TextView(raw[:]),
+        .cursor = 3, .anchor = 3, .focused = true, .max_bytes = 64, .max_codepoints = 64,
+        .input = TextFieldInput.{.select_all = true, .text = "new", .focus = true}})
+    if !result.edit.changed || result.edit.start != 0 || result.edit.end != 3 ||
+        result.edit.replacement != "new" || result.committed || raw[1] != cast(u8)255 { return 1 }
+    if EndFrame(session) != cast(FrameStatus)FrameOk { return 2 }
+    unused SessionClose(session)
+    return 42
+}

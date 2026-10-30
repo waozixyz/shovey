@@ -1,0 +1,82 @@
+// Synthetic input, records and raster effects for the real editor field.
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/text_input_props"
+#import "std/text_buffer"
+#import "std/json_scan"
+#import "std/c_string"
+
+input: TextFieldInput;
+put_count: s32;
+put_bytes: [16000]u8;
+put_length: s32;
+painted_original: bool;
+clipboard: string;
+clipboard_bytes: [128]u8;
+clipboard_length: s32;
+
+#program_export
+AppFieldInputHost :: () -> TextFieldInput { return input }
+#program_export
+AppLocaleHost :: (key: string) -> string { return key }
+#program_export
+AppRecordHost :: (name: string) -> string { return "" }
+#program_export
+SaveAppRecordHost :: (name: string, text: string) -> bool { return true }
+#program_export
+SmoothFramesHost :: (frames: s32) -> bool { return true }
+#program_export
+AppServiceHost :: (name: string, request: string) -> string {
+    operation: [16]u8
+    unused ReadStringText(request, FieldAt(request, 0, "operation"), operation[:])
+    if TextUntilNul(operation[:]) == "put" {
+        put_count += 1
+        put_length = cast(s32)request.count
+        for byte, at: request { put_bytes[at] = byte }
+        return "{\"status\":\"done\",\"id\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+    }
+    return "{\"status\":\"done\",\"account\":\"alice\"}"
+}
+#program_export
+MeasureGlyphWidth :: (value: string, font: s32, typeface: string) -> s32 { return cast(s32)value.count * font / 2 }
+#program_export
+MeasureGlyphLineHeight :: (font: s32, typeface: string) -> s32 { return font }
+#program_export
+RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) {
+    if value == "AéB" { painted_original = true }
+}
+#program_export
+RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) {
+    RasterText(value, x, y, font, color)
+}
+#program_export
+RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) {}
+#program_export
+RasterRoundedRectangleOutline :: (bounds: Rectangle, radius: float32, segments: s32, width: float32, color: Color) {}
+#program_export
+RasterLine :: (line: Rectangle, color: Color) {}
+#program_export
+RasterImage :: (asset_path: string, texture_id: u32, source: Rectangle, destination: Rectangle,
+    clip: Rectangle, origin: Vector2, rotation: float32, radius: float32, tint: Color) {}
+#program_export
+RasterImageMesh :: (asset_path: string, texture_id: u32, source: Rectangle, points: []Vector2,
+    columns: s32, rows: s32, clip: Rectangle, tint: Color) {}
+#program_export
+ImageWidth :: (asset_path: string) -> s32 { return 32 }
+#program_export
+ImageHeight :: (asset_path: string) -> s32 { return 32 }
+#program_export
+SystemClipboardOpenHost :: () -> s32 { return cast(s32)clipboard.count }
+#program_export
+SystemClipboardByteHost :: (index: s32) -> s32 { return cast(s32)clipboard[index] }
+#program_export
+SystemClipboardWriteHost :: (text: string) -> bool {
+    clipboard_length = cast(s32)text.count
+    for byte, at: text { clipboard_bytes[at] = byte }
+    return true
+}
+#program_export
+SetPlatformTextKeyboardVisible :: (session: Session, visible: bool) {}
+#program_export
+RasterTriangles :: (points: []Vector2, color: Color) {}

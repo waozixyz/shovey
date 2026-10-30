@@ -1,0 +1,182 @@
+// Exercise Shovey's actual field and collection page with the existing widget.
+#import "kryon/session"
+#import "kryon/tree_draw"
+using FrameStatus;
+#import "kryon/geometry"
+#import "kryon/tree"
+#import "kryon/paint_queue"
+#import "kryon/text_input_props"
+#import "kryon/text_input"
+using CompositionPhase;
+#import "std/text_buffer"
+#import "std/vec"
+#import "std/json_scan"
+#import "apps/node_types"
+#import, file "../src/editor/edit.zi";
+#import, file "../src/editor/drafts.zi";
+#import, file "../src/editor/sharing.zi";
+#import, file "../src/editor/editor_view.zi";
+Host :: #import "editor_field_host";
+malformed: [1]u8 = .[255];
+
+Begin :: () { BeginFrame(editor_frame.session, cast(u64)1, Rectangle.{0.0, 0.0, 800.0, 800.0}) }
+Finish :: () -> bool { return EndFrame(editor_frame.session) == cast(FrameStatus)FrameOk }
+Draw :: (field: *EditorField, limit: s32 = EDIT_NAME, width: float32 = 220.0) -> bool {
+    return EditorFieldDraw(field, cast(u64)991, Rectangle.{20.0, 20.0, width, 40.0}, "Name", "Name", limit)
+}
+Reset :: (field: *EditorField, value: string) {
+    field.* = EditorField.{}
+    field.state.length = EditSetField(field.bytes[:], value)
+    field.state.cursor = field.state.length
+    field.state.anchor = field.state.cursor
+    field.state.focused = true
+    editor_frame.session = SessionOpen()
+}
+Close :: () { unused SessionClose(editor_frame.session) }
+
+FieldChecks :: () -> s32 {
+    field: EditorField
+    Reset(*field, "AéB")
+    field.state.cursor = 3; field.state.anchor = 1
+    Host.input = TextFieldInput.{.text = "🍎", .focus = true}
+    editor_key = 65
+    Begin()
+    if Draw(*field) { return 1 }
+    if EditField(field.bytes[:], field.state.length) != "A🍎B" || field.state.cursor != 5 ||
+        field.state.anchor != 5 || !field.state.focused || editor_key != 0 { return 2 }
+    // Applying the edit before EndFrame must retain the original queued text.
+    original := false
+    for at: cast(s32)0..PendingPaintCount(editor_frame.session) - 1 {
+        if PendingPaintAt(editor_frame.session, at).value == "AéB" { original = true }
+    }
+    if !original || !Finish() || !Host.painted_original { return 3 }
+    Host.input = TextFieldInput.{.left = true, .shift = true}
+    Begin()
+    if Draw(*field) || field.state.cursor != 1 || field.state.anchor != 5 || !Finish() { return 4 }
+    Host.input = TextFieldInput.{.commit = true}
+    Begin()
+    if !Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "A🍎B" { return 5 }
+    Host.input = TextFieldInput.{.escape = true}
+    Begin()
+    if Draw(*field) || field.state.focused || !Finish() { return 6 }
+    Close()
+
+    // Byte capacity counts Unicode bytes, not characters. Failed insertion
+    // leaves the current value and scalar-boundary caret intact.
+    Reset(*field, "AéB")
+    Host.input = TextFieldInput.{.text = "🍎", .focus = true}
+    Begin()
+    if Draw(*field, 6) || !Finish() || EditField(field.bytes[:], field.state.length) != "AéB" ||
+        field.state.cursor != 4 || field.state.anchor != 4 { return 7 }
+    Host.input = TextFieldInput.{.select_all = true, .text = "ééé"}
+    Begin()
+    if Draw(*field, 6) || !Finish() || field.state.length != 6 { return 8 }
+    Host.input = TextFieldInput.{.text = "x"}
+    Begin()
+    if Draw(*field, 6) || !Finish() || EditField(field.bytes[:], field.state.length) != "ééé" { return 9 }
+    Host.input = TextFieldInput.{.blur = true}
+    Begin()
+    if Draw(*field, 6) || !Finish() || field.state.focused { return 10 }
+    Close()
+
+    Reset(*field, "abcdefghijklmnop")
+    Host.input = TextFieldInput.{.focus = true}
+    Begin()
+    if Draw(*field, EDIT_NAME, 60.0) || !Finish() || field.state.scroll_x <= 0 { return 11 }
+    Host.input = TextFieldInput.{.home = true}
+    Begin()
+    if Draw(*field, EDIT_NAME, 60.0) || !Finish() || field.state.cursor != 0 || field.state.scroll_x != 0 { return 12 }
+    Close()
+
+    // Invalid typed UTF-8 is rejected atomically even if a host sends it.
+    Reset(*field, "AéB")
+    Host.input = TextFieldInput.{.text = TextView(malformed[:]), .focus = true}
+    Begin()
+    if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "AéB" ||
+        field.state.cursor != 4 || field.state.anchor != 4 || !field.state.focused { return 14 }
+    Close()
+
+    Reset(*field, "Café")
+    Host.input = TextFieldInput.{.select_all = true, .cut = true, .focus = true}
+    Begin()
+    if Draw(*field) || !Finish() || field.state.length != 0 ||
+        TextView(Host.clipboard_bytes[:Host.clipboard_length]) != "Café" { return 18 }
+    Host.input = TextFieldInput.{.paste = true, .paste_text = "🍎"}
+    Begin()
+    if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "🍎" { return 19 }
+    Host.input = TextFieldInput.{.commit = true}
+    Host.input.composition_event.phase = cast(CompositionPhase)CompositionCommit
+    Host.input.composition_event.text = "é"
+    Begin()
+    if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "🍎é" { return 20 }
+    Host.input = TextFieldInput.{.commit = true}
+    Begin()
+    if !Draw(*field) || !Finish() { return 26 }
+    Close()
+
+    // Legacy invalid bytes stay intact and visible; no implicit name repair.
+    Reset(*field, "old")
+    field.bytes[1] = cast(u8)255
+    Host.input = TextFieldInput.{.focus = true}
+    Begin()
+    if Draw(*field) || !Finish() || field.bytes[1] != cast(u8)255 || field.state.length != 3 { return 13 }
+    Host.input = TextFieldInput.{.commit = true}
+    Begin()
+    if !Draw(*field) || !Finish() || field.bytes[1] != cast(u8)255 || field.state.length != 3 { return 17 }
+    Host.input = TextFieldInput.{.select_all = true, .text = "new"}
+    Begin()
+    if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "new" { return 15 }
+    Host.input = TextFieldInput.{.commit = true}
+    Begin()
+    if !Draw(*field) || !Finish() { return 16 }
+    Close()
+    return 0
+}
+
+CollectionChecks :: () -> s32 {
+    editor_entity = true
+    editor_collection_open = true
+    editor_collection = DraftsCollection.{}
+    editor_collection.title_length = EditSetField(editor_collection.title[:], "Original")
+    EditorCollectionShow()
+    editor_share_title.state.focused = true
+    editor_share_title.state.cursor = editor_share_title.state.length
+    editor_share_title.state.anchor = 0
+    editor_frame.session = SessionOpen()
+    Host.input = TextFieldInput.{.text = "  Café 🍎  ", .focus = true}
+    Begin()
+    EditorPublishPage(800.0, 0.0, 800.0)
+    if !Finish() || Host.put_count != 0 ||
+        EditField(editor_collection.title[:], editor_collection.title_length) != "Original" { return 21 }
+    Host.input = TextFieldInput.{.commit = true}
+    Begin()
+    EditorPublishPage(800.0, 0.0, 800.0)
+    if !Finish() || Host.put_count != 1 || editor_save_failed ||
+        EditField(editor_collection.title[:], editor_collection.title_length) != "Café 🍎" { return 22 }
+    // Read the actual emitted private draft back through Shovey's parser.
+    request := TextView(Host.put_bytes[:Host.put_length])
+    document := FieldAt(request, 0, "document")
+    if document < 0 { return 23 }
+    reply: Vec(u8)
+    BuilderPrint(*reply, "{\"status\":\"done\",\"document\":")
+    BuilderPrint(*reply, "%", TextView(Host.put_bytes[document:ValueEnd(request, document, 0)]))
+    BuilderPrint(*reply, "}")
+    restored: DraftsCollection
+    if !DraftsCollectionRead(TextView(VecSlice(reply, 0, reply.count)), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", *restored) ||
+        EditField(restored.title[:], restored.title_length) != "Café 🍎" { return 24 }
+    // Enter again with no change does not write a second draft.
+    Begin()
+    EditorPublishPage(800.0, 0.0, 800.0)
+    if !Finish() || Host.put_count != 1 { return 25 }
+    Close()
+    return 0
+}
+
+#program_export
+Check :: () -> s32 {
+    result := FieldChecks()
+    if result != 0 { return result }
+    result = CollectionChecks()
+    if result != 0 { return result }
+    return 42
+}
