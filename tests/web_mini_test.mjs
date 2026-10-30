@@ -109,7 +109,7 @@ try {
   const drawn = await nodes();
   const labels = drawn.map(node => node.label);
   const buttons = drawn.filter(node => node.role === 'button' || node.kind === 'button').map(node => node.label);
-  assert(labels.some(label => /^Level \d+ \/ \d+$/.test(label)), 'Mini did not open a level: ' + labels.join('|'));
+  assert(labels.some(label => /^1 \/ 175$/.test(label.trim())), 'Mini did not open a level: ' + labels.join('|'));
   assert(buttons.includes('Levels') && buttons.includes('Restart'), 'Mini lost its level controls: ' + buttons.join('|'));
   for (const hidden of ['Profile', 'Back', 'Help', 'Play', 'Mute', 'Unmute'])
     assert(!buttons.includes(hidden), 'Mini shows ' + hidden + ': ' + buttons.join('|'));
