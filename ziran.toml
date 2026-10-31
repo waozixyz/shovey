@@ -27,9 +27,3 @@ rules = "src/rules.zi"
 [dependencies.entity]
 git = "https://github.com/waozixyz/entity.git"
 ref = "master"
-
-# The Windows player's network library, built with MinGW over Windows TLS.
-[dependencies.curl]
-git = "https://github.com/curl/curl.git"
-ref = "19b299005fbe2d895f4ad525cfdae62a2220c3ea"
-source = true

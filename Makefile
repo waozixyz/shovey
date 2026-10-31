@@ -1,13 +1,13 @@
 .DEFAULT_GOAL := all
-ZIRAN ?= ziran
+ZIRAN ?= ./scripts/ziran.sh
 LOCK_FLAGS := $(if $(wildcard ziran.local.toml),,--locked)
 TOOLCHAIN = $(shell $(ZIRAN) pkg path ziran $(LOCK_FLAGS))
 KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 MINGCUTE = $(shell $(ZIRAN) pkg path mingcute $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 ENTITY = $(shell $(ZIRAN) pkg path entity $(LOCK_FLAGS))
-DAOCHI_CLIENT = $(shell cd '$(ENTITY)' && $(ZIRAN) pkg path daochi_client $(LOCK_FLAGS))
-CRYPTO = $(shell cd '$(DAOCHI_CLIENT)' && $(ZIRAN) pkg path crypto $(LOCK_FLAGS))
+DAOCHI_CLIENT = $(shell $(ZIRAN) pkg path DaochiClient $(LOCK_FLAGS))
+CRYPTO = $(shell $(ZIRAN) pkg path crypto $(LOCK_FLAGS))
 COMPLETION_MODULES = --module-path 'daochi_client=$(DAOCHI_CLIENT)' --module-path 'crypto=$(CRYPTO)/src'
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
@@ -198,9 +198,9 @@ web-zx: bundles
 		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
 		--asset-dir assets=build/web-assets/assets --entry game:Main \
 		-o build/web/shovey.zx src/web/game.zi
-	$(MAKE) -C '$(ENTITY)' build/entity.zx ZIRAN='$(TOOLCHAIN)/build/bin/ziran'
+	python3 scripts/build_artifacts.py --ziran '$(ZIRAN)' profile --output build/web/entity.zx
 	ZIRAN='$(TOOLCHAIN)/build/bin/ziran' python3 '$(ENTITY)/scripts/build-web.py' \
-		--bundle build/web/shovey.zx --profile '$(ENTITY)/build/entity.zx' --output build/web/runtime.html
+		--bundle build/web/shovey.zx --profile build/web/entity.zx --output build/web/runtime.html
 	cp src/web/index.html build/web/index.html
 	cp src/web/privacy.html build/web/privacy.html
 	python3 scripts/stamp-web.py
@@ -240,12 +240,9 @@ web: bundles
 		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
 		-o $(WEB_NATIVE_OUT)/ir '$(KRYON)/src/backend/canvas_app_run.zi' '$(KRYON)/src/backend/canvas_raster.zi' src/web/game.zi
 	'$(ZIRAN_BIN)/zi2c' --define PLATFORM_WEB --root $(WEB_NATIVE_OUT)/ir -o $(WEB_NATIVE_OUT)/c $$(find $(WEB_NATIVE_OUT)/ir -name '*.zir')
-	'$(EMCC)' -O2 -I'$(TOOLCHAIN)/include' $$(find $(WEB_NATIVE_OUT)/c -type d -printf ' -iquote %p') \
-		$$(find $(WEB_NATIVE_OUT)/c -name '*.c') --js-library '$(TOOLCHAIN)/web/ziran_web.js' \
-		-sEXPORTED_RUNTIME_METHODS=FS -sFORCE_FILESYSTEM=1 -lidbfs.js -sALLOW_MEMORY_GROWTH=1 \
-		-sASYNCIFY -sENVIRONMENT=web -sSTACK_SIZE=8388608 -sASYNCIFY_STACK_SIZE=1048576 \
-		--preload-file '$(KRYON)/assets/fonts/LiberationSans-Regular.ttf@/kryon-font.ttf' \
-		--preload-file build/web-assets/assets@/assets -o $(WEB_OUT)/index.js
+	python3 scripts/build_artifacts.py --ziran '$(ZIRAN)' web-link --cc '$(EMCC)' \
+		--include '$(TOOLCHAIN)/include' --generated $(WEB_NATIVE_OUT)/c \
+		--assets build/web-assets/assets --output $(WEB_OUT)/index.js
 	cp src/web/index.html $(WEB_OUT)/index.html
 	cp src/web/privacy.html $(WEB_OUT)/privacy.html
 	SHOVEY_WEB_OUT='$(WEB_OUT)' python3 scripts/stamp-web.py --deployed
@@ -306,6 +303,13 @@ chest-fixture: build/ziran/libziran.a
 		$$(find build/chest-test/c -type d -printf ' -iquote %p') \
 		$$(find build/chest-test/c -name '*.c') build/ziran/libziran.a -lm -lpthread -o build/chest-test/fixture
 	build/chest-test/fixture build/chest-test/fixture.txt
+
+.PHONY: artifact-test artifact-provider-test
+artifact-test:
+	python3 tests/build_artifacts_test.py
+
+artifact-provider-test:
+	python3 tests/build_artifacts_test.py --providers --ziran '$(ZIRAN)'
 
 .PHONY: game-maps-test
 game-maps-test:

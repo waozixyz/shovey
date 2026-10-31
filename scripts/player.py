@@ -31,6 +31,8 @@ import tarfile
 import time
 import zipfile
 
+import build_artifacts
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/player'
 COVERS = ROOT / 'assets/player'
@@ -45,17 +47,10 @@ MAX_PAYLOAD_BYTES = 64 * 1024 * 1024
 LINUX_DATA = ['shovey.zx', 'shovey.json', 'entity.zx', 'startup/shovey/title-portrait.png',
               'startup/shovey/title-landscape.png', 'startup/shovey/logo.png']
 WINDOWS_DATA = ['shovey.zx', 'shovey.json', 'entity.zx', 'kryon-font.ttf']
-WINDOWS_LIBRARIES = ['-lgdi32', '-lwinmm', '-lopengl32', '-luser32', '-lshell32', '-lole32', '-lcomdlg32',
-                     '-lcomctl32', '-luuid', '-lws2_32', '-liphlpapi', '-lcrypt32', '-lsecur32', '-lbcrypt',
-                     '-ladvapi32', '-lz', '-lm', '-lpthread']
 
 
 def environment():
-    env = {key: value for key, value in os.environ.items()
-           if key not in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
-    for key in ('MAKEFLAGS', 'MFLAGS', 'MAKEOVERRIDES'):
-        env.pop(key, None)
-    return env
+    return build_artifacts.environment()
 
 
 def run(command, **options):
@@ -69,43 +64,14 @@ def lock():
 
 def package(name):
     """A locked package's checkout, a transitive one included."""
-    if (ROOT / 'ziran.local.toml').exists() or shutil.which('ziran'):
-        tool = 'ziran'
-    else:
-        # A clean checkout without Ziran (F-Droid) gets the locked toolchain.
-        tool = str(ROOT / 'scripts/ziran.sh')
+    tool = str(ROOT / 'scripts/ziran.sh')
     return Path(subprocess.check_output([tool, 'pkg', 'path', name, *lock()], cwd=ROOT, text=True,
                                         env=environment()).strip())
 
 
-def dependency(name, project):
-    """A package's own locked dependency, by the name that package gives it."""
-    return Path(subprocess.check_output([ziran(), 'pkg', 'path', name, '--locked'], cwd=project, text=True,
-                                        env=environment()).strip())
-
-
 def toolchain():
-    """The built checkout of the toolchain this package locks: its own, the
-    one CI's setup put on PATH, or one built here into build/toolchain."""
-    source = package('ziran')
-    if (source / 'build/bin/ziran').is_file() and (source / 'build/bin/zi2c').is_file():
-        return source
-    found = shutil.which('ziran')
-    if found:
-        root = Path(found).resolve().parents[2]
-        head = subprocess.run(['git', '-C', str(root), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
-        if head and head == subprocess.run(['git', '-C', str(source), 'rev-parse', 'HEAD'], capture_output=True,
-                                           text=True).stdout.strip() and (root / 'build/bin/zi2c').is_file():
-            return root
-    private = ROOT / 'build/toolchain'
-    stamp = private / 'source'
-    if not (private / 'build/bin/ziran').is_file() or not stamp.is_file() or stamp.read_text() != str(source):
-        if private.exists():
-            shutil.rmtree(private)
-        shutil.copytree(source, private, ignore=shutil.ignore_patterns('build'))
-        run(['make', '-s', '-j2', '-C', private, 'all'])
-        stamp.write_text(str(source))
-    return private
+    """The selected package toolchain; Ziran owns its bootstrap and tools."""
+    return package('ziran')
 
 
 def ziran():
@@ -237,8 +203,7 @@ def leave_out(rules_path, resources, release_build):
 def build_games(apps):
     """Each enabled game's portable bundle, built as Arcade builds it."""
     kryon, tools, entity = package('kryon'), toolchain(), package('entity')
-    daochi_client = dependency('daochi_client', entity)
-    crypto = dependency('crypto', daochi_client)
+    daochi_client, crypto = package('DaochiClient'), package('crypto')
     staged_root, games = OUT / 'game-assets', OUT / 'games'
     games.mkdir(parents=True, exist_ok=True)
     by_id = {app['descriptor']['id']: app for app in apps}
@@ -415,16 +380,11 @@ def build_controller():
 
 
 def build_entity():
-    """The account Profile, which the player hosts beside the collection."""
-    entity, kryon, tools, qrcode = (package(name) for name in ('entity', 'kryon', 'ziran', 'qrcode'))
-    output = OUT / 'entity.zx'
-    run([ziran(), 'bundle', '--root', entity, '--module-path', entity / 'src',
-         '--module-path', kryon / 'src/ui', '--module-path', 'kryon=' + str(kryon / 'src/ui'),
-         '--module-path', 'kryon=' + str(kryon / 'src/backend'), '--module-path', 'qrcode=' + str(qrcode / 'src'),
-         '--module-path', tools / 'std', '--define', 'KRYON_HOSTED_UI',
-         '--asset-dir', 'assets=' + str(entity / 'assets'), '--entry', 'entity:Main',
-         '-o', output, entity / 'src/entity.zi'], cwd=entity)
-    return output
+    """The dependency owns its Profile bundle and embedded assets."""
+    profile = build_artifacts.request('entity:native-profile', 'linux-x86_64-gnu', ziran=ziran())
+    OUT.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(profile.output('entity.zx'), OUT / 'entity.zx')
+    shutil.copyfile(profile.output('font.ttf'), OUT / 'font.ttf')
 
 
 def collection():
@@ -505,23 +465,6 @@ def checked_collection():
 
 # Native hosts.
 
-def liboqs(folder, *configure):
-    """Entity's post-quantum signatures, built once for each liboqs source."""
-    source = package('liboqs')
-    output = folder / 'lib/liboqs.a'
-    stamp = folder / 'source'
-    if output.exists() and stamp.exists() and stamp.read_text() == str(source):
-        return output
-    if folder.exists():
-        shutil.rmtree(folder)
-    run([*configure, 'cmake', '-S', source, '-B', folder, '-DCMAKE_BUILD_TYPE=MinSizeRel', '-DBUILD_SHARED_LIBS=OFF',
-         '-DOQS_BUILD_ONLY_LIB=ON', '-DOQS_USE_OPENSSL=OFF', '-DOQS_DIST_BUILD=OFF', '-DOQS_OPT_TARGET=generic',
-         '-DOQS_MINIMAL_BUILD=SIG_ml_dsa_44'])
-    run(['cmake', '--build', folder, '--target', 'oqs', '-j2'])
-    stamp.write_text(str(source))
-    return output
-
-
 def startup_art(output):
     """Small full-colour pictures the desktop player draws before the collection opens."""
     from PIL import Image
@@ -534,34 +477,32 @@ def startup_art(output):
             image.save(startup / name, optimize=True)
 
 
-def linux():
-    receipt = checked_collection()
+def linux_host():
+    """Compile the public host; collection validation and packaging stay below."""
     folder = OUT / 'linux'
     generated = folder / 'c'
     if generated.exists():
         shutil.rmtree(generated)
     run([ziran(), 'build', '--project', *lock(), '--target=c', '--define', 'PLATFORM_DESKTOP',
          '--entry', 'player_desktop:main', '-o', generated, 'src/player_desktop.zi'], cwd=ROOT)
-    runtime = OUT / 'ziran-linux/libziran.a'
-    stamp = runtime.parent / 'source'
-    if not runtime.is_file() or not stamp.is_file() or stamp.read_text() != str(toolchain()):
-        run(['make', '-B', '-j2', '-C', toolchain(), 'BUILD_DIR=' + str(runtime.parent), runtime])
-        stamp.write_text(str(toolchain()))
-    oqs = liboqs(OUT / 'oqs-linux')
-    monocypher = package('monocypher')
-    libraries = subprocess.check_output(['pkg-config', '--libs', 'sdl2', 'cairo', 'freetype2', 'fontconfig',
-                                         'pangocairo', 'gtk+-3.0'], text=True).split()
+    profile = build_artifacts.request('entity:native-profile', 'linux-x86_64-gnu', ziran=ziran())
+    renderer = build_artifacts.request('kryon:renderer-desktop', 'linux-x86_64-gnu', ziran=ziran()).renderer()
     binary = folder / 'shovey'
     temporary = folder / 'shovey.new'
+    sources = sorted(generated.rglob('*.c'))
     run([os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections', '-fdata-sections',
-         '-I' + str(toolchain() / 'include'), '-iquote', generated,
-         *[item for path in sorted(generated.rglob('*')) if path.is_dir() for item in ('-iquote', path)],
-         *sorted(generated.rglob('*.c')), runtime,
-         '-I' + str(monocypher / 'src'), monocypher / 'src/monocypher.c',
-         # Entity's device keys sign with Monocypher's standard Ed25519.
-         monocypher / 'src/optional/monocypher-ed25519.c', oqs,
-         '-Wl,--gc-sections', *libraries, '-lX11', '-l:libcurl.so.4', '-lz', '-lm', '-lpthread', '-o', temporary])
+         '-I' + str(toolchain() / 'include'),
+         *['-iquote' + str(path) for path in sorted({generated, *(p.parent for p in sources)})],
+         *renderer['compile_flags'], *['-I' + path for path in renderer['include_directories']],
+         *sources, '-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
+         *profile.link_flags(ordinary_imports=True), '-o', temporary])
     temporary.replace(binary)
+    return binary
+
+
+def linux():
+    receipt = checked_collection()
+    folder = linux_host().parent
     for name in ('shovey.zx', 'shovey.json', 'entity.zx'):
         shutil.copyfile(OUT / name, folder / name)
     startup_art(folder)
@@ -571,10 +512,19 @@ def linux():
     pack('linux', folder, receipt['version'])
 
 
-def windows(tools):
-    receipt = checked_collection()
+def windows_host(tools):
+    """Cross-compile the public host with provider-owned foreign support."""
     folder = OUT / 'windows'
+    env = environment()
+    env.update(CC=shutil.which(tools + 'gcc') or tools + 'gcc',
+               AR=shutil.which(tools + 'ar') or tools + 'ar')
+    # Resolve support before replacing any existing Windows build output.
+    profile = build_artifacts.request('entity:native-profile', 'windows-x86_64-mingw', ziran=ziran(), env=env)
+    renderer = build_artifacts.request('kryon:renderer-raylib', 'windows-x86_64-mingw',
+                                       ziran=ziran(), env=env).renderer()
     defines = ['--define', '_WIN32', '--define', 'PLATFORM_DESKTOP', '--define', '__x86_64__']
+    for name in renderer['defines']:
+        defines.extend(['--define', name])
     ir, generated = folder / 'ir', folder / 'c'
     for path in (ir, generated):
         if path.exists():
@@ -583,92 +533,32 @@ def windows(tools):
     run([ziran(), 'ir', '--project', *lock(), *defines, '-o', ir, 'src/player_windows.zi'], cwd=ROOT)
     run([ziran(), 'build', '--target=c', *defines, '--entry', 'player_windows:main', '--root', ir,
          '-o', generated, ir / 'player_windows.zir'], cwd=ROOT)
-
-    def built(output, source):
-        stamp = output.parent / (output.name + '.source')
-        return output.exists() and stamp.exists() and stamp.read_text() == str(source)
-
-    def record(output, source):
-        (output.parent / (output.name + '.source')).write_text(str(source))
-
-    def cmake(source, build, *options):
-        if build.exists():
-            shutil.rmtree(build)
-        build.mkdir(parents=True)
-        (build / 'mingw.cmake').write_text(f'''set(CMAKE_SYSTEM_NAME Windows)
-set(CMAKE_SYSTEM_PROCESSOR x86_64)
-set(CMAKE_C_COMPILER {tools}gcc)
-set(CMAKE_RC_COMPILER {tools}windres)
-set(CMAKE_AR {tools}ar)
-set(CMAKE_RANLIB {tools}ranlib)
-set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-''')
-        run(['cmake', '-S', source, '-B', build, '-DCMAKE_TOOLCHAIN_FILE=' + str(build / 'mingw.cmake'),
-             '-DBUILD_SHARED_LIBS=OFF', *options])
-
-    compiler = toolchain()
-    runtime = folder / 'runtime/libziran.a'
-    if not built(runtime, compiler):
-        run(['make', '-B', '-j2', '-C', compiler, 'BOOTSTRAP=1', 'BUILD_DIR=' + str(runtime.parent),
-             'CC=' + tools + 'gcc', 'AR=' + tools + 'ar', 'OBJCOPY=' + tools + 'objcopy', 'CFLAGS=-O2', runtime])
-        record(runtime, compiler)
-    # Windows raylib as Breeze ships it: RGFW and OpenGL 1.1.
-    raylib_source = package('raylib') / 'src'
-    raylib = folder / 'raylib/libraylib.a'
-    if not built(raylib, raylib_source):
-        copy = folder / 'raylib/source'
-        if copy.exists():
-            shutil.rmtree(copy)
-        shutil.copytree(raylib_source, copy, ignore=shutil.ignore_patterns('*.o', '*.a'))
-        run(['make', '-j2', '-C', copy, 'OS=Windows_NT', 'RAYLIB_SRC_PATH=.', 'RAYLIB_RELEASE_PATH=..',
-             'PLATFORM=PLATFORM_DESKTOP_RGFW', 'GRAPHICS=GRAPHICS_API_OPENGL_11', 'RAYLIB_LIBTYPE=STATIC',
-             'RAYLIB_MODULE_AUDIO=TRUE', 'RAYLIB_MODULE_MODELS=TRUE', 'CC=' + tools + 'gcc', 'AR=' + tools + 'ar',
-             'RANLIB=' + tools + 'ranlib',
-             'CUSTOM_CFLAGS=-DSUPPORT_FILEFORMAT_JPG=1 -DSUPPORT_FILEFORMAT_TTF=1 -O2 -ffunction-sections -fdata-sections'])
-        record(raylib, raylib_source)
-    # Entity's account network and signatures: curl over Windows TLS, liboqs.
-    curl_source = package('curl')
-    curl = folder / 'curl/install/lib/libcurl.a'
-    if not built(curl, curl_source):
-        cmake(curl_source, folder / 'curl', '-DCMAKE_BUILD_TYPE=Release',
-              '-DCMAKE_INSTALL_PREFIX=' + str(folder / 'curl/install'), '-DBUILD_STATIC_LIBS=ON',
-              '-DBUILD_CURL_EXE=OFF', '-DCURL_STATICLIB=ON', '-DCURL_USE_SCHANNEL=ON', '-DCURL_USE_OPENSSL=OFF',
-              '-DCURL_USE_LIBPSL=OFF', '-DCURL_USE_LIBSSH2=OFF', '-DCURL_USE_GSSAPI=OFF', '-DUSE_NGHTTP2=OFF',
-              '-DUSE_LIBIDN2=OFF', '-DCURL_ZSTD=OFF', '-DCURL_BROTLI=OFF', '-DCURL_DISABLE_LDAP=ON',
-              '-DCURL_DISABLE_LDAPS=ON', '-DCURL_DISABLE_SMB=ON', '-DENABLE_CURL_MANUAL=OFF', '-DBUILD_EXAMPLES=OFF',
-              '-DBUILD_LIBCURL_DOCS=OFF', '-DBUILD_MISC_DOCS=OFF', '-DBUILD_TESTING=OFF')
-        run(['cmake', '--build', folder / 'curl', '--target', 'install', '-j2'])
-        record(curl, curl_source)
-    oqs_source = package('liboqs')
-    oqs = folder / 'oqs/lib/liboqs.a'
-    if not built(oqs, oqs_source):
-        cmake(oqs_source, folder / 'oqs', '-DCMAKE_BUILD_TYPE=MinSizeRel', '-DOQS_BUILD_ONLY_LIB=ON',
-              '-DOQS_USE_OPENSSL=OFF', '-DOQS_DIST_BUILD=OFF', '-DOQS_OPT_TARGET=generic',
-              '-DOQS_MINIMAL_BUILD=SIG_ml_dsa_44')
-        run(['cmake', '--build', folder / 'oqs', '--target', 'oqs', '-j2'])
-        record(oqs, oqs_source)
     # The program's icon in Explorer and the taskbar.
     from PIL import Image
     Image.open(ROOT / 'assets/branding/shovey-icon.png').convert('RGBA').save(
         folder / 'shovey.ico', sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
     (folder / 'shovey.rc').write_text('1 ICON "shovey.ico"\n')
-    run([tools + 'windres', '-O', 'coff', '-o', 'shovey-resource.o', 'shovey.rc'], cwd=folder)
-    monocypher = package('monocypher')
+    tool_env = {**env, 'PATH': str(Path(env['CC']).parent) + os.pathsep + env['PATH']}
+    run([tools + 'windres', '-O', 'coff', '-o', 'shovey-resource.o', 'shovey.rc'], cwd=folder, env=tool_env)
     program = folder / 'shovey.exe'
     temporary = folder / 'shovey.new.exe'
-    includes = ['-I' + str(compiler / 'include'), '-I' + str(monocypher / 'src')]
+    includes = ['-I' + str(toolchain() / 'include'),
+                *['-I' + path for path in renderer['include_directories']]]
     for path in sorted({generated, *(item for item in generated.rglob('*') if item.is_dir())}):
         includes += ['-iquote', str(path)]
     run([tools + 'gcc', '-std=c11', '-O2', '-ffunction-sections', '-fdata-sections', *includes,
-         *sorted(generated.rglob('*.c')), monocypher / 'src/monocypher.c',
-         monocypher / 'src/optional/monocypher-ed25519.c', runtime, oqs, curl, raylib, folder / 'shovey-resource.o',
-         '-Wl,--gc-sections', '-static', '-static-libgcc', '-mwindows', *WINDOWS_LIBRARIES, '-o', temporary])
-    run([tools + 'strip', temporary])
+         *renderer['compile_flags'], *sorted(generated.rglob('*.c')), folder / 'shovey-resource.o',
+         '-Wl,--gc-sections', '-static', '-static-libgcc', '-mwindows',
+         *build_artifacts.renderer_link(renderer), *profile.link_flags(ordinary_imports=True), '-o', temporary], env=tool_env)
+    run([tools + 'strip', temporary], env=tool_env)
     temporary.replace(program)
-    shutil.copyfile(package('kryon') / 'assets/fonts/LiberationSans-Regular.ttf', folder / 'kryon-font.ttf')
+    shutil.copyfile(renderer['resources']['font'], folder / 'kryon-font.ttf')
+    return program
+
+
+def windows(tools):
+    receipt = checked_collection()
+    folder = windows_host(tools).parent
     for name in ('shovey.zx', 'shovey.json', 'entity.zx'):
         shutil.copyfile(OUT / name, folder / name)
     pack('windows', folder, receipt['version'])
@@ -703,21 +593,8 @@ def pack(platform, folder, version):
     print(f'Shovey {version} {platform} download: {output}')
 
 
-def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=None):
-    """The APK (the normal and F-Droid edition, Google-free) or the Google
-    Play edition's APK or App Bundle, on Kryon's Android host from this
-    package's lock."""
-    receipt = checked_collection()
-    version = release()
-    kryon, compiler, raylib = package('kryon'), toolchain(), package('raylib')
-    assets = OUT / 'android/assets'
-    if assets.exists():
-        shutil.rmtree(assets)
-    assets.mkdir(parents=True)
-    for name in ('shovey.zx', 'shovey.json', 'entity.zx'):
-        shutil.copyfile(OUT / name, assets / name)
-    # Android before 10 has no font lookup; the Windows player ships the same font.
-    shutil.copyfile(kryon / 'assets/fonts/LiberationSans-Regular.ttf', assets / 'kryon-font.ttf')
+def prepare_android_project(kryon):
+    """Stage the maintained native host project without packaging a collection."""
     # Kryon's scaffold makes the Gradle project and its activity from the
     # locked Kryon; Shovey's module, CMake and manifest replace its own.
     droid = ROOT / 'droid'
@@ -734,14 +611,34 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
     (droid / 'gradle.properties').write_text(
         'org.gradle.daemon=false\norg.gradle.parallel=false\norg.gradle.workers.max=1\n'
         'org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8\n')
+    return droid
+
+
+def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=None):
+    """The APK (the normal and F-Droid edition, Google-free) or the Google
+    Play edition's APK or App Bundle, on Kryon's Android host from this
+    package's lock."""
+    receipt = checked_collection()
+    version = release()
+    kryon, compiler = package('kryon'), toolchain()
+    assets = OUT / 'android/assets'
+    if assets.exists():
+        shutil.rmtree(assets)
+    assets.mkdir(parents=True)
+    for name in ('shovey.zx', 'shovey.json', 'entity.zx'):
+        shutil.copyfile(OUT / name, assets / name)
+    # Android before 10 has no font lookup; the Windows player ships the same font.
+    if not (OUT / 'font.ttf').is_file():
+        build_entity()
+    shutil.copyfile(OUT / 'font.ttf', assets / 'kryon-font.ttf')
+    droid = prepare_android_project(kryon)
     sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or os.environ.get('ANDROID_HOME') or Path.home() / 'Android/Sdk')
     env = environment()
-    env.update(ANDROID_HOME=str(sdk), ANDROID_SDK_ROOT=str(sdk), LIBOQS_DIR=str(package('liboqs')),
-               MONOCYPHER_DIR=str(package('monocypher')), CMAKE_BUILD_PARALLEL_LEVEL='1')
+    env.update(ANDROID_HOME=str(sdk), ANDROID_SDK_ROOT=str(sdk))
     task = {'debug': 'assembleDebug', 'release': 'assembleRelease', 'gplay': 'assembleRelease',
             'bundle': 'bundleRelease'}[mode]
     command = ['sh', droid / 'gradlew', '-p', droid, '--no-daemon', '--max-workers=1', '-Papp.abis=' + abis,
-               '-Pkryon.dir=' + str(kryon), '-Pziran.dir=' + str(compiler), '-Praylib.dir=' + str(raylib / 'src'),
+               '-Pkryon.dir=' + str(kryon), '-Pziran.dir=' + str(compiler),
                '-Pandroid.aapt2FromMavenOverride=' + str(sdk / 'build-tools/36.0.0/aapt2')]
     # Kryon's Google Play edition adds Play Billing, so Dew is bought through
     # Play; only it may carry a Google library.

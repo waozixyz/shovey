@@ -5,14 +5,12 @@ cmake_minimum_required(VERSION 3.22)
 project(Shovey C)
 
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../../.." ABSOLUTE)
-if(NOT DEFINED KRYON_DIR OR NOT DEFINED ZIRAN_DIR OR NOT DEFINED RAYLIB_DIR)
+if(NOT DEFINED KRYON_DIR OR NOT DEFINED ZIRAN_DIR)
     message(FATAL_ERROR
-        "kryon build --profile android passes -DKRYON_DIR, -DZIRAN_DIR and "
-        "-DRAYLIB_DIR; a manual gradle run passes them as -P properties")
+        "kryon build --profile android passes -DKRYON_DIR, -DZIRAN_DIR; a manual gradle run passes them as -P properties")
 endif()
 get_filename_component(KRYON_DIR "${KRYON_DIR}" ABSOLUTE BASE_DIR "${REPO_ROOT}")
 get_filename_component(ZIRAN_DIR "${ZIRAN_DIR}" ABSOLUTE BASE_DIR "${REPO_ROOT}")
-get_filename_component(RAYLIB_DIR "${RAYLIB_DIR}" ABSOLUTE BASE_DIR "${REPO_ROOT}")
 include("${KRYON_DIR}/cmake/KryonAndroid.cmake")
 
 find_program(HOST_PYTHON NAMES python3 REQUIRED)
@@ -27,6 +25,9 @@ endif()
 
 set(APP_ZIRAN_DEFINES --define ANDROID_BUILD)
 # The app's edition (build.gradle app.edition): Google Play or F-Droid.
+if(NOT APP_EDITION)
+    set(APP_EDITION direct)
+endif()
 if(APP_EDITION STREQUAL "gplay")
     list(APPEND APP_ZIRAN_DEFINES --define GOOGLE_PLAY)
 elseif(APP_EDITION STREQUAL "fdroid")
@@ -65,57 +66,39 @@ execute_process(COMMAND "${HOST_PYTHON}"
     WORKING_DIRECTORY "${REPO_ROOT}" COMMAND_ERROR_IS_FATAL ANY)
 include("${APP_ZIRAN_MANIFEST}")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-    ${APP_ZIRAN_SOURCES} ${APP_LIBRARY_ZIRAN_SOURCES} "${REPO_ROOT}/ziran.toml")
+    ${APP_ZIRAN_SOURCES} ${APP_LIBRARY_ZIRAN_SOURCES}
+    "${REPO_ROOT}/ziran.toml" "${REPO_ROOT}/ziran.lock"
+    "${REPO_ROOT}/scripts/build_artifacts.py")
 
-set(APP_BUNDLE_RUNTIME_DIR "${CMAKE_BINARY_DIR}/bundle-runtime")
-execute_process(COMMAND "${HOST_PYTHON}"
-    "${KRYON_DIR}/scripts/build_android_runtime.py"
-    --source "${ZIRAN_DIR}" --output "${APP_BUNDLE_RUNTIME_DIR}"
-    --cc "${CMAKE_C_COMPILER} --target=${CMAKE_C_COMPILER_TARGET} --sysroot=${CMAKE_SYSROOT}"
-    --ar "${CMAKE_AR}" --objcopy "${CMAKE_OBJCOPY}"
-    "--flags=-O2 -fPIC"
-    COMMAND_ERROR_IS_FATAL ANY)
-
-kryon_android_raylib("${RAYLIB_DIR}")
-
-# Entity's account signatures, from the sources this package locks.
-set(LIBOQS_DIR "$ENV{LIBOQS_DIR}" CACHE PATH "Locked liboqs source")
-set(MONOCYPHER_DIR "$ENV{MONOCYPHER_DIR}" CACHE PATH "Locked Monocypher source")
-set(ENTITY_LOCK_FLAGS --locked)
-if(EXISTS "${REPO_ROOT}/ziran.local.toml")
-    set(ENTITY_LOCK_FLAGS)
+# Foreign renderer and account support are owned by their locked providers.
+# Shovey's Entity/Kryon Ziran modules above remain ordinary imports, once.
+set(SHOVEY_ARTIFACT_EDITION "${APP_EDITION}")
+if(APP_EDITION STREQUAL "gplay")
+    set(SHOVEY_ARTIFACT_EDITION play)
 endif()
-if(NOT LIBOQS_DIR)
-    execute_process(COMMAND "${REPO_ROOT}/scripts/ziran.sh" pkg path liboqs ${ENTITY_LOCK_FLAGS}
-        WORKING_DIRECTORY "${REPO_ROOT}" OUTPUT_VARIABLE LIBOQS_DIR OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
-endif()
-if(NOT MONOCYPHER_DIR)
-    execute_process(COMMAND "${REPO_ROOT}/scripts/ziran.sh" pkg path monocypher ${ENTITY_LOCK_FLAGS}
-        WORKING_DIRECTORY "${REPO_ROOT}" OUTPUT_VARIABLE MONOCYPHER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
-endif()
-set(OQS_BUILD_ONLY_LIB ON CACHE BOOL "" FORCE)
-set(OQS_USE_OPENSSL OFF CACHE BOOL "" FORCE)
-set(OQS_MINIMAL_BUILD "SIG_ml_dsa_44" CACHE STRING "" FORCE)
-set(OQS_DIST_BUILD OFF CACHE BOOL "" FORCE)
-set(OQS_OPT_TARGET generic CACHE STRING "" FORCE)
-foreach(feature ADX AES AVX AVX2 AVX512 AVX512BW AVX512DQ AVX512F BMI1 BMI2 FMA PCLMULQDQ POPCNT SSE SSE2 SSE3 VPCLMULQDQ)
-    set(OQS_USE_${feature}_INSTRUCTIONS OFF CACHE BOOL "" FORCE)
-endforeach()
-add_subdirectory("${LIBOQS_DIR}" "${CMAKE_BINARY_DIR}/entity-oqs")
-# Entity's device keys sign with Monocypher's standard Ed25519.
-add_library(main SHARED ${APP_ZIRAN_GENERATED_SOURCES} "${MONOCYPHER_DIR}/src/monocypher.c"
-    "${MONOCYPHER_DIR}/src/optional/monocypher-ed25519.c")
-target_link_libraries(main oqs)
+set(SHOVEY_ARTIFACT_CONFIG "${CMAKE_BINARY_DIR}/shovey-artifacts.cmake")
+execute_process(COMMAND "${HOST_PYTHON}" "${REPO_ROOT}/scripts/build_artifacts.py"
+    --ziran "${ZIRAN_BIN}" android-config
+    --ndk "${ANDROID_NDK}" --abi "${ANDROID_ABI}" --api "${ANDROID_NATIVE_API_LEVEL}"
+    --edition "${SHOVEY_ARTIFACT_EDITION}" --output "${SHOVEY_ARTIFACT_CONFIG}"
+    WORKING_DIRECTORY "${REPO_ROOT}" COMMAND_ERROR_IS_FATAL ANY)
+include("${SHOVEY_ARTIFACT_CONFIG}")
+add_library(raylib INTERFACE)
+target_link_libraries(raylib INTERFACE ${SHOVEY_RENDERER_LINK})
+target_compile_options(raylib INTERFACE ${SHOVEY_RENDERER_COMPILE})
+target_compile_definitions(raylib INTERFACE ${SHOVEY_RENDERER_DEFINES})
+target_include_directories(raylib INTERFACE ${SHOVEY_RENDERER_INCLUDES})
+add_library(main SHARED ${APP_ZIRAN_GENERATED_SOURCES})
 kryon_android_app(main)
 kryon_android_host(main ${APP_ZIRAN_GENERATED_SOURCES})
 # Keep independently built APKs identical after their debug symbols are stripped.
 target_link_options(main PRIVATE -Wl,--build-id=none)
 
-target_include_directories(main PRIVATE "${ZIRAN_DIR}/include" "${MONOCYPHER_DIR}/src")
+target_include_directories(main PRIVATE "${ZIRAN_DIR}/include")
 # Generated module names such as math.h must not shadow libc's <math.h> in
 # raylib and other native dependencies. Zi imports use quoted includes.
 foreach(directory ${APP_ZIRAN_INCLUDE_DIRS})
     target_compile_options(main PRIVATE "-iquote${directory}")
 endforeach()
 
-target_link_libraries(main z "${APP_BUNDLE_RUNTIME_DIR}/libziran.a")
+target_link_libraries(main ${SHOVEY_CRYPTO_LINK})

@@ -10,8 +10,7 @@ def envOrProp = { String envName, String propName ->
 }
 def kryonDir = envOrProp('KRYON_DIR', 'kryon.dir')
 def ziranDir = envOrProp('ZIRAN_DIR', 'ziran.dir')
-def raylibDir = envOrProp('RAYLIB_DIR', 'raylib.dir')
-if (kryonDir == null || ziranDir == null || raylibDir == null) {
+if (kryonDir == null || ziranDir == null) {
     throw new GradleException('Build through scripts/player.py android')
 }
 def androidAbis = (project.findProperty('app.abis') ?: 'arm64-v8a,armeabi-v7a').split(',').toList()
@@ -50,7 +49,6 @@ android {
             cmake {
                 arguments '-DKRYON_DIR=' + kryonDir,
                     '-DZIRAN_DIR=' + ziranDir,
-                    '-DRAYLIB_DIR=' + raylibDir,
                     '-DAPP_EDITION=' + appEdition
             }
         }

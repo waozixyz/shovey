@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.
 - Editor text fields use Kryon’s shared text state while keeping Enter to save collection names.
 - Sharing collections cancels safely when accounts change and keeps drafts when requests fail.
 - A self-contained browser package is available for CrazyGames submission, with local guest play and saved progress.

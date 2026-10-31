@@ -110,8 +110,8 @@ def translations(descriptor):
 def build(toolchain, kryon, apps, mingcute):
     lock_flags = [] if (ROOT / 'ziran.local.toml').exists() else ['--locked']
     entity = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'entity', *lock_flags], cwd=ROOT, text=True).strip())
-    daochi = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'daochi_client', *lock_flags], cwd=entity, text=True).strip())
-    crypto = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'crypto', *lock_flags], cwd=daochi, text=True).strip())
+    daochi = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'DaochiClient', *lock_flags], cwd=ROOT, text=True).strip())
+    crypto = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'crypto', *lock_flags], cwd=ROOT, text=True).strip())
     for manifest in EDITIONS:
         descriptor = json.loads((ROOT / manifest).read_text())
         name = descriptor['name']

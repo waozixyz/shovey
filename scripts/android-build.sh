@@ -14,7 +14,7 @@ ziran="$root/scripts/ziran.sh"
 "$ziran" fetch --locked
 toolchain=$("$ziran" pkg path ziran --locked)
 if [ ! -x "$toolchain/build/bin/ziran" ] || [ ! -x "$toolchain/build/bin/zi2c" ]; then
-    env -u DISPLAY -u WAYLAND_DISPLAY make -s -j2 -C "$toolchain" all
+    env -u DISPLAY -u WAYLAND_DISPLAY make -s -j1 -C "$toolchain" all
 fi
 export PATH="$toolchain/build/bin:$PATH"
 

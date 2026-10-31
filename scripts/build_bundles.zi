@@ -229,8 +229,8 @@ main :: (argc: s32, argv: **u8) -> s32 {
     ziran := JoinPath(toolchain, "build/bin/ziran")
     locked := !IsFile("ziran.local.toml")
     entity := PackagePath(ziran, "entity", "", locked)
-    daochi := PackagePath(ziran, "daochi_client", entity, locked)
-    crypto := PackagePath(ziran, "crypto", daochi, locked)
+    daochi := PackagePath(ziran, "DaochiClient", "", locked)
+    crypto := PackagePath(ziran, "crypto", "", locked)
     if entity.count == 0 || daochi.count == 0 || crypto.count == 0 { return Fail("Cannot find the entity, daochi_client and crypto packages") }
     apps: JsonDocument
     if !ReadJsonFile("apps.json", *apps) { return Fail("Cannot read apps.json") }

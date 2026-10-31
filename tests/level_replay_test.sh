@@ -3,8 +3,8 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 toolchain=${1:?usage: level_replay_test.sh TOOLCHAIN}
 entity=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path entity)
-daochi=$(cd "$entity" && "$toolchain/build/bin/ziran" pkg path daochi_client)
-crypto=$(cd "$daochi" && "$toolchain/build/bin/ziran" pkg path crypto)
+daochi=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path DaochiClient)
+crypto=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path crypto)
 work="$root/build/level-replay-test"
 mkdir -p "$work"
 "$toolchain/build/bin/ziran" bundle --root "$root" --module-path "$toolchain/std" \
