@@ -1,7 +1,7 @@
 // Campaign progress is separate from a board: visiting a puzzle is not a win.
 #import "text_buffer"
 #import, file "engine.zi";
-#import, file "levels.zi";
+#import "levels"
 
 // Levels a campaign can track; SHOVEY_LIVE_MAX keeps the closing board within.
 SHOVEY_PROGRESS_LEVELS :: 1000

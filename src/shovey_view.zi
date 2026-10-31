@@ -37,7 +37,7 @@ Math :: #import "std/math";
 #import, file "level_change.zi";
 #import, file "orientation.zi";
 #import, file "engine.zi";
-#import, file "levels.zi";
+#import "levels"
 #import, file "shovey_board.zi";
 #import, file "progress.zi";
 #import, file "guide.zi";

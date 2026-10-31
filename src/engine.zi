@@ -1,6 +1,6 @@
 // Shovey Classic campaign binding for the pure rules in rules.zi.
 #import "text_buffer"
-#import, file "levels.zi";
+#import "levels"
 #import, file "reward_locations.zi";
 #load "rules.zi";
 

@@ -125,16 +125,17 @@ def classic_code(levels, approved_levels=None):
             '} else {\n' + classic_functions(levels) + '}\n}\n' + secret_functions())
 
 
-def generate(check):
+def generate(check, output=None):
     outputs = {
-        ROOT / 'src/levels.zi': classic_code(load('classic')),
+        output or ROOT / 'src/levels.zi': classic_code(load('classic')),
     }
     stale = [path for path, text in outputs.items() if not path.exists() or path.read_text() != text]
     if check:
         for path in stale:
-            print(f'out of date: {path.relative_to(ROOT)}')
+            print(f'out of date: {path.relative_to(ROOT) if path.is_relative_to(ROOT) else path}')
         return 1 if stale else 0
     for path, text in outputs.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text)
     print(f'wrote {len(outputs)} level files')
     return 0
@@ -220,11 +221,12 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     command = commands.add_parser('generate')
     command.add_argument('--check', action='store_true')
+    command.add_argument('--output', type=Path)
     command = commands.add_parser('previews')
     command.add_argument('--cell', type=int, default=16)
     args = parser.parse_args()
     if args.command == 'generate':
-        return generate(args.check)
+        return generate(args.check, args.output)
     return previews(args.cell)
 
 

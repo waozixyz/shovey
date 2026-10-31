@@ -9,7 +9,7 @@
 #import "json_scan"
 #import "text_buffer"
 #import, file "engine.zi";
-#import, file "levels.zi";
+#import "levels"
 
 LIVE_CAMPAIGN_ID :: "435c51fbedc3c928f54124560b46116a"
 LIVE_CAMPAIGN_ROUTE :: 8192

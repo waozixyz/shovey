@@ -3,7 +3,7 @@
 Progress :: #import "entity/game_progress";
 #import, file "progress.zi";
 #import, file "engine.zi";
-#import, file "levels.zi";
+#import "levels"
 #import, file "shared_progress.zi";
 
 ShoveySharedRecord :: (progress: *ShoveyProgress) -> Progress.GameProgressRecord {
