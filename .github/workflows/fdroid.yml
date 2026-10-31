@@ -9,6 +9,10 @@ on:
   push:
     branches: [master]
     paths:
+      - ziran.toml
+      - ziran.lock
+      - scripts/ziran.sh
+      - scripts/build_artifacts.py
       - scripts/android-build.sh
       - scripts/player.py
       - scripts/fdroid-ci.py
