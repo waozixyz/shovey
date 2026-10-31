@@ -4,7 +4,6 @@
     {"from": "assets/shovey/sprites", "to": "classic/sprites"},
     {"from": "assets/shovey-landscape/sprites", "to": "classic/sprites-landscape"},
     {"from": "assets/shovey/sounds", "to": "classic/sounds"},
-    {"from": "assets/shovey/levels", "to": "classic/levels"},
     {"from": "assets/shovey/preview.png", "to": "classic/preview.png"}
   ]
 }

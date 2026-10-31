@@ -8,7 +8,7 @@
   "host_api": 41,
   "save_schema": 1,
   "build_defines": ["SHOVEY_RELEASE"],
-  "prepare_assets": "scripts/prepare_assets.py",
+  "prepare_assets": "scripts/prepare_editor_assets.py",
   "harnesses": ["arcade"],
   "entry": "editor:Main",
   "source": "src/editor/editor.zi",

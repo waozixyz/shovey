@@ -178,10 +178,11 @@ def save(image, path):
         temporary.unlink(missing_ok=True)
 
 
-def previews(cell):
+def previews(cell, output=None):
     from PIL import Image
+    output = output or ROOT / 'assets/shovey'
     for folder in ("levels", "levels-landscape"):
-        (ROOT / "assets/shovey" / folder).mkdir(parents=True, exist_ok=True)
+        (output / folder).mkdir(parents=True, exist_ok=True)
     size = (WIDTH * cell, HEIGHT * cell)
     turned_size = (HEIGHT * cell, WIDTH * cell)
     sprites = Sprites(ROOT / 'assets/shovey/sprites', cell)
@@ -210,8 +211,8 @@ def previews(cell):
             elif kind != 0:
                 image.alpha_composite(sprites.get(f'tile-{kind}'), (x, y))
                 turned.alpha_composite(turned_sprites.get(f'tile-{kind}'), (turned_x, turned_y))
-        save(image, ROOT / f'assets/shovey/levels/{level["number"]}.png')
-        save(turned, ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png')
+        save(image, output / f'levels/{level["number"]}.png')
+        save(turned, output / f'levels-landscape/{level["number"]}.png')
     print(f"drew {len(load('classic'))} level pictures")
     return 0
 
@@ -224,10 +225,11 @@ def main():
     command.add_argument('--output', type=Path)
     command = commands.add_parser('previews')
     command.add_argument('--cell', type=int, default=16)
+    command.add_argument('--output', type=Path)
     args = parser.parse_args()
     if args.command == 'generate':
         return generate(args.check, args.output)
-    return previews(args.cell)
+    return previews(args.cell, args.output)
 
 
 if __name__ == '__main__':
