@@ -486,7 +486,7 @@ def linux_host():
     run([ziran(), 'build', '--project', *lock(), '--target=c', '--define', 'PLATFORM_DESKTOP',
          '--entry', 'player_desktop:main', '-o', generated, 'src/player_desktop.zi'], cwd=ROOT)
     profile = build_artifacts.request('entity:native-profile', 'linux-x86_64-gnu', ziran=ziran())
-    renderer = build_artifacts.request('kryon:renderer-desktop', 'linux-x86_64-gnu', ziran=ziran()).renderer()
+    renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-desktop', 'linux-x86_64-gnu', ziran=ziran()))
     binary = folder / 'shovey'
     temporary = folder / 'shovey.new'
     sources = sorted(generated.rglob('*.c'))
@@ -495,7 +495,7 @@ def linux_host():
          *['-iquote' + str(path) for path in sorted({generated, *(p.parent for p in sources)})],
          *renderer['compile_flags'], *['-I' + path for path in renderer['include_directories']],
          *sources, '-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
-         *profile.link_flags(ordinary_imports=True), '-o', temporary])
+         *profile.link_flags(include_archives=False), '-o', temporary])
     temporary.replace(binary)
     return binary
 
@@ -520,8 +520,8 @@ def windows_host(tools):
                AR=shutil.which(tools + 'ar') or tools + 'ar')
     # Resolve support before replacing any existing Windows build output.
     profile = build_artifacts.request('entity:native-profile', 'windows-x86_64-mingw', ziran=ziran(), env=env)
-    renderer = build_artifacts.request('kryon:renderer-raylib', 'windows-x86_64-mingw',
-                                       ziran=ziran(), env=env).renderer()
+    renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-raylib', 'windows-x86_64-mingw',
+                                                                ziran=ziran(), env=env))
     defines = ['--define', '_WIN32', '--define', 'PLATFORM_DESKTOP', '--define', '__x86_64__']
     for name in renderer['defines']:
         defines.extend(['--define', name])
@@ -549,7 +549,7 @@ def windows_host(tools):
     run([tools + 'gcc', '-std=c11', '-O2', '-ffunction-sections', '-fdata-sections', *includes,
          *renderer['compile_flags'], *sorted(generated.rglob('*.c')), folder / 'shovey-resource.o',
          '-Wl,--gc-sections', '-static', '-static-libgcc', '-mwindows',
-         *build_artifacts.renderer_link(renderer), *profile.link_flags(ordinary_imports=True), '-o', temporary], env=tool_env)
+         *build_artifacts.renderer_link(renderer), *profile.link_flags(include_archives=False), '-o', temporary], env=tool_env)
     run([tools + 'strip', temporary], env=tool_env)
     temporary.replace(program)
     shutil.copyfile(renderer['resources']['font'], folder / 'kryon-font.ttf')
