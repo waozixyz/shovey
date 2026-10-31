@@ -1,0 +1,98 @@
+// Real production player storage, real IDBFS, fake account transport only.
+#import, file "../src/shared_progress.zi";
+#import "player_progress_storage"
+#import "kryon/app_files"
+#import "kryon/bundle_storage_web"
+#import "std/web"
+#import "std/text_buffer"
+#import "std/vec"
+#import "std/c_string"
+Progress :: #import "entity/game_progress";
+files: AppFiles;
+files_root: string = "/kryon-apps/shared-progress-test/records";
+account: string = "a";
+writes: s32;
+reads: s32;
+remote: Progress.GameProgressRecord;
+reply: [16384]u8;
+#program_export
+Service :: (name: string, request: string) -> string {
+    if name == "arcade.progress-storage" { return PlayerProgressStorage(*files, request) }
+    if name != "entity.records" { return "" }
+    if SharedProgressStatusField(request, "operation", "status") {
+        if account == "b" { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"b\",\"sync\":\"synced\"}" }
+        return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"a\",\"sync\":\"synced\"}"
+    }
+    if SharedProgressStatusField(request, "operation", "put") {
+        if reads == 0 || !Progress.GameProgressReply(request, *remote) { return "{\"status\":\"rejected\"}" }
+        writes += 1
+        return "{\"status\":\"done\"}"
+    }
+    reads += 1
+    remote = .{}; unused CopyCString("shovey.classic", remote.game[:]); remote.unlocked = 4
+    out: Vec(u8)
+    BuilderPrint(*out, "{\"status\":\"done\",\"document\":")
+    Progress.GameProgressWrite(*remote, *out)
+    BuilderPrint(*out, "}")
+    unused CopyCString(TextView(VecSlice(out, 0, out.count)), reply[:]); VecFree(out)
+    return TextUntilNul(reply[:])
+}
+#program_export
+Record :: (name: string) -> string { return AppFileRead(*files, name) }
+#program_export
+Save :: (name: string, text: string) -> bool { return AppFileWrite(*files, name, text) }
+Step :: (session: *SharedProgressSession, now: float64) {
+    for frame: cast(s32)0..4 { unused SharedProgressPump(session, now + cast(float64)frame * 0.01) }
+}
+Check :: () -> s32 {
+    record: Progress.GameProgressRecord
+    unused CopyCString("shovey.classic", record.game[:]); record.unlocked = 40
+    session: SharedProgressSession
+    SharedProgressStart(*session, record, 0.0)
+    if session.bound || reads != 0 || PlayerProgressStorage(*files, "flush") == "flushed" { return 1 }
+    if !BundleStorageOpen() { return 2 }
+    while !BundleStorageReady() && !BundleStorageFailed() { WebSleep(5) }
+    if BundleStorageFailed() || !AppFilesOpen(*files, files_root) { return 3 }
+    defer { AppFilesClose(*files) }
+    phase := WebAsNumber(WebGet(WebGlobal, WebName("progressRecovery")))
+    SharedProgressStart(*session, record, 1.0)
+    if phase == 2.0 {
+        if !session.bound { return 41 }
+        saved := session.record
+        pending: bool
+        if !SharedProgressLoad("a", *saved, *pending) || pending { return 42 }
+        if session.record.completed[1] != #char "1" { return 43 }
+        if session.record.completed[2] == #char "1" { return 44 }
+        return 0
+    }
+    if phase == 1.0 {
+        // The durable pending completion survives; the failed flush did not
+        // make the later completion durable. Hydrate before any account put.
+        if !session.dirty || session.record.completed[1] != #char "1" || session.record.completed[2] == #char "1" || writes != 0 { return 5 }
+        Step(*session, 2.0)
+        if session.dirty || !session.client.result.durable || writes != 1 || remote.unlocked != 4 { return 6 }
+        account = "b"
+        SharedProgressStart(*session, record, 3.0)
+        if session.record.completed[1] == #char "1" || session.record.unlocked != 4 { return 7 }
+        return 0
+    }
+    Step(*session, 1.1)
+    // Persist a completion without a transport step, as an offline/reloaded
+    // client would. This is the production atomic earned+pending writer.
+    earned := session.record
+    earned.completed[0] = #char "0"; earned.completed[1] = #char "1"
+    if !SharedProgressPersist(null, "a", *earned, true) { return 8 }
+    SharedProgressStart(*session, record, 2.0)
+    unused WebCall1(WebGlobal, WebName("progressFlushFailure"), WebBool(true))
+    if SharedProgressSave(*session, 3, true) || session.client.result.durable || writes != 0 { return 9 }
+    // A staged write cannot become a durable bind during this runtime.
+    SharedProgressStart(*session, record, 3.0)
+    if session.bound || writes != 0 { return 10 }
+    return 0
+}
+#program_export
+main :: () -> s32 {
+    result := Check()
+    WebSet(WebGlobal, WebName("progressTestResult"), WebNumber(cast(float64)result))
+    return result
+}

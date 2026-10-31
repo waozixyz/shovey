@@ -20,9 +20,21 @@ reply: string;
 retired: s32;
 writes: s32;
 connected: bool;
+// Each simulated device has real owner-separated earned+pending documents.
+earned_names: [8][256]u8;
+earned_text: [8][16384]u8;
+earned_device: [8]bool;
+earned_count: s32;
+earned_missing: bool;
+
 
 #program_export
 FakeService :: (name: string, request: string) -> string {
+    if name == "arcade.progress-storage" {
+        if request == "ready" { return "ready" }
+        if request == "flush" { return "flushed" }
+        if request == "missing" { return ifx earned_missing then "missing" else "present" }
+    }
     if name != "entity.records" { return "{\"status\":\"signin\"}" }
     if SharedProgressStatusField(request, "operation", "status") {
         if !connected { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"\",\"sync\":\"local\"}" }
@@ -60,6 +72,16 @@ FakeService :: (name: string, request: string) -> string {
 
 #program_export
 FakeRecord :: (name: string) -> string {
+    if name.count >= 7 && name[:7] == "earned." {
+        earned_missing = true
+        for index: cast(s32)0..earned_count - 1 {
+            if earned_device[index] == other_device && TextUntilNul(earned_names[index][:]) == name {
+                earned_missing = false
+                return TextUntilNul(earned_text[index][:])
+            }
+        }
+        return ""
+    }
     if name == "rewards" { return ifx other_device then TextUntilNul(local_second[:]) else TextUntilNul(local_first[:]) }
     if name == "reward.owner" { return ifx other_device then TextUntilNul(owner_second[:]) else TextUntilNul(owner_first[:]) }
     offset: s32 = ifx other_device then 4 else 0
@@ -75,6 +97,19 @@ FakeRecord :: (name: string) -> string {
 
 #program_export
 FakeSave :: (name: string, text: string) -> bool {
+    if name.count >= 7 && name[:7] == "earned." {
+        for index: cast(s32)0..earned_count - 1 {
+            if earned_device[index] == other_device && TextUntilNul(earned_names[index][:]) == name {
+                return CopyCString(text, earned_text[index][:])
+            }
+        }
+        if earned_count >= 8 { return false }
+        earned_device[earned_count] = other_device
+        unused CopyCString(name, earned_names[earned_count][:])
+        unused CopyCString(text, earned_text[earned_count][:])
+        earned_count += 1
+        return true
+    }
     if name == "campaign" || name == "position" { retired += 1; return false }
     if name == "rewards" { return ifx other_device then CopyCString(text, local_second[:]) else CopyCString(text, local_first[:]) }
     if name == "reward.owner" { return ifx other_device then CopyCString(text, owner_second[:]) else CopyCString(text, owner_first[:]) }

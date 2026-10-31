@@ -20,5 +20,6 @@ echo 'Rewards: claims wait for an account; opened and claimed states survive res
     --bind controls:AppRecordHost=rewards_sync_behavior:FakeRecord \
     --bind controls:SaveAppRecordHost=rewards_sync_behavior:FakeSave \
     --entry rewards_sync_behavior:Check -o "$work/sync.zx" "$root/tests/rewards_sync_behavior.zi"
-test "$("$toolchain/build/bin/ziran" run "$work/sync.zx")" = 42
+result=$("$toolchain/build/bin/ziran" run "$work/sync.zx")
+test "$result" = 42 || { echo "Reward sync local test failed: $result" >&2; exit 1; }
 echo 'Reward account sync: two devices, opened then claimed, stale saves, account isolation and unrelated campaign retention passed'

@@ -1,6 +1,6 @@
-// One account record per edition, through the common Entity service.
-// Only earned unlocks are shared. The unfinished board stays on this device.
+// Earned progress follows the owner; unfinished campaigns stay on this device.
 Progress :: #import "entity/game_progress";
+Client :: #import "entity/game_progress_client";
 #import "std/json_scan"
 #import "std/text_buffer"
 #import "std/vec"
@@ -10,6 +10,7 @@ Progress :: #import "entity/game_progress";
 #import, file "progress_laws.zi";
 
 SharedProgressSession :: struct {
+    // Public snapshots retained for every edition and the rewards adapter.
     record: Progress.GameProgressRecord
     owner: [65]u8
     owner_known: bool
@@ -17,6 +18,9 @@ SharedProgressSession :: struct {
     dirty: bool
     retiring: bool
     poll_at: float64
+    client: Client.GameProgressClient
+    bound: bool
+    now: float64
 }
 
 SharedProgressStatusField :: (reply: string, field: string, expected: string) -> bool {
@@ -24,93 +28,180 @@ SharedProgressStatusField :: (reply: string, field: string, expected: string) ->
     return ReadStringText(reply, FieldAt(reply, 0, field), bytes[:]) >= 0 && TextUntilNul(bytes[:]) == expected
 }
 
+// A status callback verifies identity without exposing account keys. Active
+// play never enters the client, so it makes no account queries at all.
+// Callbacks are synchronous and non-reentrant. Select the active edition's
+// session before entering the client (portable VM cannot cast opaque pointers).
+shared_progress_active: *SharedProgressSession;
+shared_progress_verified: [65]u8;
+SharedProgressOwner :: (context: *void) -> string {
+    unused context
+    session := shared_progress_active
+    status := ProgressAccountService("{\"operation\":\"status\"}")
+    shared_progress_verified = .{}
+    if !SharedProgressStatusField(status, "status", "done") ||
+    !SharedProgressStatusField(status, "game_progress", "account-v1") ||
+    ReadStringText(status, FieldAt(status, 0, "account"), shared_progress_verified[:]) < 0 {
+        session.available = false
+        shared_progress_verified = session.owner
+        return TextUntilNul(shared_progress_verified[:])
+    }
+    session.available = true
+    // Entity uses both an empty ID and 'local' for an unsigned profile.
+    if TextUntilNul(shared_progress_verified[:]) == "local" { shared_progress_verified = .{} }
+    return TextUntilNul(shared_progress_verified[:])
+}
+SharedProgressService :: (context: *void, service: string, request: string) -> string {
+    unused context
+    session := shared_progress_active
+    unused service
+    if !session.available { return "{\"status\":\"unavailable\"}" }
+    return ProgressAccountService(request)
+}
+SharedProgressName :: (owner: string, game: string, output: []u8) -> string {
+    if !Progress.GameProgressGameValid(game) { return "" }
+    for byte: owner {
+        if !((byte >= #char "a" && byte <= #char "z") || (byte >= #char "A" && byte <= #char "Z") ||
+        (byte >= #char "0" && byte <= #char "9") || byte == #char "-" || byte == #char "_") { return "" }
+    }
+    name: Vec(u8)
+    // The guest namespace cannot collide with an account named 'guest'.
+    BuilderPrint(*name, "earned.%.%", game, ifx owner == "" then "guest" else "account.")
+    if owner != "" { BuilderPrint(*name, "%", owner) }
+    BuilderPrint(*name, ".v1")
+    copied := CopyCString(TextView(VecSlice(name, 0, name.count)), output)
+    VecFree(name)
+    return ifx copied then TextUntilNul(output) else ""
+}
+SharedProgressPersist :: (context: *void, owner: string, record: *Progress.GameProgressRecord, pending: bool) -> bool {
+    unused context
+    if !ProgressStorageReady() { return false }
+    name_bytes: [256]u8
+    name := SharedProgressName(owner, TextUntilNul(record.game[:]), name_bytes[:])
+    if name == "" { return false }
+    text: Vec(u8)
+    BuilderPrint(*text, "{\"pending\":%,\"earned\":", ifx pending then "true" else "false")
+    Progress.GameProgressWrite(record, *text)
+    BuilderPrint(*text, "}")
+    defer { VecFree(text) }
+    return PathSaveRecord(name, TextView(VecSlice(text, 0, text.count))) && ProgressStorageFlush()
+}
+SharedProgressLoad :: (owner: string, record: *Progress.GameProgressRecord, pending: *bool) -> bool {
+    // A prior write may have been staged but failed its flush. A bind must
+    // never call that memory-backed read durable without a successful barrier.
+    if !ProgressStorageReady() || !ProgressStorageFlush() { return false }
+    name_bytes: [256]u8
+    name := SharedProgressName(owner, TextUntilNul(record.game[:]), name_bytes[:])
+    if name == "" { return false }
+    text := PathRecord(name)
+    if text == "" {
+        if !ProgressStorageMissing() { return false }
+        pending.* = false
+        return SharedProgressPersist(null, owner, record, false)
+    }
+    at := FieldAt(text, 0, "earned")
+    end := ValueEnd(text, at, 0)
+    saved: Progress.GameProgressRecord
+    if at < 0 || end <= at || !Progress.GameProgressRead(text[at:end], *saved) ||
+    TextUntilNul(saved.game[:]) != TextUntilNul(record.game[:]) { return false }
+    marker := FieldAt(text, 0, "pending")
+    marker_end := ValueEnd(text, marker, 0)
+    if marker < 0 || marker_end <= marker { return false }
+    if text[marker:marker_end] == "true" { pending.* = true }
+    else if text[marker:marker_end] == "false" { pending.* = false }
+    else { return false }
+    record.* = saved
+    return true
+}
+SharedProgressSnapshot :: (session: *SharedProgressSession) {
+    unused Client.GameProgressClientRead(*session.client, *session.record)
+    session.dirty = session.client.result.dirty
+    if session.client.result.state == Client.GameProgressClientState.Acknowledged && !session.dirty { session.retiring = true }
+}
 SharedProgressSave :: (session: *SharedProgressSession, level: s32, won: bool) -> bool {
     if !won { return true }
+    shared_progress_active = session
     if level < 1 || level >= Progress.GAME_PROGRESS_LIMIT { return false }
-    // Publish this completion, never the device's campaign snapshot. The
-    // same device can keep an unfinished board while accounts change.
     record := session.record
     count := cast(s32)TextUntilNul(record.completed[:]).count
     while count < level { record.completed[count] = #char "0"; count += 1 }
     record.completed[count] = 0
     record.completed[level - 1] = #char "1"
     if record.unlocked <= level { record.unlocked = level + 1 }
-    if !SharedProgressShouldPublish(won, !Progress.GameProgressSame(*session.record, *record)) { return true }
-    session.record = record
-    session.dirty = true
-    if !session.available { return false }
-    // Account queries wait until a win. Check the owner at that boundary
-    // before publishing; an account switch must never receive the old game.
-    status := ProgressAccountService("{\"operation\":\"status\"}")
-    owner: [65]u8
-    valid := SharedProgressStatusField(status, "status", "done") &&
-    SharedProgressStatusField(status, "game_progress", "account-v1") &&
-    ReadStringText(status, FieldAt(status, 0, "account"), owner[:]) >= 0
-    if !valid || !session.owner_known || TextUntilNul(owner[:]) != TextUntilNul(session.owner[:]) {
+    if !SharedProgressShouldPublish(won, !Progress.GameProgressSame(*session.record, *record)) {
+        return session.bound && session.client.result.durable
+    }
+    if !session.bound { return false }
+    if SharedProgressOwner(null) != TextUntilNul(session.owner[:]) {
+        // The just-finished attempt belonged to the original owner. Keep it
+        // there, never seed the next account from the device's campaign.
+        unused SharedProgressPersist(null, TextUntilNul(session.owner[:]), *record, true)
         session.poll_at = 0.0
         return false
     }
-    return SharedProgressPut(session)
+    unused Client.GameProgressClientQueue(*session.client, *record)
+    // One bounded client step; acknowledgement can finish on later frames.
+    unused Client.GameProgressClientPump(*session.client, cast(s64)(session.now * 1000.0), true)
+    SharedProgressSnapshot(session)
+    session.poll_at = 0.0
+    return session.available && session.client.result.durable && session.client.result.error == Client.GameProgressClientError.None
 }
-
-// Only a newly earned completion reaches the account store; movement is a
-// local campaign write and never enters this service.
-SharedProgressPut :: (session: *SharedProgressSession) -> bool {
-    put: Vec(u8)
-    Progress.GameProgressPutRequest(*session.record, *put)
-    saved := ProgressAccountService(TextView(VecSlice(put, 0, put.count)))
-    VecFree(put)
-    if !SharedProgressStatusField(saved, "status", "done") { return false }
-    session.dirty = false
-    session.retiring = true
-    return true
-}
-
 SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GameProgressRecord, now: float64) {
-    // Entry reads only the current account's earned progress. Device-only
-    // unlocks and positions must never seed a different account's record.
+    Client.GameProgressClientReset(*session.client)
     session.* = .{}
+    // Only the game identity is a seed. Device unlocks/resume positions do
+    // not establish earned progress for a signed-in account or a guest.
     session.record.game = record.game
     session.record.unlocked = 1
     unused SharedProgressPump(session, now)
 }
 
-// 1 means another device changed this campaign; 2 means the account changed
-// and the caller must reload the current account before saving anything.
+// 1: earned progress changed; 2: account changed (the caller's existing
+// policy reloads its campaign). A same-owner Start never reports a change.
 SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: bool = false, retire_legacy: bool = true) -> s32 {
-    // Read account progress on entry and between puzzles. An active puzzle
-    // needs no account queries; its moves and board belong to this device.
+    shared_progress_active = session
+    session.now = now
     if playing { return 0 }
     if now < session.poll_at { return 0 }
-    session.poll_at = now + 15.0
     status := ProgressAccountService("{\"operation\":\"status\"}")
     session.available = SharedProgressStatusField(status, "status", "done") &&
-    SharedProgressStatusField(status, "game_progress", "account-v1")
-    if !session.available { return 0 }
+        SharedProgressStatusField(status, "game_progress", "account-v1")
+    if !session.available { session.poll_at = now + 15.0; return 0 }
     owner: [65]u8
-    unused ReadStringText(status, FieldAt(status, 0, "account"), owner[:])
+    if ReadStringText(status, FieldAt(status, 0, "account"), owner[:]) < 0 { session.available = false; return 0 }
+    if TextUntilNul(owner[:]) == "local" { owner = .{} }
     if session.owner_known && TextUntilNul(owner[:]) != TextUntilNul(session.owner[:]) {
+        Client.GameProgressClientReset(*session.client)
         session.* = .{}
         return 2
     }
+    before := session.record
     session.owner = owner
     session.owner_known = true
-    synced := SharedProgressStatusField(status, "sync", "synced")
-    request: Vec(u8)
-    Progress.GameProgressGetRequest(TextUntilNul(session.record.game[:]), *request)
-    reply := ProgressAccountService(TextView(VecSlice(request, 0, request.count)))
-    VecFree(request)
-    before := session.record
-    remote: Progress.GameProgressRecord
-    found := SharedProgressStatusField(reply, "status", "done") && Progress.GameProgressReply(reply, *remote)
-    if found { unused Progress.GameProgressMerge(*session.record, *remote) }
-    changed := !Progress.GameProgressSame(*before, *session.record)
-    if found && Progress.GameProgressSame(*session.record, *remote) { session.dirty = false }
-    if session.dirty || (found && !Progress.GameProgressSame(*session.record, *remote)) {
-        unused SharedProgressPut(session)
-    } else if retire_legacy && session.retiring && synced && TextUntilNul(session.owner[:]) != "" {
-        // Read back first; only retire a legacy copy after account sync.
+    if !session.bound {
+        pending: bool
+        if !SharedProgressLoad(TextUntilNul(owner[:]), *session.record, *pending) { return 0 }
+        session.client.context = null
+        session.client.service = SharedProgressService
+        session.client.owner = SharedProgressOwner
+        session.client.persist = SharedProgressPersist
+        session.client.read_delay = 15000
+        result := Client.GameProgressClientBind(*session.client, TextUntilNul(owner[:]), *session.record, pending)
+        session.bound = result.state != Client.GameProgressClientState.OwnerChanged && result.error == Client.GameProgressClientError.None
+        if !session.bound { return 0 }
+    }
+    result := Client.GameProgressClientPump(*session.client, cast(s64)(now * 1000.0), true)
+    if result.state == Client.GameProgressClientState.OwnerChanged {
+        session.* = .{}
+        return 2
+    }
+    SharedProgressSnapshot(session)
+    // Keep stepping hydration, pending operations and durable acknowledgement
+    // promptly; idle account reads retain Shovey's fifteen-second interval.
+    session.poll_at = ifx result.state == Client.GameProgressClientState.Ready then now + 15.0 else now
+    if retire_legacy && session.retiring && !result.dirty && result.durable &&
+    SharedProgressStatusField(status, "sync", "synced") && TextUntilNul(owner[:]) != "" {
         session.retiring = !ProgressRetireLegacy()
     }
-    return ifx changed then 1 else 0
+    return ifx !Progress.GameProgressSame(*before, *session.record) then 1 else 0
 }

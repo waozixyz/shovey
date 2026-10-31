@@ -49,6 +49,7 @@ Codec :: #import "apps/node_codec";
 #import "kryon/image_raster"
 #import "kryon/loading_indicator"
 #import "player_loading"
+#import "player_progress_storage"
 #import "shovey_theme"
 ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
 DewIcon :: #import "mingcute/mingcute_filled_drop";
@@ -133,7 +134,7 @@ CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
     name == "AppInvitationHost" || name == "RefreshAppSharedHost" || name == "SendAppSharedHost" ||
     name == "SmoothFramesHost" || name == "AppLocaleHost" || name == "AppSoundHost" ||
     name == "tile_map.sampling" || name == "arcade.controls" || name == "arcade.sound" || name == "arcade.navigation" ||
-    name == "arcade.updates" ||
+    name == "arcade.updates" || name == "arcade.progress-storage" ||
     name == PUBLICATIONS_READ_SERVICE || name == ENTITY_RECORDS_SERVICE || name == ENTITY_DEW_SERVICE ||
     name == "entity.profile" || name == "leaderboard"
 }
@@ -145,7 +146,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
     HostScalarValid(arguments[0], "string", cast(s32)HostString) {
         record := AppArgumentText(arguments[0])
         saved := CollectionRecordsFor(TextUntilNul(node.identity.id[:]))
-        if saved == null || !AppFileNameValid(record) || record.count >= 64 { return 0 }
+        if saved == null || !AppFileNameValid(record) || record.count >= 256 { return 0 }
         AppFileFree(saved.text)
         saved.text = AppFileRead(*saved.files, record)
         if saved.files.status == -1 || saved.text.count >= 65536 { return 0 }
@@ -158,7 +159,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         record := AppArgumentText(arguments[0])
         text := AppArgumentText(arguments[1])
         saved := CollectionRecordsFor(TextUntilNul(node.identity.id[:]))
-        ok := saved != null && AppFileNameValid(record) && record.count < 64 &&
+        ok := saved != null && AppFileNameValid(record) && record.count < 256 &&
         text.count < 65536 && AppFileWrite(*saved.files, record, text)
         result.* = HostScalar("bool", ifx ok then 1 else 0)
         return 1
@@ -178,6 +179,11 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
     HostScalarValid(arguments[1], "string", cast(s32)HostString) {
         service := AppArgumentText(arguments[0])
         request := AppArgumentText(arguments[1])
+        if service == "arcade.progress-storage" {
+            saved := CollectionRecordsFor(TextUntilNul(node.identity.id[:]))
+            result.* = AppHostText(PlayerProgressStorage(ifx saved == null then null else *saved.files, request))
+            return 1
+        }
         if service == "leaderboard" {
             saved := EntityLeaderboardReport("arcade", "Arcade", TextUntilNul(node.identity.id[:]),
                 TextUntilNul(node.entry.title[:]), request)

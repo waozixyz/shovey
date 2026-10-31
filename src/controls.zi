@@ -48,6 +48,29 @@
 
 // Account records are shared across standalone and hosted editions.
 ProgressAccountService :: (request: string) -> string { return AppServiceHost("entity.records", request) }
+// Only a host that implements a durable storage barrier can acknowledge
+// an earned record. An absent service must never imply durable storage.
+ProgressStorageReady :: () -> bool {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentStorageReady()
+    } else {
+        return AppServiceHost("arcade.progress-storage", "ready") == "ready"
+    }
+}
+ProgressStorageFlush :: () -> bool {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentFlush()
+    } else {
+        return AppServiceHost("arcade.progress-storage", "flush") == "flushed"
+    }
+}
+ProgressStorageMissing :: () -> bool {
+    #if #defined(SHOVEY_WEB) {
+        return WebApp.DocumentStatus() == 0
+    } else {
+        return AppServiceHost("arcade.progress-storage", "missing") == "missing"
+    }
+}
 CompletionAccountService :: (request: string) -> string { return AppServiceHost("entity.game-completions", request) }
 // Path chunks are device records, including on hosts with account records.
 PathRecord :: (name: string) -> string {

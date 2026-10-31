@@ -1,0 +1,10 @@
+// The player's record adapter, shared by native and browser builds. Staging
+// a file is not a durable acknowledgement: AppFilesFlush waits for IDBFS.
+#import "kryon/app_files"
+PlayerProgressStorage :: (files: *AppFiles, request: string) -> string {
+    if files == null || !AppFilesReady(files) { return "unavailable" }
+    if request == "ready" { return "ready" }
+    if request == "flush" { return ifx AppFilesFlush(files) then "flushed" else "failed" }
+    if request == "missing" { return ifx files.status == 0 then "missing" else "present" }
+    return "unavailable"
+}

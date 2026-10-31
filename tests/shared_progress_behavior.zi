@@ -5,151 +5,223 @@
 Progress :: #import "entity/game_progress";
 #import, file "../src/shared_progress.zi";
 Classic :: #import, file "../src/shared_campaign.zi";
-ClassicGame :: #import, file "../src/engine.zi";
-ClassicProgress :: #import, file "../src/progress.zi";
+Game :: #import, file "../src/engine.zi";
+Campaign :: #import, file "../src/progress.zi";
 Controls :: #import, file "../src/controls.zi";
 
-remote: Progress.GameProgressRecord;
-remote_exists: bool;
-synced: bool;
+owner: string = "first";
+remote: [3]Progress.GameProgressRecord;
+exists: [3]bool;
+slot: s32;
 available: bool = true;
 old_host: bool;
-other_owner: bool;
-retired: s32;
-account_writes: s32;
-account_calls: s32;
+ready: bool = true;
+flush: bool = true;
+synced: bool = true;
 local_save_allowed: bool = true;
-reply: string;
+account_calls: s32;
+account_reads: s32;
+account_writes: s32;
+retired: s32;
+missing: bool;
+pending_put: bool;
+pending_status: bool;
+put_snapshot: Progress.GameProgressRecord;
+reply: [32768]u8;
+keys: [16][256]u8;
+staged: [16][16384]u8;
+durable: [16][16384]u8;
+key_count: s32;
 
 #program_export
 FakeService :: (name: string, request: string) -> string {
-    if name == "entity.records" { account_calls += 1 }
-    if name != "entity.records" || !available { return "{\"status\":\"unavailable\"}" }
-    if SharedProgressStatusField(request, "operation", "status") {
-        if old_host { return "{\"status\":\"done\",\"account\":\"first\",\"sync\":\"synced\"}" }
-        if other_owner { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"second\",\"sync\":\"synced\"}" }
-        if synced { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"first\",\"sync\":\"synced\"}" }
-        return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"first\",\"sync\":\"pending\"}"
+    if name == "arcade.progress-storage" {
+        if !ready { return "unavailable" }
+        if request == "ready" { return "ready" }
+        if request == "missing" { return ifx missing then "missing" else "present" }
+        if request == "flush" {
+            if !flush { return "failed" }
+            durable = staged
+            return "flushed"
+        }
     }
-    if SharedProgressStatusField(request, "operation", "put") {
-        at := FieldAt(request, 0, "document")
-        incoming: Progress.GameProgressRecord
-        if !Progress.GameProgressRead(request[at:ValueEnd(request, at, 0)], *incoming) { return "{\"status\":\"rejected\"}" }
-        if remote_exists { unused Progress.GameProgressMerge(*incoming, *remote) }
-        remote = incoming
-        remote_exists = true
-        synced = false
-        account_writes += 1
-        return "{\"status\":\"done\"}"
-    }
-    if !remote_exists { return "{\"status\":\"missing\"}" }
+    if name != "entity.records" { return "" }
+    account_calls += 1
+    if !available { return "{\"status\":\"unavailable\"}" }
     out: Vec(u8)
-    BuilderPrint(*out, "{\"status\":\"done\",\"document\":")
-    Progress.GameProgressWrite(*remote, *out)
-    BuilderPrint(*out, "}")
-    reply = BuilderFinish(out)
-    return reply
+    if SharedProgressStatusField(request, "operation", "status") && FieldAt(request, 0, "request") < 0 {
+        BuilderPrint(*out, "{\"status\":\"done\",\"account\":\"%\",\"sync\":\"%\"", owner, ifx synced then "synced" else "pending")
+        if !old_host { BuilderPrint(*out, ",\"game_progress\":\"account-v1\"") }
+        BuilderPrint(*out, "}")
+    } else if SharedProgressStatusField(request, "operation", "put") {
+        account_writes += 1
+        if !Progress.GameProgressReply(request, *put_snapshot) { return "{\"status\":\"rejected\"}" }
+        if pending_put { pending_status = true; return "{\"status\":\"pending\",\"request\":7}" }
+        remote[slot] = put_snapshot; exists[slot] = true
+        synced = false
+        return "{\"status\":\"done\"}"
+    } else if pending_status && FieldAt(request, 0, "request") >= 0 {
+        if pending_put { return "{\"status\":\"pending\",\"request\":7}" }
+        pending_status = false
+        remote[slot] = put_snapshot; exists[slot] = true
+        return "{\"status\":\"done\",\"request\":7}"
+    } else {
+        account_reads += 1
+        if !exists[slot] { return "{\"status\":\"missing\"}" }
+        BuilderPrint(*out, "{\"status\":\"done\",\"document\":")
+        Progress.GameProgressWrite(*remote[slot], *out)
+        BuilderPrint(*out, "}")
+    }
+    unused CopyCString(TextView(VecSlice(out, 0, out.count)), reply[:])
+    VecFree(out)
+    return TextUntilNul(reply[:])
 }
-
 #program_export
-FakeRecord :: (name: string) -> string { unused name; return "" }
+FakeRecord :: (name: string) -> string {
+    missing = true
+    for index: cast(s32)0..key_count - 1 {
+        if TextUntilNul(keys[index][:]) == name { missing = false; return TextUntilNul(staged[index][:]) }
+    }
+    return ""
+}
 #program_export
 FakeSave :: (name: string, text: string) -> bool {
     if name == "local.campaign" { return local_save_allowed }
-    if (name == "campaign" || name == "position") && text == "" { retired += 1 }
+    if (name == "campaign" || name == "position") && text == "" { retired += 1; return true }
+    for index: cast(s32)0..key_count - 1 {
+        if TextUntilNul(keys[index][:]) == name { return CopyCString(text, staged[index][:]) }
+    }
+    if key_count >= 16 { return false }
+    unused CopyCString(name, keys[key_count][:])
+    unused CopyCString(text, staged[key_count][:])
+    key_count += 1
     return true
 }
-
+Step :: (session: *SharedProgressSession, now: float64) {
+    for frame: cast(s32)0..5 { unused SharedProgressPump(session, now + cast(float64)frame * 0.01) }
+}
+Pending :: (session: *SharedProgressSession) -> bool {
+    value := session.record
+    marker: bool
+    return SharedProgressLoad(TextUntilNul(session.owner[:]), *value, *marker) && marker
+}
 #program_export
 Check :: () -> s32 {
-    game: ClassicGame.ShoveyGame
-    unused ClassicGame.ShoveyLoad(*game, 1)
-    local := ClassicProgress.ShoveyProgressNew()
+    local := Campaign.ShoveyProgressNew()
+    local.unlocked = 40 // A local resume must never seed this account.
     record := Classic.ShoveySharedRecord(*local)
-    session: SharedProgressSession
-    SharedProgressStart(*session, record, 0.0)
-    // Opening a new game and moving do not create a network record.
-    if account_writes != 0 { return 1 }
-    for direction: cast(s32)0..3 {
-        if ClassicGame.ShoveyMove(*game, direction) { break }
-    }
+    game: Game.ShoveyGame
+    unused Game.ShoveyLoad(*game, 1)
+    for direction: cast(s32)0..3 { if Game.ShoveyMove(*game, direction) { break } }
     board: [8193]u8
-    unused CopyCString(ClassicGame.ShoveySave(*game), board[:])
-    startup_calls := account_calls
-    for move: cast(s32)0..99 {
-        record = Classic.ShoveySharedRecord(*local)
-        if !SharedProgressSave(*session, 1, false) || account_writes != 0 ||
-        account_calls != startup_calls { return 2 }
-    }
-    record.unlocked = 2
-    if !SharedProgressSave(*session, 40, false) || session.record.unlocked != 1 || account_writes != 0 { return 10 }
-    record.unlocked = 1
-    // Playing crosses many polling intervals without calling the account
-    // service at all. Even a pending completion waits until a safe boundary.
+    unused CopyCString(Game.ShoveySave(*game), board[:])
+    session: SharedProgressSession
+    ready = false
+    SharedProgressStart(*session, record, 0.0)
+    if session.bound || account_reads != 0 { return 1 }
+    ready = true
+    flush = false
+    unused SharedProgressPump(*session, 1.0)
+    if session.bound || account_reads != 0 { return 2 }
+    flush = true
+    Step(*session, 2.0)
+    if !session.bound || session.record.unlocked != 1 || account_writes != 0 { return 3 }
     calls := account_calls
-    session.dirty = true
-    for second: cast(s32)16..180 {
-        if SharedProgressPump(*session, cast(float64)second, true) != 0 ||
-        account_calls != calls || !session.dirty { return 11 }
+    for move: cast(s32)0..99 {
+        if !SharedProgressSave(*session, 1, false) || SharedProgressPump(*session, 20.0 + cast(float64)move, true) != 0 { return 4 }
     }
-    session.dirty = false
-    // Even a newer campaign from another device cannot move this player,
-    // replace the board or advance the current level.
-    remote = record
-    remote.unlocked = 40
-    remote.completed[0] = #char "1"
-    remote.completed[1] = 0
-    remote_exists = true
-    if SharedProgressPump(*session, 16.0) != 1 { return 3 }
-    Classic.ShoveySharedRestore(*local, *session.record)
-    unused ClassicProgress.ShoveyOpenLatest(*local, *game)
-    if local.unlocked != 40 || !local.completed[0] ||
-    TextUntilNul(board[:]) != ClassicGame.ShoveySave(*game) || account_writes != 0 { return 4 }
-    // A newly completed puzzle is the only normal save to the account.
-    record.completed[1] = #char "1"
-    record.completed[2] = 0
-    if !SharedProgressSave(*session, 2, true) || account_writes != 1 || remote.unlocked != 40 { return 5 }
-    if !SharedProgressSave(*session, 2, true) || account_writes != 1 { return 14 }
+    if account_calls != calls || account_writes != 0 || TextUntilNul(board[:]) != Game.ShoveySave(*game) { return 5 }
+    remote[0] = session.record
+    remote[0].unlocked = 40; remote[0].completed[0] = #char "1"; exists[0] = true
+    if SharedProgressPump(*session, 30.0) != 1 { return 6 }
+    Step(*session, 30.1)
+    if session.record.unlocked != 40 || account_writes != 0 { return 7 }
+    // Failed persistence suppresses upload and never reports a durable save.
+    flush = false
+    if SharedProgressSave(*session, 2, true) || session.client.result.durable || account_writes != 0 { return 8 }
+    if SharedProgressSave(*session, 2, true) { return 27 }
+    calls = account_calls
+    unused SharedProgressPump(*session, 31.0, true)
+    if account_calls != calls || session.client.result.durable { return 28 }
+    // Start flushes staged data BEFORE a new client can call it durable.
+    reopened: SharedProgressSession
+    SharedProgressStart(*reopened, record, 31.0)
+    if reopened.bound || account_writes != 0 { return 9 }
+    flush = true
+    Step(*reopened, 32.0)
+    if !reopened.bound || reopened.record.completed[1] != #char "1" || account_writes != 1 || reopened.dirty { return 10 }
+    // Hydration must precede that recovered put; the old remote level remains.
+    if remote[0].unlocked != 40 || !reopened.client.result.durable || Pending(*reopened) { return 11 }
+    if !SharedProgressSave(*reopened, 2, true) || account_writes != 1 { return 12 }
+    // A provider's done reply is not a durable clear of the pending marker.
+    unused SharedProgressSave(*reopened, 8, true)
+    flush = false
+    unused SharedProgressPump(*reopened, 33.0)
+    if reopened.client.result.durable || SharedProgressSave(*reopened, 8, true) { return 29 }
+    flush = true
+    Step(*reopened, 34.0)
+    if !reopened.client.result.durable || Pending(*reopened) { return 30 }
+    // Dirtied during a pending put: acknowledgement must preserve the new win.
+    pending_put = true
+    unused SharedProgressSave(*reopened, 3, true)
+    unused SharedProgressSave(*reopened, 4, true)
+    if !Pending(*reopened) || !reopened.dirty { return 13 }
+    pending_put = false
+    Step(*reopened, 40.0)
+    Step(*reopened, 42.0)
+    if reopened.dirty || Pending(*reopened) || remote[0].completed[3] != #char "1" { return 14 }
+    // Legacy cleanup needs both node sync and an independently saved local run.
     synced = true
     local_save_allowed = false
-    if Controls.SaveLocalCampaign("device-board") { return 17 }
-    unused SharedProgressPump(*session, 32.0)
-    if retired != 0 || !session.retiring { return 18 }
+    unused Controls.SaveLocalCampaign("device-board")
+    reopened.poll_at = 0.0
+    unused SharedProgressPump(*reopened, 43.0)
+    if retired != 0 || !reopened.retiring { return 15 }
     local_save_allowed = true
-    if !Controls.SaveLocalCampaign("device-board") { return 19 }
-    unused SharedProgressPump(*session, 48.0)
-    if retired != 2 { return 6 }
-    // Reopening a saved puzzle with already-synced unlocks is read-only.
-    reopened: SharedProgressSession
-    SharedProgressStart(*reopened, session.record, 49.0)
-    if account_writes != 1 || reopened.dirty { return 13 }
-    other_owner = true
-    record.completed[2] = #char "1"
-    record.completed[3] = 0
-    if SharedProgressSave(*session, 3, true) || account_writes != 1 { return 12 }
-    if SharedProgressPump(*session, 65.0) != 2 || session.available || session.record.unlocked != 0 { return 7 }
-    other_owner = false
+    unused Controls.SaveLocalCampaign("device-board")
+    reopened.poll_at = 0.0
+    unused SharedProgressPump(*reopened, 44.0)
+    if retired != 2 { return 16 }
+    // Same-owner Profile reset preserves the local board and earned save.
+    SharedProgressStart(*reopened, record, 45.0)
+    if reopened.record.completed[3] != #char "1" || TextUntilNul(board[:]) != Game.ShoveySave(*game) { return 17 }
+    // A bound owner can retain an offline win without any upload, and the
+    // pending marker survives a same-owner restart when the service returns.
     available = false
-    SharedProgressStart(*session, record, 49.0)
-    record.unlocked = 41
-    if SharedProgressSave(*session, 40, true) { return 8 }
-    available = true
-    old_host = true
-    SharedProgressStart(*session, record, 50.0)
-    record.unlocked = 42
-    if session.available || SharedProgressSave(*session, 41, true) { return 9 }
-    // A fresh runtime after logout may still have this device's old level
-    // 40 campaign. Entry is read-only; winning level 1 earns only level 2.
-    old_host = false
-    other_owner = true
-    remote_exists = false
     writes := account_writes
-    record.unlocked = 40
-    record.completed[0] = 0
-    cold: SharedProgressSession
-    SharedProgressStart(*cold, record, 60.0)
-    if account_writes != writes || cold.record.unlocked != 1 { return 15 }
-    if !SharedProgressSave(*cold, 1, true) || account_writes != writes + 1 ||
-    remote.unlocked != 2 || TextUntilNul(remote.completed[:]) != "1" { return 16 }
+    if SharedProgressSave(*reopened, 9, true) || account_writes != writes || !reopened.dirty { return 31 }
+    available = true
+    SharedProgressStart(*reopened, record, 45.5)
+    Step(*reopened, 45.6)
+    if reopened.dirty || reopened.record.completed[8] != #char "1" { return 32 }
+    // A/B switch keeps an active A completion under A, never under B.
+    owner = "second"; slot = 1
+    writes = account_writes
+    if SharedProgressSave(*reopened, 5, true) || account_writes != writes { return 18 }
+    if SharedProgressPump(*reopened, 46.0) != 2 || reopened.available || reopened.record.unlocked != 0 { return 19 }
+    SharedProgressStart(*reopened, record, 47.0)
+    Step(*reopened, 47.1)
+    if reopened.record.unlocked != 1 || account_writes != writes { return 20 }
+    unused SharedProgressSave(*reopened, 1, true)
+    Step(*reopened, 48.0)
+    if remote[1].unlocked != 2 || TextUntilNul(remote[1].completed[:]) != "1" { return 21 }
+    owner = ""; slot = 2
+    SharedProgressStart(*reopened, record, 49.0)
+    writes = account_writes; calls = account_reads
+    unused SharedProgressSave(*reopened, 6, true)
+    if account_writes != writes || account_reads != calls || !Pending(*reopened) { return 22 }
+    SharedProgressStart(*reopened, record, 50.0)
+    if reopened.record.unlocked != 7 { return 23 }
+    owner = "first"; slot = 0
+    SharedProgressStart(*reopened, record, 51.0)
+    Step(*reopened, 51.1)
+    if reopened.record.completed[4] != #char "1" || reopened.record.completed[5] == #char "1" { return 24 }
+    // Unsupported/temporarily unavailable providers cannot acknowledge a win.
+    available = false
+    SharedProgressStart(*session, record, 52.0)
+    if SharedProgressSave(*session, 40, true) { return 25 }
+    available = true; old_host = true
+    SharedProgressStart(*session, record, 53.0)
+    if session.available || SharedProgressSave(*session, 41, true) { return 26 }
     return 42
 }
