@@ -133,6 +133,7 @@ BuildEdition :: (apps: *JsonDocument, app: s32, toolchain: string, kryon: string
     catalog: JsonDocument
     catalog_root := JsonCopy(*catalog, *descriptor, descriptor.root)
     JsonRemove(*catalog, catalog_root, "build_defines")
+    JsonRemove(*catalog, catalog_root, "prepare_assets")
     catalog_text: Vec(u8)
     BuilderPrint(*catalog_text, "%\n", JsonWrite(*catalog, catalog_root, JsonPythonStyle(2)))
     if !WriteEntireFile(JoinPath(resources, "catalog.json"), BuilderFinish(catalog_text)) { return "cannot write catalog.json" }
@@ -152,6 +153,11 @@ BuildEdition :: (apps: *JsonDocument, app: s32, toolchain: string, kryon: string
     generated := JoinPath("build/game-generated", name)
     if !CreateDirectories(generated) || !WriteEntireFile(JoinPath(generated, "translations.zi"), translations.code) {
         return "cannot write the edition's translations"
+    }
+    prepare := Text(*descriptor, "prepare_assets")
+    if prepare.count > 0 {
+        preparation: [4]string = .["python3", ResolvePath(prepare), ResolvePath(resources), ResolvePath(generated)]
+        if !RunCommand(preparation[:]) { return "cannot prepare the edition's assets" }
     }
     if !CreateDirectories("build/games") { return "cannot create build/games" }
     bundle: Vec(u8)

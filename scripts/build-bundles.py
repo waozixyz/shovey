@@ -129,7 +129,7 @@ def build(toolchain, kryon, apps, mingcute):
             else:
                 shutil.copyfile(source, target)
         (resources / 'catalog.json').write_text(json.dumps(
-            {key: value for key, value in descriptor.items() if key != 'build_defines'}, indent=2) + '\n')
+            {key: value for key, value in descriptor.items() if key not in ('build_defines', 'prepare_assets')}, indent=2) + '\n')
         if 'SHOVEY_RELEASE' in descriptor.get('build_defines', []):
             prepare_release_assets(ROOT, resources)
         blocks, code = translations(descriptor)
@@ -138,6 +138,9 @@ def build(toolchain, kryon, apps, mingcute):
             (resources / 'locales' / file_name).write_text(text)
         generated = ROOT / 'build/game-generated' / name
         generated.mkdir(parents=True, exist_ok=True)
+        if descriptor.get('prepare_assets'):
+            subprocess.run(['python3', str(ROOT / descriptor['prepare_assets']), str(resources), str(generated)],
+                           cwd=ROOT, check=True)
         (generated / 'translations.zi').write_text(code)
         bundle = ROOT / 'build/games' / f'{name}.zx'
         bundle.parent.mkdir(parents=True, exist_ok=True)
