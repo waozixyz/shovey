@@ -10,7 +10,7 @@ ref = "master"
 
 [dependencies.kryon]
 git = "https://github.com/kryonlabs/kryon.git"
-ref = "master"
+ref = "a02feeb703192f1481e72160b1ccff401d17ef9d"
 
 [dependencies.apps]
 git = "https://github.com/waozixyz/apps.git"
