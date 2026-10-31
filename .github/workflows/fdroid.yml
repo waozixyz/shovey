@@ -17,6 +17,7 @@ on:
       - scripts/player.py
       - scripts/fdroid-ci.py
       - packaging/android/**
+      - packaging/apps-controller.sha256
       - packaging/fdroid/metadata/**
       - .github/actions/android/**
       - .github/workflows/fdroid.yml
