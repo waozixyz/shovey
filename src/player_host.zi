@@ -444,7 +444,7 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
     language := ifx locale.count >= 2 then locale[:2] else "en"
     platform := AppPlatform.{.allows = CollectionAllows, .call = CollectionCall,
         .widgets = CollectionWidgets, .save = CollectionSave, .state = CollectionState,
-        .effect = CollectionEffect}
+        .effect = CollectionEffect, .host_api = 41}
     collection_ready = AppHostStart(*collection_host, bytes, "arcade.local", "arcade.shovey-player",
         "shovey", TextUntilNul(digest[:]), "local", platform, TextUntilNul(harness[:]), language)
     return collection_ready
