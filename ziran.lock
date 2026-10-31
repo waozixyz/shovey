@@ -73,17 +73,8 @@
       "url": "https://github.com/ziranlang/daochi-client.git"
     },
     {
-      "commit": "80084e1b1cdf2fbb84704c9e2babc850e7783236",
-      "dependencies": {"raylib": "p5a77c9c35110e925"},
-      "dependency_refs": {"raylib": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e"},
-      "id": "p940dac29edcad7f2",
-      "name": "kryon",
-      "ref": "master",
-      "url": "https://github.com/kryonlabs/kryon.git"
-    },
-    {
       "commit": "97f697b37446d4b3d5f5bd5d795411e52d3eada0",
-      "dependencies": {"curl": "p1ca0e8d3c19dbe4c", "daochi_client": "p89503086b39ba0fb", "kryon": "p940dac29edcad7f2", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096", "zlib": "p1dff88558141400b"},
+      "dependencies": {"curl": "p1ca0e8d3c19dbe4c", "daochi_client": "p89503086b39ba0fb", "kryon": "pe5e9983467e15f53", "monocypher": "p809b4d31a48625a3", "qrcode": "p0dfa70137405b096", "zlib": "p1dff88558141400b"},
       "dependency_refs": {"curl": "19b299005fbe2d895f4ad525cfdae62a2220c3ea", "daochi_client": "master", "kryon": "master", "monocypher": "master", "qrcode": "master", "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"},
       "id": "pb8db6dcc865e7934",
       "name": "Entity",
@@ -112,7 +103,7 @@
       "dependency_refs": {"raylib": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e"},
       "id": "pe5e9983467e15f53",
       "name": "kryon",
-      "ref": "ee9d204548295e6c6900939ba1120efe44659e79",
+      "ref": "master",
       "url": "https://github.com/kryonlabs/kryon.git"
     },
     {
@@ -126,7 +117,7 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "p41314754ab04e82d", "entity": "pb8db6dcc865e7934", "kryon": "p940dac29edcad7f2", "mingcute": "pe1027b9d16704793"},
+    "dependencies": {"apps": "p41314754ab04e82d", "entity": "pb8db6dcc865e7934", "kryon": "pe5e9983467e15f53", "mingcute": "pe1027b9d16704793"},
     "dependency_refs": {"apps": "master", "entity": "master", "kryon": "master", "mingcute": "master"},
     "name": "Shovey"
   },
