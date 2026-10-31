@@ -43,7 +43,7 @@ Client :: #import "entity/collection_client";
 #import, file "../orientation.zi";
 #import, file "../engine.zi";
 #import, file "../shovey_board.zi";
-#import, file "../levels.zi";
+#import "levels"
 #import, file "../controls.zi";
 #import, file "../shovey_theme.zi";
 #import, file "../solver/solver.zi";

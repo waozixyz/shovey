@@ -4,7 +4,7 @@
 #import "std/text_buffer"
 #import, file "../progress.zi";
 #import, file "../engine.zi";
-#import, file "../levels.zi";
+#import "levels"
 
 EditorAccountUnlocked :: (reply: string) -> s32 {
     status: [16]u8

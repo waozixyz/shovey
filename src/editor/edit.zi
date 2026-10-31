@@ -6,7 +6,7 @@
 #import "std/text_buffer"
 #import "std/json_scan"
 #import, file "../engine.zi";
-#import, file "../levels.zi";
+#import "levels"
 
 EDIT_CELLS :: 240
 EDIT_WIDTH :: 12

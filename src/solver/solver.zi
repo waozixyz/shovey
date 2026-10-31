@@ -42,7 +42,7 @@
 // is an optional action wherever it is taken.
 #import "std/text_buffer"
 #import, file "../engine.zi";
-#import, file "../levels.zi";
+#import "levels"
 #import, file "classic_rules.zi";
 
 SOLVER_NODES :: 32768
