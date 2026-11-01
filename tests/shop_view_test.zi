@@ -21,6 +21,7 @@ count: s32;
 missing: bool;
 route: string;
 purchases: s32;
+navigation_backs: s32;
 profile_request: [32]u8;
 account :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 #program_export
@@ -37,6 +38,7 @@ FakeService :: (name: string, request: string) -> string {
     }
     if name == "entity.dew" { return "{\"units\":12000000}" }
     if name == "entity.profile" { unused CopyCString(request, profile_request[:]); return "opened" }
+    if name == "arcade.navigation" && request == "back" { navigation_backs += 1; return "queued" }
     return ""
 }
 #program_export
@@ -123,6 +125,7 @@ Check :: () -> s32 {
     if !Activate(session, 61104, 320.0, 568.0) || TextUntilNul(profile_request[:]) != "open" { return 14 }
     if !Activate(session, 61106, 320.0, 568.0) || TextUntilNul(profile_request[:]) != "leaderboard" { return 15 }
     if !ShopUI.Back() || ShopUI.IsOpen() { return 16 }
+    if navigation_backs != 1 { return 27 }
     route = "chest"; ShopUI.Request()
     if !Draw(session, 320.0, 568.0, -1) || Daily.DailyChestReady(-1) { return 26 }
     if !Draw(session, 320.0, 568.0) || !Bounds(session, 320.0) || !Daily.DailyChestReady(20000) { return 17 }
@@ -131,6 +134,27 @@ Check :: () -> s32 {
     if !Draw(session, 900.0, 500.0) || !Bounds(session, 900.0) || Daily.DailyChestClaim(20000) { return 20 }
     if !Draw(session, 320.0, 568.0, 20002) || Daily.DailyChestDay(20002) != 1 { return 21 }
     if !Activate(session, 61101, 320.0, 568.0, 20002) || ShopUI.IsOpen() { return 22 }
+    if navigation_backs != 2 { return 28 }
+    // A direct in-game page closes without leaving the game, while each
+    // host-requested route pops its opener after nested Dew, Profile and
+    // Leaderboard pages.
+    ShopUI.Open(1)
+    ShopUI.tab = 0
+    if !Draw(session, 320.0, 568.0, 20002) { return 29 }
+    if !ShopUI.Back() || ShopUI.IsOpen() || navigation_backs != 2 { return 32 }
+    route = "shop"; ShopUI.Request()
+    if !Draw(session, 320.0, 568.0, 20002) { return 33 }
+    if !Activate(session, 61302, 320.0, 568.0, 20002) || !Activate(session, 62502, 320.0, 568.0, 20002) ||
+        TextUntilNul(profile_request[:]) != "dew" { return 34 }
+    if !Activate(session, 61101, 320.0, 568.0, 20002) || ShopUI.IsOpen() || navigation_backs != 3 { return 35 }
+    route = "chest"; ShopUI.Request()
+    if !Draw(session, 320.0, 568.0, 20002) { return 36 }
+    if !Activate(session, 61104, 320.0, 568.0, 20002) || TextUntilNul(profile_request[:]) != "open" { return 37 }
+    if !Activate(session, 61101, 320.0, 568.0, 20002) || ShopUI.IsOpen() || navigation_backs != 4 { return 38 }
+    route = "chest"; ShopUI.Request()
+    if !Draw(session, 320.0, 568.0, 20002) { return 39 }
+    if !Activate(session, 61106, 320.0, 568.0, 20002) || TextUntilNul(profile_request[:]) != "leaderboard" { return 40 }
+    if !Activate(session, 61101, 320.0, 568.0, 20002) || ShopUI.IsOpen() || navigation_backs != 5 { return 41 }
     unused SessionClose(session)
     return 42
 }

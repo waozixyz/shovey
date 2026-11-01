@@ -23,6 +23,7 @@ def function(path, name):
 source = '''#import "std/vec"
 #import "std/c_string"
 #import "std/text_buffer"
+ProductionShopUI :: #import "shop_view";
 Identity :: struct { id: [128]u8 }
 AppLocation :: struct { id: [128]u8; sha256: [65]u8 }
 AppLocator :: struct { identity: Identity; chain: Vec(AppLocation) }
@@ -115,6 +116,27 @@ EntityHostSave :: () -> bool { return entity_save }
 EntityHostProfileRequest :: (page: string) -> bool { profile_calls += 1; return entity_route }
 EntityHostBack :: () -> bool { return entity_back }
 '''
+source += r'''
+production_route: string;
+production_navigation_backs: s32;
+#program_export
+AppServiceHost :: (name: string, request: string) -> string {
+    if name == "arcade.navigation" && request == "back" { production_navigation_backs += 1; return "queued" }
+    return ""
+}
+#program_export
+AppRecordHost :: (name: string) -> string { return ifx name == "shop.request" then production_route else "" }
+#program_export
+SaveAppRecordHost :: (name: string, text: string) -> bool {
+    if name != "shop.request" { return false }
+    production_route = text
+    return true
+}
+#program_export
+AppSupportsHost :: (name: string) -> bool { return false }
+#program_export
+AppLocaleHost :: (key: string) -> string { return key }
+'''
 for name in ('EntityShowPage', 'EntityBack'):
     source += function(ROOT / 'src/player_entity.zi', name) + '\n'
 source += function(ROOT / 'src/web/game.zi', 'Main').replace('Main ::', 'WebMain ::', 1) + '\n'
@@ -131,6 +153,19 @@ source += r'''
 Check :: () -> s32 {
     if CollectionLocaleLabel("[a]\nUno\n---\n[b]\nDos\n---\n", "b") != "Dos" { return 15 }
     if CollectionLocaleLabel("[a]\nUno\n---\n", "missing") != "" { return 16 }
+    ProductionShopUI.Open(1)
+    if !ProductionShopUI.IsOpen() || !ProductionShopUI.Back() || ProductionShopUI.IsOpen() ||
+        production_navigation_backs != 0 { return 31 }
+    production_route = "shop"
+    ProductionShopUI.Request()
+    if !ProductionShopUI.IsOpen() || production_route != "" { return 32 }
+    ProductionShopUI.confirm = 100
+    if !ProductionShopUI.Back() || !ProductionShopUI.IsOpen() || production_navigation_backs != 0 { return 33 }
+    if !ProductionShopUI.Back() || ProductionShopUI.IsOpen() || production_navigation_backs != 1 { return 34 }
+    production_route = "chest"
+    ProductionShopUI.Request()
+    if !ProductionShopUI.IsOpen() || production_route != "" { return 35 }
+    if !ProductionShopUI.Back() || ProductionShopUI.IsOpen() || production_navigation_backs != 2 { return 36 }
     root.collection = true
     unused CopyCString("arcade.shovey-player", root.identity.id[:])
     unused CopyCString("arcade.shovey", entry.id[:])
@@ -204,9 +239,15 @@ fixture = WORK / 'routes.zi'
 fixture.write_text(source)
 flags = [] if (ROOT / 'ziran.local.toml').exists() else ['--locked']
 toolchain = Path(subprocess.check_output(['./scripts/ziran.sh', 'pkg', 'path', 'ziran', *flags], cwd=ROOT, text=True).strip())
+entity = Path(subprocess.check_output(['./scripts/ziran.sh', 'pkg', 'path', 'entity', *flags], cwd=ROOT, text=True).strip())
+kryon = Path(subprocess.check_output(['./scripts/ziran.sh', 'pkg', 'path', 'kryon', *flags], cwd=ROOT, text=True).strip())
 tool = str(toolchain / 'build/bin/ziran')
-subprocess.run([tool, 'bundle', '--root', str(WORK), '--module-path', str(toolchain / 'std'),
+subprocess.run([tool, 'bundle', '--root', str(WORK), '--module-path', str(ROOT / 'src'),
+                '--module-path', str(toolchain / 'std'),
                 '--module-path', f'std={toolchain / "std"}', '--entry', 'routes:Check',
+                '--bind-host', 'routes',
+                '--module-path', f'entity={entity / "src"}',
+                '--module-path', f'kryon={kryon / "src/ui"}', '--module-path', f'kryon={kryon / "src/backend"}',
                 '-o', str(WORK / 'routes.zx'), str(fixture)], cwd=ROOT, check=True)
 result = subprocess.check_output([tool, 'run', str(WORK / 'routes.zx')], cwd=ROOT, text=True)
 assert result.strip() == '42', result
@@ -235,4 +276,4 @@ for name in ('stall', 'chest-closed', 'chest-open', 'profile', 'trophy'):
     assert original.read_bytes() == (staging / original.name).read_bytes(), original
 for locale in (ROOT / 'src/locales').glob('*.txt'):
     assert locale.read_bytes() == (assets / 'shovey/locales' / locale.name).read_bytes(), locale
-print('Shop host local tests: verified shop/chest routes, pending/rejected navigation, write failure, service forwarding, mini gating, UTC source and exact staged icons passed')
+print('Shop host local tests: verified shop/chest routes, request-origin Back, pending/rejected navigation, write failure, service forwarding, mini gating, UTC source and exact staged icons passed')

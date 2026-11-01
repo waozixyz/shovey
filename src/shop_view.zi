@@ -79,11 +79,12 @@ scroll: s32;
 confirm: s32; // Skin id + 1; coin pack id + 100.
 notice: string;
 dew_balance: [32]u8;
+host_route: bool;
 
 #program_export
 Open :: (next: s32) {
     if next != 1 && next != 2 { return }
-    page = next; confirm = 0; scroll = 0; notice = ""
+    page = next; confirm = 0; scroll = 0; notice = ""; host_route = false
 }
 #program_export
 Skin :: () -> s32 { return ShopSkin() }
@@ -93,7 +94,13 @@ IsOpen :: () -> bool { return page != 0 }
 Back :: () -> bool {
     if page == 0 { return false }
     if confirm != 0 { confirm = 0; notice = "" }
-    else { page = 0 }
+    else {
+        page = 0
+        if host_route {
+            host_route = false
+            unused AppService("arcade.navigation", "back")
+        }
+    }
     return true
 }
 // A cover request is navigation only. Consume it before opening, so resuming
@@ -102,7 +109,7 @@ Back :: () -> bool {
 Request :: () {
     route := PathRecord("shop.request")
     next: s32 = ifx route == "shop" then 1 else ifx route == "chest" then 2 else 0
-    if next != 0 && PathSaveRecord("shop.request", "") { Open(next) }
+    if next != 0 && PathSaveRecord("shop.request", "") { Open(next); host_route = true }
 }
 #program_export
 Pump :: (now: float64, today: s64) {
