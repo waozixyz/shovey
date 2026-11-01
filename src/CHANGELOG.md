@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Sign in across Waozi apps with the shared Profile, and restore password-protected backups named after your username.
+
 - Classic 125 now needs its crate and both movable barrels on marks after their shared button work, keeping the puzzle active without adding walls.
 
 - Push barrels like wooden crates, including onto marks and into water, while keeping their barrel appearance and existing saved progress.

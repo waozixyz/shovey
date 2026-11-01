@@ -76,3 +76,5 @@ android {
 if (googlePlay) {
     apply from: new File(kryonDir, 'templates/android-gplay.gradle')
 }
+
+apply from: new File(kryonDir, 'templates/android-account-handoff.gradle')
