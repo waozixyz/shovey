@@ -264,8 +264,10 @@ web = (ROOT / 'src/web/game.zi').read_text()
 assert web.index('ShoveyShopSetToday(today)') < web.index('if !AppMini() && web_covers_open')
 assert 'today := cast(s64)AppNow() / 86400' in web
 assert 'ShopUI.IsOpen()' in web and 'else { WebCovers() }' in web
-for name in ('stall', 'chest-closed', 'profile', 'trophy', 'coins', 'dew'):
+for name in ('stall', 'chest-closed', 'trophy', 'coins', 'dew'):
     assert f'assets/shovey/shop/{name}.png' in host
+assert 'ShopState.ShopSkinPath(ShopState.ShopSkin())' in toolbar
+assert 'ShopUI.SkinPath()' in web
 # The collection builder embeds the exact binary files that the toolbar reads.
 sys.path.insert(0, str(ROOT / 'scripts'))
 spec = importlib.util.spec_from_file_location('shop_player_builder', ROOT / 'scripts/player.py')

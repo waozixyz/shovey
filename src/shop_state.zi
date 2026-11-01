@@ -21,6 +21,7 @@ shop_bought: s32;
 shop_verified: s32;
 shop_ready: bool;
 shop_poll_at: float64;
+shop_reported_skin: s32 = -1;
 
 ShopSkinName :: (id: s32) -> string {
     names: [8]string = .["default", "ember", "frost", "berry", "night", "crystal", "stone", "gold"]
@@ -99,6 +100,7 @@ ShopOwner :: () -> bool {
     if !valid { owner = .{} }
     if valid != shop_known || TextUntilNul(owner[:]) != TextUntilNul(shop_owner[:]) {
         CompletionCoins.CompletionCoinInvalidate()
+        shop_reported_skin = -1
         shop_owner = owner
         shop_known = valid
         shop_local = .{}
@@ -176,7 +178,18 @@ ShopAvailable :: (id: s32) -> bool {
 }
 ShopSkin :: () -> s32 {
     unused ShopOwner()
-    return ifx ShopAvailable(shop_local.selected) then shop_local.selected else 0
+    skin := ifx ShopAvailable(shop_local.selected) then shop_local.selected else 0
+    if shop_known && shop_owner[0] != 0 && skin != shop_reported_skin {
+        owner := shop_owner
+        request: Vec(u8)
+        BuilderPrint(*request, "skin %", skin)
+        reply := App.AppService("leaderboard", TextView(VecSlice(request, 0, request.count)))
+        saved := Products.GameShopField(reply, "status", "saved")
+        VecFree(request)
+        if !ShopOwner() || TextUntilNul(owner[:]) != TextUntilNul(shop_owner[:]) { return 0 }
+        if saved { shop_reported_skin = skin }
+    }
+    return skin
 }
 ShopCoins :: () -> s32 {
     if !ShopOwner() { return 0 }

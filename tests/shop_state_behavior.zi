@@ -16,6 +16,10 @@ ledger_coins: string = "0";
 connected: bool = true;
 purchase_status: string = "pending";
 purchase_calls: s32;
+skin_calls: s32;
+switch_on_skin: bool;
+last_skin: [24]u8;
+last_skin_owner: [65]u8;
 last_purchase: [64]u8;
 service_reply: [1024]u8;
 record_names: [12][96]u8;
@@ -39,6 +43,13 @@ Owner :: () -> string {
 AppServiceHost :: (name: string, request: string) -> string { return FakeService(name, request) }
 #program_export
 FakeService :: (name: string, request: string) -> string {
+    if name == "leaderboard" {
+        skin_calls += 1
+        unused CopyCString(request, last_skin[:])
+        unused CopyCString(Owner(), last_skin_owner[:])
+        if switch_on_skin { account = 1; switch_on_skin = false }
+        return "{\"status\":\"saved\"}"
+    }
     if name == "arcade.progress-storage" {
         if request == "ready" { return "ready" }
         if request == "missing" { return ifx storage_missing then "missing" else "present" }
@@ -118,6 +129,10 @@ Check :: () -> s32 {
     writes := save_calls
     if Shop.ShopBuy(1) || save_calls != writes || purchase_calls != 0 { return 6 }
     if !Shop.ShopSelect(1) || Shop.ShopSkin() != 1 { return 7 }
+    if TextUntilNul(last_skin[:]) != "skin 1" || TextUntilNul(last_skin_owner[:]) != FIRST { return 80 }
+    skin_count := skin_calls
+    unused Shop.ShopSkin()
+    if skin_calls != skin_count { return 81 }
     fail_save = true
     if Shop.ShopBuy(2) || Shop.ShopAvailable(2) || Shop.ShopCoins() != 250 || Shop.ShopSelect(0) || Shop.ShopSkin() != 1 { return 8 }
     fail_save = false
@@ -271,5 +286,13 @@ Check :: () -> s32 {
     if Shop.ShopCoins() != 0 { return 113 }
     account = 2
     if Shop.ShopCoins() != 0 { return 114 }
+    unused Shop.ShopSkin()
+    if TextUntilNul(last_skin_owner[:]) != SECOND { return 82 }
+    account = 0
+    guest_calls := skin_calls
+    if Shop.ShopSkin() != 0 || skin_calls != guest_calls { return 83 }
+    account = 2
+    switch_on_skin = true
+    if Shop.ShopSkin() != 0 || Shop.shop_reported_skin != -1 { return 84 }
     return 42
 }

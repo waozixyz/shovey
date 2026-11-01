@@ -153,6 +153,10 @@ SaveAppRecordHost :: (name: string, text: string) -> bool {
 #program_export
 AppServiceHost :: (name: string, request: string) -> string {
     if name == "entity.records" { return EntityRecordsAnswer(request) }
+    if name == "leaderboard" {
+        saved := EntityLeaderboardReport("arcade", "Arcade", "arcade.shovey", "Shovey", request)
+        return ifx saved then "{\"status\":\"saved\"}" else "{\"status\":\"rejected\"}"
+    }
     if name == "entity.dew" { return EntityDewAnswer(request) }
     if name == "entity.game-shop" { return EntityGameShopAnswer(request) }
     if name == "arcade.progress-storage" {
@@ -851,7 +855,7 @@ CollectionToolbar :: (session: Session, viewport: Rectangle) {
     CollectionCoverAmount(session, 49212, Rectangle.{viewport.x + 60.0, y + 30.0, viewport.width - 176.0, 28.0},
         "dew", ShopUI.DewText())
     if CollectionCoverAction(session, 49204, Rectangle.{viewport.x + viewport.width - 104.0, y, 44.0, 44.0},
-        "assets/shovey/shop/profile.png", "shovey_shop_profile") { unused EntityShowPage("open") }
+        ShopState.ShopSkinPath(ShopState.ShopSkin()), "shovey_shop_profile") { unused EntityShowPage("open") }
     if CollectionCoverAction(session, 49206, Rectangle.{viewport.x + viewport.width - 56.0, y, 44.0, 44.0},
         "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused EntityShowPage("leaderboard") }
 }

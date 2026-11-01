@@ -44,7 +44,7 @@ WebCovers :: () {
     ShopUI.CoverActions(page.session, Rectangle.{12.0, top + 12.0, width - 128.0, 104.0})
     if AppSupports("entity.profile") {
         if ShopUI.IconAction(page.session, 20400, Rectangle.{width - 104.0, top + 12.0, 44.0, 44.0},
-            "assets/shovey/shop/profile.png", "profile") { unused AppService("entity.profile", "open") }
+            ShopUI.SkinPath(), "profile") { unused AppService("entity.profile", "open") }
         if ShopUI.IconAction(page.session, 20402, Rectangle.{width - 56.0, top + 12.0, 44.0, 44.0},
             "assets/shovey/shop/trophy.png", "leaderboard") { unused AppService("entity.profile", "leaderboard") }
     }
