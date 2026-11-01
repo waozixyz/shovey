@@ -3,6 +3,91 @@
   "method": "Pixel sprites drawn by tools/pixel/pixel.py or generated for Shovey by an image model and fitted to a 32 by 32 grid; the card is composed from them. No outside image is used.",
   "files": [
     {
+      "path": "collectibles/book-page.png",
+      "depicts": "open collectible album with blank cream pages, teal cover and silver corners, Codex generated hand-painted game art",
+      "sha256": "ac2b6253fa935130d6fefd52ca8af8fde981ffc4130043e1416b5b4c75050194"
+    },
+    {
+      "path": "collectibles/brass-compass.png",
+      "depicts": "one-time collectible: open brass pocket compass, Codex generated hand-painted game art",
+      "sha256": "3a98b12e8c34b8fc7b6657b6ee9ffba59c94ed7d18e40b9019bfac5ad8637564"
+    },
+    {
+      "path": "collectibles/chipped-teacup.png",
+      "depicts": "one-time collectible: chipped teacup, Codex generated hand-painted game art",
+      "sha256": "85b4f18ec9b95e57701c1b1da07e2722368f6e2876a9a74106a9ada6e30419e8"
+    },
+    {
+      "path": "collectibles/firefly-jar.png",
+      "depicts": "one-time collectible: firefly jar, Codex generated hand-painted game art",
+      "sha256": "d130818d7435f9ab8f80fd2943b52802a7b650012267071991d3dff45cecc5aa"
+    },
+    {
+      "path": "collectibles/four-leaf-clover.png",
+      "depicts": "one-time collectible: four leaf clover, Codex generated hand-painted game art",
+      "sha256": "714acfdda6263ef2c6052eacb73b01e64e1ee7e544539681d6d8839f42527107"
+    },
+    {
+      "path": "collectibles/frost-leaf.png",
+      "depicts": "one-time collectible: frost leaf, Codex generated hand-painted game art",
+      "sha256": "3b69fec56be64a89a3f1265f5fea3e41ab0a7e171e27fbed03465bfe5d97577b"
+    },
+    {
+      "path": "collectibles/giant-acorn.png",
+      "depicts": "one-time collectible: giant acorn, Codex generated hand-painted game art",
+      "sha256": "efcb2c94054a26df3d44ccc8f1097a53558cc7fa85676701a54070f2cee4e0d4"
+    },
+    {
+      "path": "collectibles/glow-crystal.png",
+      "depicts": "one-time collectible: glow crystal, Codex generated hand-painted game art",
+      "sha256": "3c6b1dfb449a4a837cedce78ed3e0fc7bd5e77c472fe57c484eaf8c898a11ff4"
+    },
+    {
+      "path": "collectibles/golden-feather.png",
+      "depicts": "one-time collectible: golden feather, Codex generated hand-painted game art",
+      "sha256": "f724d448e79fdf46d0d3bd07ae2db88331fbbdf13521efb6829fe5148445b551"
+    },
+    {
+      "path": "collectibles/honeycomb.png",
+      "depicts": "one-time collectible: honeycomb, Codex generated hand-painted game art",
+      "sha256": "a0e02a87d6fdf2e0f62c344ac00c629ea4f71ca87e0a98d6d3e51032fe10293b"
+    },
+    {
+      "path": "collectibles/lucky-pebble.png",
+      "depicts": "one-time collectible: lucky pebble, Codex generated hand-painted game art",
+      "sha256": "6b4e34f8f5999c9fadb69421ec52169dd0c776609d576d68ae0c87863cf08df3"
+    },
+    {
+      "path": "collectibles/message-bottle.png",
+      "depicts": "one-time collectible: message bottle, Codex generated hand-painted game art",
+      "sha256": "33f6011aec4d4c9e832979e88b37e41799170988501c26b73792a263d0779370"
+    },
+    {
+      "path": "collectibles/rusty-key.png",
+      "depicts": "one-time collectible: rusty key, Codex generated hand-painted game art",
+      "sha256": "29d5b0acb207db540674315d31398df093042f62abb3e92a50d2b759d5b49fb5"
+    },
+    {
+      "path": "collectibles/silver-pinecone.png",
+      "depicts": "one-time collectible: silver pinecone, Codex generated hand-painted game art",
+      "sha256": "7df96e0e7f363ce6dfe9134145d74e452ac2bdbb2454fe4dd919e724ec1bf725"
+    },
+    {
+      "path": "collectibles/sleepy-starfish.png",
+      "depicts": "one-time collectible: sleepy starfish, Codex generated hand-painted game art",
+      "sha256": "0deed008b49ac1515ee3cce2626150e1f6a7106dfa66ef962d92f6508cc38e59"
+    },
+    {
+      "path": "collectibles/snail-shell.png",
+      "depicts": "one-time collectible: snail shell, Codex generated hand-painted game art",
+      "sha256": "0a122d0f818ca80a4f4c8f816addb6cb7b3dc23c71f4cde023a948692533da65"
+    },
+    {
+      "path": "collectibles/tiny-fossil.png",
+      "depicts": "one-time collectible: tiny fossil, Codex generated hand-painted game art",
+      "sha256": "fbfd904f5a58a2c5419c6bb189c60d395ed1e466fb8613a204671db3771764a5"
+    },
+    {
       "path": "editor-landscape.png",
       "depicts": "editor title art: 3D Shovey guides floating crates, balls and tiles onto a puzzle board on a garden workshop table",
       "sha256": "7b1eae4209ede14807806a4cbce1e2bf7a14d342e75c89042958a524cf60d67e"
@@ -21,6 +106,11 @@
       "path": "preview.png",
       "depicts": "Shovey Classic card: Shovey pushes a red ball towards its pit in a grey stone courtyard",
       "sha256": "96db251f36835c76cd03cd0104a6e1b5096e4c442d410960457edcd8e2377a38"
+    },
+    {
+      "path": "shop/book.png",
+      "depicts": "closed teal collectible album with silver leaf medallion, Codex generated hand-painted game art",
+      "sha256": "3b7394fac5c63dfbc660d4d51af71d5377030df1f417f85ea8ff6fa5eb691df2"
     },
     {
       "path": "shop/chest-closed.png",
