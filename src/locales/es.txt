@@ -900,3 +900,15 @@ Oro
 [shovey_completion_coins]
 +15 monedas · ¡Muy bien!
 ---
+
+[shovey_piece_bees]
+Enjambre de abejas
+---
+
+[shovey_piece_hive]
+Colmena
+---
+
+[shovey_tip_bees]
+Empuja la colmena junto a las abejas para calmarlas y abrir un camino. Déjala allí mientras cruzas.
+---

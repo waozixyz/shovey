@@ -900,3 +900,15 @@ Gold
 [shovey_completion_coins]
 +15 Münzen · Gut gemacht!
 ---
+
+[shovey_piece_bees]
+Bienenschwarm
+---
+
+[shovey_piece_hive]
+Bienenkorb
+---
+
+[shovey_tip_bees]
+Schiebe den Bienenkorb neben die Bienen, um sie zu beruhigen und den Weg zu öffnen. Lass ihn beim Überqueren dort.
+---

@@ -900,3 +900,15 @@ Emas
 [shovey_completion_coins]
 +15 koin · Hebat!
 ---
+
+[shovey_piece_bees]
+Kawanan lebah
+---
+
+[shovey_piece_hive]
+Sarang lebah
+---
+
+[shovey_tip_bees]
+Dorong sarang ke samping lebah untuk menenangkannya dan membuka jalan. Biarkan di sana saat menyeberang.
+---

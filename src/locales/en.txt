@@ -900,3 +900,15 @@ Gold
 [shovey_completion_coins]
 +15 coins · Well done!
 ---
+
+[shovey_piece_bees]
+Bee swarm
+---
+
+[shovey_piece_hive]
+Beehive
+---
+
+[shovey_tip_bees]
+Push the hive beside the bees to calm them and open a path. Keep it there while you cross.
+---

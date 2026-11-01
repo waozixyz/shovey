@@ -1,0 +1,72 @@
+// The hive is a movable spatial key, independent of clocks and animal ticks.
+#import, file "../src/engine.zi";
+#import, file "test_support.zi";
+#import, file "../src/guide.zi";
+
+#program_export
+main :: () -> s32 {
+    for side: cast(s32)0..3 {
+        game := ShoveyGame.{.player = 100, .level = 1}
+        swarm := ShoveyNeighbor(100, side)
+        game.ground[swarm] = SHOVEY_BEES
+        unused Check(!ShoveyMove(*game, side), "unattended swarm blocks Shovey")
+        unused Check(!ShoveyFloorAllows(*game, swarm, 9), "unattended swarm blocks crates")
+        hive := ShoveyNeighbor(swarm, side)
+        game.objects[hive] = SHOVEY_HIVE
+        unused Check(ShoveyMove(*game, side), "cardinal hive calms swarm in every direction")
+        unused Check(ShoveyFloorAllows(*game, swarm, 9), "calm swarm admits pushed pieces")
+        unused Check(!ShoveyFloorAllows(*game, swarm, SHOVEY_HIVE), "hive parks beside swarm, never on it")
+        before := game
+        unused Check(!ShoveyTick(*game), "swarm and hive never wander on timer ticks")
+        unused Check(game.player == before.player && game.ground[swarm] == SHOVEY_BEES && game.objects[hive] == SHOVEY_HIVE, "tick keeps puzzle unchanged")
+        game.objects[hive] = 0
+        unused Check(!ShoveyFloorAllows(*game, swarm, 10), "moving hive away blocks passage again")
+    }
+    game := ShoveyGame.{.player = 100, .level = 1}
+    game.ground[101] = SHOVEY_BEES
+    game.objects[114] = SHOVEY_HIVE
+    unused Check(!ShoveyMove(*game, 2), "diagonal hive does not calm bees")
+    game.objects[114] = 9
+    game.objects[102] = 9
+    unused Check(!ShoveyMove(*game, 2), "ordinary crates cannot calm bees")
+    game = ShoveyGame.{.player = 99, .level = 1}
+    game.objects[100] = 9
+    game.ground[101] = SHOVEY_BEES
+    unused Check(!ShoveyMove(*game, 2), "crate cannot be pushed into unattended swarm")
+    game.objects[89] = SHOVEY_HIVE
+    unused Check(ShoveyMove(*game, 2) && game.objects[101] == 9, "parked hive opens a crate crossing")
+    game = ShoveyGame.{.player = 100, .level = 1}
+    game.objects[101] = SHOVEY_HIVE
+    game.ground[102] = 64
+    unused Check(!ShoveyMove(*game, 2) && game.objects[101] == SHOVEY_HIVE && game.ground[102] == 64, "hives do not make water bridges")
+    game.ground[102] = 18
+    unused Check(ShoveyMove(*game, 2) && ShoveyRemaining(*game) == 1, "hive does not satisfy a crate goal")
+    game.ground[103] = SHOVEY_BEES
+    saved := ShoveySave(*game)
+    restored: ShoveyGame
+    unused Check(ShoveyRestore(*restored, saved), "bee and hive position restores")
+    unused Check(restored.objects[102] == SHOVEY_HIVE && restored.ground[103] == SHOVEY_BEES && ShoveyBeesCalm(*restored, 103), "save preserves calm adjacency")
+    // Undo is a full board snapshot, including both kinds and their position.
+    undo := game
+    unused Check(ShoveyMove(*game, 0), "can leave parked hive")
+    game = undo
+    unused Check(game.player == undo.player && game.objects[102] == SHOVEY_HIVE, "snapshot restores parked hive")
+    // The animated player path uses the same push rule as the solver.
+    game = ShoveyGame.{.player = 100, .level = 1}
+    game.objects[101] = SHOVEY_HIVE
+    frames: [8]ShoveyGame
+    count := ShoveyMoveFrames(*game, 2, frames[:])
+    unused Check(count > 0, "animated hive push produces frames")
+    if count > 0 { unused Check(frames[count - 1].objects[102] == SHOVEY_HIVE && frames[count - 1].player == 101, "animated hive push matches plain move") }
+    unused Check(ShoveyCellKind(SHOVEY_BEES) && ShoveyCellKind(SHOVEY_HIVE), "new board kinds load")
+    unused Check(GuideKind(SHOVEY_HIVE) == GuideBit(GUIDE_BEES) && GuideKind(SHOVEY_BEES) == GuideBit(GUIDE_BEES), "both pieces introduce hive rule")
+    guide: ShoveyGuide
+    guide.seen = GuideBit(GUIDE_BEES)
+    guide_bytes: [10]u8
+    unused Check(GuideWrite(*guide, guide_bytes[:]), "bee introduction writes in existing guide format")
+    other: ShoveyGuide
+    unused Check(GuideRead(*other, TextView(guide_bytes[:])) && other.seen == GuideBit(GUIDE_BEES), "bee introduction survives save without repeating")
+    if TestFailures() > 0 { return 1 }
+    print("Forest puzzle: cardinal hive, blocked swarm, push restrictions, saves and snapshots passed\n")
+    return 0
+}

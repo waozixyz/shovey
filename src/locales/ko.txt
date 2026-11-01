@@ -900,3 +900,15 @@ Dew 구매
 [shovey_completion_coins]
 +15 코인 · 잘했어요!
 ---
+
+[shovey_piece_bees]
+벌 떼
+---
+
+[shovey_piece_hive]
+벌집
+---
+
+[shovey_tip_bees]
+벌집을 벌 떼 바로 옆으로 밀면 벌들이 진정해서 길이 열려요. 건너는 동안 벌집을 그대로 두세요.
+---

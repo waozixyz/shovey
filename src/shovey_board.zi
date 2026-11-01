@@ -73,7 +73,9 @@ SPRITE_FOREST :: 303
 // Lava pits joined by screen direction, like the abyss: 16 edge masks for
 // each of four molten frames.
 SPRITE_LAVA_EDGE :: 312
-SPRITE_COUNT :: 376
+SPRITE_BEES :: 376
+SPRITE_HIVE :: 377
+SPRITE_COUNT :: 378
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -365,6 +367,8 @@ SpritesPrepare :: () {
         SpritePath(SPRITE_NEW_COLOR + kind - 44, TextView(VecSlice(bytes, 0, bytes.count)))
         VecFree(bytes)
     }
+    SpritePath(SPRITE_BEES, "tile-167")
+    SpritePath(SPRITE_HIVE, "tile-168")
     SpritePath(SPRITE_CHERRY, "tile-56")
     SpritePath(SPRITE_BOAT, "tile-148")
     SpritePath(SPRITE_BOAT + 1, "tile-149")
@@ -541,7 +545,7 @@ OnFloor :: (kind: s32) -> bool {
     return (kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46) || kind == 9 ||
     (kind >= 15 && kind <= 17) || (kind >= 50 && kind <= 52) || kind == 19 ||
     kind == 21 || kind == 56 || (kind >= 25 && kind <= 29) || kind == 32 || (kind >= 33 && kind <= 38) ||
-    (kind >= 53 && kind <= 55) || kind == 40 || kind == 72 || ShoveyMirror(kind)
+    (kind >= 53 && kind <= 55) || kind == 40 || kind == 72 || ShoveyMirror(kind) || kind == SHOVEY_BEES || kind == SHOVEY_HIVE
 }
 
 // The floor drawn under a piece: the moving block's path, plain floor, or
@@ -592,6 +596,8 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
     if ShoveyLever(kind) { return SPRITE_LEVER + kind - SHOVEY_LEVER }
     if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
+    if kind == SHOVEY_BEES { return SPRITE_BEES }
+    if kind == SHOVEY_HIVE { return SPRITE_HIVE }
     if kind == SHOVEY_TREE { return SPRITE_TREE }
     if ShoveyAnimal(kind) {
         facing := ifx position >= 0 && game.light_from[position] < 4 then game.light_from[position] else BoardEngineDirection(1, landscape)

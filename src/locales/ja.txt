@@ -900,3 +900,15 @@ Dewを購入
 [shovey_completion_coins]
 +15 コイン · お見事！
 ---
+
+[shovey_piece_bees]
+ハチの群れ
+---
+
+[shovey_piece_hive]
+ハチの巣
+---
+
+[shovey_tip_bees]
+ハチの巣をハチの隣に押すと、ハチが落ち着いて通れるよ。渡る間は巣を動かさないでね。
+---

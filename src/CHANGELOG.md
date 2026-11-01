@@ -2,11 +2,11 @@
 
 ## [Unreleased]
 
+- Rebuild Classic 93, 97 and 98 as forest crossings, a mirror garden and an icy paint puzzle, with a pushable hive that calms nearby bees. Preserve old campaign downloads, custom boards and earned progress.
+
 - Return to the level selector at the level just played or reached after a win, while a fresh session still opens at earned progress.
 - Back from a host-opened shop or chest returns to the screen that opened it.
 - Visit Shovey's shop, claim the daily chest, and open Profile and Leaderboard with painted icons.
-- Classic level 98 is rebuilt as a compact five-crate workshop with linked loops and deliberate staging.
-- Classic level 97 is a tighter crate puzzle built around clever staging and shared passages.
 - Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.
 - Editor text fields use Kryon’s shared text state while keeping Enter to save collection names.
 - Sharing collections cancels safely when accounts change and keeps drafts when requests fail.

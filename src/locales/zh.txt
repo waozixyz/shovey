@@ -900,3 +900,15 @@ Dew
 [shovey_completion_coins]
 +15 金币 · 真棒！
 ---
+
+[shovey_piece_bees]
+蜂群
+---
+
+[shovey_piece_hive]
+蜂巢
+---
+
+[shovey_tip_bees]
+把蜂巢推到蜂群旁边，让蜜蜂安静下来，就能通过。穿过时要让蜂巢留在原位。
+---

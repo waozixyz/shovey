@@ -18,6 +18,7 @@ laser_locale_keys = {
     'shovey_piece_laser_left', 'shovey_piece_laser_up',
     'shovey_piece_laser_right', 'shovey_piece_laser_down',
     'shovey_piece_laser_receiver', 'shovey_level',
+    'shovey_piece_bees', 'shovey_piece_hive', 'shovey_tip_bees',
 }
 locale_paths = sorted((ROOT / 'src/locales').glob('*.txt'))
 assert {path.stem for path in locale_paths} == expected_locales
@@ -130,7 +131,7 @@ for path in (ROOT / 'assets/shovey/levels-landscape').glob('*.png'):
 # Screen rotation changes the board layout, without tipping houses, readable
 # numbers or ordinary objects sideways. Directional art still follows the board.
 for folder, names in (
-        ('shovey/sprites', ('tile-0', 'tile-7', 'tile-21', 'tile-156', 'tile-157', *(f'tile-{kind}' for kind in range(158, 167)))),):
+        ('shovey/sprites', ('tile-0', 'tile-7', 'tile-21', 'tile-156', 'tile-157', *(f'tile-{kind}' for kind in range(158, 169)))),):
     for name in names:
         source = ROOT / 'assets' / folder / (name + '.png')
         target = ROOT / 'assets' / folder.replace('/', '-landscape/', 1) / (name + '.png')

@@ -900,3 +900,15 @@ Ouro
 [shovey_completion_coins]
 +15 moedas · Muito bem!
 ---
+
+[shovey_piece_bees]
+Enxame de abelhas
+---
+
+[shovey_piece_hive]
+Colmeia
+---
+
+[shovey_tip_bees]
+Empurre a colmeia para perto das abelhas para acalmá-las e abrir caminho. Deixe-a lá enquanto atravessa.
+---

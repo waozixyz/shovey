@@ -326,10 +326,15 @@ shop-test: levels
 	sh tests/shop_view_test.sh
 	sh tests/shop_host_test.sh
 
+.PHONY: forest-puzzle-test
+forest-puzzle-test: solver
+	$(call ziran_test,forest_puzzle_test)
+	python3 tests/forest_levels_test.py
+
 official-update-test: levels
 	$(call ziran_test,official_update_test)
 
-public-test: solver laws game-maps-test level-select-test shop-test official-update-test
+public-test: solver laws game-maps-test level-select-test shop-test official-update-test forest-puzzle-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
@@ -360,7 +365,7 @@ laws:
 	done
 	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
 
-test: solver laws game-maps-test shop-test
+test: solver laws game-maps-test shop-test forest-puzzle-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py

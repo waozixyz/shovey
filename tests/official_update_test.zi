@@ -18,7 +18,8 @@ Install :: (number: s32, board: string) {
 TestOfficial :: (number: s32, retired: string) {
     approved := ReadText("levels/approved.json")
     level := ElementAt(approved, FieldAt(approved, 0, "levels"), number - 1)
-    current := LevelBoard(approved, level)
+    variant := FieldAt(approved, level, "engine_variant")
+    current := LevelBoard(approved, ifx variant >= 0 then variant else level)
     unused Check(current == ShoveyLevelData(number), "shipped board equals approved redesign")
     // A saved position from the old official board, with earned completion.
     Install(number, retired)
@@ -78,9 +79,12 @@ TestOfficial :: (number: s32, retired: string) {
 
 #program_export
 main :: () -> s32 {
+    TestOfficial(93, RETIRED_CLASSIC_93)
+    TestOfficial(97, RETIRED_CLASSIC_97_WORKSHOP)
+    TestOfficial(98, RETIRED_CLASSIC_98_WORKSHOP)
     TestOfficial(97, RETIRED_CLASSIC_97)
     TestOfficial(98, RETIRED_CLASSIC_98)
     if TestFailures() > 0 { return 1 }
-    print("Official update: stale levels 97/98 replaced; custom boards, completion and unlock preserved\n")
+    print("Official update: stale levels 93/97/98 replaced; custom boards, completion and unlock preserved\n")
     return 0
 }

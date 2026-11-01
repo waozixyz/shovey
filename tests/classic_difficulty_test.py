@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep the retained Classic 54, 57 and 98 crate puzzles coordinated and solvable.
+"""Keep the retained Classic 54 and 57 crate puzzles coordinated and solvable.
 
 The existing solver's macro BFS is push-optimal on these ordinary Sokoban
 boards: walking is free and each macro edge is one crate push. Compare that
@@ -69,7 +69,7 @@ def main():
     # the rooms with other crates. These are solution minima, not route padding.
     # The distinct switch/colour designs for 55 and 56 have their own proofs
     # in classic_variety_test.py rather than ordinary Sokoban assumptions.
-    difficulty = {54: (4, 27, 8), 57: (5, 47, 12), 98: (5, 31, 16)}
+    difficulty = {54: (4, 27, 8), 57: (5, 47, 12)}
     for number, (crate_count, minimum, detours) in difficulty.items():
         level = classic[number - 1]
         assert level == approved[number - 1], f'Classic {number}: campaign copies differ'
@@ -101,27 +101,6 @@ def main():
         assert len({event['piece_id'] for event in pushes}) == crate_count
         switches = sum(a['piece_id'] != b['piece_id'] for a, b in zip(pushes, pushes[1:]))
         assert switches >= crate_count, f'Classic {number}: crates must be interleaved'
-        if number == 98:
-            # A compact workshop: required coordination cannot be supplied by
-            # padding a corridor or the stored route with extra walks.
-            assert sum(kind not in WALLS for kind in tiles) == 40
-            assert proof['moves'] <= 120
-            assert switches >= 10
-            # The lower loop's side bay must remain available for staging.
-            # Exhaust the altered board, rather than merely rejecting one route.
-            sealed = list(tiles)
-            bay = 11 * WIDTH + 3
-            assert board[bay] == 0 and sealed[bay] not in WALLS
-            sealed[bay] = 96
-            sealed_rows = [''.join(f'{kind:02x}' for kind in sealed[at:at + WIDTH])
-                           for at in range(0, WIDTH * HEIGHT, WIDTH)]
-            blocked = ''.join(level['cells'] + sealed_rows + level['decorations'])
-            counterfactual = subprocess.run(
-                [str(SOLVER), 'solve', '--level', '98', '--only', 'macro-bfs',
-                 '--seconds', '5', '--max-states', '120000', '--max-mb', '48', blocked],
-                capture_output=True, text=True, timeout=10)
-            assert counterfactual.returncode == 1 and '"stop":"exhausted"' in counterfactual.stderr
-
         print(f'Classic {number}: fresh engine solution, {proof["moves"]} moves, '
               f'{minimum} minimum pushes, {minimum - independent} required detour pushes',
               flush=True)

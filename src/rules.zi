@@ -88,7 +88,7 @@ ShoveyGoalDone :: (ground: s32, object: s32) -> bool {
 // A kind a board cell may start with.
 ShoveyCellKind :: (kind: s32) -> bool {
     return (kind >= 0 && kind <= SHOVEY_LAST_BUTTON) || ShoveyColorGoal(kind) || kind == SHOVEY_BOAT ||
-    kind == SHOVEY_FLOATING_CRATE || ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER
+    kind == SHOVEY_FLOATING_CRATE || ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER || kind == SHOVEY_BEES || kind == SHOVEY_HIVE
 }
 
 // Where a level ends: the house, or the boat.
@@ -143,7 +143,9 @@ SHOVEY_LASER_UP :: 153
 SHOVEY_LASER_RIGHT :: 154
 SHOVEY_LASER_DOWN :: 155
 SHOVEY_LASER_RECEIVER :: 156
-SHOVEY_LAST_KIND :: 156
+SHOVEY_BEES :: 167
+SHOVEY_HIVE :: 168
+SHOVEY_LAST_KIND :: 168
 
 ShoveyMirror :: (kind: s32) -> bool { return kind == SHOVEY_MIRROR_NE || kind == SHOVEY_MIRROR_NW }
 ShoveyLaserEmitter :: (kind: s32) -> bool { return kind >= SHOVEY_LASER_LEFT && kind <= SHOVEY_LASER_DOWN }
@@ -221,7 +223,7 @@ shovey_enter: s32 = -1;
 
 ShoveyMovable :: (kind: s32) -> bool {
     return ShoveyBallColor(kind) > 0 || kind == 9 || kind == 19 || kind == 28 ||
-    ShoveyColorBlock(kind) || kind == 40 || kind == SHOVEY_BOMB || ShoveyMirror(kind)
+    ShoveyColorBlock(kind) || kind == 40 || kind == SHOVEY_BOMB || ShoveyMirror(kind) || kind == SHOVEY_HIVE
 }
 
 ShoveyHasIce :: (game: *ShoveyGame) -> bool {
@@ -398,9 +400,20 @@ ShoveyLaserLit :: (game: *ShoveyGame, receiver: s32) -> bool {
     return false
 }
 
+// A parked hive calms the neighboring swarm. Moving it away closes the
+// passage again. Only cardinal neighbors count; hives never float in water.
+ShoveyBeesCalm :: (game: *ShoveyGame, position: s32) -> bool {
+    for side: cast(s32)0..3 {
+        neighbor := ShoveyNeighbor(position, side)
+        if neighbor >= 0 && game.objects[neighbor] == SHOVEY_HIVE { return true }
+    }
+    return false
+}
+
 ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
     if position < 0 || position >= SHOVEY_CELLS { return false }
     kind := game.ground[position]
+    if kind == SHOVEY_BEES { return object != SHOVEY_HIVE && ShoveyBeesCalm(game, position) }
     if ShoveyAnimal(kind) { return false }
     player := object == 10
     if ShoveyClosedDoor(kind) { return player }

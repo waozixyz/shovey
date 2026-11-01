@@ -1,7 +1,7 @@
 // Device-only introductions to mechanics, based on the board being played.
 #import, file "engine.zi";
 
-GUIDE_TOPICS :: 31
+GUIDE_TOPICS :: 32
 GUIDE_HOME :: 0
 GUIDE_BALL :: 1
 GUIDE_CRATE :: 2
@@ -33,6 +33,7 @@ GUIDE_RESTART :: 27
 GUIDE_DOOR :: 28
 GUIDE_ABYSS :: 29
 GUIDE_LASER :: 30
+GUIDE_BEES :: 31
 
 ShoveyGuide :: struct {
     seen: u64
@@ -77,6 +78,7 @@ GuideNearest :: (board: *ShoveyGame, topic: s32) -> s32 {
 
 GuideKind :: (kind: s32) -> u64 {
     if ShoveyBallColor(kind) > 0 || ShoveyPitColor(kind) > 0 { return GuideBit(GUIDE_BALL) }
+    if kind == SHOVEY_BEES || kind == SHOVEY_HIVE { return GuideBit(GUIDE_BEES) }
     if kind == 9 || kind == 18 { return GuideBit(GUIDE_CRATE) }
     if kind == 21 || kind == 56 { return GuideBit(GUIDE_FRUIT) }
     if kind == 19 { return GuideBit(GUIDE_STARS) }
@@ -222,6 +224,6 @@ GuideTextKey :: (topic: s32) -> string {
     "shovey_friend_keys", "shovey_friend_ice", "shovey_friend_color_blocks", "shovey_friend_shadow", "shovey_friend_animals",
     "shovey_friend_bridge", "shovey_friend_boat", "shovey_friend_cracks", "shovey_friend_bomb", "shovey_friend_arrows",
     "shovey_friend_slide", "shovey_friend_sensors", "shovey_tip_colors", "shovey_tip_restart", "shovey_friend_doors", "shovey_friend_abyss",
-    "shovey_tip_lasers"]
+    "shovey_tip_lasers", "shovey_tip_bees"]
     return ifx topic >= 0 && topic < GUIDE_TOPICS then keys[topic] else ""
 }

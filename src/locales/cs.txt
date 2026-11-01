@@ -900,3 +900,15 @@ Zlato
 [shovey_completion_coins]
 +15 mincí · Výborně!
 ---
+
+[shovey_piece_bees]
+Roj včel
+---
+
+[shovey_piece_hive]
+Úl
+---
+
+[shovey_tip_bees]
+Přisuň úl vedle včel, aby se uklidnily a otevřely cestu. Při přecházení ho tam nech.
+---

@@ -900,3 +900,15 @@ Oro
 [shovey_completion_coins]
 +15 monete · Ben fatto!
 ---
+
+[shovey_piece_bees]
+Sciame di api
+---
+
+[shovey_piece_hive]
+Alveare
+---
+
+[shovey_tip_bees]
+Spingi l’alveare accanto alle api per calmarle e aprire un passaggio. Lascialo lì mentre attraversi.
+---

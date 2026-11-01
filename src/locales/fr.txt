@@ -900,3 +900,15 @@ Or
 [shovey_completion_coins]
 +15 pièces · Bravo !
 ---
+
+[shovey_piece_bees]
+Essaim d’abeilles
+---
+
+[shovey_piece_hive]
+Ruche
+---
+
+[shovey_tip_bees]
+Pousse la ruche à côté des abeilles pour les calmer et ouvrir un passage. Laisse-la là pour traverser.
+---
