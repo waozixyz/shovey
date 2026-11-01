@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Visit Shovey's shop, claim the daily chest, and open Profile and Leaderboard with painted icons.
 - Classic level 97 is a tighter crate puzzle built around clever staging and shared passages.
 - Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.
 - Editor text fields use Kryon’s shared text state while keeping Enter to save collection names.

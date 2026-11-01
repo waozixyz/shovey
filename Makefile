@@ -315,7 +315,14 @@ artifact-provider-test:
 game-maps-test:
 	python3 tests/game_maps_test.py
 
-public-test: solver laws game-maps-test
+.PHONY: shop-test
+shop-test:
+	sh tests/daily_chest_test.sh
+	sh tests/shop_state_test.sh
+	sh tests/shop_view_test.sh
+	sh tests/shop_host_test.sh
+
+public-test: solver laws game-maps-test shop-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
@@ -346,7 +353,7 @@ laws:
 	done
 	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
 
-test: solver laws game-maps-test
+test: solver laws game-maps-test shop-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
