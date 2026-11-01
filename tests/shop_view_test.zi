@@ -23,6 +23,7 @@ route: string;
 purchases: s32;
 navigation_backs: s32;
 profile_request: [32]u8;
+dew_reply: string = "{\"units\":12000000}";
 account :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 #program_export
 FakeService :: (name: string, request: string) -> string {
@@ -36,7 +37,7 @@ FakeService :: (name: string, request: string) -> string {
         if request != "status" { purchases += 1 }
         return "{\"status\":\"done\",\"owner\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"connected\":true,\"shovey_owned\":0,\"shovey_coins\":500}"
     }
-    if name == "entity.dew" { return "{\"units\":12000000}" }
+    if name == "entity.dew" { return dew_reply }
     if name == "entity.profile" { unused CopyCString(request, profile_request[:]); return "opened" }
     if name == "arcade.navigation" && request == "back" { navigation_backs += 1; return "queued" }
     return ""
@@ -155,6 +156,23 @@ Check :: () -> s32 {
     if !Draw(session, 320.0, 568.0, 20002) { return 39 }
     if !Activate(session, 61106, 320.0, 568.0, 20002) || TextUntilNul(profile_request[:]) != "leaderboard" { return 40 }
     if !Activate(session, 61101, 320.0, 568.0, 20002) || ShopUI.IsOpen() || navigation_backs != 5 { return 41 }
+    // The shared browser cover uses a vertical Market/Chest pair and live
+    // balances, and never retains a previously returned Dew amount.
+    for width: cast(s32)0..1 {
+        screen: float32 = ifx width == 0 then 320.0 else 900.0
+        BeginFrame(session, cast(u64)1, Rectangle.{0.0, 0.0, screen, 640.0})
+        ShopUI.CoverActions(session, Rectangle.{12.0, 12.0, screen - 128.0, 104.0})
+        if EndFrame(session) != cast(FrameStatus)FrameOk || !Bounds(session, screen) { return 43 }
+        market := TreeNodeAt(session, Find(session, 61000)).bounds
+        chest := TreeNodeAt(session, Find(session, 61002)).bounds
+        if chest.x != market.x || chest.y < market.y + market.height { return 44 }
+        if Find(session, 61005) < 0 || Find(session, 61007) < 0 { return 45 }
+    }
+    if ShopUI.DewText() != "12" { return 46 }
+    dew_reply = "{\"units\":-1}"
+    if ShopUI.DewText() != "…" { return 47 }
+    dew_reply = "{\"units\":0}"
+    if ShopUI.DewText() != "0" { return 48 }
     unused SessionClose(session)
     return 42
 }

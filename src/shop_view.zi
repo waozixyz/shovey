@@ -81,6 +81,26 @@ notice: string;
 dew_balance: [32]u8;
 host_route: bool;
 
+// Another instance of the game may have claimed or spent coins while its
+// cover wallet was hidden. Rebind from the durable records on return.
+#program_export
+RefreshWallet :: () {
+    shop_storage_ok = false
+    shop_poll_at = 0.0
+    daily_chest_loaded = false
+}
+
+// Read through the account service each frame; never keep a previous owner's
+// balance while the service changes accounts or waits for a node reply.
+DewText :: () -> string {
+    dew_balance = .{}
+    reply := AppService("entity.dew", "balance")
+    units := ReadNumber(reply, FieldAt(reply, 0, "units"))
+    if !units.valid || units.value < 0.0 || units.value > 9000000000000000.0 ||
+        !DewFormat(cast(s64)units.value, DewUnits, dew_balance[:]) { unused CopyCString("…", dew_balance[:]) }
+    return TextUntilNul(dew_balance[:])
+}
+
 #program_export
 Open :: (next: s32) {
     if next != 1 && next != 2 { return }
@@ -143,6 +163,15 @@ TitleActions :: (session: Session, bounds: Rectangle) {
     if size > 44.0 { size = 44.0 }
     if IconAction(session, 61000, Rectangle.{bounds.x, bounds.y, size, size}, "assets/shovey/shop/stall.png", "shop") { Open(1) }
     if IconAction(session, 61002, Rectangle.{bounds.x + size + 4.0, bounds.y, size, size}, "assets/shovey/shop/chest-closed.png", "chest") { Open(2) }
+}
+#program_export
+CoverActions :: (session: Session, bounds: Rectangle) {
+    if IconAction(session, 61000, Rectangle.{bounds.x, bounds.y, 44.0, 44.0}, "assets/shovey/shop/stall.png", "shop") { Open(1) }
+    if IconAction(session, 61002, Rectangle.{bounds.x, bounds.y + 60.0, 44.0, 44.0}, "assets/shovey/shop/chest-closed.png", "chest") { Open(2) }
+    digits: [24]u8
+    Amount(session, 61004, Rectangle.{bounds.x + 48.0, bounds.y, bounds.width - 48.0, 28.0}, false,
+        FormatInteger(cast(s64)ShopCoins(), digits[:]))
+    Amount(session, 61006, Rectangle.{bounds.x + 48.0, bounds.y + 30.0, bounds.width - 48.0, 28.0}, true, DewText())
 }
 Amount :: (session: Session, key: u64, bounds: Rectangle, dew: bool, value: string) {
     Picture(session, key, Rectangle.{bounds.x, bounds.y + 2.0, 26.0, 26.0},
@@ -250,7 +279,7 @@ Frame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool
     unused WidgetPaletteUse(session, ShoveyPalette())
     unused Box(session, BoxProps.{.key = cast(u64)61100, .bounds = bounds, .fill = Color.{42, 46, 45, 255}})
     if Action(session, 61101, Rectangle.{bounds.x + 10.0, bounds.y + 8.0, 76.0, 44.0}, "back") { unused Back(); return true }
-    Label(session, 61102, Rectangle.{bounds.x + 94.0, bounds.y + 8.0, bounds.width - 196.0, 44.0}, Copy(ifx page == 1 then "shop" else "chest"), 22)
+    Label(session, 61102, Rectangle.{bounds.x + 94.0, bounds.y + 8.0, bounds.width - 196.0, 44.0}, Copy(ifx page == 1 then "shop" else "chest"), 17)
     if IconAction(session, 61104, Rectangle.{bounds.x + bounds.width - 96.0, bounds.y + 10.0, 40.0, 40.0}, "assets/shovey/shop/profile.png", "profile") { unused AppService("entity.profile", "open") }
     if IconAction(session, 61106, Rectangle.{bounds.x + bounds.width - 50.0, bounds.y + 10.0, 40.0, 40.0}, "assets/shovey/shop/trophy.png", "leaderboard") { unused AppService("entity.profile", "leaderboard") }
     width := bounds.width - 24.0
@@ -259,16 +288,7 @@ Frame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool
     Picture(session, 61200, Rectangle.{x, bounds.y + 62.0, 64.0, 64.0}, "assets/shovey/shop/stall.png", Copy("shop"))
     digits: [24]u8
     Amount(session, 61202, Rectangle.{x + 72.0, bounds.y + 62.0, width - 72.0, 28.0}, false, FormatInteger(cast(s64)ShopCoins(), digits[:]))
-    // The service owns its cache and account boundary; never retain another
-    // account's displayed balance between polls here.
-    {
-        dew_balance = .{}
-        reply := AppService("entity.dew", "balance")
-        units := ReadNumber(reply, FieldAt(reply, 0, "units"))
-        if !units.valid || units.value < 0.0 || units.value > 9000000000000000.0 ||
-            !DewFormat(cast(s64)units.value, DewUnits, dew_balance[:]) { unused CopyCString("…", dew_balance[:]) }
-    }
-    Amount(session, 61204, Rectangle.{x + 72.0, bounds.y + 96.0, width - 72.0, 28.0}, true, TextUntilNul(dew_balance[:]))
+    Amount(session, 61204, Rectangle.{x + 72.0, bounds.y + 96.0, width - 72.0, 28.0}, true, DewText())
     top := bounds.y + 138.0
     if page == 1 {
         tabs: [3]string = .["skins", "coins", "dew"]

@@ -54,6 +54,9 @@ Codec :: #import "apps/node_codec";
 #import "player_loading"
 #import "player_progress_storage"
 #import "shovey_theme"
+ShopUI :: #import "shop_view";
+ShopState :: #import "shop_state";
+#import "std/number_text"
 collection_shop_request: string;
 collection_shop_locator: AppLocator;
 
@@ -82,6 +85,8 @@ collection_images: *CollectionImage;
 collection_frame_paths: Vec(string);
 collection_widget_node: *AppNode;
 collection_toolbar_visible: bool = true;
+collection_wallet_visible: bool;
+collection_wallet_record: string;
 collection_person_codec: Codec.WidgetAppPersonCodec;
 collection_shared_codec: Codec.WidgetAppSharedCodec;
 collection_item_codec: Codec.WidgetAppSharedItemCodec;
@@ -129,6 +134,37 @@ CollectionRecordsFor :: (id: string) -> *CollectionRecords {
     collection_records = saved
     return saved
 }
+
+// The cover wallet uses the game's existing state and exact record namespace.
+// These native bindings never read the collection's records as game money.
+#program_export
+AppRecordHost :: (name: string) -> string {
+    saved := CollectionRecordsFor("arcade.shovey")
+    if saved == null || !AppFileNameValid(name) { return "" }
+    AppFileFree(collection_wallet_record)
+    collection_wallet_record = AppFileRead(*saved.files, name)
+    return collection_wallet_record
+}
+#program_export
+SaveAppRecordHost :: (name: string, text: string) -> bool {
+    saved := CollectionRecordsFor("arcade.shovey")
+    return saved != null && AppFileNameValid(name) && AppFileWrite(*saved.files, name, text)
+}
+#program_export
+AppServiceHost :: (name: string, request: string) -> string {
+    if name == "entity.records" { return EntityRecordsAnswer(request) }
+    if name == "entity.dew" { return EntityDewAnswer(request) }
+    if name == "entity.game-shop" { return EntityGameShopAnswer(request) }
+    if name == "arcade.progress-storage" {
+        saved := CollectionRecordsFor("arcade.shovey")
+        return PlayerProgressStorage(ifx saved == null then null else *saved.files, request)
+    }
+    return ""
+}
+#program_export
+AppSupportsHost :: (name: string) -> bool { return false }
+#program_export
+AppLocaleHost :: (key: string) -> string { return CollectionLocaleText(key) }
 
 CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
     return name == "AppRecordHost" || name == "SaveAppRecordHost" ||
@@ -483,6 +519,9 @@ CollectionClose :: () -> bool {
     if !EntityClose() { return false }
     if collection_ready && !AppHostStop(*collection_host) { return false }
     collection_ready = false
+    collection_wallet_visible = false
+    AppFileFree(collection_wallet_record)
+    collection_wallet_record = ""
     collection_loading = .{}
     CollectionCollect()
     VecFree(collection_frame_paths)
@@ -632,9 +671,13 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     // Other apps get a bar with Back and their title; the library and that
     // bar keep Profile at the top right.
     covered := runtime.node.entry.cover.portrait[0] != 0
+    if !runtime.node.collection { collection_wallet_visible = false }
     collection_toolbar_visible = !covered
     // The covers ask about new levels once; the question takes every key.
     asking := runtime.node.collection && !collection_host.platform.presentation.cover_grid && CollectionUpdates() == 2
+    // Small cover branding sits below the wallet and account actions.
+    collection_host.platform.presentation.cover_logo_width = ifx viewport.width < 600.0 then viewport.width * 0.58 else 360.0
+    collection_host.platform.presentation.cover_logo_top = 120.0
     if asking { key = 0 }
     top: s32 = ifx !covered && !runtime.node.collection && (entity_ready || nested) then 56 else 0
     now := cast(float64)MonotonicMilliseconds() / 1000.0
@@ -715,7 +758,7 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
             unused AppHostBack(*collection_host)
         }
         Text(session, TextProps.{.key = cast(u64)8,
-                .text = title, .font = 20,
+                .text = title, .font = 16,
                 .bounds = Rectangle.{viewport.x + 112.0, viewport.y + 20.0, viewport.width - 232.0, 28.0}})
     }
     return true
@@ -796,14 +839,30 @@ CollectionToolbar :: (session: Session, viewport: Rectangle) {
     unused WidgetPaletteUse(session, ShoveyPalette())
     defer { unused WidgetPaletteRestore(session) }
     y := viewport.y + 12.0
+    if !collection_wallet_visible { ShopUI.RefreshWallet(); collection_wallet_visible = true }
+    ShopUI.Pump(cast(float64)MonotonicMilliseconds() / 1000.0, UnixNow() / 86400)
     if CollectionCoverAction(session, 49200, Rectangle.{viewport.x + 12.0, y, 44.0, 44.0},
         "assets/shovey/shop/stall.png", "shovey_shop_shop") { unused CollectionShopQueue("shop") }
-    if CollectionCoverAction(session, 49202, Rectangle.{viewport.x + 60.0, y, 44.0, 44.0},
+    if CollectionCoverAction(session, 49202, Rectangle.{viewport.x + 12.0, y + 60.0, 44.0, 44.0},
         "assets/shovey/shop/chest-closed.png", "shovey_shop_chest") { unused CollectionShopQueue("chest") }
+    digits: [24]u8
+    CollectionCoverAmount(session, 49210, Rectangle.{viewport.x + 60.0, y, viewport.width - 176.0, 28.0},
+        "coins", FormatInteger(cast(s64)ShopState.ShopCoins(), digits[:]))
+    CollectionCoverAmount(session, 49212, Rectangle.{viewport.x + 60.0, y + 30.0, viewport.width - 176.0, 28.0},
+        "dew", ShopUI.DewText())
     if CollectionCoverAction(session, 49204, Rectangle.{viewport.x + viewport.width - 104.0, y, 44.0, 44.0},
         "assets/shovey/shop/profile.png", "shovey_shop_profile") { unused EntityShowPage("open") }
     if CollectionCoverAction(session, 49206, Rectangle.{viewport.x + viewport.width - 56.0, y, 44.0, 44.0},
         "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused EntityShowPage("leaderboard") }
+}
+
+CollectionCoverAmount :: (session: Session, key: u64, bounds: Rectangle, currency: string, value: string) {
+    path := ifx currency == "coins" then "assets/shovey/shop/coins.png" else "assets/shovey/shop/dew.png"
+    unused Image(session, ImageProps.{.key = key, .bounds = Rectangle.{bounds.x, bounds.y + 2.0, 24.0, 24.0},
+        .asset_path = CollectionAssetPath(path), .fit = ImageFit.ImageFitContain, .smooth = true,
+        .alt_text = CollectionLocaleText(ifx currency == "coins" then "shovey_shop_coins" else "shovey_shop_dew")})
+    unused Text(session, TextProps.{.key = key + 1, .bounds = Rectangle.{bounds.x + 28.0, bounds.y + 4.0, bounds.width - 28.0, 24.0},
+        .text = value, .font = 15})
 }
 
 c :: #system_library "c";

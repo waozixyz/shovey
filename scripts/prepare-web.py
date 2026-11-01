@@ -11,6 +11,9 @@ if assets.exists():
 assets.mkdir(parents=True)
 for name in ('shovey', 'shovey-editor'):
     shutil.copytree(root / 'build/game-assets' / name / 'assets' / name, assets / name)
+# The cover keeps the editor's existing title artwork, without a caption badge.
+(assets / 'covers').mkdir()
+shutil.copyfile(root / 'assets/covers/shovey-editor-logo.png', assets / 'covers/shovey-editor-logo.png')
 # The editor reads Classic's pictures and sounds from Shovey's own folder on
 # the page, so its packed copies stay out (see EDITOR_CLASSIC).
 shutil.rmtree(assets / 'shovey-editor' / 'classic', ignore_errors=True)

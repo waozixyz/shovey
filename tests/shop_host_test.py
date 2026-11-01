@@ -255,12 +255,16 @@ host = (ROOT / 'src/player_host.zi').read_text()
 assert 'name == "entity.game-shop"' in host
 assert 'AppHostText(EntityGameShopAnswer(request))' in host
 assert 'AppHostText(ifx EntityShowPage(request) then "queued" else "unavailable")' in host
-assert 'shop_view' not in host and 'shop_state' not in host
+# The host wallet reads the game's existing state; routes still enter the
+# verified game, whose confirmation UI owns every purchase.
+assert 'ShopUI.Pump(' in host and 'ShopState.ShopCoins()' in host
+toolbar = function(ROOT / 'src/player_host.zi', 'CollectionToolbar')
+assert 'ShopBuy(' not in toolbar and 'ShopBuyCoins(' not in toolbar
 web = (ROOT / 'src/web/game.zi').read_text()
 assert web.index('ShoveyShopSetToday(today)') < web.index('if !AppMini() && web_covers_open')
 assert 'today := cast(s64)AppNow() / 86400' in web
 assert 'ShopUI.IsOpen()' in web and 'else { WebCovers() }' in web
-for name in ('stall', 'chest-closed', 'profile', 'trophy'):
+for name in ('stall', 'chest-closed', 'profile', 'trophy', 'coins', 'dew'):
     assert f'assets/shovey/shop/{name}.png' in host
 # The collection builder embeds the exact binary files that the toolbar reads.
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -271,7 +275,7 @@ assets = WORK / 'assets'
 byte_count = builder.stage_shop_assets(assets)
 staging = assets / 'shovey/shop'
 assert byte_count == sum(path.stat().st_size for path in assets.rglob('*') if path.is_file())
-for name in ('stall', 'chest-closed', 'chest-open', 'profile', 'trophy'):
+for name in ('stall', 'chest-closed', 'chest-open', 'profile', 'trophy', 'coins', 'dew'):
     original = ROOT / 'assets/shovey/shop' / (name + '.png')
     assert original.read_bytes() == (staging / original.name).read_bytes(), original
 for locale in (ROOT / 'src/locales').glob('*.txt'):

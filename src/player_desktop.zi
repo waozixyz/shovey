@@ -27,7 +27,8 @@ DrawStartup :: (session: Session, directory: string) -> bool {
     logo := Join(directory, "startup/shovey/logo.png")
     defer { EntityFree(art); EntityFree(logo) }
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { return false }
-    unused CarouselArtwork(session, viewport, cast(u64)48000, art, logo, "Shovey")
+    unused CarouselArtwork(session, viewport, cast(u64)48000, art, logo, "Shovey", Rectangle.{},
+        ifx viewport.width < 600.0 then viewport.width * 0.58 else 360.0, 120.0)
     if EndFrame(session) != FrameStatus.FrameOk { return false }
     ok := EndDesktopFrame()
     TestDriverFrame(session)

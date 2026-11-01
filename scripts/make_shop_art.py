@@ -299,6 +299,10 @@ def optimized_png(image):
 def expected_outputs():
     outputs = {}
     for name, icon in cut_icons(ICON_SOURCE).items():
+        if name == "stall":
+            # Reviewed cutout keeps the serving window transparent too.
+            with Image.open(ROOT / "design/shop-stall-transparent.png") as source:
+                icon = source.convert("RGBA").resize((256, 256), Image.Resampling.LANCZOS)
         path = ROOT / f"assets/shovey/shop/{name}.png"
         outputs[path] = optimized_png(icon)
     for number, ramp in SKIN_RAMPS.items():

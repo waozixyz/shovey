@@ -65,6 +65,8 @@ for name in shop_icons:
         assert image.size == (256, 256) and image.mode == 'RGBA', path
         assert all(image.getpixel(corner)[3] == 0 for corner in
                    ((0, 0), (255, 0), (0, 255), (255, 255))), path
+        if name == 'stall':
+            assert image.getpixel((105, 120))[3] == 0, 'Market serving window must reveal the cover'
 
 # Lowered button walls retain a visible slab seam in every material, in both
 # orientations; they must not disappear into an ordinary floor tile.

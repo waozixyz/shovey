@@ -30,9 +30,10 @@ WebCovers :: () {
         .logo = "assets/shovey/logo.png", .action = AppLocaleHost("shovey_play")},
     CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
         .portrait = "assets/shovey/editor-portrait.png", .landscape = "assets/shovey/editor-landscape.png",
-        .logo = "assets/shovey/logo.png", .caption = AppLocaleHost("shovey_editor"), .action = AppLocaleHost("shovey_open")}
+        .logo = "assets/covers/shovey-editor-logo.png", .action = AppLocaleHost("shovey_open")}
     ]
     entered := Carousel(page.session, CarouselProps.{.key = cast(u64)20210,
+            .logo_max_width = ifx width < 600.0 then width * 0.58 else 360.0, .logo_top = 120.0,
             .bounds = Rectangle.{0.0, top, width, bottom - top}, .now = page.now, .key_pressed = AppKeyHost(),
             .dark = true, .label = AppLocaleHost("shovey_title_art"), .previous_label = AppLocaleHost("shovey_page_previous"),
             .next_label = AppLocaleHost("shovey_page_next")}, items[:], *web_covers)
@@ -40,7 +41,7 @@ WebCovers :: () {
         web_covers_open = false
         web_editor_open = entered == 1
     }
-    ShopUI.TitleActions(page.session, Rectangle.{12.0, top + 12.0, 92.0, 44.0})
+    ShopUI.CoverActions(page.session, Rectangle.{12.0, top + 12.0, width - 128.0, 104.0})
     if AppSupports("entity.profile") {
         if ShopUI.IconAction(page.session, 20400, Rectangle.{width - 104.0, top + 12.0, 44.0, 44.0},
             "assets/shovey/shop/profile.png", "profile") { unused AppService("entity.profile", "open") }
