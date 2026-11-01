@@ -4,7 +4,7 @@
 
 - Push barrels like wooden crates, including onto marks and into water, while keeping their barrel appearance and existing saved progress.
 
-- Rebuild Classic 93, 97 and 98 as forest crossings, a mirror garden and an icy paint puzzle, with a pushable hive that calms nearby bees. Preserve old campaign downloads, custom boards and earned progress.
+- Rebuild Classic 93 with hive crossings and Classic 97–99 as brick buildings with pressure plates, star relays and painted-ball puzzles. Preserve old campaign downloads, custom boards and earned progress.
 
 - Return to the level selector at the level just played or reached after a win, while a fresh session still opens at earned progress.
 - Back from a host-opened shop or chest returns to the screen that opened it.
