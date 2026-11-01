@@ -10,7 +10,7 @@
       "url": "https://github.com/ziranlang/qrcode.git"
     },
     {
-      "commit": "36ecfb0719c5b6d2a6b4f465ae9dce2a852d71df",
+      "commit": "602fc416a94523a2dd8231614ba9ab879c912cce",
       "dependencies": {
         "curl": "p8da229d15597ab5c",
         "daochi_client": "p6af0b5bd9fd0cd31",
@@ -27,7 +27,7 @@
         "qrcode": "master",
         "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"
       },
-      "id": "p2f8f019af368f6f6",
+      "id": "p4366a4e148a3355b",
       "name": "Entity",
       "ref": "master",
       "url": "https://github.com/waozixyz/entity.git"
@@ -155,7 +155,7 @@
   "root": {
     "dependencies": {
       "apps": "p9b5024e78127fbee",
-      "entity": "p2f8f019af368f6f6",
+      "entity": "p4366a4e148a3355b",
       "kryon": "pfa65f8437b3d3740",
       "mingcute": "pe1027b9d16704793"
     },

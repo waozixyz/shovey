@@ -9,11 +9,7 @@ using Canvas :: #import "kryon/Canvas";
 #import "kryon/button_widget"
 #import "kryon/button_props"
 #import "kryon/control_props"
-ProfileIcon :: #import "mingcute/mingcute_regular_user_4";
-DewIcon :: #import "mingcute/mingcute_filled_drop";
-#import "entity/dew_model"
-#import "json_scan"
-#import "text_buffer"
+ShopUI :: #import, file "../shop_view.zi";
 #import, file "host.zi";
 #import, file "../shovey_theme.zi";
 #import, file "../shovey_view.zi";
@@ -21,17 +17,6 @@ DewIcon :: #import "mingcute/mingcute_filled_drop";
 #import, file "../controls.zi";
 
 web_covers: CarouselState;
-web_dew_text: [32]u8;
-
-// The account's Dew as the page's account service reports it, 0 without one.
-WebDewText :: () -> string {
-    answer := AppService("entity.dew", "balance")
-    units := ReadNumber(answer, FieldAt(answer, 0, "units"))
-    value: s64 = ifx units.valid && units.value > 0.0 then cast(s64)units.value else 0
-    if !DewFormat(value, DewUnits, web_dew_text[:]) { return "0" }
-    return TextUntilNul(web_dew_text[:])
-}
-
 // Classic and the editor, with the cover art apps.json declares for them.
 WebCovers :: () {
     page := ReadAppUiHost()
@@ -55,21 +40,12 @@ WebCovers :: () {
         web_covers_open = false
         web_editor_open = entered == 1
     }
-    // The account's Dew beside the Profile: a drop and the number.
-    if AppSupports("entity.dew") {
-        dew := WebDewText()
-        dew_width := 52.0 + 10.0 * cast(float32)dew.count
-        if Button(page.session, ButtonProps.{.key = cast(u64)20401, .id = 20401,
-                .bounds = Rectangle.{width - 68.0 - dew_width, top + 12.0, dew_width, 44.0}, .label = dew,
-                .icon_shape = DewIcon.Shape, .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-            unused AppService("entity.profile", "open")
-        }
-    }
-    if AppSupports("entity.profile") && Button(page.session, ButtonProps.{.key = cast(u64)20400, .id = 20400,
-            .bounds = Rectangle.{width - 60.0, top + 12.0, 44.0, 44.0}, .label = AppLocaleHost("shovey_profile"),
-            .icon_shape = ProfileIcon.Shape, .icon_only = true, .fit_content = true,
-            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-        unused AppService("entity.profile", "open")
+    ShopUI.TitleActions(page.session, Rectangle.{12.0, top + 12.0, 92.0, 44.0})
+    if AppSupports("entity.profile") {
+        if ShopUI.IconAction(page.session, 20400, Rectangle.{width - 104.0, top + 12.0, 44.0, 44.0},
+            "assets/shovey/shop/profile.png", "profile") { unused AppService("entity.profile", "open") }
+        if ShopUI.IconAction(page.session, 20402, Rectangle.{width - 56.0, top + 12.0, 44.0, 44.0},
+            "assets/shovey/shop/trophy.png", "leaderboard") { unused AppService("entity.profile", "leaderboard") }
     }
 }
 
@@ -83,8 +59,19 @@ Main :: () -> s64 {
         return APP_PROTOCOL
     }
     if mode == APP_FRAME {
+        // UTC wall time determines daily eligibility; frame.now is monotonic.
+        today := cast(s64)AppNow() / 86400
+        ShoveyShopSetToday(today)
         // An embedded mini page opens straight into its level.
-        if web_covers_open && !AppMini() { WebCovers() }
+        if !AppMini() && web_covers_open {
+            page := ReadAppUiHost()
+            ShopUI.Pump(page.now, today)
+            if ShopUI.IsOpen() && (AppKeyHost() == 256 || AppKeyHost() == 4) { unused ShoveyShopBack() }
+            if ShopUI.IsOpen() {
+                unused ShoveyShopFrame(page.session, Rectangle.{0.0, cast(float32)page.top,
+                    cast(float32)page.width, cast(float32)(page.height - page.top - page.bottom)}, page.now, today)
+            } else { WebCovers() }
+        }
         else if web_editor_open { EditorFrame("en") }
         else { ShoveyFrame() }
     }

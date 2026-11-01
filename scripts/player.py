@@ -387,6 +387,23 @@ def build_entity():
     shutil.copyfile(profile.output('font.ttf'), OUT / 'font.ttf')
 
 
+def stage_shop_assets(assets):
+    """Stage the existing art and translations used by native cover actions."""
+    total = 0
+    shop_art = assets / 'shovey/shop'
+    shop_art.mkdir(parents=True, exist_ok=True)
+    for name in ('stall', 'chest-closed', 'chest-open', 'profile', 'trophy'):
+        source = ROOT / 'assets/shovey/shop' / (name + '.png')
+        shutil.copyfile(source, shop_art / source.name)
+        total += source.stat().st_size
+    locale_art = assets / 'shovey/locales'
+    locale_art.mkdir(parents=True, exist_ok=True)
+    for source in sorted((ROOT / 'src/locales').glob('*.txt')):
+        shutil.copyfile(source, locale_art / source.name)
+        total += source.stat().st_size
+    return total
+
+
 def collection():
     version = release()
     declaration, apps = declared_apps()
@@ -441,6 +458,9 @@ def collection():
     catalog = dict(schema=1, id=COLLECTION_ID, title=declaration['title'], harness='assets/apps/apps.zx',
                    children=children)
     (assets / 'apps/catalog.json').write_text(json.dumps(catalog, indent=2) + '\n')
+    total += stage_shop_assets(assets)
+    if total > MAX_PAYLOAD_BYTES:
+        raise SystemExit("Shovey's collection exceeds the host's payload limit")
     payload = OUT / 'shovey.zx'
     run([ziran(), 'bundle', '--project', *lock(), '--root', ROOT / 'src', '--entry', 'player_collection:Main',
          '--asset-dir', 'assets=' + str(assets), '-o', payload, ROOT / 'src/player_collection.zi'], cwd=ROOT)
