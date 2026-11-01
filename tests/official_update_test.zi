@@ -7,30 +7,30 @@
 #import, file "../src/progress.zi";
 #import, file "test_support.zi";
 
-Install :: (board: string) {
+Install :: (number: s32, board: string) {
     shovey_live_count = 175
-    shovey_live_lengths[96] = cast(s32)board.count
+    shovey_live_lengths[number - 1] = cast(s32)board.count
     for at: cast(s32)0..cast(s32)board.count - 1 {
-        shovey_live_boards[96 * SHOVEY_LIVE_BOARD + at] = board[at]
+        shovey_live_boards[(number - 1) * SHOVEY_LIVE_BOARD + at] = board[at]
     }
 }
 
-#program_export
-main :: () -> s32 {
+TestOfficial :: (number: s32, retired: string) {
     approved := ReadText("levels/approved.json")
-    level := ElementAt(approved, FieldAt(approved, 0, "levels"), 96)
+    level := ElementAt(approved, FieldAt(approved, 0, "levels"), number - 1)
     current := LevelBoard(approved, level)
-    unused Check(current == ShoveyLevelData(97), "shipped 97 equals approved redesign")
+    unused Check(current == ShoveyLevelData(number), "shipped board equals approved redesign")
     // A saved position from the old official board, with earned completion.
-    Install(RETIRED_CLASSIC_97)
+    Install(number, retired)
     game: ShoveyGame
-    unused Check(ShoveyLoadData(*game, 97, RETIRED_CLASSIC_97), "old official board loads")
-    progress := ShoveyProgress.{.unlocked = 98}
-    progress.completed[96] = true
+    unused Check(ShoveyLoadData(*game, number, retired), "old official board loads")
+    progress := ShoveyProgress.{.unlocked = number + 1}
+    progress.completed[number - 1] = true
+    progress.completed[12] = true
     saved := ShoveyCampaignSave(*progress, *game)
     // Save's board fingerprint must be the old board, as in the old player.
     mark: u64 = 2166136261
-    for byte: RETIRED_CLASSIC_97 { mark = ((mark ^ cast(u64)byte) * 16777619) & 4294967295 }
+    for byte: retired { mark = ((mark ^ cast(u64)byte) * 16777619) & 4294967295 }
     bytes: [3500]u8
     for at: cast(s32)0..cast(s32)saved.count - 1 { bytes[at] = saved[at] }
     alphabet := "0123456789abcdef"
@@ -38,25 +38,49 @@ main :: () -> s32 {
     restored: ShoveyGame
     earned: ShoveyProgress
     unused Check(ShoveyCampaignRestore(*earned, *restored, TextView(bytes[:saved.count])), "old saved campaign restores")
-    unused Check(earned.unlocked == 98 && earned.completed[96], "completed 97 and unlock preserved")
+    unused Check(earned.unlocked == number + 1 && earned.completed[number - 1] && earned.completed[12], "completion and unlock preserved")
     expected: ShoveyGame
-    unused ShoveyLoadData(*expected, 97, current)
+    unused ShoveyLoadData(*expected, number, current)
     expected_save := ShoveySave(*expected)
     expected_bytes: [2432]u8
     for at: cast(s32)0..cast(s32)expected_save.count - 1 { expected_bytes[at] = expected_save[at] }
     unused Check(ShoveySave(*restored) == TextView(expected_bytes[:expected_save.count]), "old position reopens redesigned board")
-    unused Check(ShoveyLevelBoard(97) == current, "stale official cache resolves to redesign")
+    unused Check(ShoveyLevelBoard(number) == current, "stale official cache resolves to redesign")
     unused Check(ShoveyLevelBoard(96) != current, "other levels not remapped")
-    // A one-byte custom revision is never recognized as the official board.
+    // A one-cell custom revision is never recognized as the official board.
     custom: [1440]u8
-    for at: cast(s32)0..1439 { custom[at] = RETIRED_CLASSIC_97[at] }
-    custom[1439] = ifx custom[1439] == #char "0" then #char "1" else #char "0"
-    Install(TextView(custom[:]))
-    unused Check(ShoveyLevelBoard(97) == TextView(custom[:]), "custom 97 preserved byte for byte")
-    Install(current)
-    unused Check(ShoveyLevelBoard(97) == current, "current live board unchanged")
+    for at: cast(s32)0..1439 { custom[at] = retired[at] }
+    custom[1438] = #char "3"
+    custom[1439] = #char "b"
+    Install(number, TextView(custom[:]))
+    unused Check(ShoveyLevelBoard(number) == TextView(custom[:]), "custom board preserved byte for byte")
+    Install(number, current)
+    unused Check(ShoveyLevelBoard(number) == current, "current live board unchanged")
+    // The exception belongs only to this exact board and level number.
+    unused Check(!ShoveyRetiredOfficialBoard(number - 1, retired), "retired board at another level preserved")
+    unused Check(!ShoveyRetiredOfficialBoard(number, retired[:retired.count - 2]), "truncated board not retired")
+    custom_game: ShoveyGame
+    unused Check(ShoveyLoad(*custom_game, number), "current live board loads")
+    Install(number, TextView(custom[:]))
+    unused Check(ShoveyLoad(*custom_game, number), "custom live board loads")
+    custom_position := ShoveySave(*custom_game)
+    custom_bytes: [2432]u8
+    for at: cast(s32)0..cast(s32)custom_position.count - 1 { custom_bytes[at] = custom_position[at] }
+    custom_save := ShoveyCampaignSave(*progress, *custom_game)
+    custom_restored: ShoveyGame
+    custom_progress: ShoveyProgress
+    unused Check(ShoveyCampaignRestore(*custom_progress, *custom_restored, custom_save), "custom saved campaign restores")
+    unused Check(custom_progress.unlocked == number + 1 && custom_progress.completed[number - 1] && custom_progress.completed[12], "custom progress preserved")
+    unused Check(ShoveyLevelBoard(number) == TextView(custom[:]), "custom cache preserved after restore")
+    unused Check(ShoveySave(*custom_restored) == TextView(custom_bytes[:custom_position.count]), "custom position preserved after restore")
     shovey_live_count = 0
+}
+
+#program_export
+main :: () -> s32 {
+    TestOfficial(97, RETIRED_CLASSIC_97)
+    TestOfficial(98, RETIRED_CLASSIC_98)
     if TestFailures() > 0 { return 1 }
-    print("Official update: stale level97 replaced; custom boards, completion and unlock preserved\n")
+    print("Official update: stale levels 97/98 replaced; custom boards, completion and unlock preserved\n")
     return 0
 }
