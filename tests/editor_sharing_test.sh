@@ -10,7 +10,7 @@ apps=$(ziran pkg path apps)
 mingcute=$(ziran pkg path mingcute)
 work="$root/build/editor-sharing-test"
 mkdir -p "$work"
-"$toolchain/build/bin/ziran" bundle --root "$root" --module-path "$toolchain/std" \
+"$toolchain/build/bin/ziran" bundle --root "$root" --module-path "$root/src" --module-path "$toolchain/std" \
  --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
  --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
  --module-path "apps=$apps/src" --module-path "mingcute=$mingcute/src" \
@@ -24,7 +24,7 @@ result=$("$toolchain/build/bin/ziran" run "$work/sharing.zx")
 test "$result" = 42 || { echo "Editor sharing local test failed: $result" >&2; exit 1; }
 echo 'Editor sharing: real client lifecycle, owner cancellation, errors and accepted/rejected route proofs passed'
 
-"$toolchain/build/bin/ziran" build --target=c --no-main --root "$root" --module-path "$toolchain/std" \
+"$toolchain/build/bin/ziran" build --target=c --no-main --root "$root" --module-path "$root/src" --module-path "$toolchain/std" \
  --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
  --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
  --module-path "apps=$apps/src" --module-path "mingcute=$mingcute/src" \

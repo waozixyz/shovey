@@ -14,7 +14,7 @@ for edition in classic rules editor editor_progress import secret; do
     rm -rf "$work"
     mkdir -p "$work/c"
     "$toolchain/build/bin/ziran" build --target=c --no-main --entry "${edition}_behavior:Check" --root "$root/tests" \
-        --module-path "$toolchain/std" --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
+        --module-path "$root/src" --module-path "$toolchain/std" --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
         -o "$work/c" "$root/tests/${edition}_behavior.zi"
     cat > "$work/c/main.c" <<C
 #include <stdio.h>

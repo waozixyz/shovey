@@ -11,7 +11,7 @@ apps=$(ziran pkg path apps)
 mingcute=$(ziran pkg path mingcute)
 work="$root/work/editor-field-test"
 mkdir -p "$work"
-set -- --root "$root" --module-path "$root/tests" --module-path "$toolchain/std" \
+set -- --root "$root" --module-path "$root/tests" --module-path "$root/src" --module-path "$toolchain/std" \
  --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
  --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
  --module-path "apps=$apps/src" --module-path "mingcute=$mingcute/src" \
