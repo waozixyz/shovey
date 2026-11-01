@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Classic level 97 is a tighter crate puzzle built around clever staging and shared passages.
 - Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.
 - Editor text fields use Kryon’s shared text state while keeping Enter to save collection names.
 - Sharing collections cancels safely when accounts change and keeps drafts when requests fail.
