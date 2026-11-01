@@ -1,0 +1,216 @@
+Shop :: #import, file "../src/shop_state.zi";
+Products :: #import "entity/game_shop";
+#import "std/text_buffer"
+#import "std/c_string"
+#import "std/vec"
+
+FIRST :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+SECOND :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+account: s32 = 1;
+account_missing: bool;
+ledger_owner: string = FIRST;
+ledger_status: string = "done";
+ledger_owned: string = "0";
+ledger_coins: string = "0";
+connected: bool = true;
+purchase_status: string = "pending";
+purchase_calls: s32;
+last_purchase: [64]u8;
+service_reply: [1024]u8;
+record_names: [4][96]u8;
+record_text: [4][512]u8;
+record_count: s32;
+save_calls: s32;
+fail_save: bool;
+switch_on_status: bool;
+switch_on_purchase: bool;
+storage_missing: bool;
+fail_flush_once: bool;
+
+Owner :: () -> string {
+    if account == 1 { return FIRST }
+    if account == 2 { return SECOND }
+    return ""
+}
+#program_export
+AppServiceHost :: (name: string, request: string) -> string { return FakeService(name, request) }
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if name == "arcade.progress-storage" {
+        if request == "ready" { return "ready" }
+        if request == "missing" { return ifx storage_missing then "missing" else "present" }
+        if request == "flush" {
+            if fail_flush_once { fail_flush_once = false; return "failed" }
+            return "flushed"
+        }
+    }
+    out: Vec(u8)
+    if name == "entity.records" {
+        if account_missing { return "" }
+        BuilderPrint(*out, "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"%\"}", Owner())
+    } else if name == Products.GAME_SHOP_SERVICE {
+        status := ledger_status
+        if request != "status" {
+            purchase_calls += 1
+            unused CopyCString(request, last_purchase[:])
+            status = purchase_status
+            if switch_on_purchase { account = 2; switch_on_purchase = false }
+        }
+        BuilderPrint(*out, "{\"owner\":\"%\",\"status\":\"%\",\"connected\":%,\"shovey_owned\":%,\"shovey_coins\":%,\"owned\":1023,\"coins\":999999}",
+            ledger_owner, status, connected, ledger_owned, ledger_coins)
+        if switch_on_status && request == "status" { account = 2; switch_on_status = false }
+    } else { return "" }
+    unused CopyCString(TextView(VecSlice(out, 0, out.count)), service_reply[:])
+    VecFree(out)
+    return TextUntilNul(service_reply[:])
+}
+#program_export
+FakeRecord :: (name: string) -> string {
+    storage_missing = true
+    for index: cast(s32)0..record_count - 1 {
+        if TextUntilNul(record_names[index][:]) == name {
+            storage_missing = record_text[index][0] == 0
+            return TextUntilNul(record_text[index][:])
+        }
+    }
+    return ""
+}
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    save_calls += 1
+    if fail_save { return false }
+    for index: cast(s32)0..record_count - 1 {
+        if TextUntilNul(record_names[index][:]) == name { return CopyCString(text, record_text[index][:]) }
+    }
+    if record_count >= 4 { return false }
+    unused CopyCString(name, record_names[record_count][:])
+    unused CopyCString(text, record_text[record_count][:])
+    record_count += 1
+    return true
+}
+Restart :: () {
+    Shop.shop_local = .{}
+    Shop.shop_owner = .{}
+    Shop.shop_known = false
+    Shop.shop_storage_ok = false
+    Shop.shop_earned = 0; Shop.shop_bought = 0; Shop.shop_verified = 0
+    Shop.shop_ready = false; Shop.shop_poll_at = 0.0
+}
+Poll :: () { Shop.shop_poll_at = 0.0; Shop.ShopPump(10.0) }
+
+#program_export
+Check :: () -> s32 {
+    // Asset and product mapping is shared with the real Entity exports.
+    if Shop.ShopSkinName(4) != "night" || Shop.ShopSkinName(5) != "crystal" ||
+    Shop.ShopSkinDew(4) != 10000000 || Shop.ShopSkinDew(5) != 30000000 { return 1 }
+    if Shop.ShopSkinPath(7) != "assets/shovey/sprites/skin-7-player-down.png" || Shop.ShopSkinPath(8) != "" { return 2 }
+    Poll()
+    if !Shop.ShopAvailable(0) || Shop.ShopSkin() != 0 || Shop.ShopCoins() != 0 || purchase_calls != 0 { return 3 }
+    if Shop.ShopAvailable(-1) || Shop.ShopAvailable(8) || Shop.ShopSelect(1) || Shop.ShopBuy(0) || Shop.ShopBuy(8) { return 4 }
+    // Opening and polling the shop never purchases anything.
+    Shop.ShopSetEarnedCoins(350)
+    if !Shop.ShopBuy(1) || Shop.ShopCoins() != 250 || !Shop.ShopAvailable(1) { return 5 }
+    writes := save_calls
+    if Shop.ShopBuy(1) || save_calls != writes || purchase_calls != 0 { return 6 }
+    if !Shop.ShopSelect(1) || Shop.ShopSkin() != 1 { return 7 }
+    fail_save = true
+    if Shop.ShopBuy(2) || Shop.ShopAvailable(2) || Shop.ShopCoins() != 250 || Shop.ShopSelect(0) || Shop.ShopSkin() != 1 { return 8 }
+    fail_save = false
+    fail_flush_once = true
+    if Shop.ShopBuy(2) || Shop.ShopAvailable(2) || Shop.ShopCoins() != 250 { return 41 }
+    Restart()
+    Poll()
+    Shop.ShopSetEarnedCoins(350)
+    if Shop.ShopCoins() != 250 || Shop.ShopSkin() != 1 || !Shop.ShopAvailable(1) { return 9 }
+    // Cumulative earned coins and purchased totals replace, never accumulate.
+    Shop.ShopSetEarnedCoins(350)
+    ledger_coins = "400"
+    Poll(); Poll()
+    if Shop.ShopCoins() != 650 { return 10 }
+    ledger_coins = "0"
+    Poll()
+    if Shop.ShopCoins() != 250 { return 11 }
+    // No locally saved field or unrelated Wurm balance grants a Dew skin.
+    if Shop.ShopAvailable(4) || Shop.ShopAvailable(5) { return 12 }
+    if !Shop.ShopBuy(4) || TextUntilNul(last_purchase[:]) != "shovey.night" || Shop.ShopAvailable(4) { return 13 }
+    ledger_owned = "8192"
+    ledger_status = "pending"
+    Poll()
+    if Shop.ShopAvailable(4) || Shop.ShopSelect(4) { return 14 }
+    ledger_status = "failed"
+    Poll()
+    if Shop.ShopAvailable(4) { return 15 }
+    ledger_status = "done"
+    ledger_owner = SECOND
+    Poll()
+    if Shop.ShopAvailable(4) { return 16 }
+    ledger_owner = FIRST
+    Poll()
+    if !Shop.ShopAvailable(4) || !Shop.ShopSelect(4) || Shop.ShopSkin() != 4 { return 17 }
+    Restart()
+    // A saved chosen premium skin is only rendered after ledger restoration.
+    if Shop.ShopSkin() != 0 || Shop.ShopAvailable(4) { return 18 }
+    Poll()
+    if Shop.ShopSkin() != 4 { return 19 }
+    if !Shop.ShopBuy(5) || TextUntilNul(last_purchase[:]) != "shovey.crystal" || Shop.ShopAvailable(5) { return 20 }
+    purchase_status = "failed"
+    if Shop.ShopBuy(5) || Shop.ShopAvailable(5) { return 21 }
+    purchase_status = "pending"
+    ledger_owned = "24576"
+    Poll()
+    if !Shop.ShopAvailable(5) { return 22 }
+    // Confirmed pack requests preserve Entity's existing purchase path.
+    if Shop.ShopBuyCoins(0) || Shop.ShopBuyCoins(4) || !Shop.ShopBuyCoins(2) ||
+    TextUntilNul(last_purchase[:]) != "shovey-coins:2" { return 23 }
+    if Shop.ShopCoins() != 0 { return 24 } // Earned value cleared on restart.
+    ledger_status = "pending"; ledger_coins = "400"
+    Poll()
+    if Shop.ShopCoins() != 0 || Shop.ShopBuyCoins(1) { return 25 }
+    ledger_status = "done"
+    Poll(); Poll()
+    if Shop.ShopCoins() != 300 { return 26 }
+    // Account switches immediately invalidate bought coins and entitlements.
+    account = 2
+    if Shop.ShopSkin() != 0 || Shop.ShopCoins() != 0 || Shop.ShopAvailable(1) || Shop.ShopAvailable(4) { return 27 }
+    Shop.ShopSetEarnedCoins(200)
+    if !Shop.ShopBuy(2) || !Shop.ShopSelect(2) || Shop.ShopCoins() != 0 { return 28 }
+    account = 1
+    if !Shop.ShopAvailable(1) || Shop.ShopAvailable(2) || Shop.ShopSkin() != 0 { return 29 }
+    Shop.ShopSetEarnedCoins(350)
+    Poll()
+    if Shop.ShopSkin() != 4 || Shop.ShopCoins() != 650 { return 30 }
+    account = 0
+    if Shop.ShopCoins() != 0 || Shop.ShopAvailable(1) || Shop.ShopAvailable(4) || Shop.ShopBuyCoins(1) { return 31 }
+    Shop.ShopSetEarnedCoins(100)
+    if !Shop.ShopBuy(1) || !Shop.ShopSelect(1) { return 32 }
+    account = 2
+    if Shop.ShopSkin() != 2 || Shop.ShopAvailable(1) { return 33 }
+    // Malformed ledger fields, disconnected and missing services fail closed.
+    ledger_owner = SECOND; ledger_owned = "8192.5"; ledger_coins = "400"
+    Poll()
+    if Shop.ShopAvailable(4) || Shop.ShopCoins() != 0 { return 34 }
+    ledger_owned = "8192"; ledger_coins = "-1"
+    Poll()
+    if Shop.ShopAvailable(4) { return 35 }
+    ledger_coins = "400"; connected = false
+    Poll()
+    if Shop.ShopAvailable(4) || Shop.ShopCoins() != 0 { return 36 }
+    connected = true; account_missing = true
+    if Shop.ShopSkin() != 0 || Shop.ShopCoins() != 0 || Shop.ShopBuy(1) { return 37 }
+    account_missing = false; account = 1; ledger_owner = FIRST
+    switch_on_status = true
+    Poll()
+    if Shop.ShopAvailable(4) || Shop.ShopSkin() != 2 { return 38 }
+    account = 1; ledger_owner = FIRST; switch_on_purchase = true
+    if Shop.ShopBuy(5) || account != 2 || Shop.ShopAvailable(4) || Shop.ShopSkin() != 2 { return 43 }
+    // A corrupt local record cannot erase the debit and allow spending again.
+    unused CopyCString("{\"version\":1,\"owner\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"selected\":2,\"owned\":4,\"spent\":0}", record_text[1][:])
+    Restart()
+    Shop.ShopSetEarnedCoins(1000)
+    if Shop.ShopBuy(1) || Shop.ShopSelect(1) { return 39 }
+    // Injecting premium ownership into local storage never proves purchase.
+    unused CopyCString("{\"version\":1,\"owner\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"selected\":4,\"owned\":16,\"spent\":0}", record_text[1][:])
+    Restart()
+    if Shop.ShopAvailable(4) || Shop.ShopSkin() != 0 { return 40 }
+    return 42
+}

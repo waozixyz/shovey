@@ -1,0 +1,222 @@
+// Shovey's local coin wardrobe and Entity's verified Dew entitlements.
+// UI must show its confirmation before calling ShopBuy / ShopBuyCoins.
+Records :: #import, file "controls.zi";
+App :: #import "kryon/app_context";
+Products :: #import "entity/game_shop";
+#import "std/json_scan"
+#import "std/text_buffer"
+#import "std/c_string"
+#import "std/vec"
+
+SHOP_SKIN_COUNT :: 8;
+SHOP_COIN_MASK :: 206; // Ember, Frost, Berry, Stone, Gold (bits 1,2,3,6,7).
+ShopLocal :: struct { selected: s32; owned: s32; spent: s32 }
+shop_local: ShopLocal;
+shop_owner: [65]u8;
+shop_known: bool;
+shop_storage_ok: bool;
+shop_earned: s32;
+shop_bought: s32;
+shop_verified: s32;
+shop_ready: bool;
+shop_poll_at: float64;
+
+ShopSkinName :: (id: s32) -> string {
+    names: [8]string = .["default", "ember", "frost", "berry", "night", "crystal", "stone", "gold"]
+    return ifx id >= 0 && id < SHOP_SKIN_COUNT then names[id] else ""
+}
+ShopSkinCoins :: (id: s32) -> s32 {
+    prices: [8]s32 = .[0, 100, 200, 300, 0, 0, 400, 600]
+    return ifx id >= 0 && id < SHOP_SKIN_COUNT then prices[id] else 0
+}
+ShopSkinProduct :: (id: s32) -> s32 {
+    if id == 4 { return 13 }
+    if id == 5 { return 14 }
+    return 0
+}
+// Entity atomic Dew units (10,000,000 per Dew), zero for coin/default skins.
+ShopSkinDew :: (id: s32) -> s64 { return Products.GameShopPrice(ShopSkinProduct(id)) }
+// Bundle-relative preview. Board animation uses the same prefix with
+// player-{up,down,left,right}.png or charged-{up,down,left,right}.png.
+ShopSkinPath :: (id: s32) -> string {
+    paths: [8]string = .["assets/shovey/sprites/player-down.png",
+        "assets/shovey/sprites/skin-1-player-down.png", "assets/shovey/sprites/skin-2-player-down.png",
+        "assets/shovey/sprites/skin-3-player-down.png", "assets/shovey/sprites/skin-4-player-down.png",
+        "assets/shovey/sprites/skin-5-player-down.png", "assets/shovey/sprites/skin-6-player-down.png",
+        "assets/shovey/sprites/skin-7-player-down.png"]
+    return ifx id >= 0 && id < SHOP_SKIN_COUNT then paths[id] else ""
+}
+ShopInteger :: (text: string, name: string, maximum: s32) -> s32 {
+    value := ReadNumber(text, FieldAt(text, 0, name))
+    if !value.valid || value.value < 0.0 || value.value > cast(float64)maximum { return -1 }
+    result := cast(s32)value.value
+    return ifx value.value == cast(float64)result then result else -1
+}
+ShopRecordName :: (output: []u8) -> string {
+    out: Vec(u8)
+    BuilderPrint(*out, "shop.v1.%", ifx shop_owner[0] == 0 then "guest" else TextUntilNul(shop_owner[:]))
+    unused CopyCString(TextView(VecSlice(out, 0, out.count)), output)
+    VecFree(out)
+    return TextUntilNul(output)
+}
+ShopLoad :: () {
+    if !Records.ProgressStorageReady() || !Records.ProgressStorageFlush() { return }
+    name: [96]u8
+    text := Records.PathRecord(ShopRecordName(name[:]))
+    shop_storage_ok = text == "" && Records.ProgressStorageMissing()
+    if text == "" { return }
+    if ValueEnd(text, 0, 0) != text.count || !Products.GameShopField(text, "owner", TextUntilNul(shop_owner[:])) ||
+    ShopInteger(text, "version", 1) != 1 { return }
+    next: ShopLocal
+    next.selected = ShopInteger(text, "selected", SHOP_SKIN_COUNT - 1)
+    next.owned = ShopInteger(text, "owned", SHOP_COIN_MASK)
+    next.spent = ShopInteger(text, "spent", 1600)
+    if next.selected < 0 || next.owned < 0 || next.spent < 0 || (next.owned & SHOP_COIN_MASK) != next.owned { return }
+    cost: s32
+    for id: cast(s32)1..SHOP_SKIN_COUNT - 1 {
+        if (next.owned & (1 << id)) != 0 { cost += ShopSkinCoins(id) }
+    }
+    if cost != next.spent { return }
+    shop_local = next
+    shop_storage_ok = true
+}
+// Identity comes from the public account service, never from a saved record
+// or from the reply whose entitlements we are about to trust.
+ShopOwner :: () -> bool {
+    status := Records.ProgressAccountService("{\"operation\":\"status\"}")
+    owner: [65]u8
+    valid := ValueEnd(status, 0, 0) == status.count && Products.GameShopField(status, "status", "done") &&
+        Products.GameShopField(status, "game_progress", "account-v1") &&
+        ReadStringText(status, FieldAt(status, 0, "account"), owner[:]) >= 0
+    if TextUntilNul(owner[:]) == "local" { owner = .{} }
+    if owner[0] != 0 {
+        if TextUntilNul(owner[:]).count != 64 { valid = false }
+        for byte: TextUntilNul(owner[:]) {
+            if !(byte >= #char "0" && byte <= #char "9") && !(byte >= #char "a" && byte <= #char "f") { valid = false }
+        }
+    }
+    if !valid { owner = .{} }
+    if valid != shop_known || TextUntilNul(owner[:]) != TextUntilNul(shop_owner[:]) {
+        shop_owner = owner
+        shop_known = valid
+        shop_local = .{}
+        shop_earned = 0; shop_bought = 0; shop_verified = 0
+        shop_ready = false; shop_poll_at = 0.0; shop_storage_ok = false
+        if valid { ShopLoad() }
+    }
+    return valid
+}
+ShopSave :: (next: ShopLocal) -> bool {
+    if !shop_known || !shop_storage_ok || !Records.ProgressStorageReady() { return false }
+    name: [96]u8
+    out: Vec(u8)
+    BuilderPrint(*out, "{\"version\":1,\"owner\":\"%\",\"selected\":%,\"owned\":%,\"spent\":%}",
+        TextUntilNul(shop_owner[:]), next.selected, next.owned, next.spent)
+    // One record publishes the choice, unlock and debit together. Keep the
+    // previous in-memory state if the storage provider rejects the write.
+    record := ShopRecordName(name[:])
+    previous := Records.PathRecord(record)
+    // Copy borrowed host storage before another host call can reuse it.
+    previous_bytes: [512]u8
+    if !CopyCString(previous, previous_bytes[:]) { VecFree(out); return false }
+    saved := Records.PathSaveRecord(record, TextView(VecSlice(out, 0, out.count)))
+    VecFree(out)
+    if !saved { return false }
+    if !Records.ProgressStorageFlush() {
+        restored := Records.PathSaveRecord(record, TextUntilNul(previous_bytes[:]))
+        durable := Records.ProgressStorageFlush()
+        if !restored || !durable { shop_storage_ok = false }
+        return false
+    }
+    shop_local = next
+    return true
+}
+ShopApplyStatus :: (reply: string) {
+    shop_ready = false
+    if ValueEnd(reply, 0, 0) != reply.count || !shop_known || shop_owner[0] == 0 || !Products.GameShopField(reply, "owner", TextUntilNul(shop_owner[:])) ||
+    !Products.GameShopField(reply, "status", "done") ||
+    !MatchLiteral(reply, FieldAt(reply, 0, "connected"), "true") {
+        shop_verified = 0; shop_bought = 0
+        return
+    }
+    owned := ShopInteger(reply, "shovey_owned", Products.GAME_SHOP_SHOVEY_BITS)
+    bought := ShopInteger(reply, "shovey_coins", 1000000000)
+    if owned < 0 || (owned & Products.GAME_SHOP_SHOVEY_BITS) != owned || bought < 0 {
+        shop_verified = 0; shop_bought = 0
+        return
+    }
+    shop_verified = owned
+    shop_bought = bought // Ledger total replaces the old value, including zero.
+    shop_ready = true
+}
+ShopPump :: (now: float64) {
+    if !ShopOwner() || now < shop_poll_at { return }
+    if !shop_storage_ok { ShopLoad() }
+    shop_poll_at = now + 5.0
+    ShopApplyStatus(App.AppService(Products.GAME_SHOP_SERVICE, "status"))
+    // An account switch during a host request invalidates that reply.
+    unused ShopOwner()
+}
+// Supply the current owner's cumulative daily chest grants after ShopPump.
+// This value is never saved as purchased coins and never consumes a chest.
+ShopSetEarnedCoins :: (total: s32) {
+    if !ShopOwner() { return }
+    shop_earned = ifx total >= 0 && total <= 1000000000 then total else 0
+}
+ShopAvailable :: (id: s32) -> bool {
+    unused ShopOwner()
+    if id == 0 { return true }
+    if id < 0 || id >= SHOP_SKIN_COUNT { return false }
+    product := ShopSkinProduct(id)
+    if product > 0 { return (shop_verified & (1 << product)) != 0 }
+    return (shop_local.owned & (1 << id)) != 0
+}
+ShopSkin :: () -> s32 {
+    unused ShopOwner()
+    return ifx ShopAvailable(shop_local.selected) then shop_local.selected else 0
+}
+ShopCoins :: () -> s32 {
+    unused ShopOwner()
+    balance := shop_earned + shop_bought - shop_local.spent
+    return ifx balance > 0 then balance else 0
+}
+ShopSelect :: (id: s32) -> bool {
+    if !ShopAvailable(id) { return false }
+    if id == shop_local.selected { return true }
+    next := shop_local
+    next.selected = id
+    return ShopSave(next)
+}
+ShopPurchase :: (request: string) -> bool {
+    if !ShopOwner() || shop_owner[0] == 0 { return false }
+    ShopApplyStatus(App.AppService(Products.GAME_SHOP_SERVICE, "status"))
+    if !ShopOwner() || !shop_ready { return false }
+    expected := shop_owner
+    answer := App.AppService(Products.GAME_SHOP_SERVICE, request)
+    // The next identity request may reuse the host's response buffer.
+    reply_bytes: [1024]u8
+    copied := CopyCString(answer, reply_bytes[:])
+    shop_poll_at = 0.0
+    // Enqueue is not ownership. Only a later successful status restores it.
+    shop_ready = false
+    if !ShopOwner() || TextUntilNul(expected[:]) != TextUntilNul(shop_owner[:]) || !copied { return false }
+    reply := TextUntilNul(reply_bytes[:])
+    return Products.GameShopField(reply, "owner", TextUntilNul(shop_owner[:])) &&
+        (Products.GameShopField(reply, "status", "pending") || Products.GameShopField(reply, "status", "done"))
+}
+ShopBuy :: (id: s32) -> bool {
+    if id <= 0 || id >= SHOP_SKIN_COUNT || ShopAvailable(id) { return false }
+    product := ShopSkinProduct(id)
+    if product > 0 { return ShopPurchase(Products.GameShopProduct(product)) }
+    cost := ShopSkinCoins(id)
+    if cost <= 0 || ShopCoins() < cost { return false }
+    next := shop_local
+    next.owned |= 1 << id
+    next.spent += cost
+    return ShopSave(next)
+}
+ShopBuyCoins :: (pack: s32) -> bool {
+    if Products.ShoveyCoinPackCoins(pack) <= 0 { return false }
+    requests: [3]string = .["shovey-coins:1", "shovey-coins:2", "shovey-coins:3"]
+    return ShopPurchase(requests[pack - 1])
+}
