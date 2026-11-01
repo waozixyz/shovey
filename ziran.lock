@@ -2,19 +2,6 @@
   "format": 1,
   "packages": [
     {
-      "commit": "a02feeb703192f1481e72160b1ccff401d17ef9d",
-      "dependencies": {
-        "raylib": "pcc7aa76725f2fb2f"
-      },
-      "dependency_refs": {
-        "raylib": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e"
-      },
-      "id": "p0797a2ec7b9d9b0e",
-      "name": "kryon",
-      "ref": "a02feeb703192f1481e72160b1ccff401d17ef9d",
-      "url": "https://github.com/kryonlabs/kryon.git"
-    },
-    {
       "commit": "2944b2e668e735438d8ce24e47a39be3f5c36af5",
       "dependencies": {},
       "id": "p0dfa70137405b096",
@@ -169,13 +156,13 @@
     "dependencies": {
       "apps": "p9b5024e78127fbee",
       "entity": "p2f8f019af368f6f6",
-      "kryon": "p0797a2ec7b9d9b0e",
+      "kryon": "pfa65f8437b3d3740",
       "mingcute": "pe1027b9d16704793"
     },
     "dependency_refs": {
       "apps": "master",
       "entity": "master",
-      "kryon": "a02feeb703192f1481e72160b1ccff401d17ef9d",
+      "kryon": "f6299fa1c71a6d9930df7a9a725d1a571adcbc68",
       "mingcute": "master"
     },
     "name": "Shovey"
