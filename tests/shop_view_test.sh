@@ -38,7 +38,7 @@ git check-ignore -q "$work"
 mkdir -p "$work"
 if [ "$fixture" != --fixture-only ]; then
 "$toolchain/build/bin/ziran" bundle --root "$root" \
-    --module-path "$root/tests" --module-path "$root/build/game-generated/shovey" \
+    --module-path "$root/tests" \
     --module-path "$toolchain/std" --module-path "std=$toolchain/std" \
     --module-path "entity=$entity/src" \
     --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
@@ -55,7 +55,7 @@ fi
 if [ "$fixture" = --fixture ] || [ "$fixture" = --fixture-only ]; then
     native="$work/native"
     "$toolchain/build/bin/ziran" build --target=c --no-main --root "$root" \
-        --module-path "$root/tests" --module-path "$root/build/game-generated/shovey" \
+        --module-path "$root/tests" \
         --module-path "$toolchain/std" --module-path "std=$toolchain/std" \
         --module-path "entity=$entity/src" \
         --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \

@@ -316,7 +316,7 @@ game-maps-test:
 	python3 tests/game_maps_test.py
 
 .PHONY: shop-test
-shop-test:
+shop-test: levels
 	sh tests/daily_chest_test.sh
 	sh tests/shop_state_test.sh
 	sh tests/shop_view_test.sh
