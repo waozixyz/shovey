@@ -716,7 +716,7 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         }
         Text(session, TextProps.{.key = cast(u64)8,
                 .text = title, .font = 20,
-                .bounds = Rectangle.{viewport.x + 100.0, viewport.y + 12.0, viewport.width - 116.0, 36.0}})
+                .bounds = Rectangle.{viewport.x + 112.0, viewport.y + 20.0, viewport.width - 232.0, 28.0}})
     }
     return true
 }
