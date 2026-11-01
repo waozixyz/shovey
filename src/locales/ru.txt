@@ -208,6 +208,9 @@
 [shovey_locked]
 Закрыт
 ---
+[shovey_progress_loading]
+Загрузка прогресса аккаунта…
+---
 [shovey_completed]
 Пройден
 ---

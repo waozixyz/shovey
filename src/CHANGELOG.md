@@ -9,6 +9,7 @@
 - Rebuild Classic 93 with hive crossings and Classic 97–99 as brick buildings with pressure plates, star relays and painted-ball puzzles. Preserve old campaign downloads, custom boards and earned progress.
 
 - Return to the level selector at the level just played or reached after a win, while a fresh session still opens at earned progress.
+- See while signed-in account progress is still loading, without delaying local play.
 - Back from a host-opened shop or chest returns to the screen that opened it.
 - Visit Shovey's shop, claim the daily chest, and open Profile and Leaderboard with painted icons.
 - Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.

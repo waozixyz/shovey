@@ -208,6 +208,9 @@
 [shovey_locked]
 未解放
 ---
+[shovey_progress_loading]
+アカウントの進行状況を読み込み中…
+---
 [shovey_completed]
 クリア済み
 ---

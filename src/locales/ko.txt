@@ -208,6 +208,9 @@
 [shovey_locked]
 잠김
 ---
+[shovey_progress_loading]
+계정 진행 상황 불러오는 중…
+---
 [shovey_completed]
 완료
 ---

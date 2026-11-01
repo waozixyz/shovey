@@ -9,6 +9,8 @@ Client :: #import "entity/game_progress_client";
 #import, file "progress_rules.zi";
 #import, file "progress_laws.zi";
 
+SHARED_PROGRESS_LOADING_TIMEOUT :: 30.0
+
 SharedProgressSession :: struct {
     // Public snapshots retained for every edition and the rewards adapter.
     record: Progress.GameProgressRecord
@@ -21,6 +23,10 @@ SharedProgressSession :: struct {
     client: Client.GameProgressClient
     bound: bool
     now: float64
+    loading_since: float64
+    sync_check_pending: bool
+    sync_pending: bool
+    sync_settled_reread: bool
 }
 
 SharedProgressStatusField :: (reply: string, field: string, expected: string) -> bool {
@@ -56,7 +62,13 @@ SharedProgressService :: (context: *void, service: string, request: string) -> s
     session := shared_progress_active
     unused service
     if !session.available { return "{\"status\":\"unavailable\"}" }
-    return ProgressAccountService(request)
+    reply := ProgressAccountService(request)
+    if SharedProgressStatusField(request, "operation", "get") {
+        missing := SharedProgressStatusField(reply, "status", "missing")
+        session.sync_check_pending = missing
+        if !missing { session.sync_pending = false }
+    }
+    return reply
 }
 SharedProgressName :: (owner: string, game: string, output: []u8) -> string {
     if !Progress.GameProgressGameValid(game) { return "" }
@@ -156,6 +168,15 @@ SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GamePr
     unused SharedProgressPump(session, now)
 }
 
+SharedProgressAccountLoading :: (session: *SharedProgressSession) -> bool {
+    if !session.available || !session.owner_known || !session.bound || TextUntilNul(session.owner[:]) == "" ||
+    session.client.result.state == Client.GameProgressClientState.Failed ||
+    session.client.result.error != Client.GameProgressClientError.None { return false }
+    if session.loading_since <= 0.0 || session.now - session.loading_since >= SHARED_PROGRESS_LOADING_TIMEOUT { return false }
+    return !session.client.result.hydrated || session.sync_check_pending || session.sync_pending ||
+        session.sync_settled_reread
+}
+
 // 1: earned progress changed; 2: account changed (the caller's existing
 // policy reloads its campaign). A same-owner Start never reports a change.
 SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: bool = false, retire_legacy: bool = true) -> s32 {
@@ -178,6 +199,7 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     before := session.record
     session.owner = owner
     session.owner_known = true
+    if session.loading_since <= 0.0 { session.loading_since = now }
     if !session.bound {
         pending: bool
         if !SharedProgressLoad(TextUntilNul(owner[:]), *session.record, *pending) { return 0 }
@@ -190,6 +212,9 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
         session.bound = result.state != Client.GameProgressClientState.OwnerChanged && result.error == Client.GameProgressClientError.None
         if !session.bound { return 0 }
     }
+    was_sync_pending := session.sync_pending
+    status_syncing := SharedProgressStatusField(status, "sync", "syncing")
+    status_pending := SharedProgressStatusField(status, "sync", "pending")
     result := Client.GameProgressClientPump(*session.client, cast(s64)(now * 1000.0), true)
     if result.state == Client.GameProgressClientState.OwnerChanged {
         session.* = .{}
@@ -198,7 +223,28 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     SharedProgressSnapshot(session)
     // Keep stepping hydration, pending operations and durable acknowledgement
     // promptly; idle account reads retain Shovey's fifteen-second interval.
-    session.poll_at = ifx result.state == Client.GameProgressClientState.Ready then now + 15.0 else now
+    if session.sync_check_pending {
+        session.sync_pending = true
+        session.sync_check_pending = false
+    }
+    else {
+        session.sync_pending = status_syncing || status_pending
+    }
+    client_idle := result.state == Client.GameProgressClientState.Ready ||
+        result.state == Client.GameProgressClientState.Acknowledged
+    if client_idle {
+        session.poll_at = ifx session.sync_pending then now + 0.5 else now + 15.0
+        if was_sync_pending && !session.sync_pending {
+            session.sync_settled_reread = true
+            session.client.next_read = 0
+            session.poll_at = now
+        }
+        else if session.sync_settled_reread && !session.sync_pending {
+            session.sync_settled_reread = false
+        }
+    } else {
+        session.poll_at = now
+    }
     if retire_legacy && session.retiring && !result.dirty && result.durable &&
     SharedProgressStatusField(status, "sync", "synced") && TextUntilNul(owner[:]) != "" {
         session.retiring = !ProgressRetireLegacy()

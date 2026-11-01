@@ -208,6 +208,9 @@ Niveaux
 [shovey_locked]
 Verrouillé
 ---
+[shovey_progress_loading]
+Chargement de la progression du compte…
+---
 [shovey_completed]
 Terminé
 ---

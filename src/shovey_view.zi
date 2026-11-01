@@ -26,6 +26,7 @@ Math :: #import "std/math";
 #import "press_widget"
 #import "scroll_props"
 #import "scroll_widget"
+#import "kryon/loading_indicator"
 #import "tree"
 #import "number_text"
 #import "text_buffer"
@@ -1283,6 +1284,7 @@ ShoveyFrame :: () {
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
+        account_loading := SharedProgressAccountLoading(*shared_progress)
         if Button(frame.session, ButtonProps.{.key = cast(u64)20022, .id = 20022,
                 .bounds = Rectangle.{12.0, top + 8.0, 112.0, 48.0}, .label = AppLocaleHost("shovey_back"),
                 .icon_shape = ICON_PREVIOUS, .fit_content = true,
@@ -1295,7 +1297,13 @@ ShoveyFrame :: () {
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
         }
-        list_top := top + 72.0
+        if account_loading {
+            LoadingIndicator(frame.session, LoadingIndicatorProps.{.key = cast(u64)20106,
+                    .bounds = Rectangle.{16.0, top + 68.0, 28.0, 24.0}, .now = frame.now, .scale = 1.0})
+            Caption(20107, Rectangle.{52.0, top + 68.0, width - 68.0, 24.0},
+                AppLocaleHost("shovey_progress_loading"), 14)
+        }
+        list_top := top + ifx account_loading then 104.0 else 72.0
         columns := cast(s32)((width - 24.0) / 112.0)
         if columns < 2 { columns = 2 }
         listed := ShoveyLevelCount()
@@ -1328,8 +1336,11 @@ ShoveyFrame :: () {
                 // Status stays accessible in the semantic label, while the
                 // visual card uses a lock/check icon and an unlocked board.
                 status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
+                level_waiting := account_loading && !unlocked
                 if Button(frame.session, ButtonProps.{.key = cast(u64)(33000 + number), .id = 33000 + number,
-                        .bounds = bounds, .label = label, .disabled = !unlocked,
+                        .bounds = bounds, .label = label,
+                        .detail = ifx level_waiting then AppLocaleHost("shovey_progress_loading") else "",
+                        .disabled = !unlocked,
                         .selected = completed, .fit_content = true,
                         .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
                         .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {

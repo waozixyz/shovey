@@ -208,6 +208,9 @@
 [shovey_locked]
 未解锁
 ---
+[shovey_progress_loading]
+正在加载账户进度…
+---
 [shovey_completed]
 已完成
 ---
