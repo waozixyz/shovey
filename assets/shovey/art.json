@@ -1813,6 +1813,16 @@
       "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
     },
     {
+      "path": "sprites/tile-167.png",
+      "depicts": "three golden honeybees with pale blue wings forming a forest swarm, Codex generated pixel art",
+      "sha256": "36eb78d29ed24b84ca924a5dbe2441b285d9353a34101b2b5499bd2d5e675d51"
+    },
+    {
+      "path": "sprites/tile-168.png",
+      "depicts": "a golden woven skep beehive with a dark arched entrance, Codex generated pixel art",
+      "sha256": "49baf1d82e1e7c124248f3991ce11f1c357d86f6672257b09fc727451e9bee15"
+    },
+    {
       "path": "sprites/tile-17.png",
       "depicts": "green paint puddle",
       "sha256": "852c0c22671dee01a2cfb21337b5d6f2ba27749ee899d6b11edc928e738d1004"
