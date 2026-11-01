@@ -143,14 +143,13 @@ def main():
                               round(before_apps['x'] - origin['x'] + before_apps['width']),
                               round(before_apps['y'] - origin['y'] + before_apps['height']))
                 open_arcade(driver)
-                # Arcade's cover shows Shovey's art with its Classic card and
-                # Play, which opens the level directly.
-                driver.wait(label='Classic', role='text')
+                # Arcade's cover shows Shovey's art with Play, which opens
+                # the level directly.
                 if edition == 'classic':
                     driver.press(label='Play', role='button')
                 else:
                     driver.press(label='Next', role='button')
-                    driver.wait(label='Editor', role='text')
+                    driver.wait(label='Open', role='button')
                     driver.press(label='Open', role='button')
                 if edition == 'classic':
                     driver.wait(label='Restart', role='button', timeout=30)

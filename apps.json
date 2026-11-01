@@ -15,7 +15,6 @@
         "portrait": "assets/shovey/title-portrait.png",
         "landscape": "assets/shovey/title-landscape.png",
         "logo": "assets/shovey/logo.png",
-        "caption": "Classic",
         "action": "play"
       }
     },
@@ -26,7 +25,6 @@
         "portrait": "assets/shovey/editor-portrait.png",
         "landscape": "assets/shovey/editor-landscape.png",
         "logo": "assets/covers/shovey-editor-logo.png",
-        "caption": "Editor",
         "action": "open"
       },
       "requires": [
