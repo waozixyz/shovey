@@ -22,7 +22,7 @@ WIDTH, HEIGHT = 12, 20
 CELLS = WIDTH * HEIGHT
 
 # Classic kinds that are pieces standing on the floor rather than floor.
-CLASSIC_PIECES = {1, 2, 3, 9, 19, 28, 36, 37, 38, 40, 72, 150, 151, 168}
+CLASSIC_PIECES = {1, 2, 3, 9, 141, 19, 28, 36, 37, 38, 40, 72, 150, 151, 168}
 CLASSIC_ON_FLOOR = {15, 16, 17, 21, 25, 26, 27, 33, 34, 35}
 CLASSIC_PLAYER = 10
 CLASSIC_WALL_FLOORS = {12: 0, 14: 0, 62: 0, 63: 0, 76: 0,

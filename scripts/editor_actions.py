@@ -969,7 +969,7 @@ def modify_once(number, feedback='', choices=None, repair=False, mode='modify', 
         'Objects 82 duck, 83 turtle and 88 crab wander and block movement; 89/90/91 fish stay on water. '
         'Decorations: 0 empty, 57 flowers, 58 grass tuft, 135 mushrooms, 136 fallen leaves, 137 bluebells, 138 lily pads (on water), '
         '84 blocking tree, 106 blocking lantern, 122 blocking boulder, 139 blocking berry bush, 140 blocking flower pot, '
-        '141 blocking barrel, 142 blocking tree stump. '
+        '141 pushable wooden barrel (same rules as crate 9), 142 blocking tree stump. '
         'Colour blocks change colour on every push: 36 red, 37 blue, 38 yellow cycle red, blue, yellow; '
         '53 cyan, 54 purple, 55 green cycle cyan, purple, green. Block goals take only their colour: '
         '39 red (and cyan), 143 blue, 144 yellow, 145 cyan, 146 purple, 147 green. '

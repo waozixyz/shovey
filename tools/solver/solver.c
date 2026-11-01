@@ -889,7 +889,7 @@ static int Verify(const char *hex, const char *route, int level, bool analyze, b
             moves++;
             features |= used;
             if (kind) pushes++;
-            if (kind == 9) crate_pushes++;
+            if (kind == 9 || kind == 141) crate_pushes++;
             if ((kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46)) ball_pushes++;
 #if defined(SHOVEY_CLASSIC)
             used_cells[from] = used_cells[classic_game.player] = true;

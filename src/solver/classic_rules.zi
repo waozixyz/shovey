@@ -349,7 +349,7 @@ SolveClassicDead :: () -> bool {
                 blocked[side] = neighbor < 0 || game.ground[neighbor] == 12
             }
             if (blocked[0] || blocked[2]) && (blocked[1] || blocked[3]) { return true }
-        } else if object == 9 {
+        } else if ShoveyCrate(object) {
             if game.ground[at] == 18 { usable += 1 }
             else if solve_classic_crate_live[at] { usable += 1; loose += 1 }
         }
@@ -362,7 +362,7 @@ SolveClassicDead :: () -> bool {
     frozen: s32 = 0
     held: [SHOVEY_CELLS]bool
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.objects[at] != 9 || game.ground[at] == 18 || !solve_classic_crate_live[at] { continue }
+        if !ShoveyCrate(game.objects[at]) || game.ground[at] == 18 || !solve_classic_crate_live[at] { continue }
         if SolveClassicFrozen(at, 0, held[:], true) && SolveClassicFrozen(at, 1, held[:], true) {
             frozen += 1
             if frozen > spare { return true }
@@ -547,9 +547,9 @@ SolveClassicEstimate :: () -> s32 {
             solve_classic_holes[pit_color - 1][hole_count[pit_color - 1]] = at; hole_count[pit_color - 1] += 1
         }
         if ShoveyPaintColor(ground) > 0 { solve_classic_painters[painter_count] = at; painter_count += 1 }
-        if object == 9 && ground != 18 { solve_classic_crates[crate_count] = at; crate_count += 1 }
+        if ShoveyCrate(object) && ground != 18 { solve_classic_crates[crate_count] = at; crate_count += 1 }
         if ground == 18 {
-            if plate_seen < SOLVE_CLASSIC_PLATES && object != 9 {
+            if plate_seen < SOLVE_CLASSIC_PLATES && !ShoveyCrate(object) {
                 solve_classic_plates[plate_count] = at
                 solve_classic_plate_table[plate_count] = plate_seen
                 plate_count += 1
@@ -766,7 +766,7 @@ SolveClassicSwitchEstimate :: () -> s32 {
             solve_classic_starts[source_count] = 0
             source_count += 1
         }
-        if game.objects[at] == 9 && game.ground[at] != 13 { solve_classic_crates[crate_count] = at; crate_count += 1 }
+        if ShoveyCrate(game.objects[at]) && game.ground[at] != 13 { solve_classic_crates[crate_count] = at; crate_count += 1 }
     }
     if source_count == 0 || crate_count == 0 { return SOLVE_CLASSIC_FAR }
     SolveClassicPushField(game, 9, source_count)
@@ -791,10 +791,10 @@ SolveClassicHardestPlate :: () -> s32 {
     tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
     for index: cast(s32)0..tracked - 1 {
         plate := solve_classic_plate_at[index]
-        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        if game.ground[plate] != 18 || ShoveyCrate(game.objects[plate]) { continue }
         nearest: s32 = SOLVE_CLASSIC_FAR
         for crate: cast(s32)0..SHOVEY_CELLS - 1 {
-            if game.objects[crate] != 9 { continue }
+            if !ShoveyCrate(game.objects[crate]) { continue }
             pushes := solve_classic_plate_open[index * SHOVEY_CELLS + crate]
             shut := solve_classic_plate_shut[index * SHOVEY_CELLS + crate]
             if shut < pushes { pushes = shut }
@@ -816,7 +816,7 @@ SolveClassicNearestPlate :: () -> s32 {
     tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
     for index: cast(s32)0..tracked - 1 {
         plate := solve_classic_plate_at[index]
-        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        if game.ground[plate] != 18 || ShoveyCrate(game.objects[plate]) { continue }
         distance := SolveClassicDistance(plate, game.player)
         if distance < best_distance || (distance == best_distance && plate > best_plate) {
             best_distance = distance
@@ -833,7 +833,7 @@ SolveClassicLowestPlate :: () -> s32 {
     tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
     for index: cast(s32)0..tracked - 1 {
         plate := solve_classic_plate_at[index]
-        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        if game.ground[plate] != 18 || ShoveyCrate(game.objects[plate]) { continue }
         if plate > best_plate { best_plate = plate }
     }
     solve_classic_work += cast(s64)tracked
@@ -847,11 +847,11 @@ SolveClassicCenterPlate :: () -> s32 {
     tracked := ifx solve_classic_plate_total < SOLVE_CLASSIC_PLATES then solve_classic_plate_total else SOLVE_CLASSIC_PLATES
     for index: cast(s32)0..tracked - 1 {
         plate := solve_classic_plate_at[index]
-        if game.ground[plate] != 18 || game.objects[plate] == 9 { continue }
+        if game.ground[plate] != 18 || ShoveyCrate(game.objects[plate]) { continue }
         total: s32 = 0
         nearest: s32 = SOLVE_CLASSIC_FAR
         for crate: cast(s32)0..SHOVEY_CELLS - 1 {
-            if game.objects[crate] != 9 || game.ground[crate] == 13 { continue }
+            if !ShoveyCrate(game.objects[crate]) || game.ground[crate] == 13 { continue }
             pushes := solve_classic_plate_open[index * SHOVEY_CELLS + crate]
             if pushes >= SOLVE_CLASSIC_FAR { continue }
             total += pushes
@@ -873,7 +873,7 @@ SolveClassicPlateEstimate :: (plate: s32) -> s32 {
     SolveClassicPushField(game, 9, 1)
     best: s32 = SOLVE_CLASSIC_FAR
     for crate: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.objects[crate] != 9 { continue }
+        if !ShoveyCrate(game.objects[crate]) { continue }
         pushes := solve_classic_distance[crate]
         if pushes >= SOLVE_CLASSIC_FAR { continue }
         value := pushes * 4 + SolveClassicDistance(game.player, crate)

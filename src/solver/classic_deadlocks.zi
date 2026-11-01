@@ -5,7 +5,7 @@
 // A wooden crate can become walkable ground when pushed into water. Static
 // reachability must allow that future bridge; the engine validates each push.
 SolveWaterMayBridge :: (game: *ShoveyGame) -> bool {
-    for object: game.objects { if object == 9 { return true } }
+    for object: game.objects { if ShoveyCrate(object) { return true } }
     return false
 }
 

@@ -334,7 +334,7 @@ forest-puzzle-test: solver
 official-update-test: levels
 	$(call ziran_test,official_update_test)
 
-public-test: solver laws game-maps-test level-select-test shop-test official-update-test forest-puzzle-test
+public-test: barrels-test solver laws game-maps-test level-select-test shop-test official-update-test forest-puzzle-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
@@ -365,7 +365,7 @@ laws:
 	done
 	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
 
-test: solver laws game-maps-test shop-test forest-puzzle-test
+test: barrels-test solver laws game-maps-test shop-test forest-puzzle-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
@@ -480,3 +480,7 @@ editor-card: levels build/ziran/libziran.a
 		$$(pkg-config --libs sdl2 cairo freetype2 fontconfig pangocairo) -lm -lpthread -o build/card/editor-card
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
 		KRYON_CAPTURE_PATH='$(abspath assets/shovey-editor/preview.png)' xvfb-run -a -n 400 build/card/editor-card
+
+.PHONY: barrels-test
+barrels-test: levels
+	$(call ziran_test,barrels_test)

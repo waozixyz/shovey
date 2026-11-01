@@ -142,6 +142,13 @@ ShoveyRestore :: (game: *ShoveyGame, text: string) -> bool {
         // Ground holds a cell kind, a blocking decoration or a wall tile such as the cave wall.
         if ground < 0 || (!ShoveyCellKind(ground) && !ShoveyBlockingDecoration(ground) && ground != SHOVEY_CAVE_WALL && ground != SHOVEY_LAVA) ||
         object < 0 || (object != 0 && !ShoveyMovable(object)) || source < 0 || source > 4 { return false }
+        // Upgrade a pre-pushable-barrel position without resetting its moves,
+        // other pieces or progress. Old barrels occupied ground and scenery.
+        if ground == SHOVEY_BARREL && object == 0 {
+            ground = ifx ShoveyCosmeticTile(restored.tiles[at]) then 0 else restored.tiles[at]
+            object = SHOVEY_BARREL
+            restored.decorations[at] = 0
+        }
         if ShoveyMovable(ground) || ground == 10 || ground == 22 || ground == 24 || ground == 32 { return false }
         restored.ground[at] = ground; restored.objects[at] = object; restored.light_from[at] = source
     }

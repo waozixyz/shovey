@@ -88,7 +88,7 @@ ClassicApiCrateCells :: () {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         classic_crate_live[at] = false
         classic_crate_pushes[at] = CLASSIC_FAR
-        if game.objects[at] == 9 { crates += 1 }
+        if ShoveyCrate(game.objects[at]) { crates += 1 }
         if game.ground[at] == 18 {
             places += 1
             classic_crate_live[at] = true
@@ -514,7 +514,7 @@ ClassicApiDead :: () -> s32 {
     // or one frozen in place off its goal.
     if classic_crate_check {
         for at: cast(s32)0..SHOVEY_CELLS - 1 {
-            if classic_game.objects[at] != 9 { continue }
+            if !ShoveyCrate(classic_game.objects[at]) { continue }
             if !classic_crate_live[at] { return 1 }
             if classic_game.ground[at] != 18 {
                 held: [SHOVEY_CELLS]bool
@@ -782,8 +782,8 @@ ClassicApiFocus :: () {
     targets: [SHOVEY_CELLS]s32; target_count: s32 = 0
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         ground := game.ground[at]; object := game.objects[at]
-        if object == 9 { crates[crate_count] = at; crate_count += 1 }
-        if ground == 18 && object != 9 { plates[plate_count] = at; plate_count += 1 }
+        if ShoveyCrate(object) { crates[crate_count] = at; crate_count += 1 }
+        if ground == 18 && !ShoveyCrate(object) { plates[plate_count] = at; plate_count += 1 }
         if ground == 13 && object == 0 { switches[switch_count] = at; switch_count += 1 }
         if object == 28 { targets[target_count] = at; target_count += 1 }
         if ground == 21 || ground == 56 || object == 19 || object == 40 ||
@@ -837,7 +837,7 @@ ClassicApiFocus :: () {
 ClassicApiActionCost :: (action: s32) -> s32 {
     if action < 0 || action > 3 || classic_crate_check { return 1 }
     at := ShoveyNeighbor(classic_game.player, action)
-    if at < 0 || classic_game.objects[at] != 9 || classic_focus[at] { return 1 }
+    if at < 0 || !ShoveyCrate(classic_game.objects[at]) || classic_focus[at] { return 1 }
     return 16
 }
 
@@ -877,8 +877,8 @@ ClassicApiEstimate :: () -> s32 {
         pit_color := ShoveyPitColor(ground)
         if pit_color > 0 { holes[pit_color - 1][hole_count[pit_color - 1]] = at; hole_count[pit_color - 1] += 1 }
         if ShoveyPaintColor(ground) > 0 { painters[painter_count] = at; painter_count += 1 }
-        if object == 9 && ground != 18 { crates[crate_count] = at; crate_count += 1 }
-        if ground == 18 && object != 9 { plates[plate_count] = at; plate_count += 1 }
+        if ShoveyCrate(object) && ground != 18 { crates[crate_count] = at; crate_count += 1 }
+        if ground == 18 && !ShoveyCrate(object) { plates[plate_count] = at; plate_count += 1 }
         if ShoveyColorBlock(object) && !ShoveyColorGoal(ground) { rings[ring_count] = at; ring_count += 1 }
         if ShoveyColorGoal(ground) && !ShoveyGoalDone(ground, object) { rests[rest_count] = at; rest_count += 1 }
         if object == 19 { stars[star_count] = at; star_count += 1 }

@@ -4,6 +4,7 @@
 #import, file "../src/editor/edit.zi";
 #import, file "../src/live_campaign.zi";
 #import, file "../src/official_updates.zi";
+#import "std/file"
 
 #program_export
 Check :: () -> s32 {
@@ -83,6 +84,27 @@ Check :: () -> s32 {
     // A changed live board is preserved, rather than all of 97 being pinned.
     shovey_live_boards[96 * SHOVEY_LIVE_BOARD + 1439] = #char "1"
     if ShoveyLevelBoard(97) == ShoveyLevelData(97) { return 18 }
+    shovey_live_count = 0
+    // Replay the actual live document, including its old-install-compatible
+    // base boards. Exact retired guards must keep new engine variants active.
+    document, read_ok := ReadEntireFile("levels/approved.json")
+    if !read_ok || !ShoveyLiveCheckStart(document) { return 19 }
+    compact: string
+    result: s32 = -1
+    for frame: 0..100000 {
+        result = ShoveyLiveCheckStep(32, *compact)
+        if result != -1 { break }
+    }
+    if result != 1 || ShoveyLevelCount() != last { return 20 }
+    for number: cast(s32)1..last {
+        if ShoveyRetiredOfficialBoard(number, ShoveyLevelBoard(number)) { return 21 }
+    }
+    // A later ruleset may reject a route; its prefix must never truncate
+    // an older install's already available campaign or its earned progress.
+    live_check.index = last - 1
+    if LiveCheckKeepPrefix(*compact) != 0 || ShoveyLevelCount() != last { return 22 }
+    live_check.index = last
+    if LiveCheckKeepPrefix(*compact) != 1 || ShoveyLevelCount() != last { return 23 }
     shovey_live_count = 0
     return 0
 }

@@ -542,7 +542,7 @@ SpriteFile :: (index: s32) -> string {
 
 // Pieces that stand on the floor rather than being a whole floor tile.
 OnFloor :: (kind: s32) -> bool {
-    return (kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46) || kind == 9 ||
+    return (kind >= 1 && kind <= 3) || (kind >= 44 && kind <= 46) || ShoveyCrate(kind) ||
     (kind >= 15 && kind <= 17) || (kind >= 50 && kind <= 52) || kind == 19 ||
     kind == 21 || kind == 56 || (kind >= 25 && kind <= 29) || kind == 32 || (kind >= 33 && kind <= 38) ||
     (kind >= 53 && kind <= 55) || kind == 40 || kind == 72 || ShoveyMirror(kind) || kind == SHOVEY_BEES || kind == SHOVEY_HIVE
@@ -751,7 +751,7 @@ BOARD_IDLE_SECONDS :: 4.0
 BoardPieceToMove :: (game: *ShoveyGame, at: s32, open_marks: bool, open_goals: bool) -> bool {
     object := game.objects[at]; ground := game.ground[at]
     if ShoveyBallColor(object) > 0 || object == 19 { return true }
-    if object == 9 { return open_marks && ground != 18 }
+    if ShoveyCrate(object) { return open_marks && ground != 18 }
     if ShoveyColorBlock(object) { return open_goals && !(ShoveyColorGoal(ground) && ShoveyGoalDone(ground, object)) }
     return false
 }
@@ -792,7 +792,7 @@ BoardGuides :: (session: Session, game: *ShoveyGame, grid: TileMapResult, key: u
     fade := ifx idle > 1.5 then 1.0 else idle / 1.5
     open_marks := false; open_goals := false
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.ground[at] == 18 && game.objects[at] != 9 { open_marks = true }
+        if game.ground[at] == 18 && !ShoveyCrate(game.objects[at]) { open_marks = true }
         if ShoveyColorGoal(game.ground[at]) && !ShoveyGoalDone(game.ground[at], game.objects[at]) { open_goals = true }
     }
     shown: s32 = 0

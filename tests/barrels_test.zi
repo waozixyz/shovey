@@ -1,0 +1,120 @@
+// Barrel behavior uses the same crate policy in engine, native and bundled solvers.
+#import, file "../src/engine.zi";
+#import, file "../src/solver/solver.zi";
+#import, file "../tools/solver/classic_api.zi";
+#import, file "../src/shovey_board.zi";
+#import, file "../src/orientation.zi";
+#import, file "test_support.zi";
+
+Put :: (bytes: []u8, cell: s32, kind: s32) {
+    alphabet := "0123456789abcdef"
+    bytes[cell * 2] = alphabet[kind / 16]
+    bytes[cell * 2 + 1] = alphabet[kind % 16]
+}
+
+// All destinations, headings and powers exercise successes and refusals.
+CrateParity :: () {
+    for kind: cast(s32)0..166 {
+        for direction: cast(s32)0..3 {
+            for power: cast(s32)0..31 {
+                from: s32 = 100
+                behind := ShoveyNeighbor(from, (direction + 2) % 4)
+                to := ShoveyNeighbor(from, direction)
+                crate := ShoveyGame.{.player = behind, .level = 1, .direction = 1, .powers = power, .finale_level = -1}
+                crate.objects[from] = 9
+                crate.ground[to] = kind
+                barrel := crate
+                barrel.objects[from] = SHOVEY_BARREL
+                a := ShoveyMove(*crate, direction)
+                b := ShoveyMove(*barrel, direction)
+                same := a == b && crate.player == barrel.player && crate.powers == barrel.powers && crate.keys == barrel.keys &&
+                    crate.moves == barrel.moves && crate.won == barrel.won && crate.lost == barrel.lost && crate.teleports == barrel.teleports
+                for at: cast(s32)0..SHOVEY_CELLS - 1 {
+                    object := ifx barrel.objects[at] == SHOVEY_BARREL then 9 else barrel.objects[at]
+                    if crate.objects[at] != object || crate.ground[at] != barrel.ground[at] || crate.tiles[at] != barrel.tiles[at] { same = false }
+                }
+                if !Check(same, "barrel and crate have identical moves on every destination") { return }
+            }
+        }
+    }
+}
+
+LoadSaveAndView :: () {
+    bytes: [1441]u8
+    for at: 0..1439 { bytes[at] = #char "0" }
+    Put(bytes[:], 13, 10)
+    Put(bytes[:], SHOVEY_CELLS * 2 + 14, SHOVEY_BARREL)
+    game: ShoveyGame
+    unused Check(ShoveyLoadData(*game, 1, TextView(bytes[:1440])), "legacy decoration board loads")
+    unused Check(game.objects[14] == SHOVEY_BARREL && game.decorations[14] == 0 && game.ground[14] == 0, "barrel transfers into object layer")
+    before := game
+    unused Check(ShoveyMove(*game, 2) && game.objects[15] == SHOVEY_BARREL, "barrel leaves its original scenery cell")
+    unused Check(ShoveyEvent(*before, *game) == SHOVEY_EVENT_PUSH, "barrel uses the crate push sound")
+    frames: [SHOVEY_CELLS + 1]ShoveyGame
+    before.ground[14] = SHOVEY_ICE
+    before.ground[15] = SHOVEY_ICE
+    count := ShoveyMoveFrames(*before, 2, frames[:])
+    unused Check(count == 1 && frames[0].player == 14 && frames[0].objects[15] == SHOVEY_BARREL, "barrel push uses crate ice animation frames")
+    layers: [SHOVEY_CELLS * 4]s32
+    for orientation: cast(s32)0..1 {
+        BoardLayersFill(*game, layers[:], 10.0, orientation == 1, false)
+        from := BoardDisplayIndex(14, orientation == 1)
+        to := BoardDisplayIndex(15, orientation == 1)
+        unused Check(layers[SHOVEY_CELLS * 2 + from] == -1 && layers[SHOVEY_CELLS * 3 + from] == -1, "no ghost barrel in either orientation")
+        unused Check(layers[SHOVEY_CELLS * 3 + to] == KindSprite(*game, SHOVEY_BARREL, 15, 10.0, orientation == 1), "moving barrel retains barrel sprite")
+    }
+    saved := ShoveySave(*game)
+    restored: ShoveyGame
+    unused Check(ShoveyRestore(*restored, saved) && restored.objects[15] == SHOVEY_BARREL && restored.objects[14] == 0, "pushed barrel position restores")
+    // Reproduce the old P3 serialization: scenery and ground, no object.
+    game.objects[15] = 0
+    game.player = 13
+    game.ground[14] = SHOVEY_BARREL
+    game.decorations[14] = SHOVEY_BARREL
+    game.moves = 17
+    old := ShoveySave(*game)
+    unused Check(ShoveyRestore(*restored, old) && restored.objects[14] == SHOVEY_BARREL && restored.ground[14] == 0 && restored.decorations[14] == 0 && restored.moves == 17, "legacy barrel save migrates without losing position")
+}
+
+Solvers :: () {
+    bytes: [1441]u8
+    for at: 0..1439 { bytes[at] = #char "0" }
+    for at: cast(s32)0..239 { Put(bytes[:], SHOVEY_CELLS + at, 12) }
+    // One barrel must bridge water, another must cover a crate mark.
+    for at: cast(s32)60..65 { Put(bytes[:], SHOVEY_CELLS + at, 0) }
+    Put(bytes[:], 61, 10)
+    Put(bytes[:], 63, 64)
+    Put(bytes[:], 65, 18)
+    Put(bytes[:], 60, 7)
+    Put(bytes[:], SHOVEY_CELLS * 2 + 62, SHOVEY_BARREL)
+    Put(bytes[:], SHOVEY_CELLS * 2 + 64, SHOVEY_BARREL)
+    data := TextView(bytes[:1440])
+    unused Check(ClassicApiLoad(*bytes[0], 1) == 1 && ClassicApiDead() == 0, "native solver counts barrels for bridge and mark")
+    for step: 0..2 { unused ClassicApiAct(2) }
+    for step: 0..3 { unused ClassicApiAct(0) }
+    unused Check(ClassicApiWon() == 1, "native solver replays barrel bridge and mark")
+    unused Check(SolverStart(data), "bundled solver loads barrel puzzle")
+    for slice: 0..999 {
+        if SolverStatus() != SOLVER_RUNNING { break }
+        unused SolverRun(20000)
+    }
+    unused Check(SolverStatus() == SOLVER_WON, "bundled solver solves barrel bridge and mark")
+    // An old engine regards the first barrel as an immovable stump and
+    // cannot replay a route requiring its push. The live checker refuses it.
+    legacy := bytes
+    Put(legacy[:], SHOVEY_CELLS * 2 + 62, SHOVEY_STUMP)
+    game: ShoveyGame
+    unused ShoveyLoadData(*game, 1, TextView(legacy[:1440]))
+    for step: 0..4 { unused ShoveyMove(*game, 2) }
+    unused Check(!game.won && game.player == 61, "old-rule live proof refuses required barrel push")
+}
+
+#program_export
+main :: () -> s32 {
+    CrateParity()
+    LoadSaveAndView()
+    Solvers()
+    if TestFailures() > 0 { return 1 }
+    print("Barrels: crate parity, scenery/view, saves and both solver engines passed\n")
+    return 0
+}
