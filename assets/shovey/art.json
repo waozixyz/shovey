@@ -3,9 +3,1434 @@
   "method": "Pixel sprites drawn by tools/pixel/pixel.py or generated for Shovey by an image model and fitted to a 32 by 32 grid; the card is composed from them. No outside image is used.",
   "files": [
     {
+      "path": "editor-landscape.png",
+      "depicts": "editor title art: 3D Shovey guides floating crates, balls and tiles onto a puzzle board on a garden workshop table",
+      "sha256": "7b1eae4209ede14807806a4cbce1e2bf7a14d342e75c89042958a524cf60d67e"
+    },
+    {
+      "path": "editor-portrait.png",
+      "depicts": "editor title art for phones: 3D Shovey building a puzzle board with floating pieces",
+      "sha256": "bf0bbeb15249f3d73c1b410e9737f7fd207310dcb5f28b7c3ce45401b77c8f9e"
+    },
+    {
+      "path": "logo.png",
+      "depicts": "Shovey logo: bubbly glossy green letters with a little Shovey peeking out",
+      "sha256": "e47781aa3328f68077589f95d813e9c2e6fff10ebd62a9d003773bb2c2f7a092"
+    },
+    {
       "path": "preview.png",
       "depicts": "Shovey Classic card: Shovey pushes a red ball towards its pit in a grey stone courtyard",
       "sha256": "96db251f36835c76cd03cd0104a6e1b5096e4c442d410960457edcd8e2377a38"
+    },
+    {
+      "path": "shop/chest-closed.png",
+      "depicts": "closed shop treasure chest with Shovey's wooden and gold theme",
+      "sha256": "491df0ae6e9c2286b1e7d87f8119ff779e874e8613468f004177e1b6ebdfa6e0"
+    },
+    {
+      "path": "shop/chest-open.png",
+      "depicts": "opened shop treasure chest revealing coins and a Dew drop",
+      "sha256": "20967e5e9ec9632699425b55bd8387d50d0b3ea2ac569ef5df4087ac7029511e"
+    },
+    {
+      "path": "shop/coins.png",
+      "depicts": "stack of Shovey coins with the character's green face",
+      "sha256": "4b690051953475ff0da089047ecbc9906433cd58671c599345a3299e7c6c3c9b"
+    },
+    {
+      "path": "shop/dew.png",
+      "depicts": "large blue Dew drop with highlights and a small splash",
+      "sha256": "bf29849f0a1a20f6464e16fc3f8b36bee06a8f4631386a0c4dca558da1d603a3"
+    },
+    {
+      "path": "shop/profile.png",
+      "depicts": "profile icon showing Shovey beside a card and progress line",
+      "sha256": "bbab69b2335d296f8a82fe656230bbf610e184316fc869d6f7dbafa8c69f9b69"
+    },
+    {
+      "path": "shop/settings.png",
+      "depicts": "settings icon with a gear and Shovey-themed controls",
+      "sha256": "68ec65b50f7ea6c7e083e2644084302b88dbbfb079f65fbd601ec70cbc988d32"
+    },
+    {
+      "path": "shop/stall.png",
+      "depicts": "Shovey's shop stall with a striped awning and wooden counter",
+      "sha256": "e78d3978242daed94f7c80873b333b12eeeaefbd92887b88dcb3526a84ddb6cc"
+    },
+    {
+      "path": "shop/trophy.png",
+      "depicts": "golden leaderboard trophy on a green emblem",
+      "sha256": "4eee11120c12429b26d1f8cb8d627cd16aac46d1cbf95f16d60c9465b9a6bc2f"
+    },
+    {
+      "path": "sprites/abyss-corner-0.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "06ab142c3bad172a564f50931dd667c07af918ed7298107b0c41f79cd761cc8f"
+    },
+    {
+      "path": "sprites/abyss-corner-1.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "00b2eb0351608d554eada270f0a40a2fa941acb70bb3b3731e5a0fb2bb2f756d"
+    },
+    {
+      "path": "sprites/abyss-corner-10.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "dfd58d68989d8123f2403abecc2de9428dd67b0f088429c82c015014c99b1c7c"
+    },
+    {
+      "path": "sprites/abyss-corner-11.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "1ebeeb006e8d38ab9c15e177eeaf662219536bccc1a78ae77a85d05dcaf84dc3"
+    },
+    {
+      "path": "sprites/abyss-corner-12.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "ace696920dc69dd5918b5152a92e359202dd50e12963fef84095b7501aa29187"
+    },
+    {
+      "path": "sprites/abyss-corner-13.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "d914e4d8756bb088a6c08ce466c124155461c4c25699cd5776c265efb6ed250d"
+    },
+    {
+      "path": "sprites/abyss-corner-14.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "6d479a95618fff0dcbe03736bbe7ca419c3f23e7d41b85f963d309109a3c2adc"
+    },
+    {
+      "path": "sprites/abyss-corner-15.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "6b02dbfc324272a8c71f540da7573a1b9f5991810f79e684e890ea7b3c0d66e3"
+    },
+    {
+      "path": "sprites/abyss-corner-2.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "fdec5be32a11f8571ca401e6ff0054c809087a9b6d9e8314c11713187b4d86bc"
+    },
+    {
+      "path": "sprites/abyss-corner-3.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "591630b5f1b71b2e2f5a874da907539d187a84679ef1e6cc0a988582987c4bea"
+    },
+    {
+      "path": "sprites/abyss-corner-4.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "846ccd1d146de557b09f0e50c2ecd625c1caf8803866ecbcb958e6ca55854627"
+    },
+    {
+      "path": "sprites/abyss-corner-5.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "7a52c6af4ed89eda65e649783b6cfd56745edac198b32fda9cad85002e912874"
+    },
+    {
+      "path": "sprites/abyss-corner-6.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "3f10a0641f88ea946e18d304ab46bfa6988a53a748545f1b8401860a32bea224"
+    },
+    {
+      "path": "sprites/abyss-corner-7.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "f20ab6931542eb1f107cf9e66c72c080439443a704464502335cc41525a04ad7"
+    },
+    {
+      "path": "sprites/abyss-corner-8.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "1630447fbe78f357f18016d11b346f2f5e2f10d104c5ec4b08719c9c9086af1d"
+    },
+    {
+      "path": "sprites/abyss-corner-9.png",
+      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
+      "sha256": "663199a0cd4e856feef80f8fd2d18a78502c9cc7894d10ade15601c124913e73"
+    },
+    {
+      "path": "sprites/abyss-edge-0.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "5de09768d768da0b9a9676a09ba9fa4d14b6576a02dea8716409cd58d3ef22ae"
+    },
+    {
+      "path": "sprites/abyss-edge-1.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "d36c334f3655f825a138d7d5b001a9eeab57ccd09fd88c2d3dd1fc0d6ea525de"
+    },
+    {
+      "path": "sprites/abyss-edge-10.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "2046e055251cbb1be5771e4a397adb7765f0d33961f7f32333c04db78b955944"
+    },
+    {
+      "path": "sprites/abyss-edge-11.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "b05f4402cd881cf6eb2133fdff7a5b1cf48694b72ec368a53b9140f52336bd87"
+    },
+    {
+      "path": "sprites/abyss-edge-12.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "871f13ae66da4eb65445ed753cb99e10a37d7ab72db3b46351a9017e4a02808e"
+    },
+    {
+      "path": "sprites/abyss-edge-13.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "d4c21429acee5f5eba14f9f6d9b4f44ffa9e561ab0bee2471033f60d15ddc0e1"
+    },
+    {
+      "path": "sprites/abyss-edge-14.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "94ffb9c08a4ac970e75feea69f8473dc8bb0b151f8f03a4ced0cdb4525fff4b8"
+    },
+    {
+      "path": "sprites/abyss-edge-15.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "d4ec6e4bfc7f41fd0ca00c46066197c1b90b393303e8a5bdc27570c85530b8ff"
+    },
+    {
+      "path": "sprites/abyss-edge-2.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "eaaad53e5062c70e05f8ba2ce8c4f953827ddad0e0ccf69d71a8c191375a16d6"
+    },
+    {
+      "path": "sprites/abyss-edge-3.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "b51bf4be7d937bd9a49248199f0bbda5719ae82aa5435cf8f608a53f8b88fc78"
+    },
+    {
+      "path": "sprites/abyss-edge-4.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "727e80d148f84bd3ee552b3292fd08981cd54938ceb635df02cd0252ded381ec"
+    },
+    {
+      "path": "sprites/abyss-edge-5.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "9cda1cb7fda0524d6dec46e7e74db99a299cbc32410e5ef08ca79e5ef01a53e4"
+    },
+    {
+      "path": "sprites/abyss-edge-6.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "bda847980362f20372746f0bad37ca53689c929f39df14a238bb655a506f5f65"
+    },
+    {
+      "path": "sprites/abyss-edge-7.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "24ee54bda9e0f6fc8caf5a07a8cdcd1247bb2fc961c7f75a81319f8bf70224c5"
+    },
+    {
+      "path": "sprites/abyss-edge-8.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "63fdfb340f687b88c1899444b6b812a0a8100ea2b9c178b3192d54e7dfe9e5f7"
+    },
+    {
+      "path": "sprites/abyss-edge-9.png",
+      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
+      "sha256": "9a7970d376bd803fa57f7b259c154a1c4b5185d91502c143e6bf6ebff4520205"
+    },
+    {
+      "path": "sprites/boat-big-hull.png",
+      "depicts": "the near side of the big boat's hull, drawn over Shovey when he rides in it",
+      "sha256": "9b873bcd3340cb2d58389256d60827f20a5a89bd979679b749ecebbd0bc292f7"
+    },
+    {
+      "path": "sprites/boat-big.png",
+      "depicts": "the boat as the board shows it, three cells wide: a wooden sailing boat with a red-striped sail and a pennant",
+      "sha256": "43a996a316b01def1c7e87f4f67b0bcdf6f6875830166cc0ab2af3965b108d5e"
+    },
+    {
+      "path": "sprites/boat-wake-0.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 1 of 4",
+      "sha256": "7bf95157366a6bca0882e88fa81058b989acb07d2031e6a6b205b67ed261d2cf"
+    },
+    {
+      "path": "sprites/boat-wake-1.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 2 of 4",
+      "sha256": "f0646f7bbc884596e216d4150daf0a59d59efa4a88013b061caee528db5670eb"
+    },
+    {
+      "path": "sprites/boat-wake-2.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 3 of 4",
+      "sha256": "ae7eb17c9f9a7fa3545f00a749bcbb60088a51825fac63407d1871f968724aef"
+    },
+    {
+      "path": "sprites/boat-wake-3.png",
+      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 4 of 4",
+      "sha256": "8cca9109c3aba785bdc95729cbeb42aeabf613d8855d11d34c349ce8860f5074"
+    },
+    {
+      "path": "sprites/burst-0.png",
+      "depicts": "a target struck by a shot, frame 1 of 6",
+      "sha256": "5fce9a26d4b42f3adc320a29c8952370dc09276d877be3933f289ec59aa23b01"
+    },
+    {
+      "path": "sprites/burst-1.png",
+      "depicts": "a target struck by a shot, frame 2 of 6",
+      "sha256": "a99330abf0a433666825682ac726e00f7e55026c0253531bf517c571e439800a"
+    },
+    {
+      "path": "sprites/burst-2.png",
+      "depicts": "a target struck by a shot, frame 3 of 6",
+      "sha256": "9b08b4c31d912aa97020c6857eb53abc53a355a4d068e84acfe307d760ab0dfb"
+    },
+    {
+      "path": "sprites/burst-3.png",
+      "depicts": "a target struck by a shot, frame 4 of 6",
+      "sha256": "a0f6ed7163fa7ba155fa27d105327ae20fba0445cca64db4f6efaa0dc549f0f9"
+    },
+    {
+      "path": "sprites/burst-4.png",
+      "depicts": "a target struck by a shot, frame 5 of 6",
+      "sha256": "9e8af77459569b5b5562163ddcc0fefda7e68b45acdf175cf271e542c906faea"
+    },
+    {
+      "path": "sprites/burst-5.png",
+      "depicts": "a target struck by a shot, frame 6 of 6",
+      "sha256": "beaa00b899ccf8fc082d03cc517d98e50186aa27dd21f08214e0ee90efabeb4a"
+    },
+    {
+      "path": "sprites/charged-down.png",
+      "depicts": "charged Shovey looking down",
+      "sha256": "98bb4e8868bfe9be8e7fb203e064ce2d7b7630645e9dc584a948939751a1eae6"
+    },
+    {
+      "path": "sprites/charged-left.png",
+      "depicts": "charged Shovey looking left",
+      "sha256": "657d947c3fd55ebe113235a7b40fae134d0f1789317a4f768d119fdaea76c86a"
+    },
+    {
+      "path": "sprites/charged-right.png",
+      "depicts": "charged Shovey looking right",
+      "sha256": "091a3217cadb018a6adc1798369713b6dd9cb36dce863be9accacd0c3fd0a6b1"
+    },
+    {
+      "path": "sprites/charged-up.png",
+      "depicts": "charged Shovey looking up",
+      "sha256": "93baa32b5002a887cbecd306c5f092ba92f995e1d930e3503b8bf62cd80a4be9"
+    },
+    {
+      "path": "sprites/chest-closed.png",
+      "depicts": "secret chest: a small wooden treasure chest with iron bands and a golden lock",
+      "sha256": "5df8390d8f332ee694151366de31ceaa4de1f04d9c3285a69a8e0aee0442aecc"
+    },
+    {
+      "path": "sprites/chest-empty.png",
+      "depicts": "secret chest opened and claimed: empty dark wooden interior, with no Dew diamond or treasure",
+      "sha256": "a3a6edd466e315e87ecbc9051f97acf89f3af9c1da370a372645fb7e9053b002"
+    },
+    {
+      "path": "sprites/chest-open.png",
+      "depicts": "secret chest opened: gold coins and a blue Dew drop inside",
+      "sha256": "ee9c8adca0158c3aa946420f1bf6f9d5df5aff25fa887ee7dedf7014e2b03eb7"
+    },
+    {
+      "path": "sprites/crab-down.png",
+      "depicts": "crab facing down",
+      "sha256": "941edb704a63066cd3bad451c22e414318561db14ec1f753b7f3cfca9d2500d5"
+    },
+    {
+      "path": "sprites/crab-left.png",
+      "depicts": "crab facing left",
+      "sha256": "a9af493c3b465a11a58511045a0dada1b911d8c02243907e5a9ff78995eb2c06"
+    },
+    {
+      "path": "sprites/crab-right.png",
+      "depicts": "crab facing right",
+      "sha256": "8ba1040359e8e48012489e1c6d1dc62aa6e5caa7c122c234ad59abe6ac9c82a5"
+    },
+    {
+      "path": "sprites/crab-up.png",
+      "depicts": "crab facing up",
+      "sha256": "492c4947f0d7dc5fd27b08d3d46db601a23f5d98312e4e5b617b56b54b27850d"
+    },
+    {
+      "path": "sprites/dog-down.png",
+      "depicts": "garden duck facing down",
+      "sha256": "4807056463a5e9953dcda70472bbd26c1471198c232305beec87a1709b168562"
+    },
+    {
+      "path": "sprites/dog-left.png",
+      "depicts": "garden duck facing left",
+      "sha256": "23b2a5a03d7ce958b99384562427d4927a1e0a769d796970bf34ae10970927e7"
+    },
+    {
+      "path": "sprites/dog-right.png",
+      "depicts": "garden duck facing right",
+      "sha256": "be0127248119c8b233d2d6330782379504024333773f52da2074254a43201bb0"
+    },
+    {
+      "path": "sprites/dog-up.png",
+      "depicts": "garden duck facing up",
+      "sha256": "d9508a1b7888943bcc820e57fc949d0eecf3495d074f813e5351686d1b81e302"
+    },
+    {
+      "path": "sprites/door-open.png",
+      "depicts": "mossy wall lowered, leaving a moss-covered stone rim",
+      "sha256": "f6255ced9845e58b0fe598b1e04ec2a7b626bd087bf65570641d4a52e567f10d"
+    },
+    {
+      "path": "sprites/explosion-0.png",
+      "depicts": "a bomb crate going off, frame 1 of 8",
+      "sha256": "d3ea168a4843c31aedf7563372023836d019d435b85717724a22eb7afe4c8800"
+    },
+    {
+      "path": "sprites/explosion-1.png",
+      "depicts": "a bomb crate going off, frame 2 of 8",
+      "sha256": "bd7a25f0919fb7e577cbe25a8632ffcebe6583f214f38e34540558ce9b97b3fc"
+    },
+    {
+      "path": "sprites/explosion-2.png",
+      "depicts": "a bomb crate going off, frame 3 of 8",
+      "sha256": "65d56e1350458358201eb52d23961aa582106faf0e05b3071acf3d1e7bdc3a15"
+    },
+    {
+      "path": "sprites/explosion-3.png",
+      "depicts": "a bomb crate going off, frame 4 of 8",
+      "sha256": "7d4c01c093310aec52cf83e2a0916c88f5c621cb2584d3b273c03ebc8a4d91bc"
+    },
+    {
+      "path": "sprites/explosion-4.png",
+      "depicts": "a bomb crate going off, frame 5 of 8",
+      "sha256": "13f7e02a87992789347c23cdb32556705d2160d2aeea3809598dc3d12f0ed5cc"
+    },
+    {
+      "path": "sprites/explosion-5.png",
+      "depicts": "a bomb crate going off, frame 6 of 8",
+      "sha256": "5561a5a54acb20f2c0cd5c36d2b8b57233a6d5a3b5247e8c5eda0c431c79548f"
+    },
+    {
+      "path": "sprites/explosion-6.png",
+      "depicts": "a bomb crate going off, frame 7 of 8",
+      "sha256": "d4c4c89f4f991b22b212da868d30981382f078709b19eb31f7c742dca02e86d0"
+    },
+    {
+      "path": "sprites/explosion-7.png",
+      "depicts": "a bomb crate going off, frame 8 of 8",
+      "sha256": "b438e0b38dc15951f7fcf55d457d9881335b11d8dcc4f63e1c44578b22dc2cd1"
+    },
+    {
+      "path": "sprites/fish-gold-0-down.png",
+      "depicts": "gold fish, frame 0, facing down",
+      "sha256": "412913a982b65a1c8414b46663819e36255c332d6cbde00f44d798e8164458a2"
+    },
+    {
+      "path": "sprites/fish-gold-0-left.png",
+      "depicts": "gold fish, frame 0, facing left",
+      "sha256": "00da98636199d282f903e299830c2970d0251f92d21d450ebcb3e0a58cd91b35"
+    },
+    {
+      "path": "sprites/fish-gold-0-right.png",
+      "depicts": "gold fish, frame 0, facing right",
+      "sha256": "e499a860312c04ff70930fc8526b55307e8cd5bec95cc77e3c709c29cd065d1a"
+    },
+    {
+      "path": "sprites/fish-gold-0-up.png",
+      "depicts": "gold fish, frame 0, facing up",
+      "sha256": "87a684ff66f817216eb55484a7f53f2c91701d69fc945347621799195dcf3043"
+    },
+    {
+      "path": "sprites/fish-gold-1-down.png",
+      "depicts": "gold fish, frame 1, facing down",
+      "sha256": "8e99209a842080349bf80cab475de20b2506f7c862045d8b790e16372ef65ce8"
+    },
+    {
+      "path": "sprites/fish-gold-1-left.png",
+      "depicts": "gold fish, frame 1, facing left",
+      "sha256": "537c9a9362879a9c9352582a6acb70440dc17985ac1300502c975ad1de958c04"
+    },
+    {
+      "path": "sprites/fish-gold-1-right.png",
+      "depicts": "gold fish, frame 1, facing right",
+      "sha256": "cc30118ec1c8f33451878e8412643a29850583faac6620f5c9456dcd354da0db"
+    },
+    {
+      "path": "sprites/fish-gold-1-up.png",
+      "depicts": "gold fish, frame 1, facing up",
+      "sha256": "285141887f375422f3cb07f48c21f9c5215bcb5f433d8052e4f6ec2ec7de15bf"
+    },
+    {
+      "path": "sprites/fish-gold-2-down.png",
+      "depicts": "gold fish, frame 2, facing down",
+      "sha256": "1e10146ddde85bfa465b830d97944ee67c79ecd83598a92fc6e9fde30fd3649b"
+    },
+    {
+      "path": "sprites/fish-gold-2-left.png",
+      "depicts": "gold fish, frame 2, facing left",
+      "sha256": "8b3876333bbd07ac7a8da3cfa7085d2a99d596567dfdf5b6b6de7709bba83ac0"
+    },
+    {
+      "path": "sprites/fish-gold-2-right.png",
+      "depicts": "gold fish, frame 2, facing right",
+      "sha256": "7ac9c0025c41e7d9248bdfb550db136a7e2c5b510a3d95362855a15de4f1078c"
+    },
+    {
+      "path": "sprites/fish-gold-2-up.png",
+      "depicts": "gold fish, frame 2, facing up",
+      "sha256": "87dd8265f8c806914cb41d6d740d80ab918061d886a5486a6b23226f7a949e7b"
+    },
+    {
+      "path": "sprites/fish-gold-3-down.png",
+      "depicts": "gold fish, frame 3, facing down",
+      "sha256": "cbf17499117994e9b68718fb89cd48be7a91a4c4f32d82351e3d84cef7a3844d"
+    },
+    {
+      "path": "sprites/fish-gold-3-left.png",
+      "depicts": "gold fish, frame 3, facing left",
+      "sha256": "56c86ce66fa17ba791a62a26c5311b9753ea2c55802cc1cf2aa5a5bb7beb5b44"
+    },
+    {
+      "path": "sprites/fish-gold-3-right.png",
+      "depicts": "gold fish, frame 3, facing right",
+      "sha256": "fb7acac7b02b4d013b86c8e24fba7e75653e6b640024988b7af74e0506be954b"
+    },
+    {
+      "path": "sprites/fish-gold-3-up.png",
+      "depicts": "gold fish, frame 3, facing up",
+      "sha256": "d06c70aab633726dfea96ee555c5c1cb28f77e049c386b1850b157afc1306e9a"
+    },
+    {
+      "path": "sprites/fish-koi-0-down.png",
+      "depicts": "koi fish, frame 0, facing down",
+      "sha256": "ce3c0c9c924ca1c02107ea0b9dfc580bf9eccf62ac8922f0571ce41e61c46fbd"
+    },
+    {
+      "path": "sprites/fish-koi-0-left.png",
+      "depicts": "koi fish, frame 0, facing left",
+      "sha256": "0f621b6a2dd192452d9618ce2f12210a05157dc9f79a585ceae97daa7581f303"
+    },
+    {
+      "path": "sprites/fish-koi-0-right.png",
+      "depicts": "koi fish, frame 0, facing right",
+      "sha256": "3b94014065ad5cd8c776693c038cb621b9a75d36e90722c48b3a7c844fc854f6"
+    },
+    {
+      "path": "sprites/fish-koi-0-up.png",
+      "depicts": "koi fish, frame 0, facing up",
+      "sha256": "3a1aaaa71a285504c21012049c2ada51d1ca46d116c3fbb6180c7f0da52cfe26"
+    },
+    {
+      "path": "sprites/fish-koi-1-down.png",
+      "depicts": "koi fish, frame 1, facing down",
+      "sha256": "33e11c858000f5c5da65bd2e1a6c692b6ba8e3041c3199c3c6c8b4c509e5f939"
+    },
+    {
+      "path": "sprites/fish-koi-1-left.png",
+      "depicts": "koi fish, frame 1, facing left",
+      "sha256": "838191af220c31350cee5ddb759b955a2ff57d5371772bb97b76841d6a16b0aa"
+    },
+    {
+      "path": "sprites/fish-koi-1-right.png",
+      "depicts": "koi fish, frame 1, facing right",
+      "sha256": "509a3a95d15291b9fc0dceb6a91b19ad456a0c07387d07d62f59336f2ce9633f"
+    },
+    {
+      "path": "sprites/fish-koi-1-up.png",
+      "depicts": "koi fish, frame 1, facing up",
+      "sha256": "b35557e80cf9923e651c6637abd42ba534c8bf8693c7b502ceec1c55ffc5f9f3"
+    },
+    {
+      "path": "sprites/fish-koi-2-down.png",
+      "depicts": "koi fish, frame 2, facing down",
+      "sha256": "ddb1d2168703612b6b495efee6d5e315e0e456fa7ff0ee21cb9e511dffecea6b"
+    },
+    {
+      "path": "sprites/fish-koi-2-left.png",
+      "depicts": "koi fish, frame 2, facing left",
+      "sha256": "ed152d90e2893deb2b64a84bcc9593033a9ffe0a841f6c7ed6debd2907e33771"
+    },
+    {
+      "path": "sprites/fish-koi-2-right.png",
+      "depicts": "koi fish, frame 2, facing right",
+      "sha256": "a11ae3ef2319ea3881c5011c510ae1477005712a3ff74144d0c6362516d8e069"
+    },
+    {
+      "path": "sprites/fish-koi-2-up.png",
+      "depicts": "koi fish, frame 2, facing up",
+      "sha256": "acfd37eb28667da1d675be51989bda53a0d6912ef7b8abe6656f613ac96f2baa"
+    },
+    {
+      "path": "sprites/fish-koi-3-down.png",
+      "depicts": "koi fish, frame 3, facing down",
+      "sha256": "025866ac32d47507d23e26c971435a77788881c6f7a60d559c51a1da5cbbb8d4"
+    },
+    {
+      "path": "sprites/fish-koi-3-left.png",
+      "depicts": "koi fish, frame 3, facing left",
+      "sha256": "21d631e7cbc3d73cedd40784ab76eaa02c79bc6302731e467fa43f3494a386aa"
+    },
+    {
+      "path": "sprites/fish-koi-3-right.png",
+      "depicts": "koi fish, frame 3, facing right",
+      "sha256": "c6b91e2855a74abea99f3685b973073bcc03f9a830809eaba2a045586d03866c"
+    },
+    {
+      "path": "sprites/fish-koi-3-up.png",
+      "depicts": "koi fish, frame 3, facing up",
+      "sha256": "f1d05f9be3565466786aefa3d00634fb63be60b6c9c8ea25a047eed72ec25a5c"
+    },
+    {
+      "path": "sprites/fish-minnow-0-down.png",
+      "depicts": "minnow fish, frame 0, facing down",
+      "sha256": "a0ac01571de32fa109ad086096e182fd13c935aa0f8ced0dc1697490f942dba8"
+    },
+    {
+      "path": "sprites/fish-minnow-0-left.png",
+      "depicts": "minnow fish, frame 0, facing left",
+      "sha256": "11faf253ceab7983a9f44515cb8b0750c56cd893d09fc3d260b8a1a9f3640803"
+    },
+    {
+      "path": "sprites/fish-minnow-0-right.png",
+      "depicts": "minnow fish, frame 0, facing right",
+      "sha256": "8a2d897daa7109514f508140eada998e97e0d4beacde43d6c3970bab3316c766"
+    },
+    {
+      "path": "sprites/fish-minnow-0-up.png",
+      "depicts": "minnow fish, frame 0, facing up",
+      "sha256": "2464952056acc30102b462e8875adfeb3b555aea4d83a517598a9f8a92a8491f"
+    },
+    {
+      "path": "sprites/fish-minnow-1-down.png",
+      "depicts": "minnow fish, frame 1, facing down",
+      "sha256": "c7552de106e7f9226cbcaaaa37ee612f2dd27a573e51d2d26d7f1e37afcba2aa"
+    },
+    {
+      "path": "sprites/fish-minnow-1-left.png",
+      "depicts": "minnow fish, frame 1, facing left",
+      "sha256": "bba78ac3f9e4e626c5a3afcc7e55fcc961ed8615b0e5cccaa2e6c23337eaf8ce"
+    },
+    {
+      "path": "sprites/fish-minnow-1-right.png",
+      "depicts": "minnow fish, frame 1, facing right",
+      "sha256": "55ab4967b40c85654791aa4e75553e4f98fa314598bbe0a4385dd2e348679c43"
+    },
+    {
+      "path": "sprites/fish-minnow-1-up.png",
+      "depicts": "minnow fish, frame 1, facing up",
+      "sha256": "1694fda0bf1a6e8d1f661a9998549eb824326c54460718dc1fb6ef83429854b9"
+    },
+    {
+      "path": "sprites/fish-minnow-2-down.png",
+      "depicts": "minnow fish, frame 2, facing down",
+      "sha256": "0e74236950b4f08754aa19de06a4c7c216283a95c618a186993c23d6e62664c1"
+    },
+    {
+      "path": "sprites/fish-minnow-2-left.png",
+      "depicts": "minnow fish, frame 2, facing left",
+      "sha256": "0e5a2751bfc617e2d8c6abd4d6555039f8df9ab3218bf86ba44f932069c22d51"
+    },
+    {
+      "path": "sprites/fish-minnow-2-right.png",
+      "depicts": "minnow fish, frame 2, facing right",
+      "sha256": "92a37147e6773dddb9f11d856e3c01c33ddb5fb17ad017718a8b1e372a75b04e"
+    },
+    {
+      "path": "sprites/fish-minnow-2-up.png",
+      "depicts": "minnow fish, frame 2, facing up",
+      "sha256": "8d556f15a61bcc1666a81edb6a29b9df518587a5f3c9ae6c65590a4d053a4b76"
+    },
+    {
+      "path": "sprites/fish-minnow-3-down.png",
+      "depicts": "minnow fish, frame 3, facing down",
+      "sha256": "41539b784c4e578716f640f3eb947218a40c349af4c9429fe7b61621c3e8ae82"
+    },
+    {
+      "path": "sprites/fish-minnow-3-left.png",
+      "depicts": "minnow fish, frame 3, facing left",
+      "sha256": "253047435da5083eb4aeeacc5aadd8b8a49b05070b688c8fc99ebbad6135c3f1"
+    },
+    {
+      "path": "sprites/fish-minnow-3-right.png",
+      "depicts": "minnow fish, frame 3, facing right",
+      "sha256": "a320ad466bce115a416277311c494007b568a4a6504bc1a30d316844051de8b3"
+    },
+    {
+      "path": "sprites/fish-minnow-3-up.png",
+      "depicts": "minnow fish, frame 3, facing up",
+      "sha256": "c4ca17bd907718317dc2164f90bf4f9ec664d783ce31e4bd3b12b671542db69e"
+    },
+    {
+      "path": "sprites/gate-open-0.png",
+      "depicts": "red gate standing open",
+      "sha256": "ce8311e1b77e8bdc90e8659329650a7a471f0822dcf8e8eead4f54a519966851"
+    },
+    {
+      "path": "sprites/gate-open-1.png",
+      "depicts": "blue gate standing open",
+      "sha256": "c438f0e518d190c1db7e64f445e1414a55e4447444bad35f08310cd2d8637a74"
+    },
+    {
+      "path": "sprites/gate-open-2.png",
+      "depicts": "green gate standing open",
+      "sha256": "82a0f285aa4acf2fb213c2b9e45caec6b7fc269eea04a78fcd818db1a1faef47"
+    },
+    {
+      "path": "sprites/gate-open.png",
+      "depicts": "orange gate with its bars drawn aside",
+      "sha256": "64ec7d8742a63efbcce43c2b0774a0a5f18d9f88a0b978bd7c1115a147f53287"
+    },
+    {
+      "path": "sprites/grass-edge-0.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "0af8b74199a31907f74e187b52a720bf3aa78f0c9873a0556ddb84c8a2408c06"
+    },
+    {
+      "path": "sprites/grass-edge-1.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "233981030eebb55fdcfa1243b34c1ded889015b7594466600a7bceafc428647f"
+    },
+    {
+      "path": "sprites/grass-edge-10.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "7fff830edad07b4063bfac768e70e9b2eaab7595ab84175a35bf9cc9a1742f93"
+    },
+    {
+      "path": "sprites/grass-edge-11.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "7d82b14bb259d3714c989a50206d3970fbe0604e8c1471d30a8696b7d348ed9e"
+    },
+    {
+      "path": "sprites/grass-edge-12.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "107da39cc7d37e5a8505003ad95c8956510363cd5b367c35b4d80615cbf4a433"
+    },
+    {
+      "path": "sprites/grass-edge-13.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "609272d8631ce381d48fa2c87308f384b23a59f917e391702fb0ae1401a11b2f"
+    },
+    {
+      "path": "sprites/grass-edge-14.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "0b2bcbe2ae20115273dbe908fcd9bbc314d007477670d22d5c0b40b3608c1c4b"
+    },
+    {
+      "path": "sprites/grass-edge-15.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "3ddcb0d692edc75895c65bbdeec93a35aa6e75a7fc5c84bb8d4860f180de11f9"
+    },
+    {
+      "path": "sprites/grass-edge-2.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "98ccfb41b0ae011127e62a5bf8e786e4c61d25d0d9a8980644210af83408178b"
+    },
+    {
+      "path": "sprites/grass-edge-3.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "1c075a52bf73f6bff314be9e434261e4f1c5fd46f2debac0a7b09d5ddfec69a3"
+    },
+    {
+      "path": "sprites/grass-edge-4.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "3ebdae99d9a1a7c7b69b364d4819b1bd94c8e279b7d2c62d4d52e26f8299ccd2"
+    },
+    {
+      "path": "sprites/grass-edge-5.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "7de761abd447f7acefb2190e74a4b3bb03be10b85b9fd538908c6a494533862a"
+    },
+    {
+      "path": "sprites/grass-edge-6.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "61ab799453626cb9a6c31b4881090679828bcf0c2634ed0c26fa258d1330d9b3"
+    },
+    {
+      "path": "sprites/grass-edge-7.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "c2efdc1cc96f6b62e3ba95c31d517d11194cf88242c347c0b82a20985dcd3330"
+    },
+    {
+      "path": "sprites/grass-edge-8.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "b643bdd84cabd2ec02229ec9922f4dd13b080d9624afb3aefe4ba32ea6a2f9bd"
+    },
+    {
+      "path": "sprites/grass-edge-9.png",
+      "depicts": "grass blending into adjacent paving with connected corners",
+      "sha256": "8310248343b59f0d4687209f1cb3dc4ce7f4b5a123fb68b5386f89ce7f7e3513"
+    },
+    {
+      "path": "sprites/lava-edge-0-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "b7b14ceb1f94e0928df74a14b98388351d08b0fcb7a79c7eca9c662f61e1749b"
+    },
+    {
+      "path": "sprites/lava-edge-0-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "e06e0382f2ba12ef4822088325064deb7217a30309d4bd34208af7858385c771"
+    },
+    {
+      "path": "sprites/lava-edge-0-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "b591de053b3083e6fade2a7a04700c0065c63461ac1a3084cfad746bc9a57929"
+    },
+    {
+      "path": "sprites/lava-edge-0.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "40e74e874cd5a126cfadbe8b78929474dcacadc4cbb9feafd443da3993f45786"
+    },
+    {
+      "path": "sprites/lava-edge-1-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "d53932d019649d63b5502c0f91ea52054bd77686dc293c3fccd7c20f6ac85f3e"
+    },
+    {
+      "path": "sprites/lava-edge-1-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "5eec73fe758ee5146dabc5a70ebf3cbbe7d81c142bb3d91e5286601b00a90804"
+    },
+    {
+      "path": "sprites/lava-edge-1-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "5eae858025ce4249e3436fd178133b8b3adc75796bf07a75980b55c5b1cf680b"
+    },
+    {
+      "path": "sprites/lava-edge-1.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "90772914d176a8f5f9a90916c7ee5613730ca33d89f3c4d95651da74b4c085d9"
+    },
+    {
+      "path": "sprites/lava-edge-10-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "741855e6754b31245dc2660da350100a6a2392cfa26eb5e477242f82ae30975b"
+    },
+    {
+      "path": "sprites/lava-edge-10-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "1b1837f81312b684fadf45be1dcc734194008b7233cadbdfe96b551bf7a8b2b0"
+    },
+    {
+      "path": "sprites/lava-edge-10-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "114caae22fb1f932db73136e3fa001046227876ad10a03714ee4e33dd451f710"
+    },
+    {
+      "path": "sprites/lava-edge-10.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "eba321a72c0cd86c86b7b73b263f13fff24bed94e8f4adc0323ef72250043384"
+    },
+    {
+      "path": "sprites/lava-edge-11-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "d4a46dafc2a4a3e38cbbdac5dc63ed20aff9282f8b88cddf20f63657d35df8c6"
+    },
+    {
+      "path": "sprites/lava-edge-11-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "d20b9a8838059a4ba95e24a05fbb4478a662512c1668bd5d9452bb14c0748027"
+    },
+    {
+      "path": "sprites/lava-edge-11-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "e28d8a458b92f71de1127d24eed94549af8a77d736ab25e002042cd9137076f7"
+    },
+    {
+      "path": "sprites/lava-edge-11.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "52407093457e2b2e4709c396ca13da2639d687fcc6311dba2ecd66cad5ee8c5f"
+    },
+    {
+      "path": "sprites/lava-edge-12-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "d55edbb8699be91b7ff03b2369e0e0d36075e3686a21b123a383f688fae0b685"
+    },
+    {
+      "path": "sprites/lava-edge-12-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "99463eba2d444b720e916c793407b20b16c13e6a339938595f9b6d2225108a50"
+    },
+    {
+      "path": "sprites/lava-edge-12-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "33f23a41d13a9e33ba4aadeaa3a8961d3a6bba3202e858c12e38ed725200ac48"
+    },
+    {
+      "path": "sprites/lava-edge-12.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "de46c004bed7434eb80023243fb7b9c78ca8a02eb3d8eea01e6d97c1b381c7b1"
+    },
+    {
+      "path": "sprites/lava-edge-13-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "1b93b5b699d8d515ae7d032d5ed78ffb0cf357267b1531e5a29a0655176f8ca7"
+    },
+    {
+      "path": "sprites/lava-edge-13-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "d5e2eaaa1de9c5304f9cc340aea6add89e58da2375b9b1e8e1d033fe4e690485"
+    },
+    {
+      "path": "sprites/lava-edge-13-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "2c78a5b259efddbc7198077c0775ed00082e25b98fb9db23069a08095310b829"
+    },
+    {
+      "path": "sprites/lava-edge-13.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "67b8bfa7f8f0e01eb4a224157a125d6d4484364215445f2c36c529442ab6eaf8"
+    },
+    {
+      "path": "sprites/lava-edge-14-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "2c8deec2b5ec99529bde32f193cbaacc7f0650f368ec04932517a177ef89164f"
+    },
+    {
+      "path": "sprites/lava-edge-14-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "81ea4fee7415d10131f3a0978272a1a0765ec9e6ed78efb641b2ce9bcffcba09"
+    },
+    {
+      "path": "sprites/lava-edge-14-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "ca1e5e7000b41d3aff8656670b14121d704d75fe0561f25bf5c58660f28772c7"
+    },
+    {
+      "path": "sprites/lava-edge-14.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "8cb70b6b209469f72f16d9de08d23180a137d6580b8973e7ad9688d471a05cad"
+    },
+    {
+      "path": "sprites/lava-edge-15-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "ac6ffc31ac67b37f66a154b0099b8bde5d98a390d916111c166e9136af08b42d"
+    },
+    {
+      "path": "sprites/lava-edge-15-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "919aa9e6cf4faa2819d71277ddc0bc107304f752176991e6c311a87cc774c9ca"
+    },
+    {
+      "path": "sprites/lava-edge-15-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "1fba483b9a5d7f7aef570d0e98c9fa299c7ebc5f2cfd131a2eb98b898a6f09ad"
+    },
+    {
+      "path": "sprites/lava-edge-15.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
+    },
+    {
+      "path": "sprites/lava-edge-2-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "67cda6ce4dbdac354cb93e440a23012b2f79bcddd751c222cfa238ce543f422a"
+    },
+    {
+      "path": "sprites/lava-edge-2-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "282d476fae4f2842d75d969f590898f51792a0c1e087e682cdd178714203d34f"
+    },
+    {
+      "path": "sprites/lava-edge-2-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "9024dda28677c7c14485e7aac6f41a6e3e0111eca56fc53b2aef53828ca62150"
+    },
+    {
+      "path": "sprites/lava-edge-2.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "aab656948d57c6f24c8e43d132693d77831b54fb7e9db47d2cbce6ee8b3c22d8"
+    },
+    {
+      "path": "sprites/lava-edge-3-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "5f13b9833964050223394078f0d52c99e24508ba5e46cde4d1fb3d94da11645d"
+    },
+    {
+      "path": "sprites/lava-edge-3-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "23afd075fda7d8c15c70595ffd135072bf9a7efdd4a1157b587b2952ec8ed8fe"
+    },
+    {
+      "path": "sprites/lava-edge-3-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "753a5e5a14e4da5ed16c5bd9d6a15344749ff44cee0559c2813e2728dd8db053"
+    },
+    {
+      "path": "sprites/lava-edge-3.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "56000701c5d8271df6e88ca8f13acd3450fc84693322ea83733e69af0170db52"
+    },
+    {
+      "path": "sprites/lava-edge-4-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "4a76b0cf4723d7ac4ec102d704c137ef34e688741405cb6ac530f16495220db6"
+    },
+    {
+      "path": "sprites/lava-edge-4-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "1dec1d32048ea1858c8f51b78a940ec83f0ab707ac946d7b4e5f327a9b18b12c"
+    },
+    {
+      "path": "sprites/lava-edge-4-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "dd7069df7af611abc51c5d08ff5fac4ed2ed4d379dbe5d3869e568fbb457d590"
+    },
+    {
+      "path": "sprites/lava-edge-4.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "2807d48b7a0a2e21061d066f3da782760853888a1cc61a013903f73ba39ff3e2"
+    },
+    {
+      "path": "sprites/lava-edge-5-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "533be5b2b06d043b757cffc733543dba2fc41f4dd0651631ab15a35f94fc169e"
+    },
+    {
+      "path": "sprites/lava-edge-5-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "4d2833e75afdf49be5d4b47469a358e5c5c39baba8e3d665bd4fbedee132fb07"
+    },
+    {
+      "path": "sprites/lava-edge-5-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "2ff33da196b20923704d3a5f9a6d13d573db4ff6eb5d588ad8e6a7a99514cce5"
+    },
+    {
+      "path": "sprites/lava-edge-5.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "c94eedd6ee557fafdfeff259ff5743e50197009e38aaca70e5268cb1bc3feda2"
+    },
+    {
+      "path": "sprites/lava-edge-6-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "3c349898cb192792c6935f8481416f839c832e3a0b157b5e27184fdadfd0c135"
+    },
+    {
+      "path": "sprites/lava-edge-6-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "5acf50c180d1295587fb1da356f9c4fb1d0be9f9d3a7cf77233e0c5bbd2abff6"
+    },
+    {
+      "path": "sprites/lava-edge-6-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "e374e5e1e1884f79a33b2169d046fea213c05fb6b1819c6a71d98b2abfda1e32"
+    },
+    {
+      "path": "sprites/lava-edge-6.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "54b31cd9d6fc5e41f02069f5712f386d9462fe6625d9d54cc68dc99fce7a9e56"
+    },
+    {
+      "path": "sprites/lava-edge-7-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "bb1f78bc478f51704021e09f8614238c6d9b9639c69bf16e8b95f390e253fab6"
+    },
+    {
+      "path": "sprites/lava-edge-7-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "b84855a2d8191b22648255aec50d20f4f8580490faf8763ca5d9e864478bdc06"
+    },
+    {
+      "path": "sprites/lava-edge-7-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "53495e747780e73e1fe419c4d070e0b892b18126a87655ce6b397c2a5305e828"
+    },
+    {
+      "path": "sprites/lava-edge-7.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "5fe83d640c69cdaa10346509f042ded1ed10d2abd6119c127af32a9ca0286f59"
+    },
+    {
+      "path": "sprites/lava-edge-8-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "e577fa56df5ca523c423633e9f1298df724a40199233b2c43ee74bcab580f2fb"
+    },
+    {
+      "path": "sprites/lava-edge-8-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "63ada19c78b6e33077f3e418d67de400ec0b1d0c0b5698d0b643183d472a6456"
+    },
+    {
+      "path": "sprites/lava-edge-8-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "277069bf135561417e6be37ad2cfc189f99a1c63b73cc8f71015ca81d03d468f"
+    },
+    {
+      "path": "sprites/lava-edge-8.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "f02c99d504d2a530c15f68de9df635110703bee1e0f3b64142a3145729e63d3e"
+    },
+    {
+      "path": "sprites/lava-edge-9-1.png",
+      "depicts": "lava pit, molten surface frame 2 of 4",
+      "sha256": "5df5fe0497afc161390f0ffc4d4bb9194ad1c140704c566bf4ce4e2403900475"
+    },
+    {
+      "path": "sprites/lava-edge-9-2.png",
+      "depicts": "lava pit, molten surface frame 3 of 4",
+      "sha256": "15c6b1067f0cb211e5b2365550dc85d54cb34adae95072232534826698d0e764"
+    },
+    {
+      "path": "sprites/lava-edge-9-3.png",
+      "depicts": "lava pit, molten surface frame 4 of 4",
+      "sha256": "c0f3d00e5f57ae987498a8a2027f460f8736c8524a398bbd1ea8ab4812c94c9c"
+    },
+    {
+      "path": "sprites/lava-edge-9.png",
+      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
+      "sha256": "3272e03e82c790958a59011ed986e96610f12920f441a7e49903fccbde476442"
+    },
+    {
+      "path": "sprites/moss-lowered-0.png",
+      "depicts": "slate wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "9c677a6c975e5766a07d6375ebbf0fca6315c65d848f337691386aa50010a4ec"
+    },
+    {
+      "path": "sprites/moss-lowered-1.png",
+      "depicts": "brick wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "304a12aa067b5c78a1f719626dd6563b31bb8cf9b7f47d8b0576bc696dee9b54"
+    },
+    {
+      "path": "sprites/moss-lowered-2.png",
+      "depicts": "sandstone wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "f1f62721f70669396fb5d6b56d4697759bd241543eda561b39a5eab8b898de53"
+    },
+    {
+      "path": "sprites/moss-lowered-3.png",
+      "depicts": "timber wall lowered into a flat slab with a recessed mossy seam",
+      "sha256": "45f83cbab868195fd9e79332f8e645dfd8dc89ef41647f9883ef44e172cdb188"
+    },
+    {
+      "path": "sprites/player-down.png",
+      "depicts": "Shovey looking down",
+      "sha256": "ce5a15c1dedc4826dc30eb837bac7ec49d38735adde157d686cfc49061f371ff"
+    },
+    {
+      "path": "sprites/player-left.png",
+      "depicts": "Shovey looking left",
+      "sha256": "f38ea9d30a789de00d239347ed80859d59da224231d17136cb28a89eb55fae17"
+    },
+    {
+      "path": "sprites/player-right.png",
+      "depicts": "Shovey looking right",
+      "sha256": "e5f534b8bbc8defb8e3a160cd145a5ecbad0742eca709b52a9f4b65f03d53173"
+    },
+    {
+      "path": "sprites/player-up.png",
+      "depicts": "Shovey looking up",
+      "sha256": "f8c4574ec7c31a196ff6d681ab512344ca1ba19cb229bc60af9d789f11e7f815"
+    },
+    {
+      "path": "sprites/projectile.png",
+      "depicts": "a flying iron shot",
+      "sha256": "b395b4301bbff6e3d229fa631d31a1bf139b9745b7e3f4bf07f1e41728ea2c12"
+    },
+    {
+      "path": "sprites/sensor-1.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 1 of 8",
+      "sha256": "48d4546647827ef2fe491d3e07a70e07f2cb15bef4cecde7dc08b7bd4ef45026"
+    },
+    {
+      "path": "sprites/sensor-2.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 2 of 8",
+      "sha256": "ccab4000061634a9578006db4b45e731cd16bb0a4590052547b0038fb0c7764f"
+    },
+    {
+      "path": "sprites/sensor-3.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 3 of 8",
+      "sha256": "6b5b4258dfdd01d35d1d98116b2157ee104e3f9ee04d0018111facbb198ea59f"
+    },
+    {
+      "path": "sprites/sensor-4.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 4 of 8",
+      "sha256": "26b3c55e64f104d4e6f6f65742a21f459ab75327c7425f0f8159c8313405f788"
+    },
+    {
+      "path": "sprites/sensor-5.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 5 of 8",
+      "sha256": "9a1ce3328b739757000a18a31d841e29500cac7eb8c84373ec64959055019112"
+    },
+    {
+      "path": "sprites/sensor-6.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 6 of 8",
+      "sha256": "3d881953a127a782ec1fba71bf96e1543526ef8e73e7888dd160b727959480d4"
+    },
+    {
+      "path": "sprites/sensor-7.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 7 of 8",
+      "sha256": "ecdc29945ef4a8da6e1b4a8c1d06d7004638c9c5c800599107cc95f4baba5470"
+    },
+    {
+      "path": "sprites/sensor-8.png",
+      "depicts": "active sensor, its bead circling the glowing ring, frame 8 of 8",
+      "sha256": "cc7f1d62826b08be8c43bd45e0d55d91e7db67a47d384bec04f95673d0d96d4a"
+    },
+    {
+      "path": "sprites/shadow.png",
+      "depicts": "mirror Shovey (pink)",
+      "sha256": "cbb03af227e8fd74a0c476763d5d836981cf5aa7197c54935eb4b109fc568944"
+    },
+    {
+      "path": "sprites/skin-1-charged-down.png",
+      "depicts": "ember-skinned charged Shovey looking down",
+      "sha256": "24b2d001bf613c6176e1908a88a1b86d6a032630cbad74073007dd61fafa877d"
+    },
+    {
+      "path": "sprites/skin-1-charged-left.png",
+      "depicts": "ember-skinned charged Shovey looking left",
+      "sha256": "5770c3515df9a69068b0e5e873cbb5e096d4bc21d254ca6d7ed002a461ddc339"
+    },
+    {
+      "path": "sprites/skin-1-charged-right.png",
+      "depicts": "ember-skinned charged Shovey looking right",
+      "sha256": "ce5b2714932cdb4281a6bbd13e8a3efb7da69fa5609fe979ed4bd7409cc9fd9f"
+    },
+    {
+      "path": "sprites/skin-1-charged-up.png",
+      "depicts": "ember-skinned charged Shovey looking up",
+      "sha256": "8115aee67e5610ae16385257a0928842aab4a48bc445fccc92a6bea840434f43"
+    },
+    {
+      "path": "sprites/skin-1-player-down.png",
+      "depicts": "ember-skinned Shovey looking down",
+      "sha256": "61135849232d507e71a88b969de862812de64c0359d5421ec456a9cd583f0071"
+    },
+    {
+      "path": "sprites/skin-1-player-left.png",
+      "depicts": "ember-skinned Shovey looking left",
+      "sha256": "18d2fb2b321a789ac0be40503cfc02cdf7fc24c6756ca6b1fecb96075d898313"
+    },
+    {
+      "path": "sprites/skin-1-player-right.png",
+      "depicts": "ember-skinned Shovey looking right",
+      "sha256": "8ea6ce70a57be565431c7e5b8578299cd791ab75adc779c65e34f26f160c571b"
+    },
+    {
+      "path": "sprites/skin-1-player-up.png",
+      "depicts": "ember-skinned Shovey looking up",
+      "sha256": "c57931c77d650115acbd45571786e20f1bcba2e806c9d967f776dc363207a0ca"
+    },
+    {
+      "path": "sprites/skin-2-charged-down.png",
+      "depicts": "frost-skinned charged Shovey looking down",
+      "sha256": "cf33f91b35e87ca327ba4e037425f1b78ee32ce4cc19d66fad74bba2e9e14504"
+    },
+    {
+      "path": "sprites/skin-2-charged-left.png",
+      "depicts": "frost-skinned charged Shovey looking left",
+      "sha256": "f9d6b4cec2fa2169ef34e8ca016d2d0883abc30c51017dd7a7ef66bf462b5504"
+    },
+    {
+      "path": "sprites/skin-2-charged-right.png",
+      "depicts": "frost-skinned charged Shovey looking right",
+      "sha256": "895b6a3d6650da5b086ce3e8e592ee405c59d069bd62bb8327bdea669dd3c7e4"
+    },
+    {
+      "path": "sprites/skin-2-charged-up.png",
+      "depicts": "frost-skinned charged Shovey looking up",
+      "sha256": "6b8cd88b3cc774b304819a17397f15c8551fbbbd60b52c442e0f2548e133af76"
+    },
+    {
+      "path": "sprites/skin-2-player-down.png",
+      "depicts": "frost-skinned Shovey looking down",
+      "sha256": "8b74e3fdbfa5a44df51b8db2f32547d3625815e06f412782570a789b5b377ccc"
+    },
+    {
+      "path": "sprites/skin-2-player-left.png",
+      "depicts": "frost-skinned Shovey looking left",
+      "sha256": "dc54b5beb3afc9d44b31097c7e0ba7f49e7fc7150fd8f81aacee813939e15973"
+    },
+    {
+      "path": "sprites/skin-2-player-right.png",
+      "depicts": "frost-skinned Shovey looking right",
+      "sha256": "8399a45e6bce27a3ab6a95cb87c1dcea3d8d73f79ccd82ede8e9df87778b9520"
+    },
+    {
+      "path": "sprites/skin-2-player-up.png",
+      "depicts": "frost-skinned Shovey looking up",
+      "sha256": "52c615634a5f25309c9b6fcfc5b8c14077ec34591021e82738281ae821ca08c4"
+    },
+    {
+      "path": "sprites/skin-3-charged-down.png",
+      "depicts": "berry-skinned charged Shovey looking down",
+      "sha256": "b6e3bca929ce7111ccf7f919e21cecc2f0ed6651bc61512addd41ac4528077fa"
+    },
+    {
+      "path": "sprites/skin-3-charged-left.png",
+      "depicts": "berry-skinned charged Shovey looking left",
+      "sha256": "97604aeba95be2a42342aedb7f51d43bb9c12e30a164228077fb368517519473"
+    },
+    {
+      "path": "sprites/skin-3-charged-right.png",
+      "depicts": "berry-skinned charged Shovey looking right",
+      "sha256": "0069d34c5d3e7e88f4df33e0a8fa0ec3a16d5d7e18c58b870ca224cdd06f88dc"
+    },
+    {
+      "path": "sprites/skin-3-charged-up.png",
+      "depicts": "berry-skinned charged Shovey looking up",
+      "sha256": "7e8e2b84f0f4128c81b5f7e1c4d5f5a5c0ae3e00c528a580b18a1d7b635a27f5"
+    },
+    {
+      "path": "sprites/skin-3-player-down.png",
+      "depicts": "berry-skinned Shovey looking down",
+      "sha256": "86971306983a023613f3153da1bfcc66c36e9b090e198809b1d9ffbe58dcbef7"
+    },
+    {
+      "path": "sprites/skin-3-player-left.png",
+      "depicts": "berry-skinned Shovey looking left",
+      "sha256": "c449975398077ed164a9c31f9acf9d819a04125e70861900d3b0f9f995d563bf"
+    },
+    {
+      "path": "sprites/skin-3-player-right.png",
+      "depicts": "berry-skinned Shovey looking right",
+      "sha256": "12636a13b96923443b115b0b00b6bb172ade134934b4283fd7f81d890ea4f1a5"
+    },
+    {
+      "path": "sprites/skin-3-player-up.png",
+      "depicts": "berry-skinned Shovey looking up",
+      "sha256": "08398f0513ff3146b1d1f23c56f1c40e719cbb40a9e6ae8e4055887c8965684e"
+    },
+    {
+      "path": "sprites/skin-4-charged-down.png",
+      "depicts": "night-skinned charged Shovey looking down",
+      "sha256": "353a8fa72897ad4291abb2856e5680bfcc89988242121ef4dbb52e8b1769d721"
+    },
+    {
+      "path": "sprites/skin-4-charged-left.png",
+      "depicts": "night-skinned charged Shovey looking left",
+      "sha256": "55f6282d246c0ae87587bc10663a8cb04833ad204a258a66fa0b2ccb702ed4f2"
+    },
+    {
+      "path": "sprites/skin-4-charged-right.png",
+      "depicts": "night-skinned charged Shovey looking right",
+      "sha256": "cbf6ba0f0ec79e958e1de037bba1b07c12c18bd8cefa9287732950c5bca7f4d1"
+    },
+    {
+      "path": "sprites/skin-4-charged-up.png",
+      "depicts": "night-skinned charged Shovey looking up",
+      "sha256": "ccbf4f1d68ed50fc69c5badc47986c659b3f8860bbdf65ac1d5f7c7ab2ee80a7"
+    },
+    {
+      "path": "sprites/skin-4-player-down.png",
+      "depicts": "night-skinned Shovey looking down",
+      "sha256": "678422ae918dc1ef3cc8401d6cb893375ebb5a68488803e56435b8f2a5e64013"
+    },
+    {
+      "path": "sprites/skin-4-player-left.png",
+      "depicts": "night-skinned Shovey looking left",
+      "sha256": "719c30bdfae99851e87a4ba81ead443c6acfadef9159abedca0064083064e954"
+    },
+    {
+      "path": "sprites/skin-4-player-right.png",
+      "depicts": "night-skinned Shovey looking right",
+      "sha256": "817388943d583652e697437826918462841375b06d9de100c0b1e69d00114c19"
+    },
+    {
+      "path": "sprites/skin-4-player-up.png",
+      "depicts": "night-skinned Shovey looking up",
+      "sha256": "4e6c3ef38436378d8c6c24b5e42cb61848c34d1b3a27bd8e38690f6fd9a2b9fc"
+    },
+    {
+      "path": "sprites/skin-5-charged-down.png",
+      "depicts": "crystal-skinned charged Shovey looking down",
+      "sha256": "6664d23f839cd712748cf11536133a8c4f0c56ebaea166c188e3a5c80f636242"
+    },
+    {
+      "path": "sprites/skin-5-charged-left.png",
+      "depicts": "crystal-skinned charged Shovey looking left",
+      "sha256": "928e216a695da3440d6e37d6e4a80b0dd7af05cf1c3aaa422c0fb85eb37c77a4"
+    },
+    {
+      "path": "sprites/skin-5-charged-right.png",
+      "depicts": "crystal-skinned charged Shovey looking right",
+      "sha256": "8b54a519fcbb706b13f160b5dbf1f8c0829468a2c70842131988de91a481f1a1"
+    },
+    {
+      "path": "sprites/skin-5-charged-up.png",
+      "depicts": "crystal-skinned charged Shovey looking up",
+      "sha256": "ebf9f8b4571b64d93287a730225c21396fd1473777949e8ce7c9291ac80dd563"
+    },
+    {
+      "path": "sprites/skin-5-player-down.png",
+      "depicts": "crystal-skinned Shovey looking down",
+      "sha256": "d79037e223be327c2ddc6061fdfe299cc237107da4b89e57af3301f010d59ab1"
+    },
+    {
+      "path": "sprites/skin-5-player-left.png",
+      "depicts": "crystal-skinned Shovey looking left",
+      "sha256": "2abd287649f34806bfacb57590dcfc5bb90c5eae7bafce4dba736634695a3dbb"
+    },
+    {
+      "path": "sprites/skin-5-player-right.png",
+      "depicts": "crystal-skinned Shovey looking right",
+      "sha256": "4402d5df11b4ad387c39283cad66d719707aea38b65c3da82095e84db5db3b67"
+    },
+    {
+      "path": "sprites/skin-5-player-up.png",
+      "depicts": "crystal-skinned Shovey looking up",
+      "sha256": "d5d63a4811029502552e4993b484242ab0de8be57dffae3890bfb6ed19bfadb7"
+    },
+    {
+      "path": "sprites/skin-6-charged-down.png",
+      "depicts": "stone-skinned charged Shovey looking down",
+      "sha256": "970503ed396f35af09ea4ddbf33b9d9c460a1a4d02414df3a21da2ee4ae54e43"
+    },
+    {
+      "path": "sprites/skin-6-charged-left.png",
+      "depicts": "stone-skinned charged Shovey looking left",
+      "sha256": "6b1db141943efb8765540c2f23de853d85c4540d290471378863082393776e7c"
+    },
+    {
+      "path": "sprites/skin-6-charged-right.png",
+      "depicts": "stone-skinned charged Shovey looking right",
+      "sha256": "a29428557924e34c93aba1f6e157174abc595c6c923ea4c1ef1493161e36b925"
+    },
+    {
+      "path": "sprites/skin-6-charged-up.png",
+      "depicts": "stone-skinned charged Shovey looking up",
+      "sha256": "3e80e6eb29c6894cf7b7a89adc731bffbc4f7cb68356d54af4ff7d8917712328"
+    },
+    {
+      "path": "sprites/skin-6-player-down.png",
+      "depicts": "stone-skinned Shovey looking down",
+      "sha256": "57279b22adf4a261658c7d003ae6843684c2a7adb2efc914600daba2102e68dd"
+    },
+    {
+      "path": "sprites/skin-6-player-left.png",
+      "depicts": "stone-skinned Shovey looking left",
+      "sha256": "bb6070531e3e7022b39133ed4ea3876d229f72b9da58268c469c37c60c1d7815"
+    },
+    {
+      "path": "sprites/skin-6-player-right.png",
+      "depicts": "stone-skinned Shovey looking right",
+      "sha256": "2fbd162277acc6d29a62e7b8413c7b78ae7432bbb98f8a53f686503b518cfb83"
+    },
+    {
+      "path": "sprites/skin-6-player-up.png",
+      "depicts": "stone-skinned Shovey looking up",
+      "sha256": "f21c7533388dfb743003719eeb1942d82cc15a1875f99cdfc944cbdcd6a5b2c1"
+    },
+    {
+      "path": "sprites/skin-7-charged-down.png",
+      "depicts": "gold-skinned charged Shovey looking down",
+      "sha256": "78804ef44fda75caf090cc784bc303b499f46237a29b8267babb0218631f0487"
+    },
+    {
+      "path": "sprites/skin-7-charged-left.png",
+      "depicts": "gold-skinned charged Shovey looking left",
+      "sha256": "b322aa5e1fe584e8ce08edecd500dbc8d65cc49224c3e8ffef7a27c9ec224065"
+    },
+    {
+      "path": "sprites/skin-7-charged-right.png",
+      "depicts": "gold-skinned charged Shovey looking right",
+      "sha256": "569897ece299ecf59770c4ce31023be6017887c02070f56da261f1be4b8fdcbb"
+    },
+    {
+      "path": "sprites/skin-7-charged-up.png",
+      "depicts": "gold-skinned charged Shovey looking up",
+      "sha256": "487c52b6d91f5b046c63c85aa21ba7af924b865f3c290fabcefa735b10a31e2a"
+    },
+    {
+      "path": "sprites/skin-7-player-down.png",
+      "depicts": "gold-skinned Shovey looking down",
+      "sha256": "b7bd7f7a68d1cf9eb75ab238a8d337a73103b9c4cb8c1e5085f8fc7461d8694d"
+    },
+    {
+      "path": "sprites/skin-7-player-left.png",
+      "depicts": "gold-skinned Shovey looking left",
+      "sha256": "34ebbe057f22e097a216b47b4f9b25789a63e4c3feafda2895ebce86008dbc80"
+    },
+    {
+      "path": "sprites/skin-7-player-right.png",
+      "depicts": "gold-skinned Shovey looking right",
+      "sha256": "87c427b480497b065521a2da6f0587265ceb2060505188c9ee62d978184d7561"
+    },
+    {
+      "path": "sprites/skin-7-player-up.png",
+      "depicts": "gold-skinned Shovey looking up",
+      "sha256": "12aa6031ba0b8f50183ef2130b68c813ccd5b76eab321f5653665c7c6a40b2c0"
     },
     {
       "path": "sprites/tile-0.png",
@@ -18,64 +1443,59 @@
       "sha256": "5debdbf49c3193738f3e3eb9e8653e14d0b4be25790be74fe0db2f62790e9310"
     },
     {
-      "path": "sprites/tile-2.png",
-      "depicts": "blue ball (pushable)",
-      "sha256": "383d80d504afdccb721c8cee0cb29ceea9b5179cfd9c74cdb74eecc0054c2a20"
-    },
-    {
-      "path": "sprites/tile-3.png",
-      "depicts": "green ball (pushable)",
-      "sha256": "88ac896f6a181e478ed0a1399f078c512be6bd1552e995b043525752d52dcda6"
-    },
-    {
-      "path": "sprites/tile-4.png",
-      "depicts": "red pit: takes the red ball",
-      "sha256": "da82bc44223bec0cf420331cb28e27c555c86893fcf17d0f5c844b9baee8ddf4"
-    },
-    {
-      "path": "sprites/tile-5.png",
-      "depicts": "blue pit: takes the blue ball",
-      "sha256": "7eadce60919cfd939fbcfb6fda0628c0fda838ea79817c79ba67d9be8c97a9a0"
-    },
-    {
-      "path": "sprites/tile-6.png",
-      "depicts": "green pit: takes the green ball",
-      "sha256": "e2ed5b32a28d3a6ae994da55e87e2f45de99b4ce057220a3075c4b254a253664"
-    },
-    {
-      "path": "sprites/tile-47.png",
-      "depicts": "cyan pit: takes the cyan ball",
-      "sha256": "9bb1cd0dd9678cd00d5f8119cefa8794dec05853c500c30efa9b3e3d12241458"
-    },
-    {
-      "path": "sprites/tile-48.png",
-      "depicts": "purple pit: takes the purple ball",
-      "sha256": "d394a74ccbfa1062ef9ec5917a385951514887e2e13dc28506c90fd4fe90a014"
-    },
-    {
-      "path": "sprites/tile-49.png",
-      "depicts": "yellow pit: takes the yellow ball",
-      "sha256": "efc8a7c1b0ed90e2d76e640a67a50240e7aebe3fae9298f1d2654d7a904b265a"
-    },
-    {
-      "path": "sprites/tile-7.png",
-      "depicts": "home: a small cottage with a jade roof and a lit door, on grass",
-      "sha256": "af67806c347906788a0dc1e1358550611eb0b26c225f55c6a97d422144f516ad"
-    },
-    {
-      "path": "sprites/tile-8.png",
-      "depicts": "teleporter: a recessed opening with an inward blue-green spiral",
-      "sha256": "88200ee79268eebd7536107cfdd3eb99ec4a3228970ed3de035e83b92e6ece11"
-    },
-    {
-      "path": "sprites/tile-9.png",
-      "depicts": "crate: clean chestnut planks with crossed wooden braces (pushable)",
-      "sha256": "21949413f7a2431cf33dc823dd7bad27ace91c8d4d4eafe36876863709861e99"
-    },
-    {
       "path": "sprites/tile-10.png",
       "depicts": "start position, drawn as floor",
       "sha256": "0a86d032642479c4e68d3d50bcbcca762f682975d1c529878c1c65b0117bf225"
+    },
+    {
+      "path": "sprites/tile-100.png",
+      "depicts": "brick floor: flat warm brick paving",
+      "sha256": "38316fb8158008c9ac3840bb12491a7d645a0c95ee14c4a28189b5f46f9ade76"
+    },
+    {
+      "path": "sprites/tile-101.png",
+      "depicts": "sandstone floor: flat pale sandstone paving",
+      "sha256": "8644370fe1c48aab3036bedd178f3155513b44d081a18f11d0dc53e785c8263b"
+    },
+    {
+      "path": "sprites/tile-102.png",
+      "depicts": "timber floor: flat wooden floorboards",
+      "sha256": "2cac12993eb68dd80608c7864b7a3a24d0b65e1b4b86bd412320d91dfdd42530"
+    },
+    {
+      "path": "sprites/tile-103.png",
+      "depicts": "mossy floor: flat stone paving with green moss",
+      "sha256": "9d0d7407e3132ac5d1377b7c95a4488f4929ccc357195125e605b044f58803fa"
+    },
+    {
+      "path": "sprites/tile-104.png",
+      "depicts": "wooden door: opens when Shovey walks through it",
+      "sha256": "114f2e00c713a6cb720c4616b116d553aea21e2803cbbb55d3c159df327ccbf7"
+    },
+    {
+      "path": "sprites/tile-105.png",
+      "depicts": "wooden door standing open, with a clear passage",
+      "sha256": "ab9dec8aef0780c304b200d681a84b9db1680945fbc9594d51b4b413bf203094"
+    },
+    {
+      "path": "sprites/tile-106.png",
+      "depicts": "floor lantern: warm glass in a metal frame; blocks movement",
+      "sha256": "50f73e22102ea09bba5dec103eb870a880a38b1a589494b3d2355910ccbaf534"
+    },
+    {
+      "path": "sprites/tile-107.png",
+      "depicts": "red gate: controlled by matching levers",
+      "sha256": "8109fefda39a7365418e0391d473da0ae00ae073b8530af3608c368fdc306b81"
+    },
+    {
+      "path": "sprites/tile-108.png",
+      "depicts": "red lever: switched off",
+      "sha256": "eeb4fdd77283ee982274f6c0e5897dff59ff83640fb246bd99fcc24d8edeb20d"
+    },
+    {
+      "path": "sprites/tile-109.png",
+      "depicts": "red lever: switched on",
+      "sha256": "6d6ad2d578957bc89128e2318bf9897d5c94a045c76eeba4c9cec5deec62880d"
     },
     {
       "path": "sprites/tile-11.png",
@@ -83,9 +1503,109 @@
       "sha256": "730ef2d5705cb422d01257742b7a1ee2ce055737cdc0a78440a79e0b2573845a"
     },
     {
+      "path": "sprites/tile-110.png",
+      "depicts": "blue gate: controlled by matching levers",
+      "sha256": "5d89822df9a45b322743b7856c44a93c82a99b0562b813fdcfb5dec1ae04e233"
+    },
+    {
+      "path": "sprites/tile-111.png",
+      "depicts": "blue lever: switched off",
+      "sha256": "72d99dd28b6b17aee1cad8b20418280642c1196b7b06d47bdecd03292ce50156"
+    },
+    {
+      "path": "sprites/tile-112.png",
+      "depicts": "blue lever: switched on",
+      "sha256": "5cdb3c4c36cf7f7ce7b1d8a2b431ed7f4c0148acc0498eb445e8ca6de2ff9adb"
+    },
+    {
+      "path": "sprites/tile-113.png",
+      "depicts": "green gate: controlled by matching levers",
+      "sha256": "d433dcc6ab0d17a8c19d6671d2a2401c08c421cb12e992d4dea9505f6d422705"
+    },
+    {
+      "path": "sprites/tile-114.png",
+      "depicts": "green lever: switched off",
+      "sha256": "4795399c7acba3f056f4e6705a379de7342f9e4b744f8e708d2c2694d1a5032a"
+    },
+    {
+      "path": "sprites/tile-115.png",
+      "depicts": "green lever: switched on",
+      "sha256": "d5b9a84b7ad4cb5b5b6b1354adf9545eb39d37da629f62075355a67abf6e6ef0"
+    },
+    {
+      "path": "sprites/tile-116.png",
+      "depicts": "red wooden door: opens when walked through",
+      "sha256": "2e1618c0fad313a6c2e65516dbb59845e6d83002dc01bbad5826ad9dd67bd01f"
+    },
+    {
+      "path": "sprites/tile-117.png",
+      "depicts": "red wooden door standing open",
+      "sha256": "b20e0980f2c2d4eda294f79726dc16ca82a8990d26f240fcf22310756b0ca056"
+    },
+    {
+      "path": "sprites/tile-118.png",
+      "depicts": "blue wooden door: opens when walked through",
+      "sha256": "4c1d949d3d626f1f4ee50a8c7550bae6bda899eba176b3cde7442c2879164180"
+    },
+    {
+      "path": "sprites/tile-119.png",
+      "depicts": "blue wooden door standing open",
+      "sha256": "d3fe246bd7b2802c23580e5b2b0bfad52fc31995a79c7c6183bdd186b3b06a88"
+    },
+    {
       "path": "sprites/tile-12.png",
       "depicts": "wall: a raised grey stone block",
       "sha256": "0674c3bc3d5ce25f6b4c52a5f2a07eb83ed0d38928a70214570eb6afc2903a28"
+    },
+    {
+      "path": "sprites/tile-120.png",
+      "depicts": "green wooden door: opens when walked through",
+      "sha256": "bf69d708485520e4feb04c4fb7d151072c81b807ab5aceaca15c9ae380b05f9b"
+    },
+    {
+      "path": "sprites/tile-121.png",
+      "depicts": "green wooden door standing open",
+      "sha256": "df41fae228578d3e3d70d9b126a27f98362ed23d0975e2e603e5f1291d19a97d"
+    },
+    {
+      "path": "sprites/tile-122.png",
+      "depicts": "boulder: a solid faceted stone that blocks movement",
+      "sha256": "b0a2b8b7222c4672c93dd1d1db5dc97d4ea3981336a80336288871c901726680"
+    },
+    {
+      "path": "sprites/tile-123.png",
+      "depicts": "orange gate: starts open and closes when its lever is on",
+      "sha256": "64ec7d8742a63efbcce43c2b0774a0a5f18d9f88a0b978bd7c1115a147f53287"
+    },
+    {
+      "path": "sprites/tile-124.png",
+      "depicts": "red gate: starts open and closes when its lever is on",
+      "sha256": "ce8311e1b77e8bdc90e8659329650a7a471f0822dcf8e8eead4f54a519966851"
+    },
+    {
+      "path": "sprites/tile-125.png",
+      "depicts": "blue gate: starts open and closes when its lever is on",
+      "sha256": "c438f0e518d190c1db7e64f445e1414a55e4447444bad35f08310cd2d8637a74"
+    },
+    {
+      "path": "sprites/tile-126.png",
+      "depicts": "green gate: starts open and closes when its lever is on",
+      "sha256": "82a0f285aa4acf2fb213c2b9e45caec6b7fc269eea04a78fcd818db1a1faef47"
+    },
+    {
+      "path": "sprites/tile-127.png",
+      "depicts": "mossy slate wall: lowers onto its matching floor while its button is held",
+      "sha256": "07660ff0818c6888809bd025d75a8e755f95db9e2fa10b1c53dd2d3051157ba3"
+    },
+    {
+      "path": "sprites/tile-128.png",
+      "depicts": "mossy brick wall: lowers onto its matching floor while its button is held",
+      "sha256": "d2f74c3304a1d68597df5f830dd5c7543b7b4c4eaab0ce686200ed478f87c036"
+    },
+    {
+      "path": "sprites/tile-129.png",
+      "depicts": "mossy sandstone wall: lowers onto its matching floor while its button is held",
+      "sha256": "bb0170bf7e3b69ef462bd61f63b929419c1b8cecf4c3c9a92ccabd8b7d7b51b9"
     },
     {
       "path": "sprites/tile-13.png",
@@ -93,9 +1613,109 @@
       "sha256": "bf2e4593616c0733f3a7778349108745a1411188d76cc4d787d8c1a177453c4b"
     },
     {
+      "path": "sprites/tile-130.png",
+      "depicts": "mossy timber wall: lowers onto its matching floor while its button is held",
+      "sha256": "0bdc609d3eb6a41b5de7540a0b92f6f1b0801480c63d742d4b9b1bda6ac4d475"
+    },
+    {
+      "path": "sprites/tile-131.png",
+      "depicts": "slate pressure button: controls matching mossy slate walls",
+      "sha256": "99a0278b27ae77e165a44509678f482433de836c34e682f5ea455c17dca4d90d"
+    },
+    {
+      "path": "sprites/tile-132.png",
+      "depicts": "brick pressure button: controls matching mossy brick walls",
+      "sha256": "42012722e42371ba49ff40f1a7207a0104dd6f361591d6561737c827dd4a1495"
+    },
+    {
+      "path": "sprites/tile-133.png",
+      "depicts": "sandstone pressure button: controls matching mossy sandstone walls",
+      "sha256": "cca5f63f8c4f799d882f6c4a2b68c6ebe7f2d2701287a94ac2b88115e206f82b"
+    },
+    {
+      "path": "sprites/tile-134.png",
+      "depicts": "timber pressure button: controls matching mossy timber walls",
+      "sha256": "00dc96c8daa512d08ca22a36dbc90e9cc449c923b150540c14414b32574e3677"
+    },
+    {
+      "path": "sprites/tile-135.png",
+      "depicts": "mushrooms: red-orange spotted caps on the floor (decoration)",
+      "sha256": "53bc0d3db3d32dac36d5c744b2925486b7a8b975044137b04780dc3d89ed95bb"
+    },
+    {
+      "path": "sprites/tile-136.png",
+      "depicts": "fallen autumn leaves on the floor (decoration)",
+      "sha256": "b8909a1891905a72c522c738ce7e84a5988c060ed49b4d86cab1a192680f5a82"
+    },
+    {
+      "path": "sprites/tile-137.png",
+      "depicts": "bluebells: blue bell flowers on the floor (decoration)",
+      "sha256": "c78ca6de0b56380a37d99fc9f80960df060c78158942e2fbab805dd4d477cc69"
+    },
+    {
+      "path": "sprites/tile-138.png",
+      "depicts": "lily pads with a pink lotus, floating on water (decoration)",
+      "sha256": "21e73bfcc56f7e2e3d58e59afa48be14539ba74b4c19ff8684174265f1313599"
+    },
+    {
+      "path": "sprites/tile-139.png",
+      "depicts": "berry bush: a round leafy bush with red berries; blocks movement",
+      "sha256": "f8a5d900751768a0bf052d2268ba2afc8f3f74f3b1f6eec4ee62ce150c431832"
+    },
+    {
       "path": "sprites/tile-14.png",
       "depicts": "mossy stone wall: sinks when a pressure plate is held",
       "sha256": "500aeda9c1847f7437d6cde0c82e1f03de35c7233579317e27633e68ee92e910"
+    },
+    {
+      "path": "sprites/tile-140.png",
+      "depicts": "flower pot: terracotta pot of pink, yellow and white flowers; blocks movement",
+      "sha256": "157b6c4085773cf62db2b2c3c19a3d5bf9ef102cddf9e88fee5750ccc8948958"
+    },
+    {
+      "path": "sprites/tile-141.png",
+      "depicts": "barrel: an upright wooden barrel with iron hoops; blocks movement",
+      "sha256": "70a5daeab4b946cd7e49b6fff2fc7866c62f6b467bc57951c855392703ebd985"
+    },
+    {
+      "path": "sprites/tile-142.png",
+      "depicts": "tree stump: a cut stump with rings and a green sprout; blocks movement",
+      "sha256": "4e43632ce7992d571ecf187cb467548bfae433ba99fcf4738e15c3495a5d9bd2"
+    },
+    {
+      "path": "sprites/tile-143.png",
+      "depicts": "blue colour block goal: a blue hatched square",
+      "sha256": "d3dc9bc848b6dd691e033364035fd7238cfe78a5cbd47f2e4729c69bb8b489df"
+    },
+    {
+      "path": "sprites/tile-144.png",
+      "depicts": "yellow colour block goal: a yellow hatched square",
+      "sha256": "43b8a178df7180cd35536cd84ff924cb08fd8610bf9168d852af54ea0217e317"
+    },
+    {
+      "path": "sprites/tile-145.png",
+      "depicts": "cyan colour block goal: a cyan hatched square",
+      "sha256": "2b731a79c43213cced8bd2e06b1361e2595ccb31a71fd5cc98bcd4d73f9af65a"
+    },
+    {
+      "path": "sprites/tile-146.png",
+      "depicts": "purple colour block goal: a purple hatched square",
+      "sha256": "662f568b9d53bbe7a181b540cbb623925b8a396caa53f5034d8304313ee3f1c3"
+    },
+    {
+      "path": "sprites/tile-147.png",
+      "depicts": "green colour block goal: a green hatched square",
+      "sha256": "c8cde3d7e93b49826395fe40c5a7cd6e3e0045bcad402eca7d36f80532671cd9"
+    },
+    {
+      "path": "sprites/tile-148.png",
+      "depicts": "boat at the shore: a wooden boat with a white sail, the way home of the last level",
+      "sha256": "04e249d44cf43aae7465e7495a7c6d79f32dc2e449898f013e3fcc7b914a26af"
+    },
+    {
+      "path": "sprites/tile-149.png",
+      "depicts": "floating crate: a crate pushed into water, floating low; Shovey can walk on it",
+      "sha256": "6bdaf7c3b18641d0aaaffcb263b30466c4aff2d7711dc97b62f44908d3096dc1"
     },
     {
       "path": "sprites/tile-15.png",
@@ -103,9 +1723,94 @@
       "sha256": "3a225f623a8a87a1610e4aa39dab41455fea433887f8e14699785af7221ba96e"
     },
     {
+      "path": "sprites/tile-150.png",
+      "depicts": "pushable mirror, / orientation: a silver panel turns a laser beam",
+      "sha256": "37f097fed9ef822e5748f9e12fb179d208258572f82710197c9667e29306614e"
+    },
+    {
+      "path": "sprites/tile-151.png",
+      "depicts": "pushable mirror, \\ orientation: a silver panel turns a laser beam",
+      "sha256": "5b5ff6417bc0be03df773608db31746b3b6b962bb03ef50f66bded3259f4975d"
+    },
+    {
+      "path": "sprites/tile-152.png",
+      "depicts": "fixed laser emitter facing left, with its short red beam",
+      "sha256": "37ea75cd06c38f392084f165e624ce94d27322006ba861db6935c590fd0b2767"
+    },
+    {
+      "path": "sprites/tile-153.png",
+      "depicts": "fixed laser emitter facing up, with its short red beam",
+      "sha256": "698acffa98d232ed3dcdc86e333b5bb6e5f8533632cce63a6451e627d01cb89c"
+    },
+    {
+      "path": "sprites/tile-154.png",
+      "depicts": "fixed laser emitter facing right, with its short red beam",
+      "sha256": "80f61ecda845eb7d32425eb409991faa9a9cae3a5d3ac880a10860ccf7392bde"
+    },
+    {
+      "path": "sprites/tile-155.png",
+      "depicts": "fixed laser emitter facing down, with its short red beam",
+      "sha256": "4fbf489b6e007d62480274e53a19cf7e3d9689b29c63c6bf0c8b09ba24aebb69"
+    },
+    {
+      "path": "sprites/tile-156.png",
+      "depicts": "unlit laser receiver: a dark socket with a red gem",
+      "sha256": "7b9f12489ea14fa38648dc54f0533e073546b8c704771cb85bde7a9babe6f6de"
+    },
+    {
+      "path": "sprites/tile-157.png",
+      "depicts": "lit laser receiver: a bright yellow gem with four light rays",
+      "sha256": "c70b80364d6bd62662ac9308f540e03b6aedb8c225492477a813fec8edf5f825"
+    },
+    {
+      "path": "sprites/tile-158.png",
+      "depicts": "pine: a dark green fir tree; blocks movement and laser beams",
+      "sha256": "034c9452941f079c187adfd0dc2fe1b21c6b95864cc0f914bdc82d777223f39a"
+    },
+    {
+      "path": "sprites/tile-159.png",
+      "depicts": "fallen log: a mossy fallen tree trunk; blocks movement and laser beams",
+      "sha256": "f89658448c106d6c7e59d4a1d1aa92a44b12a87ad7e209012da29c0bfe2eb6e1"
+    },
+    {
       "path": "sprites/tile-16.png",
       "depicts": "blue paint puddle, matching the other paint silhouettes",
       "sha256": "edc29b0ee59b98ea6fe7d8b5aadb40cd0b51c5c17bda962af29097d565eaccc8"
+    },
+    {
+      "path": "sprites/tile-160.png",
+      "depicts": "mossy boulder: a grey stone capped with moss; blocks movement and laser beams",
+      "sha256": "2570069d7642e95e23050055c57e43b54e8e73b33801c3a4c144daef107222d2"
+    },
+    {
+      "path": "sprites/tile-161.png",
+      "depicts": "ferns: a low clump of green fern fronds on the floor (decoration)",
+      "sha256": "ef3e390105e1dea0d88f9ce0ac3fa80ee80812e3fd72be90bb139d0bde627cee"
+    },
+    {
+      "path": "sprites/tile-162.png",
+      "depicts": "forest floor: dark ground of fallen pine needles and moss",
+      "sha256": "bd2faffe8f0fe2c92191cd79613691ec5235a4251d9ceb7957b54257c318086f"
+    },
+    {
+      "path": "sprites/tile-163.png",
+      "depicts": "cave floor: dark packed rock and gravel",
+      "sha256": "eb00e29c0624b2ee5cf1b14449503b26f410bc388f85d48dc03e70fce74eef56"
+    },
+    {
+      "path": "sprites/tile-164.png",
+      "depicts": "cave wall: a block of rough dark cave rock; blocks movement and laser beams",
+      "sha256": "33cd60b9accbab4c283f0bdfd4cacc065e608252321beded99098a0ea40eb5e7"
+    },
+    {
+      "path": "sprites/tile-165.png",
+      "depicts": "crystals: glowing cyan cave crystals on a rock; block movement and laser beams",
+      "sha256": "a987745d53b92050011ee7851db2927fcdf1fe7c7325e958cda43c6c2fb46132"
+    },
+    {
+      "path": "sprites/tile-166.png",
+      "depicts": "lava: molten rock deep in a pit; Shovey falls in and nothing can be pushed there",
+      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
     },
     {
       "path": "sprites/tile-17.png",
@@ -121,6 +1826,11 @@
       "path": "sprites/tile-19.png",
       "depicts": "star block: a stone block with a bright star (pushable)",
       "sha256": "2313d8444ebe80546d0278d1fd2b0e0dfa6ad04891604667878576d10f08e81d"
+    },
+    {
+      "path": "sprites/tile-2.png",
+      "depicts": "blue ball (pushable)",
+      "sha256": "383d80d504afdccb721c8cee0cb29ceea9b5179cfd9c74cdb74eecc0054c2a20"
     },
     {
       "path": "sprites/tile-20.png",
@@ -173,6 +1883,11 @@
       "sha256": "6d26f643464b87a1cf86407906984f7509a43d912e8a9612992c56ebd6ce2c4e"
     },
     {
+      "path": "sprites/tile-3.png",
+      "depicts": "green ball (pushable)",
+      "sha256": "88ac896f6a181e478ed0a1399f078c512be6bd1552e995b043525752d52dcda6"
+    },
+    {
       "path": "sprites/tile-30.png",
       "depicts": "fresh path: a solid blue ring",
       "sha256": "9fe1c4631806418bff3daedfa353217f65a5ae5cdd1e64fbf806baa60ff343cc"
@@ -223,124 +1938,84 @@
       "sha256": "0a09c6d79961285f18e623273d9db7833e2418cb5a7d5aae595cb0eb275a2efa"
     },
     {
-      "path": "sprites/tile-143.png",
-      "depicts": "blue colour block goal: a blue hatched square",
-      "sha256": "d3dc9bc848b6dd691e033364035fd7238cfe78a5cbd47f2e4729c69bb8b489df"
-    },
-    {
-      "path": "sprites/tile-144.png",
-      "depicts": "yellow colour block goal: a yellow hatched square",
-      "sha256": "43b8a178df7180cd35536cd84ff924cb08fd8610bf9168d852af54ea0217e317"
-    },
-    {
-      "path": "sprites/tile-145.png",
-      "depicts": "cyan colour block goal: a cyan hatched square",
-      "sha256": "2b731a79c43213cced8bd2e06b1361e2595ccb31a71fd5cc98bcd4d73f9af65a"
-    },
-    {
-      "path": "sprites/tile-146.png",
-      "depicts": "purple colour block goal: a purple hatched square",
-      "sha256": "662f568b9d53bbe7a181b540cbb623925b8a396caa53f5034d8304313ee3f1c3"
-    },
-    {
-      "path": "sprites/tile-147.png",
-      "depicts": "green colour block goal: a green hatched square",
-      "sha256": "c8cde3d7e93b49826395fe40c5a7cd6e3e0045bcad402eca7d36f80532671cd9"
-    },
-    {
-      "path": "sprites/tile-148.png",
-      "depicts": "boat at the shore: a wooden boat with a white sail, the way home of the last level",
-      "sha256": "04e249d44cf43aae7465e7495a7c6d79f32dc2e449898f013e3fcc7b914a26af"
-    },
-    {
-      "path": "sprites/boat-big.png",
-      "depicts": "the boat as the board shows it, three cells wide: a wooden sailing boat with a red-striped sail and a pennant",
-      "sha256": "43a996a316b01def1c7e87f4f67b0bcdf6f6875830166cc0ab2af3965b108d5e"
-    },
-    {
-      "path": "sprites/boat-big-hull.png",
-      "depicts": "the near side of the big boat's hull, drawn over Shovey when he rides in it",
-      "sha256": "9b873bcd3340cb2d58389256d60827f20a5a89bd979679b749ecebbd0bc292f7"
-    },
-    {
-      "path": "sprites/boat-wake-0.png",
-      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 1 of 4",
-      "sha256": "7bf95157366a6bca0882e88fa81058b989acb07d2031e6a6b205b67ed261d2cf"
-    },
-    {
-      "path": "sprites/boat-wake-1.png",
-      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 2 of 4",
-      "sha256": "f0646f7bbc884596e216d4150daf0a59d59efa4a88013b061caee528db5670eb"
-    },
-    {
-      "path": "sprites/boat-wake-2.png",
-      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 3 of 4",
-      "sha256": "ae7eb17c9f9a7fa3545f00a749bcbb60088a51825fac63407d1871f968724aef"
-    },
-    {
-      "path": "sprites/boat-wake-3.png",
-      "depicts": "water breaking on the big boat's bow and foam along its waterline, frame 4 of 4",
-      "sha256": "8cca9109c3aba785bdc95729cbeb42aeabf613d8855d11d34c349ce8860f5074"
-    },
-    {
-      "path": "sprites/tile-149.png",
-      "depicts": "floating crate: a crate pushed into water, floating low; Shovey can walk on it",
-      "sha256": "6bdaf7c3b18641d0aaaffcb263b30466c4aff2d7711dc97b62f44908d3096dc1"
-    },
-    {
-      "path": "sprites/tile-150.png",
-      "depicts": "pushable mirror, / orientation: a silver panel turns a laser beam",
-      "sha256": "37f097fed9ef822e5748f9e12fb179d208258572f82710197c9667e29306614e"
-    },
-    {
-      "path": "sprites/tile-151.png",
-      "depicts": "pushable mirror, \\ orientation: a silver panel turns a laser beam",
-      "sha256": "5b5ff6417bc0be03df773608db31746b3b6b962bb03ef50f66bded3259f4975d"
-    },
-    {
-      "path": "sprites/tile-152.png",
-      "depicts": "fixed laser emitter facing left, with its short red beam",
-      "sha256": "37ea75cd06c38f392084f165e624ce94d27322006ba861db6935c590fd0b2767"
-    },
-    {
-      "path": "sprites/tile-153.png",
-      "depicts": "fixed laser emitter facing up, with its short red beam",
-      "sha256": "698acffa98d232ed3dcdc86e333b5bb6e5f8533632cce63a6451e627d01cb89c"
-    },
-    {
-      "path": "sprites/tile-154.png",
-      "depicts": "fixed laser emitter facing right, with its short red beam",
-      "sha256": "80f61ecda845eb7d32425eb409991faa9a9cae3a5d3ac880a10860ccf7392bde"
-    },
-    {
-      "path": "sprites/tile-155.png",
-      "depicts": "fixed laser emitter facing down, with its short red beam",
-      "sha256": "4fbf489b6e007d62480274e53a19cf7e3d9689b29c63c6bf0c8b09ba24aebb69"
-    },
-    {
-      "path": "sprites/tile-156.png",
-      "depicts": "unlit laser receiver: a dark socket with a red gem",
-      "sha256": "7b9f12489ea14fa38648dc54f0533e073546b8c704771cb85bde7a9babe6f6de"
-    },
-    {
-      "path": "sprites/tile-157.png",
-      "depicts": "lit laser receiver: a bright yellow gem with four light rays",
-      "sha256": "c70b80364d6bd62662ac9308f540e03b6aedb8c225492477a813fec8edf5f825"
-    },
-    {
-      "path": "sprites/chest-closed.png",
-      "depicts": "secret chest: a small wooden treasure chest with iron bands and a golden lock",
-      "sha256": "5df8390d8f332ee694151366de31ceaa4de1f04d9c3285a69a8e0aee0442aecc"
-    },
-    {
-      "path": "sprites/chest-open.png",
-      "depicts": "secret chest opened: gold coins and a blue Dew drop inside",
-      "sha256": "ee9c8adca0158c3aa946420f1bf6f9d5df5aff25fa887ee7dedf7014e2b03eb7"
+      "path": "sprites/tile-4.png",
+      "depicts": "red pit: takes the red ball",
+      "sha256": "da82bc44223bec0cf420331cb28e27c555c86893fcf17d0f5c844b9baee8ddf4"
     },
     {
       "path": "sprites/tile-40.png",
       "depicts": "mirror Shovey (pink)",
       "sha256": "cbb03af227e8fd74a0c476763d5d836981cf5aa7197c54935eb4b109fc568944"
+    },
+    {
+      "path": "sprites/tile-44.png",
+      "depicts": "cyan ball (pushable)",
+      "sha256": "38705dfc730ce9466c818c06abc5964aca2b1416365f5a4408bb4788fde2d275"
+    },
+    {
+      "path": "sprites/tile-45.png",
+      "depicts": "purple ball (pushable)",
+      "sha256": "27a1cd847617342d4bf980d186dcc8df31912a65f3e0be4ca4230b1d5a97b0ba"
+    },
+    {
+      "path": "sprites/tile-46.png",
+      "depicts": "yellow ball (pushable)",
+      "sha256": "c5f147d12acf87796385d6da93cb882ad0b430a665c096e0d1497664e52f6029"
+    },
+    {
+      "path": "sprites/tile-47.png",
+      "depicts": "cyan pit: takes the cyan ball",
+      "sha256": "9bb1cd0dd9678cd00d5f8119cefa8794dec05853c500c30efa9b3e3d12241458"
+    },
+    {
+      "path": "sprites/tile-48.png",
+      "depicts": "purple pit: takes the purple ball",
+      "sha256": "d394a74ccbfa1062ef9ec5917a385951514887e2e13dc28506c90fd4fe90a014"
+    },
+    {
+      "path": "sprites/tile-49.png",
+      "depicts": "yellow pit: takes the yellow ball",
+      "sha256": "efc8a7c1b0ed90e2d76e640a67a50240e7aebe3fae9298f1d2654d7a904b265a"
+    },
+    {
+      "path": "sprites/tile-5.png",
+      "depicts": "blue pit: takes the blue ball",
+      "sha256": "7eadce60919cfd939fbcfb6fda0628c0fda838ea79817c79ba67d9be8c97a9a0"
+    },
+    {
+      "path": "sprites/tile-50.png",
+      "depicts": "cyan paint puddle",
+      "sha256": "80a042a93b62ca3be372169b353438152afbe6eb41a2a2b83eba9192185dedb9"
+    },
+    {
+      "path": "sprites/tile-51.png",
+      "depicts": "purple paint puddle",
+      "sha256": "6576467dc65881484e860b75a19722decb61640038917443035f5f1ed2645b35"
+    },
+    {
+      "path": "sprites/tile-52.png",
+      "depicts": "yellow paint puddle",
+      "sha256": "5933a55d4c11a232d4cf6f5d4fd95fa3bc417a02b824acbc39fcdfd4bd0dcc36"
+    },
+    {
+      "path": "sprites/tile-53.png",
+      "depicts": "cyan colour block (pushable)",
+      "sha256": "bcc38ebbedfe4a0940166216e04b810c91b188f598329008044ea9d46196fac9"
+    },
+    {
+      "path": "sprites/tile-54.png",
+      "depicts": "purple colour block (pushable)",
+      "sha256": "43d7e95d7c2069a054b445907146b00cbe6c2341efcbdfdf5cce490b86f4388b"
+    },
+    {
+      "path": "sprites/tile-55.png",
+      "depicts": "green colour block (pushable)",
+      "sha256": "df9eda100a30c4a61b6bc4f0481ba6c85b19c47d40fc42aa5bc700bbe43eccc1"
+    },
+    {
+      "path": "sprites/tile-56.png",
+      "depicts": "cherry",
+      "sha256": "2040ff590a279a1f22c434e40ece5091cd102265ade5e485da37ec1eadea10a1"
     },
     {
       "path": "sprites/tile-57.png",
@@ -356,6 +2031,11 @@
       "path": "sprites/tile-59.png",
       "depicts": "pebbles on the floor (decoration)",
       "sha256": "bc4ea942fedbcb48a0182a4e130ae2a21949a8aec5ba997e2a23a2be296b51fe"
+    },
+    {
+      "path": "sprites/tile-6.png",
+      "depicts": "green pit: takes the green ball",
+      "sha256": "e2ed5b32a28d3a6ae994da55e87e2f45de99b4ce057220a3075c4b254a253664"
     },
     {
       "path": "sprites/tile-60.png",
@@ -408,6 +2088,11 @@
       "sha256": "4c85d23a7f335af048bf4928bf98585c70314195f3fe86393c5c3339dd494a63"
     },
     {
+      "path": "sprites/tile-7.png",
+      "depicts": "home: a small cottage with a jade roof and a lit door, on grass",
+      "sha256": "af67806c347906788a0dc1e1358550611eb0b26c225f55c6a97d422144f516ad"
+    },
+    {
       "path": "sprites/tile-70.png",
       "depicts": "ice patch: Shovey slides across",
       "sha256": "dc35bbc4997631734980d8029cf1de2c638867a01f29e987aec244aa4e6e285e"
@@ -453,6 +2138,11 @@
       "sha256": "cabc0ed20501a98e67d77d6f88b25640c3337619bdd3f05310e7391fccf2a6b9"
     },
     {
+      "path": "sprites/tile-8.png",
+      "depicts": "teleporter: a recessed opening with an inward blue-green spiral",
+      "sha256": "88200ee79268eebd7536107cfdd3eb99ec4a3228970ed3de035e83b92e6ece11"
+    },
+    {
       "path": "sprites/tile-82.png",
       "depicts": "garden duck: a cream-white duck with a brown wing and orange bill",
       "sha256": "d9508a1b7888943bcc820e57fc949d0eecf3495d074f813e5351686d1b81e302"
@@ -488,6 +2178,26 @@
       "sha256": "492c4947f0d7dc5fd27b08d3d46db601a23f5d98312e4e5b617b56b54b27850d"
     },
     {
+      "path": "sprites/tile-89.png",
+      "depicts": "gold fish: rests on water",
+      "sha256": "87a684ff66f817216eb55484a7f53f2c91701d69fc945347621799195dcf3043"
+    },
+    {
+      "path": "sprites/tile-9.png",
+      "depicts": "crate: clean chestnut planks with crossed wooden braces (pushable)",
+      "sha256": "21949413f7a2431cf33dc823dd7bad27ace91c8d4d4eafe36876863709861e99"
+    },
+    {
+      "path": "sprites/tile-90.png",
+      "depicts": "koi fish: rests on water",
+      "sha256": "3a1aaaa71a285504c21012049c2ada51d1ca46d116c3fbb6180c7f0da52cfe26"
+    },
+    {
+      "path": "sprites/tile-91.png",
+      "depicts": "minnow fish: rests on water",
+      "sha256": "2464952056acc30102b462e8875adfeb3b555aea4d83a517598a9f8a92a8491f"
+    },
+    {
       "path": "sprites/tile-92.png",
       "depicts": "orange gate: controlled by matching orange levers",
       "sha256": "5b598970ad5909181c39fe8bbbdb77fa283f02c8aa8d484d3faac081d8ef875f"
@@ -501,11 +2211,6 @@
       "path": "sprites/tile-94.png",
       "depicts": "orange lever: switched on",
       "sha256": "3123a35377610607b15fb545884f2763c87190511416a3a3ed3219564e3345f4"
-    },
-    {
-      "path": "sprites/gate-open.png",
-      "depicts": "orange gate with its bars drawn aside",
-      "sha256": "64ec7d8742a63efbcce43c2b0774a0a5f18d9f88a0b978bd7c1115a147f53287"
     },
     {
       "path": "sprites/tile-95.png",
@@ -533,386 +2238,6 @@
       "sha256": "b032ead7d6ec02d673759c558a826809b88a4eca7df3f0bc74840200835ab65f"
     },
     {
-      "path": "sprites/tile-100.png",
-      "depicts": "brick floor: flat warm brick paving",
-      "sha256": "38316fb8158008c9ac3840bb12491a7d645a0c95ee14c4a28189b5f46f9ade76"
-    },
-    {
-      "path": "sprites/tile-101.png",
-      "depicts": "sandstone floor: flat pale sandstone paving",
-      "sha256": "8644370fe1c48aab3036bedd178f3155513b44d081a18f11d0dc53e785c8263b"
-    },
-    {
-      "path": "sprites/tile-102.png",
-      "depicts": "timber floor: flat wooden floorboards",
-      "sha256": "2cac12993eb68dd80608c7864b7a3a24d0b65e1b4b86bd412320d91dfdd42530"
-    },
-    {
-      "path": "sprites/tile-103.png",
-      "depicts": "mossy floor: flat stone paving with green moss",
-      "sha256": "9d0d7407e3132ac5d1377b7c95a4488f4929ccc357195125e605b044f58803fa"
-    },
-    {
-      "path": "sprites/tile-104.png",
-      "depicts": "wooden door: opens when Shovey walks through it",
-      "sha256": "114f2e00c713a6cb720c4616b116d553aea21e2803cbbb55d3c159df327ccbf7"
-    },
-    {
-      "path": "sprites/tile-105.png",
-      "depicts": "wooden door standing open, with a clear passage",
-      "sha256": "ab9dec8aef0780c304b200d681a84b9db1680945fbc9594d51b4b413bf203094"
-    },
-    {
-      "path": "sprites/tile-106.png",
-      "depicts": "floor lantern: warm glass in a metal frame; blocks movement",
-      "sha256": "50f73e22102ea09bba5dec103eb870a880a38b1a589494b3d2355910ccbaf534"
-    },
-    {
-      "path": "sprites/tile-122.png",
-      "depicts": "boulder: a solid faceted stone that blocks movement",
-      "sha256": "b0a2b8b7222c4672c93dd1d1db5dc97d4ea3981336a80336288871c901726680"
-    },
-    {
-      "path": "sprites/tile-123.png",
-      "depicts": "orange gate: starts open and closes when its lever is on",
-      "sha256": "64ec7d8742a63efbcce43c2b0774a0a5f18d9f88a0b978bd7c1115a147f53287"
-    },
-    {
-      "path": "sprites/tile-135.png",
-      "depicts": "mushrooms: red-orange spotted caps on the floor (decoration)",
-      "sha256": "53bc0d3db3d32dac36d5c744b2925486b7a8b975044137b04780dc3d89ed95bb"
-    },
-    {
-      "path": "sprites/tile-136.png",
-      "depicts": "fallen autumn leaves on the floor (decoration)",
-      "sha256": "b8909a1891905a72c522c738ce7e84a5988c060ed49b4d86cab1a192680f5a82"
-    },
-    {
-      "path": "sprites/tile-137.png",
-      "depicts": "bluebells: blue bell flowers on the floor (decoration)",
-      "sha256": "c78ca6de0b56380a37d99fc9f80960df060c78158942e2fbab805dd4d477cc69"
-    },
-    {
-      "path": "sprites/tile-138.png",
-      "depicts": "lily pads with a pink lotus, floating on water (decoration)",
-      "sha256": "21e73bfcc56f7e2e3d58e59afa48be14539ba74b4c19ff8684174265f1313599"
-    },
-    {
-      "path": "sprites/tile-139.png",
-      "depicts": "berry bush: a round leafy bush with red berries; blocks movement",
-      "sha256": "f8a5d900751768a0bf052d2268ba2afc8f3f74f3b1f6eec4ee62ce150c431832"
-    },
-    {
-      "path": "sprites/tile-158.png",
-      "depicts": "pine: a dark green fir tree; blocks movement and laser beams",
-      "sha256": "034c9452941f079c187adfd0dc2fe1b21c6b95864cc0f914bdc82d777223f39a"
-    },
-    {
-      "path": "sprites/tile-159.png",
-      "depicts": "fallen log: a mossy fallen tree trunk; blocks movement and laser beams",
-      "sha256": "f89658448c106d6c7e59d4a1d1aa92a44b12a87ad7e209012da29c0bfe2eb6e1"
-    },
-    {
-      "path": "sprites/tile-160.png",
-      "depicts": "mossy boulder: a grey stone capped with moss; blocks movement and laser beams",
-      "sha256": "2570069d7642e95e23050055c57e43b54e8e73b33801c3a4c144daef107222d2"
-    },
-    {
-      "path": "sprites/tile-161.png",
-      "depicts": "ferns: a low clump of green fern fronds on the floor (decoration)",
-      "sha256": "ef3e390105e1dea0d88f9ce0ac3fa80ee80812e3fd72be90bb139d0bde627cee"
-    },
-    {
-      "path": "sprites/tile-162.png",
-      "depicts": "forest floor: dark ground of fallen pine needles and moss",
-      "sha256": "bd2faffe8f0fe2c92191cd79613691ec5235a4251d9ceb7957b54257c318086f"
-    },
-    {
-      "path": "sprites/tile-163.png",
-      "depicts": "cave floor: dark packed rock and gravel",
-      "sha256": "eb00e29c0624b2ee5cf1b14449503b26f410bc388f85d48dc03e70fce74eef56"
-    },
-    {
-      "path": "sprites/tile-164.png",
-      "depicts": "cave wall: a block of rough dark cave rock; blocks movement and laser beams",
-      "sha256": "33cd60b9accbab4c283f0bdfd4cacc065e608252321beded99098a0ea40eb5e7"
-    },
-    {
-      "path": "sprites/tile-165.png",
-      "depicts": "crystals: glowing cyan cave crystals on a rock; block movement and laser beams",
-      "sha256": "a987745d53b92050011ee7851db2927fcdf1fe7c7325e958cda43c6c2fb46132"
-    },
-    {
-      "path": "sprites/tile-166.png",
-      "depicts": "lava: molten rock deep in a pit; Shovey falls in and nothing can be pushed there",
-      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
-    },
-    {
-      "path": "sprites/tile-140.png",
-      "depicts": "flower pot: terracotta pot of pink, yellow and white flowers; blocks movement",
-      "sha256": "157b6c4085773cf62db2b2c3c19a3d5bf9ef102cddf9e88fee5750ccc8948958"
-    },
-    {
-      "path": "sprites/tile-141.png",
-      "depicts": "barrel: an upright wooden barrel with iron hoops; blocks movement",
-      "sha256": "70a5daeab4b946cd7e49b6fff2fc7866c62f6b467bc57951c855392703ebd985"
-    },
-    {
-      "path": "sprites/tile-142.png",
-      "depicts": "tree stump: a cut stump with rings and a green sprout; blocks movement",
-      "sha256": "4e43632ce7992d571ecf187cb467548bfae433ba99fcf4738e15c3495a5d9bd2"
-    },
-    {
-      "path": "sprites/shadow.png",
-      "depicts": "mirror Shovey (pink)",
-      "sha256": "cbb03af227e8fd74a0c476763d5d836981cf5aa7197c54935eb4b109fc568944"
-    },
-    {
-      "path": "sprites/door-open.png",
-      "depicts": "mossy wall lowered, leaving a moss-covered stone rim",
-      "sha256": "f6255ced9845e58b0fe598b1e04ec2a7b626bd087bf65570641d4a52e567f10d"
-    },
-    {
-      "path": "sprites/projectile.png",
-      "depicts": "a flying iron shot",
-      "sha256": "b395b4301bbff6e3d229fa631d31a1bf139b9745b7e3f4bf07f1e41728ea2c12"
-    },
-    {
-      "path": "sprites/tile-107.png",
-      "depicts": "red gate: controlled by matching levers",
-      "sha256": "8109fefda39a7365418e0391d473da0ae00ae073b8530af3608c368fdc306b81"
-    },
-    {
-      "path": "sprites/tile-108.png",
-      "depicts": "red lever: switched off",
-      "sha256": "eeb4fdd77283ee982274f6c0e5897dff59ff83640fb246bd99fcc24d8edeb20d"
-    },
-    {
-      "path": "sprites/tile-109.png",
-      "depicts": "red lever: switched on",
-      "sha256": "6d6ad2d578957bc89128e2318bf9897d5c94a045c76eeba4c9cec5deec62880d"
-    },
-    {
-      "path": "sprites/gate-open-0.png",
-      "depicts": "red gate standing open",
-      "sha256": "ce8311e1b77e8bdc90e8659329650a7a471f0822dcf8e8eead4f54a519966851"
-    },
-    {
-      "path": "sprites/tile-124.png",
-      "depicts": "red gate: starts open and closes when its lever is on",
-      "sha256": "ce8311e1b77e8bdc90e8659329650a7a471f0822dcf8e8eead4f54a519966851"
-    },
-    {
-      "path": "sprites/tile-116.png",
-      "depicts": "red wooden door: opens when walked through",
-      "sha256": "2e1618c0fad313a6c2e65516dbb59845e6d83002dc01bbad5826ad9dd67bd01f"
-    },
-    {
-      "path": "sprites/tile-117.png",
-      "depicts": "red wooden door standing open",
-      "sha256": "b20e0980f2c2d4eda294f79726dc16ca82a8990d26f240fcf22310756b0ca056"
-    },
-    {
-      "path": "sprites/tile-110.png",
-      "depicts": "blue gate: controlled by matching levers",
-      "sha256": "5d89822df9a45b322743b7856c44a93c82a99b0562b813fdcfb5dec1ae04e233"
-    },
-    {
-      "path": "sprites/tile-111.png",
-      "depicts": "blue lever: switched off",
-      "sha256": "72d99dd28b6b17aee1cad8b20418280642c1196b7b06d47bdecd03292ce50156"
-    },
-    {
-      "path": "sprites/tile-112.png",
-      "depicts": "blue lever: switched on",
-      "sha256": "5cdb3c4c36cf7f7ce7b1d8a2b431ed7f4c0148acc0498eb445e8ca6de2ff9adb"
-    },
-    {
-      "path": "sprites/gate-open-1.png",
-      "depicts": "blue gate standing open",
-      "sha256": "c438f0e518d190c1db7e64f445e1414a55e4447444bad35f08310cd2d8637a74"
-    },
-    {
-      "path": "sprites/tile-125.png",
-      "depicts": "blue gate: starts open and closes when its lever is on",
-      "sha256": "c438f0e518d190c1db7e64f445e1414a55e4447444bad35f08310cd2d8637a74"
-    },
-    {
-      "path": "sprites/tile-118.png",
-      "depicts": "blue wooden door: opens when walked through",
-      "sha256": "4c1d949d3d626f1f4ee50a8c7550bae6bda899eba176b3cde7442c2879164180"
-    },
-    {
-      "path": "sprites/tile-119.png",
-      "depicts": "blue wooden door standing open",
-      "sha256": "d3fe246bd7b2802c23580e5b2b0bfad52fc31995a79c7c6183bdd186b3b06a88"
-    },
-    {
-      "path": "sprites/tile-113.png",
-      "depicts": "green gate: controlled by matching levers",
-      "sha256": "d433dcc6ab0d17a8c19d6671d2a2401c08c421cb12e992d4dea9505f6d422705"
-    },
-    {
-      "path": "sprites/tile-114.png",
-      "depicts": "green lever: switched off",
-      "sha256": "4795399c7acba3f056f4e6705a379de7342f9e4b744f8e708d2c2694d1a5032a"
-    },
-    {
-      "path": "sprites/tile-115.png",
-      "depicts": "green lever: switched on",
-      "sha256": "d5b9a84b7ad4cb5b5b6b1354adf9545eb39d37da629f62075355a67abf6e6ef0"
-    },
-    {
-      "path": "sprites/gate-open-2.png",
-      "depicts": "green gate standing open",
-      "sha256": "82a0f285aa4acf2fb213c2b9e45caec6b7fc269eea04a78fcd818db1a1faef47"
-    },
-    {
-      "path": "sprites/tile-126.png",
-      "depicts": "green gate: starts open and closes when its lever is on",
-      "sha256": "82a0f285aa4acf2fb213c2b9e45caec6b7fc269eea04a78fcd818db1a1faef47"
-    },
-    {
-      "path": "sprites/tile-120.png",
-      "depicts": "green wooden door: opens when walked through",
-      "sha256": "bf69d708485520e4feb04c4fb7d151072c81b807ab5aceaca15c9ae380b05f9b"
-    },
-    {
-      "path": "sprites/tile-121.png",
-      "depicts": "green wooden door standing open",
-      "sha256": "df41fae228578d3e3d70d9b126a27f98362ed23d0975e2e603e5f1291d19a97d"
-    },
-    {
-      "path": "sprites/tile-127.png",
-      "depicts": "mossy slate wall: lowers onto its matching floor while its button is held",
-      "sha256": "07660ff0818c6888809bd025d75a8e755f95db9e2fa10b1c53dd2d3051157ba3"
-    },
-    {
-      "path": "sprites/tile-131.png",
-      "depicts": "slate pressure button: controls matching mossy slate walls",
-      "sha256": "99a0278b27ae77e165a44509678f482433de836c34e682f5ea455c17dca4d90d"
-    },
-    {
-      "path": "sprites/moss-lowered-0.png",
-      "depicts": "slate wall lowered into a flat slab with a recessed mossy seam",
-      "sha256": "9c677a6c975e5766a07d6375ebbf0fca6315c65d848f337691386aa50010a4ec"
-    },
-    {
-      "path": "sprites/tile-128.png",
-      "depicts": "mossy brick wall: lowers onto its matching floor while its button is held",
-      "sha256": "d2f74c3304a1d68597df5f830dd5c7543b7b4c4eaab0ce686200ed478f87c036"
-    },
-    {
-      "path": "sprites/tile-132.png",
-      "depicts": "brick pressure button: controls matching mossy brick walls",
-      "sha256": "42012722e42371ba49ff40f1a7207a0104dd6f361591d6561737c827dd4a1495"
-    },
-    {
-      "path": "sprites/moss-lowered-1.png",
-      "depicts": "brick wall lowered into a flat slab with a recessed mossy seam",
-      "sha256": "304a12aa067b5c78a1f719626dd6563b31bb8cf9b7f47d8b0576bc696dee9b54"
-    },
-    {
-      "path": "sprites/tile-129.png",
-      "depicts": "mossy sandstone wall: lowers onto its matching floor while its button is held",
-      "sha256": "bb0170bf7e3b69ef462bd61f63b929419c1b8cecf4c3c9a92ccabd8b7d7b51b9"
-    },
-    {
-      "path": "sprites/tile-133.png",
-      "depicts": "sandstone pressure button: controls matching mossy sandstone walls",
-      "sha256": "cca5f63f8c4f799d882f6c4a2b68c6ebe7f2d2701287a94ac2b88115e206f82b"
-    },
-    {
-      "path": "sprites/moss-lowered-2.png",
-      "depicts": "sandstone wall lowered into a flat slab with a recessed mossy seam",
-      "sha256": "f1f62721f70669396fb5d6b56d4697759bd241543eda561b39a5eab8b898de53"
-    },
-    {
-      "path": "sprites/tile-130.png",
-      "depicts": "mossy timber wall: lowers onto its matching floor while its button is held",
-      "sha256": "0bdc609d3eb6a41b5de7540a0b92f6f1b0801480c63d742d4b9b1bda6ac4d475"
-    },
-    {
-      "path": "sprites/tile-134.png",
-      "depicts": "timber pressure button: controls matching mossy timber walls",
-      "sha256": "00dc96c8daa512d08ca22a36dbc90e9cc449c923b150540c14414b32574e3677"
-    },
-    {
-      "path": "sprites/moss-lowered-3.png",
-      "depicts": "timber wall lowered into a flat slab with a recessed mossy seam",
-      "sha256": "45f83cbab868195fd9e79332f8e645dfd8dc89ef41647f9883ef44e172cdb188"
-    },
-    {
-      "path": "sprites/player-up.png",
-      "depicts": "Shovey looking up",
-      "sha256": "f8c4574ec7c31a196ff6d681ab512344ca1ba19cb229bc60af9d789f11e7f815"
-    },
-    {
-      "path": "sprites/charged-up.png",
-      "depicts": "charged Shovey looking up",
-      "sha256": "93baa32b5002a887cbecd306c5f092ba92f995e1d930e3503b8bf62cd80a4be9"
-    },
-    {
-      "path": "sprites/player-right.png",
-      "depicts": "Shovey looking right",
-      "sha256": "e5f534b8bbc8defb8e3a160cd145a5ecbad0742eca709b52a9f4b65f03d53173"
-    },
-    {
-      "path": "sprites/charged-right.png",
-      "depicts": "charged Shovey looking right",
-      "sha256": "091a3217cadb018a6adc1798369713b6dd9cb36dce863be9accacd0c3fd0a6b1"
-    },
-    {
-      "path": "sprites/player-down.png",
-      "depicts": "Shovey looking down",
-      "sha256": "ce5a15c1dedc4826dc30eb837bac7ec49d38735adde157d686cfc49061f371ff"
-    },
-    {
-      "path": "sprites/charged-down.png",
-      "depicts": "charged Shovey looking down",
-      "sha256": "98bb4e8868bfe9be8e7fb203e064ce2d7b7630645e9dc584a948939751a1eae6"
-    },
-    {
-      "path": "sprites/player-left.png",
-      "depicts": "Shovey looking left",
-      "sha256": "f38ea9d30a789de00d239347ed80859d59da224231d17136cb28a89eb55fae17"
-    },
-    {
-      "path": "sprites/charged-left.png",
-      "depicts": "charged Shovey looking left",
-      "sha256": "657d947c3fd55ebe113235a7b40fae134d0f1789317a4f768d119fdaea76c86a"
-    },
-    {
-      "path": "sprites/dog-up.png",
-      "depicts": "garden duck facing up",
-      "sha256": "d9508a1b7888943bcc820e57fc949d0eecf3495d074f813e5351686d1b81e302"
-    },
-    {
-      "path": "sprites/dog-right.png",
-      "depicts": "garden duck facing right",
-      "sha256": "be0127248119c8b233d2d6330782379504024333773f52da2074254a43201bb0"
-    },
-    {
-      "path": "sprites/dog-down.png",
-      "depicts": "garden duck facing down",
-      "sha256": "4807056463a5e9953dcda70472bbd26c1471198c232305beec87a1709b168562"
-    },
-    {
-      "path": "sprites/dog-left.png",
-      "depicts": "garden duck facing left",
-      "sha256": "23b2a5a03d7ce958b99384562427d4927a1e0a769d796970bf34ae10970927e7"
-    },
-    {
-      "path": "sprites/turtle-up.png",
-      "depicts": "turtle facing up",
-      "sha256": "2566fd5c6472accb26842ec82a53e232c97efbbdb583e12234963d60891f985d"
-    },
-    {
-      "path": "sprites/turtle-right.png",
-      "depicts": "turtle facing right",
-      "sha256": "29b09738583a84cdab57ca8e92412d608b3f22ae93a1c152b968ebeb59798591"
-    },
-    {
       "path": "sprites/turtle-down.png",
       "depicts": "turtle facing down",
       "sha256": "e64fa9871bb0aa3d0a170287d1f7306fcb3c5deadc3fb43d38bf877e48dce08b"
@@ -923,24 +2248,14 @@
       "sha256": "3f50f07b37670bcfb1aa1252fddade39a01e56e6354ab68f15cadc7434442c82"
     },
     {
-      "path": "sprites/crab-up.png",
-      "depicts": "crab facing up",
-      "sha256": "492c4947f0d7dc5fd27b08d3d46db601a23f5d98312e4e5b617b56b54b27850d"
+      "path": "sprites/turtle-right.png",
+      "depicts": "turtle facing right",
+      "sha256": "29b09738583a84cdab57ca8e92412d608b3f22ae93a1c152b968ebeb59798591"
     },
     {
-      "path": "sprites/crab-right.png",
-      "depicts": "crab facing right",
-      "sha256": "8ba1040359e8e48012489e1c6d1dc62aa6e5caa7c122c234ad59abe6ac9c82a5"
-    },
-    {
-      "path": "sprites/crab-down.png",
-      "depicts": "crab facing down",
-      "sha256": "941edb704a63066cd3bad451c22e414318561db14ec1f753b7f3cfca9d2500d5"
-    },
-    {
-      "path": "sprites/crab-left.png",
-      "depicts": "crab facing left",
-      "sha256": "a9af493c3b465a11a58511045a0dada1b911d8c02243907e5a9ff78995eb2c06"
+      "path": "sprites/turtle-up.png",
+      "depicts": "turtle facing up",
+      "sha256": "2566fd5c6472accb26842ec82a53e232c97efbbdb583e12234963d60891f985d"
     },
     {
       "path": "sprites/water-0.png",
@@ -963,986 +2278,6 @@
       "sha256": "8ba155336b723695ad488e0de793129d82cbef6d7ab0a378d8d92e990c0b5f86"
     },
     {
-      "path": "sprites/tile-89.png",
-      "depicts": "gold fish: rests on water",
-      "sha256": "87a684ff66f817216eb55484a7f53f2c91701d69fc945347621799195dcf3043"
-    },
-    {
-      "path": "sprites/fish-gold-0-up.png",
-      "depicts": "gold fish, frame 0, facing up",
-      "sha256": "87a684ff66f817216eb55484a7f53f2c91701d69fc945347621799195dcf3043"
-    },
-    {
-      "path": "sprites/fish-gold-0-right.png",
-      "depicts": "gold fish, frame 0, facing right",
-      "sha256": "e499a860312c04ff70930fc8526b55307e8cd5bec95cc77e3c709c29cd065d1a"
-    },
-    {
-      "path": "sprites/fish-gold-0-down.png",
-      "depicts": "gold fish, frame 0, facing down",
-      "sha256": "412913a982b65a1c8414b46663819e36255c332d6cbde00f44d798e8164458a2"
-    },
-    {
-      "path": "sprites/fish-gold-0-left.png",
-      "depicts": "gold fish, frame 0, facing left",
-      "sha256": "00da98636199d282f903e299830c2970d0251f92d21d450ebcb3e0a58cd91b35"
-    },
-    {
-      "path": "sprites/fish-gold-1-up.png",
-      "depicts": "gold fish, frame 1, facing up",
-      "sha256": "285141887f375422f3cb07f48c21f9c5215bcb5f433d8052e4f6ec2ec7de15bf"
-    },
-    {
-      "path": "sprites/fish-gold-1-right.png",
-      "depicts": "gold fish, frame 1, facing right",
-      "sha256": "cc30118ec1c8f33451878e8412643a29850583faac6620f5c9456dcd354da0db"
-    },
-    {
-      "path": "sprites/fish-gold-1-down.png",
-      "depicts": "gold fish, frame 1, facing down",
-      "sha256": "8e99209a842080349bf80cab475de20b2506f7c862045d8b790e16372ef65ce8"
-    },
-    {
-      "path": "sprites/fish-gold-1-left.png",
-      "depicts": "gold fish, frame 1, facing left",
-      "sha256": "537c9a9362879a9c9352582a6acb70440dc17985ac1300502c975ad1de958c04"
-    },
-    {
-      "path": "sprites/fish-gold-2-up.png",
-      "depicts": "gold fish, frame 2, facing up",
-      "sha256": "87dd8265f8c806914cb41d6d740d80ab918061d886a5486a6b23226f7a949e7b"
-    },
-    {
-      "path": "sprites/fish-gold-2-right.png",
-      "depicts": "gold fish, frame 2, facing right",
-      "sha256": "7ac9c0025c41e7d9248bdfb550db136a7e2c5b510a3d95362855a15de4f1078c"
-    },
-    {
-      "path": "sprites/fish-gold-2-down.png",
-      "depicts": "gold fish, frame 2, facing down",
-      "sha256": "1e10146ddde85bfa465b830d97944ee67c79ecd83598a92fc6e9fde30fd3649b"
-    },
-    {
-      "path": "sprites/fish-gold-2-left.png",
-      "depicts": "gold fish, frame 2, facing left",
-      "sha256": "8b3876333bbd07ac7a8da3cfa7085d2a99d596567dfdf5b6b6de7709bba83ac0"
-    },
-    {
-      "path": "sprites/fish-gold-3-up.png",
-      "depicts": "gold fish, frame 3, facing up",
-      "sha256": "d06c70aab633726dfea96ee555c5c1cb28f77e049c386b1850b157afc1306e9a"
-    },
-    {
-      "path": "sprites/fish-gold-3-right.png",
-      "depicts": "gold fish, frame 3, facing right",
-      "sha256": "fb7acac7b02b4d013b86c8e24fba7e75653e6b640024988b7af74e0506be954b"
-    },
-    {
-      "path": "sprites/fish-gold-3-down.png",
-      "depicts": "gold fish, frame 3, facing down",
-      "sha256": "cbf17499117994e9b68718fb89cd48be7a91a4c4f32d82351e3d84cef7a3844d"
-    },
-    {
-      "path": "sprites/fish-gold-3-left.png",
-      "depicts": "gold fish, frame 3, facing left",
-      "sha256": "56c86ce66fa17ba791a62a26c5311b9753ea2c55802cc1cf2aa5a5bb7beb5b44"
-    },
-    {
-      "path": "sprites/tile-90.png",
-      "depicts": "koi fish: rests on water",
-      "sha256": "3a1aaaa71a285504c21012049c2ada51d1ca46d116c3fbb6180c7f0da52cfe26"
-    },
-    {
-      "path": "sprites/fish-koi-0-up.png",
-      "depicts": "koi fish, frame 0, facing up",
-      "sha256": "3a1aaaa71a285504c21012049c2ada51d1ca46d116c3fbb6180c7f0da52cfe26"
-    },
-    {
-      "path": "sprites/fish-koi-0-right.png",
-      "depicts": "koi fish, frame 0, facing right",
-      "sha256": "3b94014065ad5cd8c776693c038cb621b9a75d36e90722c48b3a7c844fc854f6"
-    },
-    {
-      "path": "sprites/fish-koi-0-down.png",
-      "depicts": "koi fish, frame 0, facing down",
-      "sha256": "ce3c0c9c924ca1c02107ea0b9dfc580bf9eccf62ac8922f0571ce41e61c46fbd"
-    },
-    {
-      "path": "sprites/fish-koi-0-left.png",
-      "depicts": "koi fish, frame 0, facing left",
-      "sha256": "0f621b6a2dd192452d9618ce2f12210a05157dc9f79a585ceae97daa7581f303"
-    },
-    {
-      "path": "sprites/fish-koi-1-up.png",
-      "depicts": "koi fish, frame 1, facing up",
-      "sha256": "b35557e80cf9923e651c6637abd42ba534c8bf8693c7b502ceec1c55ffc5f9f3"
-    },
-    {
-      "path": "sprites/fish-koi-1-right.png",
-      "depicts": "koi fish, frame 1, facing right",
-      "sha256": "509a3a95d15291b9fc0dceb6a91b19ad456a0c07387d07d62f59336f2ce9633f"
-    },
-    {
-      "path": "sprites/fish-koi-1-down.png",
-      "depicts": "koi fish, frame 1, facing down",
-      "sha256": "33e11c858000f5c5da65bd2e1a6c692b6ba8e3041c3199c3c6c8b4c509e5f939"
-    },
-    {
-      "path": "sprites/fish-koi-1-left.png",
-      "depicts": "koi fish, frame 1, facing left",
-      "sha256": "838191af220c31350cee5ddb759b955a2ff57d5371772bb97b76841d6a16b0aa"
-    },
-    {
-      "path": "sprites/fish-koi-2-up.png",
-      "depicts": "koi fish, frame 2, facing up",
-      "sha256": "acfd37eb28667da1d675be51989bda53a0d6912ef7b8abe6656f613ac96f2baa"
-    },
-    {
-      "path": "sprites/fish-koi-2-right.png",
-      "depicts": "koi fish, frame 2, facing right",
-      "sha256": "a11ae3ef2319ea3881c5011c510ae1477005712a3ff74144d0c6362516d8e069"
-    },
-    {
-      "path": "sprites/fish-koi-2-down.png",
-      "depicts": "koi fish, frame 2, facing down",
-      "sha256": "ddb1d2168703612b6b495efee6d5e315e0e456fa7ff0ee21cb9e511dffecea6b"
-    },
-    {
-      "path": "sprites/fish-koi-2-left.png",
-      "depicts": "koi fish, frame 2, facing left",
-      "sha256": "ed152d90e2893deb2b64a84bcc9593033a9ffe0a841f6c7ed6debd2907e33771"
-    },
-    {
-      "path": "sprites/fish-koi-3-up.png",
-      "depicts": "koi fish, frame 3, facing up",
-      "sha256": "f1d05f9be3565466786aefa3d00634fb63be60b6c9c8ea25a047eed72ec25a5c"
-    },
-    {
-      "path": "sprites/fish-koi-3-right.png",
-      "depicts": "koi fish, frame 3, facing right",
-      "sha256": "c6b91e2855a74abea99f3685b973073bcc03f9a830809eaba2a045586d03866c"
-    },
-    {
-      "path": "sprites/fish-koi-3-down.png",
-      "depicts": "koi fish, frame 3, facing down",
-      "sha256": "025866ac32d47507d23e26c971435a77788881c6f7a60d559c51a1da5cbbb8d4"
-    },
-    {
-      "path": "sprites/fish-koi-3-left.png",
-      "depicts": "koi fish, frame 3, facing left",
-      "sha256": "21d631e7cbc3d73cedd40784ab76eaa02c79bc6302731e467fa43f3494a386aa"
-    },
-    {
-      "path": "sprites/tile-91.png",
-      "depicts": "minnow fish: rests on water",
-      "sha256": "2464952056acc30102b462e8875adfeb3b555aea4d83a517598a9f8a92a8491f"
-    },
-    {
-      "path": "sprites/fish-minnow-0-up.png",
-      "depicts": "minnow fish, frame 0, facing up",
-      "sha256": "2464952056acc30102b462e8875adfeb3b555aea4d83a517598a9f8a92a8491f"
-    },
-    {
-      "path": "sprites/fish-minnow-0-right.png",
-      "depicts": "minnow fish, frame 0, facing right",
-      "sha256": "8a2d897daa7109514f508140eada998e97e0d4beacde43d6c3970bab3316c766"
-    },
-    {
-      "path": "sprites/fish-minnow-0-down.png",
-      "depicts": "minnow fish, frame 0, facing down",
-      "sha256": "a0ac01571de32fa109ad086096e182fd13c935aa0f8ced0dc1697490f942dba8"
-    },
-    {
-      "path": "sprites/fish-minnow-0-left.png",
-      "depicts": "minnow fish, frame 0, facing left",
-      "sha256": "11faf253ceab7983a9f44515cb8b0750c56cd893d09fc3d260b8a1a9f3640803"
-    },
-    {
-      "path": "sprites/fish-minnow-1-up.png",
-      "depicts": "minnow fish, frame 1, facing up",
-      "sha256": "1694fda0bf1a6e8d1f661a9998549eb824326c54460718dc1fb6ef83429854b9"
-    },
-    {
-      "path": "sprites/fish-minnow-1-right.png",
-      "depicts": "minnow fish, frame 1, facing right",
-      "sha256": "55ab4967b40c85654791aa4e75553e4f98fa314598bbe0a4385dd2e348679c43"
-    },
-    {
-      "path": "sprites/fish-minnow-1-down.png",
-      "depicts": "minnow fish, frame 1, facing down",
-      "sha256": "c7552de106e7f9226cbcaaaa37ee612f2dd27a573e51d2d26d7f1e37afcba2aa"
-    },
-    {
-      "path": "sprites/fish-minnow-1-left.png",
-      "depicts": "minnow fish, frame 1, facing left",
-      "sha256": "bba78ac3f9e4e626c5a3afcc7e55fcc961ed8615b0e5cccaa2e6c23337eaf8ce"
-    },
-    {
-      "path": "sprites/fish-minnow-2-up.png",
-      "depicts": "minnow fish, frame 2, facing up",
-      "sha256": "8d556f15a61bcc1666a81edb6a29b9df518587a5f3c9ae6c65590a4d053a4b76"
-    },
-    {
-      "path": "sprites/fish-minnow-2-right.png",
-      "depicts": "minnow fish, frame 2, facing right",
-      "sha256": "92a37147e6773dddb9f11d856e3c01c33ddb5fb17ad017718a8b1e372a75b04e"
-    },
-    {
-      "path": "sprites/fish-minnow-2-down.png",
-      "depicts": "minnow fish, frame 2, facing down",
-      "sha256": "0e74236950b4f08754aa19de06a4c7c216283a95c618a186993c23d6e62664c1"
-    },
-    {
-      "path": "sprites/fish-minnow-2-left.png",
-      "depicts": "minnow fish, frame 2, facing left",
-      "sha256": "0e5a2751bfc617e2d8c6abd4d6555039f8df9ab3218bf86ba44f932069c22d51"
-    },
-    {
-      "path": "sprites/fish-minnow-3-up.png",
-      "depicts": "minnow fish, frame 3, facing up",
-      "sha256": "c4ca17bd907718317dc2164f90bf4f9ec664d783ce31e4bd3b12b671542db69e"
-    },
-    {
-      "path": "sprites/fish-minnow-3-right.png",
-      "depicts": "minnow fish, frame 3, facing right",
-      "sha256": "a320ad466bce115a416277311c494007b568a4a6504bc1a30d316844051de8b3"
-    },
-    {
-      "path": "sprites/fish-minnow-3-down.png",
-      "depicts": "minnow fish, frame 3, facing down",
-      "sha256": "41539b784c4e578716f640f3eb947218a40c349af4c9429fe7b61621c3e8ae82"
-    },
-    {
-      "path": "sprites/fish-minnow-3-left.png",
-      "depicts": "minnow fish, frame 3, facing left",
-      "sha256": "253047435da5083eb4aeeacc5aadd8b8a49b05070b688c8fc99ebbad6135c3f1"
-    },
-    {
-      "path": "sprites/grass-edge-0.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "0af8b74199a31907f74e187b52a720bf3aa78f0c9873a0556ddb84c8a2408c06"
-    },
-    {
-      "path": "sprites/abyss-corner-0.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "06ab142c3bad172a564f50931dd667c07af918ed7298107b0c41f79cd761cc8f"
-    },
-    {
-      "path": "sprites/abyss-edge-0.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "5de09768d768da0b9a9676a09ba9fa4d14b6576a02dea8716409cd58d3ef22ae"
-    },
-    {
-      "path": "sprites/lava-edge-0.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "40e74e874cd5a126cfadbe8b78929474dcacadc4cbb9feafd443da3993f45786"
-    },
-    {
-      "path": "sprites/lava-edge-0-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "b7b14ceb1f94e0928df74a14b98388351d08b0fcb7a79c7eca9c662f61e1749b"
-    },
-    {
-      "path": "sprites/lava-edge-0-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "e06e0382f2ba12ef4822088325064deb7217a30309d4bd34208af7858385c771"
-    },
-    {
-      "path": "sprites/lava-edge-0-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "b591de053b3083e6fade2a7a04700c0065c63461ac1a3084cfad746bc9a57929"
-    },
-    {
-      "path": "sprites/grass-edge-1.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "233981030eebb55fdcfa1243b34c1ded889015b7594466600a7bceafc428647f"
-    },
-    {
-      "path": "sprites/abyss-corner-1.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "00b2eb0351608d554eada270f0a40a2fa941acb70bb3b3731e5a0fb2bb2f756d"
-    },
-    {
-      "path": "sprites/abyss-edge-1.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "d36c334f3655f825a138d7d5b001a9eeab57ccd09fd88c2d3dd1fc0d6ea525de"
-    },
-    {
-      "path": "sprites/lava-edge-1.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "90772914d176a8f5f9a90916c7ee5613730ca33d89f3c4d95651da74b4c085d9"
-    },
-    {
-      "path": "sprites/lava-edge-1-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "d53932d019649d63b5502c0f91ea52054bd77686dc293c3fccd7c20f6ac85f3e"
-    },
-    {
-      "path": "sprites/lava-edge-1-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "5eec73fe758ee5146dabc5a70ebf3cbbe7d81c142bb3d91e5286601b00a90804"
-    },
-    {
-      "path": "sprites/lava-edge-1-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "5eae858025ce4249e3436fd178133b8b3adc75796bf07a75980b55c5b1cf680b"
-    },
-    {
-      "path": "sprites/grass-edge-2.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "98ccfb41b0ae011127e62a5bf8e786e4c61d25d0d9a8980644210af83408178b"
-    },
-    {
-      "path": "sprites/abyss-corner-2.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "fdec5be32a11f8571ca401e6ff0054c809087a9b6d9e8314c11713187b4d86bc"
-    },
-    {
-      "path": "sprites/abyss-edge-2.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "eaaad53e5062c70e05f8ba2ce8c4f953827ddad0e0ccf69d71a8c191375a16d6"
-    },
-    {
-      "path": "sprites/lava-edge-2.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "aab656948d57c6f24c8e43d132693d77831b54fb7e9db47d2cbce6ee8b3c22d8"
-    },
-    {
-      "path": "sprites/lava-edge-2-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "67cda6ce4dbdac354cb93e440a23012b2f79bcddd751c222cfa238ce543f422a"
-    },
-    {
-      "path": "sprites/lava-edge-2-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "282d476fae4f2842d75d969f590898f51792a0c1e087e682cdd178714203d34f"
-    },
-    {
-      "path": "sprites/lava-edge-2-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "9024dda28677c7c14485e7aac6f41a6e3e0111eca56fc53b2aef53828ca62150"
-    },
-    {
-      "path": "sprites/grass-edge-3.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "1c075a52bf73f6bff314be9e434261e4f1c5fd46f2debac0a7b09d5ddfec69a3"
-    },
-    {
-      "path": "sprites/abyss-corner-3.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "591630b5f1b71b2e2f5a874da907539d187a84679ef1e6cc0a988582987c4bea"
-    },
-    {
-      "path": "sprites/abyss-edge-3.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "b51bf4be7d937bd9a49248199f0bbda5719ae82aa5435cf8f608a53f8b88fc78"
-    },
-    {
-      "path": "sprites/lava-edge-3.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "56000701c5d8271df6e88ca8f13acd3450fc84693322ea83733e69af0170db52"
-    },
-    {
-      "path": "sprites/lava-edge-3-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "5f13b9833964050223394078f0d52c99e24508ba5e46cde4d1fb3d94da11645d"
-    },
-    {
-      "path": "sprites/lava-edge-3-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "23afd075fda7d8c15c70595ffd135072bf9a7efdd4a1157b587b2952ec8ed8fe"
-    },
-    {
-      "path": "sprites/lava-edge-3-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "753a5e5a14e4da5ed16c5bd9d6a15344749ff44cee0559c2813e2728dd8db053"
-    },
-    {
-      "path": "sprites/grass-edge-4.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "3ebdae99d9a1a7c7b69b364d4819b1bd94c8e279b7d2c62d4d52e26f8299ccd2"
-    },
-    {
-      "path": "sprites/abyss-corner-4.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "846ccd1d146de557b09f0e50c2ecd625c1caf8803866ecbcb958e6ca55854627"
-    },
-    {
-      "path": "sprites/abyss-edge-4.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "727e80d148f84bd3ee552b3292fd08981cd54938ceb635df02cd0252ded381ec"
-    },
-    {
-      "path": "sprites/lava-edge-4.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "2807d48b7a0a2e21061d066f3da782760853888a1cc61a013903f73ba39ff3e2"
-    },
-    {
-      "path": "sprites/lava-edge-4-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "4a76b0cf4723d7ac4ec102d704c137ef34e688741405cb6ac530f16495220db6"
-    },
-    {
-      "path": "sprites/lava-edge-4-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "1dec1d32048ea1858c8f51b78a940ec83f0ab707ac946d7b4e5f327a9b18b12c"
-    },
-    {
-      "path": "sprites/lava-edge-4-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "dd7069df7af611abc51c5d08ff5fac4ed2ed4d379dbe5d3869e568fbb457d590"
-    },
-    {
-      "path": "sprites/grass-edge-5.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "7de761abd447f7acefb2190e74a4b3bb03be10b85b9fd538908c6a494533862a"
-    },
-    {
-      "path": "sprites/abyss-corner-5.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "7a52c6af4ed89eda65e649783b6cfd56745edac198b32fda9cad85002e912874"
-    },
-    {
-      "path": "sprites/abyss-edge-5.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "9cda1cb7fda0524d6dec46e7e74db99a299cbc32410e5ef08ca79e5ef01a53e4"
-    },
-    {
-      "path": "sprites/lava-edge-5.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "c94eedd6ee557fafdfeff259ff5743e50197009e38aaca70e5268cb1bc3feda2"
-    },
-    {
-      "path": "sprites/lava-edge-5-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "533be5b2b06d043b757cffc733543dba2fc41f4dd0651631ab15a35f94fc169e"
-    },
-    {
-      "path": "sprites/lava-edge-5-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "4d2833e75afdf49be5d4b47469a358e5c5c39baba8e3d665bd4fbedee132fb07"
-    },
-    {
-      "path": "sprites/lava-edge-5-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "2ff33da196b20923704d3a5f9a6d13d573db4ff6eb5d588ad8e6a7a99514cce5"
-    },
-    {
-      "path": "sprites/grass-edge-6.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "61ab799453626cb9a6c31b4881090679828bcf0c2634ed0c26fa258d1330d9b3"
-    },
-    {
-      "path": "sprites/abyss-corner-6.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "3f10a0641f88ea946e18d304ab46bfa6988a53a748545f1b8401860a32bea224"
-    },
-    {
-      "path": "sprites/abyss-edge-6.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "bda847980362f20372746f0bad37ca53689c929f39df14a238bb655a506f5f65"
-    },
-    {
-      "path": "sprites/lava-edge-6.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "54b31cd9d6fc5e41f02069f5712f386d9462fe6625d9d54cc68dc99fce7a9e56"
-    },
-    {
-      "path": "sprites/lava-edge-6-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "3c349898cb192792c6935f8481416f839c832e3a0b157b5e27184fdadfd0c135"
-    },
-    {
-      "path": "sprites/lava-edge-6-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "5acf50c180d1295587fb1da356f9c4fb1d0be9f9d3a7cf77233e0c5bbd2abff6"
-    },
-    {
-      "path": "sprites/lava-edge-6-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "e374e5e1e1884f79a33b2169d046fea213c05fb6b1819c6a71d98b2abfda1e32"
-    },
-    {
-      "path": "sprites/grass-edge-7.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "c2efdc1cc96f6b62e3ba95c31d517d11194cf88242c347c0b82a20985dcd3330"
-    },
-    {
-      "path": "sprites/abyss-corner-7.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "f20ab6931542eb1f107cf9e66c72c080439443a704464502335cc41525a04ad7"
-    },
-    {
-      "path": "sprites/abyss-edge-7.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "24ee54bda9e0f6fc8caf5a07a8cdcd1247bb2fc961c7f75a81319f8bf70224c5"
-    },
-    {
-      "path": "sprites/lava-edge-7.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "5fe83d640c69cdaa10346509f042ded1ed10d2abd6119c127af32a9ca0286f59"
-    },
-    {
-      "path": "sprites/lava-edge-7-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "bb1f78bc478f51704021e09f8614238c6d9b9639c69bf16e8b95f390e253fab6"
-    },
-    {
-      "path": "sprites/lava-edge-7-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "b84855a2d8191b22648255aec50d20f4f8580490faf8763ca5d9e864478bdc06"
-    },
-    {
-      "path": "sprites/lava-edge-7-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "53495e747780e73e1fe419c4d070e0b892b18126a87655ce6b397c2a5305e828"
-    },
-    {
-      "path": "sprites/grass-edge-8.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "b643bdd84cabd2ec02229ec9922f4dd13b080d9624afb3aefe4ba32ea6a2f9bd"
-    },
-    {
-      "path": "sprites/abyss-corner-8.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "1630447fbe78f357f18016d11b346f2f5e2f10d104c5ec4b08719c9c9086af1d"
-    },
-    {
-      "path": "sprites/abyss-edge-8.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "63fdfb340f687b88c1899444b6b812a0a8100ea2b9c178b3192d54e7dfe9e5f7"
-    },
-    {
-      "path": "sprites/lava-edge-8.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "f02c99d504d2a530c15f68de9df635110703bee1e0f3b64142a3145729e63d3e"
-    },
-    {
-      "path": "sprites/lava-edge-8-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "e577fa56df5ca523c423633e9f1298df724a40199233b2c43ee74bcab580f2fb"
-    },
-    {
-      "path": "sprites/lava-edge-8-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "63ada19c78b6e33077f3e418d67de400ec0b1d0c0b5698d0b643183d472a6456"
-    },
-    {
-      "path": "sprites/lava-edge-8-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "277069bf135561417e6be37ad2cfc189f99a1c63b73cc8f71015ca81d03d468f"
-    },
-    {
-      "path": "sprites/grass-edge-9.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "8310248343b59f0d4687209f1cb3dc4ce7f4b5a123fb68b5386f89ce7f7e3513"
-    },
-    {
-      "path": "sprites/abyss-corner-9.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "663199a0cd4e856feef80f8fd2d18a78502c9cc7894d10ade15601c124913e73"
-    },
-    {
-      "path": "sprites/abyss-edge-9.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "9a7970d376bd803fa57f7b259c154a1c4b5185d91502c143e6bf6ebff4520205"
-    },
-    {
-      "path": "sprites/lava-edge-9.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "3272e03e82c790958a59011ed986e96610f12920f441a7e49903fccbde476442"
-    },
-    {
-      "path": "sprites/lava-edge-9-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "5df5fe0497afc161390f0ffc4d4bb9194ad1c140704c566bf4ce4e2403900475"
-    },
-    {
-      "path": "sprites/lava-edge-9-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "15c6b1067f0cb211e5b2365550dc85d54cb34adae95072232534826698d0e764"
-    },
-    {
-      "path": "sprites/lava-edge-9-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "c0f3d00e5f57ae987498a8a2027f460f8736c8524a398bbd1ea8ab4812c94c9c"
-    },
-    {
-      "path": "sprites/grass-edge-10.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "7fff830edad07b4063bfac768e70e9b2eaab7595ab84175a35bf9cc9a1742f93"
-    },
-    {
-      "path": "sprites/abyss-corner-10.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "dfd58d68989d8123f2403abecc2de9428dd67b0f088429c82c015014c99b1c7c"
-    },
-    {
-      "path": "sprites/abyss-edge-10.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "2046e055251cbb1be5771e4a397adb7765f0d33961f7f32333c04db78b955944"
-    },
-    {
-      "path": "sprites/lava-edge-10.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "eba321a72c0cd86c86b7b73b263f13fff24bed94e8f4adc0323ef72250043384"
-    },
-    {
-      "path": "sprites/lava-edge-10-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "741855e6754b31245dc2660da350100a6a2392cfa26eb5e477242f82ae30975b"
-    },
-    {
-      "path": "sprites/lava-edge-10-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "1b1837f81312b684fadf45be1dcc734194008b7233cadbdfe96b551bf7a8b2b0"
-    },
-    {
-      "path": "sprites/lava-edge-10-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "114caae22fb1f932db73136e3fa001046227876ad10a03714ee4e33dd451f710"
-    },
-    {
-      "path": "sprites/grass-edge-11.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "7d82b14bb259d3714c989a50206d3970fbe0604e8c1471d30a8696b7d348ed9e"
-    },
-    {
-      "path": "sprites/abyss-corner-11.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "1ebeeb006e8d38ab9c15e177eeaf662219536bccc1a78ae77a85d05dcaf84dc3"
-    },
-    {
-      "path": "sprites/abyss-edge-11.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "b05f4402cd881cf6eb2133fdff7a5b1cf48694b72ec368a53b9140f52336bd87"
-    },
-    {
-      "path": "sprites/lava-edge-11.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "52407093457e2b2e4709c396ca13da2639d687fcc6311dba2ecd66cad5ee8c5f"
-    },
-    {
-      "path": "sprites/lava-edge-11-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "d4a46dafc2a4a3e38cbbdac5dc63ed20aff9282f8b88cddf20f63657d35df8c6"
-    },
-    {
-      "path": "sprites/lava-edge-11-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "d20b9a8838059a4ba95e24a05fbb4478a662512c1668bd5d9452bb14c0748027"
-    },
-    {
-      "path": "sprites/lava-edge-11-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "e28d8a458b92f71de1127d24eed94549af8a77d736ab25e002042cd9137076f7"
-    },
-    {
-      "path": "sprites/grass-edge-12.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "107da39cc7d37e5a8505003ad95c8956510363cd5b367c35b4d80615cbf4a433"
-    },
-    {
-      "path": "sprites/abyss-corner-12.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "ace696920dc69dd5918b5152a92e359202dd50e12963fef84095b7501aa29187"
-    },
-    {
-      "path": "sprites/abyss-edge-12.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "871f13ae66da4eb65445ed753cb99e10a37d7ab72db3b46351a9017e4a02808e"
-    },
-    {
-      "path": "sprites/lava-edge-12.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "de46c004bed7434eb80023243fb7b9c78ca8a02eb3d8eea01e6d97c1b381c7b1"
-    },
-    {
-      "path": "sprites/lava-edge-12-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "d55edbb8699be91b7ff03b2369e0e0d36075e3686a21b123a383f688fae0b685"
-    },
-    {
-      "path": "sprites/lava-edge-12-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "99463eba2d444b720e916c793407b20b16c13e6a339938595f9b6d2225108a50"
-    },
-    {
-      "path": "sprites/lava-edge-12-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "33f23a41d13a9e33ba4aadeaa3a8961d3a6bba3202e858c12e38ed725200ac48"
-    },
-    {
-      "path": "sprites/grass-edge-13.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "609272d8631ce381d48fa2c87308f384b23a59f917e391702fb0ae1401a11b2f"
-    },
-    {
-      "path": "sprites/abyss-corner-13.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "d914e4d8756bb088a6c08ce466c124155461c4c25699cd5776c265efb6ed250d"
-    },
-    {
-      "path": "sprites/abyss-edge-13.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "d4c21429acee5f5eba14f9f6d9b4f44ffa9e561ab0bee2471033f60d15ddc0e1"
-    },
-    {
-      "path": "sprites/lava-edge-13.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "67b8bfa7f8f0e01eb4a224157a125d6d4484364215445f2c36c529442ab6eaf8"
-    },
-    {
-      "path": "sprites/lava-edge-13-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "1b93b5b699d8d515ae7d032d5ed78ffb0cf357267b1531e5a29a0655176f8ca7"
-    },
-    {
-      "path": "sprites/lava-edge-13-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "d5e2eaaa1de9c5304f9cc340aea6add89e58da2375b9b1e8e1d033fe4e690485"
-    },
-    {
-      "path": "sprites/lava-edge-13-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "2c78a5b259efddbc7198077c0775ed00082e25b98fb9db23069a08095310b829"
-    },
-    {
-      "path": "sprites/grass-edge-14.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "0b2bcbe2ae20115273dbe908fcd9bbc314d007477670d22d5c0b40b3608c1c4b"
-    },
-    {
-      "path": "sprites/abyss-corner-14.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "6d479a95618fff0dcbe03736bbe7ca419c3f23e7d41b85f963d309109a3c2adc"
-    },
-    {
-      "path": "sprites/abyss-edge-14.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "94ffb9c08a4ac970e75feea69f8473dc8bb0b151f8f03a4ced0cdb4525fff4b8"
-    },
-    {
-      "path": "sprites/lava-edge-14.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "8cb70b6b209469f72f16d9de08d23180a137d6580b8973e7ad9688d471a05cad"
-    },
-    {
-      "path": "sprites/lava-edge-14-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "2c8deec2b5ec99529bde32f193cbaacc7f0650f368ec04932517a177ef89164f"
-    },
-    {
-      "path": "sprites/lava-edge-14-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "81ea4fee7415d10131f3a0978272a1a0765ec9e6ed78efb641b2ce9bcffcba09"
-    },
-    {
-      "path": "sprites/lava-edge-14-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "ca1e5e7000b41d3aff8656670b14121d704d75fe0561f25bf5c58660f28772c7"
-    },
-    {
-      "path": "sprites/grass-edge-15.png",
-      "depicts": "grass blending into adjacent paving with connected corners",
-      "sha256": "3ddcb0d692edc75895c65bbdeec93a35aa6e75a7fc5c84bb8d4860f180de11f9"
-    },
-    {
-      "path": "sprites/abyss-corner-15.png",
-      "depicts": "an abyss inner corner: rock walls running on down and the near lip turning",
-      "sha256": "6b02dbfc324272a8c71f540da7573a1b9f5991810f79e684e890ea7b3c0d66e3"
-    },
-    {
-      "path": "sprites/abyss-edge-15.png",
-      "depicts": "abyss: a cliff of rock bands under the far ground, narrow walls at the sides and a lip at the near edge",
-      "sha256": "d4ec6e4bfc7f41fd0ca00c46066197c1b90b393303e8a5bdc27570c85530b8ff"
-    },
-    {
-      "path": "sprites/lava-edge-15.png",
-      "depicts": "lava pit: the abyss cliffs with dim molten rock far below",
-      "sha256": "e7d9f34febd53ba5c9ef669c2d640de5108eb64b1212b317de625b6020ff287f"
-    },
-    {
-      "path": "sprites/lava-edge-15-1.png",
-      "depicts": "lava pit, molten surface frame 2 of 4",
-      "sha256": "ac6ffc31ac67b37f66a154b0099b8bde5d98a390d916111c166e9136af08b42d"
-    },
-    {
-      "path": "sprites/lava-edge-15-2.png",
-      "depicts": "lava pit, molten surface frame 3 of 4",
-      "sha256": "919aa9e6cf4faa2819d71277ddc0bc107304f752176991e6c311a87cc774c9ca"
-    },
-    {
-      "path": "sprites/lava-edge-15-3.png",
-      "depicts": "lava pit, molten surface frame 4 of 4",
-      "sha256": "1fba483b9a5d7f7aef570d0e98c9fa299c7ebc5f2cfd131a2eb98b898a6f09ad"
-    },
-    {
-      "path": "sprites/burst-0.png",
-      "depicts": "a target struck by a shot, frame 1 of 6",
-      "sha256": "5fce9a26d4b42f3adc320a29c8952370dc09276d877be3933f289ec59aa23b01"
-    },
-    {
-      "path": "sprites/burst-1.png",
-      "depicts": "a target struck by a shot, frame 2 of 6",
-      "sha256": "a99330abf0a433666825682ac726e00f7e55026c0253531bf517c571e439800a"
-    },
-    {
-      "path": "sprites/burst-2.png",
-      "depicts": "a target struck by a shot, frame 3 of 6",
-      "sha256": "9b08b4c31d912aa97020c6857eb53abc53a355a4d068e84acfe307d760ab0dfb"
-    },
-    {
-      "path": "sprites/burst-3.png",
-      "depicts": "a target struck by a shot, frame 4 of 6",
-      "sha256": "a0f6ed7163fa7ba155fa27d105327ae20fba0445cca64db4f6efaa0dc549f0f9"
-    },
-    {
-      "path": "sprites/burst-4.png",
-      "depicts": "a target struck by a shot, frame 5 of 6",
-      "sha256": "9e8af77459569b5b5562163ddcc0fefda7e68b45acdf175cf271e542c906faea"
-    },
-    {
-      "path": "sprites/burst-5.png",
-      "depicts": "a target struck by a shot, frame 6 of 6",
-      "sha256": "beaa00b899ccf8fc082d03cc517d98e50186aa27dd21f08214e0ee90efabeb4a"
-    },
-    {
-      "path": "sprites/explosion-0.png",
-      "depicts": "a bomb crate going off, frame 1 of 8",
-      "sha256": "d3ea168a4843c31aedf7563372023836d019d435b85717724a22eb7afe4c8800"
-    },
-    {
-      "path": "sprites/explosion-1.png",
-      "depicts": "a bomb crate going off, frame 2 of 8",
-      "sha256": "bd7a25f0919fb7e577cbe25a8632ffcebe6583f214f38e34540558ce9b97b3fc"
-    },
-    {
-      "path": "sprites/explosion-2.png",
-      "depicts": "a bomb crate going off, frame 3 of 8",
-      "sha256": "65d56e1350458358201eb52d23961aa582106faf0e05b3071acf3d1e7bdc3a15"
-    },
-    {
-      "path": "sprites/explosion-3.png",
-      "depicts": "a bomb crate going off, frame 4 of 8",
-      "sha256": "7d4c01c093310aec52cf83e2a0916c88f5c621cb2584d3b273c03ebc8a4d91bc"
-    },
-    {
-      "path": "sprites/explosion-4.png",
-      "depicts": "a bomb crate going off, frame 5 of 8",
-      "sha256": "13f7e02a87992789347c23cdb32556705d2160d2aeea3809598dc3d12f0ed5cc"
-    },
-    {
-      "path": "sprites/explosion-5.png",
-      "depicts": "a bomb crate going off, frame 6 of 8",
-      "sha256": "5561a5a54acb20f2c0cd5c36d2b8b57233a6d5a3b5247e8c5eda0c431c79548f"
-    },
-    {
-      "path": "sprites/explosion-6.png",
-      "depicts": "a bomb crate going off, frame 7 of 8",
-      "sha256": "d4c4c89f4f991b22b212da868d30981382f078709b19eb31f7c742dca02e86d0"
-    },
-    {
-      "path": "sprites/explosion-7.png",
-      "depicts": "a bomb crate going off, frame 8 of 8",
-      "sha256": "b438e0b38dc15951f7fcf55d457d9881335b11d8dcc4f63e1c44578b22dc2cd1"
-    },
-    {
-      "path": "sprites/sensor-1.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 1 of 8",
-      "sha256": "48d4546647827ef2fe491d3e07a70e07f2cb15bef4cecde7dc08b7bd4ef45026"
-    },
-    {
-      "path": "sprites/sensor-2.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 2 of 8",
-      "sha256": "ccab4000061634a9578006db4b45e731cd16bb0a4590052547b0038fb0c7764f"
-    },
-    {
-      "path": "sprites/sensor-3.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 3 of 8",
-      "sha256": "6b5b4258dfdd01d35d1d98116b2157ee104e3f9ee04d0018111facbb198ea59f"
-    },
-    {
-      "path": "sprites/sensor-4.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 4 of 8",
-      "sha256": "26b3c55e64f104d4e6f6f65742a21f459ab75327c7425f0f8159c8313405f788"
-    },
-    {
-      "path": "sprites/sensor-5.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 5 of 8",
-      "sha256": "9a1ce3328b739757000a18a31d841e29500cac7eb8c84373ec64959055019112"
-    },
-    {
-      "path": "sprites/sensor-6.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 6 of 8",
-      "sha256": "3d881953a127a782ec1fba71bf96e1543526ef8e73e7888dd160b727959480d4"
-    },
-    {
-      "path": "sprites/sensor-7.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 7 of 8",
-      "sha256": "ecdc29945ef4a8da6e1b4a8c1d06d7004638c9c5c800599107cc95f4baba5470"
-    },
-    {
-      "path": "sprites/sensor-8.png",
-      "depicts": "active sensor, its bead circling the glowing ring, frame 8 of 8",
-      "sha256": "cc7f1d62826b08be8c43bd45e0d55d91e7db67a47d384bec04f95673d0d96d4a"
-    },
-    {
-      "path": "sprites/tile-44.png",
-      "depicts": "cyan ball (pushable)",
-      "sha256": "38705dfc730ce9466c818c06abc5964aca2b1416365f5a4408bb4788fde2d275"
-    },
-    {
-      "path": "sprites/tile-45.png",
-      "depicts": "purple ball (pushable)",
-      "sha256": "27a1cd847617342d4bf980d186dcc8df31912a65f3e0be4ca4230b1d5a97b0ba"
-    },
-    {
-      "path": "sprites/tile-46.png",
-      "depicts": "yellow ball (pushable)",
-      "sha256": "c5f147d12acf87796385d6da93cb882ad0b430a665c096e0d1497664e52f6029"
-    },
-    {
-      "path": "sprites/tile-50.png",
-      "depicts": "cyan paint puddle",
-      "sha256": "80a042a93b62ca3be372169b353438152afbe6eb41a2a2b83eba9192185dedb9"
-    },
-    {
-      "path": "sprites/tile-51.png",
-      "depicts": "purple paint puddle",
-      "sha256": "6576467dc65881484e860b75a19722decb61640038917443035f5f1ed2645b35"
-    },
-    {
-      "path": "sprites/tile-52.png",
-      "depicts": "yellow paint puddle",
-      "sha256": "5933a55d4c11a232d4cf6f5d4fd95fa3bc417a02b824acbc39fcdfd4bd0dcc36"
-    },
-    {
-      "path": "sprites/tile-53.png",
-      "depicts": "cyan colour block (pushable)",
-      "sha256": "bcc38ebbedfe4a0940166216e04b810c91b188f598329008044ea9d46196fac9"
-    },
-    {
-      "path": "sprites/tile-54.png",
-      "depicts": "purple colour block (pushable)",
-      "sha256": "43d7e95d7c2069a054b445907146b00cbe6c2341efcbdfdf5cce490b86f4388b"
-    },
-    {
-      "path": "sprites/tile-55.png",
-      "depicts": "green colour block (pushable)",
-      "sha256": "df9eda100a30c4a61b6bc4f0481ba6c85b19c47d40fc42aa5bc700bbe43eccc1"
-    },
-    {
-      "path": "sprites/tile-56.png",
-      "depicts": "cherry",
-      "sha256": "2040ff590a279a1f22c434e40ece5091cd102265ade5e485da37ec1eadea10a1"
-    },
-    {
-      "path": "sprites/chest-empty.png",
-      "depicts": "secret chest opened and claimed: empty dark wooden interior, with no Dew diamond or treasure",
-      "sha256": "a3a6edd466e315e87ecbc9051f97acf89f3af9c1da370a372645fb7e9053b002"
-    },
-    {
       "path": "title-landscape.png",
       "depicts": "title screen art: a glossy 3D Shovey pushes a wooden crate across a sunny garden courtyard, home behind",
       "sha256": "40c01eb8300e4c5db52b2d75373e17cdaf7f68140c33c0a225613fc174660747"
@@ -1951,21 +2286,6 @@
       "path": "title-portrait.png",
       "depicts": "title screen art for phones: 3D Shovey pushing a crate in a garden courtyard with its cottage home",
       "sha256": "ddcbf989eab5971157d8cdc73494ed03660bb4c7a7679543248f45be260777e3"
-    },
-    {
-      "path": "logo.png",
-      "depicts": "Shovey logo: bubbly glossy green letters with a little Shovey peeking out",
-      "sha256": "e47781aa3328f68077589f95d813e9c2e6fff10ebd62a9d003773bb2c2f7a092"
-    },
-    {
-      "path": "editor-landscape.png",
-      "depicts": "editor title art: 3D Shovey guides floating crates, balls and tiles onto a puzzle board on a garden workshop table",
-      "sha256": "7b1eae4209ede14807806a4cbce1e2bf7a14d342e75c89042958a524cf60d67e"
-    },
-    {
-      "path": "editor-portrait.png",
-      "depicts": "editor title art for phones: 3D Shovey building a puzzle board with floating pieces",
-      "sha256": "bf0bbeb15249f3d73c1b410e9737f7fd207310dcb5f28b7c3ce45401b77c8f9e"
     }
   ]
 }

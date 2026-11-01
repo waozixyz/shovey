@@ -1093,6 +1093,286 @@
       "sha256": "cbb03af227e8fd74a0c476763d5d836981cf5aa7197c54935eb4b109fc568944"
     },
     {
+      "path": "sprites/skin-1-charged-down.png",
+      "depicts": "landscape presentation of ember-skinned charged Shovey looking down",
+      "sha256": "24b2d001bf613c6176e1908a88a1b86d6a032630cbad74073007dd61fafa877d"
+    },
+    {
+      "path": "sprites/skin-1-charged-left.png",
+      "depicts": "landscape presentation of ember-skinned charged Shovey looking left",
+      "sha256": "5770c3515df9a69068b0e5e873cbb5e096d4bc21d254ca6d7ed002a461ddc339"
+    },
+    {
+      "path": "sprites/skin-1-charged-right.png",
+      "depicts": "landscape presentation of ember-skinned charged Shovey looking right",
+      "sha256": "ce5b2714932cdb4281a6bbd13e8a3efb7da69fa5609fe979ed4bd7409cc9fd9f"
+    },
+    {
+      "path": "sprites/skin-1-charged-up.png",
+      "depicts": "landscape presentation of ember-skinned charged Shovey looking up",
+      "sha256": "8115aee67e5610ae16385257a0928842aab4a48bc445fccc92a6bea840434f43"
+    },
+    {
+      "path": "sprites/skin-1-player-down.png",
+      "depicts": "landscape presentation of ember-skinned Shovey looking down",
+      "sha256": "61135849232d507e71a88b969de862812de64c0359d5421ec456a9cd583f0071"
+    },
+    {
+      "path": "sprites/skin-1-player-left.png",
+      "depicts": "landscape presentation of ember-skinned Shovey looking left",
+      "sha256": "18d2fb2b321a789ac0be40503cfc02cdf7fc24c6756ca6b1fecb96075d898313"
+    },
+    {
+      "path": "sprites/skin-1-player-right.png",
+      "depicts": "landscape presentation of ember-skinned Shovey looking right",
+      "sha256": "8ea6ce70a57be565431c7e5b8578299cd791ab75adc779c65e34f26f160c571b"
+    },
+    {
+      "path": "sprites/skin-1-player-up.png",
+      "depicts": "landscape presentation of ember-skinned Shovey looking up",
+      "sha256": "c57931c77d650115acbd45571786e20f1bcba2e806c9d967f776dc363207a0ca"
+    },
+    {
+      "path": "sprites/skin-2-charged-down.png",
+      "depicts": "landscape presentation of frost-skinned charged Shovey looking down",
+      "sha256": "cf33f91b35e87ca327ba4e037425f1b78ee32ce4cc19d66fad74bba2e9e14504"
+    },
+    {
+      "path": "sprites/skin-2-charged-left.png",
+      "depicts": "landscape presentation of frost-skinned charged Shovey looking left",
+      "sha256": "f9d6b4cec2fa2169ef34e8ca016d2d0883abc30c51017dd7a7ef66bf462b5504"
+    },
+    {
+      "path": "sprites/skin-2-charged-right.png",
+      "depicts": "landscape presentation of frost-skinned charged Shovey looking right",
+      "sha256": "895b6a3d6650da5b086ce3e8e592ee405c59d069bd62bb8327bdea669dd3c7e4"
+    },
+    {
+      "path": "sprites/skin-2-charged-up.png",
+      "depicts": "landscape presentation of frost-skinned charged Shovey looking up",
+      "sha256": "6b8cd88b3cc774b304819a17397f15c8551fbbbd60b52c442e0f2548e133af76"
+    },
+    {
+      "path": "sprites/skin-2-player-down.png",
+      "depicts": "landscape presentation of frost-skinned Shovey looking down",
+      "sha256": "8b74e3fdbfa5a44df51b8db2f32547d3625815e06f412782570a789b5b377ccc"
+    },
+    {
+      "path": "sprites/skin-2-player-left.png",
+      "depicts": "landscape presentation of frost-skinned Shovey looking left",
+      "sha256": "dc54b5beb3afc9d44b31097c7e0ba7f49e7fc7150fd8f81aacee813939e15973"
+    },
+    {
+      "path": "sprites/skin-2-player-right.png",
+      "depicts": "landscape presentation of frost-skinned Shovey looking right",
+      "sha256": "8399a45e6bce27a3ab6a95cb87c1dcea3d8d73f79ccd82ede8e9df87778b9520"
+    },
+    {
+      "path": "sprites/skin-2-player-up.png",
+      "depicts": "landscape presentation of frost-skinned Shovey looking up",
+      "sha256": "52c615634a5f25309c9b6fcfc5b8c14077ec34591021e82738281ae821ca08c4"
+    },
+    {
+      "path": "sprites/skin-3-charged-down.png",
+      "depicts": "landscape presentation of berry-skinned charged Shovey looking down",
+      "sha256": "b6e3bca929ce7111ccf7f919e21cecc2f0ed6651bc61512addd41ac4528077fa"
+    },
+    {
+      "path": "sprites/skin-3-charged-left.png",
+      "depicts": "landscape presentation of berry-skinned charged Shovey looking left",
+      "sha256": "97604aeba95be2a42342aedb7f51d43bb9c12e30a164228077fb368517519473"
+    },
+    {
+      "path": "sprites/skin-3-charged-right.png",
+      "depicts": "landscape presentation of berry-skinned charged Shovey looking right",
+      "sha256": "0069d34c5d3e7e88f4df33e0a8fa0ec3a16d5d7e18c58b870ca224cdd06f88dc"
+    },
+    {
+      "path": "sprites/skin-3-charged-up.png",
+      "depicts": "landscape presentation of berry-skinned charged Shovey looking up",
+      "sha256": "7e8e2b84f0f4128c81b5f7e1c4d5f5a5c0ae3e00c528a580b18a1d7b635a27f5"
+    },
+    {
+      "path": "sprites/skin-3-player-down.png",
+      "depicts": "landscape presentation of berry-skinned Shovey looking down",
+      "sha256": "86971306983a023613f3153da1bfcc66c36e9b090e198809b1d9ffbe58dcbef7"
+    },
+    {
+      "path": "sprites/skin-3-player-left.png",
+      "depicts": "landscape presentation of berry-skinned Shovey looking left",
+      "sha256": "c449975398077ed164a9c31f9acf9d819a04125e70861900d3b0f9f995d563bf"
+    },
+    {
+      "path": "sprites/skin-3-player-right.png",
+      "depicts": "landscape presentation of berry-skinned Shovey looking right",
+      "sha256": "12636a13b96923443b115b0b00b6bb172ade134934b4283fd7f81d890ea4f1a5"
+    },
+    {
+      "path": "sprites/skin-3-player-up.png",
+      "depicts": "landscape presentation of berry-skinned Shovey looking up",
+      "sha256": "08398f0513ff3146b1d1f23c56f1c40e719cbb40a9e6ae8e4055887c8965684e"
+    },
+    {
+      "path": "sprites/skin-4-charged-down.png",
+      "depicts": "landscape presentation of night-skinned charged Shovey looking down",
+      "sha256": "353a8fa72897ad4291abb2856e5680bfcc89988242121ef4dbb52e8b1769d721"
+    },
+    {
+      "path": "sprites/skin-4-charged-left.png",
+      "depicts": "landscape presentation of night-skinned charged Shovey looking left",
+      "sha256": "55f6282d246c0ae87587bc10663a8cb04833ad204a258a66fa0b2ccb702ed4f2"
+    },
+    {
+      "path": "sprites/skin-4-charged-right.png",
+      "depicts": "landscape presentation of night-skinned charged Shovey looking right",
+      "sha256": "cbf6ba0f0ec79e958e1de037bba1b07c12c18bd8cefa9287732950c5bca7f4d1"
+    },
+    {
+      "path": "sprites/skin-4-charged-up.png",
+      "depicts": "landscape presentation of night-skinned charged Shovey looking up",
+      "sha256": "ccbf4f1d68ed50fc69c5badc47986c659b3f8860bbdf65ac1d5f7c7ab2ee80a7"
+    },
+    {
+      "path": "sprites/skin-4-player-down.png",
+      "depicts": "landscape presentation of night-skinned Shovey looking down",
+      "sha256": "678422ae918dc1ef3cc8401d6cb893375ebb5a68488803e56435b8f2a5e64013"
+    },
+    {
+      "path": "sprites/skin-4-player-left.png",
+      "depicts": "landscape presentation of night-skinned Shovey looking left",
+      "sha256": "719c30bdfae99851e87a4ba81ead443c6acfadef9159abedca0064083064e954"
+    },
+    {
+      "path": "sprites/skin-4-player-right.png",
+      "depicts": "landscape presentation of night-skinned Shovey looking right",
+      "sha256": "817388943d583652e697437826918462841375b06d9de100c0b1e69d00114c19"
+    },
+    {
+      "path": "sprites/skin-4-player-up.png",
+      "depicts": "landscape presentation of night-skinned Shovey looking up",
+      "sha256": "4e6c3ef38436378d8c6c24b5e42cb61848c34d1b3a27bd8e38690f6fd9a2b9fc"
+    },
+    {
+      "path": "sprites/skin-5-charged-down.png",
+      "depicts": "landscape presentation of crystal-skinned charged Shovey looking down",
+      "sha256": "6664d23f839cd712748cf11536133a8c4f0c56ebaea166c188e3a5c80f636242"
+    },
+    {
+      "path": "sprites/skin-5-charged-left.png",
+      "depicts": "landscape presentation of crystal-skinned charged Shovey looking left",
+      "sha256": "928e216a695da3440d6e37d6e4a80b0dd7af05cf1c3aaa422c0fb85eb37c77a4"
+    },
+    {
+      "path": "sprites/skin-5-charged-right.png",
+      "depicts": "landscape presentation of crystal-skinned charged Shovey looking right",
+      "sha256": "8b54a519fcbb706b13f160b5dbf1f8c0829468a2c70842131988de91a481f1a1"
+    },
+    {
+      "path": "sprites/skin-5-charged-up.png",
+      "depicts": "landscape presentation of crystal-skinned charged Shovey looking up",
+      "sha256": "ebf9f8b4571b64d93287a730225c21396fd1473777949e8ce7c9291ac80dd563"
+    },
+    {
+      "path": "sprites/skin-5-player-down.png",
+      "depicts": "landscape presentation of crystal-skinned Shovey looking down",
+      "sha256": "d79037e223be327c2ddc6061fdfe299cc237107da4b89e57af3301f010d59ab1"
+    },
+    {
+      "path": "sprites/skin-5-player-left.png",
+      "depicts": "landscape presentation of crystal-skinned Shovey looking left",
+      "sha256": "2abd287649f34806bfacb57590dcfc5bb90c5eae7bafce4dba736634695a3dbb"
+    },
+    {
+      "path": "sprites/skin-5-player-right.png",
+      "depicts": "landscape presentation of crystal-skinned Shovey looking right",
+      "sha256": "4402d5df11b4ad387c39283cad66d719707aea38b65c3da82095e84db5db3b67"
+    },
+    {
+      "path": "sprites/skin-5-player-up.png",
+      "depicts": "landscape presentation of crystal-skinned Shovey looking up",
+      "sha256": "d5d63a4811029502552e4993b484242ab0de8be57dffae3890bfb6ed19bfadb7"
+    },
+    {
+      "path": "sprites/skin-6-charged-down.png",
+      "depicts": "landscape presentation of stone-skinned charged Shovey looking down",
+      "sha256": "970503ed396f35af09ea4ddbf33b9d9c460a1a4d02414df3a21da2ee4ae54e43"
+    },
+    {
+      "path": "sprites/skin-6-charged-left.png",
+      "depicts": "landscape presentation of stone-skinned charged Shovey looking left",
+      "sha256": "6b1db141943efb8765540c2f23de853d85c4540d290471378863082393776e7c"
+    },
+    {
+      "path": "sprites/skin-6-charged-right.png",
+      "depicts": "landscape presentation of stone-skinned charged Shovey looking right",
+      "sha256": "a29428557924e34c93aba1f6e157174abc595c6c923ea4c1ef1493161e36b925"
+    },
+    {
+      "path": "sprites/skin-6-charged-up.png",
+      "depicts": "landscape presentation of stone-skinned charged Shovey looking up",
+      "sha256": "3e80e6eb29c6894cf7b7a89adc731bffbc4f7cb68356d54af4ff7d8917712328"
+    },
+    {
+      "path": "sprites/skin-6-player-down.png",
+      "depicts": "landscape presentation of stone-skinned Shovey looking down",
+      "sha256": "57279b22adf4a261658c7d003ae6843684c2a7adb2efc914600daba2102e68dd"
+    },
+    {
+      "path": "sprites/skin-6-player-left.png",
+      "depicts": "landscape presentation of stone-skinned Shovey looking left",
+      "sha256": "bb6070531e3e7022b39133ed4ea3876d229f72b9da58268c469c37c60c1d7815"
+    },
+    {
+      "path": "sprites/skin-6-player-right.png",
+      "depicts": "landscape presentation of stone-skinned Shovey looking right",
+      "sha256": "2fbd162277acc6d29a62e7b8413c7b78ae7432bbb98f8a53f686503b518cfb83"
+    },
+    {
+      "path": "sprites/skin-6-player-up.png",
+      "depicts": "landscape presentation of stone-skinned Shovey looking up",
+      "sha256": "f21c7533388dfb743003719eeb1942d82cc15a1875f99cdfc944cbdcd6a5b2c1"
+    },
+    {
+      "path": "sprites/skin-7-charged-down.png",
+      "depicts": "landscape presentation of gold-skinned charged Shovey looking down",
+      "sha256": "78804ef44fda75caf090cc784bc303b499f46237a29b8267babb0218631f0487"
+    },
+    {
+      "path": "sprites/skin-7-charged-left.png",
+      "depicts": "landscape presentation of gold-skinned charged Shovey looking left",
+      "sha256": "b322aa5e1fe584e8ce08edecd500dbc8d65cc49224c3e8ffef7a27c9ec224065"
+    },
+    {
+      "path": "sprites/skin-7-charged-right.png",
+      "depicts": "landscape presentation of gold-skinned charged Shovey looking right",
+      "sha256": "569897ece299ecf59770c4ce31023be6017887c02070f56da261f1be4b8fdcbb"
+    },
+    {
+      "path": "sprites/skin-7-charged-up.png",
+      "depicts": "landscape presentation of gold-skinned charged Shovey looking up",
+      "sha256": "487c52b6d91f5b046c63c85aa21ba7af924b865f3c290fabcefa735b10a31e2a"
+    },
+    {
+      "path": "sprites/skin-7-player-down.png",
+      "depicts": "landscape presentation of gold-skinned Shovey looking down",
+      "sha256": "b7bd7f7a68d1cf9eb75ab238a8d337a73103b9c4cb8c1e5085f8fc7461d8694d"
+    },
+    {
+      "path": "sprites/skin-7-player-left.png",
+      "depicts": "landscape presentation of gold-skinned Shovey looking left",
+      "sha256": "34ebbe057f22e097a216b47b4f9b25789a63e4c3feafda2895ebce86008dbc80"
+    },
+    {
+      "path": "sprites/skin-7-player-right.png",
+      "depicts": "landscape presentation of gold-skinned Shovey looking right",
+      "sha256": "87c427b480497b065521a2da6f0587265ceb2060505188c9ee62d978184d7561"
+    },
+    {
+      "path": "sprites/skin-7-player-up.png",
+      "depicts": "landscape presentation of gold-skinned Shovey looking up",
+      "sha256": "12aa6031ba0b8f50183ef2130b68c813ccd5b76eab321f5653665c7c6a40b2c0"
+    },
+    {
       "path": "sprites/tile-0.png",
       "depicts": "landscape presentation of floor: a pale grey paving stone",
       "sha256": "0a86d032642479c4e68d3d50bcbcca762f682975d1c529878c1c65b0117bf225"

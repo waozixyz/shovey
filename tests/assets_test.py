@@ -44,6 +44,10 @@ classic += [f'water-{frame}' for frame in range(4)]
 classic += [f'fish-{fish}-{frame}-{facing}' for fish in ('gold', 'koi', 'minnow') for frame in range(4) for facing in ('left', 'up', 'right', 'down')]
 classic += [f'grass-edge-{mask}' for mask in range(16)]
 classic += [f'{kind}-{facing}' for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
+skin_sprites = [f'skin-{number}-{kind}-{facing}' for number in range(1, 8)
+                for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
+assert len(skin_sprites) == 56
+classic += skin_sprites
 classic += ['shadow', 'door-open', 'projectile'] + [f'sensor-{frame}' for frame in range(1, 9)]
 classic += ['chest-closed', 'chest-open', 'chest-empty']
 classic += [f'moss-lowered-{style}' for style in range(4)]
@@ -52,6 +56,15 @@ expected += [f'assets/shovey-landscape/sprites/{name}.png' for name in classic]
 for path in expected:
     with Image.open(ROOT / path) as image:
         assert image.size == (128, 128) and image.mode == 'RGBA', path
+
+# Shop icons are transparent standalone art, not opaque cells cut from the sheet.
+shop_icons = ('chest-closed', 'chest-open', 'coins', 'dew', 'stall', 'trophy', 'profile', 'settings')
+for name in shop_icons:
+    path = ROOT / f'assets/shovey/shop/{name}.png'
+    with Image.open(path) as image:
+        assert image.size == (256, 256) and image.mode == 'RGBA', path
+        assert all(image.getpixel(corner)[3] == 0 for corner in
+                   ((0, 0), (255, 0), (0, 255), (255, 255))), path
 
 # Lowered button walls retain a visible slab seam in every material, in both
 # orientations; they must not disappear into an ordinary floor tile.
@@ -154,7 +167,7 @@ for folder in ('assets/shovey', 'assets/shovey-landscape', 'assets/shovey-editor
         assert hashlib.sha256(data).hexdigest() == item['sha256'], item['path']
         assert item['depicts'], item['path']
         listed.add(f'{folder}/{item["path"]}')
-missing = set(expected) - listed
+missing = (set(expected) | {f'assets/shovey/shop/{name}.png' for name in shop_icons}) - listed
 assert not missing, f'Not described in art.json: {sorted(missing)[:5]}'
 
 # Every sound the view plays is a short mono 16-bit 22050 Hz WAV, described
@@ -171,4 +184,4 @@ for path in played:
     with wave.open(str(ROOT / path)) as sound:
         assert (sound.getnchannels(), sound.getsampwidth(), sound.getframerate()) == (1, 2, 22050), path
         assert 0.1 <= sound.getnframes() / 22050 <= 1.5, path
-print(f'Assets: {len(expected)} sprites, two cards and {len(played)} sounds present, sized and described')
+print(f'Assets: {len(expected)} sprites, {len(shop_icons)} shop icons, two cards and {len(played)} sounds present, sized and described')
