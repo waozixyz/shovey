@@ -1,0 +1,135 @@
+#import, file "../src/daily_chest.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+DailyPlan :: #import "entity/game_daily";
+
+names: [4][256]u8;
+records: [4][64]u8;
+record_count: s32;
+missing: bool;
+account: s32;
+unavailable: bool;
+fail_save: bool;
+fail_flush: bool;
+storage_ready: bool = true;
+writes: s32;
+
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if name == "arcade.progress-storage" {
+        if request == "ready" { return ifx storage_ready then "ready" else "" }
+        if request == "flush" { return ifx fail_flush then "" else "flushed" }
+        if request == "missing" { return ifx missing then "missing" else "present" }
+    }
+    if name == "entity.records" && request == "{\"operation\":\"status\"}" {
+        if unavailable { return "{\"status\":\"pending\"}" }
+        if account == 1 { return "{\"status\":\"done\",\"account\":\"first\"}" }
+        if account == 2 { return "{\"status\":\"done\",\"account\":\"guest\"}" }
+        if account == 3 { return "{\"status\":\"done\",\"account\":\"local\"}" }
+        if account == 4 { return "{\"status\":\"done\",\"account\":\"../bad\"}" }
+        return "{\"status\":\"done\",\"account\":\"\"}"
+    }
+    return ""
+}
+
+#program_export
+FakeRecord :: (name: string) -> string {
+    missing = true
+    for index: cast(s32)0..record_count - 1 {
+        if TextUntilNul(names[index][:]) == name {
+            missing = false
+            return TextUntilNul(records[index][:])
+        }
+    }
+    return ""
+}
+
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    if fail_save { return false }
+    slot := record_count
+    for index: cast(s32)0..record_count - 1 {
+        if TextUntilNul(names[index][:]) == name { slot = index }
+    }
+    if slot >= 4 { return false }
+    if slot == record_count { record_count += 1 }
+    unused CopyCString(name, names[slot][:])
+    unused CopyCString(text, records[slot][:])
+    writes += 1
+    return true
+}
+
+Restart :: () {
+    daily_chest_loaded = false
+    daily_chest_available = false
+    daily_chest_owner = .{}
+    daily_chest_name = .{}
+    daily_chest_plan = DailyPlan.GameDailyEmpty()
+    daily_chest_coins = 0
+}
+
+Check :: () -> s32 {
+    if DailyChestCoins() != 0 || DailyChestDay(100) != 1 || DailyChestWeekClaimed(100) != 0 { return 1 }
+    if !DailyChestReady(100) || DailyChestClaim(-1) || DailyChestClaim(4000001) { return 2 }
+    if !DailyChestClaim(100) || DailyChestCoins() != 20 || DailyChestDay(100) != 1 || DailyChestWeekClaimed(100) != 1 { return 3 }
+    saved_writes := writes
+    if DailyChestReady(100) || DailyChestClaim(100) || DailyChestClaim(99) || writes != saved_writes { return 4 }
+    Restart()
+    if DailyChestCoins() != 20 || DailyChestClaim(100) || DailyChestDay(101) != 2 { return 5 }
+    if !DailyChestClaim(101) || DailyChestCoins() != 45 || DailyChestWeekClaimed(101) != 2 { return 6 }
+    // A missed UTC day restarts the week, preserving both previous grants.
+    if DailyChestDay(103) != 1 || DailyChestWeekClaimed(103) != 0 || DailyChestCoins() != 45 { return 7 }
+    if !DailyChestClaim(103) || DailyChestCoins() != 65 || DailyChestWeekClaimed(103) != 1 { return 8 }
+    // Complete the seven-day plan and wrap its next consecutive day to day 1.
+    totals: [6]s32 = .[90, 120, 155, 195, 245, 345]
+    for index: cast(s32)0..5 {
+        today := cast(s64)104 + index
+        if DailyChestDay(today) != index + 2 || !DailyChestClaim(today) || DailyChestCoins() != totals[index] { return 9 + index }
+    }
+    if DailyChestDay(109) != 7 || DailyChestWeekClaimed(109) != 7 || DailyChestDay(110) != 1 || DailyChestWeekClaimed(110) != 0 { return 15 }
+    Restart()
+    if DailyChestClaim(109) || DailyChestCoins() != 345 || !DailyChestClaim(110) || DailyChestCoins() != 365 { return 16 }
+    // A rejected write rolls back plan and grants; retry awards exactly once.
+    fail_save = true
+    if DailyChestClaim(111) || daily_chest_coins != 365 || daily_chest_plan.last_day != 110 { return 17 }
+    fail_save = false
+    Restart()
+    if DailyChestCoins() != 365 || !DailyChestClaim(111) || DailyChestCoins() != 390 || DailyChestClaim(111) { return 18 }
+    // A staged write cannot report success until the durable barrier succeeds.
+    fail_flush = true
+    if DailyChestClaim(112) || daily_chest_coins != 390 || daily_chest_plan.last_day != 111 { return 19 }
+    Restart()
+    if DailyChestCoins() != 0 || DailyChestReady(112) { return 20 }
+    fail_flush = false
+    if DailyChestCoins() != 420 || DailyChestClaim(112) { return 21 }
+    // Two accounts and an account literally named guest never share guest coins.
+    account = 1
+    if DailyChestCoins() != 0 || !DailyChestClaim(112) || DailyChestCoins() != 20 { return 22 }
+    account = 2
+    if DailyChestCoins() != 0 || !DailyChestClaim(112) || DailyChestCoins() != 20 { return 23 }
+    if record_count != 3 { return 24 }
+    account = 0
+    if DailyChestCoins() != 420 || DailyChestClaim(112) { return 25 }
+    account = 3
+    if DailyChestCoins() != 420 { return 26 }
+    unavailable = true
+    if DailyChestCoins() != 0 || DailyChestClaim(113) { return 27 }
+    unavailable = false
+    account = 1
+    if DailyChestCoins() != 20 || DailyChestClaim(112) || !DailyChestClaim(113) || DailyChestCoins() != 45 { return 28 }
+    account = 4
+    if DailyChestCoins() != 0 || DailyChestClaim(113) { return 29 }
+    account = 1
+    storage_ready = false
+    if DailyChestClaim(114) { return 30 }
+    Restart()
+    if DailyChestCoins() != 0 || DailyChestReady(114) { return 31 }
+    storage_ready = true
+    if DailyChestCoins() != 45 || !DailyChestClaim(114) || DailyChestCoins() != 75 { return 32 }
+    // Unknown/corrupt saves stay untouched rather than reopening paid days.
+    unused CopyCString("c1:bad", records[1][:])
+    Restart()
+    saved_writes = writes
+    if DailyChestCoins() != 0 || DailyChestClaim(115) || writes != saved_writes { return 33 }
+    return 42
+}

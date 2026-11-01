@@ -1,0 +1,137 @@
+// Cosmetic chest grants, separate from Dew and from shop spending. The caller
+// supplies UTC days since 1970; this adapter never reads a clock.
+DailyPlan :: #import "entity/game_daily";
+#import "std/c_string"
+#import "std/json_scan"
+#import "std/text_buffer"
+#import, file "controls.zi";
+#import, file "shared_progress.zi";
+
+daily_chest_plan: DailyPlan.GameDaily = DailyPlan.GameDailyEmpty();
+daily_chest_coins: s32;
+daily_chest_owner: [65]u8;
+daily_chest_name: [256]u8;
+daily_chest_loaded: bool;
+daily_chest_available: bool;
+
+DailyChestPlanCoins :: (day: s32) -> s32 {
+    coins: [7]s32 = .[20, 25, 30, 35, 40, 50, 100]
+    return ifx day >= 1 && day <= 7 then coins[day - 1] else 0
+}
+
+DailyChestHex :: (byte: u8) -> s32 {
+    if byte >= #char "0" && byte <= #char "9" { return cast(s32)byte - 48 }
+    if byte >= #char "a" && byte <= #char "f" { return cast(s32)byte - 87 }
+    return -1
+}
+
+// The shared plan codec and cumulative grant total are one atomic record.
+// Keeping the total explicitly preserves coins when the consecutive week resets.
+DailyChestEncode :: (output: []u8) -> string {
+    bytes: [12]u8
+    unused DailyPlan.GameDailyEncode(daily_chest_plan, bytes[:8])
+    for index: 0..3 { bytes[index + 8] = cast(u8)((daily_chest_coins >> (index * 8)) & 255) }
+    alphabet := "0123456789abcdef"
+    output[0] = #char "c"; output[1] = #char "1"; output[2] = #char ":"
+    for index: 0..11 {
+        output[3 + index * 2] = alphabet[bytes[index] >> 4]
+        output[4 + index * 2] = alphabet[bytes[index] & 15]
+    }
+    return TextView(output[:27])
+}
+
+DailyChestDecode :: (text: string) -> bool {
+    if text.count != 27 || text[:3] != "c1:" { return false }
+    bytes: [12]u8
+    for index: 0..11 {
+        high := DailyChestHex(text[3 + index * 2])
+        low := DailyChestHex(text[4 + index * 2])
+        if high < 0 || low < 0 { return false }
+        bytes[index] = cast(u8)(high * 16 + low)
+    }
+    if bytes[0] != 1 || bytes[7] > 7 { return false }
+    plan := DailyPlan.GameDailyDecode(bytes[:8])
+    if (plan.days == 0 && (plan.last_day != -1 || plan.week != 0)) ||
+        (plan.days > 0 && (plan.last_day < 0 || plan.last_day > 4000000 || bytes[7] == 0)) { return false }
+    coins: s64
+    for index: 0..3 { coins |= cast(s64)bytes[index + 8] << (index * 8) }
+    if coins < cast(s64)plan.days * 20 || coins > cast(s64)plan.days * 100 { return false }
+    daily_chest_plan = plan
+    daily_chest_coins = cast(s32)coins
+    return true
+}
+
+DailyChestPump :: (today: s64) {
+    unused today
+    // Verify on every public access, including a claim immediately after an
+    // account switch. Pending/unavailable identity never exposes the old coins.
+    status := ProgressAccountService("{\"operation\":\"status\"}")
+    owner: [65]u8
+    verified := SharedProgressStatusField(status, "status", "done") &&
+        ReadStringText(status, FieldAt(status, 0, "account"), owner[:]) >= 0
+    if TextUntilNul(owner[:]) == "local" { owner = .{} }
+    name: [256]u8
+    valid_name := SharedProgressName(TextUntilNul(owner[:]), "shovey.daily-chest", name[:]) != ""
+    daily_chest_available = false
+    if !verified || !valid_name {
+        daily_chest_loaded = false
+        daily_chest_plan = DailyPlan.GameDailyEmpty()
+        daily_chest_coins = 0
+        return
+    }
+    if !daily_chest_loaded || TextUntilNul(owner[:]) != TextUntilNul(daily_chest_owner[:]) {
+        daily_chest_loaded = false
+        daily_chest_owner = owner
+        daily_chest_name = name
+        daily_chest_plan = DailyPlan.GameDailyEmpty()
+        daily_chest_coins = 0
+        // A staged write whose flush failed is not yet a durable grant.
+        if !ProgressStorageReady() || !ProgressStorageFlush() { return }
+        text := PathRecord(TextUntilNul(name[:]))
+        if text == "" {
+            if !ProgressStorageMissing() { return }
+        } else if !DailyChestDecode(text) { return }
+        daily_chest_loaded = true
+    }
+    daily_chest_available = true
+}
+
+// Cumulative earned coins, before the wardrobe subtracts its own purchases.
+DailyChestCoins :: () -> s32 {
+    DailyChestPump(-1)
+    return ifx daily_chest_available then daily_chest_coins else 0
+}
+
+DailyChestReady :: (today: s64) -> bool {
+    DailyChestPump(today)
+    return daily_chest_available && DailyPlan.GameDailyClaimReady(daily_chest_plan, today) && today <= 4000000
+}
+
+DailyChestWeekClaimed :: (today: s64) -> s32 {
+    DailyChestPump(today)
+    return ifx daily_chest_available then DailyPlan.GameDailyWeekClaimed(daily_chest_plan, today) else 0
+}
+
+// Claimed day's card stays selected today; tomorrow selects the next card.
+DailyChestDay :: (today: s64) -> s32 {
+    claimed := DailyChestWeekClaimed(today)
+    if today > daily_chest_plan.last_day || claimed == 0 { return claimed + 1 }
+    return claimed
+}
+
+DailyChestClaim :: (today: s64) -> bool {
+    if !DailyChestReady(today) || !ProgressStorageReady() { return false }
+    before := daily_chest_plan
+    before_coins := daily_chest_coins
+    if !DailyPlan.GameDailyClaim(*daily_chest_plan, today) { return false }
+    daily_chest_coins += DailyChestPlanCoins(daily_chest_plan.week)
+    text: [27]u8
+    if !PathSaveRecord(TextUntilNul(daily_chest_name[:]), DailyChestEncode(text[:])) || !ProgressStorageFlush() {
+        daily_chest_plan = before
+        daily_chest_coins = before_coins
+        daily_chest_loaded = false
+        daily_chest_available = false
+        return false
+    }
+    return true
+}
