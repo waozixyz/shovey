@@ -49,6 +49,7 @@ Math :: #import "std/math";
 #import, file "controls.zi";
 #import, file "pieces.zi";
 #import, file "shovey_theme.zi";
+ShopUI :: #import, file "shop_view.zi";
 #if #defined(PLATFORM_WEB) {
     // The compiled browser game reads the node itself; its page host offers
     // no services.
@@ -1132,6 +1133,7 @@ LevelChangeShade :: () -> float32 {
 // Back from the level list or help returns to the level; false while
 // playing, so the host returns to the cover that opened the game.
 ShoveyBack :: () -> bool {
+    if ShopUI.Back() { return true }
     if reward_card >= 0 { reward_card = -1; return true }
     if friend_card_visible {
         if GuideAcknowledge(*friend_guide) { friend_save_pending = true }
@@ -1148,6 +1150,19 @@ ReplayOpened :: () {
     if ShoveySecret(game.level) || completion_path.level != game.level { return }
     replay_ack_failed = !LevelReplayOpened(game.level, TextUntilNul(completion_path.map[:]), TextUntilNul(shared_progress.owner[:]), ShoveyLevelBoard(game.level))
     if replay_ack_failed { save_failed = true }
+}
+
+// Hosts supply a UTC epoch day; the UI frame clock is monotonic.
+ShoveyShopToday: s64 = -1;
+#program_export
+ShoveyShopSetToday :: (today: s64) { ShoveyShopToday = today }
+#program_export
+ShoveyShopOpen :: (page: s32) { ShopUI.Open(page) }
+#program_export
+ShoveyShopBack :: () -> bool { return ShopUI.Back() }
+#program_export
+ShoveyShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool {
+    return ShopUI.Frame(session, bounds, now, today)
 }
 
 ShoveyFrame :: () {
@@ -1222,6 +1237,16 @@ ShoveyFrame :: () {
     bottom := cast(float32)(frame.height - frame.bottom)
     ShoveyDress(frame.session, width, top, bottom)
     key := AppKeyHost()
+    if !mini {
+        ShopUI.Request()
+        ShopUI.Pump(frame.now, ShoveyShopToday)
+        BoardSetSkin(ShopUI.Skin())
+        if ShopUI.IsOpen() {
+            if key == 256 || key == 4 { unused ShopUI.Back() }
+            if ShopUI.IsOpen() { unused ShopUI.Frame(frame.session, Rectangle.{0.0, top, width, bottom - top}, frame.now, ShoveyShopToday) }
+            return
+        }
+    }
     if reward_card >= 0 {
         if key == 256 || key == 4 { reward_card = -1 }
         key = 0
@@ -1245,6 +1270,8 @@ ShoveyFrame :: () {
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
         }
+        if !mini { ShopUI.TitleActions(frame.session, Rectangle.{12.0, top + 62.0, 92.0, 40.0}) }
+        list_top := top + ifx mini then 72.0 else 110.0
         columns := cast(s32)((width - 24.0) / 112.0)
         if columns < 2 { columns = 2 }
         listed := ShoveyLevelCount()
@@ -1260,7 +1287,7 @@ ShoveyFrame :: () {
             levels_focus_pending = false
         }
         scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
-                .bounds = Rectangle.{16.0, top + 72.0, width - 32.0, bottom - top - 88.0},
+                .bounds = Rectangle.{16.0, list_top, width - 32.0, bottom - list_top - 16.0},
                 .content_height = rows * row_height, .scroll_offset = levels_scroll})
         levels_scroll = scroll.scroll_offset
         if scroll.opened {
@@ -1428,6 +1455,9 @@ ShoveyFrame :: () {
     }
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
+    if !mini && !cinematic {
+        ShopUI.TitleActions(frame.session, Rectangle.{width - 96.0, status_y, 92.0, 28.0})
+    }
     area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
     FriendPrepare()
     pad_mode := ControlsPad() && !mini

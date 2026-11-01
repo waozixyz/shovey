@@ -1,0 +1,298 @@
+// Render the production composition with real retained widgets and fake services.
+ShopUI :: #import, file "../src/shop_view.zi";
+Engine :: #import, file "../src/engine.zi";
+Board :: #import, file "../src/shovey_board.zi";
+Wardrobe :: #import, file "../src/shop_state.zi";
+Daily :: #import, file "../src/daily_chest.zi";
+#import "kryon/session"
+#import "kryon/tree"
+#import "kryon/tree_draw"
+#import "kryon/tree_input"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "std/c_string"
+#import "std/text_buffer"
+#import "std/vec"
+using FrameStatus;
+
+names: [8][256]u8;
+values: [8][1024]u8;
+count: s32;
+missing: bool;
+route: string;
+purchases: s32;
+profile_request: [32]u8;
+account :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if name == "arcade.progress-storage" {
+        if request == "ready" { return "ready" }
+        if request == "flush" { return "flushed" }
+        if request == "missing" { return ifx missing then "missing" else "present" }
+    }
+    if name == "entity.records" { return "{\"status\":\"done\",\"game_progress\":\"account-v1\",\"account\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}" }
+    if name == "entity.game-shop" {
+        if request != "status" { purchases += 1 }
+        return "{\"status\":\"done\",\"owner\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"connected\":true,\"shovey_owned\":0,\"shovey_coins\":500}"
+    }
+    if name == "entity.dew" { return "{\"units\":12000000}" }
+    if name == "entity.profile" { unused CopyCString(request, profile_request[:]); return "opened" }
+    return ""
+}
+#program_export
+FakeRecord :: (name: string) -> string {
+    missing = true
+    if name == "shop.request" { return route }
+    for slot: cast(s32)0..count - 1 {
+        if TextUntilNul(names[slot][:]) == name { missing = false; return TextUntilNul(values[slot][:]) }
+    }
+    return ""
+}
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    if name == "shop.request" { route = text; return true }
+    slot := count
+    for index: cast(s32)0..count - 1 { if TextUntilNul(names[index][:]) == name { slot = index } }
+    if slot >= 8 { return false }
+    if slot == count { count += 1 }
+    unused CopyCString(name, names[slot][:]); unused CopyCString(text, values[slot][:])
+    return true
+}
+#program_export
+FakeLocale :: (key: string) -> string { return TestLocale(key) }
+#program_export
+FakeSupports :: (name: string) -> bool { return false }
+
+Draw :: (session: Session, width: float32, height: float32, today: s64 = 20000) -> bool {
+    area := Rectangle.{0.0, 0.0, width, height}
+    BeginFrame(session, cast(u64)1, area)
+    if !ShopUI.Frame(session, area, 10.0, today) { return false }
+    return EndFrame(session) == cast(FrameStatus)FrameOk
+}
+Find :: (session: Session, key: u64) -> s32 {
+    for at: cast(s32)0..TreeCount(session) - 1 { if TreeNodeAt(session, at).key == key { return at } }
+    return -1
+}
+Click :: (session: Session, key: u64) -> bool {
+    at := Find(session, key)
+    return at >= 0 && TreeActivateAt(session, at)
+}
+Bounds :: (session: Session, width: float32) -> bool {
+    for at: cast(s32)0..TreeCount(session) - 1 {
+        node := TreeNodeAt(session, at)
+        if node.bounds.width < 0.0 || node.bounds.height < 0.0 || node.bounds.x < -0.1 || node.bounds.x + node.bounds.width > width + 0.1 { return false }
+    }
+    return true
+}
+// Consume the event, then render the state it selected. Back may close
+// the page on the first frame, in which case there is no second shop frame.
+Activate :: (session: Session, key: u64, width: float32, height: float32, today: s64 = 20000) -> bool {
+    if !Click(session, key) || !Draw(session, width, height, today) { return false }
+    return !ShopUI.IsOpen() || Draw(session, width, height, today)
+}
+#program_export
+Check :: () -> s32 {
+    session := SessionOpen()
+    if ShopUI.IsOpen() || ShopUI.Back() { return 1 }
+    route = "shop"; ShopUI.Request()
+    if !ShopUI.IsOpen() || route != "" || purchases != 0 { return 2 }
+    if !Draw(session, 320.0, 568.0) || !Bounds(session, 320.0) { return 3 }
+    if !Activate(session, 61301, 320.0, 568.0) { return 4 }
+    // Opening, cancelling and backing out never invoke checkout.
+    if !Activate(session, 62426, 320.0, 568.0) || purchases != 0 || Find(session, 61610) < 0 { return 5 }
+    if !Activate(session, 61611, 320.0, 568.0) || purchases != 0 || ShopUI.confirm != 0 { return 6 }
+    if !Activate(session, 62426, 320.0, 568.0) || !ShopUI.Back() || !ShopUI.IsOpen() || ShopUI.confirm != 0 { return 7 }
+    if !Draw(session, 320.0, 568.0) || !Activate(session, 62426, 320.0, 568.0) { return 8 }
+    if !Activate(session, 61610, 320.0, 568.0) || purchases != 1 { return 9 }
+    if !Activate(session, 61300, 900.0, 500.0) || !Bounds(session, 900.0) { return 10 }
+    // Coin skins debit only after confirmation, then can be selected.
+    if !Activate(session, 62026, 900.0, 500.0) || Wardrobe.ShopAvailable(1) { return 11 }
+    if !Activate(session, 61610, 900.0, 500.0) || !Wardrobe.ShopAvailable(1) || Wardrobe.ShopSkin() != 1 || Wardrobe.ShopCoins() != 400 { return 12 }
+    // Both facings and charged variants follow the selected skin, while
+    // the tools keep their default until the game explicitly supplies one.
+    Board.BoardSetSkin(Wardrobe.ShopSkin())
+    Board.BoardSkinPrepare()
+    if Board.SpriteFile(Board.SPRITE_PLAYER) != "assets/shovey/sprites/skin-1-player-left.png" ||
+        Board.landscape_sprite_files[Board.SPRITE_CHARGED + 3] != "assets/shovey-landscape/sprites/skin-1-charged-down.png" { return 23 }
+    board: Engine.ShoveyGame
+    Board.BoardCacheKeep(*board, false)
+    if !Board.BoardCacheCurrent(*board, false) { return 24 }
+    Board.BoardSetSkin(2); Board.BoardSkinPrepare()
+    if Board.BoardCacheCurrent(*board, false) { return 25 }
+    if !Activate(session, 61302, 320.0, 568.0) || !Activate(session, 62502, 320.0, 568.0) || TextUntilNul(profile_request[:]) != "dew" { return 13 }
+    if !Activate(session, 61104, 320.0, 568.0) || TextUntilNul(profile_request[:]) != "open" { return 14 }
+    if !Activate(session, 61106, 320.0, 568.0) || TextUntilNul(profile_request[:]) != "leaderboard" { return 15 }
+    if !ShopUI.Back() || ShopUI.IsOpen() { return 16 }
+    route = "chest"; ShopUI.Request()
+    if !Draw(session, 320.0, 568.0, -1) || Daily.DailyChestReady(-1) { return 26 }
+    if !Draw(session, 320.0, 568.0) || !Bounds(session, 320.0) || !Daily.DailyChestReady(20000) { return 17 }
+    for day: cast(s32)1..7 { if Find(session, cast(u64)(63100 + day * 10)) < 0 { return 18 } }
+    if !Activate(session, 63002, 320.0, 568.0) || Daily.DailyChestReady(20000) || Wardrobe.ShopCoins() != 420 { return 19 }
+    if !Draw(session, 900.0, 500.0) || !Bounds(session, 900.0) || Daily.DailyChestClaim(20000) { return 20 }
+    if !Draw(session, 320.0, 568.0, 20002) || Daily.DailyChestDay(20002) != 1 { return 21 }
+    if !Activate(session, 61101, 320.0, 568.0, 20002) || ShopUI.IsOpen() { return 22 }
+    unused SessionClose(session)
+    return 42
+}
+
+// One explicit host binds package and local effects consistently.
+#program_export
+AppServiceHost :: (name: string, request: string) -> string { return FakeService(name, request) }
+#program_export
+AppSupportsHost :: (name: string) -> bool { return false }
+#program_export
+AppLocaleHost :: (key: string) -> string { return FakeLocale(key) }
+#program_export
+AppRecordHost :: (name: string) -> string { return FakeRecord(name) }
+#program_export
+SaveAppRecordHost :: (name: string, text: string) -> bool { return FakeSave(name, text) }
+
+#if #defined(SHOVEY_SHOP_FIXTURE) {
+    Pixmap :: #import "kryon/pixmap";
+    #program_export "ShopTestMeasureGlyphWidth"
+    MeasureGlyphWidth :: (value: string, font: s32, typeface: string) -> s32 { return Pixmap.MeasureGlyphWidth(value, font, typeface) }
+    #program_export "ShopTestMeasureGlyphLineHeight"
+    MeasureGlyphLineHeight :: (font: s32, typeface: string) -> s32 { return Pixmap.MeasureGlyphLineHeight(font, typeface) }
+    #program_export "ShopTestImageWidth"
+    ImageWidth :: (asset_path: string) -> s32 { return Pixmap.ImageWidth(asset_path) }
+    #program_export "ShopTestImageHeight"
+    ImageHeight :: (asset_path: string) -> s32 { return Pixmap.ImageHeight(asset_path) }
+    #program_export "ShopTestRasterText"
+    RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) { Pixmap.RasterText(value, x, y, font, color) }
+    #program_export "ShopTestRasterTextClipped"
+    RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) { Pixmap.RasterTextClipped(value, x, y, font, color, clip) }
+    #program_export "ShopTestRasterRoundedRectangle"
+    RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) { Pixmap.RasterRoundedRectangle(bounds, radius, segments, color) }
+    #program_export "ShopTestRasterRoundedRectangleOutline"
+    RasterRoundedRectangleOutline :: (bounds: Rectangle, radius: float32, segments: s32, width: float32, color: Color) { Pixmap.RasterRoundedRectangleOutline(bounds, radius, segments, width, color) }
+    #program_export "ShopTestRasterLine"
+    RasterLine :: (line: Rectangle, color: Color) { Pixmap.RasterLine(line, color) }
+    #program_export "ShopTestRasterImage"
+    RasterImage :: (asset_path: string, texture_id: u32, source: Rectangle, destination: Rectangle, clip: Rectangle, origin: Vector2, rotation: float32, radius: float32, tint: Color) { Pixmap.RasterImage(asset_path, texture_id, source, destination, clip, origin, rotation, radius, tint) }
+    #program_export "ShopTestRasterImageMesh"
+    RasterImageMesh :: (asset_path: string, texture_id: u32, source: Rectangle, points: []Vector2, columns: s32, rows: s32, clip: Rectangle, tint: Color) { Pixmap.RasterImageMesh(asset_path, texture_id, source, points, columns, rows, clip, tint) }
+    #program_export "ShopTestRasterTriangles"
+    RasterTriangles :: (points: []Vector2, color: Color) { Pixmap.RasterTriangles(points, color) }
+} else {
+
+#program_export
+MeasureGlyphWidth :: (value: string, font: s32, typeface: string) -> s32 { return cast(s32)value.count * font / 2 }
+
+#program_export
+MeasureGlyphLineHeight :: (font: s32, typeface: string) -> s32 { return font }
+
+#program_export
+ImageWidth :: (asset_path: string) -> s32 { return 32 }
+
+#program_export
+ImageHeight :: (asset_path: string) -> s32 { return 32 }
+
+#program_export
+RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) {  }
+
+#program_export
+RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) {  }
+
+#program_export
+RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) {  }
+
+#program_export
+RasterRoundedRectangleOutline :: (bounds: Rectangle, radius: float32, segments: s32, width: float32, color: Color) {  }
+
+#program_export
+RasterLine :: (line: Rectangle, color: Color) {  }
+
+#program_export
+RasterImage :: (asset_path: string, texture_id: u32, source: Rectangle, destination: Rectangle, clip: Rectangle, origin: Vector2, rotation: float32, radius: float32, tint: Color) {  }
+
+#program_export
+RasterImageMesh :: (asset_path: string, texture_id: u32, source: Rectangle, points: []Vector2, columns: s32, rows: s32, clip: Rectangle, tint: Color) {  }
+
+#program_export
+RasterTriangles :: (points: []Vector2, color: Color) {  }
+}
+
+#if #defined(SHOVEY_SHOP_FIXTURE) {
+    PNG :: #import "std/png_linux";
+    Img :: #import "std/image";
+    #import "std/file"
+    english: string;
+    fixture_art: [1048576]u32;
+    fixture_art_count: s64;
+    fixture_surface: [230400]u32;
+    TestLocale :: (key: string) -> string {
+        for at: cast(s64)0..english.count - key.count - 4 {
+            if english[at] != #char "[" { continue }
+            same := true
+            for index: cast(s64)0..key.count - 1 { if english[at + index + 1] != key[index] { same = false; break } }
+            start := at + key.count + 3
+            if !same || english[at + key.count + 1] != #char "]" { continue }
+            end := start
+            while end < english.count && english[end] != #char "\n" { end += 1 }
+            return english[start:end]
+        }
+        return key
+    }
+    FixtureSave :: (path: string) -> bool {
+        image := Img.NewImage(320, 720)
+        for at: cast(s64)0..230399 {
+            pixel := fixture_surface[at]
+            image.pixels[at * 4] = cast(u8)(pixel >> 16)
+            image.pixels[at * 4 + 1] = cast(u8)(pixel >> 8)
+            image.pixels[at * 4 + 2] = cast(u8)pixel
+            image.pixels[at * 4 + 3] = 255
+        }
+        saved := PNG.WritePNGFile(path, *image)
+        VecFree(image.pixels)
+        return saved
+    }
+    #program_export
+    Fixture :: () -> s32 {
+        document, ok := ReadEntireFile("src/locales/en.txt")
+        if !ok { return 1 }
+        english = document
+        paths: [15]string = .["assets/shovey/shop/stall.png", "assets/shovey/shop/chest-open.png",
+            "assets/shovey/shop/chest-closed.png", "assets/shovey/shop/coins.png", "assets/shovey/shop/dew.png",
+            "assets/shovey/shop/profile.png", "assets/shovey/shop/trophy.png", "", "", "", "", "", "", "", ""]
+        starts: [15]s64
+        widths: [15]s32
+        heights: [15]s32
+        for id: cast(s32)0..7 { paths[id + 7] = Wardrobe.ShopSkinPath(id) }
+        // Load all owned bytes before the rasterizer borrows any image spans.
+        for slot: cast(s32)0..14 {
+            image := PNG.ReadPNGFile(paths[slot])
+            if !Img.ImageValid(*image) { return 2 }
+            starts[slot] = fixture_art_count; widths[slot] = image.width; heights[slot] = image.height
+            for at: cast(s64)0..cast(s64)image.width * image.height - 1 {
+                red := cast(u32)image.pixels[at * 4]
+                green := cast(u32)image.pixels[at * 4 + 1]
+                blue := cast(u32)image.pixels[at * 4 + 2]
+                alpha := cast(u32)image.pixels[at * 4 + 3]
+                if fixture_art_count >= fixture_art.count { return 2 }
+                fixture_art[fixture_art_count] = (alpha << 24) | (red << 16) | (green << 8) | blue
+                fixture_art_count += 1
+            }
+            VecFree(image.pixels)
+        }
+        for slot: cast(s32)0..14 {
+            if !Pixmap.PixmapSetImage(slot, paths[slot], widths[slot], heights[slot],
+                fixture_art[starts[slot]:starts[slot] + cast(s64)widths[slot] * heights[slot]]) { return 3 }
+        }
+        session := SessionOpen()
+        ShopUI.Open(1)
+        unused Pixmap.PixmapBeginInto(cast(u32)0xff2a2e2d, 320, 720, fixture_surface[:])
+        if !Draw(session, 320.0, 720.0) || !FixtureSave("work/shop-view-test/shop.png") { return 4 }
+        // A fresh retained tree ensures a full picture after clearing pixels.
+        unused SessionClose(session)
+        session = SessionOpen()
+        ShopUI.Open(2)
+        unused Pixmap.PixmapBeginInto(cast(u32)0xff2a2e2d, 320, 720, fixture_surface[:])
+        if !Draw(session, 320.0, 720.0) || !FixtureSave("work/shop-view-test/chest.png") { return 5 }
+        Pixmap.PixmapEndInto()
+        Pixmap.PixmapCloseWorkers()
+        unused SessionClose(session)
+        return 42
+    }
+} else {
+    TestLocale :: (key: string) -> string { return key }
+}

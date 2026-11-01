@@ -799,3 +799,100 @@ Completa y sincroniza los niveles 1–28 con al menos 10 movimientos por nivel p
 [shovey_reward_campaign_requirements]
 Completa y sincroniza todos los niveles Classic con al menos 10 movimientos por nivel para reclamar esta recompensa.
 ---
+
+[shovey_shop_shop]
+Tienda
+---
+[shovey_shop_chest]
+Cofre diario
+---
+[shovey_shop_skins]
+Aspectos
+---
+[shovey_shop_coins]
+Monedas
+---
+[shovey_shop_dew]
+Dew
+---
+[shovey_shop_back]
+Atrás
+---
+[shovey_shop_profile]
+Perfil
+---
+[shovey_shop_leaderboard]
+Clasificación
+---
+[shovey_shop_confirm]
+Confirmar compra
+---
+[shovey_shop_cancel]
+Cancelar
+---
+[shovey_shop_free]
+Gratis
+---
+[shovey_shop_owned]
+En propiedad
+---
+[shovey_shop_wear]
+Usar
+---
+[shovey_shop_wearing]
+En uso
+---
+[shovey_shop_buy]
+Comprar
+---
+[shovey_shop_buy_dew]
+Comprar Dew
+---
+[shovey_shop_claim]
+Recoger
+---
+[shovey_shop_claimed]
+Recogido
+---
+[shovey_shop_today]
+Hoy
+---
+[shovey_shop_locked]
+Bloqueado
+---
+[shovey_shop_chest_wait]
+Vuelve mañana
+---
+[shovey_shop_purchase_pending]
+Compra enviada. El saldo se actualizará tras la confirmación.
+---
+[shovey_shop_purchase_failed]
+No se pudo confirmar. Revisa tu saldo e inténtalo de nuevo.
+---
+[shovey_shop_chest_rule]
+Recoge una recompensa cada día. Siete días seguidos dan siete regalos; si faltas un día, la racha se reinicia.
+---
+[shovey_shop_skin_default]
+Clásico
+---
+[shovey_shop_skin_ember]
+Ascua
+---
+[shovey_shop_skin_frost]
+Escarcha
+---
+[shovey_shop_skin_berry]
+Baya
+---
+[shovey_shop_skin_night]
+Noche
+---
+[shovey_shop_skin_crystal]
+Cristal
+---
+[shovey_shop_skin_stone]
+Piedra
+---
+[shovey_shop_skin_gold]
+Oro
+---

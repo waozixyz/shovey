@@ -799,3 +799,100 @@ Pro získání odměny dokonči a synchronizuj úrovně 1–28 s alespoň 10 tah
 [shovey_reward_campaign_requirements]
 Pro získání odměny dokonči a synchronizuj všechny úrovně Classic s alespoň 10 tahy v každé úrovni.
 ---
+
+[shovey_shop_shop]
+Obchod
+---
+[shovey_shop_chest]
+Denní truhla
+---
+[shovey_shop_skins]
+Vzhledy
+---
+[shovey_shop_coins]
+Mince
+---
+[shovey_shop_dew]
+Dew
+---
+[shovey_shop_back]
+Zpět
+---
+[shovey_shop_profile]
+Profil
+---
+[shovey_shop_leaderboard]
+Žebříček
+---
+[shovey_shop_confirm]
+Potvrdit nákup
+---
+[shovey_shop_cancel]
+Zrušit
+---
+[shovey_shop_free]
+Zdarma
+---
+[shovey_shop_owned]
+Vlastněno
+---
+[shovey_shop_wear]
+Použít
+---
+[shovey_shop_wearing]
+Používá se
+---
+[shovey_shop_buy]
+Koupit
+---
+[shovey_shop_buy_dew]
+Koupit Dew
+---
+[shovey_shop_claim]
+Vyzvednout
+---
+[shovey_shop_claimed]
+Vyzvednuto
+---
+[shovey_shop_today]
+Dnes
+---
+[shovey_shop_locked]
+Zamčeno
+---
+[shovey_shop_chest_wait]
+Vrať se zítra
+---
+[shovey_shop_purchase_pending]
+Nákup odeslán. Zůstatek se obnoví po potvrzení.
+---
+[shovey_shop_purchase_failed]
+Nepodařilo se potvrdit. Zkontroluj zůstatek a zkus to znovu.
+---
+[shovey_shop_chest_rule]
+Vyzvedni odměnu každý den. Sedm dní v řadě přinese sedm dárků; vynechaný den sérii vynuluje.
+---
+[shovey_shop_skin_default]
+Klasický
+---
+[shovey_shop_skin_ember]
+Žár
+---
+[shovey_shop_skin_frost]
+Mráz
+---
+[shovey_shop_skin_berry]
+Bobule
+---
+[shovey_shop_skin_night]
+Noc
+---
+[shovey_shop_skin_crystal]
+Krystal
+---
+[shovey_shop_skin_stone]
+Kámen
+---
+[shovey_shop_skin_gold]
+Zlato
+---

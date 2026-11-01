@@ -799,3 +799,100 @@ Selesaikan dan sinkronkan level 1–28 dengan minimal 10 langkah per level untuk
 [shovey_reward_campaign_requirements]
 Selesaikan dan sinkronkan semua level Classic dengan minimal 10 langkah per level untuk mengklaim hadiah ini.
 ---
+
+[shovey_shop_shop]
+Toko
+---
+[shovey_shop_chest]
+Peti harian
+---
+[shovey_shop_skins]
+Tampilan
+---
+[shovey_shop_coins]
+Koin
+---
+[shovey_shop_dew]
+Dew
+---
+[shovey_shop_back]
+Kembali
+---
+[shovey_shop_profile]
+Profil
+---
+[shovey_shop_leaderboard]
+Peringkat
+---
+[shovey_shop_confirm]
+Konfirmasi beli
+---
+[shovey_shop_cancel]
+Batal
+---
+[shovey_shop_free]
+Gratis
+---
+[shovey_shop_owned]
+Dimiliki
+---
+[shovey_shop_wear]
+Pakai
+---
+[shovey_shop_wearing]
+Dipakai
+---
+[shovey_shop_buy]
+Beli
+---
+[shovey_shop_buy_dew]
+Beli Dew
+---
+[shovey_shop_claim]
+Ambil
+---
+[shovey_shop_claimed]
+Diambil
+---
+[shovey_shop_today]
+Hari ini
+---
+[shovey_shop_locked]
+Terkunci
+---
+[shovey_shop_chest_wait]
+Kembali besok
+---
+[shovey_shop_purchase_pending]
+Pembelian dikirim. Saldo diperbarui setelah dikonfirmasi.
+---
+[shovey_shop_purchase_failed]
+Belum dikonfirmasi. Periksa saldo lalu coba lagi.
+---
+[shovey_shop_chest_rule]
+Ambil hadiah sekali sehari. Tujuh hari berturut-turut memberi tujuh hadiah; melewatkan satu hari mengulang rangkaian.
+---
+[shovey_shop_skin_default]
+Klasik
+---
+[shovey_shop_skin_ember]
+Bara
+---
+[shovey_shop_skin_frost]
+Embun beku
+---
+[shovey_shop_skin_berry]
+Beri
+---
+[shovey_shop_skin_night]
+Malam
+---
+[shovey_shop_skin_crystal]
+Kristal
+---
+[shovey_shop_skin_stone]
+Batu
+---
+[shovey_shop_skin_gold]
+Emas
+---

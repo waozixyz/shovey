@@ -315,6 +315,41 @@ SpritePath :: (index: s32, name: string) {
     SpritePathIn(landscape_sprite_files[:], index, SPRITE_LANDSCAPE_FOLDER, name)
 }
 
+board_selected_skin: s32;
+#program_export
+BoardSetSkin :: (id: s32) { board_selected_skin = ifx id >= 0 && id < 8 then id else 0 }
+sprite_skin: s32 = -1;
+skin_sprite_paths: [8][8]string;
+skin_landscape_paths: [8][8]string;
+BoardSkinPrepare :: () {
+    skin := board_selected_skin
+    if skin == sprite_skin { return }
+    sprite_skin = skin
+    facings: [4]string = .["left", "up", "right", "down"]
+    for direction: cast(s32)0..3 {
+        for charged: cast(s32)0..1 {
+            index := (ifx charged == 1 then SPRITE_CHARGED else SPRITE_PLAYER) + direction
+            slot := charged * 4 + direction
+            // Each immutable path is allocated once; switching skins only
+            // changes references, including the landscape charged sprites.
+            if skin_sprite_paths[skin][slot].count == 0 {
+                name: Vec(u8)
+                if skin > 0 { BuilderPrint(*name, "skin-%-", skin) }
+                BuilderPrint(*name, "%-%", ifx charged == 1 then "charged" else "player", facings[direction])
+                path: Vec(u8)
+                BuilderPrint(*path, "assets/shovey/sprites/%.png", TextView(VecSlice(name, 0, name.count)))
+                skin_sprite_paths[skin][slot] = BuilderFinish(path)
+                land: Vec(u8)
+                BuilderPrint(*land, "assets/%/sprites/%.png", SPRITE_LANDSCAPE_FOLDER, TextView(VecSlice(name, 0, name.count)))
+                skin_landscape_paths[skin][slot] = BuilderFinish(land)
+                VecFree(name)
+            }
+            sprite_files[index] = skin_sprite_paths[skin][slot]
+            landscape_sprite_files[index] = skin_landscape_paths[skin][slot]
+        }
+    }
+}
+
 SpritesPrepare :: () {
     for index: cast(s32)0..15 { abyss_sprite_indices[index] = SPRITE_ABYSS + index }
     digits: [24]u8
@@ -472,16 +507,7 @@ SpritesPrepare :: () {
         BuilderPrint(*corner, "abyss-corner-%", FormatInteger(cast(s64)mask, digits[:]))
         SpritePath(SPRITE_ABYSS_CORNER + mask, BuilderFinish(corner))
     }
-    for direction: cast(s32)0..3 {
-        bytes: Vec(u8)
-        BuilderPrint(*bytes, "player-%", facings[direction])
-        SpritePath(SPRITE_PLAYER + direction, TextView(VecSlice(bytes, 0, bytes.count)))
-        VecFree(bytes)
-        charged: Vec(u8)
-        BuilderPrint(*charged, "charged-%", facings[direction])
-        SpritePath(SPRITE_CHARGED + direction, TextView(VecSlice(charged, 0, charged.count)))
-        VecFree(charged)
-    }
+    BoardSkinPrepare()
     SpritePath(SPRITE_DOOR_OPEN, "door-open")
     for frame_number: cast(s32)0..7 {
         bytes: Vec(u8)
@@ -506,6 +532,7 @@ SpritesPrepare :: () {
 // The picture file of one sprite number.
 SpriteFile :: (index: s32) -> string {
     if !sprites_ready { SpritesPrepare() }
+    BoardSkinPrepare()
     return sprite_files[index]
 }
 
@@ -651,12 +678,14 @@ board_cache_tiles: [SHOVEY_CELLS]s32;
 board_cache_decorations: [SHOVEY_CELLS]s32;
 board_cache_gliding: [SHOVEY_CELLS]s32;
 board_cache_player: s32 = -2;
+board_cache_skin: s32 = -2;
 board_cache_chest: s32 = -2;
 board_cache_landscape: bool;
 board_cache_animated: [SHOVEY_CELLS]s32;
 board_cache_animated_count: s32;
 
 BoardCacheCurrent :: (game: *ShoveyGame, landscape: bool) -> bool {
+    if board_cache_skin != sprite_skin { return false }
     if board_cache_player != game.player || board_cache_landscape != landscape || board_cache_chest != BoardChestState() { return false }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         if board_cache_ground[at] != game.ground[at] || board_cache_objects[at] != game.objects[at] ||
@@ -691,6 +720,7 @@ BoardCacheKeep :: (game: *ShoveyGame, landscape: bool) {
             board_cache_animated_count += 1
         }
     }
+    board_cache_skin = sprite_skin
     board_cache_player = game.player
     board_cache_chest = BoardChestState()
     board_cache_landscape = landscape
@@ -952,6 +982,7 @@ BoardAlong :: (grid: TileMapResult, from: s32, direction: s32, steps: s32, lands
 ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64, now: float64, names: []string,
     landscape: bool) -> TileMapResult {
     if !sprites_ready { SpritesPrepare() }
+    BoardSkinPrepare()
     BoardEffectsNotice(game, now)
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
@@ -1081,6 +1112,7 @@ board_preview_layers: [SHOVEY_CELLS * 4]s32;
 ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64, names: []string, landscape: bool,
     scenery: bool = false) {
     if !sprites_ready { SpritesPrepare() }
+    BoardSkinPrepare()
     if !ShoveyLoad(*board_preview_game, level) { return }
     BoardLayersFill(*board_preview_game, board_preview_layers[:], 0.0, landscape, false)
     files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]

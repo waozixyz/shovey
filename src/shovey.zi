@@ -6,7 +6,7 @@
 Main :: () -> s32 { return RunNodeApp(ShoveyNodeFrame, ShoveyNodeBack) }
 
 ShoveyNodeFrame :: (message: AppMessage) -> bool {
-    unused message
+    ShoveyShopSetToday(ifx message.time > 0 then message.time / 86400 else -1)
     ShoveyFrame()
     return true
 }

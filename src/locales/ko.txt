@@ -799,3 +799,100 @@ Dew 보상을 받으세요.
 [shovey_reward_campaign_requirements]
 이 보상을 받으려면 모든 Classic 레벨을 각각 10회 이상 이동하여 완료하고 동기화하세요.
 ---
+
+[shovey_shop_shop]
+상점
+---
+[shovey_shop_chest]
+일일 상자
+---
+[shovey_shop_skins]
+스킨
+---
+[shovey_shop_coins]
+코인
+---
+[shovey_shop_dew]
+Dew
+---
+[shovey_shop_back]
+뒤로
+---
+[shovey_shop_profile]
+프로필
+---
+[shovey_shop_leaderboard]
+순위표
+---
+[shovey_shop_confirm]
+구매 확인
+---
+[shovey_shop_cancel]
+취소
+---
+[shovey_shop_free]
+무료
+---
+[shovey_shop_owned]
+보유 중
+---
+[shovey_shop_wear]
+착용
+---
+[shovey_shop_wearing]
+착용 중
+---
+[shovey_shop_buy]
+구매
+---
+[shovey_shop_buy_dew]
+Dew 구매
+---
+[shovey_shop_claim]
+받기
+---
+[shovey_shop_claimed]
+받음
+---
+[shovey_shop_today]
+오늘
+---
+[shovey_shop_locked]
+잠김
+---
+[shovey_shop_chest_wait]
+내일 다시 오세요
+---
+[shovey_shop_purchase_pending]
+구매를 요청했어요. 확인 후 잔액이 갱신돼요.
+---
+[shovey_shop_purchase_failed]
+확인하지 못했어요. 잔액을 확인하고 다시 시도하세요.
+---
+[shovey_shop_chest_rule]
+하루 한 번 보상을 받으세요. 7일 연속으로 7개 보상! 하루를 놓치면 처음부터 시작해요.
+---
+[shovey_shop_skin_default]
+클래식
+---
+[shovey_shop_skin_ember]
+불씨
+---
+[shovey_shop_skin_frost]
+서리
+---
+[shovey_shop_skin_berry]
+베리
+---
+[shovey_shop_skin_night]
+밤
+---
+[shovey_shop_skin_crystal]
+수정
+---
+[shovey_shop_skin_stone]
+돌
+---
+[shovey_shop_skin_gold]
+금
+---

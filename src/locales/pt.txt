@@ -799,3 +799,100 @@ Conclua e sincronize os níveis 1–28 com pelo menos 10 movimentos por nível p
 [shovey_reward_campaign_requirements]
 Conclua e sincronize todos os níveis Classic com pelo menos 10 movimentos por nível para resgatar esta recompensa.
 ---
+
+[shovey_shop_shop]
+Loja
+---
+[shovey_shop_chest]
+Baú diário
+---
+[shovey_shop_skins]
+Visuais
+---
+[shovey_shop_coins]
+Moedas
+---
+[shovey_shop_dew]
+Dew
+---
+[shovey_shop_back]
+Voltar
+---
+[shovey_shop_profile]
+Perfil
+---
+[shovey_shop_leaderboard]
+Classificação
+---
+[shovey_shop_confirm]
+Confirmar compra
+---
+[shovey_shop_cancel]
+Cancelar
+---
+[shovey_shop_free]
+Grátis
+---
+[shovey_shop_owned]
+Adquirido
+---
+[shovey_shop_wear]
+Usar
+---
+[shovey_shop_wearing]
+Em uso
+---
+[shovey_shop_buy]
+Comprar
+---
+[shovey_shop_buy_dew]
+Comprar Dew
+---
+[shovey_shop_claim]
+Resgatar
+---
+[shovey_shop_claimed]
+Resgatado
+---
+[shovey_shop_today]
+Hoje
+---
+[shovey_shop_locked]
+Bloqueado
+---
+[shovey_shop_chest_wait]
+Volte amanhã
+---
+[shovey_shop_purchase_pending]
+Compra enviada. O saldo será atualizado após a confirmação.
+---
+[shovey_shop_purchase_failed]
+Não foi possível confirmar. Confira o saldo e tente de novo.
+---
+[shovey_shop_chest_rule]
+Resgate uma recompensa por dia. Sete dias seguidos dão sete presentes; perder um dia reinicia a sequência.
+---
+[shovey_shop_skin_default]
+Clássico
+---
+[shovey_shop_skin_ember]
+Brasa
+---
+[shovey_shop_skin_frost]
+Geada
+---
+[shovey_shop_skin_berry]
+Fruta
+---
+[shovey_shop_skin_night]
+Noite
+---
+[shovey_shop_skin_crystal]
+Cristal
+---
+[shovey_shop_skin_stone]
+Pedra
+---
+[shovey_shop_skin_gold]
+Ouro
+---
