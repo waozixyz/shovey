@@ -3,6 +3,7 @@
 #import, file "../src/levels.zi";
 #import, file "../src/editor/edit.zi";
 #import, file "../src/live_campaign.zi";
+#import, file "../src/official_updates.zi";
 
 #program_export
 Check :: () -> s32 {
@@ -69,6 +70,19 @@ Check :: () -> s32 {
     ShoveyLevelBoard(29) != ShoveyLevelData(1) { return 12 }
     if !ShoveyLiveAlreadyChecked("publication", "publication", SHOVEY_APPROVED_CAMPAIGN_MARK) ||
     ShoveyLiveAlreadyChecked("new-publication", "publication", SHOVEY_APPROVED_CAMPAIGN_MARK) { return 14 }
+    // A stale official publication can have been revalidated and stamped
+    // against THIS build. Its old 97 must still not roll back the redesign.
+    for at: cast(s32)0..1439 { live_staged[96 * SHOVEY_LIVE_BOARD + at] = RETIRED_CLASSIC_97[at] }
+    cached = LiveCheckInstall()
+    shovey_live_count = 0
+    if !ShoveyLiveLoadCached(cached, SHOVEY_APPROVED_CAMPAIGN_MARK) ||
+    ShoveyLevelBoard(97) != ShoveyLevelData(97) { return 15 }
+    if !ShoveyLoad(*game, 97) { return 16 }
+    for letter: ShoveyLevelSolution(97) { unused ShoveyMove(*game, cast(s32)(letter - #char "0")) }
+    if !game.won { return 17 }
+    // A changed live board is preserved, rather than all of 97 being pinned.
+    shovey_live_boards[96 * SHOVEY_LIVE_BOARD + 1439] = #char "1"
+    if ShoveyLevelBoard(97) == ShoveyLevelData(97) { return 18 }
     shovey_live_count = 0
     return 0
 }

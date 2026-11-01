@@ -1,6 +1,7 @@
 // Shovey Classic campaign binding for the pure rules in rules.zi.
 #import "text_buffer"
 #import "levels"
+#import, file "official_updates.zi";
 #import, file "reward_locations.zi";
 #load "rules.zi";
 
@@ -42,7 +43,9 @@ ShoveyLevelBoard :: (level: s32) -> string {
     if shovey_live_count > 0 {
         if level >= 1 && level <= shovey_live_count {
             at := (level - 1) * SHOVEY_LIVE_BOARD
-            return TextView(shovey_live_boards[at:at + shovey_live_lengths[level - 1]])
+            board := TextView(shovey_live_boards[at:at + shovey_live_lengths[level - 1]])
+            if ShoveyRetiredOfficialBoard(level, board) { return ShoveyLevelData(level) }
+            return board
         }
         return ""
     }

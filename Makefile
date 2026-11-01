@@ -322,7 +322,10 @@ shop-test: levels
 	sh tests/shop_view_test.sh
 	sh tests/shop_host_test.sh
 
-public-test: solver laws game-maps-test shop-test
+official-update-test: levels
+	$(call ziran_test,official_update_test)
+
+public-test: solver laws game-maps-test shop-test official-update-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
