@@ -187,13 +187,18 @@ FriendSave :: () {
 
 FriendPrepare :: () {
     if mini || ShoveySecret(game.level) || game.level == ShoveyFinaleLevel() { return }
+    if SharedProgressAccountLoading(*shared_progress) {
+        friend_guide.pending = 0
+        friend_guide.waiting = 0
+        return
+    }
     if !friend_loaded {
         friend_loaded = true
-        if !GuideRead(*friend_guide, PathRecord("local.guide.seen")) {
-            GuideSeedEarlier(*friend_guide, game.level)
-            if game.moves > 0 { friend_guide.seen = friend_guide.seen | GuideBoardTopics(*game) }
-            if friend_guide.seen != 0 { FriendSave() }
-        }
+        unused GuideRead(*friend_guide, PathRecord("local.guide.seen"))
+        before := friend_guide.seen
+        GuideSeedEarlier(*friend_guide, progress.unlocked)
+        if game.moves > 0 { friend_guide.seen = friend_guide.seen | GuideBoardTopics(*game) }
+        if friend_guide.seen != before { FriendSave() }
     }
     GuideOffer(*friend_guide, *game)
 }
@@ -1257,6 +1262,12 @@ ShoveyFrame :: () {
             Remember()
         }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
+        if friend_loaded {
+            before := friend_guide.seen
+            friend_guide.level = 0
+            GuideSeedEarlier(*friend_guide, progress.unlocked)
+            if friend_guide.seen != before { FriendSave() }
+        }
     }
     width := cast(float32)frame.width
     top := cast(float32)frame.top

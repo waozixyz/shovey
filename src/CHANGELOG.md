@@ -10,6 +10,7 @@
 
 - Return to the level selector at the level just played or reached after a win, while a fresh session still opens at earned progress.
 - See while signed-in account progress is still loading, without delaying local play.
+- Pip does not repeat introductions already covered by synced account progress.
 - Back from a host-opened shop or chest returns to the screen that opened it.
 - Visit Shovey's shop, claim the daily chest, and open Profile and Leaderboard with painted icons.
 - Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.

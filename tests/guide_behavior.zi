@@ -108,5 +108,14 @@ Check :: () -> s32 {
     }
     if step != -1 || !seen || tapped.player != start || tapped.moves != 0 || GuideNext(*pip) != -1 { return 30 }
     if GuideTouch(*pip, true, true, 2, *seen) != 2 || GuideTouch(*pip, false, true, 3, *seen) != 3 { return 31 }
+    beginner: ShoveyGuide
+    GuideSeedEarlier(*beginner, 1)
+    GuideOffer(*beginner, *tapped)
+    if GuideNext(*beginner) != GUIDE_HOME { return 32 }
+    experienced: ShoveyGuide
+    if !ShoveyLoad(*tapped, 91) { return 34 }
+    GuideSeedEarlier(*experienced, 91)
+    GuideOffer(*experienced, *tapped)
+    if GuideNext(*experienced) != -1 { return 35 }
     return 42
 }
