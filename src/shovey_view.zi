@@ -1291,8 +1291,7 @@ ShoveyFrame :: () {
         if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
         }
-        if !mini { ShopUI.TitleActions(frame.session, Rectangle.{12.0, top + 62.0, 92.0, 40.0}) }
-        list_top := top + ifx mini then 72.0 else 110.0
+        list_top := top + 72.0
         columns := cast(s32)((width - 24.0) / 112.0)
         if columns < 2 { columns = 2 }
         listed := ShoveyLevelCount()
@@ -1476,10 +1475,7 @@ ShoveyFrame :: () {
     }
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
-    if !mini && !cinematic {
-        ShopUI.TitleActions(frame.session, Rectangle.{width - 96.0, status_y, 92.0, 28.0})
-    }
-    area := Rectangle.{8.0, status_y + 28.0, width - 16.0, bottom - status_y - 36.0}
+    area := Rectangle.{8.0, status_y, width - 16.0, bottom - status_y - 8.0}
     FriendPrepare()
     pad_mode := ControlsPad() && !mini
     landscape := BoardLandscape(area.width, area.height)

@@ -28,6 +28,10 @@ def main():
         return (a['x'] + a['width'] <= b['x'] or b['x'] + b['width'] <= a['x'] or
                 a['y'] + a['height'] <= b['y'] or b['y'] + b['height'] <= a['y'])
 
+    def without_game_shortcuts():
+        for key in (61000, 61001, 61002, 61003):
+            assert not driver.find(key=key), f'In-game shortcut leaked: {key}'
+
     for width, height in ((320, 640), (900, 640)):
         with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as folder:
             profile = Path(folder)
@@ -78,6 +82,23 @@ def main():
                         assert separated(logo, market) and separated(logo, chest)
                         assert logo['width'] <= (width * .58 + 1 if width < 600 else 361)
                     subprocess.run(['import', '-window', window, str(output / f'{width}.png')], check=True)
+                    driver.press(label='Play', role='button')
+                    driver.wait(label='How do you want to move?', role='text')
+                    without_game_shortcuts()
+                    driver.press(label='Swipe and tap', role='button')
+                    driver.wait_gone(label='How do you want to move?', role='text')
+                    if driver.find(label='Got it', role='button'):
+                        driver.press(label='Got it', role='button')
+                        driver.wait_gone(label='Got it', role='button')
+                    driver.wait(label='Levels', role='button')
+                    without_game_shortcuts()
+                    driver.press(label='Levels', role='button')
+                    driver.wait(label='Continue', role='button')
+                    without_game_shortcuts()
+                    driver.press(label='Back', role='button')
+                    driver.wait(label='Levels', role='button')
+                    driver.press(label='Back', role='button')
+                    driver.wait(key=49200, role='button')
                     driver.press(label='Next', role='button')
                     driver.wait(label='Open', role='button')
                     driver.wait_idle(frames=3, timeout=5)
@@ -104,7 +125,7 @@ def main():
                     if child.poll() is None:
                         child.terminate()
                     child.wait(timeout=10)
-    print('Header local UI test passed: 320/900px layouts, compact clear titles, stored guest coins, Dew readout, Market/Chest Back and Profile navigation')
+    print('Header local UI test passed: 320/900px layouts, compact clear titles, stored guest coins, Dew readout, title-only Market/Chest, Back routing and Profile navigation')
 
 
 if __name__ == '__main__':
