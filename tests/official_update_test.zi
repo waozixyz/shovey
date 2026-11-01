@@ -79,6 +79,7 @@ TestOfficial :: (number: s32, retired: string) {
 
 #program_export
 main :: () -> s32 {
+    TestOfficial(125, RETIRED_CLASSIC_125_BARRELS)
     TestOfficial(97, RETIRED_CLASSIC_97_GARDEN)
     TestOfficial(98, RETIRED_CLASSIC_98_FROZEN)
     TestOfficial(99, RETIRED_CLASSIC_99)

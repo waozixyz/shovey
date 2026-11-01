@@ -482,5 +482,6 @@ editor-card: levels build/ziran/libziran.a
 		KRYON_CAPTURE_PATH='$(abspath assets/shovey-editor/preview.png)' xvfb-run -a -n 400 build/card/editor-card
 
 .PHONY: barrels-test
-barrels-test: levels
+barrels-test: solver
 	$(call ziran_test,barrels_test)
+	python3 tests/barrels_levels_test.py

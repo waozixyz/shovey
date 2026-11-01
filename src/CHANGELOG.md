@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Classic 125 now needs its crate and both movable barrels on marks after their shared button work, keeping the puzzle active without adding walls.
+
 - Push barrels like wooden crates, including onto marks and into water, while keeping their barrel appearance and existing saved progress.
 
 - Rebuild Classic 93 with hive crossings and Classic 97–99 as brick buildings with pressure plates, star relays and painted-ball puzzles. Preserve old campaign downloads, custom boards and earned progress.
