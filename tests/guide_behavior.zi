@@ -89,5 +89,24 @@ Check :: () -> s32 {
     doors.player = SHOVEY_WIDTH * 11 + 6
     GuideOffer(*met, *doors)
     if GuideNext(*met) != -1 { return 26 }
+    // A tap anywhere while Pip's card shows continues the guide without
+    // stepping Shovey; once the card is gone, taps step again.
+    tapped: ShoveyGame
+    if !ShoveyLoad(*tapped, 1) { return 27 }
+    pip: ShoveyGuide
+    GuideOffer(*pip, *tapped)
+    first := GuideNext(*pip)
+    if first < 0 { return 28 }
+    start := tapped.player
+    seen := false
+    step := GuideTouch(*pip, true, false, 2, *seen)
+    if step != -1 || seen || GuideNext(*pip) != first { return 29 }
+    for direction: cast(s32)0..3 {
+        step = GuideTouch(*pip, true, true, direction, *seen)
+        if step >= 0 { unused ShoveyMove(*tapped, step) }
+        if GuideNext(*pip) < 0 { break }
+    }
+    if step != -1 || !seen || tapped.player != start || tapped.moves != 0 || GuideNext(*pip) != -1 { return 30 }
+    if GuideTouch(*pip, true, true, 2, *seen) != 2 || GuideTouch(*pip, false, true, 3, *seen) != 3 { return 31 }
     return 42
 }

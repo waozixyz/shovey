@@ -688,6 +688,9 @@ Pip
 [shovey_friend_continue]
 Compris
 ---
+[shovey_friend_tap]
+Touche n’importe où pour continuer
+---
 [shovey_friend_replay]
 Les conseils de Pip
 ---

@@ -1,4 +1,4 @@
-// Verify that pressing the empty space beside the board steps the player, on a wide browser window; no pixel captures.
+// Verify board movement and Pip's tips on a wide browser window: keys move under a tip, the first tap anywhere only dismisses it; no pixel captures.
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {mkdtemp, readFile, rm} from 'node:fs/promises';
@@ -70,6 +70,25 @@ try {
     await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1});
     await delay(400);
   }
+  async function key(code, keyCode) {
+    for (const type of ['keyDown', 'keyUp'])
+      await call('Input.dispatchKeyEvent', {type, key: code, code, windowsVirtualKeyCode: keyCode});
+  }
+  async function button(label) {
+    const node = (await tree()).find(candidate => candidate.label === label &&
+      (candidate.role === 'button' || candidate.kind === 'button'));
+    assert(node, 'Missing button ' + label);
+    await click(node.x + node.width / 2, node.y + node.height / 2);
+    return node;
+  }
+  async function cardIsVisible() {
+    return (await tree()).some(node => node.label === 'Got it' && (node.role === 'button' || node.kind === 'button'));
+  }
+  async function playerCentre() {
+    const player = (await tree()).find(node => node.label === 'Shovey' && node.role === 'image');
+    assert(player, 'Missing Shovey in the widget tree');
+    return [player.x + player.width / 2, player.y + player.height / 2];
+  }
   await call('Runtime.enable');
   await call('Page.enable');
   await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
@@ -104,28 +123,92 @@ try {
   await click(choice.x + choice.width / 2, choice.y + choice.height / 2);
   await delay(600);
   assert(!(await tree()).find(node => node.label === 'How do you want to move?'), 'The controls question stayed open');
-  // A new player meets Pip before movement becomes available.
-  const introduction = (await tree()).find(node => node.label === 'Got it');
-  if (introduction) await click(introduction.x + introduction.width / 2, introduction.y + introduction.height / 2);
-  assert(!(await tree()).find(node => node.label === 'Got it'), 'The introduction stayed open');
+  // Pip's introduction: keys still move Shovey under it.
+  assert(await cardIsVisible(), 'The first level did not show Pip');
   const campaign = () => evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding: 'utf8'})`);
-  const before = await campaign();
-  // The board is centred, so the window's far edges lie beside it. A wall may
-  // block one side; the player walks towards at least one of them.
-  let moved = false;
-  for (const x of [12, width - 12]) {
-    await click(x, height / 2);
-    await delay(400);
-    if (await campaign() !== before) { moved = true; break; }
+  async function moveUntilPlayerMoved(actions) {
+    const [beforeX, beforeY] = await playerCentre();
+    for (const action of actions) {
+      await action();
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const [afterX, afterY] = await playerCentre();
+        if (Math.abs(afterX - beforeX) + Math.abs(afterY - beforeY) > 2) return;
+        await delay(100);
+      }
+    }
+    throw Error('No tested movement moved Shovey');
   }
-  assert(moved, 'Pressing beside the board did not step the player');
+  async function swipe(dx, dy) {
+    const board = (await tree()).find(node => node.key === 22000);
+    assert(board, 'Missing the board in the widget tree');
+    const x = board.x + board.width / 2;
+    const y = board.y + board.height / 2;
+    await call('Input.dispatchMouseEvent', {type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1});
+    await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x: x + dx, y: y + dy, button: 'left', buttons: 1});
+    await delay(100);
+    await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x: x + dx, y: y + dy, button: 'left', buttons: 0, clickCount: 1});
+    await delay(400);
+  }
+  const arrows = [
+    ['ArrowLeft', 37], ['ArrowUp', 38], ['ArrowRight', 39], ['ArrowDown', 40]
+  ];
+  await moveUntilPlayerMoved(arrows.map(([code, keyCode]) => () => key(code, keyCode)));
+  assert(await cardIsVisible(), 'Keyboard movement dismissed Pip');
+  async function dismissWithoutMoving(action, name) {
+    const before = await campaign();
+    const [beforeX, beforeY] = await playerCentre();
+    await action();
+    await delay(500);
+    assert(!(await cardIsVisible()), name + ' did not dismiss Pip');
+    assert.equal(await campaign(), before, name + ' dismissal stepped the board');
+    const [afterX, afterY] = await playerCentre();
+    assert(Math.abs(afterX - beforeX) + Math.abs(afterY - beforeY) <= 2, name + ' dismissal moved Shovey');
+  }
+  async function replayPip() {
+    await button('Help');
+    await button('Pip’s tips');
+    assert(await cardIsVisible(), 'Replaying Pip from Help did not show him');
+  }
+  // The first tap or swipe anywhere, beside the board or on it, only
+  // continues Pip's guide.
+  await dismissWithoutMoving(() => click(12, height / 2), 'A tap beside the board');
+  await replayPip();
+  const board = (await tree()).find(node => node.key === 22000);
+  assert(board, 'Missing the board in the widget tree');
+  await dismissWithoutMoving(() => click(board.x + board.width / 2, board.y + board.height / 2), 'A tap on the board');
+  await replayPip();
+  await dismissWithoutMoving(() => swipe(100, 0), 'A swipe');
+  await replayPip();
+  await dismissWithoutMoving(() => button('Got it'), 'The button');
+  await replayPip();
+  await dismissWithoutMoving(() => key('Enter', 13), 'Enter');
+  await replayPip();
+  await dismissWithoutMoving(() => key('Escape', 27), 'Escape');
+  // Without Pip, taps, swipes and the pad move Shovey again.
+  await moveUntilPlayerMoved([12, width - 12].map(x => () => click(x, height / 2)));
+  await moveUntilPlayerMoved([
+    () => swipe(-100, 0), () => swipe(0, -100), () => swipe(100, 0), () => swipe(0, 100)
+  ]);
+  await button('Help');
+  await button('Movement pad');
+  await button('Close help');
+  const pad = (await tree()).find(node => node.key === 20040);
+  assert(pad, 'The movement pad did not appear');
+  const third = pad.width / 3;
+  const arms = [
+    [pad.x + third / 2, pad.y + third * 1.5],
+    [pad.x + third * 1.5, pad.y + third / 2],
+    [pad.x + third * 2.5, pad.y + third * 1.5],
+    [pad.x + third * 1.5, pad.y + third * 2.5]
+  ];
+  await moveUntilPlayerMoved(arms.map(([x, y]) => () => click(x, y)));
   const saved = await campaign();
   await call('Page.reload');
   await wait(`typeof Module !== 'undefined' && Module.FS?.analyzePath('/tmp/test-driver').exists &&
     Module.FS.analyzePath('/kryon-apps/shovey/local.campaign').exists &&
     document.querySelector('#loading-screen').classList.contains('is-hidden')`);
   assert.equal(await campaign(), saved, 'The local campaign save did not survive a reload');
-  console.log(`PASS: Shovey web ${width}x${height}: pressing beside the board steps the player`);
+  console.log(`PASS: Shovey web ${width}x${height}: keys move under Pip, the first tap or swipe only dismisses him, then taps, swipes and the pad move Shovey`);
 } finally {
   socket?.close();
   if (browser.exitCode === null && browser.signalCode === null) {

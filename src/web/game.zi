@@ -3,6 +3,7 @@
 #import "kryon/app_context"
 #import "kryon/app_protocol"
 #import "kryon/app_mini"
+using Canvas :: #import "kryon/Canvas";
 #import "kryon/geometry"
 #import "kryon/carousel"
 #import "kryon/button_widget"
@@ -76,6 +77,7 @@ WebCovers :: () {
 Main :: () -> s64 {
     mode := AppMode()
     if mode == APP_IDENTIFY {
+        CanvasSetExitKey(0)
         AppIdentity("shovey")
         AppDescribe("Shovey", "S1.7rr:M4 4H20V20H4ZM9 9H15V15H9Z")
         return APP_PROTOCOL

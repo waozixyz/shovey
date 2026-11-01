@@ -688,6 +688,9 @@ Pip
 [shovey_friend_continue]
 Rozumím
 ---
+[shovey_friend_tap]
+Pokračuj klepnutím kamkoli
+---
 [shovey_friend_replay]
 Pipovy tipy
 ---

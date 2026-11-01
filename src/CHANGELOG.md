@@ -5,6 +5,8 @@
 - Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.
 - Editor text fields use Kryon’s shared text state while keeping Enter to save collection names.
 - Sharing collections cancels safely when accounts change and keeps drafts when requests fail.
+- Pip's tips now stay visible without blocking movement or pausing the board.
+- Pip's tips glow on what they point at, and a tap anywhere continues them without moving Shovey.
 - A self-contained browser package is available for CrazyGames submission, with local guest play and saved progress.
 
 ## [0.6.163] - 2026-10-29

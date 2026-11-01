@@ -688,6 +688,9 @@ Shovey
 [shovey_friend_continue]
 明白了
 ---
+[shovey_friend_tap]
+点击任意处继续
+---
 [shovey_friend_replay]
 皮普的提示
 ---

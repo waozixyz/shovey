@@ -688,6 +688,9 @@ Shovey
 [shovey_friend_continue]
 알겠어
 ---
+[shovey_friend_tap]
+아무 곳이나 탭해서 계속
+---
 [shovey_friend_replay]
 핍의 도움말
 ---

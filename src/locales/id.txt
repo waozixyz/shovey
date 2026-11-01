@@ -688,6 +688,9 @@ Pip
 [shovey_friend_continue]
 Mengerti
 ---
+[shovey_friend_tap]
+Ketuk di mana saja untuk lanjut
+---
 [shovey_friend_replay]
 Kiat Pip
 ---

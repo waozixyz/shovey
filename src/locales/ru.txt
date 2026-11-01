@@ -688,6 +688,9 @@ Dew
 [shovey_friend_continue]
 Понятно
 ---
+[shovey_friend_tap]
+Нажми в любом месте, чтобы продолжить
+---
 [shovey_friend_replay]
 Советы Пипа
 ---

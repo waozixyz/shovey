@@ -85,6 +85,8 @@ shared_account_changed: bool;
 help_open: bool;
 friend_guide: ShoveyGuide;
 friend_loaded: bool;
+friend_card_visible: bool;
+friend_save_pending: bool;
 // An embedded mini page opens straight into a level with only its levels
 // and restart controls.
 mini: bool;
@@ -198,6 +200,8 @@ FriendCovers :: (x: float32, y: float32, card_width: float32, height: float32, c
     return covered.width > 0.0 && covered.height > 0.0
 }
 
+// Pip's card: the tip, a glow on the cell it is about and Continue, which
+// Enter and Escape also press.
 FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: TileMapResult, landscape: bool) {
     topic := GuideNext(*friend_guide)
     if topic < 0 { return }
@@ -207,6 +211,11 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     text_height := cast(float32)TextHeight(frame.session, TextProps.{.text = text,
             .bounds = Rectangle.{0.0, 0.0, text_width, 0.0}, .font = 15, .wrap = TextWrap.TextWrapAuto})
     height: float32 = text_height + 98.0
+    // The hint sits beside Continue, or above it on a narrow card.
+    hint := AppLocaleHost("shovey_friend_tap")
+    hint_width := card_width - 228.0
+    hint_row := hint_width < 150.0
+    if hint_row { hint_width = text_width; height += 24.0 }
     if height < 154.0 { height = 154.0 }
     x: float32 = width - card_width - 12.0
     // Point out the new mechanic without revealing a route through the puzzle.
@@ -230,10 +239,7 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     if y < clear { y = clear }
     hides := focused && FriendCovers(x, y, card_width, height, focus_cell)
     if hides && !FriendCovers(x, clear, card_width, height, focus_cell) { y = clear }
-    if focused {
-        unused Box(frame.session, BoxProps.{.key = cast(u64)20605, .bounds = focus_cell,
-                .fill = Color.{181, 221, 104, 28}, .border = Color.{207, 242, 139, 255}, .radius = 4.0})
-    }
+    if focused { PipGlow(frame.session, cast(u64)20610, focus_cell, frame.now) }
     // Pip sits in the scene beside a speech bubble; the puzzle stays visible.
     unused Box(frame.session, BoxProps.{.key = cast(u64)20600,
             .bounds = Rectangle.{x + 68.0, y, card_width - 68.0, height}, .radius = 18.0,
@@ -245,8 +251,12 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
             .bounds = Rectangle.{x - 4.0, y + height - 112.0 + bob, 110.0, 116.0},
             .asset_path = "assets/shovey/pip.png", .alt_text = AppLocaleHost("shovey_friend_name"),
             .fit = ImageFit.ImageFitContain, .smooth = true})
-    if Control(20604, Rectangle.{x + card_width - 104.0, y + height - 46.0, 88.0, 36.0},
-        AppLocaleHost("shovey_friend_continue")) || key == 257 || key == 32 || key == 256 {
+    hint_y := ifx hint_row then y + height - 70.0 else y + height - 46.0
+    Text(frame.session, TextProps.{.key = cast(u64)20616, .text = hint, .font = 13, .wrap = TextWrap.TextWrapAuto,
+            .bounds = Rectangle.{x + 108.0, hint_y, hint_width, ifx hint_row then 22.0 else 36.0},
+            .align = TextAlign.TextAlignStart, .vertical_align = TextAlign.TextAlignCenter})
+    if PipContinue(frame.session, 20604, Rectangle.{x + card_width - 112.0, y + height - 48.0, 96.0, 38.0},
+        AppLocaleHost("shovey_friend_continue"), frame.now) || key == 257 || key == 256 {
         if GuideAcknowledge(*friend_guide) { FriendSave() }
     }
 }
@@ -1123,6 +1133,11 @@ LevelChangeShade :: () -> float32 {
 // playing, so the host returns to the cover that opened the game.
 ShoveyBack :: () -> bool {
     if reward_card >= 0 { reward_card = -1; return true }
+    if friend_card_visible {
+        if GuideAcknowledge(*friend_guide) { friend_save_pending = true }
+        friend_card_visible = false
+        return true
+    }
     if !selector_open && !help_open { return false }
     selector_open = false
     help_open = false
@@ -1137,6 +1152,11 @@ ReplayOpened :: () {
 
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
+    friend_card_visible = false
+    if friend_save_pending {
+        friend_save_pending = false
+        FriendSave()
+    }
     if !loaded {
         // The host's cover is the title: every open goes straight to play.
         mini = AppMini()
@@ -1423,11 +1443,11 @@ ShoveyFrame :: () {
     choosing := !mini && !ControlsChosen()
     guiding := !mini && !cinematic && !game.won && !ShoveySecret(game.level) && GuideNext(*friend_guide) >= 0
     friend_key := key
-    if choosing || guiding || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
+    if choosing || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
     if key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
-    if !guiding && slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
+    if slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
         game = slide_boards[slide_next]
         slide_next += 1
         slide_at = frame.now
@@ -1436,12 +1456,11 @@ ShoveyFrame :: () {
     sliding := slide_next < slide_count
     // Moving blocks and animals never decide a level, so their steps are
     // saved with the next move instead of writing the save every second.
-    if !guiding && !sliding && frame.now - last_tick >= 1.0 {
+    if !sliding && frame.now - last_tick >= 1.0 {
         unused ShoveyBlocksTick(*game)
         last_tick = frame.now
     }
-    if !guiding && !sliding { unused AnimalsWander() }
-    if guiding { last_tick = frame.now; slide_at = frame.now; boat_beside_at = 0.0 }
+    if !sliding { unused AnimalsWander() }
     SpriteNames()
     // While the ending plays the whole screen is the scene: the island the
     // last level belongs to and the open water round it. Once the boat sails
@@ -1538,12 +1557,6 @@ ShoveyFrame :: () {
         ControlsChoice(width, top, bottom)
         return
     }
-    if guiding {
-        // Pip keeps clear of the bar and of the status shown under it.
-        clear := ifx status_icon != "" then status_y + 40.0 else top + 56.0
-        FriendCard(width, clear, bottom, friend_key, grid, landscape)
-        return
-    }
     disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel() || reward_card >= 0
     // Touch: swipe anywhere under the bar to step, or tap a cell or the space
     // beside the board to step towards it; hold either to keep walking. With
@@ -1566,7 +1579,7 @@ ShoveyFrame :: () {
             cell := TileMapCellAt(grid, gesture.x, gesture.y)
             cell = BoardLogicalIndex(cell, landscape)
             // Tapping Shovey himself throws the shot he holds.
-            if gesture.tapped && cell >= 0 && cell == game.player && (game.powers & SHOVEY_AMMO) != 0 {
+            if gesture.tapped && cell >= 0 && cell == game.player && (game.powers & SHOVEY_AMMO) != 0 && !guiding {
                 changed = ShoveyAct(-1) || changed
             } else if cell >= 0 {
                 step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
@@ -1587,7 +1600,21 @@ ShoveyFrame :: () {
     }
     // The throw button shows only while Shovey holds a shot.
     if (game.powers & SHOVEY_AMMO) != 0 && !disabled {
-        if ThrowButton(width, top, bottom) { changed = ShoveyAct(-1) || changed }
+        if ThrowButton(width, top, bottom) && !guiding { changed = ShoveyAct(-1) || changed }
+    }
+    if guiding {
+        // Any press under the bar is for Pip and continues his guide; keys
+        // still move Shovey under the card.
+        tap := Press(frame.session, PressProps.{.key = cast(u64)20617, .id = 20617,
+                .bounds = Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0},
+                .label = AppLocaleHost("shovey_friend_tap"), .now = frame.now, .capture = true})
+        tip_seen := false
+        step = GuideTouch(*friend_guide, true, tap.released, step, *tip_seen)
+        if tip_seen { FriendSave() }
+        // Pip keeps clear of the bar and of the status shown under it.
+        clear := ifx status_icon != "" then status_y + 40.0 else top + 56.0
+        friend_card_visible = true
+        FriendCard(width, clear, bottom, friend_key, grid, landscape)
     }
     if step >= 0 { changed = ShoveyStepOrCross(step, landscape) || changed }
     if walking && slide_next >= slide_count && frame.now - walk_at >= WALK_SECONDS {

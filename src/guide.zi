@@ -166,6 +166,16 @@ GuideAcknowledge :: (guide: *ShoveyGuide) -> bool {
     return before != guide.seen
 }
 
+// While Pip's card shows, a press anywhere is for him: its release continues
+// the guide and the step it would make is dropped, so only keys move Shovey
+// under the card. Returns the step still to take; seen turns true when the
+// seen record changed.
+GuideTouch :: (guide: *ShoveyGuide, shown: bool, released: bool, step: s32, seen: *bool) -> s32 {
+    if !shown || GuideNext(guide) < 0 { return step }
+    if released && GuideAcknowledge(guide) { seen.* = true }
+    return -1
+}
+
 GuideReplay :: (guide: *ShoveyGuide, board: *ShoveyGame) {
     guide.level = board.level
     guide.pending = GuideBoardTopics(board)

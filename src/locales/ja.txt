@@ -688,6 +688,9 @@ Shovey
 [shovey_friend_continue]
 わかった
 ---
+[shovey_friend_tap]
+どこかをタップして続ける
+---
 [shovey_friend_replay]
 ピップのヒント
 ---
