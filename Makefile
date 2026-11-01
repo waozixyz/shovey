@@ -315,6 +315,10 @@ artifact-provider-test:
 game-maps-test:
 	python3 tests/game_maps_test.py
 
+.PHONY: level-select-test
+level-select-test:
+	$(call ziran_test,level_select_focus_test)
+
 .PHONY: shop-test
 shop-test: levels
 	sh tests/daily_chest_test.sh
@@ -325,7 +329,7 @@ shop-test: levels
 official-update-test: levels
 	$(call ziran_test,official_update_test)
 
-public-test: solver laws game-maps-test shop-test official-update-test
+public-test: solver laws game-maps-test level-select-test shop-test official-update-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py

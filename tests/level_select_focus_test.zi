@@ -1,0 +1,13 @@
+Focus :: #import, file "../src/level_select_focus.zi";
+
+#program_export
+main :: () -> s32 {
+    if Focus.LevelSelectFocus(0, 74, 98) != 74 { return 1 }
+    if Focus.LevelSelectFocus(9, 98, 98) != 9 { return 2 }
+    if Focus.LevelSelectFocus(10, 74, 98) != 10 { return 3 }
+    if Focus.LevelSelectFocus(0, 0, 98) != 1 { return 4 }
+    if Focus.LevelSelectFocus(0, 120, 98) != 98 { return 5 }
+    if Focus.LevelSelectFocus(120, 74, 98) != 74 { return 6 }
+    print("Level selector focus: earned default, replayed level, advanced level and bounds passed\n")
+    return 0
+}

@@ -48,6 +48,7 @@ Math :: #import "std/math";
 #import, file "shared_campaign.zi";
 #import, file "controls.zi";
 #import, file "pieces.zi";
+#import, file "level_select_focus.zi";
 #import, file "shovey_theme.zi";
 CompletionCoins :: #import, file "completion_coins.zi";
 ShopUI :: #import, file "shop_view.zi";
@@ -80,6 +81,7 @@ progress: ShoveyProgress;
 selector_open: bool;
 levels_scroll: s32;
 levels_focus_pending: bool;
+levels_played_level: s32;
 loaded: bool;
 shared_progress: SharedProgressSession;
 completion_path: CompletionPath;
@@ -432,6 +434,7 @@ ChangeLevel :: (level: s32) {
         return
     }
     if ShoveySelectLevel(*progress, *game, level) {
+        levels_played_level = game.level
         secret_visit.valid = false
         PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
         ReplayOpened()
@@ -764,6 +767,7 @@ ContinueGame :: () {
     // Continuing an attempt keeps its exact map and route, even if a newer
     // campaign arrived while playing. Only a newly opened board is acknowledged.
     if advanced { PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:])) }
+    if game.level >= 1 && game.level <= ShoveyLevelCount() { levels_played_level = game.level }
     ReplayOpened()
     selector_open = false
     help_open = false
@@ -1300,9 +1304,7 @@ ShoveyFrame :: () {
         preview_height := (cell - 12.0) * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
         row_height := cast(s32)(preview_height + 52.0 + 8.0)
         if levels_focus_pending {
-            latest := progress.unlocked
-            if latest < 1 { latest = 1 }
-            if latest > listed { latest = listed }
+            latest := LevelSelectFocus(levels_played_level, progress.unlocked, listed)
             levels_scroll = (latest - 1) / columns * row_height
             levels_focus_pending = false
         }

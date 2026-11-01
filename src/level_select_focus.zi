@@ -1,0 +1,9 @@
+// The selector's first opening belongs to earned progress. After a player
+// enters or advances to a level, that level is the one to reveal next.
+LevelSelectFocus :: (played_level: s32, unlocked_level: s32, listed_levels: s32) -> s32 {
+    focused := unlocked_level
+    if played_level >= 1 && played_level <= listed_levels { focused = played_level }
+    if focused < 1 { focused = 1 }
+    if focused > listed_levels { focused = listed_levels }
+    return focused
+}

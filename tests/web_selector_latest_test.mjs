@@ -1,5 +1,5 @@
-// The actual browser game opens its selector at earned progress, including
-// after replaying an older puzzle. Scrolling remains free while it is open.
+// The actual browser game opens its selector at earned progress, then keeps
+// the level the player left or advanced from in view. Scrolling stays free.
 import assert from 'node:assert/strict';
 import {spawn, execFileSync} from 'node:child_process';
 import {mkdtemp, readFile, rm} from 'node:fs/promises';
@@ -11,6 +11,8 @@ import {driverSetup} from './web_driver.mjs';
 
 const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.url).pathname;
 const fixture = execFileSync(new URL('../build/guide-test/native', import.meta.url).pathname, ['74'], {encoding: 'utf8'});
+const campaign = JSON.parse(await readFile(new URL('../levels/approved.json', import.meta.url), 'utf8'));
+const levelOneSolution = campaign.levels[0].solution;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-selector-'));
 const server = createServer(async (request, response) => {
   try {
@@ -86,6 +88,12 @@ try {
     await call('Input.dispatchMouseEvent', {type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1});
     await delay(200);
   }
+  async function key(code, keyCode) {
+    for (const type of ['keyDown', 'keyUp']) {
+      await call('Input.dispatchKeyEvent', {type, key: code, code, windowsVirtualKeyCode: keyCode});
+    }
+    await delay(80);
+  }
   await call('Runtime.enable');
   await call('Page.enable');
   await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
@@ -125,11 +133,14 @@ try {
   await wait(async () => (await tree()).some(n => n.label === 'Play' && (n.role === 'button' || n.kind === 'button')), 'Play cover did not appear');
   await press('Play');
   await wait(async () => (await tree()).some(n => n.label.startsWith('Level 74 /')), 'Earned level did not open');
-  for (const [width, height] of [[390, 844], [960, 600]]) {
+  const arrows = [['ArrowLeft', 37], ['ArrowUp', 38], ['ArrowRight', 39], ['ArrowDown', 40]];
+  for (const [index, [width, height]] of [[390, 844], [960, 600]].entries()) {
     await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: true});
     await delay(250);
     await press('Levels');
-    await wait(async () => (await tree()).some(n => n.key === 33074 && n.y >= 70 && n.y + n.height <= height), 'Latest unlocked card is not visible');
+    const focusedCard = index === 0 ? 33074 : 33002;
+    await wait(async () => (await tree()).some(n => n.key === focusedCard && n.y >= 70 && n.y + n.height <= height),
+      'Expected selector focus card is not visible');
     await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x: width / 2, y: 250, buttons: 0});
     await delay(100);
     await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: width / 2, y: 250, deltaX: 0, deltaY: -20000});
@@ -139,11 +150,20 @@ try {
     await press('1');
     await wait(async () => (await tree()).some(n => n.label.startsWith('Level 1 /')), 'Older level did not open');
     await press('Levels');
-    await wait(async () => (await tree()).some(n => n.key === 33074 && n.y >= 70 && n.y + n.height <= height), 'Replaying an older level moved the selector default');
+    await wait(async () => (await tree()).some(n => n.key === 33001 && n.y >= 70 && n.y + n.height <= height),
+      'Returning from level 1 moved its selector card out of view');
+    if (index === 0) {
+      await press('Back');
+      for (const direction of levelOneSolution) await key(...arrows[Number(direction)]);
+      await wait(async () => (await tree()).some(n => n.label.startsWith('Level 2 /')), 'Winning level 1 did not advance to level 2');
+      await press('Levels');
+      await wait(async () => (await tree()).some(n => n.key === 33002 && n.y >= 70 && n.y + n.height <= height),
+        'Finishing level 1 did not keep level 2 in view');
+    }
     await press('Continue');
   }
   assert.equal(failures.length, 0, failures.join('|'));
-  console.log('Pip artwork, paused input and saved acknowledgement; selector: earned level74 visible by default in portrait/landscape; manual scroll preserved; replaying level1 still opens at74');
+  console.log('Pip artwork, paused input and saved acknowledgement; selector: earned level74 opens once, then replayed level1 and finished level2 stay visible in portrait/landscape');
 } finally {
   if (socket) socket.close();
   if (browser.exitCode === null && browser.signalCode === null) {
