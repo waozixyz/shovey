@@ -896,3 +896,7 @@ Pietra
 [shovey_shop_skin_gold]
 Oro
 ---
+
+[shovey_completion_coins]
++15 monete · Ben fatto!
+---

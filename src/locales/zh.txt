@@ -896,3 +896,7 @@ Dew
 [shovey_shop_skin_gold]
 黄金
 ---
+
+[shovey_completion_coins]
++15 金币 · 真棒！
+---

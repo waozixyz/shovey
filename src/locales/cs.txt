@@ -896,3 +896,7 @@ Kámen
 [shovey_shop_skin_gold]
 Zlato
 ---
+
+[shovey_completion_coins]
++15 mincí · Výborně!
+---

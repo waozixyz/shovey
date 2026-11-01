@@ -896,3 +896,7 @@ Batu
 [shovey_shop_skin_gold]
 Emas
 ---
+
+[shovey_completion_coins]
++15 koin · Hebat!
+---

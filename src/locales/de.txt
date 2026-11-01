@@ -896,3 +896,7 @@ Stein
 [shovey_shop_skin_gold]
 Gold
 ---
+
+[shovey_completion_coins]
++15 Münzen · Gut gemacht!
+---

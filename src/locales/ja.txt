@@ -896,3 +896,7 @@ Dewを購入
 [shovey_shop_skin_gold]
 金
 ---
+
+[shovey_completion_coins]
++15 コイン · お見事！
+---

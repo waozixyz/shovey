@@ -1,3 +1,4 @@
+Coins :: #import, file "../src/completion_coins.zi";
 Shop :: #import, file "../src/shop_state.zi";
 Products :: #import "entity/game_shop";
 #import "std/text_buffer"
@@ -17,15 +18,17 @@ purchase_status: string = "pending";
 purchase_calls: s32;
 last_purchase: [64]u8;
 service_reply: [1024]u8;
-record_names: [4][96]u8;
-record_text: [4][512]u8;
+record_names: [12][96]u8;
+record_text: [12][512]u8;
 record_count: s32;
 save_calls: s32;
 fail_save: bool;
 switch_on_status: bool;
 switch_on_purchase: bool;
 storage_missing: bool;
+flush_calls: s32;
 fail_flush_once: bool;
+fail_grant_flush: bool;
 
 Owner :: () -> string {
     if account == 1 { return FIRST }
@@ -40,6 +43,7 @@ FakeService :: (name: string, request: string) -> string {
         if request == "ready" { return "ready" }
         if request == "missing" { return ifx storage_missing then "missing" else "present" }
         if request == "flush" {
+            flush_calls += 1
             if fail_flush_once { fail_flush_once = false; return "failed" }
             return "flushed"
         }
@@ -77,12 +81,13 @@ FakeRecord :: (name: string) -> string {
 }
 #program_export
 FakeSave :: (name: string, text: string) -> bool {
+    if fail_grant_flush { fail_flush_once = true; fail_grant_flush = false }
     save_calls += 1
     if fail_save { return false }
     for index: cast(s32)0..record_count - 1 {
         if TextUntilNul(record_names[index][:]) == name { return CopyCString(text, record_text[index][:]) }
     }
-    if record_count >= 4 { return false }
+    if record_count >= 12 { return false }
     unused CopyCString(name, record_names[record_count][:])
     unused CopyCString(text, record_text[record_count][:])
     record_count += 1
@@ -212,5 +217,59 @@ Check :: () -> s32 {
     unused CopyCString("{\"version\":1,\"owner\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"selected\":4,\"owned\":16,\"spent\":0}", record_text[1][:])
     Restart()
     if Shop.ShopAvailable(4) || Shop.ShopSkin() != 0 { return 40 }
+    // Real completion transaction and wallet, using the production storage
+    // callbacks. Old completed levels never yield a retroactive grant.
+    record_count = 0; account = 1; ledger_owner = FIRST; ledger_owned = "0"; ledger_coins = "0"
+    Restart(); Poll()
+    pending: Coins.CompletionCoinPending
+    Coins.CompletionCoinBegin(*pending, FIRST, 3, false, false, true, 176)
+    if pending.active { return 101 }
+    Coins.CompletionCoinBegin(*pending, FIRST, 3, true, true, true, 176)
+    if pending.active { return 102 }
+    Coins.CompletionCoinBegin(*pending, FIRST, 2, true, false, true, 176)
+    if pending.active { return 103 }
+    Coins.CompletionCoinBegin(*pending, FIRST, 3, true, false, false, 176)
+    if pending.active { return 104 }
+    Coins.CompletionCoinBegin(*pending, FIRST, 3, true, false, true, 176)
+    fail_save = true
+    if Coins.CompletionCoinFinish(*pending) != -1 || !pending.active || Shop.ShopCoins() != 0 { return 105 }
+    // Navigation and a new account cannot overwrite the original transaction.
+    account = 2
+    Coins.CompletionCoinBegin(*pending, SECOND, 6, true, false, true, 176)
+    fail_save = false
+    if Coins.CompletionCoinFinish(*pending) != 15 || pending.active || Shop.ShopCoins() != 0 { return 106 }
+    account = 1
+    if Shop.ShopCoins() != 15 { return 107 }
+    Restart(); Poll()
+    if Shop.ShopCoins() != 15 { return 108 }
+    barriers := flush_calls
+    unused Shop.ShopCoins(); unused Shop.ShopCoins()
+    if flush_calls != barriers { return 115 }
+    fail_flush_once = true
+    Coins.CompletionCoinInvalidate()
+    if Shop.ShopCoins() != 15 { return 116 }
+    barriers = flush_calls
+    unused Shop.ShopCoins()
+    if barriers != flush_calls { return 119 }
+    // Repeated callback, replay, and reopen have the same durable marker.
+    Coins.CompletionCoinBegin(*pending, FIRST, 3, true, false, true, 176)
+    if Coins.CompletionCoinFinish(*pending) != 0 || Shop.ShopCoins() != 15 { return 109 }
+    Coins.CompletionCoinBegin(*pending, FIRST, 6, true, false, true, 176)
+    // Fail the barrier after the read, during the grant's flush.
+    fail_grant_flush = true
+    if Coins.CompletionCoinFinish(*pending) != -1 || !pending.active { return 110 }
+    if Coins.CompletionCoinFinish(*pending) != 0 || pending.active || Shop.ShopCoins() != 30 { return 111 }
+    Restart(); Poll()
+    if Shop.ShopCoins() != 30 { return 112 }
+    // Existing daily earnings, purchased coins and wardrobe debits coexist.
+    Shop.ShopSetEarnedCoins(70)
+    ledger_coins = "200"; Poll()
+    if Shop.ShopCoins() != 300 || !Shop.ShopBuy(1) || Shop.ShopCoins() != 200 { return 117 }
+    Restart(); Poll(); Shop.ShopSetEarnedCoins(70)
+    if Shop.ShopCoins() != 200 || !Shop.ShopAvailable(1) { return 118 }
+    account = 0
+    if Shop.ShopCoins() != 0 { return 113 }
+    account = 2
+    if Shop.ShopCoins() != 0 { return 114 }
     return 42
 }

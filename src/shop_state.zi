@@ -1,5 +1,6 @@
 // Shovey's local coin wardrobe and Entity's verified Dew entitlements.
 // UI must show its confirmation before calling ShopBuy / ShopBuyCoins.
+CompletionCoins :: #import, file "completion_coins.zi";
 Records :: #import, file "controls.zi";
 App :: #import "kryon/app_context";
 Products :: #import "entity/game_shop";
@@ -97,6 +98,7 @@ ShopOwner :: () -> bool {
     }
     if !valid { owner = .{} }
     if valid != shop_known || TextUntilNul(owner[:]) != TextUntilNul(shop_owner[:]) {
+        CompletionCoins.CompletionCoinInvalidate()
         shop_owner = owner
         shop_known = valid
         shop_local = .{}
@@ -152,6 +154,7 @@ ShopApplyStatus :: (reply: string) {
 ShopPump :: (now: float64) {
     if !ShopOwner() || now < shop_poll_at { return }
     if !shop_storage_ok { ShopLoad() }
+    CompletionCoins.CompletionCoinInvalidate()
     shop_poll_at = now + 5.0
     ShopApplyStatus(App.AppService(Products.GAME_SHOP_SERVICE, "status"))
     // An account switch during a host request invalidates that reply.
@@ -176,8 +179,8 @@ ShopSkin :: () -> s32 {
     return ifx ShopAvailable(shop_local.selected) then shop_local.selected else 0
 }
 ShopCoins :: () -> s32 {
-    unused ShopOwner()
-    balance := shop_earned + shop_bought - shop_local.spent
+    if !ShopOwner() { return 0 }
+    balance := shop_earned + shop_bought + CompletionCoins.CompletionCoinTotal(TextUntilNul(shop_owner[:])) - shop_local.spent
     return ifx balance > 0 then balance else 0
 }
 ShopSelect :: (id: s32) -> bool {

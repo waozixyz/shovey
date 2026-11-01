@@ -896,3 +896,7 @@ Dew 구매
 [shovey_shop_skin_gold]
 금
 ---
+
+[shovey_completion_coins]
++15 코인 · 잘했어요!
+---

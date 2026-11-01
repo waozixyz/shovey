@@ -896,3 +896,7 @@ Pedra
 [shovey_shop_skin_gold]
 Ouro
 ---
+
+[shovey_completion_coins]
++15 moedas · Muito bem!
+---

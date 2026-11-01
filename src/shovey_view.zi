@@ -49,6 +49,7 @@ Math :: #import "std/math";
 #import, file "controls.zi";
 #import, file "pieces.zi";
 #import, file "shovey_theme.zi";
+CompletionCoins :: #import, file "completion_coins.zi";
 ShopUI :: #import, file "shop_view.zi";
 #if #defined(PLATFORM_WEB) {
     // The compiled browser game reads the node itself; its page host offers
@@ -381,10 +382,25 @@ Sprite :: (key: u64, index: s32, bounds: Rectangle, label: string) {
 // The solved-level count last reported to the leaderboard.
 reported_levels: s32 = -1;
 
+coin_pending: CompletionCoins.CompletionCoinPending;
+coin_celebrate_at: float64 = -10.0;
+
 Remember :: () {
     // A secret level is never saved: the game reopens on the last level.
     if ShoveySecret(game.level) { return }
     if replay_ack_failed { ReplayOpened() }
+    if game.level >= 1 && game.level <= SHOVEY_PROGRESS_LEVELS {
+        CompletionCoins.CompletionCoinBegin(*coin_pending, TextUntilNul(completion_path.owner[:]), game.level,
+            game.won, progress.completed[game.level - 1], ShoveyLevelUnlocked(*progress, game.level), ShoveyFinaleLevel())
+    }
+    if coin_pending.active {
+        awarded := CompletionCoins.CompletionCoinFinish(*coin_pending)
+        if awarded < 0 { save_failed = true; return }
+        if awarded > 0 && SharedProgressOwner(null) == TextUntilNul(coin_pending.owner[:]) {
+            coin_celebrate_at = frame.now
+            if !SoundMuted() { unused AppSoundHost("assets/shovey/sounds/pickup.wav") }
+        }
+    }
     ShoveyRecordWin(*progress, *game)
     save_failed = !SaveLocalCampaign(ShoveyCampaignSave(*progress, *game)) || replay_ack_failed
     if !PathSave(*completion_path, *game) { save_failed = true }
@@ -403,6 +419,7 @@ OpenLevels :: () {
 }
 
 ChangeLevel :: (level: s32) {
+    if coin_pending.active { return }
     friend_guide.level = 0
     slide_count = 0
     slide_next = 0
@@ -738,6 +755,7 @@ won_at: float64;
 entered_at: float64;
 
 ContinueGame :: () {
+    if coin_pending.active { return }
     slide_count = 0
     slide_next = 0
     advanced := ShoveyContinue(*progress, *game)
@@ -1167,6 +1185,9 @@ ShoveyShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s6
 
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
+    // Retry the original attempt while its winning board and normal menus
+    // remain visible. Level changes wait for its durable payout marker.
+    if coin_pending.active { Remember() }
     friend_card_visible = false
     if friend_save_pending {
         friend_save_pending = false
@@ -1211,8 +1232,8 @@ ShoveyFrame :: () {
     last_won := game.won && game.level == ShoveyLevelCount()
     if !help_open && (!last_won || ending_at > 0.0) { RewardOffer(REWARD_CAMPAIGN) }
     RewardsPump(frame.now)
-    shared_change := SharedProgressPump(*shared_progress, frame.now, ShoveySecret(game.level) || (game.moves > 0 && !game.won))
-    if shared_change == 2 { loaded = false; shared_account_changed = true; return }
+    shared_change := ifx coin_pending.active then 0 else SharedProgressPump(*shared_progress, frame.now, ShoveySecret(game.level) || (game.moves > 0 && !game.won))
+    if shared_change == 2 { coin_celebrate_at = -10.0; loaded = false; shared_account_changed = true; return }
     // Hydration may finish while an untouched board is idle. Bind that fresh
     // attempt to the cached owner; active attempts retain their original owner.
     if game.moves == 0 && completion_path.actions_count == 0 && !game.won && !game.lost &&
@@ -1581,6 +1602,15 @@ ShoveyFrame :: () {
                 .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
                 .label = status, .icon_shape = status_icon, .icon_only = true,
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
+    }
+    coin_age := frame.now - coin_celebrate_at
+    if coin_age >= 0.0 && coin_age < 1.8 {
+        rise := cast(float32)coin_age * 18.0
+        toast_width := ifx width < 432.0 then width - 32.0 else 400.0
+        toast_x := (width - toast_width) / 2.0
+        Image(frame.session, ImageProps.{.key = 20801, .asset_path = "assets/shovey/shop/coins.png",
+            .alt_text = AppLocaleHost("shovey_shop_coins"), .bounds = Rectangle.{toast_x, top + 76.0 - rise, 40.0, 40.0}, .fit = ImageFit.ImageFitContain})
+        Caption(20802, Rectangle.{toast_x + 44.0, top + 64.0 - rise, toast_width - 44.0, 64.0}, AppLocaleHost("shovey_completion_coins"), 20, true)
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
     if choosing {

@@ -896,3 +896,7 @@ Dew
 [shovey_shop_skin_gold]
 Золото
 ---
+
+[shovey_completion_coins]
++15 монет · Отлично!
+---

@@ -1,0 +1,90 @@
+// Cosmetic milestones: 15 coins on the first clear of levels 3, 6, 9, ... .
+// A single durable bitmap is both the payout marker and cumulative wallet grant.
+Records :: #import, file "controls.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+#import "std/vec"
+COMPLETION_COIN_AMOUNT :: 15;
+COMPLETION_COIN_SLOTS :: 333;
+CompletionCoinName :: (owner: string, output: []u8) -> string {
+    if owner != "" {
+        if owner.count != 64 { return "" }
+        for byte: owner {
+            if !(byte >= #char "0" && byte <= #char "9") && !(byte >= #char "a" && byte <= #char "f") { return "" }
+        }
+    }
+    out: Vec(u8)
+    BuilderPrint(*out, "completion.coins.v1.%", ifx owner == "" then "guest" else owner)
+    copied := CopyCString(TextView(VecSlice(out, 0, out.count)), output)
+    VecFree(out)
+    return ifx copied then TextUntilNul(output) else ""
+}
+CompletionCoinRead :: (name: string, marks: []u8) -> bool {
+    if name == "" || !Records.ProgressStorageReady() || !Records.ProgressStorageFlush() { return false }
+    text := Records.PathRecord(name)
+    if text == "" {
+        if !Records.ProgressStorageMissing() { return false }
+        for index: 0..COMPLETION_COIN_SLOTS - 1 { marks[index] = #char "0" }
+        return true
+    }
+    if text.count != COMPLETION_COIN_SLOTS { return false }
+    for index: 0..COMPLETION_COIN_SLOTS - 1 {
+        if text[index] != #char "0" && text[index] != #char "1" { return false }
+        marks[index] = text[index]
+    }
+    return true
+}
+completion_coin_owner: [65]u8;
+completion_coin_cached: bool;
+completion_coin_total: s32;
+CompletionCoinInvalidate :: () { completion_coin_cached = false }
+CompletionCoinTotal :: (owner: string) -> s32 {
+    if TextUntilNul(completion_coin_owner[:]) != owner {
+        unused CopyCString(owner, completion_coin_owner[:])
+        completion_coin_total = 0
+        completion_coin_cached = false
+    }
+    if completion_coin_cached { return completion_coin_total }
+    // A failed read keeps the last owner-bound total until the next shop poll.
+    completion_coin_cached = true
+    name: [96]u8
+    marks: [COMPLETION_COIN_SLOTS]u8
+    if !CompletionCoinRead(CompletionCoinName(owner, name[:]), marks[:]) { return completion_coin_total }
+    count: s32
+    for mark: marks { if mark == #char "1" { count += COMPLETION_COIN_AMOUNT } }
+    completion_coin_total = count
+    completion_coin_cached = true
+    return count
+}
+// -1 means retry before recording campaign completion. An already staged
+// marker is flushed before reading, so a failed barrier can never pay twice.
+CompletionCoinAward :: (owner: string, level: s32, first_clear: bool) -> s32 {
+    if !first_clear || level < 1 || level > 999 || level % 3 != 0 { return 0 }
+    name_bytes: [96]u8
+    name := CompletionCoinName(owner, name_bytes[:])
+    marks: [COMPLETION_COIN_SLOTS]u8
+    if !CompletionCoinRead(name, marks[:]) { return -1 }
+    slot := level / 3 - 1
+    if marks[slot] == #char "1" { CompletionCoinInvalidate(); return 0 }
+    marks[slot] = #char "1"
+    if !Records.PathSaveRecord(name, TextView(marks[:])) || !Records.ProgressStorageFlush() { return -1 }
+    CompletionCoinInvalidate()
+    return COMPLETION_COIN_AMOUNT
+}
+
+// This transaction belongs to the winning attempt, even if a host rebinds
+// its current profile or navigates away before retrying the storage barrier.
+CompletionCoinPending :: struct { active: bool; owner: [65]u8; level: s32 }
+CompletionCoinBegin :: (pending: *CompletionCoinPending, owner: string, level: s32,
+    won: bool, already_completed: bool, unlocked: bool, finale: s32) {
+    if pending.active || !won || already_completed || !unlocked || level < 1 || level >= finale || level % 3 != 0 { return }
+    if !CopyCString(owner, pending.owner[:]) { return }
+    pending.level = level
+    pending.active = true
+}
+CompletionCoinFinish :: (pending: *CompletionCoinPending) -> s32 {
+    if !pending.active { return 0 }
+    result := CompletionCoinAward(TextUntilNul(pending.owner[:]), pending.level, true)
+    if result >= 0 { pending.active = false }
+    return result
+}

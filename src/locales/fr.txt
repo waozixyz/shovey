@@ -896,3 +896,7 @@ Pierre
 [shovey_shop_skin_gold]
 Or
 ---
+
+[shovey_completion_coins]
++15 pièces · Bravo !
+---
