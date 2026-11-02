@@ -244,6 +244,12 @@ jobs:
         env:
           CXX: x86_64-w64-mingw32-g++
         run: make player-windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shovey-windows
+          path: waozixyz/shovey/build/downloads/*.zip
+          if-no-files-found: error
+          retention-days: 7
       - name: Play the unpacked download under Wine on a private display
         run: |
           rm -rf build/windows-check
@@ -253,11 +259,13 @@ jobs:
             WINEPREFIX="$RUNNER_TEMP/wine" timeout 900s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
             python3 tests/shovey_windows_ui_test.py --program "$PWD/build/windows-check/Shovey/shovey.exe" \
             --inbe-source "$GITHUB_WORKSPACE/waozixyz/breeze"
-      - uses: actions/upload-artifact@v4
+      - name: Preserve private Windows test diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          name: shovey-windows
-          path: waozixyz/shovey/build/downloads/*.zip
-          if-no-files-found: error
+          name: windows-ui-diagnostics
+          path: waozixyz/shovey/build/shovey-windows-ui-test/
+          if-no-files-found: ignore
           retention-days: 7
 
   release:

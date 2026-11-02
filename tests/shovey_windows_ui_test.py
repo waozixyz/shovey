@@ -16,14 +16,31 @@ import time
 
 LEVEL_UPDATES = 'Download new levels when they come out?'
 
-def answer_cover_question(driver):
+def answer_cover_question(driver, profile):
     """Shovey asks once on its covers whether games
     download new levels; tests keep the levels they ship with. The question
     shows in the covers' first frame."""
     driver.wait(label='Play', role='button', timeout=60)
     if driver.find(label=LEVEL_UPDATES, role='text'):
-        driver.press(label='Not now', role='button')
-        driver.wait_gone(label=LEVEL_UPDATES, role='text')
+        reply = driver.press(label='Not now', role='button')
+        try:
+            driver.wait_gone(label=LEVEL_UPDATES, role='text')
+        except AssertionError:
+            try:
+                nodes = driver.tree()
+                settings = profile / 'games/arcade.shovey-player/records'
+                detail = {'press': reply, 'nodes': [node for node in nodes
+                          if node.get('label') in (LEVEL_UPDATES, 'Not now', 'Download')],
+                          'settings_directory_exists': settings.is_dir(),
+                          'settings_files': [{'name': name, 'exists': (settings / name).exists(),
+                                              'bytes': (settings / name).stat().st_size if (settings / name).is_file() else None}
+                                             for name in ('.lock', 'level-updates', 'level-updates.new')]}
+                (driver.directory.parent / 'prompt-failure.json').write_text(json.dumps(detail, indent=2) + '\n')
+                print('Windows prompt diagnostics:', json.dumps(detail))
+            except Exception as error:
+                print('Windows prompt diagnostics unavailable:', type(error).__name__, str(error)[:200])
+            raise
+        assert (profile / 'games/arcade.shovey-player/records/level-updates').read_text() == 'off'
 
 
 
@@ -109,7 +126,7 @@ def main():
     classic = profile / 'games/arcade.shovey/records/local.campaign'
     account_progress = profile / 'entity/records/local/game-progress/fd65a3d7ac3d5ceb2d4d96cc5224a740.json'
     with application('play'):
-        answer_cover_question(driver)
+        answer_cover_question(driver, profile)
         driver.press(label='Play', role='button')
         wait_level_one(driver, classic_levels)
         # The first level asks how to move; until then it takes every key.
@@ -135,7 +152,7 @@ def main():
         driver.key('escape')
         driver.wait(label='Play', role='button')
     with application('restart'):
-        answer_cover_question(driver)
+        answer_cover_question(driver, profile)
         driver.press(label='Play', role='button')
         wait_level_one(driver, classic_levels)
         assert classic.read_bytes() != fresh, 'The move was lost across a restart'
