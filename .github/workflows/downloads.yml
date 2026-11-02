@@ -231,6 +231,7 @@ jobs:
           fetch: true
           packages: >-
             build-essential cmake pkg-config python3-pil python3-numpy gcc-mingw-w64-x86-64-win32
+            g++-mingw-w64-x86-64-win32
             binutils-mingw-w64-x86-64 libz-mingw-w64-dev wine wine64 xvfb xauth unzip
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -240,6 +241,8 @@ jobs:
           sparse-checkout: tests/ui_driver.py
           sparse-checkout-cone-mode: false
       - name: Cross-build and pack the Windows download
+        env:
+          CXX: x86_64-w64-mingw32-g++
         run: make player-windows
       - name: Play the unpacked download under Wine on a private display
         run: |
