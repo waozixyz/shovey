@@ -200,7 +200,8 @@ web-zx: bundles
 		-o build/web/shovey.zx src/web/game.zi
 	python3 scripts/build_artifacts.py --ziran '$(ZIRAN)' profile --output build/web/entity.zx
 	ZIRAN='$(TOOLCHAIN)/build/bin/ziran' python3 '$(ENTITY)/scripts/build-web.py' \
-		--bundle build/web/shovey.zx --profile build/web/entity.zx --output build/web/runtime.html
+		--bundle build/web/shovey.zx --profile build/web/entity.zx --output build/web/runtime.html \
+		--linked build/web/shovey.zx --linked build/web/entity.zx
 	cp src/web/index.html build/web/index.html
 	cp src/web/privacy.html build/web/privacy.html
 	python3 scripts/stamp-web.py
