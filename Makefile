@@ -383,6 +383,7 @@ laws:
 
 test: barrels-test solver laws game-maps-test shop-test forest-puzzle-test
 	python3 tests/play_release_notes_test.py
+	python3 tests/pages_packaging_test.py
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py

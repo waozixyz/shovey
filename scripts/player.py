@@ -17,7 +17,6 @@ landscape` first; `make player-*` does.
 """
 import argparse
 import fcntl
-import gzip
 import hashlib
 import io
 import json
@@ -769,14 +768,6 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
 
 # The website.
 
-def compress(path):
-    """A gzip copy beside path, which the page fetches first: Cloudflare Pages
-    does not compress binary files."""
-    with open(path.with_name(path.name + '.gz'), 'wb') as raw:
-        with gzip.GzipFile(filename='', mode='wb', compresslevel=9, fileobj=raw, mtime=0) as packed:
-            packed.write(path.read_bytes())
-
-
 def site(release_folder, output):
     """shovey.waozi.xyz: a released download's own shovey.zx, shovey.json and
     entity.zx, unchanged, in the player compiled for the browser. Their
@@ -807,7 +798,6 @@ def site(release_folder, output):
     page_pictures(output)
     for name in ('runtime.js', 'runtime.wasm', 'runtime.data'):
         shutil.copyfile(work / name, output / name)
-    compress(output / 'runtime.data')
     (output / 'arcade.json').write_text(text)
     # One cache key for the runtime, its data and the collection it opens.
     page = output / 'index.html'
@@ -820,6 +810,7 @@ def site(release_folder, output):
     source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     (output / 'build.json').write_text(json.dumps({'source_revision': source, 'version': receipt['version'],
                                                    'assets_sha256': revision.hexdigest()}) + '\n')
+    run([sys.executable, ROOT / 'scripts/prepare-pages.py', output], cwd=ROOT)
     print(f'shovey.waozi.xyz runs the released Shovey {receipt["version"]} in {output}')
 
 

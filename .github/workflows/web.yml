@@ -14,6 +14,15 @@ on:
     types: [completed]
   workflow_dispatch:
     inputs:
+      site_only:
+        description: Rebuild and deploy only the released website (no campaign publication)
+        required: false
+        type: boolean
+        default: false
+      released_site_run:
+        description: Successful site artifact run to repackage unchanged (requires site_only)
+        required: false
+        type: string
       revision:
         description: Full approved source commit (defaults to the triggering commit)
         required: false
@@ -21,14 +30,51 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: shovey-web-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      game: ${{ steps.scope.outputs.game }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.revision || github.sha }}
+      - name: Test the site packaging and release notes
+        run: |
+          python3 tests/pages_packaging_test.py
+          python3 tests/play_release_notes_test.py
+      - id: scope
+        env:
+          BEFORE: ${{ github.event.before }}
+          SITE_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.site_only }}
+        run: |
+          if [ "$SITE_ONLY" = true ]; then
+            echo 'game=false' >> "$GITHUB_OUTPUT"
+          # Only explicitly marked packaging commits may skip campaign work.
+          elif [ "$GITHUB_EVENT_NAME" = push ] && git cat-file -e "$BEFORE^{commit}" &&
+               git log -1 --format=%B | rg -q '^Shovey-Site-Only: true$'; then
+            python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
+          import subprocess
+          import os
+          changed = subprocess.check_output(['git', 'diff', '--name-only', os.environ['BEFORE'], 'HEAD'], text=True).splitlines()
+          packaging = {'.github/workflows/web.yml', 'scripts/prepare-pages.py', 'scripts/player.py',
+                       'site/index.html', 'tests/pages_packaging_test.py', 'tests/pages_browser_test.py', 'tests/web_release_test.mjs',
+                       'Makefile', '.github/workflows/play-bundle.yml', 'tests/play_release_notes_test.py'}
+          print('game=' + str(not changed or not set(changed) <= packaging).lower())
+          PYCODE
+          else
+            echo 'game=true' >> "$GITHUB_OUTPUT"
+          fi
   build:
-    if: github.event_name != 'workflow_run'
+    needs: scope
+    if: github.event_name != 'workflow_run' && needs.scope.outputs.game == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     outputs:
@@ -111,7 +157,8 @@ jobs:
 
   site:
     name: Build the site from the newest release
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    needs: scope
+    if: (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && (github.event_name != 'push' || needs.scope.outputs.game != 'false')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
@@ -145,7 +192,7 @@ jobs:
       # The player is built from this checkout's lock; the locked compiler
       # comes prebuilt and Ubuntu packages from the canonical archive.
       - name: Set up the locked Ziran, its packages and the build tools
-        if: steps.due.outputs.publish == 'true'
+        if: steps.due.outputs.publish == 'true' && !inputs.released_site_run
         uses: ziranlang/ziran/.github/actions/setup@979159a55bcf1f9edb9eb8f26ea10aca421412e2
         with:
           project: waozixyz/shovey
@@ -153,19 +200,52 @@ jobs:
           fetch: true
           packages: build-essential cmake pkg-config python3-pil
       - uses: actions/setup-node@v4
-        if: steps.due.outputs.publish == 'true'
+        if: steps.due.outputs.publish == 'true' && !inputs.released_site_run
         with:
           node-version: 22
       - uses: mymindstorm/setup-emsdk@v14
-        if: steps.due.outputs.publish == 'true'
+        if: steps.due.outputs.publish == 'true' && !inputs.released_site_run
         with:
           version: '6.0.6'
           actions-cache-folder: emsdk-cache
       - name: Build the site from the release
-        if: steps.due.outputs.publish == 'true'
+        if: steps.due.outputs.publish == 'true' && !inputs.released_site_run
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/build-site.py --tag "v${{ steps.due.outputs.version }}" --output build/web-site
+      - name: Download the existing released site
+        if: steps.due.outputs.publish == 'true' && inputs.site_only && inputs.released_site_run
+        uses: actions/download-artifact@v4
+        with:
+          name: shovey-site
+          path: waozixyz/shovey/build/web-site
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.released_site_run }}
+      - name: Repackage the released site for Pages
+        if: steps.due.outputs.publish == 'true' && inputs.released_site_run
+        env:
+          SITE_ONLY: ${{ inputs.site_only }}
+          VERSION: ${{ steps.due.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          SITE_RUN: ${{ inputs.released_site_run }}
+        run: |
+          test "$SITE_ONLY" = true
+          python3 - <<'PYCODE'
+          import json, os, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', 'repos/waozixyz/shovey/' + path]))
+          run_id = os.environ['SITE_RUN']
+          assert run_id.isdecimal(), 'Expected an Actions run ID'
+          source = api('commits/v' + os.environ['VERSION'])['sha']
+          run = api('actions/runs/' + run_id)
+          assert run['repository']['full_name'] == 'waozixyz/shovey'
+          assert run['head_sha'] == source and run['path'] == '.github/workflows/web.yml'
+          jobs = api('actions/runs/' + run_id + '/jobs?per_page=100')['jobs']
+          assert any(j['name'] == 'Build the site from the newest release' and j['conclusion'] == 'success' for j in jobs)
+          build = json.load(open('build/web-site/build.json'))
+          assert build['version'] == os.environ['VERSION'] and build['source_revision'] == source
+          PYCODE
+          python3 scripts/prepare-pages.py build/web-site
       - name: Play the release in a private browser
         if: steps.due.outputs.publish == 'true'
         run: |
@@ -253,7 +333,7 @@ jobs:
 
   itch:
     name: Publish itch.io
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && needs.site.outputs.publish == 'true'
+    if: (github.event_name != 'workflow_dispatch' || !inputs.site_only) && github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && needs.site.outputs.publish == 'true'
     needs: site
     runs-on: ubuntu-24.04
     timeout-minutes: 15

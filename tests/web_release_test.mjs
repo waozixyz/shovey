@@ -14,7 +14,7 @@ import {driverSetup} from './web_driver.mjs';
 
 const root = process.argv[2] || new URL('../build/web-site/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-release-'));
-const types = {'.wasm': 'application/wasm', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json'};
+const types = {'.html': 'text/html', '.wasm': 'application/wasm', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json'};
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
@@ -28,7 +28,7 @@ const server = createServer(async (request, response) => {
       return;
     }
     const body = await readFile(join(root, path === '/' ? 'index.html' : path));
-    response.setHeader('Content-Type', types[path.slice(path.lastIndexOf('.'))] || 'text/html');
+    response.setHeader('Content-Type', types[path.slice(path.lastIndexOf('.'))] || 'application/octet-stream');
     response.end(body);
   } catch {
     // Like Cloudflare Pages, a missing file gets the site's page.

@@ -79,30 +79,40 @@
         onAbort: failed,
         onExit: function (code) { if (code !== 0) failed(); }
       };
-      // The game travels gzip-compressed beside its plain copy (17.5 MB, or
-      // 6.8 MB packed): Cloudflare does not compress binary files. Browsers
-      // without DecompressionStream, or a missing .gz, take the plain file.
-      // Cloudflare answers a file the site does not have with this page.
-      function found(response) {
-        return response.ok && !/text\/html/.test(response.headers.get('Content-Type') || '');
-      }
-      function plain(name) {
-        return fetch(assetUrl(name)).then(function (response) {
-          return found(response) ? response.arrayBuffer() : null;
-        });
-      }
-      function bundle(name) {
-        if (typeof DecompressionStream !== 'function') return plain(name);
-        return fetch(assetUrl(name + '.gz')).then(function (response) {
-          if (!found(response)) throw new Error(response.status);
-          return response.arrayBuffer();
-        }).then(function (packed) {
-          var head = new Uint8Array(packed, 0, Math.min(2, packed.byteLength));
-          // A server that already decoded it hands over the plain bytes.
-          if (head[0] !== 0x1f || head[1] !== 0x8b) return packed;
-          return new Response(new Blob([packed]).stream()
-            .pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-        }).catch(function () { return plain(name); });
+      // The game travels in bounded files for Cloudflare Pages. Emscripten
+      // receives the original, verified package through getPreloadedPackage.
+      async function bundle(name) {
+        async function fetchFile(path) {
+          var response = await fetch(assetUrl(path));
+          if (!response.ok || /text\/html/.test(response.headers.get('Content-Type') || ''))
+            throw new Error('Missing game data: ' + path);
+          return response;
+        }
+        async function hash(bytes) {
+          return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))
+            .map(function (byte) { return byte.toString(16).padStart(2, '0'); }).join('');
+        }
+        var manifest = await (await fetchFile(name + '.json')).json();
+        if (manifest.format !== 1 || !Number.isSafeInteger(manifest.size) || manifest.size <= 0 ||
+            !/^[a-f0-9]{64}$/.test(manifest.sha256) || !Array.isArray(manifest.chunks) || !manifest.chunks.length)
+          throw new Error('Invalid game data manifest');
+        var data = new Uint8Array(manifest.size), offset = 0;
+        for (var i = 0; i < manifest.chunks.length; i++) {
+          var chunk = manifest.chunks[i];
+          if (chunk.name !== name + '.part-' + String(i).padStart(4, '0') ||
+              !Number.isSafeInteger(chunk.size) || chunk.size <= 0 || chunk.size > 16 * 1024 * 1024 ||
+              offset + chunk.size > data.length || !/^[a-f0-9]{64}$/.test(chunk.sha256))
+            throw new Error('Invalid game data chunk');
+          var bytes = await (await fetchFile(chunk.name)).arrayBuffer();
+          if (bytes.byteLength !== chunk.size || await hash(bytes) !== chunk.sha256)
+            throw new Error('Damaged game data chunk');
+          data.set(new Uint8Array(bytes), offset);
+          offset += bytes.byteLength;
+          bar.style.width = (100 * offset / data.length) + '%';
+        }
+        if (offset !== data.length || await hash(data) !== manifest.sha256)
+          throw new Error('Damaged game data');
+        return data.buffer;
       }
       Promise.all([
         fetch(assetUrl('arcade.json'), { cache: 'no-cache' }).then(function (response) {
