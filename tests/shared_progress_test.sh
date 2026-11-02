@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-toolchain=${1:?usage: shared_progress_test.sh TOOLCHAIN}
-entity=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path entity)
+toolchain=${1:?usage: shared_progress_test.sh TOOLCHAIN [ENTITY]}
+entity=${2:-$(cd "$root" && "$toolchain/build/bin/ziran" pkg path entity)}
 work="$root/build/shared-progress-test"
 mkdir -p "$work"
 "$toolchain/build/bin/ziran" bundle --root "$root" --module-path "$toolchain/std" \

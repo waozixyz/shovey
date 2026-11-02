@@ -2386,6 +2386,126 @@
       "path": "title-portrait.png",
       "depicts": "title screen art for phones: 3D Shovey pushing a crate in a garden courtyard with its cottage home",
       "sha256": "ddcbf989eab5971157d8cdc73494ed03660bb4c7a7679543248f45be260777e3"
+    },
+    {
+      "path": "world-map/riverfold-world-region-01.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "913cd1cc0bb0842df049d98094a20024eff9377170f682f31b09b4a9e7f4b344"
+    },
+    {
+      "path": "world-map/riverfold-world-region-02.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "99390c39fcf3d180b2d6e2e8c44c0b51ec4dd923f7f6224838abc75cbcb37fb2"
+    },
+    {
+      "path": "world-map/riverfold-world-region-03.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "618e5664684606f6a5aff21a875392e27d82d58385bb29318662ef655e1e40f8"
+    },
+    {
+      "path": "world-map/riverfold-world-region-04.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "a3846e0f5ca2eed446968145143bb5d6ce7a0f735d353b8bc62f281a551796e8"
+    },
+    {
+      "path": "world-map/riverfold-world-region-05.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "ce9507c6bc354a42db28e75c9f7d7fc56af9ede3d324bb8b9c091eedd680fbd0"
+    },
+    {
+      "path": "world-map/riverfold-world-region-06.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "c7662cc901c3f6556295274a54df3eecfa890080cad73c5b1b6310470ac41914"
+    },
+    {
+      "path": "world-map/riverfold-world-region-07.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "e4c57ec650f940fa4c74cb6d0d7b0efb8ed199d6555ef1797156e44a2f1cb54b"
+    },
+    {
+      "path": "world-map/riverfold-world-region-08.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "f3eb89f214fc9026bc3d7e36586ef42d7dd6e6886418c7cb0222c43e40572d6d"
+    },
+    {
+      "path": "world-map/riverfold-world-region-09.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "5154d6d756103f48a2d117d4117ab0ffe6ea6493c498a14414264d2a0a3f9a4b"
+    },
+    {
+      "path": "world-map/riverfold-world-region-10.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "4edb5e51dba6322fbca854c48a8c65e61c293161c09ce45b96318359c537f563"
+    },
+    {
+      "path": "world-map/riverfold-world-region-11.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "cc637f0abcf4de96b5d9447f4b7a894bdd7d2b67cdb5c421b0539d83c1992725"
+    },
+    {
+      "path": "world-map/riverfold-world-region-12.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "32849f971b13dba9af62458722f5f914d132f182ff20dfb98f20b8f211285926"
+    },
+    {
+      "path": "world-map/riverfold-world-region-13.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "b5a7c5b365a4e210cb1bd19836d80b1d38489825fbcac959f26e5aaf006dd89d"
+    },
+    {
+      "path": "world-map/riverfold-world-region-14.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "e36690837982283a4ddb8c48635b0c0f3122e093d5b7928e021c3e6bafa1cf24"
+    },
+    {
+      "path": "world-map/riverfold-world-region-15.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "66a6051b52a7ddfcce7e342894c5c7071193e55d634c9ff32ae12a6ca1ccff4d"
+    },
+    {
+      "path": "world-map/riverfold-world-region-16.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "c1572598cddd98a05e8c03ce518562b370799db10bbd7f6bddddf74b5d9bbf32"
+    },
+    {
+      "path": "world-map/riverfold-world-bridge-west.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "b782524b75728668f3a2ad6b6838acbd20a123059ee4c40050f63194dfc23bb4"
+    },
+    {
+      "path": "world-map/riverfold-world-bridge-east.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "471598fb290c19e3c920e9174846af2ab96a73c45d5d70b051302215f358bad6"
+    },
+    {
+      "path": "world-map/riverfold-world-prop-stone-stair-apron.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "d7ded14f6e4d2c4e3c11ea27348689c3f69a70369d0176a8dd9375359a091098"
+    },
+    {
+      "path": "world-map/riverfold-world-prop-north-south-pond-bridge.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "d67b8b96964a4d883ab249e4bb4c8aa295007a8efe6da64a8b1d317463649ce9"
+    },
+    {
+      "path": "world-map/riverfold-world-prop-short-pond-bridge.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "147c4a20b1d59cd2bdf1fe176b96f7b6c44ce89787f16c32e26efa04579440e2"
+    },
+    {
+      "path": "world-map/riverfold-world-secret-29a.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "4c774e9499bc06425e44268d884592e3d51393e476cb98b2d6dc953ef2befd74"
+    },
+    {
+      "path": "world-map/riverfold-world-secret-175a.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "74559b705e276375703caf821c262794d62d025bc6e125364976382fb0c28a11"
+    },
+    {
+      "path": "world-map/riverfold-world-secret-175b.webp",
+      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
+      "sha256": "af5984c845e5449cae098bb86116926b533644cd72acc98c370c7c90ee5de9a6"
     }
   ]
 }

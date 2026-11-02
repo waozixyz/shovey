@@ -50,6 +50,8 @@ Math :: #import "std/math";
 #import, file "controls.zi";
 #import, file "pieces.zi";
 #import, file "level_select_focus.zi";
+WorldMap :: #import, file "world_map_view.zi";
+MapRoute :: #import, file "world_map_progression.zi";
 #import, file "shovey_theme.zi";
 CompletionCoins :: #import, file "completion_coins.zi";
 ShopUI :: #import, file "shop_view.zi";
@@ -83,6 +85,8 @@ game: ShoveyGame;
 progress: ShoveyProgress;
 selector_open: bool;
 levels_scroll: s32;
+levels_map: WorldMap.WorldMapViewState;
+levels_choice_offered: s32;
 levels_focus_pending: bool;
 levels_played_level: s32;
 loaded: bool;
@@ -424,6 +428,7 @@ Remember :: () {
 }
 
 OpenLevels :: () {
+    if game.level >= 1 && game.level <= ShoveyLevelCount() { levels_played_level = game.level }
     selector_open = true
     levels_focus_pending = true
 }
@@ -767,6 +772,18 @@ entered_at: float64;
 
 ContinueGame :: () {
     if coin_pending.active { return }
+    if game.won {
+        ShoveyRecordWin(*progress, *game)
+        if MapRoute.WorldMapChoicePending(progress.unlocked, progress.completed[:], game.level) {
+            levels_choice_offered = game.level
+            levels_played_level = game.level
+            OpenLevels()
+            levels_map.focused = game.level
+            levels_map.reveal = true
+            levels_focus_pending = false
+            return
+        }
+    }
     slide_count = 0
     slide_next = 0
     advanced := ShoveyContinue(*progress, *game)
@@ -799,6 +816,8 @@ WinPause :: () {
         won_at = frame.now
         Remember()
     }
+    if levels_choice_offered == game.level &&
+        MapRoute.WorldMapChoicePending(progress.unlocked, progress.completed[:], game.level) { return }
     if LevelWinContinues(LevelChangeMs(won_at)) { ContinueGame() }
 }
 
@@ -855,9 +874,8 @@ secret_visit: ShoveySecretVisit;
 EdgeTravel :: (direction: s32, landscape: bool) -> bool {
     previous := game.level
     if !ShoveySecretEdge(*game, *secret_visit, direction) { return false }
-    if game.level == CHEST_LEVEL {
-        unused PathSaveRecord("local.secret29a", "1")
-    }
+    discovery_key := ShoveySecretEntryDiscoveryKey(*game, *secret_visit)
+    if discovery_key != "" && !PathSaveRecord(discovery_key, "1") { save_failed = true }
     edge_from = previous
     edge_at = frame.now
     edge_visible = ifx landscape then (direction + 3) % 4 else direction
@@ -1207,11 +1225,16 @@ ShoveyFrame :: () {
         FriendSave()
     }
     if !loaded {
+        levels_choice_offered = 0
         // The host's cover is the title: every open goes straight to play.
         mini = AppMini()
         LiveCampaignStart()
-        if shared_account_changed || !ShoveyCampaignRestore(*progress, *game, LocalCampaignRecord()) {
+        levels_played_level = 0
+        restored_campaign := !shared_account_changed && ShoveyCampaignRestore(*progress, *game, LocalCampaignRecord())
+        if restored_campaign { levels_played_level = game.level }
+        if !restored_campaign {
             if !shared_account_changed && ShoveyRestore(*game, AppRecordHost("position")) {
+                levels_played_level = game.level
                 progress = ShoveyMigrateProgress(*game)
                 // That record predates the shipped boards: restart its level.
                 unused ShoveyLoad(*game, game.level)
@@ -1225,7 +1248,7 @@ ShoveyFrame :: () {
         if shared_progress.available { ShoveySharedRestore(*progress, *shared_progress.record) }
         // Entering play keeps the campaign, so its record exists from the
         // start; an embedded mini page saves only once something changes.
-        latest := ShoveyOpenLatest(*progress, *game)
+        latest := ShoveyOpenLatest(*progress, *game, levels_played_level)
         if latest || !PathRestore(*completion_path, *game) {
             PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
         }
@@ -1257,9 +1280,9 @@ ShoveyFrame :: () {
     if shared_change == 1 {
         LevelReplayReset(TextUntilNul(shared_progress.owner[:]))
         ShoveySharedRestore(*progress, *shared_progress.record)
-        // Account hydration can finish after the first frame. Open its
-        // latest puzzle unless this device already has a board in progress.
-        if ShoveyOpenLatest(*progress, *game) {
+        // Fresh accounts follow hydrated progress; a saved or explicitly
+        // selected board stays on this device, even before its first move.
+        if ShoveyOpenLatest(*progress, *game, levels_played_level) {
             PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
             ReplayOpened()
             Remember()
@@ -1323,80 +1346,144 @@ ShoveyFrame :: () {
                 AppLocaleHost("shovey_progress_loading"), 14)
         }
         list_top := top + ifx account_loading then 104.0 else 72.0
-        columns := cast(s32)((width - 24.0) / 112.0)
-        if columns < 2 { columns = 2 }
         listed := ShoveyLevelCount()
-        rows := (listed + columns - 1) / columns
-        cell := (width - 32.0 - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
-        preview_height := (cell - 12.0) * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
-        row_height := cast(s32)(preview_height + 52.0 + 8.0)
-        if levels_focus_pending {
-            latest := LevelSelectFocus(levels_played_level, progress.unlocked, listed)
-            levels_scroll = (latest - 1) / columns * row_height
-            levels_focus_pending = false
-        }
-        scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
-                .bounds = Rectangle.{16.0, list_top, width - 32.0, bottom - list_top - 16.0},
-                .content_height = rows * row_height, .scroll_offset = levels_scroll})
-        levels_scroll = scroll.scroll_offset
-        if scroll.opened {
-            SpriteNames()
-            for slot: cast(s32)1..listed {
-                number := slot
-                at := slot - 1
-                bounds := Rectangle.{scroll.content.x + cast(float32)(at % columns) * (cell + 8.0),
-                    scroll.content.y + cast(float32)(at / columns) * cast(float32)row_height, cell, preview_height + 52.0}
-                // Only the cards in view are built; slow phones paid for all of them every frame.
-                if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
-                unlocked := ShoveyLevelUnlocked(*progress, number)
-                completed := progress.completed[number - 1]
-                digits: [24]u8
-                label := FormatInteger(cast(s64)number, digits[:])
-                // Status stays accessible in the semantic label, while the
-                // visual card uses a lock/check icon and an unlocked board.
-                status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
-                level_waiting := account_loading && !unlocked
-                if Button(frame.session, ButtonProps.{.key = cast(u64)(33000 + number), .id = 33000 + number,
-                        .bounds = bounds, .label = label,
-                        .detail = ifx level_waiting then AppLocaleHost("shovey_progress_loading") else "",
-                        .disabled = !unlocked,
-                        .selected = completed, .fit_content = true,
-                        .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
-                        .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-                    ChangeLevel(number)
-                }
-                if unlocked {
-                    // Cover the centered visual label only inside the picture
-                    // area, then repeat the number in the card's footer.
-                    picture := Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height}
-                    LevelPicture(number, picture, cast(u64)(35000 + number), cast(u64)(52000 + number), landscape)
-                }
-                {
-                    Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)
-                }
-                icon := ""
-                if !unlocked {
-                    icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17"
-                } else if completed {
-                    icon = "S2rr:M5 12L10 17L19 7"
-                }
-                if icon != "" {
-                    // A disabled icon button is a canonical widget, with a
-                    // translated accessibility label and no extra action.
-                    unused Button(frame.session, ButtonProps.{.key = cast(u64)(37000 + number),
-                            .bounds = ifx unlocked then Rectangle.{bounds.x + bounds.width - 32.0, bounds.y + preview_height + 12.0, 28.0, 28.0} else
-                            Rectangle.{bounds.x + bounds.width / 2.0 - 22.0, bounds.y + preview_height * 0.5 - 18.0, 44.0, 44.0},
-                            .label = status, .icon_only = true, .icon_shape = icon, .disabled = true,
-                            .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
-                            .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
-                }
-                if unlocked && LevelReplayDot(number, ShoveyLevelBoard(number), completed, TextUntilNul(shared_progress.owner[:])) {
-                    unused Circle(frame.session, CircleProps.{.key = cast(u64)(43000 + number),
-                            .center = Vector2.{bounds.x + bounds.width - 13.0, bounds.y + 13.0},
-                            .radius = 4.0, .fill = Color.{255, 226, 150, 255}})
+        if listed <= MapRoute.WORLD_MAP_CLASSIC_LEVELS {
+            visible: [1003]bool
+            available: [1003]bool
+            completed: [1003]bool
+            replay: [1003]bool
+            map_bounds := Rectangle.{0.0, list_top, width, bottom - list_top - 16.0}
+            map_width := WorldMap.WorldMapViewWidth(map_bounds.width)
+            for number: cast(s32)1..listed {
+                visible[number - 1] = true
+                available[number - 1] = ShoveyLevelUnlocked(*progress, number)
+                completed[number - 1] = progress.completed[number - 1]
+                point := WorldMap.WorldMapViewPosition(number, map_width, false)
+                if available[number - 1] && point.y >= cast(float32)levels_map.scroll_offset - 64.0 &&
+                point.y <= cast(float32)levels_map.scroll_offset + map_bounds.height + 64.0 {
+                    replay[number - 1] = LevelReplayDot(number, ShoveyLevelBoard(number), completed[number - 1], TextUntilNul(shared_progress.owner[:]))
                 }
             }
-            End(frame.session)
+            for index: cast(s32)0..MapRoute.WORLD_MAP_SECRET_COUNT - 1 {
+                place := MapRoute.WorldMapSecretLevel(index)
+                destination := MapRoute.WorldMapDiscoveredSecretAt(index, PathRecord(MapRoute.WorldMapSecretDiscoveryKey(place)))
+                if !destination.detached { continue }
+                visible[place - 1] = true
+                available[place - 1] = true
+            }
+            if levels_focus_pending {
+                levels_map.focused = levels_played_level
+                if !ShoveyLevelUnlocked(*progress, levels_map.focused) { levels_map.focused = game.level }
+                if ShoveySecret(game.level) && visible[game.level - 1] { levels_map.focused = game.level }
+                levels_map.reveal = true
+                levels_focus_pending = false
+            }
+            selected := WorldMap.WorldMapView(frame.session, map_bounds, *levels_map,
+                WorldMap.WorldMapViewProps.{.visible = visible[:], .available = available[:],
+                    .completed = completed[:], .replay = replay[:], .loading = account_loading,
+                    .now = frame.now, .key_pressed = key,
+                    .available_label = AppLocaleHost("shovey_available"),
+                    .completed_label = AppLocaleHost("shovey_completed"),
+                    .locked_label = AppLocaleHost("shovey_locked"),
+                    .loading_label = AppLocaleHost("shovey_progress_loading")})
+            if selected.activated >= 1 && selected.activated <= listed { ChangeLevel(selected.activated) }
+            if selected.activated >= 1001 && selected.activated <= 1003 && !coin_pending.active {
+                if ShoveySecret(game.level) { unused ShoveyReturnFromSecret(*game, *secret_visit) }
+                record := PathRecord(MapRoute.WorldMapSecretDiscoveryKey(selected.activated))
+                if ShoveySelectDiscoveredSecret(*game, *secret_visit, selected.activated, record) {
+                    friend_guide.level = 0
+                    slide_count = 0
+                    slide_next = 0
+                    walk_count = 0
+                    last_tick = frame.now
+                    won_at = 0.0
+                    selector_open = false
+                    help_open = false
+                }
+            }
+        } else {
+            // A live campaign can outgrow the authored journey. Its complete
+            // canonical selector remains reachable rather than truncating IDs.
+            columns := cast(s32)((width - 24.0) / 112.0)
+            if columns < 2 { columns = 2 }
+            rows := (listed + columns - 1) / columns
+            cell := (width - 32.0 - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
+            preview_height := (cell - 12.0) * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
+            row_height := cast(s32)(preview_height + 52.0 + 8.0)
+            if levels_focus_pending {
+                latest := LevelSelectFocus(levels_played_level, progress.unlocked, listed)
+                levels_scroll = (latest - 1) / columns * row_height
+                levels_focus_pending = false
+            }
+            scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
+                    .bounds = Rectangle.{16.0, list_top, width - 32.0, bottom - list_top - 16.0},
+                    .content_height = rows * row_height, .scroll_offset = levels_scroll})
+            levels_scroll = scroll.scroll_offset
+            if scroll.opened {
+                SpriteNames()
+                for slot: cast(s32)1..listed {
+                    number := slot
+                    at := slot - 1
+                    bounds := Rectangle.{scroll.content.x + cast(float32)(at % columns) * (cell + 8.0),
+                        scroll.content.y + cast(float32)(at / columns) * cast(float32)row_height, cell, preview_height + 52.0}
+                    // Only the cards in view are built; slow phones paid for all of them every frame.
+                    if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
+                    unlocked := ShoveyLevelUnlocked(*progress, number)
+                    completed := progress.completed[number - 1]
+                    digits: [24]u8
+                    label := FormatInteger(cast(s64)number, digits[:])
+                    // Status stays accessible in the semantic label, while the
+                    // visual card uses a lock/check icon and an unlocked board.
+                    status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
+                    level_waiting := account_loading && !unlocked
+                    if Button(frame.session, ButtonProps.{.key = cast(u64)(33000 + number), .id = 33000 + number,
+                            .bounds = bounds, .label = label,
+                            .detail = ifx level_waiting then AppLocaleHost("shovey_progress_loading") else "",
+                            .disabled = !unlocked,
+                            .selected = completed, .fit_content = true,
+                            .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
+                            .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+                        ChangeLevel(number)
+                    }
+                    if unlocked {
+                        // Cover the centered visual label only inside the picture
+                        // area, then repeat the number in the card's footer.
+                        picture := Rectangle.{bounds.x + 6.0, bounds.y + 6.0, bounds.width - 12.0, preview_height}
+                        LevelPicture(number, picture, cast(u64)(35000 + number), cast(u64)(52000 + number), landscape)
+                    }
+                    {
+                        Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)
+                    }
+                    icon := ""
+                    if !unlocked && !level_waiting {
+                        icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17"
+                    } else if completed {
+                        icon = "S2rr:M5 12L10 17L19 7"
+                    }
+                    if icon != "" {
+                        // A disabled icon button is a canonical widget, with a
+                        // translated accessibility label and no extra action.
+                        unused Button(frame.session, ButtonProps.{.key = cast(u64)(37000 + number),
+                                .bounds = ifx unlocked then Rectangle.{bounds.x + bounds.width - 32.0, bounds.y + preview_height + 12.0, 28.0, 28.0} else
+                                Rectangle.{bounds.x + bounds.width / 2.0 - 22.0, bounds.y + preview_height * 0.5 - 18.0, 44.0, 44.0},
+                                .label = status, .icon_only = true, .icon_shape = icon, .disabled = true,
+                                .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
+                                .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
+                    }
+                    if level_waiting {
+                        LoadingIndicator(frame.session, LoadingIndicatorProps.{.key = cast(u64)(38000 + number),
+                                .bounds = Rectangle.{bounds.x + bounds.width / 2.0 - 21.0,
+                                    bounds.y + preview_height * 0.5 - 18.0, 42.0, 36.0},
+                                .now = frame.now, .scale = 1.2})
+                    }
+                    if unlocked && LevelReplayDot(number, ShoveyLevelBoard(number), completed, TextUntilNul(shared_progress.owner[:])) {
+                        unused Circle(frame.session, CircleProps.{.key = cast(u64)(43000 + number),
+                                .center = Vector2.{bounds.x + bounds.width - 13.0, bounds.y + 13.0},
+                                .radius = 4.0, .fill = Color.{255, 226, 150, 255}})
+                    }
+                }
+                End(frame.session)
+            }
         }
         LevelReplayPump(24)
         RewardCard(width, bottom)

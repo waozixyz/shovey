@@ -32,6 +32,11 @@ Check :: () -> s32 {
     position: ShoveyGame
     if !ShoveyCampaignRestore(*restored, *position, saved) || position.level != last || restored.unlocked != later || !restored.completed[last - 1] || !restored.completed[22] { return 5 }
     if ShoveyOpenLatest(*restored, *position) || position.level != last { return 6 }
+    if restored.unlocked != later || !restored.completed[last - 1] || !restored.completed[22] { return 24 }
+    // An unfinished device position remains intact even with later earned progress.
+    if !ShoveyLoad(*position, 23) { return 25 }
+    position.moves = 3
+    if ShoveyOpenLatest(*restored, *position) || position.level != 23 || position.moves != 3 { return 26 }
     // A live campaign past 175 levels saves the wide layout and restores it.
     for index: cast(s32)0..299 {
         board := ShoveyLevelData(1 + index % last)

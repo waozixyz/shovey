@@ -3,14 +3,17 @@
 ## [Unreleased]
 
 - Password fields start empty and show one star for each character you type.
+- Explore Classic on a painted map with two-axis navigation, six branching routes and discovered secret islands. Return to the level you last played and browse only a few locked levels ahead.
+- Browse the same map in the Editor and preview a board before opening it for editing.
+- Open local Classic with downloads turned off, without a rejected network request.
 
 ## [0.6.164] - 2026-11-02
 
 - Match the Profile portrait to the selected Shovey skin immediately, preserving its stone frame.
-- Find Shovey Island between Classic and the Editor, unlock it with a confirmed Dew quote and download it securely for your account.
+- Find bundled Shovey Island between Classic and the Editor and buy access with a confirmed Dew quote, without a separate download.
 - The Editor's level previews work again, and any level you have unlocked opens for editing.
 - Paint barrels in the Editor as pushable pieces, like crates.
-- Discover 16 one-time treasures across Classic and keep them in the Collectible Book beside the Chest.
+- Discover 16 one-time treasures across Classic and find Collectibles to the left of your Profile portrait.
 - Sign in across Waozi apps with the shared Profile, and restore password-protected backups named after your username.
 - Classic 125 now needs its crate and both movable barrels on marks after their shared button work, keeping the puzzle active without adding walls.
 - Push barrels like wooden crates, including onto marks and into water, while keeping their barrel appearance and existing saved progress.

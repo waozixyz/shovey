@@ -1,0 +1,342 @@
+// The Classic journey graph. IDs identify boards, never their prerequisites.
+// Each authored fork is a compact diamond: either arm opens the merge.
+// One board per arm lets existing numeric earned prefixes stay lossless;
+// longer arms require versioned availability persistence, not a max-ID gate.
+#import, file "reward_locations.zi";
+
+WORLD_MAP_CLASSIC_LEVELS :: 175
+WORLD_MAP_FORK_COUNT :: 6
+WORLD_MAP_EDGE_COUNT :: 180
+WORLD_MAP_SECRET_COUNT :: 3
+
+WorldMapEdge :: struct { from_level: s32; to_level: s32 }
+WorldMapFork :: struct { entry: s32; left: s32; right: s32; merge: s32; segment: s32 }
+
+#scope_file
+// Flat scalar storage keeps the immutable authored tables portable.
+world_map_forks: [30]s32 = .[
+    17, 18, 19, 20, 1,
+    39, 40, 41, 42, 3,
+    65, 66, 67, 68, 5,
+    89, 90, 91, 92, 7,
+    117, 118, 119, 120, 10,
+    140, 141, 142, 143, 12,
+];
+
+world_map_edges: [360]s32 = .[
+    1, 2,
+    2, 3,
+    3, 4,
+    4, 5,
+    5, 6,
+    6, 7,
+    7, 8,
+    8, 9,
+    9, 10,
+    10, 11,
+    11, 12,
+    12, 13,
+    13, 14,
+    14, 15,
+    15, 16,
+    16, 17,
+    17, 18,
+    17, 19,
+    18, 20,
+    19, 20,
+    20, 21,
+    21, 22,
+    22, 23,
+    23, 24,
+    24, 25,
+    25, 26,
+    26, 27,
+    27, 28,
+    28, 29,
+    29, 30,
+    30, 31,
+    31, 32,
+    32, 33,
+    33, 34,
+    34, 35,
+    35, 36,
+    36, 37,
+    37, 38,
+    38, 39,
+    39, 40,
+    39, 41,
+    40, 42,
+    41, 42,
+    42, 43,
+    43, 44,
+    44, 45,
+    45, 46,
+    46, 47,
+    47, 48,
+    48, 49,
+    49, 50,
+    50, 51,
+    51, 52,
+    52, 53,
+    53, 54,
+    54, 55,
+    55, 56,
+    56, 57,
+    57, 58,
+    58, 59,
+    59, 60,
+    60, 61,
+    61, 62,
+    62, 63,
+    63, 64,
+    64, 65,
+    65, 66,
+    65, 67,
+    66, 68,
+    67, 68,
+    68, 69,
+    69, 70,
+    70, 71,
+    71, 72,
+    72, 73,
+    73, 74,
+    74, 75,
+    75, 76,
+    76, 77,
+    77, 78,
+    78, 79,
+    79, 80,
+    80, 81,
+    81, 82,
+    82, 83,
+    83, 84,
+    84, 85,
+    85, 86,
+    86, 87,
+    87, 88,
+    88, 89,
+    89, 90,
+    89, 91,
+    90, 92,
+    91, 92,
+    92, 93,
+    93, 94,
+    94, 95,
+    95, 96,
+    96, 97,
+    97, 98,
+    98, 99,
+    99, 100,
+    100, 101,
+    101, 102,
+    102, 103,
+    103, 104,
+    104, 105,
+    105, 106,
+    106, 107,
+    107, 108,
+    108, 109,
+    109, 110,
+    110, 111,
+    111, 112,
+    112, 113,
+    113, 114,
+    114, 115,
+    115, 116,
+    116, 117,
+    117, 118,
+    117, 119,
+    118, 120,
+    119, 120,
+    120, 121,
+    121, 122,
+    122, 123,
+    123, 124,
+    124, 125,
+    125, 126,
+    126, 127,
+    127, 128,
+    128, 129,
+    129, 130,
+    130, 131,
+    131, 132,
+    132, 133,
+    133, 134,
+    134, 135,
+    135, 136,
+    136, 137,
+    137, 138,
+    138, 139,
+    139, 140,
+    140, 141,
+    140, 142,
+    141, 143,
+    142, 143,
+    143, 144,
+    144, 145,
+    145, 146,
+    146, 147,
+    147, 148,
+    148, 149,
+    149, 150,
+    150, 151,
+    151, 152,
+    152, 153,
+    153, 154,
+    154, 155,
+    155, 156,
+    156, 157,
+    157, 158,
+    158, 159,
+    159, 160,
+    160, 161,
+    161, 162,
+    162, 163,
+    163, 164,
+    164, 165,
+    165, 166,
+    166, 167,
+    167, 168,
+    168, 169,
+    169, 170,
+    170, 171,
+    171, 172,
+    172, 173,
+    173, 174,
+    174, 175,
+];
+
+#scope_export
+WorldMapForkAt :: (index: s32) -> WorldMapFork {
+    if index < 0 || index >= WORLD_MAP_FORK_COUNT { return .{} }
+    at := index * 5
+    return WorldMapFork.{world_map_forks[at], world_map_forks[at + 1], world_map_forks[at + 2],
+        world_map_forks[at + 3], world_map_forks[at + 4]}
+}
+
+// Draw only these edges: sibling arms and secret rooms have no route edge.
+WorldMapEdgeAt :: (index: s32) -> WorldMapEdge {
+    if index < 0 || index >= WORLD_MAP_EDGE_COUNT { return .{} }
+    return WorldMapEdge.{world_map_edges[index * 2], world_map_edges[index * 2 + 1]}
+}
+
+WorldMapLevelCompleted :: (completed: []bool, level: s32) -> bool {
+    return level >= 1 && level <= WORLD_MAP_CLASSIC_LEVELS &&
+        level <= completed.count && completed[level - 1]
+}
+
+WorldMapLevelAvailable :: (earned_unlocked: s32, completed: []bool, level: s32) -> bool {
+    if level < 1 || level > WORLD_MAP_CLASSIC_LEVELS { return false }
+    // Preserve every previously earned unlock, even sparse old saves which
+    // recorded no wins. A completion itself also always remains revisitable.
+    if level == 1 || level <= earned_unlocked || WorldMapLevelCompleted(completed, level) { return true }
+    for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+        edge := WorldMapEdgeAt(index)
+        if edge.to_level == level && WorldMapLevelCompleted(completed, edge.from_level) { return true }
+    }
+    return false
+}
+
+// A completed entry with two unfinished successors asks the player to choose.
+WorldMapAvailableSuccessorCount :: (earned_unlocked: s32, completed: []bool, current: s32) -> s32 {
+    count: s32 = 0
+    for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+        edge := WorldMapEdgeAt(index)
+        if edge.from_level == current && WorldMapLevelAvailable(earned_unlocked, completed, edge.to_level) &&
+            !WorldMapLevelCompleted(completed, edge.to_level) { count += 1 }
+    }
+    return count
+}
+
+WorldMapChoicePending :: (earned_unlocked: s32, completed: []bool, current: s32) -> bool {
+    return WorldMapLevelCompleted(completed, current) &&
+        WorldMapAvailableSuccessorCount(earned_unlocked, completed, current) > 1
+}
+
+// Follow the chosen route, walking past completed successors without asking
+// the player to solve them again. Edge order is the deterministic fallback
+// when a caller has not presented the fork choice. Return 0 at the route end.
+WorldMapNextLevel :: (earned_unlocked: s32, completed: []bool, current: s32) -> s32 {
+    if current < 1 || current > WORLD_MAP_CLASSIC_LEVELS { return 0 }
+    pending: [WORLD_MAP_CLASSIC_LEVELS]s32
+    seen: [WORLD_MAP_CLASSIC_LEVELS]bool
+    pending[0] = current
+    seen[current - 1] = true
+    read: s32 = 0
+    count: s32 = 1
+    while read < count {
+        from := pending[read]
+        read += 1
+        for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+            edge := WorldMapEdgeAt(index)
+            if edge.from_level != from || seen[edge.to_level - 1] { continue }
+            seen[edge.to_level - 1] = true
+            if !WorldMapLevelAvailable(earned_unlocked, completed, edge.to_level) { continue }
+            if !WorldMapLevelCompleted(completed, edge.to_level) { return edge.to_level }
+            pending[count] = edge.to_level
+            count += 1
+        }
+    }
+    return 0
+}
+
+// Keep a current unfinished board meaningful; otherwise prefer its unfinished
+// continuation, then the furthest available unfinished board. Never focus a
+// locked node solely because it has the largest ID.
+WorldMapFocusLevel :: (earned_unlocked: s32, completed: []bool, current: s32) -> s32 {
+    if WorldMapLevelAvailable(earned_unlocked, completed, current) {
+        if !WorldMapLevelCompleted(completed, current) { return current }
+        next := WorldMapNextLevel(earned_unlocked, completed, current)
+        if next != 0 { return next }
+    }
+    latest: s32 = 1
+    for level: cast(s32)1..WORLD_MAP_CLASSIC_LEVELS {
+        if WorldMapLevelAvailable(earned_unlocked, completed, level) { latest = level }
+    }
+    level := latest
+    while level >= 1 {
+        if WorldMapLevelAvailable(earned_unlocked, completed, level) &&
+            !WorldMapLevelCompleted(completed, level) { return level }
+        level -= 1
+    }
+    return latest
+}
+
+WorldMapSecretDestination :: struct {
+    level: s32
+    parent_level: s32
+    label: string
+    discovery_key: string
+    detached: bool
+}
+
+WorldMapSecretLevel :: (index: s32) -> s32 {
+    if index == 0 { return CHEST_LEVEL }
+    if index == 1 { return 1001 }
+    if index == 2 { return 1002 }
+    return 0
+}
+
+WorldMapSecretDiscoveryKey :: (level: s32) -> string {
+    if level == CHEST_LEVEL { return "local.secret29a" }
+    if level == 1001 { return "local.secret175a" }
+    if level == 1002 { return "local.secret175b" }
+    return ""
+}
+
+WorldMapSecretVisible :: (level: s32, discovery_record: string) -> bool {
+    return WorldMapSecretDiscoveryKey(level) != "" && discovery_record == "1"
+}
+
+// The caller reads the actual discovery record, not ordinary level availability.
+// An undiscovered room returns no marker, label, lock, position or destination.
+WorldMapDiscoveredSecretAt :: (index: s32, discovery_record: string) -> WorldMapSecretDestination {
+    level := WorldMapSecretLevel(index)
+    if !WorldMapSecretVisible(level, discovery_record) { return .{} }
+    return WorldMapSecretDestination.{
+        .level = level,
+        .parent_level = ifx level == CHEST_LEVEL then CHEST_PARENT_LEVEL else WORLD_MAP_CLASSIC_LEVELS,
+        .label = ifx level == CHEST_LEVEL then "29a" else ifx level == 1001 then "175a" else "175b",
+        .discovery_key = WorldMapSecretDiscoveryKey(level),
+        .detached = true}
+}

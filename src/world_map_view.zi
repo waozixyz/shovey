@@ -1,0 +1,609 @@
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/button_props"
+#import "kryon/button_widget"
+#import "kryon/control_props"
+#import "kryon/image_props"
+#import "kryon/image_widget"
+#import "kryon/box_props"
+#import "kryon/box_widget"
+#import "kryon/shape_props"
+#import "kryon/shape_widget"
+#import "kryon/scroll_props"
+#import "kryon/scroll_widget"
+#import "kryon/tree"
+#import "kryon/widget_palette"
+#import "kryon/text_props"
+#import "kryon/text_align"
+#import "kryon/text_widget"
+#import "kryon/svg_icon_props"
+#import "kryon/svg_icon_widget"
+#import "std/number_text"
+Math :: #import "std/math";
+Layout :: #import, file "world_map_layout.zi";
+Route :: #import, file "world_map_progression.zi";
+Art :: #import, file "world_map_art.zi";
+#import, file "world_map_art.zi";
+
+WorldMapViewState :: struct {
+    scroll_offset: s32
+    scroll_x: s32
+    focused: s32
+    reveal: bool
+    viewport_width: float32
+    viewport_height: float32
+    // Authored rectangles cover the viewport; independent of image loading.
+    panel_coverage_complete: bool
+}
+
+// Visibility is an explicit caller decision. Public callers supply actual
+// discovery records; the private editor supplies its authored places. Empty
+// visibility never means "show everything". Slices are indexed by place - 1.
+WorldMapViewProps :: struct {
+    visible: []bool
+    available: []bool
+    completed: []bool
+    replay: []bool
+    labels: []string
+    focus_only: bool
+    loading: bool
+    now: float64
+    key_pressed: s32
+    available_label: string
+    completed_label: string
+    locked_label: string
+    loading_label: string
+}
+
+WorldMapSelection :: struct {
+    focused: s32
+    activated: s32
+}
+
+WorldMapViewFlag :: (values: []bool, place: s32) -> bool {
+    return place > 0 && place <= values.count && values[place - 1]
+}
+
+WorldMapViewWidth :: (viewport_width: float32) -> float32 {
+    width := viewport_width - 32.0
+    if width > 390.0 { width = 390.0 }
+    if width < 1.0 { width = 1.0 }
+    return width
+}
+
+// The editor's three authored aliases use the same detached positions as
+// their public room identities. They are accepted only in focus-only mode.
+WorldMapViewPlace :: (place: s32, focus_only: bool) -> s32 {
+    if focus_only && place >= 176 && place <= 178 { return place + 825 }
+    return place
+}
+
+// Measured coordinates use 390 only as a scale reference. The painted world
+// can extend beyond that width; fork geometry is a fallback for missing art.
+WorldMapViewClassicPosition :: (place: s32, width: float32, painted: Vector2) -> Vector2 {
+    if painted.x >= 0.0 && painted.y >= 0.0 {
+        return Vector2.{painted.x * width / 390.0, painted.y * width / 390.0}
+    }
+    point := Layout.WorldMapLevelPosition(place, width)
+    for index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+        fork := Route.WorldMapForkAt(index)
+        if place == fork.entry || place == fork.merge { point.x = width * 0.5 }
+        if place == fork.left || place == fork.right {
+            left := Layout.WorldMapLevelPosition(fork.left, width)
+            right := Layout.WorldMapLevelPosition(fork.right, width)
+            point.y = (left.y + right.y) * 0.5
+            point.x = width * ifx place == fork.left then 0.27 else 0.73
+        }
+    }
+    return point
+}
+
+// Measured islets retain their full world range. The anchor is already scaled
+// and is used only while the corresponding authored position is missing.
+WorldMapViewSecretPosition :: (place: s32, width: float32, painted: Vector2, anchor: Vector2) -> Vector2 {
+    if place < 1001 || place > 1003 { return Vector2.{-1.0, -1.0} }
+    if painted.x >= 0.0 && painted.y >= 0.0 {
+        return Vector2.{painted.x * width / 390.0, painted.y * width / 390.0}
+    }
+    scale := width / 390.0
+    if place == 1003 {
+        return Vector2.{ifx anchor.x >= width * 0.5 then 58.0 * scale else 332.0 * scale,
+            anchor.y - 42.0 * scale}
+    }
+    return Vector2.{ifx place == 1001 then 64.0 * scale else 326.0 * scale,
+        anchor.y + 76.0 * scale}
+}
+
+WorldMapViewPosition :: (place: s32, width: float32, focus_only: bool) -> Vector2 {
+    place = WorldMapViewPlace(place, focus_only)
+    if place >= 1 && place <= Layout.WorldMapLevelCount {
+        return WorldMapViewClassicPosition(place, width, Art.WorldMapArtLevelPosition(place))
+    }
+    if place == 1003 {
+        anchor := WorldMapViewPosition(29, width, false)
+        return WorldMapViewSecretPosition(place, width, Art.WorldMapArtSecretPosition(place), anchor)
+    }
+    if place == 1001 || place == 1002 {
+        anchor := WorldMapViewPosition(175, width, false)
+        return WorldMapViewSecretPosition(place, width, Art.WorldMapArtSecretPosition(place), anchor)
+    }
+    return Vector2.{-1.0, -1.0}
+}
+
+WorldMapViewFocusOffset :: (place: s32, width: float32, height: float32, focus_only: bool) -> s32 {
+    point := WorldMapViewPosition(place, width, focus_only)
+    if point.x == -1.0 && point.y == -1.0 { return 0 }
+    bounds := WorldMapViewArtBounds(width)
+    if bounds.height <= 0.0 { bounds = Rectangle.{0.0, 0.0, width, Layout.WorldMapHeight(width)} }
+    return WorldMapViewFocusOffsetInBounds(point, height, bounds)
+}
+
+WorldMapViewFocusOffsetInBounds :: (point: Vector2, height: float32, bounds: Rectangle) -> s32 {
+    if !(height > 0.0) || !(bounds.height > 0.0) || point.x != point.x || point.y != point.y || bounds.y != bounds.y { return 0 }
+    if point.x == -1.0 && point.y == -1.0 { return 0 }
+    maximum := bounds.y + bounds.height - height
+    if maximum < bounds.y { maximum = bounds.y }
+    offset := point.y - height * 0.5
+    if offset < bounds.y { offset = bounds.y }
+    if offset > maximum { offset = maximum }
+    return cast(s32)offset
+}
+
+// Public browsing ends three locked nodes beyond the furthest reachable
+// ordinary destination. Discovery and private editor visibility stay explicit.
+WorldMapViewPublicLast :: (props: WorldMapViewProps) -> s32 {
+    if props.focus_only { return Layout.WorldMapLevelCount }
+    frontier: s32 = 1
+    for place: cast(s32)1..Layout.WorldMapLevelCount {
+        if WorldMapViewFlag(props.visible, place) && WorldMapViewFlag(props.available, place) { frontier = place }
+    }
+    last := frontier + 3
+    if last > Layout.WorldMapLevelCount { last = Layout.WorldMapLevelCount }
+    return last
+}
+
+WorldMapViewBrowsable :: (props: WorldMapViewProps, place: s32) -> bool {
+    return WorldMapViewFlag(props.visible, place) &&
+        (props.focus_only || place > Layout.WorldMapLevelCount || place <= WorldMapViewPublicLast(props))
+}
+
+// Fixed authored water is real drawn coverage, independent of discovery/loading.
+WorldMapViewArtBounds :: (width: float32) -> Rectangle {
+    water := Art.WorldMapArtWaterBounds()
+    scale := width / 390.0
+    return Rectangle.{water.x * scale, water.y * scale, water.width * scale, water.height * scale}
+}
+
+WorldMapViewPanelVisible :: (panel: WorldMapArtPanel, props: WorldMapViewProps) -> bool {
+    if panel.secret_room == 0 { return true }
+    if WorldMapViewFlag(props.visible, panel.secret_room) { return true }
+    return props.focus_only && WorldMapViewFlag(props.visible, panel.secret_room - 825)
+}
+
+WorldMapViewCameraBounds :: (props: WorldMapViewProps, width: float32, viewport_height: float32 = 0.0) -> Rectangle {
+    extent := WorldMapViewArtBounds(width)
+    if props.focus_only || WorldMapViewPublicLast(props) == Layout.WorldMapLevelCount { return extent }
+    first_y := extent.y + extent.height
+    last := WorldMapViewPublicLast(props)
+    for place: cast(s32)1..last {
+        if !WorldMapViewFlag(props.visible, place) { continue }
+        point := WorldMapViewPosition(place, width, false)
+        if point.y >= 0.0 && point.y - 56.0 < first_y { first_y = point.y - 56.0 }
+    }
+    // Device-local discoveries survive account progress changes. Include the
+    // known islet's full artwork while future ordinary nodes remain filtered.
+    for index: cast(s32)0..Art.WorldMapArtPanelCount - 1 {
+        panel := Art.WorldMapArtPanelAt(index)
+        if panel.secret_room == 0 || !WorldMapViewPanelVisible(panel, props) { continue }
+        top := panel.world_bounds.y * width / 390.0
+        if top < first_y { first_y = top }
+    }
+    if first_y > extent.y {
+        extent.height -= first_y - extent.y
+        extent.y = first_y
+    }
+    // A short public range still fills the viewport with real terrain.
+    // Extend its top into authored scenery, while node visibility stays at
+    // frontier + 3. Never push the viewport past the bottom of the artwork.
+    if extent.height < viewport_height {
+        art := WorldMapViewArtBounds(width)
+        extent.y = art.y + art.height - viewport_height
+        if extent.y < art.y { extent.y = art.y }
+        extent.height = art.y + art.height - extent.y
+    }
+    return extent
+}
+
+WorldMapViewClampAxis :: (offset: s32, start: float32, extent: float32, viewport: float32) -> s32 {
+    minimum := cast(s32)start
+    maximum := cast(s32)(start + extent - viewport)
+    if maximum < minimum { maximum = minimum }
+    if offset < minimum { return minimum }
+    if offset > maximum { return maximum }
+    return offset
+}
+
+WorldMapViewHorizontalRange :: struct {
+    minimum: s32
+    maximum: s32
+    complete: bool
+}
+
+// Find the continuous safe interval containing viewport.x. Sweep every panel
+// top/bottom within the visible height, merging touching horizontal coverage
+// in each band before intersecting its allowed camera interval. This handles
+// overlaps and side-by-side panels without treating their union as a bbox.
+WorldMapViewPanelIntervalAt :: (panels: []Rectangle, viewport: Rectangle) -> WorldMapViewHorizontalRange {
+    result: WorldMapViewHorizontalRange
+    if viewport.width <= 0.0 || viewport.height <= 0.0 { return result }
+    top := viewport.y
+    bottom := top + viewport.height
+    while top < bottom {
+        next_y := bottom
+        for panel: panels {
+            if panel.width <= 0.0 || panel.height <= 0.0 { continue }
+            if panel.y > top && panel.y < next_y { next_y = panel.y }
+            end_y := panel.y + panel.height
+            if end_y > top && end_y < next_y { next_y = end_y }
+        }
+        left := viewport.x
+        right := viewport.x
+        grew := true
+        while grew {
+            grew = false
+            for panel: panels {
+                if panel.width <= 0.0 || panel.height <= 0.0 ||
+                    panel.y > top || panel.y + panel.height <= top { continue }
+                end_x := panel.x + panel.width
+                if panel.x > right || end_x < left { continue }
+                if panel.x < left { left = panel.x; grew = true }
+                if end_x > right { right = end_x; grew = true }
+            }
+        }
+        // Round inward: truncation exposes fractional edges at negative
+        // origins, and a subpixel interval may contain no integer camera.
+        minimum := cast(s32)left
+        maximum := cast(s32)(right - viewport.width)
+        if cast(float32)minimum < left { minimum += 1 }
+        if cast(float32)maximum > right - viewport.width { maximum -= 1 }
+        if minimum > maximum || viewport.x < cast(float32)minimum || viewport.x > cast(float32)maximum { return .{} }
+        if !result.complete || minimum > result.minimum { result.minimum = minimum }
+        if !result.complete || maximum < result.maximum { result.maximum = maximum }
+        result.complete = true
+        top = next_y
+    }
+    return result
+}
+
+// Pure rectangle-fixture entry point. If the requested x is unsafe, the nearest
+// feasible component starts/ends at a panel edge (minus viewport width on the
+// right). Search those endpoints rather than joining disconnected intervals.
+// complete=false means an authored gap, incompatible coverage, or terrain too
+// small for this viewport; camera clamping cannot manufacture missing scenery.
+WorldMapViewPanelHorizontalRange :: (panels: []Rectangle, viewport: Rectangle) -> WorldMapViewHorizontalRange {
+    result := WorldMapViewPanelIntervalAt(panels, viewport)
+    if result.complete { return result }
+    distance: float32
+    for index: cast(s32)0..cast(s32)panels.count * 2 - 1 {
+        panel := panels[index / 2]
+        if panel.width <= 0.0 || panel.height <= 0.0 { continue }
+        edge := ifx index % 2 == 0 then panel.x else panel.x + panel.width - viewport.width
+        candidate := cast(s32)edge
+        if index % 2 == 0 && cast(float32)candidate < edge { candidate += 1 }
+        if index % 2 != 0 && cast(float32)candidate > edge { candidate -= 1 }
+        probe := viewport
+        probe.x = cast(float32)candidate
+        interval := WorldMapViewPanelIntervalAt(panels, probe)
+        if !interval.complete { continue }
+        delta := probe.x - viewport.x
+        if delta < 0.0 { delta = -delta }
+        if !result.complete || delta < distance || (delta == distance && interval.minimum < result.minimum) {
+            result = interval
+            distance = delta
+        }
+    }
+    return result
+}
+
+WorldMapViewClampPanelCamera :: (state: *WorldMapViewState, extent: Rectangle, viewport: Rectangle, panels: []Rectangle) {
+    state.scroll_x = WorldMapViewClampAxis(state.scroll_x, extent.x, extent.width, viewport.width)
+    state.scroll_offset = WorldMapViewClampAxis(state.scroll_offset, extent.y, extent.height, viewport.height)
+    visible := Rectangle.{cast(float32)state.scroll_x, cast(float32)state.scroll_offset, viewport.width, viewport.height}
+    coverage := WorldMapViewPanelHorizontalRange(panels, visible)
+    state.panel_coverage_complete = coverage.complete
+    if !coverage.complete { return }
+    if state.scroll_x < coverage.minimum { state.scroll_x = coverage.minimum }
+    if state.scroll_x > coverage.maximum { state.scroll_x = coverage.maximum }
+}
+
+WorldMapViewClampCamera :: (state: *WorldMapViewState, extent: Rectangle, viewport: Rectangle, width: float32) {
+    // The bounded water fill covers every visible y, including detached islets.
+    // Secret-specific rectangles never participate before discovery.
+    coverage: [1]Rectangle = .[WorldMapViewArtBounds(width)]
+    WorldMapViewClampPanelCamera(state, extent, viewport, coverage[:])
+}
+
+WorldMapViewReveal :: (state: *WorldMapViewState, props: WorldMapViewProps, width: float32, viewport: Rectangle) {
+    if WorldMapViewBrowsable(props, state.focused) {
+        point := WorldMapViewPosition(state.focused, width, props.focus_only)
+        state.scroll_x = cast(s32)(point.x - viewport.width * 0.5)
+        state.scroll_offset = cast(s32)(point.y - viewport.height * 0.5)
+    }
+    WorldMapViewClampCamera(state, WorldMapViewCameraBounds(props, width, viewport.height), viewport, width)
+    state.reveal = false
+}
+
+WorldMapViewIntersects :: (bounds: Rectangle, viewport: Rectangle, margin: float32) -> bool {
+    return bounds.x + bounds.width >= viewport.x - margin &&
+        bounds.x <= viewport.x + viewport.width + margin &&
+        bounds.y + bounds.height >= viewport.y - margin &&
+        bounds.y <= viewport.y + viewport.height + margin
+}
+
+WorldMapViewRouteDistance :: (from: Vector2, to: Vector2) -> float32 {
+    dx := cast(float64)to.x - cast(float64)from.x
+    dy := cast(float64)to.y - cast(float64)from.y
+    return cast(float32)Math.Sqrt(dx * dx + dy * dy)
+}
+
+// All points share one coordinate space. An empty intermediate slice preserves
+// the straight route; one point is a bend. Repeated points add no arc length.
+WorldMapViewRouteSample :: (from: Vector2, to: Vector2, intermediate: []Vector2, t: float32) -> Vector2 {
+    if t <= 0.0 { return from }
+    if t >= 1.0 { return to }
+    length: float32
+    previous := from
+    for index: cast(s32)0..cast(s32)intermediate.count {
+        next := to
+        if index < intermediate.count { next = intermediate[index] }
+        length += WorldMapViewRouteDistance(previous, next)
+        previous = next
+    }
+    if length <= 0.0 { return from }
+    remaining := length * t
+    previous = from
+    for index: cast(s32)0..cast(s32)intermediate.count {
+        next := to
+        if index < intermediate.count { next = intermediate[index] }
+        segment := WorldMapViewRouteDistance(previous, next)
+        if segment > 0.0 {
+            if remaining <= segment {
+                fraction := remaining / segment
+                return Vector2.{previous.x + (next.x - previous.x) * fraction,
+                    previous.y + (next.y - previous.y) * fraction}
+            }
+            remaining -= segment
+        }
+        previous = next
+    }
+    return to
+}
+
+// Include every intermediate extremum, then apply the same map scale/origin as
+// the dots. The origin includes horizontal and vertical camera translation.
+WorldMapViewRouteBounds :: (from: Vector2, to: Vector2, intermediate: []Vector2,
+        origin: Vector2, scale: float32) -> Rectangle {
+    minimum := from
+    maximum := from
+    for index: cast(s32)0..cast(s32)intermediate.count {
+        point := to
+        if index < intermediate.count { point = intermediate[index] }
+        if point.x < minimum.x { minimum.x = point.x }
+        if point.y < minimum.y { minimum.y = point.y }
+        if point.x > maximum.x { maximum.x = point.x }
+        if point.y > maximum.y { maximum.y = point.y }
+    }
+    return Rectangle.{origin.x + minimum.x * scale, origin.y + minimum.y * scale,
+        (maximum.x - minimum.x) * scale, (maximum.y - minimum.y) * scale}
+}
+
+// Kept separate so focus-only selection and unavailable activation can be
+// exercised without a window or host input. Rendering calls this once only.
+WorldMapViewSelect :: (state: *WorldMapViewState, props: WorldMapViewProps, place: s32) -> WorldMapSelection {
+    result := WorldMapSelection.{.focused = state.focused}
+    if !WorldMapViewBrowsable(props, place) || !WorldMapViewFlag(props.available, place) { return result }
+    state.focused = place
+    result.focused = place
+    if !props.focus_only { result.activated = place }
+    return result
+}
+
+WorldMapViewKeyboard :: (state: *WorldMapViewState, props: WorldMapViewProps, width: float32, height: float32) -> WorldMapSelection {
+    key := props.key_pressed
+    if key == 257 || key == 32 { return WorldMapViewSelect(state, props, state.focused) }
+    next := state.focused
+    if key == 265 || key == 262 { next = WorldMapViewAdjacent(state.focused, props.visible, true) }
+    if key == 264 || key == 263 { next = WorldMapViewAdjacent(state.focused, props.visible, false) }
+    // Across a diamond, horizontal movement chooses its parallel arm.
+    for index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+        fork := Route.WorldMapForkAt(index)
+        if key == 262 && state.focused == fork.left { next = fork.right }
+        if key == 263 && state.focused == fork.right { next = fork.left }
+    }
+    if key == 268 { next = 1 }
+    if key == 269 { next = WorldMapViewPublicLast(props) }
+    if key == 268 || key == 269 { state.reveal = true }
+    if next >= 1 && next <= Layout.WorldMapLevelCount && next != state.focused && WorldMapViewBrowsable(props, next) {
+        state.focused = next
+        state.reveal = true
+    }
+    if key == 266 { state.scroll_offset -= cast(s32)(height * 0.8); state.reveal = false }
+    if key == 267 { state.scroll_offset += cast(s32)(height * 0.8); state.reveal = false }
+    // Horizontal camera movement is useful when authored panels extend
+    // sideways beyond the viewport. Arrows retain route/branch navigation.
+    if key == 65 { state.scroll_x -= cast(s32)(width * 0.5); state.reveal = false }
+    if key == 68 { state.scroll_x += cast(s32)(width * 0.5); state.reveal = false }
+    return WorldMapSelection.{.focused = state.focused}
+}
+
+WorldMapViewAdjacent :: (place: s32, visible: []bool, forward: bool) -> s32 {
+    for index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
+        edge := Route.WorldMapEdgeAt(index)
+        source := ifx forward then edge.from_level else edge.to_level
+        destination := ifx forward then edge.to_level else edge.from_level
+        if source == place && WorldMapViewFlag(visible, destination) { return destination }
+    }
+    return place
+}
+
+WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState, props: WorldMapViewProps) -> WorldMapSelection {
+    shown: [1003]bool
+    last := WorldMapViewPublicLast(props)
+    for place: cast(s32)1..cast(s32)props.visible.count {
+        if place > 1003 { break }
+        shown[place - 1] = WorldMapViewFlag(props.visible, place) &&
+            (props.focus_only || place > Layout.WorldMapLevelCount || place <= last)
+    }
+    props.visible = shown[:]
+    width := WorldMapViewWidth(bounds.width)
+    result := WorldMapViewKeyboard(state, props, width, bounds.height)
+    scale := width / 390.0
+    if state.viewport_width > 0.0 && (state.viewport_width != bounds.width || state.viewport_height != bounds.height) {
+        state.reveal = true
+    }
+    state.viewport_width = bounds.width
+    state.viewport_height = bounds.height
+    extent := WorldMapViewCameraBounds(props, width)
+    viewport := bounds
+    // A native horizontal scroll track is needed only when authored artwork
+    // is wider than the viewport. Keep the full authored horizontal range.
+    sideways := extent.width > bounds.width
+    if sideways { viewport.height -= 20.0 }
+    extent = WorldMapViewCameraBounds(props, width, viewport.height)
+    if state.reveal { WorldMapViewReveal(state, props, width, viewport) }
+    WorldMapViewClampCamera(state, extent, viewport, width)
+    if sideways {
+        horizontal := Scroll(session, ScrollProps.{.key = cast(u64)20108,
+            .bounds = Rectangle.{bounds.x, bounds.y + viewport.height, bounds.width, 20.0},
+            .horizontal = true, .manual_scroll = true, .content_width = cast(s32)(extent.x + extent.width) - cast(s32)extent.x,
+            .scroll_offset = state.scroll_x - cast(s32)extent.x})
+        state.scroll_x = horizontal.scroll_offset + cast(s32)extent.x
+        if horizontal.opened { End(session) }
+    }
+    scroll := Scroll(session, ScrollProps.{.key = cast(u64)20105, .bounds = viewport,
+            .manual_scroll = true, .content_height = cast(s32)(extent.y + extent.height) - cast(s32)extent.y,
+            .scroll_offset = state.scroll_offset - cast(s32)extent.y})
+    state.scroll_offset = scroll.scroll_offset + cast(s32)extent.y
+    requested_offset := state.scroll_offset
+    // Scroll input can cross a panel join during this frame. Constrain the
+    // final camera before painting, not only the previous frame's camera.
+    WorldMapViewClampCamera(state, extent, viewport, width)
+    if !scroll.opened { return result }
+    origin := Vector2.{scroll.content.x - cast(float32)state.scroll_x,
+        scroll.content.y - cast(float32)cast(s32)extent.y + cast(float32)(requested_offset - state.scroll_offset)}
+    if extent.width < viewport.width { origin.x += (viewport.width - extent.width) * 0.5 }
+    if extent.height < viewport.height { origin.y += (viewport.height - extent.height) * 0.5 }
+    // Paint only the visible intersection: no full-world bitmap allocation.
+    water := WorldMapViewArtBounds(width)
+    water.x += origin.x
+    water.y += origin.y
+    left := water.x
+    top := water.y
+    right := water.x + water.width
+    bottom := water.y + water.height
+    if left < scroll.viewport.x { left = scroll.viewport.x }
+    if top < scroll.viewport.y { top = scroll.viewport.y }
+    if right > scroll.viewport.x + scroll.viewport.width { right = scroll.viewport.x + scroll.viewport.width }
+    if bottom > scroll.viewport.y + scroll.viewport.height { bottom = scroll.viewport.y + scroll.viewport.height }
+    if right > left && bottom > top {
+        unused Box(session, BoxProps.{.key = cast(u64)59999,
+            .bounds = Rectangle.{left, top, right - left, bottom - top}, .fill = Color.{40, 123, 151, 255}})
+    }
+    // Submit only nearby native panels. Image sources stay in source pixels;
+    // world bounds set their physical scale, never a stretched overview.
+    for index: cast(s32)0..Art.WorldMapArtPanelCount - 1 {
+        panel := Art.WorldMapArtPanelAt(index)
+        if !panel.available || !WorldMapViewPanelVisible(panel, props) { continue }
+        picture := Rectangle.{origin.x + panel.world_bounds.x * scale,
+            origin.y + panel.world_bounds.y * scale, panel.world_bounds.width * scale,
+            panel.world_bounds.height * scale}
+        if !WorldMapViewIntersects(picture, scroll.viewport, picture.height) { continue }
+        unused Image(session, ImageProps.{.key = cast(u64)(60000 + index),
+                .asset_path = panel.asset_path, .preview_path = panel.preview_path,
+                .source = panel.source, .full_size = panel.full_size, .bounds = picture,
+                .fit = ImageFit.ImageFitContain, .smooth = true})
+    }
+    // These quiet stepping stones leave the painted trail dominant. The
+    // canonical buttons use pale stone, with the current destination green.
+    unused WidgetPaletteUse(session, WidgetPalette.{.background = cast(u32)0xe7e8dfff,
+        .base = cast(u32)0xe7e8dfff, .text = cast(u32)0x25392eff,
+        .selected = cast(u32)0x42a94cff, .selected_text = cast(u32)0xffffffff,
+        .border = cast(u32)0x9bada0ff, .success = cast(u32)0xc9dfbaff,
+        .danger = cast(u32)0xe60000ff, .warning = cast(u32)0xffca0cff, .material = true})
+    // Explicit graph edges include forks and merges. Neither secret identities
+    // nor unseen destinations are ever connected by an inferred numeric path.
+    for index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
+        edge := Route.WorldMapEdgeAt(index)
+        if !WorldMapViewFlag(props.visible, edge.from_level) || !WorldMapViewFlag(props.visible, edge.to_level) { continue }
+        from := WorldMapViewPosition(edge.from_level, 390.0, false)
+        to := WorldMapViewPosition(edge.to_level, 390.0, false)
+        intermediate := Art.WorldMapArtEdgeIntermediatePoints(edge.from_level, edge.to_level)
+        route_bounds := WorldMapViewRouteBounds(from, to, intermediate, origin, scale)
+        if !WorldMapViewIntersects(route_bounds, scroll.viewport, 64.0) { continue }
+        earned := WorldMapViewFlag(props.completed, edge.from_level)
+        for stone: cast(s32)1..5 {
+            t := cast(float32)stone / 6.0
+            point := WorldMapViewRouteSample(from, to, intermediate, t)
+            unused Circle(session, CircleProps.{.key = cast(u64)(700000 + index * 8 + stone),
+                    .center = Vector2.{origin.x + point.x * scale, origin.y + point.y * scale},
+                    .radius = 2.5, .fill = ifx earned then Color.{232, 236, 205, 210} else Color.{226, 230, 214, 155}})
+        }
+    }
+    for place: cast(s32)1..cast(s32)props.visible.count {
+        if !WorldMapViewFlag(props.visible, place) { continue }
+        point := WorldMapViewPosition(place, width, props.focus_only)
+        if point.x < 0.0 { continue }
+        node := Rectangle.{origin.x + point.x - 28.0, origin.y + point.y - 28.0, 56.0, 56.0}
+        if !WorldMapViewIntersects(node, scroll.viewport, 56.0) { continue }
+        available := WorldMapViewFlag(props.available, place)
+        completed := WorldMapViewFlag(props.completed, place)
+        // Keep a readable stone beneath a disabled canonical button; the
+        // host may dim its face, but scenery must never swallow the number.
+        unused Circle(session, CircleProps.{.key = cast(u64)(900000 + place),
+                .center = Vector2.{node.x + 28.0, node.y + 28.0}, .radius = 28.0,
+                .fill = Color.{225, 229, 216, 255}})
+        if place == state.focused {
+            unused Circle(session, CircleProps.{.key = cast(u64)(64000 + place),
+                    .center = Vector2.{node.x + 28.0, node.y + 28.0}, .radius = 33.0,
+                    .fill = Color.{107, 202, 105, 255}})
+        }
+        digits: [24]u8
+        label := FormatInteger(cast(s64)place, digits[:])
+        identity := WorldMapViewPlace(place, props.focus_only)
+        if identity == 1001 { label = "175a" }
+        if identity == 1002 { label = "175b" }
+        if identity == 1003 { label = "29a" }
+        if place <= props.labels.count && props.labels[place - 1] != "" { label = props.labels[place - 1] }
+        status := ifx !available then props.locked_label else ifx completed then props.completed_label else props.available_label
+        if props.loading && !available { status = props.loading_label }
+        if Button(session, ButtonProps.{.key = cast(u64)(33000 + place), .id = 33000 + place,
+                .bounds = node, .label = label, .detail = ifx props.focus_only then "" else status, .disabled = !available,
+                .icon_only = true,
+                .selected = place == state.focused, .circle = true, .fit_content = true,
+                .tone = ifx place == state.focused then ButtonTone.ButtonToneAccent else
+                    ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
+                .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
+            result = WorldMapViewSelect(state, props, place)
+        }
+        // Number-only paint is composed from the canonical Text widget. The
+        // canonical button retains its full translated semantic description.
+        Text(session, TextProps.{.key = cast(u64)(920000 + place), .bounds = node,
+                .text = label, .font = 18, .wrap = TextWrap.TextWrapNone,
+                .align = TextAlign.TextAlignCenter, .vertical_align = TextAlign.TextAlignCenter})
+        if !available || completed {
+            SvgIcon(session, SvgIconProps.{
+                    .bounds = Rectangle.{node.x + 40.0, node.y + 38.0, 16.0, 16.0},
+                    .shape = ifx completed then "S2rr:M5 12L10 17L19 7" else "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17",
+                    .color = Color.{37, 57, 46, 255}})
+        }
+        if WorldMapViewFlag(props.replay, place) {
+            unused Circle(session, CircleProps.{.key = cast(u64)(43000 + place),
+                    .center = Vector2.{node.x + 49.0, node.y + 7.0}, .radius = 4.0,
+                    .fill = Color.{255, 226, 150, 255}})
+        }
+    }
+    unused WidgetPaletteRestore(session)
+    End(session)
+    return result
+}

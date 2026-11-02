@@ -8,6 +8,7 @@ import sys
 import time
 
 from PIL import Image, ImageChops
+from editor_ui_driver import EditorUiDriver
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -18,8 +19,10 @@ profile = output / 'profile'
 (profile / 'backup/editor-drafts').mkdir(parents=True, exist_ok=True)
 (profile / 'levels').mkdir(exist_ok=True)
 shutil.copyfile(ROOT / 'levels/classic.json', profile / 'levels/classic.json')
-if not (profile / 'assets').exists():
-    (profile / 'assets').symlink_to(ROOT / 'assets', target_is_directory=True)
+if (profile / 'assets').is_symlink():
+    (profile / 'assets').unlink()
+for folder in ('shovey/sprites', 'shovey-landscape/sprites'):
+    shutil.copytree(ROOT / 'assets' / folder, profile / 'assets' / folder, dirs_exist_ok=True)
 level = json.loads((ROOT / 'levels/classic.json').read_text())['levels'][0]
 pieces = ''.join(level['cells'])
 (profile / 'backup/editor-drafts/001.hex').write_text(pieces + '0c' + '4d' * 239 + '00' * 240)
@@ -28,6 +31,11 @@ pieces = ''.join(level['cells'])
 environment = {key: value for key, value in os.environ.items()
                if key not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
 environment |= {'YUE_DESKTOP_RECOVERY': '0', 'SDL_VIDEODRIVER': 'x11', 'SDL_AUDIODRIVER': 'dummy'}
+driver_folder = output / 'driver'
+driver_folder.mkdir(exist_ok=True)
+for name in ('command', 'reply'):
+    (driver_folder / name).unlink(missing_ok=True)
+environment['KRYON_TEST_DRIVER'] = str(driver_folder)
 with (output / 'app.log').open('w') as log:
     child = subprocess.Popen([str(ROOT / 'build/private-editor/shovey-level-editor'), '1'],
                              cwd=profile, env=environment, stdout=log, stderr=subprocess.STDOUT)
@@ -41,6 +49,7 @@ with (output / 'app.log').open('w') as log:
             time.sleep(0.05)
         assert windows, 'The test editor did not map its own window'
         window = windows[0]
+        driver = EditorUiDriver(driver_folder, child, window)
         subprocess.run(['xdotool', 'windowfocus', window], check=True)
         for width, height in ((1500, 1000), (1437, 937)):
             subprocess.run(['xdotool', 'windowsize', window, str(width), str(height)], check=True)
@@ -107,7 +116,7 @@ with (output / 'app.log').open('w') as log:
         click(palette + 170, 274)
         click(x, y)
         click(palette + 58, 106)
-        click(palette + 56, 562)
+        driver.press('Abyss')
         click(x, y)
         cleared = draft()
         assert cleared[at * 2:at * 2 + 2] == '00'

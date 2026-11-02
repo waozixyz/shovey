@@ -177,7 +177,7 @@ try {
       'Expected selector focus card is not visible');
     await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x: width / 2, y: 250, buttons: 0});
     await delay(100);
-    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: width / 2, y: 250, deltaX: 0, deltaY: -20000});
+    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: width / 2, y: 250, deltaX: 0, deltaY: 20000});
     await wait(async () => (await tree()).some(n => n.key === 33001), 'Cannot scroll back to the first level');
     await delay(500);
     assert((await tree()).some(n => n.key === 33001), 'Selector snapped back during manual scrolling');

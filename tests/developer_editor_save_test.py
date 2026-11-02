@@ -31,7 +31,10 @@ def rows_of(values):
 environment = {k: v for k, v in os.environ.items()
                if k not in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS')}
 generated = Path(os.environ.get('EDITOR_GENERATED', str(ROOT / 'build/private-editor/c')))
-toolchain = Path(subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip())
+toolchain_path = os.environ.get('ZIRAN_TOOLCHAIN')
+if not toolchain_path:
+    toolchain_path = subprocess.check_output(['ziran', 'pkg', 'path', 'ziran'], cwd=ROOT, text=True).strip()
+toolchain = Path(toolchain_path)
 command = [os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections', '-fdata-sections',
            '-Dmain=shovey_editor_main', '-I' + str(toolchain / 'include'), '-I' + str(generated)]
 for folder in sorted({p.parent for p in generated.rglob('*.h')}):
@@ -45,6 +48,8 @@ subprocess.run(command, cwd=ROOT, env=environment, check=True)
 subprocess.run([str(output / 'save-test')], cwd=profile, env=environment, check=True)
 solver = profile / 'build/solver/shovey-solve-classic'
 solver.parent.mkdir(parents=True, exist_ok=True)
+if solver.is_symlink():
+    solver.unlink()
 if not solver.exists():
     shutil.copy2(ROOT / 'build/solver/shovey-solve-classic', solver)
 (profile / 'scripts').mkdir(exist_ok=True)

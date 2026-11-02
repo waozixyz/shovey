@@ -1,0 +1,64 @@
+#import "kryon/geometry"
+Art :: #import, file "world_map_art.zi";
+
+// Segment indices run from the first (lowest) journey segment to the last.
+// Invalid levels and indices return -1; invalid geometry returns negative bounds.
+WorldMapSegmentCount :: 16;
+WorldMapLevelCount :: 175;
+
+WorldMapSegmentStart :: (index: s32) -> s32 {
+    starts: [16]s32 = .[1, 13, 25, 36, 49, 62, 76, 86, 96, 101, 113, 125, 136, 151, 163, 175]
+    if index < 0 || index >= WorldMapSegmentCount { return -1 }
+    return starts[index]
+}
+
+WorldMapSegmentEnd :: (index: s32) -> s32 {
+    if index < 0 || index >= WorldMapSegmentCount { return -1 }
+    if index == WorldMapSegmentCount - 1 { return WorldMapLevelCount }
+    return WorldMapSegmentStart(index + 1) - 1
+}
+
+WorldMapLevelSegment :: (level: s32) -> s32 {
+    if level < 1 || level > WorldMapLevelCount { return -1 }
+    index: s32 = 0
+    while index < WorldMapSegmentCount {
+        if level <= WorldMapSegmentEnd(index) { return index }
+        index += 1
+    }
+    return -1
+}
+
+// The regional catalog keeps full native aspect and the global water extent.
+WorldMapSegmentBaseHeight :: (index: s32) -> float32 {
+    if index < 0 || index >= WorldMapSegmentCount { return -1.0 }
+    return Art.WorldMapArtPanelAt(index).world_bounds.height
+}
+
+WorldMapHeight :: (width: float32) -> float32 {
+    if width <= 0.0 { return -1.0 }
+    return Art.WorldMapArtWaterBounds().height * width / 390.0
+}
+
+WorldMapSegmentBounds :: (index: s32, width: float32) -> Rectangle {
+    if index < 0 || index >= WorldMapSegmentCount || width <= 0.0 { return Rectangle.{-1.0, -1.0, -1.0, -1.0} }
+    bounds := Art.WorldMapArtPanelAt(index).world_bounds
+    scale := width / 390.0
+    return Rectangle.{bounds.x * scale, bounds.y * scale, bounds.width * scale, bounds.height * scale}
+}
+
+WorldMapLevelPosition :: (level: s32, width: float32) -> Vector2 {
+    if WorldMapLevelSegment(level) < 0 || width <= 0.0 { return Vector2.{-1.0, -1.0} }
+    point := Art.WorldMapArtLevelPosition(level)
+    return Vector2.{point.x * width / 390.0, point.y * width / 390.0}
+}
+
+// Center the level where possible, clamped to the scrollable extent.
+WorldMapFocusOffset :: (level: s32, width: float32, viewport_height: float32) -> float32 {
+    if WorldMapLevelSegment(level) < 0 || width <= 0.0 || viewport_height <= 0.0 { return 0.0 }
+    max_scroll := WorldMapHeight(width) - viewport_height
+    if max_scroll <= 0.0 { return 0.0 }
+    offset := WorldMapLevelPosition(level, width).y - viewport_height * 0.5
+    if offset < 0.0 { return 0.0 }
+    if offset > max_scroll { return max_scroll }
+    return offset
+}

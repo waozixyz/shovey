@@ -1,0 +1,40 @@
+Map :: #import, file "../src/world_map_layout.zi";
+
+#program_export
+main :: () -> s32 {
+    if Map.WorldMapSegmentCount != 16 || Map.WorldMapLevelCount != 175 { return 1 }
+    if Map.WorldMapHeight(390.0) != 53360.0 { return 2 }
+    if Map.WorldMapLevelSegment(12) != 0 || Map.WorldMapLevelSegment(13) != 1 { return 3 }
+    if Map.WorldMapLevelSegment(95) != 7 || Map.WorldMapLevelSegment(96) != 8 { return 4 }
+    if Map.WorldMapLevelSegment(100) != 8 || Map.WorldMapLevelSegment(101) != 9 { return 5 }
+    if Map.WorldMapLevelSegment(174) != 14 || Map.WorldMapLevelSegment(175) != 15 { return 6 }
+    if Map.WorldMapLevelSegment(0) != -1 || Map.WorldMapLevelSegment(176) != -1 { return 7 }
+    if Map.WorldMapSegmentStart(-1) != -1 || Map.WorldMapSegmentEnd(16) != -1 { return 8 }
+    if Map.WorldMapLevelPosition(0, 390.0).x != -1.0 || Map.WorldMapSegmentBounds(16, 390.0).y != -1.0 { return 9 }
+    if Map.WorldMapHeight(0.0) != -1.0 || Map.WorldMapLevelPosition(1, 0.0).y != -1.0 { return 10 }
+    if Map.WorldMapFocusOffset(0, 390.0, 600.0) != 0.0 || Map.WorldMapFocusOffset(1, 390.0, 0.0) != 0.0 { return 21 }
+    widths: [2]float32 = .[200.0, 780.0]
+    w: s32 = 0
+    while w < 2 {
+        width := widths[w]
+        height := Map.WorldMapHeight(width)
+        previous := height + 1.0
+        level: s32 = 1
+        while level <= 175 {
+            index := Map.WorldMapLevelSegment(level)
+            if index < 0 || level < Map.WorldMapSegmentStart(index) || level > Map.WorldMapSegmentEnd(index) { return 11 }
+            pos := Map.WorldMapLevelPosition(level, width)
+            bounds := Map.WorldMapSegmentBounds(index, width)
+            if pos.x < 0.0 || pos.x > 5079.0 * width / 390.0 || pos.y < 0.0 || pos.y > height { return 12 }
+            if pos.y < bounds.y || pos.y > bounds.y + bounds.height { return 13 }
+            offset := Map.WorldMapFocusOffset(level, width, 600.0)
+            if offset < 0.0 || offset > height - 600.0 { return 14 }
+            previous = pos.y
+            level += 1
+        }
+        if Map.WorldMapFocusOffset(1, width, height + 1.0) != 0.0 { return 17 }
+        w += 1
+    }
+    print("World map layout: 175 levels, segments, bounds and focus passed\n")
+    return 0
+}

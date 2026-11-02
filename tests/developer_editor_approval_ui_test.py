@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 from PIL import Image, ImageChops
+from editor_ui_driver import EditorUiDriver
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
@@ -65,6 +66,9 @@ if sys.argv[1] in ('glm', 'glm-redesign', 'glm-prettify', 'fix'):
 environment = {k: v for k, v in os.environ.items()
                if k not in ('WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER')}
 environment.update(SDL_VIDEODRIVER='x11', SDL_AUDIODRIVER='dummy', YUE_DESKTOP_RECOVERY='0')
+driver_folder = profile / 'driver'
+driver_folder.mkdir()
+environment['KRYON_TEST_DRIVER'] = str(driver_folder)
 with (output / 'app.log').open('w') as log:
     child = subprocess.Popen([str(args.binary.resolve()), '1'],
                              cwd=profile, env=environment, stdout=log, stderr=subprocess.STDOUT)
@@ -78,6 +82,7 @@ with (output / 'app.log').open('w') as log:
             time.sleep(0.05)
         assert windows
         window = windows[0]
+        driver = EditorUiDriver(driver_folder, child, window)
         def click(x, y):
             subprocess.run(['xdotool', 'mousemove', '--window', window, str(x), str(y), 'click', '1'], check=True)
         time.sleep(0.6)
@@ -85,6 +90,8 @@ with (output / 'app.log').open('w') as log:
         click(100, 28)
         time.sleep(0.2)
         def map_colors():
+            click(1440, 100)  # Publication colors belong to the Levels list.
+            time.sleep(0.2)
             subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
             shot = output / 'approvals-map.png'
             subprocess.run(['import', '-window', window, str(shot)], check=True)
@@ -246,7 +253,7 @@ with (output / 'app.log').open('w') as log:
         assert map_colors()[0] == purple
         click(100, 28)
         (drafts / 'worker-started').unlink()
-        click(670, 66)
+        driver.press('Update all')
         for attempt in range(40):
             if (drafts / 'worker-started').exists(): break
             time.sleep(.025)

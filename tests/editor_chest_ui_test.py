@@ -103,8 +103,7 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
             subprocess.run(['xdotool', 'windowfocus', window], check=True)
             for mode in ('Levels', 'Map'):
                 press('Level 28 of 175')
-                if mode == 'Map':
-                    press('Map')
+                press(mode)
                 if ADMIN:
                     assert not any(re.fullmatch(r'[0-9]+[ab]', node.get('label', ''))
                                    for node in nodes()), 'Public editor exposed a secret level'
@@ -112,9 +111,17 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                     continue
                 wait(lambda: showing('29a'), f'29a absent from {mode} selector')
                 entries = {node['label']: node for node in nodes() if node.get('label') in ('29', '29a', '30')}
-                order = lambda name: (entries[name]['visible_y'], entries[name]['visible_x'])
-                assert order('29') < order('29a') < order('30'), '29a is not beside 29 in numeric order'
+                if mode == 'Levels':
+                    order = lambda name: (entries[name]['visible_y'], entries[name]['visible_x'])
+                    assert order('29') < order('29a') < order('30'), '29a is not beside 29 in numeric order'
+                else:
+                    # The secret is detached from the journey; focus reveals
+                    # its actual board, then Edit opens it explicitly.
+                    subprocess.run(['xdotool', 'key', '--window', window, 'n', 'n'], check=True)
+                    wait(lambda: showing('Level 29a'), 'Secret map preview did not focus')
                 press('29a')
+                if mode == 'Map':
+                    press('Edit')
                 wait(lambda: showing('Secret chest 29a'), '29a did not open the hidden room')
                 assert (drafts / 'place').read_text().strip() == '178', '29a opened ordinary 29'
                 wait(chest_shown, 'The actual chest sprite is missing in edit mode')

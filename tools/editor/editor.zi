@@ -57,6 +57,7 @@
 #import, file "../../src/orientation.zi";
 #import, file "../../src/levels.zi";
 #import, file "../../src/reward_locations.zi";
+#import, file "../../src/world_map_view.zi";
 
 sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
@@ -1090,8 +1091,10 @@ LoadApprovals :: () {
 ToggleSelector :: () {
     selector_open = !selector_open
     if selector_open {
-        // The list opens on the numbered cards; Map is one click away.
-        selector_map = false
+        selector_map = true
+        selector_focus = current
+        selector_focus_pending = true
+        selector_navigation_key = 0
         LoadApprovals()
         CheckServer(MonotonicMilliseconds())
     }
@@ -2373,79 +2376,58 @@ LevelCardColor :: (place: s32) -> Color {
     return Color.{72, 80, 78, 255}
 }
 
-// The map: every place's board drawn edge to edge in one picture, so the
-// campaign reads as one world. scripts/editor_previews.py draws it from the
-// boards listed in wanted.txt and names it after their FNV-1a hashes, so an
-// edited board waits for its new map instead of showing the old one, and the
-// whole map stays one cached texture.
-PREVIEW_FOLDER :: "backup/editor-drafts/previews/"
-MAP_TILE_WIDTH :: 160
-MAP_TILE_HEIGHT :: 96
 selector_map: bool;
+selector_focus: s32;
+selector_focus_pending: bool;
+selector_navigation_key: s32;
+selector_view: WorldMapViewState;
+selector_authored: [ALL_PLACES]bool;
+selector_preview_layers: [SHOVEY_CELLS * 3]s32;
+selector_preview_title: [64]u8;
+
+// Browsing never opens a board: the current draft and its undo stack remain
+// untouched until the explicit Edit action goes through Open next frame.
+SelectorFocus :: (place: s32) {
+    if place < 1 || place > ALL_PLACES { return }
+    if place != current { RestoreDraft(place) }
+    selector_focus = place
+    selector_focus_pending = true
+}
+
+SelectorEdit :: () {
+    if selector_focus < 1 || selector_focus > ALL_PLACES { return }
+    if selector_focus == current { selector_open = false }
+    else { selector_pick = selector_focus }
+}
+
+SelectorKey :: (key: s32) {
+    selector_navigation_key = ifx key >= 262 && key <= 265 then key else 0
+    if key == 80 { SelectorFocus(AdjacentPlace(selector_focus, -1)) }
+    if key == 78 { SelectorFocus(AdjacentPlace(selector_focus, 1)) }
+    if key == 268 { SelectorFocus(1) }
+    if key == 269 { SelectorFocus(PLACES) }
+    if key == 257 { SelectorEdit() }
+}
+
+SelectorPreview :: (area: Rectangle) {
+    if selector_focus < 1 || selector_focus > ALL_PLACES { selector_focus = current }
+    length: s32 = 0
+    AppendText(selector_preview_title[:], *length, "Level ")
+    AppendPlace(selector_preview_title[:], *length, selector_focus)
+    Caption(75990, Rectangle.{area.x + 8.0, area.y + 8.0, area.width - 16.0, 28.0},
+        TextView(selector_preview_title[:length]), 18)
+    unused HexBoard(Board(selector_focus), OurTiles(), selector_preview_layers[:], cast(u64)76000,
+        Rectangle.{area.x + 8.0, area.y + 44.0, area.width - 16.0, area.height - 104.0},
+        boards_landscape, "Level preview", selector_focus == CHEST_PLACE)
+    if Control(63, Rectangle.{area.x + 8.0, area.y + area.height - 48.0, area.width - 16.0, 40.0}, "Edit") {
+        SelectorEdit()
+    }
+}
 // A place clicked in the list opens at the start of the next frame, so no
 // frame mixes the list's widgets with the level's.
 selector_pick: s32;
-map_hash: u32;
-map_ready: bool;
-map_path: [64]u8;
-map_path_length: s32;
-map_hashes: [ALL_PLACES * 8]u8;
-preview_wanted: [ALL_PLACES * (HEX + 5)]u8;
-preview_checked_at: s64 = -100000;
-preview_requested_at: s64 = -100000;
-
-BoardHash :: (board: []u8) -> u32 {
-    hash: u32 = 2166136261
-    for byte: board { hash = (hash ^ cast(u32)byte) * cast(u32)16777619 }
-    return hash
-}
-
-AppendHash :: (bytes: []u8, length: *s32, hash: u32) {
-    digits := "0123456789abcdef"
-    for shift: cast(s32)0..7 {
-        bytes[length.*] = digits[cast(s64)((hash >> cast(u32)((7 - shift) * 4)) & cast(u32)15)]
-        length.* += 1
-    }
-}
-
-// Once a second, see whether the map of the current boards exists; when it
-// does not, list every board for the drawing script and start it, at most
-// every few seconds.
-RefreshMap :: (now: s64) {
-    if now - preview_checked_at < 1000 { return }
-    preview_checked_at = now
-    length: s32 = 0
-    for slot: cast(s32)1..ALL_PLACES { AppendHash(map_hashes[:], *length, BoardHash(Board(SelectorPlace(slot)))) }
-    hash := BoardHash(map_hashes[:length])
-    if hash != map_hash || map_path_length == 0 {
-        map_hash = hash
-        map_path_length = 0
-        AppendText(map_path[:], *map_path_length, PREVIEW_FOLDER)
-        AppendText(map_path[:], *map_path_length, "map-")
-        AppendHash(map_path[:], *map_path_length, hash)
-        AppendText(map_path[:], *map_path_length, ".png")
-        map_ready = false
-    }
-    if !map_ready { map_ready = PathExists(TextView(map_path[:map_path_length])) }
-    if map_ready || now - preview_requested_at < 4000 { return }
-    preview_requested_at = now
-    length = 0
-    for slot: cast(s32)1..ALL_PLACES {
-        place := SelectorPlace(slot)
-        AppendNumber(preview_wanted[:], *length, place)
-        AppendText(preview_wanted[:], *length, " ")
-        AppendText(preview_wanted[:], *length, TextView(Board(place)))
-        AppendText(preview_wanted[:], *length, "\n")
-    }
-    Shell("mkdir -p backup/editor-drafts/previews")
-    if WriteEntireFile("backup/editor-drafts/previews/wanted.txt", TextView(preview_wanted[:length])) {
-        Shell("setsid python3 scripts/editor_previews.py > backup/editor-previews.log 2>&1 < /dev/null &")
-    }
-}
-
-// Every place at once, in one of two views: the map of all boards joined edge
-// to edge, or a card per place coloured by its release state with its number.
-// A click opens that place.
+// The shared journey previews the focused board before Edit opens it. The
+// numbered list remains a direct shortcut, coloured by publication state.
 SELECTOR_COLUMNS :: 15
 ISLAND_EDITOR_SCRIPT :: "backup/island-private/open-island-editor.sh"
 SelectorScreen :: (area: Rectangle) {
@@ -2460,40 +2442,36 @@ SelectorScreen :: (area: Rectangle) {
     if Control(60, Rectangle.{area.x + area.width - 200.0, area.y, 96.0, legend_height - 4.0}, "Map", selector_map) { selector_map = true }
     if Control(61, Rectangle.{area.x + area.width - 100.0, area.y, 96.0, legend_height - 4.0}, "Levels", !selector_map) { selector_map = false }
     if selector_map {
-        RefreshMap(MonotonicMilliseconds())
-        // The picture's own proportions, as large as the area allows.
-        space := Rectangle.{area.x, area.y + legend_height, area.width, area.height - legend_height}
-        map_width := cast(float32)(SELECTOR_COLUMNS * MAP_TILE_WIDTH)
-        map_height := cast(float32)(rows * MAP_TILE_HEIGHT)
-        scale := space.width / map_width
-        if space.height / map_height < scale { scale = space.height / map_height }
-        tile_width := cast(float32)MAP_TILE_WIDTH * scale
-        tile_height := cast(float32)MAP_TILE_HEIGHT * scale
-        origin_x := space.x + (space.width - map_width * scale) / 2.0
-        origin_y := space.y + (space.height - map_height * scale) / 2.0
-        if map_ready {
-            Image(session, ImageProps.{.key = cast(u64)75999, .asset_path = TextView(map_path[:map_path_length]),
-                    .bounds = Rectangle.{origin_x, origin_y, map_width * scale, map_height * scale},
-                    .fit = ImageFit.ImageFitStretch})
+        map_area := Rectangle.{area.x, area.y + legend_height, area.width, area.height - legend_height}
+        preview_area := map_area
+        if area.width >= 900.0 {
+            preview_area.width = area.width * 0.38
+            if preview_area.width > 480.0 { preview_area.width = 480.0 }
+            map_area.width -= preview_area.width + 12.0
+            preview_area.x = map_area.x + map_area.width + 12.0
         } else {
-            Caption(15, Rectangle.{area.x, area.y, area.width - 310.0, legend_height}, "Drawing the map…", 14)
+            preview_area.height = map_area.height * 0.42
+            if preview_area.height > 400.0 { preview_area.height = 400.0 }
+            map_area.height -= preview_area.height + 12.0
+            preview_area.y = map_area.y + map_area.height + 12.0
         }
-        for slot: cast(s32)1..ALL_PLACES {
-            place := SelectorPlace(slot)
-            index := slot - 1
-            bounds := Rectangle.{origin_x + cast(float32)(index % SELECTOR_COLUMNS) * tile_width,
-                origin_y + cast(float32)(index / SELECTOR_COLUMNS) * tile_height, tile_width, tile_height}
-            if place == current {
-                unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
-                        .border = Color.{255, 255, 255, 230}})
-            }
-            length: s32 = 0
-            AppendPlace(cell_bytes[index * 16:index * 16 + 16], *length, place)
-            if Button(session, ButtonProps.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
-                    .label = TextView(cell_bytes[index * 16:index * 16 + length]), .invisible = true}) != 0 {
-                selector_pick = place
-            }
+        // Authoring access belongs only to this private caller. The public
+        // player supplies discovery/progression visibility to the same widget.
+        for index: cast(s32)0..ALL_PLACES - 1 { selector_authored[index] = true }
+        if selector_focus_pending {
+            selector_view.focused = selector_focus
+            selector_view.reveal = true
+            selector_focus_pending = false
         }
+        selection := WorldMapView(session, map_area, *selector_view, WorldMapViewProps.{
+            .visible = selector_authored[:], .available = selector_authored[:], .focus_only = true,
+            .key_pressed = selector_navigation_key,
+            .now = cast(float64)MonotonicMilliseconds() / 1000.0,
+            .available_label = "Edit", .completed_label = "Edit", .locked_label = "", .loading_label = ""})
+        if selection.focused > 0 && selection.focused <= ALL_PLACES && selection.focused != selector_focus {
+            SelectorFocus(selection.focused)
+        }
+        SelectorPreview(preview_area)
         return
     }
     gap: float32 = 4.0
@@ -2713,10 +2691,14 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
     FollowLevelFile(now)
     PollCheck()
     ctrl := (modifiers & 2) != 0
-    if key == 258 { if playing { StopPlay() } else { StartPlay() } }
+    if key == 258 && !selector_open { if playing { StopPlay() } else { StartPlay() } }
     if key == 76 && !playing { ToggleSelector() }
+    // Reset both clocks on every selector frame, including the frame that
+    // closes it, so hidden time cannot advance a playtest or watched route.
+    selector_was_open := selector_open
+    if playing && selector_was_open { last_tick = now; watch_last = now }
     if key == 256 { selector_open = false }
-    if playing {
+    if playing && !selector_was_open && !selector_open {
         if !watching {
             if key == 263 || key == 65 { PlayAct(BoardEngineDirection(0, boards_landscape)) }
             if key == 265 || key == 87 { PlayAct(BoardEngineDirection(1, boards_landscape)) }
@@ -2739,7 +2721,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
             PlayAct(action)
             watch_at += 1
         }
-    } else {
+    } else if !playing && !selector_open && !selector_was_open {
         if key == 78 { Open(AdjacentPlace(current, 1)) }
         if key == 80 { Open(AdjacentPlace(current, -1)) }
         if key == 85 { Open(NextWaiting()) }
@@ -2748,6 +2730,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if key == 67 { StartCheck() }
         if key == 83 && ctrl { StartSave() }
     }
+    if selector_open && selector_map { SelectorKey(key) }
     // Check again shortly after the last change.
     // While playing, wait for a real pause so a check never runs move by move.
     delay: s64 = ifx playing then 1500 else 1200

@@ -192,8 +192,10 @@ try {
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Opening Classic wrote unearned account progress');
     await textClick('Levels');
     assert((await labels()).some(text => text.includes('Level')));
-    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: 2200});
+    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: -2200});
     await delay(500);
+    assert((await tree()).some(node => node.visible && node.key > 33001 && node.key <= 33175),
+      'Scrolling did not reveal later journey waypoints');
     assert.equal(await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`), campaign, 'Scrolling changed the device campaign');
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Scrolling wrote account progress');
     // Editor reads the browser's Classic save, while keeping the device's

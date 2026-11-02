@@ -1,0 +1,270 @@
+#import, file "../src/world_map_progression.zi";
+#import, file "../src/progress.zi";
+#import, file "../src/secret_travel.zi";
+#import, file "../src/engine.zi";
+#import, file "../src/reward_locations.zi";
+Shared :: #import, file "../src/shared_campaign.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+
+HasEdge :: (from: s32, to: s32) -> bool {
+    for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+        edge := WorldMapEdgeAt(index)
+        if edge.from_level == from && edge.to_level == to { return true }
+    }
+    return false
+}
+
+GraphStructure :: () -> s32 {
+    if WORLD_MAP_CLASSIC_LEVELS != 175 || WORLD_MAP_EDGE_COUNT != 180 || WORLD_MAP_FORK_COUNT != 6 { return 1 }
+    reached: [175]bool
+    incoming: [175]s32
+    outgoing: [175]s32
+    reached[0] = true
+    for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+        edge := WorldMapEdgeAt(index)
+        if edge.from_level < 1 || edge.to_level > 175 || edge.from_level >= edge.to_level { return 2 }
+        for earlier: cast(s32)0..index - 1 {
+            other := WorldMapEdgeAt(earlier)
+            if edge.from_level == other.from_level && edge.to_level == other.to_level { return 3 }
+        }
+        incoming[edge.to_level - 1] += 1
+        outgoing[edge.from_level - 1] += 1
+    }
+    // Reachability depends on explicit edges, never numeric adjacency.
+    for pass: cast(s32)1..175 {
+        for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+            edge := WorldMapEdgeAt(index)
+            if reached[edge.from_level - 1] { reached[edge.to_level - 1] = true }
+        }
+    }
+    branches: s32 = 0
+    merges: s32 = 0
+    for level: cast(s32)1..175 {
+        if !reached[level - 1] { return 4 }
+        if level > 1 && (incoming[level - 1] < 1 || incoming[level - 1] > 2) { return 5 }
+        if level < 175 && (outgoing[level - 1] < 1 || outgoing[level - 1] > 2) { return 6 }
+        if incoming[level - 1] == 2 { merges += 1 }
+        if outgoing[level - 1] == 2 { branches += 1 }
+    }
+    if branches != 6 || merges != 6 || incoming[0] != 0 || outgoing[174] != 0 { return 7 }
+    if WorldMapEdgeAt(-1).from_level != 0 || WorldMapEdgeAt(WORLD_MAP_EDGE_COUNT).to_level != 0 ||
+        WorldMapForkAt(-1).entry != 0 || WorldMapForkAt(6).entry != 0 { return 8 }
+    // Independently sweep all nodes using only earned predecessor completions.
+    done: [175]bool
+    for level: cast(s32)1..175 {
+        if !WorldMapLevelAvailable(1, done[:], level) { return 9 }
+        done[level - 1] = true
+    }
+    return 0
+}
+
+ForkBehavior :: () -> s32 {
+    for index: cast(s32)0..WORLD_MAP_FORK_COUNT - 1 {
+        fork := WorldMapForkAt(index)
+        if !HasEdge(fork.entry, fork.left) || !HasEdge(fork.entry, fork.right) ||
+            !HasEdge(fork.left, fork.merge) || !HasEdge(fork.right, fork.merge) ||
+            HasEdge(fork.left, fork.right) || HasEdge(fork.entry, fork.merge) { return 10 }
+        // Test each arm independently: either opens the merge, neither silently
+        // completes its sibling, and choosing the right arm needs no left win.
+        for side: cast(s32)0..1 {
+            progress := ShoveyProgress.{.unlocked = fork.entry}
+            game: ShoveyGame
+            unused ShoveyLoad(*game, fork.entry)
+            if WorldMapChoicePending(progress.unlocked, progress.completed[:], fork.entry) ||
+                WorldMapAvailableSuccessorCount(progress.unlocked, progress.completed[:], fork.entry) != 0 { return 22 }
+            if ShoveyLevelUnlocked(*progress, fork.left) || ShoveyLevelUnlocked(*progress, fork.right) { return 11 }
+            ShoveyRecordWin(*progress, *game)
+            if ShoveyLevelUnlocked(*progress, fork.right) { return 12 }
+            game.won = true
+            ShoveyRecordWin(*progress, *game)
+            if !WorldMapChoicePending(progress.unlocked, progress.completed[:], fork.entry) ||
+                WorldMapAvailableSuccessorCount(progress.unlocked, progress.completed[:], fork.entry) != 2 { return 23 }
+            if !ShoveyLevelUnlocked(*progress, fork.left) || !ShoveyLevelUnlocked(*progress, fork.right) ||
+                ShoveyLevelUnlocked(*progress, fork.merge) { return 13 }
+            // Opening the latest board still follows either available fork arm.
+            focus := WorldMapFocusLevel(progress.unlocked, progress.completed[:], game.level)
+            resumed_focus := game
+            if (focus != fork.left && focus != fork.right) || !ShoveyOpenLatest(*progress, *resumed_focus) ||
+                resumed_focus.level != focus { return 58 }
+            arm := ifx side == 0 then fork.left else fork.right
+            sibling := ifx side == 0 then fork.right else fork.left
+            if !ShoveySelectLevel(*progress, *game, arm) { return 14 }
+            game.won = true
+            if !ShoveyContinue(*progress, *game) || game.level != fork.merge { return 15 }
+            if !progress.completed[arm - 1] || progress.completed[sibling - 1] ||
+                !ShoveyLevelUnlocked(*progress, sibling) || !ShoveyLevelUnlocked(*progress, fork.merge) { return 16 }
+            if WorldMapChoicePending(progress.unlocked, progress.completed[:], fork.entry) ||
+                WorldMapAvailableSuccessorCount(progress.unlocked, progress.completed[:], fork.entry) != 1 ||
+                WorldMapChoicePending(progress.unlocked, progress.completed[:], arm) { return 24 }
+            // The left win exposes a merge beyond the old numeric prefix.
+            // Its unfinished board must still round-trip through C2.
+            game.moves = 7
+            saved := ShoveyCampaignSave(*progress, *game)
+            restored: ShoveyProgress
+            resumed: ShoveyGame
+            if !ShoveyCampaignRestore(*restored, *resumed, saved) || resumed.level != fork.merge ||
+                resumed.moves != 7 || restored.unlocked != progress.unlocked ||
+                !restored.completed[arm - 1] || restored.completed[sibling - 1] ||
+                !ShoveyLevelUnlocked(*restored, fork.merge) || !ShoveyLevelUnlocked(*restored, sibling) { return 17 }
+            // The existing account wire model carries the same unlock/completion
+            // data, including a merge earned beyond its numeric prefix.
+            record := Shared.ShoveySharedRecord(*progress)
+            account := ShoveyProgressNew()
+            Shared.ShoveySharedRestore(*account, *record)
+            if !ShoveyLevelUnlocked(*account, fork.merge) || !ShoveyLevelUnlocked(*account, sibling) ||
+                account.completed[sibling - 1] { return 18 }
+            // Revisit the other arm after completing the merge: Continue walks
+            // past the completed merge without asking for a replay.
+            game.won = true
+            ShoveyRecordWin(*progress, *game)
+            if !ShoveySelectLevel(*progress, *game, sibling) { return 19 }
+            game.won = true
+            if !ShoveyContinue(*progress, *game) || game.level != fork.merge + 1 ||
+                !progress.completed[sibling - 1] { return 20 }
+            if WorldMapFocusLevel(progress.unlocked, progress.completed[:], game.level) != game.level { return 21 }
+        }
+    }
+    return 0
+}
+
+LegacyAvailability :: () -> s32 {
+    // Every old sparse prefix remains available without inventing wins,
+    // including prefixes in the middle of any newly authored fork.
+    for unlocked: cast(s32)1..176 {
+        progress := ShoveyProgress.{.unlocked = unlocked}
+        for level: cast(s32)1..175 {
+            if ShoveyLevelUnlocked(*progress, level) != (level <= unlocked) { return 30 }
+            if progress.completed[level - 1] { return 31 }
+        }
+    }
+    fresh := ShoveyProgressNew()
+    if WorldMapLevelAvailable(5000, fresh.completed[:], 0) ||
+        WorldMapLevelAvailable(5000, fresh.completed[:], 176) { return 32 }
+    game: ShoveyGame
+    unused ShoveyLoad(*game, 19)
+    migrated := ShoveyMigrateProgress(*game)
+    if migrated.unlocked != 19 || migrated.completed[18] || !ShoveyLevelUnlocked(*migrated, 18) { return 33 }
+    sparse := ShoveyProgress.{.unlocked = 19}
+    if !ShoveyCampaignRestore(*migrated, *game, ShoveyCampaignSave(*sparse, *game)) ||
+        migrated.unlocked != 19 || migrated.completed[17] { return 34 }
+    empty: [0]bool
+    if !WorldMapLevelAvailable(1, empty[:], 1) || WorldMapLevelAvailable(1, empty[:], 2) { return 35 }
+    if WorldMapNextLevel(1, empty[:], -1) != 0 || WorldMapNextLevel(175, empty[:], 175) != 0 { return 36 }
+    if WorldMapChoicePending(175, empty[:], 1) ||
+        WorldMapAvailableSuccessorCount(175, empty[:], 1) != 1 { return 56 }
+    fresh.completed[0] = true
+    if WorldMapChoicePending(2, fresh.completed[:], 1) ||
+        WorldMapAvailableSuccessorCount(2, fresh.completed[:], 1) != 1 { return 57 }
+    return 0
+}
+
+SaveVersions :: () -> s32 {
+    progress := ShoveyProgress.{.unlocked = 19}
+    progress.completed[16] = true
+    progress.completed[17] = true
+    game: ShoveyGame
+    unused ShoveyLoad(*game, 20)
+    game.moves = 9
+    // A layered C3 and decorated C4 retain their graph-earned resume position.
+    game.tiles[game.player] = 78
+    game.decorations = .{}
+    for version: cast(s32)3..5 {
+        if version == 4 { game.decorations[game.player] = 57 }
+        if version == 5 {
+            progress.unlocked = 177
+            progress.completed[175] = true
+        }
+        saved := ShoveyCampaignSave(*progress, *game)
+        if saved[1] != cast(u8)(48 + version) { return 37 }
+        restored: ShoveyProgress
+        position: ShoveyGame
+        if !ShoveyCampaignRestore(*restored, *position, saved) || position.level != 20 ||
+            position.moves != 9 || !restored.completed[17] || restored.completed[18] ||
+            !ShoveyLevelUnlocked(*restored, 20) { return 38 }
+        if version == 5 && (restored.unlocked != 177 || !restored.completed[175]) { return 39 }
+    }
+    return 0
+}
+
+JourneyWithoutReplay :: () -> s32 {
+    progress := ShoveyProgressNew()
+    game: ShoveyGame
+    unused ShoveyLoad(*game, 1)
+    wins: s32 = 0
+    while game.level < 175 {
+        if progress.completed[game.level - 1] { return 50 }
+        before: [175]bool
+        for level: cast(s32)1..175 { before[level - 1] = ShoveyLevelUnlocked(*progress, level) }
+        just_won := game.level
+        game.won = true
+        if !ShoveyContinue(*progress, *game) { return 51 }
+        for level: cast(s32)1..175 {
+            if !before[level - 1] && ShoveyLevelUnlocked(*progress, level) &&
+                !HasEdge(just_won, level) { return 52 }
+        }
+        wins += 1
+        if wins >= 175 { return 53 }
+    }
+    game.won = true
+    ShoveyRecordWin(*progress, *game)
+    if wins + 1 != 169 || ShoveyContinue(*progress, *game) { return 54 }
+    for index: cast(s32)0..WORLD_MAP_FORK_COUNT - 1 {
+        fork := WorldMapForkAt(index)
+        if progress.completed[fork.right - 1] || !ShoveyLevelUnlocked(*progress, fork.right) { return 55 }
+    }
+    return 0
+}
+
+SecretVisibility :: () -> s32 {
+    // Actual saved discovery values are required; even finishing the ordinary
+    // campaign supplies neither an undiscovered label nor a detached marker.
+    records: [5]string = .["", "0", "true", "1 ", "discovered"]
+    for index: cast(s32)0..WORLD_MAP_SECRET_COUNT - 1 {
+        level := WorldMapSecretLevel(index)
+        for record: records {
+            hidden := WorldMapDiscoveredSecretAt(index, record)
+            if hidden.level != 0 || hidden.parent_level != 0 || hidden.label != "" ||
+                hidden.discovery_key != "" || hidden.detached || WorldMapSecretVisible(level, record) { return 40 }
+        }
+        marker := WorldMapDiscoveredSecretAt(index, "1")
+        if marker.level != level || !marker.detached || marker.discovery_key != WorldMapSecretDiscoveryKey(level) ||
+            marker.label == "" || marker.parent_level != (ifx level == CHEST_LEVEL then 29 else 175) { return 41 }
+        done: [175]bool
+        if WorldMapLevelAvailable(4096, done[:], level) { return 42 }
+        for edge_index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+            edge := WorldMapEdgeAt(edge_index)
+            if edge.from_level == level || edge.to_level == level { return 43 }
+        }
+        // The map uses the same navigation primitive as a beach crossing,
+        // preserving the exact current campaign attempt as the return board.
+        game: ShoveyGame
+        unused ShoveyLoad(*game, 29)
+        game.moves = 17
+        game.keys = 2
+        original: [2433]u8
+        unused CopyCString(ShoveySave(*game), original[:])
+        visit: ShoveySecretVisit
+        if ShoveySelectDiscoveredSecret(*game, *visit, level, "") || visit.valid ||
+            ShoveySelectDiscoveredSecret(*game, *visit, 1, "1") { return 44 }
+        if !ShoveySelectDiscoveredSecret(*game, *visit, level, "1") || game.level != level || !visit.valid ||
+            ShoveySelectDiscoveredSecret(*game, *visit, level, "1") { return 45 }
+        if !ShoveyReturnFromSecret(*game, *visit) || TextUntilNul(original[:]) != ShoveySave(*game) { return 46 }
+    }
+    if WorldMapDiscoveredSecretAt(-1, "1").level != 0 || WorldMapDiscoveredSecretAt(3, "1").label != "" ||
+        WorldMapSecretDiscoveryKey(175) != "" || WorldMapSecretLevel(3) != 0 { return 47 }
+    if WorldMapDiscoveredSecretAt(0, "1").label != "29a" ||
+        WorldMapDiscoveredSecretAt(1, "1").label != "175a" ||
+        WorldMapDiscoveredSecretAt(2, "1").label != "175b" { return 48 }
+    return 0
+}
+
+#program_export
+Check :: () -> s32 {
+    result := GraphStructure(); if result != 0 { return result }
+    result = ForkBehavior(); if result != 0 { return result }
+    result = LegacyAvailability(); if result != 0 { return result }
+    result = SaveVersions(); if result != 0 { return result }
+    result = JourneyWithoutReplay(); if result != 0 { return result }
+    return SecretVisibility()
+}

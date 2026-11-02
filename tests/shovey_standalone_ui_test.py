@@ -51,11 +51,13 @@ def main():
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--inbe-source', type=Path, required=True)
     parser.add_argument('--classic-levels', type=int, help='Expected campaign length of an already built artifact')
+    parser.add_argument('--map-only', action='store_true', help='Run the focused Classic map navigation and selection test')
     args = parser.parse_args()
     assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
     assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
     root = Path(__file__).resolve().parents[1]
-    output = root / 'build/shovey-standalone-ui-test'
+    output = root / ('work/classic-map-ui-test' if args.map_only else 'build/shovey-standalone-ui-test')
+    subprocess.run(['git', 'check-ignore', '-q', str(output)], cwd=root, check=True)
     # Classic's heading counts its levels, which the published campaign lists.
     classic_levels = args.classic_levels or len(json.loads((root / 'levels/approved.json').read_text())['levels'])
     output.mkdir(parents=True, exist_ok=True)
@@ -200,6 +202,18 @@ def main():
                 time.sleep(.05)
         raise AssertionError('No arm of the movement pad moved Shovey')
 
+    def assert_map_terrain_fills_height():
+        nodes = driver.tree()
+        viewport = next(node for node in nodes if node.get('key') == 20105)
+        water = next(node for node in nodes if node.get('key') == 59999)
+        # Fixed authored water fills the viewport between regional paintings.
+        # Image panels alone need not cover every point in that water.
+        assert water['x'] <= viewport['x'] + 1 and water['y'] <= viewport['y'] + 1
+        assert water['x'] + water['width'] >= viewport['x'] + viewport['width'] - 16
+        assert water['y'] + water['height'] >= viewport['y'] + viewport['height'] - 16
+        panels = [node for node in nodes if node.get('kind') == 'image' and 60000 <= node.get('key', 0) < 60100]
+        assert any(panel['visible'] for panel in panels), 'Focused map has no visible regional painting'
+
     def overlaps(a, b):
         return a['x'] < b['x'] + b['width'] and b['x'] < a['x'] + a['width'] and \
             a['y'] < b['y'] + b['height'] and b['y'] < a['y'] + a['height']
@@ -243,18 +257,59 @@ def main():
             assert (profile / 'games/arcade.shovey-player/records/sound').read_text() == 'on'
             driver.press(label='Levels', role='button')
             driver.wait(label='Continue', role='button')
-            portrait_preview = driver.find(label='1', role='image', visible=True)[0]
-            assert abs(portrait_preview['width'] / portrait_preview['height'] - 3 / 5) < .01
+            window = resize_owned_window(child, 390, 844)
+            portrait_marker = driver.wait(key=33001, role='button', visible=True)
+            assert portrait_marker['width'] >= 48 and portrait_marker['height'] >= 48
+            assert not driver.find(key=34001) and not driver.find(key=34002) and not driver.find(key=34003), \
+                'Undiscovered rooms leaked onto the journey'
+            driver.key('end')
+            locked = driver.wait(key=33004, role='button', visible=True)
+            assert not locked['enabled'], 'A future waypoint became playable'
+            assert not any(33005 <= node.get('key', 0) <= 33175 for node in driver.tree()), \
+                'Fresh progress exposed more than three locked waypoints'
+            driver.key('enter')
+            driver.wait(label='Continue', role='button')
+            driver.key('home')
+            # Up follows explicit graph edges and skips each parallel right
+            # arm rather than treating it as the next step in a linear list.
+            for _ in range(3):
+                driver.key('up')
+            middle = driver.wait(key=33004, role='button', visible=True)
+            assert middle['selected'] and not middle['enabled'], middle
+            before_y = middle['y']
+            driver.drag((24, 240), (24, 540))
+            driver.wait_idle(frames=3)
+            moved = driver.find(key=33004, role='button', visible=True)
+            assert not moved or moved[0]['y'] >= before_y - 1, 'Touch dragging escaped the public camera bounds'
+            driver.key('home')
+            driver.wait(key=33001, role='button', visible=True)
+            assert_map_terrain_fills_height()
+            subprocess.run(['import', '-window', window, str(output / 'level-selector-portrait.png')], check=True)
             window = resize_owned_window(child, 960, 600)
-            landscape_preview = driver.find(label='1', role='image', visible=True)[0]
-            assert abs(landscape_preview['width'] / landscape_preview['height'] - 5 / 3) < .01
+            # The same portrait journey stays centered in a wide viewport;
+            # waypoints remain touch-sized rather than becoming board cards.
+            landscape_marker = driver.wait(key=33001, role='button', visible=True)
+            assert landscape_marker['width'] >= 48 and landscape_marker['height'] >= 48
+            viewport = driver.find(key=20105, visible=True)[0]
+            marker_x = landscape_marker['x'] + landscape_marker['width'] / 2
+            assert abs(marker_x - (viewport['x'] + viewport['width'] / 2)) <= viewport['width'] * .15, \
+                'Focused waypoint was not revealed by the horizontal camera'
+            assert landscape_marker['selected'] and landscape_marker['enabled']
+            assert_map_terrain_fills_height()
             subprocess.run(['import', '-window', window, str(output / 'level-selector-landscape.png')], check=True)
+            driver.press(key=33001, role='button')
+            wait_level_one(driver, classic_levels)
+            driver.press(label='Levels', role='button')
+            driver.wait(label='Continue', role='button')
             # Back from the level list returns to the level, then to the covers.
             driver.press(key=20022)
             wait_level_one(driver, classic_levels)
             assert not driver.find(label='Continue', role='button', visible=True)
             driver.press(label='Back', role='button')
             driver.wait(label='Play', role='button')
+            if args.map_only:
+                print('Classic map local UI test passed: 390x844 and 960x600, keyboard 1/4, three locked previews, touch scrolling, selection and Back')
+                return
             answer_cover_question(driver)
             driver.press(label='Play', role='button')
             wait_level_one(driver, classic_levels)

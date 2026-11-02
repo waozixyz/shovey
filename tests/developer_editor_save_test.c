@@ -213,6 +213,34 @@ int main(int argc, char **argv) {
     editor_Remember(true);
     editor_SetKind(editor_Board(1), SHOVEY_CELLS * 2 + 13, 57);
     editor_Edited();
+    /* Map browsing must preserve the open board and its undo history. */
+    uint8_t browsing_board[HEX];
+    memcpy(browsing_board, editor_Board(1).data, HEX);
+    int browsing_history = history_count;
+    editor_ToggleSelector();
+    assert(selector_open && selector_map && selector_focus == 1);
+    editor_SelectorFocus(175);
+    editor_SelectorFocus(0);
+    editor_SelectorFocus(ALL_PLACES + 1);
+    assert(selector_focus == 175 && current == 1 && selector_pick == 0);
+    assert(history_count == browsing_history);
+    assert(memcmp(browsing_board, editor_Board(1).data, HEX) == 0);
+    editor_ToggleSelector(); /* Cancel. */
+    assert(!selector_open && current == 1 && history_count == browsing_history);
+    editor_ToggleSelector();
+    assert(selector_focus == 1);
+    editor_SelectorEdit(); /* Editing the same destination retains undo. */
+    assert(!selector_open && selector_pick == 0 && history_count == browsing_history);
+    editor_ToggleSelector();
+    editor_SelectorKey(269); /* End reaches the full 175-level journey. */
+    assert(selector_focus == 175 && current == 1);
+    editor_SelectorKey(268);
+    editor_SelectorKey(78);
+    assert(selector_focus == 2 && current == 1);
+    editor_SelectorEdit();
+    assert(selector_pick == 2 && current == 1 && history_count == browsing_history);
+    selector_pick = 0;
+    selector_open = false;
     editor_UndoEdit();
     assert(editor_KindAt(editor_Board(1), SHOVEY_CELLS * 2 + 13) == original);
     editor_RedoEdit();
