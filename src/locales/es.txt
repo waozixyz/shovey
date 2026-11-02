@@ -944,7 +944,7 @@ Empuja la colmena junto a las abejas para calmarlas y abrir un camino. Déjala a
 ---
 
 [shovey_book]
-Libro de coleccionables
+Coleccionables
 ---
 
 [shovey_book_unknown]

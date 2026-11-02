@@ -944,7 +944,7 @@ Přisuň úl vedle včel, aby se uklidnily a otevřely cestu. Při přecházení
 ---
 
 [shovey_book]
-Kniha pokladů
+Sběratelské předměty
 ---
 
 [shovey_book_unknown]

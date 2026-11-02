@@ -944,7 +944,7 @@ Pousse la ruche à côté des abeilles pour les calmer et ouvrir un passage. Lai
 ---
 
 [shovey_book]
-Livre des trésors
+Collectionnables
 ---
 
 [shovey_book_unknown]

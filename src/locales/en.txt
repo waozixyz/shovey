@@ -944,7 +944,7 @@ Push the hive beside the bees to calm them and open a path. Keep it there while 
 ---
 
 [shovey_book]
-Collectible Book
+Collectibles
 ---
 
 [shovey_book_unknown]

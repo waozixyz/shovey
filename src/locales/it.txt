@@ -944,7 +944,7 @@ Spingi l’alveare accanto alle api per calmarle e aprire un passaggio. Lascialo
 ---
 
 [shovey_book]
-Libro dei collezionabili
+Collezionabili
 ---
 
 [shovey_book_unknown]

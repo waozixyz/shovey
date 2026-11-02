@@ -57,7 +57,7 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
                     crop = image.convert('RGB').crop((round(x), round(y), round(x + icon['visible_width'] * sx), round(y + icon['visible_height'] * sy)))
                     assert max(ImageStat.Stat(crop).stddev) > 8, 'Book cover icon did not render'
                 driver.press(key=49208, role='button')
-                driver.wait(label='Collectible Book', role='text', timeout=60)
+                driver.wait(label='Collectibles', role='text', timeout=60)
                 driver.wait(label='1 / 16', role='text')
                 driver.wait(label='Lucky pebble', role='text')
                 driver.wait(label='Still hidden', role='text')

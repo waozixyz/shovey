@@ -944,7 +944,7 @@ Shovey Island
 ---
 
 [shovey_book]
-Книга находок
+Коллекционные предметы
 ---
 
 [shovey_book_unknown]

@@ -1023,12 +1023,12 @@ CollectionToolbar :: (session: Session, viewport: Rectangle) {
         "assets/shovey/shop/stall.png", "shovey_shop_shop") { unused CollectionShopQueue("shop") }
     if CollectionCoverAction(session, 49202, Rectangle.{viewport.x + 12.0, y + 60.0, 44.0, 44.0},
         "assets/shovey/shop/chest-closed.png", "shovey_shop_chest") { unused CollectionShopQueue("chest") }
-    if CollectionCoverAction(session, 49208, Rectangle.{viewport.x + 64.0, y + 60.0, 44.0, 44.0},
+    if CollectionCoverAction(session, 49208, Rectangle.{viewport.x + viewport.width - 152.0, y, 44.0, 44.0},
         "assets/shovey/shop/book.png", "shovey_book") { unused CollectionShopQueue("book") }
     digits: [24]u8
-    CollectionCoverAmount(session, 49210, Rectangle.{viewport.x + 60.0, y, viewport.width - 176.0, 28.0},
+    CollectionCoverAmount(session, 49210, Rectangle.{viewport.x + 60.0, y, viewport.width - 224.0, 28.0},
         "coins", FormatInteger(cast(s64)ShopState.ShopCoins(), digits[:]))
-    CollectionCoverAmount(session, 49212, Rectangle.{viewport.x + 60.0, y + 30.0, viewport.width - 176.0, 28.0},
+    CollectionCoverAmount(session, 49212, Rectangle.{viewport.x + 60.0, y + 30.0, viewport.width - 224.0, 28.0},
         "dew", ShopUI.DewText())
     skin := ShopState.ShopSkin()
     if CollectionCoverAction(session, 49204, Rectangle.{viewport.x + viewport.width - 104.0, y, 44.0, 44.0},

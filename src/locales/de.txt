@@ -944,7 +944,7 @@ Schiebe den Bienenkorb neben die Bienen, um sie zu beruhigen und den Weg zu öff
 ---
 
 [shovey_book]
-Sammelbuch
+Sammlerstücke
 ---
 
 [shovey_book_unknown]

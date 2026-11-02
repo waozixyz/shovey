@@ -944,7 +944,7 @@ Dewが足りません。
 ---
 
 [shovey_book]
-コレクションブック
+コレクション
 ---
 
 [shovey_book_unknown]

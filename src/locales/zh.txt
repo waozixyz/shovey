@@ -944,7 +944,7 @@ Dew 不足。
 ---
 
 [shovey_book]
-收藏图鉴
+收藏品
 ---
 
 [shovey_book_unknown]

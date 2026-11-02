@@ -944,7 +944,7 @@ Empurre a colmeia para perto das abelhas para acalmá-las e abrir caminho. Deixe
 ---
 
 [shovey_book]
-Livro de colecionáveis
+Colecionáveis
 ---
 
 [shovey_book_unknown]

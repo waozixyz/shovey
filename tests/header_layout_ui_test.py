@@ -68,12 +68,16 @@ def main():
                         time.sleep(.05)
                     market = driver.wait(key=49200, role='button')
                     chest = driver.wait(key=49202, role='button')
+                    book = driver.wait(key=49208, role='button')
+                    profile = driver.wait(key=49204, role='button')
+                    assert book['x'] + book['width'] + 4 == profile['x']
+                    assert book['y'] == profile['y']
                     assert chest['x'] == market['x'] and chest['y'] >= market['y'] + market['height']
                     coins = driver.wait(key=49211, role='text', label='20')
                     dew = driver.wait(key=49213, role='text')
                     assert coins['x'] > market['x'] + market['width'] and dew['x'] == coins['x']
                     assert dew['y'] > coins['y']
-                    for button in (driver.wait(key=49204), driver.wait(key=49206)):
+                    for button in (book, profile, driver.wait(key=49206)):
                         assert separated(coins, button) and separated(dew, button)
                     logos = [node for node in driver.tree() if node['kind'] == 'image' and
                              119 <= node['y'] <= 121 and node['width'] <= 361]

@@ -944,7 +944,7 @@ Dorong sarang ke samping lebah untuk menenangkannya dan membuka jalan. Biarkan d
 ---
 
 [shovey_book]
-Buku Koleksi
+Barang koleksi
 ---
 
 [shovey_book_unknown]

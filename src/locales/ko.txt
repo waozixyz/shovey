@@ -944,7 +944,7 @@ Dew가 부족합니다.
 ---
 
 [shovey_book]
-수집 도감
+수집품
 ---
 
 [shovey_book_unknown]
