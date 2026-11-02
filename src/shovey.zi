@@ -1,6 +1,14 @@
 #import "apps/node_types"
 #import "apps/node_app"
 #import, file "shovey_view.zi";
+Reminder :: #import, file "chest_reminder.zi";
+ReminderPolicy :: #import, file "chest_reminder_policy.zi";
+DailyReminder :: #import, file "daily_chest.zi";
+ReminderRecords :: #import, file "controls.zi";
+host_api :: #system_library "host_api";
+AppLocaleHost :: (key: string) -> string #foreign host_api;
+
+chest_reminder_session: Reminder.ChestReminderSession;
 
 #program_export "ShoveyMain"
 Main :: () -> s32 { return RunNodeApp(ShoveyNodeFrame, ShoveyNodeBack) }
@@ -8,6 +16,14 @@ Main :: () -> s32 { return RunNodeApp(ShoveyNodeFrame, ShoveyNodeBack) }
 ShoveyNodeFrame :: (message: AppMessage) -> bool {
     ShoveyShopSetToday(ifx message.time > 0 then message.time / 86400 else -1)
     ShoveyFrame()
+    if message.time > 0 && chest_reminder_session.checked_at != message.time {
+        reminder_enabled := ReminderRecords.PathRecord("chest.reminder.enabled") != "off"
+        reminder_policy := ReminderPolicy.ChestReminderReadPolicy(ifx reminder_enabled then "on" else "off",
+            ReminderRecords.PathRecord("chest.reminder.time"))
+        Reminder.ChestReminderFrame(*chest_reminder_session, reminder_policy, message.time,
+            AppLocaleHost("shovey_shop_chest"), AppLocaleHost("shovey_chest_reminder"),
+            DailyReminder.DailyChestReminderAvailableAfter())
+    }
     return true
 }
 

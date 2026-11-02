@@ -71,11 +71,14 @@ Restart :: () {
 Check :: () -> s32 {
     if DailyChestCoins() != 0 || DailyChestDay(100) != 1 || DailyChestWeekClaimed(100) != 0 { return 1 }
     if !DailyChestReady(100) || DailyChestClaim(-1) || DailyChestClaim(4000001) { return 2 }
+    if DailyChestReminderAvailableAfter() != 0 { return 34 }
     if !DailyChestClaim(100) || DailyChestCoins() != 20 || DailyChestDay(100) != 1 || DailyChestWeekClaimed(100) != 1 { return 3 }
+    if DailyChestReminderAvailableAfter() != 101 * cast(s64)86400000 { return 35 }
     saved_writes := writes
     if DailyChestReady(100) || DailyChestClaim(100) || DailyChestClaim(99) || writes != saved_writes { return 4 }
     Restart()
     if DailyChestCoins() != 20 || DailyChestClaim(100) || DailyChestDay(101) != 2 { return 5 }
+    if DailyChestReminderAvailableAfter() != 101 * cast(s64)86400000 { return 36 }
     if !DailyChestClaim(101) || DailyChestCoins() != 45 || DailyChestWeekClaimed(101) != 2 { return 6 }
     // A missed UTC day restarts the week, preserving both previous grants.
     if DailyChestDay(103) != 1 || DailyChestWeekClaimed(103) != 0 || DailyChestCoins() != 45 { return 7 }
@@ -114,6 +117,7 @@ Check :: () -> s32 {
     if DailyChestCoins() != 420 { return 26 }
     unavailable = true
     if DailyChestCoins() != 0 || DailyChestClaim(113) { return 27 }
+    if DailyChestReminderAvailableAfter() != -1 { return 37 }
     unavailable = false
     account = 1
     if DailyChestCoins() != 20 || DailyChestClaim(112) || !DailyChestClaim(113) || DailyChestCoins() != 45 { return 28 }
@@ -131,5 +135,6 @@ Check :: () -> s32 {
     Restart()
     saved_writes = writes
     if DailyChestCoins() != 0 || DailyChestClaim(115) || writes != saved_writes { return 33 }
+    if DailyChestReminderAvailableAfter() != -1 || writes != saved_writes { return 38 }
     return 42
 }

@@ -1090,3 +1090,7 @@ Brújula de latón
 [shovey_item_brass_compass_line]
 Siempre apunta a la aventura.
 ---
+
+[shovey_chest_reminder]
+Tu cofre diario te espera. Abre Shovey para recoger tu recompensa.
+---

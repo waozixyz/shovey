@@ -1090,3 +1090,7 @@ Classic에서 특별한 물건을 찾아보세요.
 [shovey_item_brass_compass_line]
 언제나 모험을 가리켜요.
 ---
+
+[shovey_chest_reminder]
+일일 상자가 기다리고 있어요. Shovey를 열어 보상을 받으세요.
+---

@@ -1,0 +1,37 @@
+// Reminder dates are device-local calendar days supplied by the shared host.
+// Daily chest grants use UTC elsewhere; a claim never controls this policy.
+CHEST_REMINDER_HOUR :: 19
+CHEST_REMINDER_MINUTE :: 0
+
+ChestReminderPolicy :: struct {
+    enabled: bool
+    hour: s32
+    minute: s32
+}
+
+ChestReminderDefaultPolicy :: () -> ChestReminderPolicy {
+    return ChestReminderPolicy.{true, CHEST_REMINDER_HOUR, CHEST_REMINDER_MINUTE}
+}
+
+ChestReminderTimeValid :: (policy: ChestReminderPolicy) -> bool {
+    return policy.hour >= 0 && policy.hour < 24 && policy.minute >= 0 && policy.minute < 60
+}
+
+ChestReminderCanSchedule :: (policy: ChestReminderPolicy, available_after: s64) -> bool {
+    return policy.enabled && ChestReminderTimeValid(policy) && available_after >= 0
+}
+
+// No reminder setting predates this feature. Missing records use 19:00;
+// retain an explicit off choice and any valid stored HH:MM device-local time.
+ChestReminderReadPolicy :: (enabled: string, time: string) -> ChestReminderPolicy {
+    policy := ChestReminderDefaultPolicy()
+    policy.enabled = enabled != "off"
+    if time.count != 5 || time[2] != #char ":" { return policy }
+    for index: 0..4 {
+        if index != 2 && (time[index] < #char "0" || time[index] > #char "9") { return policy }
+    }
+    hour := (cast(s32)time[0] - 48) * 10 + cast(s32)time[1] - 48
+    minute := (cast(s32)time[3] - 48) * 10 + cast(s32)time[4] - 48
+    if hour < 24 && minute < 60 { policy.hour = hour; policy.minute = minute }
+    return policy
+}

@@ -44,8 +44,11 @@ class BundleCatalogTest(unittest.TestCase):
         builder.build(*[self.root / name for name in ('toolchain', 'kryon', 'apps', 'mingcute')])
 
     def test_external_descriptor_is_not_read_or_embedded(self):
+        # The reminder's new capability must reject older hosts before entry.
+        minimum_host = json.loads((ROOT / 'src/catalog.json').read_text())['host_api']
+        self.assertEqual(minimum_host, 42)
         descriptor = dict(name='public', assets='art', locales='locales', locale_prefix='game.',
-                          entry='game:Entry', source='game.zi', preview='preview.png')
+                          entry='game:Entry', source='game.zi', preview='preview.png', host_api=minimum_host)
         self.write('public/catalog.json', json.dumps(descriptor))
         self.write('art/marker.txt', 'public art')
         self.write('locales/en.txt', '[game.title]\nPublic game\n---\n')
@@ -65,6 +68,8 @@ class BundleCatalogTest(unittest.TestCase):
         self.assertIn(str(self.root / 'game.zi'), command)
         self.assertIn('game:Retain', command)
         self.assertEqual((self.root / 'build/game-assets/public/assets/public/marker.txt').read_text(), 'public art')
+        packed = json.loads((self.root / 'build/game-assets/public/assets/public/catalog.json').read_text())
+        self.assertEqual(packed['host_api'], minimum_host)
         self.assertIn('Public game', (self.root / 'build/game-generated/public/translations.zi').read_text())
         self.assertEqual((self.root / 'build/games/public-preview.png').read_bytes(), preview.read_bytes())
         self.assertEqual(private.read_text(), 'preserved private output')

@@ -107,6 +107,14 @@ DailyChestReady :: (today: s64) -> bool {
     return daily_chest_available && DailyPlan.GameDailyClaimReady(daily_chest_plan, today) && today <= 4000000
 }
 
+// The evening reminder follows the device's local calendar, but cannot promise
+// a chest before this plan's next UTC reset. Unknown storage stays unavailable.
+DailyChestReminderAvailableAfter :: () -> s64 {
+    DailyChestPump(-1)
+    if !daily_chest_available { return -1 }
+    return (daily_chest_plan.last_day + 1) * 86400000
+}
+
 DailyChestWeekClaimed :: (today: s64) -> s32 {
     DailyChestPump(today)
     return ifx daily_chest_available then DailyPlan.GameDailyWeekClaimed(daily_chest_plan, today) else 0

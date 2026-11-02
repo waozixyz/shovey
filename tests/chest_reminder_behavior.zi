@@ -1,0 +1,161 @@
+#import, file "../src/chest_reminder_policy.zi";
+#import, file "../src/chest_reminder.zi";
+// Exercise the same local-day guard Android's receiver executes.
+#import "kryon/notification_schedule_policy"
+#import "kryon/notification_schedule"
+#import "kryon/notification"
+
+Check :: () -> s32 {
+    policy := ChestReminderDefaultPolicy()
+    if policy.hour != 19 || policy.minute != 0 || !policy.enabled { return 1 }
+    props := ChestReminderProps("Daily chest", "Your daily chest is waiting.")
+    #if #defined(KRYON_HOSTED_UI) {
+        if props.tag != "shovey.daily-chest" { return 17 }
+    } else {
+        if props.tag != "hosted:arcade.shovey:shovey.daily-chest" { return 17 }
+    }
+    if props.id != 1 || !props.suppress_when_focused { return 33 }
+    if !DailyNotificationValid(props, policy.hour, policy.minute, 0) { return 2 }
+    // Opening alone suppresses today; no claim or sign-in is needed.
+    if !NotificationDayAllowed(20261102, 0, 0, true, 1, 127) { return 3 }
+    opened: s32 = 20261102
+    if NotificationDayAllowed(20261102, opened, 0, true, 1, 127) { return 4 }
+    // Restart reloads the persisted local date unchanged. Claiming a chest
+    // cannot undo the open; tomorrow becomes eligible without an app restart.
+    restored_opened := opened
+    if NotificationDayAllowed(20261102, restored_opened, 0, true, 1, 127) { return 5 }
+    if !NotificationDayAllowed(20261103, restored_opened, 0, true, 2, 127) { return 6 }
+    // Successful delivery persists its own day, preventing repeated alarms.
+    delivered: s32 = 20261103
+    restored_delivered := delivered
+    if NotificationDayAllowed(20261103, restored_opened, restored_delivered, true, 2, 127) { return 7 }
+    if !NotificationDayAllowed(20261104, restored_opened, restored_delivered, true, 3, 127) { return 8 }
+    // Backward dates, month/year boundaries and leap-day validity.
+    if NotificationDayAllowed(20261101, restored_opened, restored_delivered, true, 0, 127) { return 9 }
+    if !NotificationDayAllowed(20270101, 20261231, 20261230, true, 5, 127) { return 10 }
+    if !NotificationDateValid(2028, 2, 29) || NotificationDateValid(2027, 2, 29) { return 11 }
+    if NotificationDateValid(2026, 11, 31) { return 12 }
+    // Existing valid time settings are accepted; invalid times never schedule.
+    policy.hour = 20; policy.minute = 15
+    if !ChestReminderTimeValid(policy) || !DailyNotificationValid(props, policy.hour, policy.minute, 0) { return 13 }
+    policy.hour = 24
+    if ChestReminderTimeValid(policy) || DailyNotificationValid(props, policy.hour, policy.minute, 0) { return 14 }
+    policy.hour = 19; policy.minute = -1
+    if ChestReminderTimeValid(policy) { return 15 }
+    // An invalid/unknown claim lower bound must not install a rule.
+    if DailyNotificationValid(props, 19, 0, -1) { return 16 }
+    policy = ChestReminderDefaultPolicy()
+    policy.enabled = false
+    if ChestReminderCanSchedule(policy, 0) { return 18 }
+    policy.enabled = true
+    if !ChestReminderCanSchedule(policy, 0) || ChestReminderCanSchedule(policy, -1) { return 19 }
+    policy = ChestReminderReadPolicy("off", "20:15")
+    if policy.enabled || policy.hour != 20 || policy.minute != 15 { return 30 }
+    policy = ChestReminderReadPolicy("", "bad")
+    if !policy.enabled || policy.hour != 19 || policy.minute != 0 { return 31 }
+    policy = ChestReminderReadPolicy("on", "24:99")
+    if policy.hour != 19 || policy.minute != 0 { return 32 }
+    return AdapterCheck()
+}
+
+schedule_count: s32;
+cancel_count: s32;
+open_count: s32;
+supported: bool = true;
+fail_schedule: bool;
+wrong_scope: bool;
+scheduled_hour: s32;
+scheduled_minute: s32;
+scheduled_after: s64;
+suppressed_on_open: bool;
+
+#program_export
+FakeSupported :: () -> bool { return supported }
+FakeSchedule :: (props: NotificationProps, hour: s32, minute: s32,
+    suppress_on_open: bool, available_after: s64) -> bool {
+    schedule_count += 1
+    if props.tag != CHEST_REMINDER_TAG || props.id != CHEST_REMINDER_ID { wrong_scope = true }
+    scheduled_hour = hour; scheduled_minute = minute; scheduled_after = available_after
+    suppressed_on_open = suppress_on_open
+    return !fail_schedule
+}
+#program_export
+FakeCancel :: (tag: string, id: s32) -> bool {
+    cancel_count += 1
+    if tag != CHEST_REMINDER_TAG || id != CHEST_REMINDER_ID { wrong_scope = true }
+    return true
+}
+#program_export
+FakeOpened :: (tag: string, id: s32) -> bool {
+    open_count += 1
+    if tag != CHEST_REMINDER_TAG || id != CHEST_REMINDER_ID { wrong_scope = true }
+    return true
+}
+
+#program_export
+ScheduleDailyNotificationHost :: (props: NotificationProps, hour: s32, minute: s32,
+    suppress_on_open: bool, available_after: s64, weekdays: u32, skip_local_date: s32) -> bool {
+    if weekdays != 127 || skip_local_date != 0 { wrong_scope = true }
+    return FakeSchedule(props, hour, minute, suppress_on_open, available_after)
+}
+
+#program_export
+DailyNotificationsSupportedHost :: () -> bool { return FakeSupported() }
+#program_export
+CancelDailyNotificationHost :: (tag: string, id: s32) -> bool { return FakeCancel(tag, id) }
+#program_export
+NotificationAppOpenedHost :: (tag: string, id: s32) -> bool { return FakeOpened(tag, id) }
+
+AdapterCheck :: () -> s32 {
+    effects := ChestReminderEffects.{FakeSupported, FakeSchedule, FakeCancel, FakeOpened}
+    state: ChestReminderSession
+    policy := ChestReminderDefaultPolicy()
+    // First open installs one daily rule and cancels today's occurrence.
+    ChestReminderApply(*state, policy, 100, "Chest", "Reward", 0, effects)
+    if schedule_count != 1 || open_count != 1 || !suppressed_on_open ||
+        scheduled_hour != 19 || scheduled_minute != 0 || scheduled_after != 0 { return 20 }
+    ChestReminderApply(*state, policy, 100, "Chest", "Reward", 0, effects)
+    ChestReminderApply(*state, policy, 101, "Chest", "Reward", 0, effects)
+    if schedule_count != 1 || open_count != 2 { return 21 }
+    // Claim changes only the UTC lower bound. Opening still suppresses today.
+    ChestReminderApply(*state, policy, 102, "Chest", "Reward", 86400000, effects)
+    if schedule_count != 2 || open_count != 3 || scheduled_after != 86400000 { return 22 }
+    // Restart replaces the same stable rule rather than creating another ID.
+    state = ChestReminderSession.{}
+    ChestReminderApply(*state, policy, 103, "Chest", "Reward", 86400000, effects)
+    if schedule_count != 3 || open_count != 4 || wrong_scope { return 23 }
+    // Disabled preferences cancel; repeating frames never recreate the rule.
+    policy.enabled = false
+    ChestReminderApply(*state, policy, 104, "Chest", "Reward", 0, effects)
+    ChestReminderApply(*state, policy, 105, "Chest", "Reward", 0, effects)
+    if cancel_count != 1 || schedule_count != 3 || open_count != 4 { return 24 }
+    policy.enabled = true; policy.hour = 20; policy.minute = 15
+    ChestReminderApply(*state, policy, 106, "Chest", "Reward", 0, effects)
+    if schedule_count != 4 || scheduled_hour != 20 || scheduled_minute != 15 { return 25 }
+    // Unsupported hosts do not emit platform effects.
+    supported = false
+    ChestReminderApply(*state, policy, 107, "Chest", "Reward", 0, effects)
+    if schedule_count != 4 || open_count != 5 || cancel_count != 1 { return 26 }
+    supported = true
+    ChestReminderApply(*state, policy, 108, "Chest", "Reward", -1, effects)
+    if cancel_count != 2 || open_count != 5 { return 27 }
+    // Failed registration retries; it never acknowledges a configured rule.
+    fail_schedule = true
+    ChestReminderApply(*state, policy, 109, "Chest", "Reward", 0, effects)
+    if state.configured { return 28 }
+    fail_schedule = false
+    ChestReminderApply(*state, policy, 110, "Chest", "Reward", 0, effects)
+    if !state.configured || schedule_count != 6 || wrong_scope { return 29 }
+    #if #defined(KRYON_HOSTED_UI) {
+        // Run the production public API too, using fake host effects only.
+        state = ChestReminderSession.{}
+        ChestReminderFrame(*state, policy, 111, "Chest", "Reward", 0)
+        if !state.configured || schedule_count != 7 || open_count != 8 || wrong_scope { return 34 }
+    }
+    return 42
+}
+
+NativeCheck :: () -> s32 {
+    result := Check()
+    return ifx result == 42 then 0 else result
+}

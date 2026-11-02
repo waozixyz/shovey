@@ -1,0 +1,15 @@
+#import "apps/tree"
+#import "std/text_buffer"
+
+// These nodes come from the native host's verified tree, never guest fields.
+ChestReminderSlotAllowed :: (root: *AppNode, active: *AppNode, node: *AppNode) -> bool {
+    return root != null && node != null && active == node && root != node &&
+        !node.collection && TextUntilNul(node.identity.id[:]) == "arcade.shovey" &&
+        TextUntilNul(root.identity.authority[:]) != "" &&
+        TextUntilNul(node.identity.authority[:]) == TextUntilNul(root.identity.authority[:])
+}
+
+ChestReminderSlotFocused :: (root: *AppNode, active: *AppNode, node: *AppNode,
+    foreground: bool, profile_visible: bool, island_visible: bool) -> bool {
+    return foreground && !profile_visible && !island_visible && ChestReminderSlotAllowed(root, active, node)
+}

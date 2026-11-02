@@ -1090,3 +1090,7 @@ Kompas kuningan
 [shovey_item_brass_compass_line]
 Selalu menunjuk ke petualangan.
 ---
+
+[shovey_chest_reminder]
+Peti harianmu menunggu. Buka Shovey untuk mengambil hadiahmu.
+---

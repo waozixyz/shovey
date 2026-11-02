@@ -1090,3 +1090,7 @@ Messingkompass
 [shovey_item_brass_compass_line]
 Zeigt immer zum Abenteuer.
 ---
+
+[shovey_chest_reminder]
+Deine tägliche Truhe wartet. Öffne Shovey und hole deine Belohnung ab.
+---

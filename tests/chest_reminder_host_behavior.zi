@@ -1,0 +1,41 @@
+#import, file "../src/chest_reminder_host_policy.zi";
+#import "apps/tree"
+#import "std/c_string"
+
+Check :: () -> s32 {
+    root: AppNode
+    game: AppNode
+    editor: AppNode
+    unused CopyCString("trusted.collection", root.identity.authority[:])
+    unused CopyCString("trusted.collection", game.identity.authority[:])
+    unused CopyCString("trusted.collection", editor.identity.authority[:])
+    unused CopyCString("arcade.shovey", game.identity.id[:])
+    unused CopyCString("arcade.shovey-editor", editor.identity.id[:])
+    if !ChestReminderSlotAllowed(*root, *game, *game) { return 1 }
+    if ChestReminderSlotAllowed(*root, *editor, *game) || ChestReminderSlotAllowed(*root, *editor, *editor) { return 2 }
+    // A matching string outside the verified root authority grants nothing.
+    impostor := game
+    unused CopyCString("other.collection", impostor.identity.authority[:])
+    if ChestReminderSlotAllowed(*root, *impostor, *impostor) { return 3 }
+    // Pointer ownership matters even when all identity fields match.
+    impostor = game
+    if ChestReminderSlotAllowed(*root, *game, *impostor) { return 4 }
+    game.collection = true
+    if ChestReminderSlotAllowed(*root, *game, *game) { return 5 }
+    game.collection = false
+    if ChestReminderSlotAllowed(null, *game, *game) || ChestReminderSlotAllowed(*root, *game, null) { return 6 }
+    if ChestReminderSlotAllowed(*game, *game, *game) { return 7 }
+    if !ChestReminderSlotFocused(*root, *game, *game, true, false, false) { return 8 }
+    if ChestReminderSlotFocused(*root, *game, *game, false, false, false) { return 9 }
+    if ChestReminderSlotFocused(*root, *game, *game, true, true, false) { return 10 }
+    if ChestReminderSlotFocused(*root, *game, *game, true, false, true) { return 11 }
+    if ChestReminderSlotFocused(*root, *editor, *game, true, false, false) { return 12 }
+    root.identity.authority = .{}
+    if ChestReminderSlotAllowed(*root, *game, *game) { return 13 }
+    return 42
+}
+
+NativeCheck :: () -> s32 {
+    result := Check()
+    return ifx result == 42 then 0 else result
+}

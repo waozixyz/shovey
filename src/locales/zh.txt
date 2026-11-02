@@ -1090,3 +1090,7 @@ Dew 不足。
 [shovey_item_brass_compass_line]
 总是指向冒险。
 ---
+
+[shovey_chest_reminder]
+你的每日宝箱正在等你。打开 Shovey 领取奖励。
+---

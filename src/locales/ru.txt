@@ -1090,3 +1090,7 @@ Shovey Island
 [shovey_item_brass_compass_line]
 Всегда указывает на приключения.
 ---
+
+[shovey_chest_reminder]
+Твой ежедневный сундук ждёт. Открой Shovey и забери награду.
+---

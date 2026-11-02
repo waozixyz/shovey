@@ -4,8 +4,8 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
 set --
 if [ ! -f ziran.local.toml ]; then set -- --locked; fi
-toolchain=$(./scripts/ziran.sh pkg path ziran "$@")
-entity=$(./scripts/ziran.sh pkg path entity "$@")
+toolchain=${DAILY_CHEST_TEST_TOOLCHAIN:-$(./scripts/ziran.sh pkg path ziran "$@")}
+entity=${DAILY_CHEST_TEST_ENTITY:-$(./scripts/ziran.sh pkg path entity "$@")}
 work="$root/work/daily-chest-test"
 git check-ignore -q "$work"
 mkdir -p "$work"

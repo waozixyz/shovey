@@ -1090,3 +1090,7 @@ Brass compass
 [shovey_item_brass_compass_line]
 Always pointing to adventure.
 ---
+
+[shovey_chest_reminder]
+Your daily chest is waiting. Open Shovey to collect your reward.
+---

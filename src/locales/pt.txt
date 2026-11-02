@@ -1090,3 +1090,7 @@ Bússola de latão
 [shovey_item_brass_compass_line]
 Sempre aponta para a aventura.
 ---
+
+[shovey_chest_reminder]
+Seu baú diário está esperando. Abra Shovey para coletar sua recompensa.
+---

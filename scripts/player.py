@@ -699,8 +699,9 @@ def prepare_android_project(kryon):
     # locked Kryon; Shovey's module, CMake and manifest replace its own.
     droid = ROOT / 'droid'
     activity = droid / 'app/src/main/java/xyz/waozi/shovey/ShoveyActivity.java'
+    notification_receiver = droid / 'app/src/main/java/org/kryonlabs/notifications/NotificationReceiver.java'
     for generated in (activity, droid / 'app/build.gradle', droid / 'app/src/main/AndroidManifest.xml',
-                      droid / 'app/src/main/cpp/CMakeLists.txt'):
+                      droid / 'app/src/main/cpp/CMakeLists.txt', notification_receiver):
         generated.unlink(missing_ok=True)
     run([sys.executable, kryon / 'scripts/android_scaffold.py', '--root', ROOT, '--name', 'Shovey',
          '--package', 'xyz.waozi.shovey', '--activity', 'ShoveyActivity', '--kryon', kryon], cwd=ROOT)

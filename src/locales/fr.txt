@@ -1090,3 +1090,7 @@ Boussole en laiton
 [shovey_item_brass_compass_line]
 Toujours tournée vers l’aventure.
 ---
+
+[shovey_chest_reminder]
+Ton coffre quotidien t’attend. Ouvre Shovey pour récupérer ta récompense.
+---

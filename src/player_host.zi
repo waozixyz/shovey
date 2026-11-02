@@ -58,6 +58,14 @@ Codec :: #import "apps/node_codec";
 #import "player_progress_storage"
 #import "shovey_theme"
 ShopUI :: #import "shop_view";
+#import, file "chest_reminder_host_policy.zi";
+#if !#defined(PLATFORM_WEB) {
+    #if #defined(ANDROID_BUILD) || #defined(_WIN32) {
+        ReminderWindow :: #import "kryon/raylib_runtime";
+    } else {
+        ReminderWindow :: #import "kryon/Desktop";
+    }
+}
 ShopState :: #import "shop_state";
 #import "std/number_text"
 collection_shop_request: string;
@@ -181,6 +189,10 @@ AppSupportsHost :: (name: string) -> bool { return false }
 AppLocaleHost :: (key: string) -> string { return CollectionLocaleText(key) }
 
 CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
+    if name == "kryon.notification.schedule" {
+        return ChestReminderSlotAllowed(AppTreeNode(*collection_host.tree, AppHandle.{0, 1}),
+            AppTreeNode(*collection_host.tree, collection_host.tree.active), node)
+    }
     return name == "AppRecordHost" || name == "SaveAppRecordHost" ||
     name == "AppFriendHost" || name == "AppSharedHost" || name == "AppSharedItemHost" ||
     name == "AppInvitationHost" || name == "RefreshAppSharedHost" || name == "SendAppSharedHost" ||
@@ -189,6 +201,21 @@ CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
     name == "arcade.updates" || name == "arcade.progress-storage" ||
     name == PUBLICATIONS_READ_SERVICE || name == ENTITY_RECORDS_SERVICE || name == ENTITY_DEW_SERVICE ||
     name == "entity.game-shop" || name == "entity.profile" || name == "leaderboard"
+}
+
+CollectionFocused :: (context: *void, node: *AppNode) -> bool {
+    unused context
+    foreground := false
+    #if !#defined(PLATFORM_WEB) {
+        #if #defined(ANDROID_BUILD) || #defined(_WIN32) {
+            foreground = ReminderWindow.RaylibFocused()
+        } else {
+            foreground = ReminderWindow.WindowFocusedHost()
+        }
+    }
+    return ChestReminderSlotFocused(AppTreeNode(*collection_host.tree, AppHandle.{0, 1}),
+        AppTreeNode(*collection_host.tree, collection_host.tree.active), node,
+        foreground, entity_visible, collection_island_page)
 }
 
 CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
@@ -504,11 +531,11 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
     if !AppFilesOpen(*collection_resources, collection_resource_root) { return false }
     locale := EnvironmentText("LANG")
     language := ifx locale.count >= 2 then locale[:2] else "en"
-    platform := AppPlatform.{.allows = CollectionAllows, .call = CollectionCall,
+    platform := AppPlatform.{.allows = CollectionAllows, .call = CollectionCall, .focused = CollectionFocused,
         .widgets = CollectionWidgets, .save = CollectionSave, .state = CollectionState,
         .effect = CollectionEffect, .open_effect = CollectionOpenEffect,
         .bundle = CollectionPackageBundle, .download = CollectionPackageDownload,
-        .fetch = CollectionPackageFetch, .host_api = 41}
+        .fetch = CollectionPackageFetch, .host_api = APPS_NOTIFICATION_HOST_API}
     collection_island_package.service = EntityGameShopAnswer
     collection_island_package.start = HttpTransferStart
     collection_island_package.poll = HttpTransferPollLength

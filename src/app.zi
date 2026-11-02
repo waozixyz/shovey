@@ -9,9 +9,18 @@
 #import "kryon/ScrollDevice"
 #import "kryon/raylib_runtime"
 #import "std/timer_linux"
+#import "std/date_time_linux"
 #import "player_host"
 #import "player_entity"
 #import "player_platform"
+#if #defined(ANDROID_BUILD) {
+    #import "kryon/notification"
+    #import, file "chest_reminder.zi";
+    #import, file "chest_reminder_policy.zi";
+    DailyReminder :: #import, file "daily_chest.zi";
+    chest_reminder_session: ChestReminderSession;
+    chest_reminder_permission_checked: bool;
+}
 
 // Android's Back key as raylib reports it.
 PLAYER_BACK_KEY :: 4
@@ -53,6 +62,23 @@ Frame :: (session: Session, viewport: Rectangle) -> s32 {
     if player_state == 0 { player_state = ifx PlayerStart() then 1 else 2 }
     if player_state != 1 { return 1 }
     #if #defined(ANDROID_BUILD) {
+        reminder_now := UnixNow()
+        if RaylibFocused() && chest_reminder_session.checked_at != reminder_now {
+            // Native record text is borrowed until the next read.
+            reminder_enabled := AppRecordHost("chest.reminder.enabled") != "off"
+            reminder_policy := ChestReminderReadPolicy(ifx reminder_enabled then "on" else "off", AppRecordHost("chest.reminder.time"))
+            // Permission is an OS choice. Remember the one initial request so
+            // reopening Shovey never repeats a denied prompt.
+            if reminder_policy.enabled && !chest_reminder_permission_checked {
+                chest_reminder_permission_checked = true
+                if AppRecordHost("chest.reminder.permission") == "" &&
+                    SaveAppRecordHost("chest.reminder.permission", "asked") &&
+                    !NotificationsAllowed() { unused RequestNotifications() }
+            }
+            ChestReminderFrame(*chest_reminder_session, reminder_policy, reminder_now,
+                CollectionLocaleText("shovey_shop_chest"), CollectionLocaleText("shovey_chest_reminder"),
+                DailyReminder.DailyChestReminderAvailableAfter())
+        }
         // Drags scroll the host's own pages, such as the profile, as the
         // desktop and Windows hosts already do.
         pointer := PointerSample(session)

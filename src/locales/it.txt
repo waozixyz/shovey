@@ -1090,3 +1090,7 @@ Bussola d’ottone
 [shovey_item_brass_compass_line]
 Punta sempre all’avventura.
 ---
+
+[shovey_chest_reminder]
+Il tuo forziere giornaliero ti aspetta. Apri Shovey per ritirare la ricompensa.
+---

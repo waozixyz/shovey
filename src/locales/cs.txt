@@ -1090,3 +1090,7 @@ Mosazný kompas
 [shovey_item_brass_compass_line]
 Vždy ukazuje k dobrodružství.
 ---
+
+[shovey_chest_reminder]
+Tvá denní truhla čeká. Otevři Shovey a vyzvedni si odměnu.
+---

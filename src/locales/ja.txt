@@ -1090,3 +1090,7 @@ Classicで特別なアイテムを探そう。
 [shovey_item_brass_compass_line]
 いつも冒険を指している。
 ---
+
+[shovey_chest_reminder]
+デイリーチェストが待っています。Shoveyを開いて報酬を受け取りましょう。
+---

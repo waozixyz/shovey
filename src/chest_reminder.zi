@@ -1,0 +1,76 @@
+// Android's shared offline scheduler owns persistent rules and local dates.
+#import "kryon/notification"
+#import "kryon/notification_schedule"
+#import, file "chest_reminder_policy.zi";
+
+// The standalone owns this one verified game slot. Use its hosted namespace
+// too, so opening the collection and then its game replaces the same rule.
+#if #defined(KRYON_HOSTED_UI) {
+    CHEST_REMINDER_TAG :: "shovey.daily-chest"
+} else {
+    CHEST_REMINDER_TAG :: "hosted:arcade.shovey:shovey.daily-chest"
+}
+CHEST_REMINDER_ID :: 1
+
+ChestReminderProps :: (title: string, body: string) -> NotificationProps {
+    return NotificationProps.{.title = title, .body = body, .tag = CHEST_REMINDER_TAG,
+        .id = CHEST_REMINDER_ID, .suppress_when_focused = true}
+}
+
+ChestReminderSession :: struct {
+    checked_at: s64
+    configured: bool
+    cancelled: bool
+    policy: ChestReminderPolicy
+    available_after: s64
+}
+
+ChestReminderSupported :: #type () -> bool;
+ChestReminderSchedule :: #type (props: NotificationProps, hour: s32, minute: s32,
+    suppress_on_open: bool, available_after: s64) -> bool;
+ChestReminderScopedEffect :: #type (tag: string, id: s32) -> bool;
+
+// A small effect boundary lets local tests exercise the real app transitions
+// without opening windows, requesting OS permission or posting notifications.
+ChestReminderEffects :: struct {
+    supported: ChestReminderSupported
+    schedule: ChestReminderSchedule
+    cancel: ChestReminderScopedEffect
+    opened: ChestReminderScopedEffect
+}
+
+ChestReminderScheduleShared :: (props: NotificationProps, hour: s32, minute: s32,
+    suppress_on_open: bool, available_after: s64) -> bool {
+    return ScheduleDailyNotification(props, hour, minute, suppress_on_open, available_after)
+}
+
+// Call only while Shovey is in the foreground. Repeating the scoped open
+// handles resume and crossing local midnight without touching another game.
+ChestReminderFrame :: (state: *ChestReminderSession, policy: ChestReminderPolicy,
+    now: s64, title: string, body: string, available_after: s64) {
+    ChestReminderApply(state, policy, now, title, body, available_after, ChestReminderEffects.{
+        DailyNotificationsSupported, ChestReminderScheduleShared, CancelDailyNotification, NotificationAppOpened})
+}
+
+ChestReminderApply :: (state: *ChestReminderSession, policy: ChestReminderPolicy,
+    now: s64, title: string, body: string, available_after: s64, effects: ChestReminderEffects) {
+    if now < 0 || state.checked_at == now { return }
+    state.checked_at = now
+    if !effects.supported() { return }
+    if !ChestReminderCanSchedule(policy, available_after) {
+        if !state.cancelled { state.cancelled = effects.cancel(CHEST_REMINDER_TAG, CHEST_REMINDER_ID) }
+        state.configured = false
+        return
+    }
+    state.cancelled = false
+    changed := !state.configured || state.policy.enabled != policy.enabled ||
+        state.policy.hour != policy.hour || state.policy.minute != policy.minute ||
+        state.available_after != available_after
+    if changed {
+        state.configured = effects.schedule(ChestReminderProps(title, body),
+            policy.hour, policy.minute, true, available_after)
+        if state.configured { state.policy = policy; state.available_after = available_after }
+    }
+    // Opening the game is sufficient, even when the chest remains unclaimed.
+    unused effects.opened(CHEST_REMINDER_TAG, CHEST_REMINDER_ID)
+}
