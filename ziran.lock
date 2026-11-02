@@ -73,6 +73,15 @@
       "url": "https://github.com/curl/curl.git"
     },
     {
+      "commit": "132d002e6a974bb2b3b27f4b97c8f0ed6d7a6d3d",
+      "dependencies": {"curl": "p8da229d15597ab5c", "daochi_client": "p6af0b5bd9fd0cd31", "kryon": "pcd450c600194cee7", "monocypher": "p002f6ed23e3a3576", "oqs": "p7098ac9cd92f7e5f", "qrcode": "p0dfa70137405b096", "zlib": "p82dbc05081cd4d96"},
+      "dependency_refs": {"curl": "19b299005fbe2d895f4ad525cfdae62a2220c3ea", "daochi_client": "970d5e44b1702158cb16469892da6ff50f142427", "kryon": "e373b8a7f8821256b86de12dd5ee05a32d373e87", "monocypher": "master", "oqs": "master", "qrcode": "master", "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"},
+      "id": "p9a53f9629e2b699e",
+      "name": "Entity",
+      "ref": "132d002e6a974bb2b3b27f4b97c8f0ed6d7a6d3d",
+      "url": "https://github.com/waozixyz/entity.git"
+    },
+    {
       "commit": "944826f70779a6b6cd53f6b06a75b36f4d8a2558",
       "dependencies": {},
       "id": "pc23fbf455e97614d",
@@ -105,20 +114,11 @@
       "name": "mingcute",
       "ref": "master",
       "url": "https://github.com/kryonlabs/mingcute.git"
-    },
-    {
-      "commit": "298a5413faf4d8bbcf0af38de1c0e3755876b18c",
-      "dependencies": {"curl": "p8da229d15597ab5c", "daochi_client": "p6af0b5bd9fd0cd31", "kryon": "pcd450c600194cee7", "monocypher": "p002f6ed23e3a3576", "oqs": "p7098ac9cd92f7e5f", "qrcode": "p0dfa70137405b096", "zlib": "p82dbc05081cd4d96"},
-      "dependency_refs": {"curl": "19b299005fbe2d895f4ad525cfdae62a2220c3ea", "daochi_client": "970d5e44b1702158cb16469892da6ff50f142427", "kryon": "e373b8a7f8821256b86de12dd5ee05a32d373e87", "monocypher": "master", "oqs": "master", "qrcode": "master", "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"},
-      "id": "pf0f64f5c4fcaaeec",
-      "name": "Entity",
-      "ref": "master",
-      "url": "https://github.com/waozixyz/entity.git"
     }
   ],
   "root": {
-    "dependencies": {"apps": "p7c0e095f496911cc", "entity": "pf0f64f5c4fcaaeec", "kryon": "pcd450c600194cee7", "mingcute": "pe1027b9d16704793"},
-    "dependency_refs": {"apps": "master", "entity": "master", "kryon": "e373b8a7f8821256b86de12dd5ee05a32d373e87", "mingcute": "master"},
+    "dependencies": {"apps": "p7c0e095f496911cc", "entity": "p9a53f9629e2b699e", "kryon": "pcd450c600194cee7", "mingcute": "pe1027b9d16704793"},
+    "dependency_refs": {"apps": "master", "entity": "132d002e6a974bb2b3b27f4b97c8f0ed6d7a6d3d", "kryon": "e373b8a7f8821256b86de12dd5ee05a32d373e87", "mingcute": "master"},
     "name": "Shovey"
   },
   "toolchain": {
