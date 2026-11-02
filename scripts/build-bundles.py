@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build every app apps.json declares into a portable app bundle
+"""Build local apps apps.json declares into a portable app bundle
 (build/games/*.zx).
 
 Each catalog.json names its entry, source, assets and locales. Hosts such as
@@ -15,9 +15,6 @@ import subprocess
 from release_assets import prepare_release_assets
 
 ROOT = Path(__file__).resolve().parents[1]
-EDITIONS = [app['manifest'] for app in json.loads((ROOT / 'apps.json').read_text())['apps']]
-LIBRARY_ENTRIES = {app['manifest']: app.get('library_entries', [])
-                   for app in json.loads((ROOT / 'apps.json').read_text())['apps']}
 # A bundle may hold only its own assets/<name>/ folder. A game that draws
 # another's pictures lists copies in shared_assets.json beside its catalog.
 
@@ -112,7 +109,12 @@ def build(toolchain, kryon, apps, mingcute):
     entity = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'entity', *lock_flags], cwd=ROOT, text=True).strip())
     daochi = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'DaochiClient', *lock_flags], cwd=ROOT, text=True).strip())
     crypto = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'crypto', *lock_flags], cwd=ROOT, text=True).strip())
-    for manifest in EDITIONS:
+    for app in json.loads((ROOT / 'apps.json').read_text())['apps']:
+        # External entries are downloaded through the host's protected package
+        # path; their public descriptors have no local source or asset tree.
+        if app.get('external'):
+            continue
+        manifest = app['manifest']
         descriptor = json.loads((ROOT / manifest).read_text())
         name = descriptor['name']
         staged = ROOT / 'build/game-assets' / name
@@ -158,7 +160,7 @@ def build(toolchain, kryon, apps, mingcute):
             '--module-path', 'daochi_client=' + str(daochi),
             '--module-path', 'crypto=' + str(crypto / 'src'),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
-            *[flag for name in LIBRARY_ENTRIES[manifest] for flag in ('--retain', name)],
+            *[flag for name in app.get('library_entries', []) for flag in ('--retain', name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir',
             'assets=' + str(bundle_assets(manifest, name, staged, 'SHOVEY_RELEASE' in descriptor.get('build_defines', []))),
             '--entry', descriptor['entry'], '-o', str(bundle), str(ROOT / descriptor['source'])],

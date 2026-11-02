@@ -153,6 +153,7 @@ landscape:
 	python3 tools/levels/landscape.py --check
 
 bundles: levels landscape
+	python3 tests/build_bundles_test.py
 	python3 scripts/build-bundles.py --toolchain '$(TOOLCHAIN)' --kryon '$(KRYON)' --apps '$(APPS)' --mingcute '$(MINGCUTE)'
 
 # The standalone desktop app, built here without Arcade: Shovey's own bundle
