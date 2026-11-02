@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [Unreleased]
+
+- Password fields start empty and show one star for each character you type.
+
 ## [0.6.164] - 2026-11-02
 
 - Match the Profile portrait to the selected Shovey skin immediately, preserving its stone frame.
