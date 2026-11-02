@@ -158,7 +158,7 @@ jobs:
   site:
     name: Build the site from the newest release
     needs: scope
-    if: (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && (github.event_name != 'push' || needs.scope.outputs.game != 'false')
+    if: github.event_name != 'push' || needs.scope.outputs.game != 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
@@ -177,6 +177,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_SOURCE: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_RUN: ${{ github.event.workflow_run.id }}
         run: |
           tag=$(gh release list --repo waozixyz/shovey --limit 20 --exclude-drafts --json tagName,isPrerelease \
             -q '[.[] | select(.isPrerelease | not) | .tagName | select(startswith("v"))][0]')
@@ -185,8 +186,25 @@ jobs:
           # A due-only Downloads run did not publish a release. Only its
           # actual released source may start an automatic website rebuild.
           if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
-            released=$(gh api "repos/waozixyz/shovey/commits/$tag" --jq .sha)
-            if [ "$released" != "$RELEASE_SOURCE" ]; then
+            export RELEASE_TAG="$tag"
+            published=$(python3 - <<'PYCODE'
+          import json, os, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', 'repos/waozixyz/shovey/' + path]))
+          run_id = os.environ['RELEASE_RUN']
+          assert run_id.isdecimal(), 'Expected a Downloads run ID'
+          run = api('actions/runs/' + run_id)
+          assert run['repository']['full_name'] == 'waozixyz/shovey'
+          assert run['path'] == '.github/workflows/downloads.yml'
+          assert run['head_sha'] == os.environ['RELEASE_SOURCE'] and run['status'] == 'completed'
+          jobs = api('actions/runs/' + run_id + '/jobs?per_page=100')['jobs']
+          released = api('commits/' + os.environ['RELEASE_TAG'])['sha']
+          published = released == run['head_sha'] and any(j['name'] == 'release' and
+              j['status'] == 'completed' and j['conclusion'] == 'success' for j in jobs)
+          print('true' if published else 'false')
+          PYCODE
+            )
+            if [ "$published" != true ]; then
               echo '::notice::Downloads did not publish the selected release.'
               echo 'publish=false' >> "$GITHUB_OUTPUT"
               exit 0
