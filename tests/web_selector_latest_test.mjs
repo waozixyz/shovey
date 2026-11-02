@@ -113,12 +113,25 @@ try {
   const introduction = await tree();
   assert(introduction.some(n => n.label === 'Pip' && n.kind === 'image'), 'Pip artwork is missing');
   const beforeTip = await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`);
+  // Pip leaves keyboard play available. On level 1 the cell to the right
+  // is empty: one key changes only player, facing and move count in the
+  // saved position (engine.zi), keeping the board and earned progress.
+  const positionAt = beforeTip.indexOf('P');
+  assert(positionAt > 0, 'Campaign position is missing');
+  assert.equal(beforeTip.slice(positionAt + 12, positionAt + 20), '00000000');
+  const nextPlayer = (parseInt(beforeTip.slice(positionAt + 4, positionAt + 6), 16) + 1).toString(16).padStart(2, '0');
+  const expectedTip = beforeTip.slice(0, positionAt + 4) + nextPlayer + '02' +
+    beforeTip.slice(positionAt + 8, positionAt + 12) + '00000001' + beforeTip.slice(positionAt + 20);
   await call('Input.dispatchKeyEvent', {type:'keyDown', key:'ArrowRight', code:'ArrowRight', windowsVirtualKeyCode:39, nativeVirtualKeyCode:39});
   await call('Input.dispatchKeyEvent', {type:'keyUp', key:'ArrowRight', code:'ArrowRight', windowsVirtualKeyCode:39, nativeVirtualKeyCode:39});
   await delay(200);
-  assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`), beforeTip, 'Movement happened during the introduction');
+  assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`), expectedTip,
+    'Keyboard play under Pip must save exactly one rightward step without changing the rest of the campaign');
+  assert((await tree()).some(n => n.label === 'Got it'), 'Movement dismissed Pip');
   await press('Got it');
   await wait(async () => !(await tree()).some(n => n.label === 'Got it'), 'Pip did not dismiss');
+  assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`), expectedTip,
+    'Dismissing Pip must not move Shovey');
   assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.guide.seen', {encoding:'utf8'})`), 'G100000001');
   await call('Runtime.evaluate', {awaitPromise: true, expression: `new Promise(resolve => {
     Module.FS.mkdirTree('/kryon-apps/shovey');
@@ -163,7 +176,7 @@ try {
     await press('Continue');
   }
   assert.equal(failures.length, 0, failures.join('|'));
-  console.log('Pip artwork, paused input and saved acknowledgement; selector: earned level74 opens once, then replayed level1 and finished level2 stay visible in portrait/landscape');
+  console.log('Pip artwork, keyboard play, touch dismissal without movement and saved acknowledgement; selector: earned level74 opens once, then replayed level1 and finished level2 stay visible in portrait/landscape');
 } finally {
   if (socket) socket.close();
   if (browser.exitCode === null && browser.signalCode === null) {
