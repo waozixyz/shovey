@@ -2,6 +2,8 @@
 // reach it through the player's services, as they do inside Arcade.
 #import "entity/native_host"
 #import "entity/model"
+#import "kryon/app_context_host"
+#import "kryon/app_protocol"
 #import "std/file"
 #import "std/c_string"
 #import "std/vec"
@@ -31,6 +33,15 @@ EntityLocaleText :: #type (key: string) -> string;
 entity_locale_text: EntityLocaleText;
 EntityCopy :: (key: string) -> string { return ifx entity_locale_text != null then entity_locale_text(key) else key }
 entity_typed: [1024]u8;
+entity_page_title: [256]u8;
+
+EntityTitle :: (fallback: string) -> string {
+    if !entity_ready { return EntityCopy(fallback) }
+    portable.command = "page-title"
+    if !AppContextRun(*portable, APP_COMMAND) || portable.reply == "" ||
+    !CopyCString(portable.reply, entity_page_title[:]) { return EntityCopy(fallback) }
+    return TextUntilNul(entity_page_title[:])
+}
 
 // The profile's theme tokens in Shovey's slate, like the game around it.
 EntityShoveyTokens :: () {
@@ -99,7 +110,7 @@ EntityFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32)
     if width > 560.0 { width = 560.0 }
     if height > 720.0 { height = 720.0 }
     modal := ModalFrame(session, ModalFrameProps.{.key = cast(u64)49000, .id = 49000,
-            .title = EntityCopy(entity_heading), .width = cast(s32)width, .height = cast(s32)height, .scale = 1.0,
+            .title = EntityTitle(entity_heading), .width = cast(s32)width, .height = cast(s32)height, .scale = 1.0,
             .has_right_action = true, .right_label = EntityCopy("shovey_shop_back")})
     if modal.dismissed || modal.right_clicked { unused EntityBack() }
     if !modal.opened { return true }
