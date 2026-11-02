@@ -104,6 +104,12 @@ try {
     return result.nodes;
   }
   async function labels() { return (await tree()).map(node => node.label); }
+  async function openProfile() {
+    const row = (await tree()).find(node => node.key === 20400 && node.kind === 'button');
+    assert(row, 'Missing Profile cover action');
+    await click(row.x + row.width / 2, row.y + row.height / 2);
+    await wait('Module.profileVisible');
+  }
   async function textClick(label) {
     const nodes = await tree();
     const row = nodes.find(node => node.label === label && (node.role === 'button' || node.kind === 'button'));
@@ -111,8 +117,7 @@ try {
     await click(row.x + row.width / 2, row.y + row.height / 2);
   }
   console.log('Opening Profile');
-  await click(352, 31);
-  await wait('Module.profileVisible');
+  await openProfile();
   let profileText = await labels();
   for (const end = Date.now() + 5000; !profileText.includes('Not signed in') && Date.now() < end;) {
     await delay(100);
@@ -141,8 +146,7 @@ try {
     await call('Page.reload');
     await wait('globalThis.Module?.profileReady');
     assert(await evaluate(`Module.FS.analyzePath('/kryon-apps/profile/account.key').exists`), 'Confirmed account was lost on immediate reload');
-    await click(352, 31);
-    await wait('Module.profileVisible');
+    await openProfile();
     profileText = await labels();
     assert(profileText.includes('Dew balance'));
     assert(!profileText.includes('Not signed in'), 'Persisted account was not restored');
