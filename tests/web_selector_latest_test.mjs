@@ -13,6 +13,7 @@ const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.u
 const fixture = execFileSync(new URL('../build/guide-test/native', import.meta.url).pathname, ['74'], {encoding: 'utf8'});
 const campaign = JSON.parse(await readFile(new URL('../levels/approved.json', import.meta.url), 'utf8'));
 const levelOneSolution = campaign.levels[0].solution;
+const mapArt = JSON.parse(await readFile(new URL('../assets/shovey/world-map/riverfold.json', import.meta.url), 'utf8'));
 // Fish wander between frames and are persisted with the next player move.
 // Compare every other saved field, including objects and the water beneath
 // each fish, and require each fish species' population to remain unchanged.
@@ -112,6 +113,35 @@ try {
     }
     await delay(80);
   }
+  async function wheelToFirst() {
+    const first = mapArt.nodes.find(node => node.level === 1);
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const nodes = await tree();
+      const viewport = nodes.find(node => node.key === 20105);
+      const waypoint = nodes.find(node => node.key === 33001 && node.visible && node.enabled);
+      if (waypoint && waypoint.x >= viewport.x && waypoint.x + waypoint.width <= viewport.x + viewport.width &&
+          waypoint.y >= viewport.y && waypoint.y + waypoint.height <= viewport.y + viewport.height) return;
+      // Infer the camera's actual translation from a submitted painting.
+      // Wheel input moves it; no focus, selection or camera state is injected.
+      const panel = nodes.find(node => node.kind === 'image' && node.key >= 60000 && node.key < 60000 + mapArt.panels.length);
+      assert(panel, 'No map painting available to measure manual scrolling');
+      const authored = mapArt.panels[panel.key - 60000].worldBounds;
+      const scale = panel.width / authored.width;
+      const dx = panel.x + (first.x - authored.x) * scale - (viewport.x + viewport.width / 2);
+      const dy = panel.y + (first.y - authored.y) * scale - (viewport.y + viewport.height / 2);
+      for (const [horizontal, distance] of [[true, dx], [false, dy]]) {
+        if (Math.abs(distance) < 16) continue;
+        const area = horizontal ? nodes.find(node => node.key === 20108) : viewport;
+        assert(area, 'Map scroll area is missing');
+        const x = area.x + area.width / 2, y = area.y + area.height / 2;
+        await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x, y, buttons: 0});
+        await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x, y,
+          deltaX: horizontal ? distance : 0, deltaY: horizontal ? 0 : distance});
+      }
+      await delay(350);
+    }
+    throw Error('Manual two-axis wheel navigation did not reveal level 1');
+  }
   await call('Runtime.enable');
   await call('Page.enable');
   await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
@@ -175,12 +205,9 @@ try {
     const focusedCard = index === 0 ? 33074 : 33002;
     await wait(async () => (await tree()).some(n => n.key === focusedCard && n.y >= 70 && n.y + n.height <= height),
       'Expected selector focus card is not visible');
-    await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x: width / 2, y: 250, buttons: 0});
-    await delay(100);
-    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: width / 2, y: 250, deltaX: 0, deltaY: 20000});
-    await wait(async () => (await tree()).some(n => n.key === 33001), 'Cannot scroll back to the first level');
+    await wheelToFirst();
     await delay(500);
-    assert((await tree()).some(n => n.key === 33001), 'Selector snapped back during manual scrolling');
+    assert((await tree()).some(n => n.key === 33001 && n.visible && n.enabled), 'Selector snapped back during manual scrolling');
     await press('1');
     await wait(async () => (await tree()).some(n => n.label.startsWith('Level 1 /')), 'Older level did not open');
     await press('Levels');
