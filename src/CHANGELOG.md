@@ -2,12 +2,12 @@
 
 ## [Unreleased]
 
+## [0.6.164] - 2026-11-02
+
 - Password fields start empty and show one star for each character you type.
-- Explore Classic on a painted map with two-axis navigation, six branching routes and discovered secret islands. Return to the level you last played and browse only a few locked levels ahead.
+- Explore Classic on a painted map with two-axis navigation, six branching routes and discovered secret islands. Browse only a few locked levels ahead.
 - Browse the same map in the Editor and preview a board before opening it for editing.
 - Open local Classic with downloads turned off, without a rejected network request.
-
-## [0.6.164] - 2026-11-02
 
 - Match the Profile portrait to the selected Shovey skin immediately, preserving its stone frame.
 - Find bundled Shovey Island between Classic and the Editor and buy access with a confirmed Dew quote, without a separate download.
@@ -18,7 +18,7 @@
 - Classic 125 now needs its crate and both movable barrels on marks after their shared button work, keeping the puzzle active without adding walls.
 - Push barrels like wooden crates, including onto marks and into water, while keeping their barrel appearance and existing saved progress.
 - Rebuild Classic 93 with hive crossings and Classic 97–99 as brick buildings with pressure plates, star relays and painted-ball puzzles. Preserve old campaign downloads, custom boards and earned progress.
-- Return to the level selector at the level just played or reached after a win, while a fresh session still opens at earned progress.
+- Return to the level last selected or played, including after reopening the game, while keeping later unlocked progress.
 - See while signed-in account progress is still loading, without delaying local play.
 - Pip does not repeat introductions already covered by synced account progress.
 - Back from a host-opened shop or chest returns to the screen that opened it.
