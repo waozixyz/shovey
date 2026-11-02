@@ -128,6 +128,44 @@ ForkBehavior :: () -> s32 {
     return 0
 }
 
+ReplayContinuation :: () -> s32 {
+    // Keep the browser regression's complete earned prefix intact: replaying
+    // level 1 advances to 2 even though every board through 73 is completed.
+    for earned: cast(s32)74..99 {
+        progress := ShoveyProgress.{.unlocked = earned}
+        for level: cast(s32)1..earned - 1 { progress.completed[level - 1] = true }
+        // Finding an unfinished campaign board remains separate from replay.
+        if WorldMapFocusLevel(earned, progress.completed[:], 1) != earned { return 67 }
+        game: ShoveyGame
+        if !ShoveySelectLevel(*progress, *game, 1) { return 60 }
+        for current: cast(s32)1..16 {
+            game.won = true
+            if !ShoveyContinue(*progress, *game) || game.level != current + 1 { return 61 }
+            if progress.unlocked != earned { return 62 }
+            for level: cast(s32)1..earned - 1 {
+                if !progress.completed[level - 1] { return 63 }
+            }
+        }
+    }
+    // A completed merge still need not be redone from either fork arm.
+    // Stop immediately after that merge even when later boards are completed.
+    progress := ShoveyProgress.{.unlocked = 175}
+    for level: cast(s32)1..174 { progress.completed[level - 1] = true }
+    for index: cast(s32)0..WORLD_MAP_FORK_COUNT - 1 {
+        fork := WorldMapForkAt(index)
+        for side: cast(s32)0..1 {
+            arm := ifx side == 0 then fork.left else fork.right
+            game: ShoveyGame
+            if !ShoveySelectLevel(*progress, *game, arm) { return 64 }
+            game.won = true
+            if !ShoveyContinue(*progress, *game) || game.level != fork.merge + 1 { return 65 }
+            game.won = true
+            if !ShoveyContinue(*progress, *game) || game.level != fork.merge + 2 { return 66 }
+        }
+    }
+    return 0
+}
+
 LegacyAvailability :: () -> s32 {
     // Every old sparse prefix remains available without inventing wins,
     // including prefixes in the middle of any newly authored fork.
@@ -263,6 +301,7 @@ SecretVisibility :: () -> s32 {
 Check :: () -> s32 {
     result := GraphStructure(); if result != 0 { return result }
     result = ForkBehavior(); if result != 0 { return result }
+    result = ReplayContinuation(); if result != 0 { return result }
     result = LegacyAvailability(); if result != 0 { return result }
     result = SaveVersions(); if result != 0 { return result }
     result = JourneyWithoutReplay(); if result != 0 { return result }

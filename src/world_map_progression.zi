@@ -253,9 +253,9 @@ WorldMapChoicePending :: (earned_unlocked: s32, completed: []bool, current: s32)
         WorldMapAvailableSuccessorCount(earned_unlocked, completed, current) > 1
 }
 
-// Follow the chosen route, walking past completed successors without asking
-// the player to solve them again. Edge order is the deterministic fallback
-// when a caller has not presented the fork choice. Return 0 at the route end.
+// Continue locally, including replays of completed ordinary boards. Only a
+// completed fork merge is skipped when returning from an arm. Prefer unfinished
+// arms, then edge order when no fork choice was presented. Return 0 at the end.
 WorldMapNextLevel :: (earned_unlocked: s32, completed: []bool, current: s32) -> s32 {
     if current < 1 || current > WORLD_MAP_CLASSIC_LEVELS { return 0 }
     pending: [WORLD_MAP_CLASSIC_LEVELS]s32
@@ -267,15 +267,23 @@ WorldMapNextLevel :: (earned_unlocked: s32, completed: []bool, current: s32) -> 
     while read < count {
         from := pending[read]
         read += 1
+        replay: s32 = 0
         for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
             edge := WorldMapEdgeAt(index)
             if edge.from_level != from || seen[edge.to_level - 1] { continue }
             seen[edge.to_level - 1] = true
             if !WorldMapLevelAvailable(earned_unlocked, completed, edge.to_level) { continue }
             if !WorldMapLevelCompleted(completed, edge.to_level) { return edge.to_level }
-            pending[count] = edge.to_level
-            count += 1
+            merge := false
+            for fork_index: cast(s32)0..WORLD_MAP_FORK_COUNT - 1 {
+                if WorldMapForkAt(fork_index).merge == edge.to_level { merge = true; break }
+            }
+            if merge {
+                pending[count] = edge.to_level
+                count += 1
+            } else if replay == 0 { replay = edge.to_level }
         }
+        if replay != 0 { return replay }
     }
     return 0
 }
@@ -286,8 +294,11 @@ WorldMapNextLevel :: (earned_unlocked: s32, completed: []bool, current: s32) -> 
 WorldMapFocusLevel :: (earned_unlocked: s32, completed: []bool, current: s32) -> s32 {
     if WorldMapLevelAvailable(earned_unlocked, completed, current) {
         if !WorldMapLevelCompleted(completed, current) { return current }
-        next := WorldMapNextLevel(earned_unlocked, completed, current)
-        if next != 0 { return next }
+        next := current
+        while next != 0 {
+            next = WorldMapNextLevel(earned_unlocked, completed, next)
+            if next != 0 && !WorldMapLevelCompleted(completed, next) { return next }
+        }
     }
     latest: s32 = 1
     for level: cast(s32)1..WORLD_MAP_CLASSIC_LEVELS {
