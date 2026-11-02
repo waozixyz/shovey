@@ -59,7 +59,7 @@ jobs:
             echo 'game=false' >> "$GITHUB_OUTPUT"
           # Only explicitly marked packaging commits may skip campaign work.
           elif [ "$GITHUB_EVENT_NAME" = push ] && git cat-file -e "$BEFORE^{commit}" &&
-               git log -1 --format=%B | rg -q '^Shovey-Site-Only: true$'; then
+               git log -1 --format=%B | grep -qx 'Shovey-Site-Only: true'; then
             python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
           import subprocess
           import os

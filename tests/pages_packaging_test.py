@@ -121,5 +121,28 @@ class PagesPackaging(unittest.TestCase):
                 exec(code, {})
             self.assertEqual(output.getvalue().strip(), expected)
 
+    def test_actual_scope_shell_without_ripgrep(self):
+        source = (ROOT/'.github/workflows/web.yml').read_text().split('      - id: scope', 1)[1]
+        script = textwrap.dedent(source.split('        run: |\n', 1)[1].split('  build:', 1)[0])
+        work = ROOT/'work/pages-packaging'; work.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=work) as temporary:
+            folder = Path(temporary)
+            git = folder/'git'
+            git.write_text("#!/usr/bin/python3\nimport os,sys\nif sys.argv[1]=='log': print(os.environ['TEST_MESSAGE'])\nelif sys.argv[1]=='diff': print(os.environ['TEST_CHANGED'])\nelif sys.argv[1]!='cat-file': sys.exit(2)\n")
+            git.chmod(0o700)
+            cases = [('push','false','Shovey-Site-Only: true','scripts/prepare-pages.py','game=false'),
+                     ('push','false','Ordinary game change','scripts/prepare-pages.py','game=true'),
+                     ('push','false','Shovey-Site-Only: true','src/player.zi','game=true'),
+                     ('workflow_dispatch','true','Ordinary game change','src/player.zi','game=false')]
+            for event, site_only, message, changed, expected in cases:
+                result = folder/'output'; result.write_text('')
+                env = dict(os.environ, PATH=str(folder)+os.pathsep+os.defpath,
+                           GITHUB_EVENT_NAME=event, SITE_ONLY=site_only, BEFORE='before',
+                           TEST_MESSAGE=message, TEST_CHANGED=changed, GITHUB_OUTPUT=str(result))
+                # Reproduce the bare runner where ripgrep was unavailable.
+                subprocess.run(['bash','--noprofile','--norc','-eo','pipefail','-c',
+                                'rg() { return 127; };\n'+script], env=env, check=True)
+                self.assertEqual(result.read_text().strip(), expected)
+
 
 if __name__ == '__main__': unittest.main()
