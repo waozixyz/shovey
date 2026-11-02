@@ -117,7 +117,7 @@ jobs:
           section = re.search(r'^## \[' + re.escape(os.environ['VERSION']) + r'\] - .*?\n(.*?)(?=^## |\Z)', text, re.M | re.S)
           notes = section[1].strip()
           # Play keeps at most 500 characters of notes per language.
-          print(notes if len(notes) <= 500 else notes[:499] + '…')
+          print(notes if len(notes) <= 500 else notes[:499] + '…', end='')
           PY
           cat build/play-notes/whatsnew-en-US
       - name: Upload to Google Play internal testing
