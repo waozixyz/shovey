@@ -24,6 +24,18 @@ def main():
     sys.path.insert(0, str(args.driver_source.resolve()))
     from ui_driver import UiDriver
 
+    catalog = json.loads((root / 'apps.json').read_text())['apps']
+
+    def select_cover(action, direction):
+        assert sum(entry['cover']['action'] == action.lower() for entry in catalog) == 1
+        for index in range(len(catalog)):
+            if driver.find(label=action, role='button'):
+                return
+            if index + 1 < len(catalog):
+                driver.press(label=direction, role='button')
+                driver.wait_idle(frames=3, timeout=5)
+        raise AssertionError(f'{action} cover missing from the {len(catalog)}-entry catalog')
+
     def separated(a, b):
         return (a['x'] + a['width'] <= b['x'] or b['x'] + b['width'] <= a['x'] or
                 a['y'] + a['height'] <= b['y'] or b['y'] + b['height'] <= a['y'])
@@ -103,7 +115,7 @@ def main():
                     driver.wait(label='Levels', role='button')
                     driver.press(label='Back', role='button')
                     driver.wait(key=49200, role='button')
-                    driver.press(label='Next', role='button')
+                    select_cover('Open', 'Next')
                     driver.wait(label='Open', role='button')
                     driver.wait_idle(frames=3, timeout=5)
                     editor_logos = [node for node in driver.tree() if node['kind'] == 'image' and
@@ -111,7 +123,7 @@ def main():
                     assert editor_logos and any('Editor' in node['label'] for node in editor_logos)
                     assert not driver.find(label='Editor', role='text'), 'Redundant caption returned'
                     subprocess.run(['import', '-window', window, str(output / f'{width}-editor.png')], check=True)
-                    driver.press(label='Previous', role='button')
+                    select_cover('Play', 'Previous')
                     driver.wait(label='Play', role='button')
                     for key in (49200, 49202):
                         driver.press(key=key, role='button')
