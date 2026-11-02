@@ -11,6 +11,7 @@ from PIL import Image, ImageChops, ImageStat
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--binary', type=Path, required=True)
 p.add_argument('--driver-source', type=Path, required=True)
+p.add_argument('--width', type=int, choices=(320, 900), default=320)
 a = p.parse_args()
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
 assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
@@ -41,26 +42,34 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
             windows = subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--pid', str(child.pid)], text=True).split()
             assert len(windows) == 1
             window = windows[0]
-            subprocess.run(['xdotool', 'windowsize', '--sync', window, '900', '800'], check=True)
-            def picture(name):
+            subprocess.run(['xdotool', 'windowsize', '--sync', window, str(a.width), '900'], check=True)
+            subprocess.run(['xdotool', 'windowmove', '--sync', window, '0', '0'], check=True)
+            def picture(name, image_key):
                 button = driver.wait(key=49204, role='button')
+                portrait = driver.wait(key=image_key, role='image')
                 driver.wait_idle(frames=5, timeout=10)
                 shot = out / (name + '.png')
                 subprocess.run(['import', '-window', window, str(shot)], check=True)
-                with Image.open(shot) as image:
-                    x, y = int(button['x']), int(button['y'])
-                    return image.convert('RGB').crop((x, y, x + int(button['width']), y + int(button['height'])))
-            first = picture('ember')
+                with Image.open(shot) as captured:
+                    assert captured.width == a.width, captured.size
+                    x, y = round(portrait['x']), round(portrait['y'])
+                    crop = (x, y, x + round(portrait['width']), y + round(portrait['height']))
+                    assert 0 <= x < crop[2] <= captured.width and 0 <= y < crop[3] <= captured.height, (crop, captured.size)
+                    return captured.convert('RGB').crop(crop), portrait
+            first, first_portrait = picture('ember', 50205)
+            assert first_portrait['detail'].endswith('/assets/shovey/shop/profile-skin-1-96.png'), first_portrait
             driver.press(key=49200, role='button')
             driver.wait(key=62046, role='button', timeout=30)
             driver.press(key=62046, role='button')
             driver.press(key=61101, role='button')
-            second = picture('frost')
+            second, second_portrait = picture('frost', 50206)
+            assert second_portrait['detail'].endswith('/assets/shovey/shop/profile-skin-2-96.png'), second_portrait
+            saved = json.loads((records / 'shop.v1.guest').read_text())
+            assert saved['selected'] == 2, saved
             difference = ImageStat.Stat(ImageChops.difference(first, second)).mean
             assert max(difference) > 5, ('Selected skin did not change title PFP', difference)
-            saved = json.loads((records / 'shop.v1.guest').read_text())
-            assert saved['selected'] == 2
             driver.press(key=49204, role='button')
+            driver.wait_gone(key=49204, role='button')
             driver.key('escape')
             driver.wait(key=49204, role='button')
         finally:

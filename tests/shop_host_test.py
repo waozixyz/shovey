@@ -8,11 +8,15 @@ import re
 import importlib.util
 import sys
 import subprocess
+import tempfile
+from PIL import Image
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-WORK = ROOT / 'work/shop-host-test'
-subprocess.run(['git', 'check-ignore', '-q', str(WORK)], cwd=ROOT, check=True)
-WORK.mkdir(parents=True, exist_ok=True)
+WORK_ROOT = ROOT / 'work/shop-host-test'
+subprocess.run(['git', 'check-ignore', '-q', str(WORK_ROOT)], cwd=ROOT, check=True)
+WORK_ROOT.mkdir(parents=True, exist_ok=True)
+WORK = Path(tempfile.mkdtemp(prefix='run-', dir=WORK_ROOT))
 
 def function(path, name):
     text = path.read_text()
@@ -279,7 +283,12 @@ assert 'today := cast(s64)AppNow() / 86400' in web
 assert 'ShopUI.IsOpen()' in web and 'else { WebCovers() }' in web
 for name in ('stall', 'chest-closed', 'trophy', 'coins', 'dew'):
     assert f'assets/shovey/shop/{name}.png' in host
-assert 'ShopState.ShopSkinPath(ShopState.ShopSkin())' in toolbar
+profile_paths = function(ROOT / 'src/shop_state.zi', 'ShopProfilePath')
+assert 'assets/shovey/shop/profile-96.png' in profile_paths
+assert 'skin := ShopState.ShopSkin()' in toolbar
+assert 'ShopState.ShopProfilePath(skin)' in toolbar
+assert '50204 + cast(u64)skin' in toolbar
+assert 'assets/shovey/sprites/player-down.png' not in toolbar
 assert 'ShopUI.SkinPath()' in web
 # The collection builder embeds the exact binary files that the toolbar reads.
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -290,9 +299,45 @@ assets = WORK / 'assets'
 byte_count = builder.stage_shop_assets(assets)
 staging = assets / 'shovey/shop'
 assert byte_count == sum(path.stat().st_size for path in assets.rglob('*') if path.is_file())
-for name in ('stall', 'chest-closed', 'chest-open', 'book', 'profile', 'trophy', 'coins', 'dew'):
+for name in ('stall', 'chest-closed', 'chest-open', 'book', 'profile-96', 'trophy', 'coins', 'dew'):
     original = ROOT / 'assets/shovey/shop' / (name + '.png')
     assert original.read_bytes() == (staging / original.name).read_bytes(), original
+expected_portraits = [ROOT / 'assets/shovey/shop' / 'profile-96.png'] + \
+    [ROOT / 'assets/shovey/shop' / f'profile-skin-{skin}-96.png' for skin in range(1, 8)]
+staged_portraits = sorted(path.name for path in staging.glob('profile*.png'))
+expected_portrait_names = sorted(original.name for original in expected_portraits)
+assert staged_portraits == expected_portrait_names, (staged_portraits, expected_portrait_names)
+for original in expected_portraits:
+    staged = staging / original.name
+    assert staged.is_file(), original
+    assert original.read_bytes() == staged.read_bytes(), original
+    with Image.open(original) as picture:
+        assert picture.mode == 'RGBA' and picture.size == (96, 96), original
+        alpha = picture.getchannel('A').tobytes()
+        pixels = np.asarray(picture)
+        if original.name == 'profile-96.png':
+            default_alpha = alpha
+            default_pixels = pixels
+            with Image.open(ROOT / 'assets/shovey/shop/profile.png') as full_size:
+                resized = full_size.resize((96, 96), Image.Resampling.LANCZOS).convert('RGBA')
+                assert np.array_equal(np.asarray(resized), pixels), original
+        else:
+            assert alpha == default_alpha, original
+            assert np.array_equal(default_pixels[:, :, 3], pixels[:, :, 3]), original
+            height, width, _ = pixels.shape
+            ys, xs = np.ogrid[:height, :width]
+            radius2 = (xs - 47.5) ** 2 + (ys - 47.5) ** 2
+            base_rgb = default_pixels[:, :, :3].astype(int)
+            band = (radius2 > 32.75 ** 2) & (radius2 <= 34.5 ** 2) & \
+                (base_rgb[:, :, 1] > base_rgb[:, :, 0] + 20) & \
+                (base_rgb[:, :, 1] > base_rgb[:, :, 2] + 20)
+            ring = (radius2 > 32.75 ** 2) & ~band
+            assert band.any()
+            assert not np.any(np.all(pixels[:, :, :3][band] == default_pixels[:, :, :3][band], axis=1)), original
+            assert np.array_equal(default_pixels[:, :, :3][ring], pixels[:, :, :3][ring]), original
+            changed = np.any(default_pixels[:, :, :3] != pixels[:, :, :3], axis=2)
+            assert changed.any() and not np.any(changed & ring), original
+assert not (assets / 'shovey/sprites').exists()
 for locale in (ROOT / 'src/locales').glob('*.txt'):
     assert locale.read_bytes() == (assets / 'shovey/locales' / locale.name).read_bytes(), locale
 print('Shop host local tests: verified shop/chest routes, request-origin Back, pending/rejected navigation, write failure, service forwarding, mini gating, UTC source and exact staged icons passed')

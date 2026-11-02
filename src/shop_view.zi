@@ -108,7 +108,7 @@ Open :: (next: s32) {
 }
 #program_export
 Skin :: () -> s32 { return ShopSkin() }
-SkinPath :: () -> string { return ShopSkinPath(ShopSkin()) }
+SkinPath :: () -> string { return ShopProfilePath(ShopSkin()) }
 #program_export
 IsOpen :: () -> bool { return page != 0 }
 #program_export

@@ -915,8 +915,10 @@ CollectionLocaleText :: (key: string) -> string {
     return ifx value == "" then key else value
 }
 
-CollectionCoverAction :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string) -> bool {
-    unused Image(session, ImageProps.{.key = key + 1, .bounds = bounds,
+CollectionCoverAction :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string,
+    image_key: u64 = 0) -> bool {
+    portrait_key := ifx image_key != 0 then image_key else key + 1
+    unused Image(session, ImageProps.{.key = portrait_key, .bounds = bounds,
         .asset_path = CollectionAssetPath(path), .fit = ImageFit.ImageFitContain, .smooth = true, .alt_text = CollectionLocaleText(label)})
     return Button(session, ButtonProps.{.key = key, .id = cast(s32)key, .bounds = bounds,
         .label = CollectionLocaleText(label), .invisible = true}) != 0
@@ -943,8 +945,9 @@ CollectionToolbar :: (session: Session, viewport: Rectangle) {
         "coins", FormatInteger(cast(s64)ShopState.ShopCoins(), digits[:]))
     CollectionCoverAmount(session, 49212, Rectangle.{viewport.x + 60.0, y + 30.0, viewport.width - 176.0, 28.0},
         "dew", ShopUI.DewText())
+    skin := ShopState.ShopSkin()
     if CollectionCoverAction(session, 49204, Rectangle.{viewport.x + viewport.width - 104.0, y, 44.0, 44.0},
-        ShopState.ShopSkinPath(ShopState.ShopSkin()), "shovey_shop_profile") { unused EntityShowPage("open") }
+        ShopState.ShopProfilePath(skin), "shovey_shop_profile", 50204 + cast(u64)skin) { unused EntityShowPage("open") }
     if CollectionCoverAction(session, 49206, Rectangle.{viewport.x + viewport.width - 56.0, y, 44.0, 44.0},
         "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused EntityShowPage("leaderboard") }
 }

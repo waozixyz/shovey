@@ -48,6 +48,14 @@ ShopSkinPath :: (id: s32) -> string {
         "assets/shovey/sprites/skin-7-player-down.png"]
     return ifx id >= 0 && id < SHOP_SKIN_COUNT then paths[id] else ""
 }
+ShopProfilePath :: (id: s32) -> string {
+    paths: [8]string = .["assets/shovey/shop/profile-96.png",
+        "assets/shovey/shop/profile-skin-1-96.png", "assets/shovey/shop/profile-skin-2-96.png",
+        "assets/shovey/shop/profile-skin-3-96.png", "assets/shovey/shop/profile-skin-4-96.png",
+        "assets/shovey/shop/profile-skin-5-96.png", "assets/shovey/shop/profile-skin-6-96.png",
+        "assets/shovey/shop/profile-skin-7-96.png"]
+    return ifx id >= 0 && id < SHOP_SKIN_COUNT then paths[id] else ""
+}
 ShopInteger :: (text: string, name: string, maximum: s32) -> s32 {
     value := ReadNumber(text, FieldAt(text, 0, name))
     if !value.valid || value.value < 0.0 || value.value > cast(float64)maximum { return -1 }
