@@ -176,11 +176,22 @@ jobs:
         id: due
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_SOURCE: ${{ github.event.workflow_run.head_sha }}
         run: |
           tag=$(gh release list --repo waozixyz/shovey --limit 20 --exclude-drafts --json tagName,isPrerelease \
             -q '[.[] | select(.isPrerelease | not) | .tagName | select(startswith("v"))][0]')
           test -n "$tag"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          # A due-only Downloads run did not publish a release. Only its
+          # actual released source may start an automatic website rebuild.
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
+            released=$(gh api "repos/waozixyz/shovey/commits/$tag" --jq .sha)
+            if [ "$released" != "$RELEASE_SOURCE" ]; then
+              echo '::notice::Downloads did not publish the selected release.'
+              echo 'publish=false' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
           live=$(curl -fsS https://shovey.waozi.xyz/build.json | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' || true)
           # The site changes with each release; a manual run rebuilds it anyway.
           if [ "$GITHUB_EVENT_NAME" != workflow_dispatch ] && [ "$live" = "${tag#v}" ]; then

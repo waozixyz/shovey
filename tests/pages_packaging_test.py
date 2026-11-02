@@ -144,5 +144,24 @@ class PagesPackaging(unittest.TestCase):
                                 'rg() { return 127; };\n'+script], env=env, check=True)
                 self.assertEqual(result.read_text().strip(), expected)
 
+    def test_downloads_event_requires_actual_released_source(self):
+        workflow = (ROOT/'.github/workflows/web.yml').read_text()
+        section = workflow.split('      - name: Check for a release the site does not have yet',1)[1]
+        script = textwrap.dedent(section.split('        run: |\n',1)[1].split('      # The player is built',1)[0])
+        work = ROOT/'work/pages-packaging'; work.mkdir(parents=True,exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=work) as temporary:
+            folder = Path(temporary)
+            gh = folder/'gh'
+            gh.write_text("#!/usr/bin/python3\nimport sys\nprint('v0.6.164' if sys.argv[1:3]==['release','list'] else 'released-source')\n")
+            curl = folder/'curl'
+            curl.write_text('#!/usr/bin/python3\nprint(\'{"version":"0.6.163"}\')\n')
+            for path in (gh,curl): path.chmod(0o700)
+            for source, expected in (('packaging-source','false'), ('released-source','true')):
+                result = folder/'output'; result.write_text('')
+                env = dict(os.environ, PATH=str(folder)+os.pathsep+os.defpath,
+                           GITHUB_EVENT_NAME='workflow_run', RELEASE_SOURCE=source, GITHUB_OUTPUT=str(result))
+                subprocess.run(['bash','--noprofile','--norc','-eo','pipefail','-c',script],env=env,check=True,stdout=subprocess.DEVNULL)
+                self.assertEqual(result.read_text().splitlines(),['version=0.6.164','publish='+expected])
+
 
 if __name__ == '__main__': unittest.main()
