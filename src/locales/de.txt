@@ -903,6 +903,33 @@ Gold
 [shovey_completion_coins]
 +15 Münzen · Gut gemacht!
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+40 % Rabatt
+---
+[shovey_island_unlock]
+Freischalten
+---
+[shovey_island_signin]
+Zum Freischalten anmelden
+---
+[shovey_island_loading]
+Preis wird geprüft …
+---
+[shovey_island_offline]
+Zum Freischalten mit dem Internet verbinden.
+---
+[shovey_island_changed]
+Der Preis hat sich geändert. Prüfe ihn und versuche es erneut.
+---
+[shovey_island_insufficient]
+Nicht genug Dew.
+---
+[shovey_island_failed]
+Freischalten fehlgeschlagen. Versuche es erneut.
+---
 
 [shovey_piece_bees]
 Bienenschwarm

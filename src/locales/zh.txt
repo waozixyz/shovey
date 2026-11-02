@@ -903,6 +903,33 @@ Dew
 [shovey_completion_coins]
 +15 金币 · 真棒！
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+优惠 40%
+---
+[shovey_island_unlock]
+解锁
+---
+[shovey_island_signin]
+登录后解锁
+---
+[shovey_island_loading]
+正在查询价格…
+---
+[shovey_island_offline]
+请连接互联网后解锁。
+---
+[shovey_island_changed]
+价格已变动，请确认后重试。
+---
+[shovey_island_insufficient]
+Dew 不足。
+---
+[shovey_island_failed]
+解锁失败，请重试。
+---
 
 [shovey_piece_bees]
 蜂群

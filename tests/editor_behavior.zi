@@ -46,6 +46,12 @@ LayerChecks :: () -> s32 {
         if EditPieceKind(index) == SHOVEY_BOAT { return 177 }
     }
     if EditPaint(*board, SHOVEY_BOAT, 50) { return 178 }
+    // Barrels paint like crates; a barrel an old board keeps in scenery stays one piece.
+    barrels := EditNewBoard()
+    if !EditPaint(*barrels, EDIT_BARREL, 50) || barrels.ground[50] != EDIT_BARREL || barrels.decorations[50] != 0 { return 190 }
+    barrels.decorations[51] = EDIT_BARREL
+    if EditPaint(*barrels, 9, 51) || barrels.ground[51] != 0 { return 191 }
+    if !EditPaint(*barrels, 0, 51) || barrels.decorations[51] != 0 { return 192 }
     unused EditPaint(*board, 9, 50)
     if !EditPaint(*board, EDIT_TILE_BRUSH + 77, 50) || board.ground[50] != 9 || board.tiles[50] != 77 { return 150 }
     history: EditHistory

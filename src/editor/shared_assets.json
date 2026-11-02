@@ -5,5 +5,8 @@
     {"from": "assets/shovey-landscape/sprites", "to": "classic/sprites-landscape"},
     {"from": "assets/shovey/sounds", "to": "classic/sounds"},
     {"from": "assets/shovey/preview.png", "to": "classic/preview.png"}
+  ],
+  "release_copies": [
+    {"from": "assets/shovey/levels", "to": "classic/levels"}
   ]
 }

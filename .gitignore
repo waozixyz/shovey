@@ -31,6 +31,8 @@ __pycache__/
 /assets/shovey-island-landscape/
 /assets/shovey/island-landscape.png
 /assets/shovey/island-portrait.png
+/assets/covers/shovey-island-logo.png
+/assets/player-private/
 /tools/editor/island_editor.zi
 /tools/editor/island_save.zi
 /tools/solver/island_api.zi

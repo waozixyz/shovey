@@ -903,6 +903,33 @@ Dewを購入
 [shovey_completion_coins]
 +15 コイン · お見事！
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+40%オフ
+---
+[shovey_island_unlock]
+アンロック
+---
+[shovey_island_signin]
+ログインしてアンロック
+---
+[shovey_island_loading]
+価格を確認中…
+---
+[shovey_island_offline]
+アンロックするにはインターネットに接続してください。
+---
+[shovey_island_changed]
+価格が変わりました。確認してもう一度お試しください。
+---
+[shovey_island_insufficient]
+Dewが足りません。
+---
+[shovey_island_failed]
+アンロックできませんでした。もう一度お試しください。
+---
 
 [shovey_piece_bees]
 ハチの群れ

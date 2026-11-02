@@ -903,6 +903,33 @@ Dew 구매
 [shovey_completion_coins]
 +15 코인 · 잘했어요!
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+40% 할인
+---
+[shovey_island_unlock]
+잠금 해제
+---
+[shovey_island_signin]
+로그인하여 잠금 해제
+---
+[shovey_island_loading]
+가격 확인 중…
+---
+[shovey_island_offline]
+잠금 해제하려면 인터넷에 연결하세요.
+---
+[shovey_island_changed]
+가격이 변경되었습니다. 확인 후 다시 시도하세요.
+---
+[shovey_island_insufficient]
+Dew가 부족합니다.
+---
+[shovey_island_failed]
+잠금 해제하지 못했습니다. 다시 시도하세요.
+---
 
 [shovey_piece_bees]
 벌 떼

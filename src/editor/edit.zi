@@ -61,6 +61,8 @@ EditBoardRead :: (board: *EditBoard, hex: string) -> bool {
 // A tile brush is separate from a piece, including the empty floor brush.
 EDIT_TILE_BRUSH :: 256
 EDIT_DECO_BRUSH :: 512
+// Barrels are pushed like crates. Older boards still store them in scenery.
+EDIT_BARREL :: 141
 EditLayered :: (board: *EditBoard) -> bool {
     for at: cast(s32)0..EDIT_CELLS - 1 {
         if board.decorations[at] != 0 || board.tiles[at] != cast(u8)ShoveyDefaultTile(cast(s32)board.ground[at]) { return true }
@@ -148,7 +150,7 @@ EditPiecesPrepare :: () {
     10, 7, 9, 18, 1, 2, 3, 4, 5, 6,
     15, 16, 17, 19, 21, 13, 131, 132, 133, 134, 92, 123, 93, 104, 116, 118, 120, 107, 124, 108, 110, 125, 111, 113, 126, 114, EDIT_DECO_BRUSH + 106, EDIT_DECO_BRUSH + 122,
     EDIT_DECO_BRUSH + 135, EDIT_DECO_BRUSH + 136, EDIT_DECO_BRUSH + 137, EDIT_DECO_BRUSH + 138,
-    EDIT_DECO_BRUSH + 139, EDIT_DECO_BRUSH + 140, EDIT_DECO_BRUSH + 141, EDIT_DECO_BRUSH + 142,
+    EDIT_DECO_BRUSH + 139, EDIT_DECO_BRUSH + 140, EDIT_BARREL, EDIT_DECO_BRUSH + 142,
     EDIT_DECO_BRUSH + 158, EDIT_DECO_BRUSH + 159, EDIT_DECO_BRUSH + 160, EDIT_DECO_BRUSH + 161, EDIT_DECO_BRUSH + 165, 33, 34, 8, 11, 25,
     26, 28, 27, 29, 30, 31, 20, 23, 35, 36, 37, 38, 53, 54, 55, 39, 143, 144, 145, 146, 147, 40, 149,
     150, 151, 152, 153, 154, 155, 156, 0]
@@ -244,7 +246,7 @@ EditPaint :: (board: *EditBoard, kind: s32, at: s32) -> bool {
         return true
     }
     if !ShoveyCellKind(kind) || kind == 22 || kind == 24 || kind == 32 || kind == 41 || kind == 42 || kind == 43 { return false }
-    if kind != 0 && ShoveyBlockingDecoration(cast(s32)board.decorations[at]) { return false }
+    if kind != 0 && (ShoveyBlockingDecoration(cast(s32)board.decorations[at]) || board.decorations[at] == EDIT_BARREL) { return false }
     if EditBorder(at) || at == shovey { return false }
     if kind == 0 && board.decorations[at] != 0 {
         board.ground[at] = 0

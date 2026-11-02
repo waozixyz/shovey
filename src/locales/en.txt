@@ -903,6 +903,33 @@ Gold
 [shovey_completion_coins]
 +15 coins · Well done!
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+40% off
+---
+[shovey_island_unlock]
+Unlock
+---
+[shovey_island_signin]
+Sign in to unlock
+---
+[shovey_island_loading]
+Checking the price…
+---
+[shovey_island_offline]
+Connect to the internet to unlock.
+---
+[shovey_island_changed]
+The price changed. Check it and try again.
+---
+[shovey_island_insufficient]
+Not enough Dew.
+---
+[shovey_island_failed]
+It could not be unlocked. Try again.
+---
 
 [shovey_piece_bees]
 Bee swarm

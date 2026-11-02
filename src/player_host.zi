@@ -52,6 +52,7 @@ Codec :: #import "apps/node_codec";
 #import "kryon/image_raster"
 #import "kryon/loading_indicator"
 #import "player_loading"
+#import "island_unlock"
 #import "player_progress_storage"
 #import "shovey_theme"
 ShopUI :: #import "shop_view";
@@ -59,6 +60,10 @@ ShopState :: #import "shop_state";
 #import "std/number_text"
 collection_shop_request: string;
 collection_shop_locator: AppLocator;
+collection_island: IslandUnlock;
+collection_island_page: bool;
+collection_island_poll: float64;
+collection_island_opening: bool;
 
 using HostValueKind;
 
@@ -496,7 +501,7 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
     language := ifx locale.count >= 2 then locale[:2] else "en"
     platform := AppPlatform.{.allows = CollectionAllows, .call = CollectionCall,
         .widgets = CollectionWidgets, .save = CollectionSave, .state = CollectionState,
-        .effect = CollectionEffect, .host_api = 41}
+        .effect = CollectionEffect, .open_effect = CollectionOpenEffect, .host_api = 41}
     collection_ready = AppHostStart(*collection_host, bytes, "arcade.local", "arcade.shovey-player",
         "shovey", TextUntilNul(digest[:]), "local", platform, TextUntilNul(harness[:]), language)
     if collection_ready { entity_locale_text = CollectionLocaleText }
@@ -507,6 +512,7 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
 // library it is unused, so the app closes.
 CollectionBack :: () -> bool {
     if EntityBack() { return true }
+    if collection_island_page { collection_island_page = false; return true }
     return AppHostBack(*collection_host) > 0
 }
 
@@ -562,6 +568,7 @@ CollectionPending :: (request: s64) -> bool {
 CollectionOpenGame :: (id: string) -> bool {
     root := AppTreeNode(*collection_host.tree, collection_host.tree.active)
     if root == null || !root.collection { Report("Shovey: no collection is open to start "); Report(id); Report("\n"); return false }
+    if id == ISLAND_UNLOCK_APP && !collection_island.owned { CollectionIslandShow(); return true }
     entry := AppCatalogAt(*root.catalog, AppCatalogFind(*root.catalog, id))
     plan: AppInstallPlan
     if entry != null && AppHostInstallPlan(*collection_host, root, entry, *plan) && plan.count > 0 {
@@ -663,7 +670,13 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     CollectionShopNavigate()
     collection_toolbar_visible = true
     defer { CollectionToolbar(session, viewport) }
+    CollectionIslandPump()
+    if collection_island_opening {
+        collection_island_opening = false
+        unused CollectionOpenGame(ISLAND_UNLOCK_APP)
+    }
     if entity_visible { return EntityFrame(session, viewport, key, modifiers) }
+    if collection_island_page { CollectionIslandFrame(session, viewport); return true }
     runtime := AppHostActiveRuntime(*collection_host)
     if runtime == null { Report("Shovey: no app is running\n"); return false }
     opening := !runtime.node.collection && (!collection_loading.shown ||
@@ -766,6 +779,80 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
                 .bounds = Rectangle.{viewport.x + 112.0, viewport.y + 20.0, viewport.width - 232.0, 28.0}})
     }
     return true
+}
+
+// Shovey Island's cover in the collection, or null where it is not packaged.
+CollectionIslandEntry :: () -> *AppEntry {
+    root := AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
+    if root == null || !root.collection { return null }
+    at := AppCatalogFind(*root.catalog, ISLAND_UNLOCK_APP)
+    return ifx at < 0 then null else AppCatalogAt(*root.catalog, at)
+}
+
+// The cover stays reachable while locked; opening it shows the unlock page.
+CollectionOpenEffect :: (context: *void, account: string, locator: *AppLocator,
+    request: *AppsRequest, reply: *AppsReply) -> s32 {
+    if TextUntilNul(locator.identity.id[:]) != ISLAND_UNLOCK_APP || collection_island.owned { return APP_OPEN_DECLARED }
+    CollectionIslandShow()
+    return APP_OPEN_HANDLED
+}
+
+CollectionIslandShow :: () {
+    IslandUnlockOpen(*collection_island)
+    collection_island_page = true
+}
+
+// Reads this owner's saved answer; a missing node or file never blocks play.
+CollectionIslandRecord :: () -> *CollectionRecords { return CollectionRecordsFor("arcade.shovey-player") }
+
+CollectionIslandPump :: () {
+    entry := CollectionIslandEntry()
+    if entry == null { return }
+    if entity_ready {
+        now := cast(float64)MonotonicMilliseconds() / 1000.0
+        request := IslandUnlockNext(*collection_island, now)
+        waiting := collection_island.stage != ISLAND_IDLE && collection_island.stage != ISLAND_READY
+        if request != "" || waiting || collection_island_page || now >= collection_island_poll {
+            collection_island_poll = now + 5.0
+            changed := IslandUnlockAnswer(*collection_island,
+                EntityGameShopAnswer(ifx request != "" then request else "status"), now)
+            saved := CollectionIslandRecord()
+            name: [96]u8
+            record_name := IslandUnlockRecordName(*collection_island, name[:])
+            if changed && saved != null && record_name != "" {
+                AppFileFree(saved.text)
+                saved.text = AppFileRead(*saved.files, record_name)
+                IslandUnlockRestore(*collection_island, saved.text)
+            }
+            if collection_island.owned && !collection_island.saved && saved != null && record_name != "" {
+                text: [192]u8
+                collection_island.saved = AppFileWrite(*saved.files, record_name, IslandUnlockRecord(*collection_island, text[:]))
+            }
+        }
+    }
+    caption: [128]u8
+    unused CopyCString(IslandUnlockCaption(*collection_island, caption[:]), entry.cover.caption[:])
+    unused CopyCString(ifx collection_island.owned then "play" else "open", entry.cover.action[:])
+    if collection_island_page && collection_island.owned {
+        collection_island_page = false
+        collection_island_opening = true
+    }
+}
+
+CollectionIslandFrame :: (session: Session, viewport: Rectangle) {
+    collection_toolbar_visible = false
+    entry := CollectionIslandEntry()
+    if entry == null { collection_island_page = false; return }
+    collection_widget_node = AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
+    landscape := viewport.width > viewport.height && entry.cover.landscape[0] != 0
+    background := CollectionAssetPath(ifx landscape then TextUntilNul(entry.cover.landscape[:]) else TextUntilNul(entry.cover.portrait[:]))
+    logo := CollectionAssetPath(TextUntilNul(entry.cover.logo[:]))
+    unused WidgetPaletteUse(session, ShoveyPalette())
+    action := IslandUnlockPage(session, viewport, *collection_island, background, logo)
+    unused WidgetPaletteRestore(session)
+    if action == ISLAND_ACTION_BACK { collection_island_page = false }
+    if action == ISLAND_ACTION_SIGN_IN { unused EntityShowPage("open") }
+    if action == ISLAND_ACTION_BUY_DEW { unused EntityShowPage("dew") }
 }
 
 // Navigation records select a page in the verified game, never an item to buy.

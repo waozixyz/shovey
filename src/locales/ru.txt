@@ -903,6 +903,33 @@ Dew
 [shovey_completion_coins]
 +15 монет · Отлично!
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+Скидка 40%
+---
+[shovey_island_unlock]
+Открыть
+---
+[shovey_island_signin]
+Войди, чтобы открыть
+---
+[shovey_island_loading]
+Проверяем цену…
+---
+[shovey_island_offline]
+Подключись к интернету, чтобы открыть.
+---
+[shovey_island_changed]
+Цена изменилась. Проверь её и попробуй снова.
+---
+[shovey_island_insufficient]
+Недостаточно Dew.
+---
+[shovey_island_failed]
+Не удалось открыть. Попробуй снова.
+---
 
 [shovey_piece_bees]
 Пчелиный рой

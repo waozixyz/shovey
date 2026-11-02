@@ -903,6 +903,33 @@ Or
 [shovey_completion_coins]
 +15 pièces · Bravo !
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+-40 %
+---
+[shovey_island_unlock]
+Débloquer
+---
+[shovey_island_signin]
+Connecte-toi pour débloquer
+---
+[shovey_island_loading]
+Vérification du prix…
+---
+[shovey_island_offline]
+Connecte-toi à Internet pour débloquer.
+---
+[shovey_island_changed]
+Le prix a changé. Vérifie-le et réessaie.
+---
+[shovey_island_insufficient]
+Pas assez de Dew.
+---
+[shovey_island_failed]
+Déblocage impossible. Réessaie.
+---
 
 [shovey_piece_bees]
 Essaim d’abeilles

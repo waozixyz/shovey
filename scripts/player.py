@@ -36,6 +36,9 @@ import build_artifacts
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/player'
 COVERS = ROOT / 'assets/player'
+# Copies of a private game's covers stay out of the public repository too.
+PRIVATE_COVERS = ROOT / 'assets/player-private'
+PRIVATE_APP = ROOT / 'src/island/app.json'
 CONTROLLER_SHA256 = ROOT / 'packaging/apps-controller.sha256'
 DOWNLOADS = ROOT / 'build/downloads'
 # The collection's identity and the record folders it names stay those of
@@ -107,9 +110,13 @@ def declared_apps():
     """The apps apps.json declares, with their catalogs, in dependency order."""
     declaration = json.loads((ROOT / 'apps.json').read_text())
     apps = []
-    for app in declaration['apps']:
+    # A private game comes right after the first, only where its source exists;
+    # a public checkout builds the collection without it.
+    private = json.loads(PRIVATE_APP.read_text()) if PRIVATE_APP.exists() else None
+    declared = declaration['apps'][:1] + ([private] if private else []) + declaration['apps'][1:]
+    for app in declared:
         manifest = ROOT / app['manifest']
-        apps.append(dict(manifest=manifest, descriptor=json.loads(manifest.read_text()),
+        apps.append(dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=app is private,
                          cover=app.get('cover'), requires=app.get('requires', []),
                          shared_code=app.get('shared_code', False),
                          shared_records=app.get('shared_records', []),
@@ -135,9 +142,14 @@ def declared_apps():
     return declaration, [app for app in ordered if app['enabled']]
 
 
-def shared_copies(app):
+def shared_assets(app):
     path = app['manifest'].with_name('shared_assets.json')
-    return json.loads(path.read_text())['copies'] if path.exists() else []
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def shared_copies(app):
+    shared = shared_assets(app)
+    return shared.get('copies', []) + shared.get('release_copies', [])
 
 
 def share_resources(app, apps, resources, staged):
@@ -219,7 +231,10 @@ def build_games(apps):
         resources = staged / 'assets' / name
         resources.mkdir(parents=True)
         shutil.copytree(ROOT / descriptor['assets'], resources, dirs_exist_ok=True)
-        for copy in shared_copies(app):
+        for copy in shared_assets(app).get('release_copies', []):
+            # prepare_release_assets composes these pictures from the approved campaign.
+            (resources / copy['to']).mkdir(parents=True, exist_ok=True)
+        for copy in shared_assets(app).get('copies', []):
             source, target = ROOT / copy['from'], resources / copy['to']
             target.parent.mkdir(parents=True, exist_ok=True)
             if source.is_dir():
@@ -231,6 +246,9 @@ def build_games(apps):
             indent=2) + '\n')
         defines = descriptor.get('build_defines', [])
         if 'SHOVEY_RELEASE' in defines:
+            # Classic's own pictures must exist for the editor's copies to alias them.
+            if not app['requires']:
+                (resources / 'levels').mkdir(exist_ok=True)
             prepare_release_assets(ROOT, resources)
         leave_out(manifest.with_name('bundle.json'), resources, 'SHOVEY_RELEASE' in defines)
         locales = resources / 'locales'
@@ -296,13 +314,14 @@ PREVIEW_LONGEST, COVER_LONGEST, LOGO_LONGEST, COVER_QUALITY = 480, 640, 512, 85
 
 
 def cover_art(apps):
-    """(copy name, key, source bytes) for every enabled game's covers and preview."""
+    """(folder, copy name, key, source bytes) for every enabled game's covers and preview."""
     for app in apps:
         name = app['descriptor']['name']
-        yield name, 'preview', (ROOT / app['descriptor']['preview']).read_bytes()
+        folder = PRIVATE_COVERS if app['private'] else COVERS
+        yield folder, name, 'preview', (ROOT / app['descriptor']['preview']).read_bytes()
         for key in ('portrait', 'landscape', 'logo'):
             if app['cover'] and key in app['cover']:
-                yield name, key, (ROOT / app['cover'][key]).read_bytes()
+                yield folder, name, key, (ROOT / app['cover'][key]).read_bytes()
 
 
 def small_copy(data, key):
@@ -337,28 +356,30 @@ def covers():
     """Remake the committed copies. The collection packs them as they are, so
     its bytes never depend on the local image library."""
     _, apps = declared_apps()
-    COVERS.mkdir(parents=True, exist_ok=True)
-    sources, written = {}, set()
-    for name, key, data in cover_art(apps):
-        contents, suffix = small_copy(data, key)
-        (COVERS / f'{name}-{key}{suffix}').write_bytes(contents)
-        written.add(f'{name}-{key}{suffix}')
-        sources[f'{name}-{key}'] = {'source_sha256': hashlib.sha256(data).hexdigest()}
-    for stale in [*COVERS.glob('*.png'), *COVERS.glob('*.jpg')]:
-        if stale.name not in written:
-            stale.unlink()
-    (COVERS / 'sources.json').write_text(json.dumps(dict(sorted(sources.items())), indent=2) + '\n')
-    print(f'{len(sources)} cover copies in {COVERS.relative_to(ROOT)}')
+    art = list(cover_art(apps))
+    for folder in sorted({item[0] for item in art}):
+        folder.mkdir(parents=True, exist_ok=True)
+        sources, written = {}, set()
+        for _, name, key, data in (item for item in art if item[0] == folder):
+            contents, suffix = small_copy(data, key)
+            (folder / f'{name}-{key}{suffix}').write_bytes(contents)
+            written.add(f'{name}-{key}{suffix}')
+            sources[f'{name}-{key}'] = {'source_sha256': hashlib.sha256(data).hexdigest()}
+        for stale in [*folder.glob('*.png'), *folder.glob('*.jpg')]:
+            if stale.name not in written:
+                stale.unlink()
+        (folder / 'sources.json').write_text(json.dumps(dict(sorted(sources.items())), indent=2) + '\n')
+        print(f'{len(sources)} cover copies in {folder.relative_to(ROOT)}')
 
 
-def cover_copy(name, key, source):
+def cover_copy(name, key, source, folder=COVERS):
     """(bytes, suffix) of the committed copy, which must be of the current art."""
-    sources = json.loads((COVERS / 'sources.json').read_text())
+    sources = json.loads((folder / 'sources.json').read_text())
     if sources.get(f'{name}-{key}', {}).get('source_sha256') != hashlib.sha256(source).hexdigest():
         raise SystemExit(f'{name} {key} art changed; run python3 scripts/player.py covers')
     for suffix in ('.png', '.jpg'):
-        if (COVERS / f'{name}-{key}{suffix}').is_file():
-            return (COVERS / f'{name}-{key}{suffix}').read_bytes(), suffix
+        if (folder / f'{name}-{key}{suffix}').is_file():
+            return (folder / f'{name}-{key}{suffix}').read_bytes(), suffix
     raise SystemExit(f'{name} {key} has no copy; run python3 scripts/player.py covers')
 
 
@@ -423,7 +444,8 @@ def collection():
         descriptor = app['descriptor']
         name = descriptor['name']
         bundle = (OUT / 'games' / (name + '.zx')).read_bytes()
-        preview, preview_suffix = cover_copy(name, 'preview', (ROOT / descriptor['preview']).read_bytes())
+        covers_folder = PRIVATE_COVERS if app['private'] else COVERS
+        preview, preview_suffix = cover_copy(name, 'preview', (ROOT / descriptor['preview']).read_bytes(), covers_folder)
         copies = [(bundle, f'arcade/games/{name}.zx'), (preview, f'arcade/previews/{name}{preview_suffix}')]
         child = dict(id=descriptor['id'], title=descriptor['title'], bundle=f'assets/arcade/games/{name}.zx',
                      protocol='node/2', expected_id=name, version=edition_version(app['manifest']),
@@ -443,7 +465,7 @@ def collection():
             packed = {key: app['cover'][key] for key in ('caption', 'action') if key in app['cover']}
             for key in ('portrait', 'landscape', 'logo'):
                 if key in app['cover']:
-                    contents, suffix = cover_copy(name, key, (ROOT / app['cover'][key]).read_bytes())
+                    contents, suffix = cover_copy(name, key, (ROOT / app['cover'][key]).read_bytes(), covers_folder)
                     packed[key] = f'assets/arcade/covers/{name}-{key}{suffix}'
                     copies.append((contents, f'arcade/covers/{name}-{key}{suffix}'))
             child['cover'] = packed

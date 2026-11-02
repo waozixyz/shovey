@@ -1,0 +1,239 @@
+// The quote, exact confirmation, restore and page with fake shop answers only:
+// no account, network or Dew is involved.
+#import "island_unlock"
+#import "kryon/session"
+#import "kryon/tree"
+#import "kryon/tree_draw"
+#import "kryon/tree_input"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "std/text_buffer"
+#import "std/vec"
+using FrameStatus;
+
+ALICE :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+BOB :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+#program_export
+FakeLocale :: (key: string) -> string { return ifx key == "shovey_island_off" then "40% off" else key }
+#program_export
+MeasureGlyphWidth :: (value: string, font: s32, typeface: string) -> s32 { return cast(s32)value.count * font / 2 }
+#program_export
+MeasureGlyphLineHeight :: (font: s32, typeface: string) -> s32 { return font }
+#program_export
+RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) {}
+#program_export
+RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) {}
+#program_export
+RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) {}
+#program_export
+RasterRoundedRectangleOutline :: (bounds: Rectangle, radius: float32, segments: s32, width: float32, color: Color) {}
+#program_export
+RasterLine :: (line: Rectangle, color: Color) {}
+#program_export
+RasterImage :: (asset_path: string, texture_id: u32, source: Rectangle, destination: Rectangle,
+    clip: Rectangle, origin: Vector2, rotation: float32, radius: float32, tint: Color) {}
+#program_export
+RasterImageMesh :: (asset_path: string, texture_id: u32, source: Rectangle, points: []Vector2,
+    columns: s32, rows: s32, clip: Rectangle, tint: Color) {}
+#program_export
+ImageWidth :: (asset_path: string) -> s32 { return 32 }
+#program_export
+ImageHeight :: (asset_path: string) -> s32 { return 32 }
+#program_export
+FakeSupports :: (name: string) -> bool { return false }
+
+Answer :: (owner: string, connected: bool, owned: bool, price: s64, status: string) -> string {
+    text: Vec(u8)
+    BuilderPrint(*text, "{\"owner\":\"%\",\"connected\":%,\"island_owned\":%,\"island_price_units\":%,\"island_regular_price_units\":85000000,\"island_discount_percent\":%,\"status\":\"%\"}",
+        owner, connected, owned, price, ifx price == 51000000 then 40 else 0, status)
+    return BuilderFinish(text)
+}
+
+// A signed-in owner taken as far as the node's sale quote.
+Quoted :: (unlock: *IslandUnlock, price: s64) -> bool {
+    unused IslandUnlockAnswer(unlock, Answer(ALICE, true, false, 0, "idle"), 0.0)
+    if IslandUnlockNext(unlock, 0.0) != "refresh" { return false }
+    if IslandUnlockAnswer(unlock, Answer(ALICE, true, false, 0, "pending"), 0.0) { return false }
+    unused IslandUnlockAnswer(unlock, Answer(ALICE, true, false, 0, "done"), 0.0)
+    if IslandUnlockNext(unlock, 0.0) != "shovey.island.quote" { return false }
+    unused IslandUnlockAnswer(unlock, Answer(ALICE, true, false, 0, "pending"), 0.0)
+    unused IslandUnlockAnswer(unlock, Answer(ALICE, true, false, price, "done"), 0.0)
+    return unlock.stage == ISLAND_READY && unlock.price == price
+}
+
+Purchase :: () -> s32 {
+    unlock: IslandUnlock
+    // Nothing can be bought before a quote.
+    if IslandUnlockBuy(*unlock) { return 1 }
+    if !Quoted(*unlock, 51000000) { return 2 }
+    if unlock.percent != 40 || unlock.regular != 85000000 { return 3 }
+    if !IslandUnlockBuy(*unlock) { return 4 }
+    // The confirmation names the exact quoted units, and only once.
+    if IslandUnlockNext(*unlock, 1.0) != "shovey.island:51000000" { return 5 }
+    if IslandUnlockBuy(*unlock) || IslandUnlockNext(*unlock, 1.0) != "" { return 6 }
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 51000000, "pending"), 1.0)
+    if unlock.owned { return 7 }
+    // Only the ledger's verified answer unlocks.
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, true, 51000000, "done"), 1.0)
+    if !unlock.owned || unlock.stage != ISLAND_IDLE { return 8 }
+    if IslandUnlockNext(*unlock, 100.0) != "" { return 9 }
+    return 0
+}
+
+Refusals :: () -> s32 {
+    unlock: IslandUnlock
+    if !Quoted(*unlock, 51000000) { return 1 }
+    // A stale quote charges nothing and shows the new price first.
+    unused IslandUnlockBuy(*unlock)
+    unused IslandUnlockNext(*unlock, 1.0)
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 0, "price_changed"), 1.0)
+    if unlock.owned || unlock.notice != "shovey_island_changed" || unlock.price != 0 { return 2 }
+    if IslandUnlockBuy(*unlock) { return 3 }
+    if IslandUnlockNext(*unlock, 1.0) != "shovey.island.quote" { return 4 }
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 85000000, "done"), 1.0)
+    if unlock.price != 85000000 || unlock.percent != 0 { return 5 }
+    // Not enough Dew leaves the quote ready for after a top-up.
+    unused IslandUnlockBuy(*unlock)
+    if IslandUnlockNext(*unlock, 2.0) != "shovey.island:85000000" { return 6 }
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 85000000, "insufficient"), 2.0)
+    if unlock.owned || unlock.notice != "shovey_island_insufficient" || unlock.stage != ISLAND_READY { return 7 }
+    // A failed transfer stays locked and can be tried again.
+    unused IslandUnlockBuy(*unlock)
+    unused IslandUnlockNext(*unlock, 3.0)
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 85000000, "failed"), 3.0)
+    if unlock.owned || unlock.notice != "shovey_island_failed" { return 8 }
+    return 0
+}
+
+Offline :: () -> s32 {
+    unlock: IslandUnlock
+    // Signed out: no quote, and the launch price is what the page shows.
+    unused IslandUnlockAnswer(*unlock, Answer("", false, false, 0, "signin"), 0.0)
+    if IslandUnlockNext(*unlock, 0.0) != "refresh" { return 1 }
+    unused IslandUnlockAnswer(*unlock, Answer("", false, false, 0, "signin"), 0.0)
+    if unlock.stage != ISLAND_IDLE || IslandUnlockNext(*unlock, 1.0) != "" { return 2 }
+    if IslandUnlockNext(*unlock, 6.0) != "refresh" { return 3 }
+    unused IslandUnlockAnswer(*unlock, Answer("", false, false, 0, "signin"), 6.0)
+    price, regular, percent := IslandUnlockShown(*unlock)
+    if price != 51000000 || regular != 85000000 || percent != 40 { return 4 }
+    caption: [64]u8
+    if IslandUnlockCaption(*unlock, caption[:]) != "51 Dew · 40% off" { return 5 }
+    // Signed in with no connection: it retries slowly and blocks nothing.
+    online: IslandUnlock
+    unused IslandUnlockAnswer(*online, Answer(ALICE, true, false, 0, "idle"), 0.0)
+    unused IslandUnlockNext(*online, 0.0)
+    unused IslandUnlockAnswer(*online, Answer(ALICE, true, false, 0, "failed"), 0.0)
+    if online.stage != ISLAND_IDLE || IslandUnlockNext(*online, 29.0) != "" { return 6 }
+    if IslandUnlockNext(*online, 31.0) != "refresh" { return 7 }
+    // The regular price shows without an offer once the node quotes it.
+    regular_only: IslandUnlock
+    if !Quoted(*regular_only, 85000000) { return 8 }
+    if IslandUnlockCaption(*regular_only, caption[:]) != "85 Dew" { return 9 }
+    return 0
+}
+
+Restore :: () -> s32 {
+    bought: IslandUnlock
+    if !IslandUnlockAnswer(*bought, Answer(ALICE, true, true, 0, "done"), 0.0) { return 1 }
+    if !bought.owned || bought.saved { return 2 }
+    name: [96]u8
+    text: [192]u8
+    if IslandUnlockRecordName(*bought, name[:]) != "island.v1.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" { return 3 }
+    record := IslandUnlockRecord(*bought, text[:])
+    // A restart offline: the same owner has it back with no answer from the node.
+    restart: IslandUnlock
+    if !IslandUnlockAnswer(*restart, Answer(ALICE, false, false, 0, "failed"), 0.0) { return 4 }
+    IslandUnlockRestore(*restart, record)
+    if !restart.owned || !restart.saved { return 5 }
+    unused IslandUnlockAnswer(*restart, Answer(ALICE, false, false, 0, "failed"), 1.0)
+    if !restart.owned { return 6 }
+    // Another owner, or a guest, never reads it as theirs.
+    other: IslandUnlock
+    unused IslandUnlockAnswer(*other, Answer(BOB, true, false, 0, "idle"), 0.0)
+    IslandUnlockRestore(*other, record)
+    if other.owned { return 7 }
+    guest: IslandUnlock
+    IslandUnlockRestore(*guest, record)
+    if guest.owned || IslandUnlockRecordName(*guest, name[:]) != "" { return 8 }
+    // Malformed records stay locked.
+    IslandUnlockRestore(*other, "{\"version\":2,\"owner\":\"bbbb\",\"owned\":true}")
+    if other.owned { return 9 }
+    // Leaving the account locks again and forgets the quote.
+    if !IslandUnlockAnswer(*restart, Answer(BOB, true, false, 0, "idle"), 2.0) { return 10 }
+    if restart.owned || restart.price != 0 { return 11 }
+    // A guest answer cannot claim ownership.
+    forged: IslandUnlock
+    unused IslandUnlockAnswer(*forged, Answer("", false, true, 0, "done"), 0.0)
+    if forged.owned { return 12 }
+    return 0
+}
+
+Find :: (session: Session, key: u64) -> s32 {
+    for at: cast(s32)0..TreeCount(session) - 1 { if TreeNodeAt(session, at).key == key { return at } }
+    return -1
+}
+Draw :: (session: Session, unlock: *IslandUnlock, width: float32, height: float32) -> s32 {
+    area := Rectangle.{0.0, 0.0, width, height}
+    BeginFrame(session, cast(u64)1, area)
+    action := IslandUnlockPage(session, area, unlock, "", "")
+    if EndFrame(session) != cast(FrameStatus)FrameOk { return -1 }
+    return action
+}
+Click :: (session: Session, unlock: *IslandUnlock, key: u64, width: float32, height: float32) -> s32 {
+    at := Find(session, key)
+    if at < 0 || !TreeActivateAt(session, at) { return -2 }
+    return Draw(session, unlock, width, height)
+}
+
+Page :: () -> s32 {
+    session := SessionOpen()
+    if !SessionValid(session) { return 1 }
+    defer { SessionClose(session) }
+    guest: IslandUnlock
+    if Draw(session, *guest, 360.0, 640.0) != 0 { return 2 }
+    // The offer's three parts, and no way to buy while signed out.
+    if Find(session, 49540) < 0 || Find(session, 49541) < 0 || Find(session, 49542) < 0 || Find(session, 49544) < 0 { return 3 }
+    if Find(session, 49534) >= 0 || Find(session, 49530) < 0 { return 4 }
+    if Click(session, *guest, 49530, 360.0, 640.0) != ISLAND_ACTION_SIGN_IN { return 5 }
+    unlock: IslandUnlock
+    if !Quoted(*unlock, 51000000) { return 6 }
+    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 7 }
+    // Unlock only asks; Confirm alone sends the exact request.
+    unused Click(session, *unlock, 49534, 360.0, 640.0)
+    if !unlock.confirming || unlock.stage != ISLAND_READY { return 8 }
+    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 9 }
+    if Find(session, 49532) < 0 { return 10 }
+    unused Click(session, *unlock, 49531, 360.0, 640.0)
+    if unlock.confirming || unlock.stage != ISLAND_READY { return 11 }
+    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 12 }
+    unused Click(session, *unlock, 49534, 360.0, 640.0)
+    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 13 }
+    unused Click(session, *unlock, 49532, 360.0, 640.0)
+    if unlock.stage != ISLAND_CONFIRM_NEEDED { return 14 }
+    if IslandUnlockNext(*unlock, 1.0) != "shovey.island:51000000" { return 15 }
+    // Fits narrow and wide windows.
+    node: s32 = 0
+    while node < TreeCount(session) {
+        bounds := TreeNodeAt(session, node).bounds
+        if bounds.x < -0.1 || bounds.x + bounds.width > 360.1 || bounds.y < -0.1 { return 16 }
+        node += 1
+    }
+    if Draw(session, *unlock, 1200.0, 500.0) != 0 { return 17 }
+    return 0
+}
+
+#program_export
+Check :: () -> s32 {
+    result := Purchase()
+    if result != 0 { return 100 + result }
+    result = Refusals()
+    if result != 0 { return 200 + result }
+    result = Offline()
+    if result != 0 { return 300 + result }
+    result = Restore()
+    if result != 0 { return 400 + result }
+    result = Page()
+    if result != 0 { return 500 + result }
+    return 42
+}

@@ -903,6 +903,33 @@ Ouro
 [shovey_completion_coins]
 +15 moedas · Muito bem!
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+40% de desconto
+---
+[shovey_island_unlock]
+Desbloquear
+---
+[shovey_island_signin]
+Entra para desbloquear
+---
+[shovey_island_loading]
+A verificar o preço…
+---
+[shovey_island_offline]
+Liga-te à internet para desbloquear.
+---
+[shovey_island_changed]
+O preço mudou. Confirma e tenta de novo.
+---
+[shovey_island_insufficient]
+Não tens Dew suficiente.
+---
+[shovey_island_failed]
+Não foi possível desbloquear. Tenta de novo.
+---
 
 [shovey_piece_bees]
 Enxame de abelhas

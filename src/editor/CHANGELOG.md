@@ -1,5 +1,10 @@
 # Shovey Editor changelog
 
+## [Unreleased]
+
+- Open earned story levels with working previews.
+- Paint barrels as pushable pieces, like crates.
+
 ## [0.2.147] - 2026-10-29
 
 - Keep several named level collections, each private until you share it with friends or everyone.

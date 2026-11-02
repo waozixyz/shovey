@@ -903,6 +903,33 @@ Oro
 [shovey_completion_coins]
 +15 monedas · ¡Muy bien!
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+40 % de descuento
+---
+[shovey_island_unlock]
+Desbloquear
+---
+[shovey_island_signin]
+Inicia sesión para desbloquear
+---
+[shovey_island_loading]
+Comprobando el precio…
+---
+[shovey_island_offline]
+Conéctate a internet para desbloquear.
+---
+[shovey_island_changed]
+El precio cambió. Revísalo e inténtalo de nuevo.
+---
+[shovey_island_insufficient]
+No tienes suficiente Dew.
+---
+[shovey_island_failed]
+No se pudo desbloquear. Inténtalo de nuevo.
+---
 
 [shovey_piece_bees]
 Enjambre de abejas

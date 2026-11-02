@@ -326,6 +326,7 @@ shop-test: levels
 	sh tests/shop_state_test.sh
 	sh tests/shop_view_test.sh
 	sh tests/shop_host_test.sh
+	sh tests/island_unlock_test.sh
 
 .PHONY: forest-puzzle-test
 forest-puzzle-test: solver

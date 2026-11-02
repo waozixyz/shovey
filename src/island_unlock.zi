@@ -1,0 +1,330 @@
+// Shovey Island's unlock: the node's exact quote, its confirmation and the
+// owner's verified entitlement. The ledger decides ownership; the local record
+// only keeps that answer for an offline restart of the same owner.
+#import "std/json_scan"
+#import "std/text_buffer"
+#import "std/c_string"
+#import "std/vec"
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/box_props"
+#import "kryon/box_widget"
+#import "kryon/text_props"
+#import "kryon/text_widget"
+#import "kryon/text_align"
+#import "kryon/text_measure"
+#import "kryon/button_props"
+#import "kryon/control_props"
+#import "kryon/button_widget"
+#import "kryon/image_props"
+#import "kryon/image_widget"
+#import "entity/dew_model"
+
+host_api :: #system_library "host_api";
+AppLocaleHost :: (key: string) -> string #foreign host_api;
+
+ISLAND_UNLOCK_APP :: "arcade.shovey-island";
+// Shown only until a signed-in device has the node's quote. Buying always
+// needs that quote, so these values can never set what is charged.
+ISLAND_LAUNCH_UNITS: s64 = 51000000;
+ISLAND_REGULAR_UNITS: s64 = 85000000;
+ISLAND_LAUNCH_PERCENT: s32 = 40;
+
+ISLAND_IDLE :: 0;
+ISLAND_SYNCING :: 1;
+ISLAND_QUOTE_NEEDED :: 2;
+ISLAND_QUOTING :: 3;
+ISLAND_READY :: 4;
+ISLAND_CONFIRM_NEEDED :: 5;
+ISLAND_CONFIRMING :: 6;
+
+ISLAND_ACTION_NONE :: 0;
+ISLAND_ACTION_BACK :: 1;
+ISLAND_ACTION_SIGN_IN :: 2;
+ISLAND_ACTION_BUY_DEW :: 3;
+
+ISLAND_RETRY_SIGNED_OUT: float64 = 5.0;
+ISLAND_RETRY_OFFLINE: float64 = 30.0;
+
+IslandUnlock :: struct {
+    owner: [65]u8
+    owned: bool
+    // The owned answer is in this owner's local record.
+    saved: bool
+    connected: bool
+    // The node's current quote; zero until one has arrived.
+    price: s64
+    regular: s64
+    percent: s32
+    stage: s32
+    retry_at: float64
+    // Locale key of the last outcome, or empty.
+    notice: string
+    confirming: bool
+}
+
+// The one exact confirmation waiting to go out.
+island_request: [64]u8;
+
+// A page opening asks again, so what it shows is the node's current price.
+IslandUnlockOpen :: (unlock: *IslandUnlock) {
+    unlock.confirming = false
+    unlock.notice = ""
+    if unlock.stage == ISLAND_IDLE || unlock.stage == ISLAND_READY {
+        unlock.stage = ISLAND_IDLE
+        unlock.retry_at = 0.0
+    }
+}
+
+// The request to send now, or "" to only read the status.
+IslandUnlockNext :: (unlock: *IslandUnlock, now: float64) -> string {
+    if unlock.owned { return "" }
+    if unlock.stage == ISLAND_IDLE && now >= unlock.retry_at {
+        unlock.stage = ISLAND_SYNCING
+        return "refresh"
+    }
+    if unlock.stage == ISLAND_QUOTE_NEEDED {
+        unlock.stage = ISLAND_QUOTING
+        return "shovey.island.quote"
+    }
+    if unlock.stage == ISLAND_CONFIRM_NEEDED {
+        unlock.stage = ISLAND_CONFIRMING
+        return TextUntilNul(island_request[:])
+    }
+    return ""
+}
+
+// Starts the exact-quote purchase. Nothing is sent without a current quote.
+IslandUnlockBuy :: (unlock: *IslandUnlock) -> bool {
+    if unlock.owned || unlock.stage != ISLAND_READY || unlock.price <= 0 { return false }
+    text: Vec(u8)
+    BuilderPrint(*text, "shovey.island:%", unlock.price)
+    copied := CopyCString(TextView(VecSlice(text, 0, text.count)), island_request[:])
+    VecFree(text)
+    if !copied { return false }
+    unlock.notice = ""
+    unlock.stage = ISLAND_CONFIRM_NEEDED
+    return true
+}
+
+IslandAnswerStatus :: (answer: string, value: string) -> bool {
+    status: [32]u8
+    return ReadStringText(answer, FieldAt(answer, 0, "status"), status[:]) >= 0 && TextUntilNul(status[:]) == value
+}
+
+IslandAnswerUnits :: (answer: string, name: string) -> s64 {
+    value := ReadNumber(answer, FieldAt(answer, 0, name))
+    if !value.valid || value.value <= 0.0 || value.value > 1000000000000.0 { return 0 }
+    units := cast(s64)value.value
+    return ifx cast(float64)units == value.value then units else 0
+}
+
+// Applies an entity.game-shop answer. True when its owner differs from the
+// previous one, so the caller restores that owner's own record.
+IslandUnlockAnswer :: (unlock: *IslandUnlock, answer: string, now: float64) -> bool {
+    owner: [65]u8
+    if ReadStringText(answer, FieldAt(answer, 0, "owner"), owner[:]) < 0 { return false }
+    changed := TextUntilNul(owner[:]) != TextUntilNul(unlock.owner[:])
+    if changed {
+        unlock.* = IslandUnlock.{}
+        unlock.owner = owner
+    }
+    unlock.connected = MatchLiteral(answer, FieldAt(answer, 0, "connected"), "true")
+    if MatchLiteral(answer, FieldAt(answer, 0, "island_owned"), "true") && unlock.owner[0] != 0 {
+        unlock.owned = true
+        unlock.stage = ISLAND_IDLE
+        unlock.notice = ""
+        unlock.confirming = false
+        return changed
+    }
+    if unlock.owned || IslandAnswerStatus(answer, "pending") { return changed }
+    if unlock.stage == ISLAND_SYNCING {
+        if !unlock.connected {
+            unlock.stage = ISLAND_IDLE
+            unlock.retry_at = now + ISLAND_RETRY_SIGNED_OUT
+        } else if IslandAnswerStatus(answer, "failed") {
+            unlock.stage = ISLAND_IDLE
+            unlock.retry_at = now + ISLAND_RETRY_OFFLINE
+        } else {
+            unlock.stage = ISLAND_QUOTE_NEEDED
+        }
+    } else if unlock.stage == ISLAND_QUOTING {
+        price := IslandAnswerUnits(answer, "island_price_units")
+        if price > 0 {
+            unlock.price = price
+            unlock.regular = IslandAnswerUnits(answer, "island_regular_price_units")
+            percent := ReadNumber(answer, FieldAt(answer, 0, "island_discount_percent"))
+            unlock.percent = ifx percent.valid && percent.value > 0.0 && percent.value < 100.0 then cast(s32)percent.value else 0
+            unlock.stage = ISLAND_READY
+        } else {
+            unlock.stage = ISLAND_IDLE
+            unlock.retry_at = now + ifx unlock.connected then ISLAND_RETRY_OFFLINE else ISLAND_RETRY_SIGNED_OUT
+        }
+    } else if unlock.stage == ISLAND_CONFIRMING {
+        unlock.confirming = false
+        if IslandAnswerStatus(answer, "price_changed") {
+            // The charge never happened; show the new price before any retry.
+            unlock.price = 0
+            unlock.notice = "shovey_island_changed"
+            unlock.stage = ISLAND_QUOTE_NEEDED
+        } else {
+            unlock.stage = ISLAND_READY
+            unlock.notice = ifx IslandAnswerStatus(answer, "insufficient") then "shovey_island_insufficient" else ifx IslandAnswerStatus(answer, "signin") then "shovey_island_signin" else "shovey_island_failed"
+        }
+    }
+    return changed
+}
+
+IslandUnlockRecordName :: (unlock: *IslandUnlock, output: []u8) -> string {
+    if unlock.owner[0] == 0 { return "" }
+    text: Vec(u8)
+    BuilderPrint(*text, "island.v1.%", TextUntilNul(unlock.owner[:]))
+    copied := CopyCString(TextView(VecSlice(text, 0, text.count)), output)
+    VecFree(text)
+    return ifx copied then TextUntilNul(output) else ""
+}
+
+IslandUnlockRecord :: (unlock: *IslandUnlock, output: []u8) -> string {
+    text: Vec(u8)
+    BuilderPrint(*text, "{\"version\":1,\"owner\":\"%\",\"owned\":true}", TextUntilNul(unlock.owner[:]))
+    copied := CopyCString(TextView(VecSlice(text, 0, text.count)), output)
+    VecFree(text)
+    return ifx copied then TextUntilNul(output) else ""
+}
+
+// Only this owner's verified answer restores; a guest never owns Island.
+IslandUnlockRestore :: (unlock: *IslandUnlock, record: string) {
+    if unlock.owner[0] == 0 || record == "" { return }
+    owner: [65]u8
+    version := ReadNumber(record, FieldAt(record, 0, "version"))
+    if !version.valid || version.value != 1.0 ||
+    ReadStringText(record, FieldAt(record, 0, "owner"), owner[:]) < 0 ||
+    TextUntilNul(owner[:]) != TextUntilNul(unlock.owner[:]) ||
+    !MatchLiteral(record, FieldAt(record, 0, "owned"), "true") { return }
+    unlock.owned = true
+    unlock.saved = true
+    unlock.stage = ISLAND_IDLE
+}
+
+// What to show: the node's quote, or the launch price until one has arrived.
+IslandUnlockShown :: (unlock: *IslandUnlock) -> (price: s64, regular: s64, percent: s32) {
+    if unlock.price > 0 {
+        return unlock.price, ifx unlock.regular > 0 then unlock.regular else unlock.price, unlock.percent
+    }
+    return ISLAND_LAUNCH_UNITS, ISLAND_REGULAR_UNITS, ISLAND_LAUNCH_PERCENT
+}
+
+IslandDewText :: (units: s64, output: []u8) -> string {
+    if !DewFormat(units, DewUnits, output, "Dew") { return "" }
+    return TextUntilNul(output)
+}
+
+// The line under a locked cover's title: the price and any offer.
+IslandUnlockCaption :: (unlock: *IslandUnlock, output: []u8) -> string {
+    if unlock.owned { return "" }
+    price, regular, percent := IslandUnlockShown(unlock)
+    digits: [32]u8
+    amount := IslandDewText(price, digits[:])
+    text: Vec(u8)
+    if percent > 0 && regular > price { BuilderPrint(*text, "% · %", amount, AppLocaleHost("shovey_island_off")) }
+    else { BuilderPrint(*text, "%", amount) }
+    copied := CopyCString(TextView(VecSlice(text, 0, text.count)), output)
+    VecFree(text)
+    return ifx copied then TextUntilNul(output) else ""
+}
+
+IslandLine :: (session: Session, key: u64, bounds: Rectangle, text: string, size: s32, centre: bool = true) {
+    unused Text(session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = size,
+        .align = ifx centre then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
+        .vertical_align = TextAlign.TextAlignCenter, .wrap = TextWrap.TextWrapAuto})
+}
+
+IslandButton :: (session: Session, key: u64, bounds: Rectangle, label: string, accent: bool = false, disabled: bool = false) -> bool {
+    return Button(session, ButtonProps.{.key = key, .id = cast(s32)key, .bounds = bounds, .label = label,
+        .disabled = disabled, .fit_content = true,
+        .tone = ifx accent then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
+        .emphasis = ifx accent then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
+}
+
+// The current price, with the regular one struck through during an offer.
+IslandPriceRow :: (session: Session, x: float32, y: float32, width: float32, unlock: *IslandUnlock) {
+    price, regular, percent := IslandUnlockShown(unlock)
+    price_digits: [32]u8
+    regular_digits: [32]u8
+    IslandLine(session, 49540, Rectangle.{x, y, width, 42.0}, IslandDewText(price, price_digits[:]), 32)
+    if percent <= 0 || regular <= price { return }
+    was := IslandDewText(regular, regular_digits[:])
+    row := y + 44.0
+    half := width / 2.0
+    was_props := TextProps.{.key = cast(u64)49541, .text = was, .font = 18}
+    was_width := cast(float32)TextWidth(session, was_props)
+    IslandLine(session, 49541, Rectangle.{x, row, half - 6.0, 30.0}, was, 18)
+    unused Box(session, BoxProps.{.key = cast(u64)49542,
+        .bounds = Rectangle.{x + (half - 6.0 - was_width) / 2.0 - 2.0, row + 14.0, was_width + 4.0, 2.0},
+        .fill = Color.{255, 255, 255, 230}})
+    unused Box(session, BoxProps.{.key = cast(u64)49543, .bounds = Rectangle.{x + half + 6.0, row, half - 6.0, 30.0},
+        .fill = Color.{214, 72, 48, 255}, .radius = 15.0})
+    IslandLine(session, 49544, Rectangle.{x + half + 6.0, row, half - 6.0, 30.0}, AppLocaleHost("shovey_island_off"), 16)
+}
+
+// Draws the locked page and acts on it; returns what the host must do.
+IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnlock,
+    background: string, logo: string) -> s32 {
+    action: s32 = ISLAND_ACTION_NONE
+    unused Image(session, ImageProps.{.key = cast(u64)49510, .bounds = viewport, .asset_path = background,
+        .fit = ImageFit.ImageFitCover, .smooth = true, .alt_text = AppLocaleHost("shovey_island_title")})
+    width := ifx viewport.width - 32.0 < 420.0 then viewport.width - 32.0 else 420.0
+    height: float32 = 288.0
+    x := viewport.x + (viewport.width - width) / 2.0
+    y := viewport.y + viewport.height - height - 24.0
+    logo_top := viewport.y + 64.0
+    logo_height := y - logo_top - 12.0
+    if logo_height > 180.0 { logo_height = 180.0 }
+    if logo_height > 40.0 {
+        unused Image(session, ImageProps.{.key = cast(u64)49511, .asset_path = logo, .fit = ImageFit.ImageFitContain, .smooth = true,
+            .bounds = Rectangle.{x, logo_top, width, logo_height}, .alt_text = AppLocaleHost("shovey_island_title")})
+    }
+    if IslandButton(session, 49512, Rectangle.{viewport.x + 12.0, viewport.y + 12.0, 84.0, 44.0}, AppLocaleHost("shovey_shop_back")) {
+        action = ISLAND_ACTION_BACK
+    }
+    unused Box(session, BoxProps.{.key = cast(u64)49520, .bounds = Rectangle.{x, y, width, height},
+        .fill = Color.{38, 44, 43, 235}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+    inner_x := x + 16.0
+    inner := width - 32.0
+    IslandLine(session, 49521, Rectangle.{inner_x, y + 10.0, inner, 30.0}, AppLocaleHost("shovey_island_title"), 18)
+    IslandPriceRow(session, inner_x, y + 42.0, inner, unlock)
+    busy := unlock.stage == ISLAND_CONFIRMING || unlock.stage == ISLAND_CONFIRM_NEEDED
+    buttons := y + height - 100.0
+    half := (inner - 12.0) / 2.0
+    if !unlock.connected {
+        if IslandButton(session, 49530, Rectangle.{inner_x, buttons + 44.0, inner, 44.0}, AppLocaleHost("shovey_island_signin"), true) {
+            action = ISLAND_ACTION_SIGN_IN
+        }
+    } else if unlock.confirming || busy {
+        if IslandButton(session, 49531, Rectangle.{inner_x, buttons + 44.0, half, 44.0}, AppLocaleHost("shovey_shop_cancel"), false, busy) {
+            unlock.confirming = false
+        }
+        if IslandButton(session, 49532, Rectangle.{inner_x + half + 12.0, buttons + 44.0, half, 44.0},
+            AppLocaleHost("shovey_shop_confirm"), true, busy) {
+            unused IslandUnlockBuy(unlock)
+        }
+    } else {
+        insufficient := unlock.notice == "shovey_island_insufficient"
+        if insufficient && IslandButton(session, 49533, Rectangle.{inner_x, buttons + 44.0, half, 44.0}, AppLocaleHost("shovey_shop_buy_dew")) {
+            action = ISLAND_ACTION_BUY_DEW
+        }
+        at := ifx insufficient then inner_x + half + 12.0 else inner_x
+        if IslandButton(session, 49534, Rectangle.{at, buttons + 44.0, ifx insufficient then half else inner, 44.0},
+            AppLocaleHost("shovey_island_unlock"), true, unlock.stage != ISLAND_READY) {
+            unlock.confirming = true
+            unlock.notice = ""
+        }
+    }
+    status := unlock.notice
+    if status == "" && unlock.connected && unlock.stage != ISLAND_READY && !busy {
+        status = ifx unlock.stage == ISLAND_IDLE then "shovey_island_offline" else "shovey_island_loading"
+    }
+    if status != "" { IslandLine(session, 49535, Rectangle.{inner_x, buttons, inner, 40.0}, AppLocaleHost(status), 14) }
+    return action
+}

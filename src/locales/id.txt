@@ -903,6 +903,33 @@ Emas
 [shovey_completion_coins]
 +15 koin · Hebat!
 ---
+[shovey_island_title]
+Shovey Island
+---
+[shovey_island_off]
+Diskon 40%
+---
+[shovey_island_unlock]
+Buka
+---
+[shovey_island_signin]
+Masuk untuk membuka
+---
+[shovey_island_loading]
+Memeriksa harga…
+---
+[shovey_island_offline]
+Sambungkan ke internet untuk membuka.
+---
+[shovey_island_changed]
+Harga berubah. Periksa lalu coba lagi.
+---
+[shovey_island_insufficient]
+Dew tidak cukup.
+---
+[shovey_island_failed]
+Gagal membuka. Coba lagi.
+---
 
 [shovey_piece_bees]
 Kawanan lebah

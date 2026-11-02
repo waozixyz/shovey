@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Open Shovey Island from its own cover where installed, with a confirmed Dew quote and restored ownership.
+- The Editor's level previews work again, and any level you have unlocked opens for editing.
+- Paint barrels in the Editor as pushable pieces, like crates.
+
 - Sign in across Waozi apps with the shared Profile, and restore password-protected backups named after your username.
 
 - Classic 125 now needs its crate and both movable barrels on marks after their shared button work, keeping the puzzle active without adding walls.
