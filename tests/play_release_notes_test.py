@@ -54,6 +54,33 @@ class PlayReleaseNotesTest(unittest.TestCase):
         self.assertEqual(self.generated_file(multibyte), 'é' * 499 + '…')
         self.assertEqual(len(self.generated_file(multibyte)), 500)
 
+    def test_actual_retry_input_validation_and_step_conditions(self):
+        workflow = (ROOT / '.github/workflows/play-bundle.yml').read_text()
+        self.assertRegex(workflow, r'      bundle_only:\n        description: [^\n]+\n        type: boolean\n        default: false')
+        steps = re.split(r'(?=^      - )', workflow, flags=re.M)
+        def step(name):
+            return next(block for block in steps if block.startswith('      - name: '+name+'\n'))
+        validation = textwrap.dedent(step('Validate the fixed revision').split('        run: |\n', 1)[1])
+        def enabled(name, products_only, bundle_only):
+            match = re.search(r'^        if: (.+)$', step(name), re.M)
+            if not match: return True
+            return {'${{ !inputs.products_only }}': not products_only,
+                    '${{ !inputs.bundle_only }}': not bundle_only}[match[1]]
+        for products_only, bundle_only, upload, products in (
+                (False, False, True, True), (True, False, False, True),
+                (False, True, True, False), (True, True, False, False)):
+            with self.subTest(products_only=products_only, bundle_only=bundle_only):
+                env = dict(os.environ, REVISION='1e91a0df921522b155dc4d0443cf424e6ee76ea0',
+                           PRODUCTS_ONLY=str(products_only).lower(), BUNDLE_ONLY=str(bundle_only).lower())
+                result = subprocess.run(['bash','--noprofile','--norc','-eo','pipefail','-c',validation],
+                                        env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                self.assertEqual(result.returncode, 1 if products_only and bundle_only else 0)
+                if result.returncode: continue  # No build or external action may run.
+                for name in ('Build the Google Play edition bundle','Sign and verify the bundle',
+                             'Write the release notes','Upload to Google Play internal testing'):
+                    self.assertEqual(enabled(name,products_only,bundle_only), upload)
+                self.assertEqual(enabled('Sell the Dew packs at Google Play prices',products_only,bundle_only), products)
+
 
 if __name__ == '__main__':
     unittest.main()

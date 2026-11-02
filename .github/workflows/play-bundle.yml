@@ -20,6 +20,10 @@ on:
         description: Full Shovey release commit (defaults to this run's commit)
         type: string
         required: false
+      bundle_only:
+        description: Retry the existing release upload without changing Dew products
+        type: boolean
+        default: false
       products_only:
         description: Repair Dew products after a successful bundle upload (no bundle upload)
         type: boolean
@@ -51,7 +55,13 @@ jobs:
       - name: Validate the fixed revision
         env:
           REVISION: ${{ inputs.revision || github.sha }}
+          PRODUCTS_ONLY: ${{ inputs.products_only }}
+          BUNDLE_ONLY: ${{ inputs.bundle_only }}
         run: |
+          if [ "$PRODUCTS_ONLY" = true ] && [ "$BUNDLE_ONLY" = true ]; then
+            echo '::error::Choose either products_only or bundle_only.'
+            exit 1
+          fi
           python3 -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}", os.environ["REVISION"]), "Use a full Shovey commit"'
       # The locked compiler comes prebuilt, the package checkouts cached, and
       # Ubuntu packages from the canonical archive.
@@ -134,6 +144,7 @@ jobs:
       # Add the 10 Dew pack at a 20% premium, rounded up locally.
       # Larger pack prices change only when explicitly selected.
       - name: Sell the Dew packs at Google Play prices
+        if: ${{ !inputs.bundle_only }}
         shell: bash
         env:
           ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
