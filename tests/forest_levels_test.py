@@ -51,14 +51,23 @@ def main():
         found = solve(level, 'macro-bfs' if number == 93 else 'greedy')
         assert stored['goals'] == found['goals']
         if number != 93:
-            # Buildings in this stage use brick floors, thin wall outlines,
-            # paved courtyards, lamps and pots. No forest, ice or laser detours.
+            # Buildings use brick floors, wall outlines, paved courtyards,
+            # lamps and pots. Levels 98/99 also retain their surrounding wall.
             assert set(terrain) <= {77, 60, 96, 100}
-            assert 80 <= terrain.count(100) <= 120 and terrain.count(96) <= 56
+            perimeter = set()
+            if number in (98, 99):
+                perimeter = {at for at in range(240)
+                             if at // 12 < 3 or at // 12 == 19 or at % 12 in (0, 11)}
+                doorway = 19 * 12 + 6
+                assert terrain[doorway] == 100, 'Keep the building entrance open'
+                perimeter.remove(doorway)
+                assert all(terrain[at] == 96 for at in perimeter), 'Missing surrounding brick wall'
+            assert 80 <= terrain.count(100) <= 120
+            assert sum(kind == 96 for at, kind in enumerate(terrain) if at not in perimeter) <= 56
             assert set(decorations) <= {0, 106, 139, 140}
             assert not set(board) & {64, 70, 150, 151, 152, 153, 154, 155, 156, 167, 168}
             for at, kind in enumerate(terrain):
-                if kind != 96: continue
+                if kind != 96 or at in perimeter: continue
                 x, y = at % 12, at // 12
                 assert any(terrain[(y + dy) * 12 + x + dx] == 100
                            for dy in (-1, 0, 1) for dx in (-1, 0, 1)
