@@ -1,30 +1,21 @@
 # Shovey changelog
 
-## [Unreleased]
+## [0.6.164] - 2026-11-02
 
 - Match the Profile portrait to the selected Shovey skin immediately, preserving its stone frame.
-
 - Find Shovey Island between Classic and the Editor, unlock it with a confirmed Dew quote and download it securely for your account.
 - The Editor's level previews work again, and any level you have unlocked opens for editing.
 - Paint barrels in the Editor as pushable pieces, like crates.
-
 - Discover 16 one-time treasures across Classic and keep them in the Collectible Book beside the Chest.
-
 - Sign in across Waozi apps with the shared Profile, and restore password-protected backups named after your username.
-
 - Classic 125 now needs its crate and both movable barrels on marks after their shared button work, keeping the puzzle active without adding walls.
-
 - Push barrels like wooden crates, including onto marks and into water, while keeping their barrel appearance and existing saved progress.
-
 - Rebuild Classic 93 with hive crossings and Classic 97–99 as brick buildings with pressure plates, star relays and painted-ball puzzles. Preserve old campaign downloads, custom boards and earned progress.
-
 - Return to the level selector at the level just played or reached after a win, while a fresh session still opens at earned progress.
 - See while signed-in account progress is still loading, without delaying local play.
 - Pip does not repeat introductions already covered by synced account progress.
 - Back from a host-opened shop or chest returns to the screen that opened it.
 - Visit Shovey's shop, claim the daily chest, and open Profile and Leaderboard with painted icons.
-- Player builds use shared dependency artifacts for the Profile, account cryptography and renderers.
-- Editor text fields use Kryon’s shared text state while keeping Enter to save collection names.
 - Sharing collections cancels safely when accounts change and keeps drafts when requests fail.
 - Pip's tips now stay visible without blocking movement or pausing the board.
 - Pip's tips glow on what they point at, and a tap anywhere continues them without moving Shovey.
