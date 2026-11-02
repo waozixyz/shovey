@@ -6,6 +6,7 @@ import functools
 import http.server
 import json
 import os
+import re
 from pathlib import Path
 import socket
 import struct
@@ -179,6 +180,17 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));let sequence=0;
                   mapArt=json.loads((ROOT/'assets/shovey/world-map/riverfold.json').read_text()),
                   driverSetup=setup, target=f'http://127.0.0.1:{server.server_port}/')
     prelude += ''.join('const '+k+'='+json.dumps(v)+';' for k,v in config.items()) + stationary
+    # Execute the CI server's actual MIME expressions in Chromium: root
+    # navigation must remain HTML while chunk files must remain binary.
+    server_source = (ROOT/'tests/web_release_test.mjs').read_text()
+    types = re.search(r"const types = (.*?);", server_source).group(1)
+    content_type = re.search(r"response.setHeader\('Content-Type', (.*?)\);", server_source).group(1)
+    prelude += 'const types='+types+';const mime=path=>('+content_type+');'
+    for path, expected in (('/', 'text/html'), ('/index.html', 'text/html'),
+                           ('/runtime.data.part-0000', 'application/octet-stream'),
+                           ('/runtime.data.json', 'application/json'), ('/runtime.js', 'text/javascript'),
+                           ('/runtime.wasm', 'application/wasm')):
+        prelude += 'assert.equal(mime('+json.dumps(path)+'),'+json.dumps(expected)+');'
     prelude += 'const socket=new WebSocket('+json.dumps(game['webSocketDebuggerUrl'])+');await new Promise(resolve=>socket.addEventListener("open",resolve,{once:true}));'
     extra = """
     for (const file of ['Module.getPreloadedPackage()', \"Module.FS.readFile('/app.zx')\"]) {

@@ -28,7 +28,7 @@ const server = createServer(async (request, response) => {
       return;
     }
     const body = await readFile(join(root, path === '/' ? 'index.html' : path));
-    response.setHeader('Content-Type', types[path.slice(path.lastIndexOf('.'))] || 'application/octet-stream');
+    response.setHeader('Content-Type', path === '/' ? 'text/html' : types[path.slice(path.lastIndexOf('.'))] || 'application/octet-stream');
     response.end(body);
   } catch {
     // Like Cloudflare Pages, a missing file gets the site's page.
@@ -81,7 +81,7 @@ try {
       if (await evaluate(expression)) return;
       await delay(100);
     }
-    throw Error('Timed out: ' + expression + '; console: ' + lines.slice(-10).join(' | '));
+    throw Error('Timed out: ' + expression + '; page: ' + await evaluate(`JSON.stringify({type:document.contentType,url:location.href,module:!!globalThis.Module,loading:document.querySelector('#loading')?.className})`) + '; console: ' + lines.slice(-10).join(' | '));
   }
   async function click(x, y) {
     await call('Input.dispatchMouseEvent', {type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1});
