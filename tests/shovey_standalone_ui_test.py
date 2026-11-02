@@ -340,11 +340,13 @@ def main():
             driver.wait(label='Open', role='button')
         with application(profile, 'restore'):
             driver.press(label='Next', role='button')
+            driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')
             driver.wait(label='New level', role='text')
             # Escape on the board returns to the editor's cover, which stays selected.
             driver.key('escape')
             driver.wait(label='Open', role='button')
+            driver.press(label='Previous', role='button')
             driver.press(label='Previous', role='button')
             answer_cover_question(driver)
             driver.press(label='Play', role='button')
