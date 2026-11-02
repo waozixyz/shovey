@@ -942,3 +942,151 @@ Dew가 부족합니다.
 [shovey_tip_bees]
 벌집을 벌 떼 바로 옆으로 밀면 벌들이 진정해서 길이 열려요. 건너는 동안 벌집을 그대로 두세요.
 ---
+
+[shovey_book]
+수집 도감
+---
+
+[shovey_book_unknown]
+아직 숨겨져 있어요
+---
+
+[shovey_book_hint]
+Classic에서 특별한 물건을 찾아보세요.
+---
+
+[shovey_book_complete]
+모든 보물을 찾았어요!
+---
+
+[shovey_book_found]
+보물 발견!
+---
+
+[shovey_item_lucky_pebble]
+행운의 조약돌
+---
+
+[shovey_item_lucky_pebble_line]
+여행길에 작은 행운을.
+---
+
+[shovey_item_rusty_key]
+녹슨 열쇠
+---
+
+[shovey_item_rusty_key_line]
+옛날에는 무엇을 열었을까요?
+---
+
+[shovey_item_message_bottle]
+병 속의 편지
+---
+
+[shovey_item_message_bottle_line]
+먼 곳에서 온 인사.
+---
+
+[shovey_item_four_leaf_clover]
+네잎클로버
+---
+
+[shovey_item_four_leaf_clover_line]
+행운의 잎이 하나 더.
+---
+
+[shovey_item_snail_shell]
+달팽이 껍데기
+---
+
+[shovey_item_snail_shell_line]
+버려진 작은 집.
+---
+
+[shovey_item_golden_feather]
+황금 깃털
+---
+
+[shovey_item_golden_feather_line]
+나무 꼭대기에서 온 선물.
+---
+
+[shovey_item_giant_acorn]
+거대한 도토리
+---
+
+[shovey_item_giant_acorn_line]
+다람쥐를 위한 잔치.
+---
+
+[shovey_item_silver_pinecone]
+은빛 솔방울
+---
+
+[shovey_item_silver_pinecone_line]
+솔잎 사이로 비치는 달빛.
+---
+
+[shovey_item_honeycomb]
+벌집
+---
+
+[shovey_item_honeycomb_line]
+벌집에서 온 달콤한 선물.
+---
+
+[shovey_item_firefly_jar]
+반딧불이 병
+---
+
+[shovey_item_firefly_jar_line]
+숲의 작은 등불.
+---
+
+[shovey_item_frost_leaf]
+서리 잎
+---
+
+[shovey_item_frost_leaf_line]
+잎에 담긴 겨울.
+---
+
+[shovey_item_glow_crystal]
+빛나는 수정
+---
+
+[shovey_item_glow_crystal_line]
+깊은 곳에서 온 빛.
+---
+
+[shovey_item_tiny_fossil]
+작은 화석
+---
+
+[shovey_item_tiny_fossil_line]
+아주 오래된 작은 이야기.
+---
+
+[shovey_item_chipped_teacup]
+이가 빠진 찻잔
+---
+
+[shovey_item_chipped_teacup_line]
+밖에서 마시는 차가 더 맛있어요.
+---
+
+[shovey_item_sleepy_starfish]
+졸린 불가사리
+---
+
+[shovey_item_sleepy_starfish_line]
+밀물을 꿈꾸고 있어요.
+---
+
+[shovey_item_brass_compass]
+황동 나침반
+---
+
+[shovey_item_brass_compass_line]
+언제나 모험을 가리켜요.
+---

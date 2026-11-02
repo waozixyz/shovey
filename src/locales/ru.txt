@@ -942,3 +942,151 @@ Shovey Island
 [shovey_tip_bees]
 Подвинь улей вплотную к пчёлам, чтобы успокоить их и открыть проход. Оставь его там, пока переходишь.
 ---
+
+[shovey_book]
+Книга находок
+---
+
+[shovey_book_unknown]
+Ещё скрыто
+---
+
+[shovey_book_hint]
+Ищите особые предметы в Classic.
+---
+
+[shovey_book_complete]
+Все сокровища найдены!
+---
+
+[shovey_book_found]
+Сокровище найдено!
+---
+
+[shovey_item_lucky_pebble]
+Счастливый камешек
+---
+
+[shovey_item_lucky_pebble_line]
+Немного удачи в дорогу.
+---
+
+[shovey_item_rusty_key]
+Ржавый ключ
+---
+
+[shovey_item_rusty_key_line]
+Что он когда-то открывал?
+---
+
+[shovey_item_message_bottle]
+Послание в бутылке
+---
+
+[shovey_item_message_bottle_line]
+Привет издалека.
+---
+
+[shovey_item_four_leaf_clover]
+Четырёхлистный клевер
+---
+
+[shovey_item_four_leaf_clover_line]
+Лишний листик удачи.
+---
+
+[shovey_item_snail_shell]
+Раковина улитки
+---
+
+[shovey_item_snail_shell_line]
+Маленький покинутый дом.
+---
+
+[shovey_item_golden_feather]
+Золотое перо
+---
+
+[shovey_item_golden_feather_line]
+Подарок с верхушек деревьев.
+---
+
+[shovey_item_giant_acorn]
+Гигантский жёлудь
+---
+
+[shovey_item_giant_acorn_line]
+Пир для белки.
+---
+
+[shovey_item_silver_pinecone]
+Серебряная шишка
+---
+
+[shovey_item_silver_pinecone_line]
+Лунный свет среди иголок.
+---
+
+[shovey_item_honeycomb]
+Медовые соты
+---
+
+[shovey_item_honeycomb_line]
+Сладкий подарок из улья.
+---
+
+[shovey_item_firefly_jar]
+Банка со светлячками
+---
+
+[shovey_item_firefly_jar_line]
+Маленький лесной фонарик.
+---
+
+[shovey_item_frost_leaf]
+Морозный лист
+---
+
+[shovey_item_frost_leaf_line]
+Зима, сохранённая в листе.
+---
+
+[shovey_item_glow_crystal]
+Светящийся кристалл
+---
+
+[shovey_item_glow_crystal_line]
+Свет из глубин.
+---
+
+[shovey_item_tiny_fossil]
+Крошечная окаменелость
+---
+
+[shovey_item_tiny_fossil_line]
+Крошечная древняя история.
+---
+
+[shovey_item_chipped_teacup]
+Щербатая чашка
+---
+
+[shovey_item_chipped_teacup_line]
+На свежем воздухе чай вкуснее.
+---
+
+[shovey_item_sleepy_starfish]
+Сонная морская звезда
+---
+
+[shovey_item_sleepy_starfish_line]
+Мечтает о приливе.
+---
+
+[shovey_item_brass_compass]
+Латунный компас
+---
+
+[shovey_item_brass_compass_line]
+Всегда указывает на приключения.
+---

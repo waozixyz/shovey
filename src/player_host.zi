@@ -857,7 +857,7 @@ CollectionIslandFrame :: (session: Session, viewport: Rectangle) {
 
 // Navigation records select a page in the verified game, never an item to buy.
 CollectionShopQueue :: (page: string) -> bool {
-    if page != "shop" && page != "chest" { return false }
+    if page != "shop" && page != "chest" && page != "book" { return false }
     if collection_shop_request != "" { return false }
     root := AppTreeNode(*collection_host.tree, collection_host.tree.active)
     if root == null || !root.collection { return false }
@@ -936,6 +936,8 @@ CollectionToolbar :: (session: Session, viewport: Rectangle) {
         "assets/shovey/shop/stall.png", "shovey_shop_shop") { unused CollectionShopQueue("shop") }
     if CollectionCoverAction(session, 49202, Rectangle.{viewport.x + 12.0, y + 60.0, 44.0, 44.0},
         "assets/shovey/shop/chest-closed.png", "shovey_shop_chest") { unused CollectionShopQueue("chest") }
+    if CollectionCoverAction(session, 49208, Rectangle.{viewport.x + 64.0, y + 60.0, 44.0, 44.0},
+        "assets/shovey/shop/book.png", "shovey_book") { unused CollectionShopQueue("book") }
     digits: [24]u8
     CollectionCoverAmount(session, 49210, Rectangle.{viewport.x + 60.0, y, viewport.width - 176.0, 28.0},
         "coins", FormatInteger(cast(s64)ShopState.ShopCoins(), digits[:]))

@@ -53,6 +53,8 @@ Math :: #import "std/math";
 #import, file "shovey_theme.zi";
 CompletionCoins :: #import, file "completion_coins.zi";
 ShopUI :: #import, file "shop_view.zi";
+Collectibles :: #import, file "collectibles.zi";
+Book :: #import, file "collectible_book.zi";
 #if #defined(PLATFORM_WEB) {
     // The compiled browser game reads the node itself; its page host offers
     // no services.
@@ -1162,6 +1164,7 @@ LevelChangeShade :: () -> float32 {
 // playing, so the host returns to the cover that opened the game.
 ShoveyBack :: () -> bool {
     if ShopUI.Back() { return true }
+    if Book.BookBack() { return true }
     if reward_card >= 0 { reward_card = -1; return true }
     if friend_card_visible {
         if GuideAcknowledge(*friend_guide) { friend_save_pending = true }
@@ -1278,6 +1281,11 @@ ShoveyFrame :: () {
         ShopUI.Request()
         ShopUI.Pump(frame.now, ShoveyShopToday)
         BoardSetSkin(ShopUI.Skin())
+        Book.BookRequest()
+        if Book.BookIsOpen() {
+            if key == 256 || key == 4 { unused Book.BookBack() }
+            if Book.BookFrame(frame.session, Rectangle.{0.0, top, width, bottom - top}, TextUntilNul(shared_progress.owner[:])) { return }
+        }
         if ShopUI.IsOpen() {
             if key == 256 || key == 4 { unused ShopUI.Back() }
             if ShopUI.IsOpen() { unused ShopUI.Frame(frame.session, Rectangle.{0.0, top, width, bottom - top}, frame.now, ShoveyShopToday) }
@@ -1576,6 +1584,7 @@ ShoveyFrame :: () {
     board_chest_open = RewardEarned(REWARD_CHEST)
     board_chest_claimed = RewardClaimed(REWARD_CHEST)
     grid := ShoveyBoard(frame.session, *game, board_bounds, cast(u64)22000, frame.now, sprite_names[:], landscape)
+    if board_sail < 0.0 && crossing < 0.0 && !cinematic { CollectibleOverlay(grid, landscape) }
     board_chest = -1
     if board_sail < 0.0 && crossing < 0.0 {
         scene_cell = grid.cell
@@ -1736,7 +1745,57 @@ ShoveyFrame :: () {
             if first_open && !SoundMuted() { unused AppSoundHost("assets/shovey/sounds/goal.wav") }
         }
     }
+    CollectiblePickup()
+    Book.BookToast(frame.session, Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}, collectible_toast, frame.now - collectible_toast_at)
     if !cinematic { RewardCard(width, bottom) }
+}
+
+// A special item waits on its cell until this owner has found it. It is
+// drawn over the board in play, never baked into boards or level pictures,
+// and only where Shovey could stand, so a changed board never shows it in a
+// wall or under a crate.
+collectible_pending: Collectibles.CollectiblePending;
+collectible_toast: s32 = -1;
+collectible_toast_at: float64 = -10.0;
+
+CollectibleHere :: () -> s32 {
+    if ShoveySecret(game.level) || game.level < 1 || game.level > ShoveyLevelCount() { return -1 }
+    index := Collectibles.CollectibleOnLevel(game.level)
+    if index < 0 || Collectibles.CollectibleFound(TextUntilNul(completion_path.owner[:]), index) { return -1 }
+    if collectible_pending.active && collectible_pending.index == index { return -1 }
+    return index
+}
+
+CollectibleOverlay :: (grid: TileMapResult, landscape: bool) {
+    index := CollectibleHere()
+    if index < 0 { return }
+    cell := Collectibles.CollectibleCell(index)
+    if cell == game.player || game.objects[cell] != 0 || ShoveySolidDecor(game.decorations[cell]) ||
+    !ShoveyFloorAllows(*game, cell, 10) { return }
+    at := TileMapCell(grid, BoardDisplayIndex(cell, landscape))
+    bob := cast(float32)Math.Sin(frame.now * 3.0) * at.height * 0.05
+    inset := at.width * 0.12
+    Image(frame.session, ImageProps.{.key = cast(u64)20810, .asset_path = Collectibles.CollectibleIcon(index),
+            .alt_text = AppLocaleHost("shovey_book_unknown"),
+            .bounds = Rectangle.{at.x + inset, at.y + inset + bob, at.width - inset * 2.0, at.height - inset * 2.0},
+            .fit = ImageFit.ImageFitContain, .smooth = true})
+}
+
+// Stepping onto an item records it once for the owner of this attempt; a
+// storage barrier that fails retries on later frames.
+CollectiblePickup :: () {
+    if !collectible_pending.active {
+        index := CollectibleHere()
+        if index < 0 || game.player != Collectibles.CollectibleCell(index) { return }
+        Collectibles.CollectibleBegin(*collectible_pending, TextUntilNul(completion_path.owner[:]), index)
+    }
+    index := collectible_pending.index
+    owner: [65]u8 = collectible_pending.owner
+    if Collectibles.CollectibleFinish(*collectible_pending) == 1 && TextUntilNul(owner[:]) == TextUntilNul(completion_path.owner[:]) {
+        collectible_toast = index
+        collectible_toast_at = frame.now
+        if !SoundMuted() { unused AppSoundHost("assets/shovey/sounds/pickup.wav") }
+    }
 }
 
 // The separate hidden beach room has the chest; level 29 never does.

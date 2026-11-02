@@ -942,3 +942,151 @@ Beehive
 [shovey_tip_bees]
 Push the hive beside the bees to calm them and open a path. Keep it there while you cross.
 ---
+
+[shovey_book]
+Collectible Book
+---
+
+[shovey_book_unknown]
+Still hidden
+---
+
+[shovey_book_hint]
+Find special items across Classic.
+---
+
+[shovey_book_complete]
+Every treasure found!
+---
+
+[shovey_book_found]
+Treasure found!
+---
+
+[shovey_item_lucky_pebble]
+Lucky pebble
+---
+
+[shovey_item_lucky_pebble_line]
+A little luck for the road.
+---
+
+[shovey_item_rusty_key]
+Rusty key
+---
+
+[shovey_item_rusty_key_line]
+What did it once open?
+---
+
+[shovey_item_message_bottle]
+Message in a bottle
+---
+
+[shovey_item_message_bottle_line]
+A greeting from far away.
+---
+
+[shovey_item_four_leaf_clover]
+Four-leaf clover
+---
+
+[shovey_item_four_leaf_clover_line]
+One extra leaf of luck.
+---
+
+[shovey_item_snail_shell]
+Snail shell
+---
+
+[shovey_item_snail_shell_line]
+A tiny abandoned home.
+---
+
+[shovey_item_golden_feather]
+Golden feather
+---
+
+[shovey_item_golden_feather_line]
+A gift from the treetops.
+---
+
+[shovey_item_giant_acorn]
+Giant acorn
+---
+
+[shovey_item_giant_acorn_line]
+A feast for a squirrel.
+---
+
+[shovey_item_silver_pinecone]
+Silver pinecone
+---
+
+[shovey_item_silver_pinecone_line]
+Moonlight among the needles.
+---
+
+[shovey_item_honeycomb]
+Honeycomb
+---
+
+[shovey_item_honeycomb_line]
+A sweet gift from the hive.
+---
+
+[shovey_item_firefly_jar]
+Firefly jar
+---
+
+[shovey_item_firefly_jar_line]
+A little lantern of the woods.
+---
+
+[shovey_item_frost_leaf]
+Frost leaf
+---
+
+[shovey_item_frost_leaf_line]
+Winter kept in a leaf.
+---
+
+[shovey_item_glow_crystal]
+Glow crystal
+---
+
+[shovey_item_glow_crystal_line]
+A light from deep below.
+---
+
+[shovey_item_tiny_fossil]
+Tiny fossil
+---
+
+[shovey_item_tiny_fossil_line]
+A very old little story.
+---
+
+[shovey_item_chipped_teacup]
+Chipped teacup
+---
+
+[shovey_item_chipped_teacup_line]
+Tea tastes better outdoors.
+---
+
+[shovey_item_sleepy_starfish]
+Sleepy starfish
+---
+
+[shovey_item_sleepy_starfish_line]
+Dreaming of the tide.
+---
+
+[shovey_item_brass_compass]
+Brass compass
+---
+
+[shovey_item_brass_compass_line]
+Always pointing to adventure.
+---

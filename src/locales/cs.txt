@@ -942,3 +942,151 @@ Roj včel
 [shovey_tip_bees]
 Přisuň úl vedle včel, aby se uklidnily a otevřely cestu. Při přecházení ho tam nech.
 ---
+
+[shovey_book]
+Kniha pokladů
+---
+
+[shovey_book_unknown]
+Ještě ukrytý
+---
+
+[shovey_book_hint]
+Najdi zvláštní předměty v Classic.
+---
+
+[shovey_book_complete]
+Všechny poklady nalezeny!
+---
+
+[shovey_book_found]
+Poklad nalezen!
+---
+
+[shovey_item_lucky_pebble]
+Šťastný oblázek
+---
+
+[shovey_item_lucky_pebble_line]
+Trocha štěstí na cestu.
+---
+
+[shovey_item_rusty_key]
+Rezavý klíč
+---
+
+[shovey_item_rusty_key_line]
+Co asi kdysi otevíral?
+---
+
+[shovey_item_message_bottle]
+Vzkaz v láhvi
+---
+
+[shovey_item_message_bottle_line]
+Pozdrav z velké dálky.
+---
+
+[shovey_item_four_leaf_clover]
+Čtyřlístek
+---
+
+[shovey_item_four_leaf_clover_line]
+Jeden lístek štěstí navíc.
+---
+
+[shovey_item_snail_shell]
+Šnečí ulita
+---
+
+[shovey_item_snail_shell_line]
+Malý opuštěný domov.
+---
+
+[shovey_item_golden_feather]
+Zlaté pírko
+---
+
+[shovey_item_golden_feather_line]
+Dárek z korun stromů.
+---
+
+[shovey_item_giant_acorn]
+Obří žalud
+---
+
+[shovey_item_giant_acorn_line]
+Hostina pro veverku.
+---
+
+[shovey_item_silver_pinecone]
+Stříbrná šiška
+---
+
+[shovey_item_silver_pinecone_line]
+Měsíční svit mezi jehličím.
+---
+
+[shovey_item_honeycomb]
+Medová plástev
+---
+
+[shovey_item_honeycomb_line]
+Sladký dar z úlu.
+---
+
+[shovey_item_firefly_jar]
+Sklenice světlušek
+---
+
+[shovey_item_firefly_jar_line]
+Malá lesní lucerna.
+---
+
+[shovey_item_frost_leaf]
+Zmrzlý list
+---
+
+[shovey_item_frost_leaf_line]
+Zima schovaná v listu.
+---
+
+[shovey_item_glow_crystal]
+Zářivý krystal
+---
+
+[shovey_item_glow_crystal_line]
+Světlo z hlubin.
+---
+
+[shovey_item_tiny_fossil]
+Drobná zkamenělina
+---
+
+[shovey_item_tiny_fossil_line]
+Malý prastarý příběh.
+---
+
+[shovey_item_chipped_teacup]
+Otlučený šálek
+---
+
+[shovey_item_chipped_teacup_line]
+Čaj chutná venku lépe.
+---
+
+[shovey_item_sleepy_starfish]
+Ospalá hvězdice
+---
+
+[shovey_item_sleepy_starfish_line]
+Sní o přílivu.
+---
+
+[shovey_item_brass_compass]
+Mosazný kompas
+---
+
+[shovey_item_brass_compass_line]
+Vždy ukazuje k dobrodružství.
+---

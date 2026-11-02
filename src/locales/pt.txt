@@ -942,3 +942,151 @@ Colmeia
 [shovey_tip_bees]
 Empurre a colmeia para perto das abelhas para acalmá-las e abrir caminho. Deixe-a lá enquanto atravessa.
 ---
+
+[shovey_book]
+Livro de colecionáveis
+---
+
+[shovey_book_unknown]
+Ainda escondido
+---
+
+[shovey_book_hint]
+Encontre itens especiais em Classic.
+---
+
+[shovey_book_complete]
+Todos os tesouros encontrados!
+---
+
+[shovey_book_found]
+Tesouro encontrado!
+---
+
+[shovey_item_lucky_pebble]
+Pedra da sorte
+---
+
+[shovey_item_lucky_pebble_line]
+Um pouco de sorte para o caminho.
+---
+
+[shovey_item_rusty_key]
+Chave enferrujada
+---
+
+[shovey_item_rusty_key_line]
+O que ela abria antes?
+---
+
+[shovey_item_message_bottle]
+Mensagem numa garrafa
+---
+
+[shovey_item_message_bottle_line]
+Uma saudação de longe.
+---
+
+[shovey_item_four_leaf_clover]
+Trevo de quatro folhas
+---
+
+[shovey_item_four_leaf_clover_line]
+Uma folha extra de sorte.
+---
+
+[shovey_item_snail_shell]
+Concha de caracol
+---
+
+[shovey_item_snail_shell_line]
+Um pequeno lar abandonado.
+---
+
+[shovey_item_golden_feather]
+Pena dourada
+---
+
+[shovey_item_golden_feather_line]
+Um presente das copas das árvores.
+---
+
+[shovey_item_giant_acorn]
+Bolota gigante
+---
+
+[shovey_item_giant_acorn_line]
+Um banquete para um esquilo.
+---
+
+[shovey_item_silver_pinecone]
+Pinha prateada
+---
+
+[shovey_item_silver_pinecone_line]
+Luar entre as agulhas.
+---
+
+[shovey_item_honeycomb]
+Favo de mel
+---
+
+[shovey_item_honeycomb_line]
+Um doce presente da colmeia.
+---
+
+[shovey_item_firefly_jar]
+Pote de vaga-lumes
+---
+
+[shovey_item_firefly_jar_line]
+Uma pequena lanterna da floresta.
+---
+
+[shovey_item_frost_leaf]
+Folha gelada
+---
+
+[shovey_item_frost_leaf_line]
+O inverno guardado numa folha.
+---
+
+[shovey_item_glow_crystal]
+Cristal brilhante
+---
+
+[shovey_item_glow_crystal_line]
+Uma luz das profundezas.
+---
+
+[shovey_item_tiny_fossil]
+Fóssil minúsculo
+---
+
+[shovey_item_tiny_fossil_line]
+Uma pequena história muito antiga.
+---
+
+[shovey_item_chipped_teacup]
+Xícara lascada
+---
+
+[shovey_item_chipped_teacup_line]
+O chá fica melhor ao ar livre.
+---
+
+[shovey_item_sleepy_starfish]
+Estrela-do-mar sonolenta
+---
+
+[shovey_item_sleepy_starfish_line]
+Sonhando com a maré.
+---
+
+[shovey_item_brass_compass]
+Bússola de latão
+---
+
+[shovey_item_brass_compass_line]
+Sempre aponta para a aventura.
+---

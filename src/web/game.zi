@@ -10,6 +10,7 @@ using Canvas :: #import "kryon/Canvas";
 #import "kryon/button_props"
 #import "kryon/control_props"
 ShopUI :: #import, file "../shop_view.zi";
+Book :: #import, file "../collectible_book.zi";
 #import, file "host.zi";
 #import, file "../shovey_theme.zi";
 #import, file "../shovey_view.zi";
@@ -42,6 +43,7 @@ WebCovers :: () {
         web_editor_open = entered == 1
     }
     ShopUI.CoverActions(page.session, Rectangle.{12.0, top + 12.0, width - 128.0, 104.0})
+    if Book.BookCoverAction(page.session, 20404, Rectangle.{64.0, top + 72.0, 44.0, 44.0}) { Book.BookOpen() }
     if AppSupports("entity.profile") {
         if ShopUI.IconAction(page.session, 20400, Rectangle.{width - 104.0, top + 12.0, 44.0, 44.0},
             ShopUI.SkinPath(), "profile") { unused AppService("entity.profile", "open") }
@@ -68,7 +70,11 @@ Main :: () -> s64 {
             page := ReadAppUiHost()
             ShopUI.Pump(page.now, today)
             if ShopUI.IsOpen() && (AppKeyHost() == 256 || AppKeyHost() == 4) { unused ShoveyShopBack() }
-            if ShopUI.IsOpen() {
+            if Book.BookIsOpen() && (AppKeyHost() == 256 || AppKeyHost() == 4) { unused Book.BookBack() }
+            if Book.BookIsOpen() {
+                unused Book.BookFrame(page.session, Rectangle.{0.0, cast(float32)page.top,
+                    cast(float32)page.width, cast(float32)(page.height - page.top - page.bottom)}, "")
+            } else if ShopUI.IsOpen() {
                 unused ShoveyShopFrame(page.session, Rectangle.{0.0, cast(float32)page.top,
                     cast(float32)page.width, cast(float32)(page.height - page.top - page.bottom)}, page.now, today)
             } else { WebCovers() }

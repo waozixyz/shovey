@@ -1,0 +1,252 @@
+// One-time collectibles: special items hidden on campaign boards. The view
+// draws each as an overlay over its cell, like the secret chest, so no board
+// or level picture changes and older players keep accepting the campaign.
+// Stepping onto one records it once for that owner in a single durable
+// bitmap, the same way completion coins are kept.
+Records :: #import, file "controls.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+#import "std/vec"
+
+COLLECTIBLE_COUNT :: 16;
+// The bitmap keeps room for items added later; old records stay readable.
+COLLECTIBLE_SLOTS :: 64;
+
+CollectibleId :: (index: s32) -> string {
+    if index == 0 { return "lucky-pebble" }
+    if index == 1 { return "rusty-key" }
+    if index == 2 { return "message-bottle" }
+    if index == 3 { return "four-leaf-clover" }
+    if index == 4 { return "snail-shell" }
+    if index == 5 { return "golden-feather" }
+    if index == 6 { return "giant-acorn" }
+    if index == 7 { return "silver-pinecone" }
+    if index == 8 { return "honeycomb" }
+    if index == 9 { return "firefly-jar" }
+    if index == 10 { return "frost-leaf" }
+    if index == 11 { return "glow-crystal" }
+    if index == 12 { return "tiny-fossil" }
+    if index == 13 { return "chipped-teacup" }
+    if index == 14 { return "sleepy-starfish" }
+    if index == 15 { return "brass-compass" }
+    return ""
+}
+
+// Levels and cells (y * 12 + x) on the portrait board.
+CollectibleLevel :: (index: s32) -> s32 {
+    if index == 0 { return 4 }
+    if index == 1 { return 15 }
+    if index == 2 { return 26 }
+    if index == 3 { return 40 }
+    if index == 4 { return 53 }
+    if index == 5 { return 63 }
+    if index == 6 { return 72 }
+    if index == 7 { return 83 }
+    if index == 8 { return 93 }
+    if index == 9 { return 97 }
+    if index == 10 { return 98 }
+    if index == 11 { return 108 }
+    if index == 12 { return 124 }
+    if index == 13 { return 143 }
+    if index == 14 { return 158 }
+    if index == 15 { return 170 }
+    return -1
+}
+
+CollectibleCell :: (index: s32) -> s32 {
+    if index == 0 { return 5 * 12 + 4 }
+    if index == 1 { return 14 * 12 + 3 }
+    if index == 2 { return 10 * 12 + 7 }
+    if index == 3 { return 7 * 12 + 1 }
+    if index == 4 { return 18 * 12 + 5 }
+    if index == 5 { return 5 * 12 + 2 }
+    if index == 6 { return 8 * 12 + 1 }
+    if index == 7 { return 18 * 12 + 5 }
+    if index == 8 { return 3 * 12 + 10 }
+    if index == 9 { return 16 * 12 + 4 }
+    if index == 10 { return 10 * 12 + 6 }
+    if index == 11 { return 10 * 12 + 10 }
+    if index == 12 { return 2 * 12 + 1 }
+    if index == 13 { return 5 * 12 + 2 }
+    if index == 14 { return 1 * 12 + 9 }
+    if index == 15 { return 1 * 12 + 2 }
+    return -1
+}
+
+// Literal paths and keys keep packaging and locale lookups explicit.
+CollectibleIcon :: (index: s32) -> string {
+    if index == 0 { return "assets/shovey/collectibles/lucky-pebble.png" }
+    if index == 1 { return "assets/shovey/collectibles/rusty-key.png" }
+    if index == 2 { return "assets/shovey/collectibles/message-bottle.png" }
+    if index == 3 { return "assets/shovey/collectibles/four-leaf-clover.png" }
+    if index == 4 { return "assets/shovey/collectibles/snail-shell.png" }
+    if index == 5 { return "assets/shovey/collectibles/golden-feather.png" }
+    if index == 6 { return "assets/shovey/collectibles/giant-acorn.png" }
+    if index == 7 { return "assets/shovey/collectibles/silver-pinecone.png" }
+    if index == 8 { return "assets/shovey/collectibles/honeycomb.png" }
+    if index == 9 { return "assets/shovey/collectibles/firefly-jar.png" }
+    if index == 10 { return "assets/shovey/collectibles/frost-leaf.png" }
+    if index == 11 { return "assets/shovey/collectibles/glow-crystal.png" }
+    if index == 12 { return "assets/shovey/collectibles/tiny-fossil.png" }
+    if index == 13 { return "assets/shovey/collectibles/chipped-teacup.png" }
+    if index == 14 { return "assets/shovey/collectibles/sleepy-starfish.png" }
+    if index == 15 { return "assets/shovey/collectibles/brass-compass.png" }
+    return ""
+}
+
+CollectibleNameKey :: (index: s32) -> string {
+    if index == 0 { return "shovey_item_lucky_pebble" }
+    if index == 1 { return "shovey_item_rusty_key" }
+    if index == 2 { return "shovey_item_message_bottle" }
+    if index == 3 { return "shovey_item_four_leaf_clover" }
+    if index == 4 { return "shovey_item_snail_shell" }
+    if index == 5 { return "shovey_item_golden_feather" }
+    if index == 6 { return "shovey_item_giant_acorn" }
+    if index == 7 { return "shovey_item_silver_pinecone" }
+    if index == 8 { return "shovey_item_honeycomb" }
+    if index == 9 { return "shovey_item_firefly_jar" }
+    if index == 10 { return "shovey_item_frost_leaf" }
+    if index == 11 { return "shovey_item_glow_crystal" }
+    if index == 12 { return "shovey_item_tiny_fossil" }
+    if index == 13 { return "shovey_item_chipped_teacup" }
+    if index == 14 { return "shovey_item_sleepy_starfish" }
+    if index == 15 { return "shovey_item_brass_compass" }
+    return ""
+}
+
+CollectibleLineKey :: (index: s32) -> string {
+    if index == 0 { return "shovey_item_lucky_pebble_line" }
+    if index == 1 { return "shovey_item_rusty_key_line" }
+    if index == 2 { return "shovey_item_message_bottle_line" }
+    if index == 3 { return "shovey_item_four_leaf_clover_line" }
+    if index == 4 { return "shovey_item_snail_shell_line" }
+    if index == 5 { return "shovey_item_golden_feather_line" }
+    if index == 6 { return "shovey_item_giant_acorn_line" }
+    if index == 7 { return "shovey_item_silver_pinecone_line" }
+    if index == 8 { return "shovey_item_honeycomb_line" }
+    if index == 9 { return "shovey_item_firefly_jar_line" }
+    if index == 10 { return "shovey_item_frost_leaf_line" }
+    if index == 11 { return "shovey_item_glow_crystal_line" }
+    if index == 12 { return "shovey_item_tiny_fossil_line" }
+    if index == 13 { return "shovey_item_chipped_teacup_line" }
+    if index == 14 { return "shovey_item_sleepy_starfish_line" }
+    if index == 15 { return "shovey_item_brass_compass_line" }
+    return ""
+}
+
+// The item hidden on this level's cell, or -1.
+CollectibleAt :: (level: s32, cell: s32) -> s32 {
+    for index: cast(s32)0..COLLECTIBLE_COUNT - 1 {
+        if CollectibleLevel(index) == level && CollectibleCell(index) == cell { return index }
+    }
+    return -1
+}
+
+// The item hidden somewhere on this level, or -1.
+CollectibleOnLevel :: (level: s32) -> s32 {
+    for index: cast(s32)0..COLLECTIBLE_COUNT - 1 {
+        if CollectibleLevel(index) == level { return index }
+    }
+    return -1
+}
+
+CollectibleRecordName :: (owner: string, output: []u8) -> string {
+    if owner != "" {
+        if owner.count != 64 { return "" }
+        for byte: owner {
+            if !(byte >= #char "0" && byte <= #char "9") && !(byte >= #char "a" && byte <= #char "f") { return "" }
+        }
+    }
+    out: Vec(u8)
+    BuilderPrint(*out, "collectibles.v1.%", ifx owner == "" then "guest" else owner)
+    copied := CopyCString(TextView(VecSlice(out, 0, out.count)), output)
+    VecFree(out)
+    return ifx copied then TextUntilNul(output) else ""
+}
+
+// False when storage cannot answer yet; a missing record reads as empty.
+CollectibleRead :: (name: string, marks: []u8) -> bool {
+    if name == "" || !Records.ProgressStorageReady() || !Records.ProgressStorageFlush() { return false }
+    text := Records.PathRecord(name)
+    if text == "" {
+        if !Records.ProgressStorageMissing() { return false }
+        for index: 0..COLLECTIBLE_SLOTS - 1 { marks[index] = #char "0" }
+        return true
+    }
+    if text.count != COLLECTIBLE_SLOTS { return false }
+    for index: 0..COLLECTIBLE_SLOTS - 1 {
+        if text[index] != #char "0" && text[index] != #char "1" { return false }
+        marks[index] = text[index]
+    }
+    return true
+}
+
+// The found marks of one owner, cached until a pickup or another owner.
+collectible_owner: [65]u8;
+collectible_cached: bool;
+collectible_marks: [COLLECTIBLE_SLOTS]u8;
+
+CollectibleInvalidate :: () { collectible_cached = false }
+
+CollectibleRefresh :: (owner: string) {
+    if TextUntilNul(collectible_owner[:]) != owner {
+        unused CopyCString(owner, collectible_owner[:])
+        collectible_marks = .{}
+        collectible_cached = false
+    }
+    if collectible_cached { return }
+    // Keep the owner-bound marks while storage starts, then retry so a book
+    // opened before hydration can show its saved finds without reopening.
+    name: [96]u8
+    marks: [COLLECTIBLE_SLOTS]u8
+    if !CollectibleRead(CollectibleRecordName(owner, name[:]), marks[:]) { return }
+    collectible_marks = marks
+    collectible_cached = true
+}
+
+CollectibleFound :: (owner: string, index: s32) -> bool {
+    if index < 0 || index >= COLLECTIBLE_COUNT { return false }
+    CollectibleRefresh(owner)
+    return collectible_marks[index] == #char "1"
+}
+
+CollectibleFoundCount :: (owner: string) -> s32 {
+    count: s32
+    for index: cast(s32)0..COLLECTIBLE_COUNT - 1 { if CollectibleFound(owner, index) { count += 1 } }
+    return count
+}
+
+// 1 when this pickup is new, 0 when it was already found, -1 to retry once
+// storage answers. The record is re-read first, so another instance's find
+// is never lost and an item never counts twice.
+CollectibleRecord :: (owner: string, index: s32) -> s32 {
+    if index < 0 || index >= COLLECTIBLE_COUNT { return 0 }
+    name_bytes: [96]u8
+    name := CollectibleRecordName(owner, name_bytes[:])
+    marks: [COLLECTIBLE_SLOTS]u8
+    if !CollectibleRead(name, marks[:]) { return -1 }
+    if marks[index] == #char "1" { CollectibleInvalidate(); return 0 }
+    marks[index] = #char "1"
+    if !Records.PathSaveRecord(name, TextView(marks[:])) || !Records.ProgressStorageFlush() { return -1 }
+    CollectibleInvalidate()
+    return 1
+}
+
+// A pickup belongs to the owner who stepped on it, even if the host rebinds
+// its profile before storage answers.
+CollectiblePending :: struct { active: bool; owner: [65]u8; index: s32 }
+
+CollectibleBegin :: (pending: *CollectiblePending, owner: string, index: s32) {
+    if pending.active || index < 0 || index >= COLLECTIBLE_COUNT { return }
+    if CollectibleFound(owner, index) { return }
+    if !CopyCString(owner, pending.owner[:]) { return }
+    pending.index = index
+    pending.active = true
+}
+
+CollectibleFinish :: (pending: *CollectiblePending) -> s32 {
+    if !pending.active { return 0 }
+    result := CollectibleRecord(TextUntilNul(pending.owner[:]), pending.index)
+    if result >= 0 { pending.active = false }
+    return result
+}

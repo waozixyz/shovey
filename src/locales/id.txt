@@ -942,3 +942,151 @@ Sarang lebah
 [shovey_tip_bees]
 Dorong sarang ke samping lebah untuk menenangkannya dan membuka jalan. Biarkan di sana saat menyeberang.
 ---
+
+[shovey_book]
+Buku Koleksi
+---
+
+[shovey_book_unknown]
+Masih tersembunyi
+---
+
+[shovey_book_hint]
+Temukan benda istimewa di Classic.
+---
+
+[shovey_book_complete]
+Semua harta ditemukan!
+---
+
+[shovey_book_found]
+Harta ditemukan!
+---
+
+[shovey_item_lucky_pebble]
+Kerikil keberuntungan
+---
+
+[shovey_item_lucky_pebble_line]
+Sedikit keberuntungan untuk perjalanan.
+---
+
+[shovey_item_rusty_key]
+Kunci berkarat
+---
+
+[shovey_item_rusty_key_line]
+Apa yang dulu dibukanya?
+---
+
+[shovey_item_message_bottle]
+Pesan dalam botol
+---
+
+[shovey_item_message_bottle_line]
+Salam dari tempat jauh.
+---
+
+[shovey_item_four_leaf_clover]
+Semanggi empat daun
+---
+
+[shovey_item_four_leaf_clover_line]
+Sehelai daun keberuntungan tambahan.
+---
+
+[shovey_item_snail_shell]
+Cangkang siput
+---
+
+[shovey_item_snail_shell_line]
+Rumah kecil yang ditinggalkan.
+---
+
+[shovey_item_golden_feather]
+Bulu emas
+---
+
+[shovey_item_golden_feather_line]
+Hadiah dari puncak pepohonan.
+---
+
+[shovey_item_giant_acorn]
+Biji ek raksasa
+---
+
+[shovey_item_giant_acorn_line]
+Pesta untuk tupai.
+---
+
+[shovey_item_silver_pinecone]
+Runjung perak
+---
+
+[shovey_item_silver_pinecone_line]
+Cahaya bulan di antara daun jarum.
+---
+
+[shovey_item_honeycomb]
+Sarang madu
+---
+
+[shovey_item_honeycomb_line]
+Hadiah manis dari sarang lebah.
+---
+
+[shovey_item_firefly_jar]
+Stoples kunang-kunang
+---
+
+[shovey_item_firefly_jar_line]
+Lentera kecil dari hutan.
+---
+
+[shovey_item_frost_leaf]
+Daun beku
+---
+
+[shovey_item_frost_leaf_line]
+Musim dingin tersimpan dalam daun.
+---
+
+[shovey_item_glow_crystal]
+Kristal bercahaya
+---
+
+[shovey_item_glow_crystal_line]
+Cahaya dari kedalaman.
+---
+
+[shovey_item_tiny_fossil]
+Fosil mungil
+---
+
+[shovey_item_tiny_fossil_line]
+Kisah kecil yang sangat tua.
+---
+
+[shovey_item_chipped_teacup]
+Cangkir sumbing
+---
+
+[shovey_item_chipped_teacup_line]
+Teh lebih nikmat di luar.
+---
+
+[shovey_item_sleepy_starfish]
+Bintang laut mengantuk
+---
+
+[shovey_item_sleepy_starfish_line]
+Memimpikan air pasang.
+---
+
+[shovey_item_brass_compass]
+Kompas kuningan
+---
+
+[shovey_item_brass_compass_line]
+Selalu menunjuk ke petualangan.
+---

@@ -413,7 +413,7 @@ def stage_shop_assets(assets):
     total = 0
     shop_art = assets / 'shovey/shop'
     shop_art.mkdir(parents=True, exist_ok=True)
-    for name in ('stall', 'chest-closed', 'chest-open', 'profile', 'trophy', 'coins', 'dew'):
+    for name in ('stall', 'chest-closed', 'chest-open', 'book', 'profile', 'trophy', 'coins', 'dew'):
         source = ROOT / 'assets/shovey/shop' / (name + '.png')
         shutil.copyfile(source, shop_art / source.name)
         total += source.stat().st_size

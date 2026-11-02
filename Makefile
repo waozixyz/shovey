@@ -320,8 +320,12 @@ game-maps-test:
 level-select-test:
 	$(call ziran_test,level_select_focus_test)
 
+.PHONY: collectibles-test
+collectibles-test:
+	sh tests/collectibles_test.sh
+
 .PHONY: shop-test
-shop-test: levels
+shop-test: collectibles-test levels
 	sh tests/daily_chest_test.sh
 	sh tests/shop_state_test.sh
 	sh tests/shop_view_test.sh

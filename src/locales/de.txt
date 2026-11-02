@@ -942,3 +942,151 @@ Bienenkorb
 [shovey_tip_bees]
 Schiebe den Bienenkorb neben die Bienen, um sie zu beruhigen und den Weg zu öffnen. Lass ihn beim Überqueren dort.
 ---
+
+[shovey_book]
+Sammelbuch
+---
+
+[shovey_book_unknown]
+Noch verborgen
+---
+
+[shovey_book_hint]
+Finde besondere Dinge in Classic.
+---
+
+[shovey_book_complete]
+Alle Schätze gefunden!
+---
+
+[shovey_book_found]
+Schatz gefunden!
+---
+
+[shovey_item_lucky_pebble]
+Glückskiesel
+---
+
+[shovey_item_lucky_pebble_line]
+Ein wenig Glück für den Weg.
+---
+
+[shovey_item_rusty_key]
+Rostiger Schlüssel
+---
+
+[shovey_item_rusty_key_line]
+Was hat er einst geöffnet?
+---
+
+[shovey_item_message_bottle]
+Flaschenpost
+---
+
+[shovey_item_message_bottle_line]
+Ein Gruß aus weiter Ferne.
+---
+
+[shovey_item_four_leaf_clover]
+Vierblättriges Kleeblatt
+---
+
+[shovey_item_four_leaf_clover_line]
+Ein Blatt Glück mehr.
+---
+
+[shovey_item_snail_shell]
+Schneckenhaus
+---
+
+[shovey_item_snail_shell_line]
+Ein winziges verlassenes Zuhause.
+---
+
+[shovey_item_golden_feather]
+Goldene Feder
+---
+
+[shovey_item_golden_feather_line]
+Ein Geschenk aus den Baumkronen.
+---
+
+[shovey_item_giant_acorn]
+Rieseneichel
+---
+
+[shovey_item_giant_acorn_line]
+Ein Festmahl für ein Eichhörnchen.
+---
+
+[shovey_item_silver_pinecone]
+Silberner Tannenzapfen
+---
+
+[shovey_item_silver_pinecone_line]
+Mondlicht zwischen den Nadeln.
+---
+
+[shovey_item_honeycomb]
+Honigwabe
+---
+
+[shovey_item_honeycomb_line]
+Ein süßes Geschenk aus dem Bienenstock.
+---
+
+[shovey_item_firefly_jar]
+Glühwürmchenglas
+---
+
+[shovey_item_firefly_jar_line]
+Eine kleine Waldlaterne.
+---
+
+[shovey_item_frost_leaf]
+Frostblatt
+---
+
+[shovey_item_frost_leaf_line]
+Winter in einem Blatt.
+---
+
+[shovey_item_glow_crystal]
+Leuchtkristall
+---
+
+[shovey_item_glow_crystal_line]
+Ein Licht aus der Tiefe.
+---
+
+[shovey_item_tiny_fossil]
+Winziges Fossil
+---
+
+[shovey_item_tiny_fossil_line]
+Eine winzige uralte Geschichte.
+---
+
+[shovey_item_chipped_teacup]
+Angeschlagene Teetasse
+---
+
+[shovey_item_chipped_teacup_line]
+Tee schmeckt draußen besser.
+---
+
+[shovey_item_sleepy_starfish]
+Schläfriger Seestern
+---
+
+[shovey_item_sleepy_starfish_line]
+Träumt von der Flut.
+---
+
+[shovey_item_brass_compass]
+Messingkompass
+---
+
+[shovey_item_brass_compass_line]
+Zeigt immer zum Abenteuer.
+---

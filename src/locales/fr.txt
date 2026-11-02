@@ -942,3 +942,151 @@ Ruche
 [shovey_tip_bees]
 Pousse la ruche à côté des abeilles pour les calmer et ouvrir un passage. Laisse-la là pour traverser.
 ---
+
+[shovey_book]
+Livre des trésors
+---
+
+[shovey_book_unknown]
+Encore caché
+---
+
+[shovey_book_hint]
+Trouvez des objets spéciaux dans Classic.
+---
+
+[shovey_book_complete]
+Tous les trésors trouvés !
+---
+
+[shovey_book_found]
+Trésor trouvé !
+---
+
+[shovey_item_lucky_pebble]
+Caillou porte-bonheur
+---
+
+[shovey_item_lucky_pebble_line]
+Un peu de chance pour la route.
+---
+
+[shovey_item_rusty_key]
+Clé rouillée
+---
+
+[shovey_item_rusty_key_line]
+Qu’ouvrait-elle autrefois ?
+---
+
+[shovey_item_message_bottle]
+Message en bouteille
+---
+
+[shovey_item_message_bottle_line]
+Un bonjour venu de loin.
+---
+
+[shovey_item_four_leaf_clover]
+Trèfle à quatre feuilles
+---
+
+[shovey_item_four_leaf_clover_line]
+Une feuille de chance en plus.
+---
+
+[shovey_item_snail_shell]
+Coquille d’escargot
+---
+
+[shovey_item_snail_shell_line]
+Une petite maison abandonnée.
+---
+
+[shovey_item_golden_feather]
+Plume dorée
+---
+
+[shovey_item_golden_feather_line]
+Un cadeau de la cime des arbres.
+---
+
+[shovey_item_giant_acorn]
+Gland géant
+---
+
+[shovey_item_giant_acorn_line]
+Un festin pour un écureuil.
+---
+
+[shovey_item_silver_pinecone]
+Pomme de pin argentée
+---
+
+[shovey_item_silver_pinecone_line]
+Du clair de lune parmi les aiguilles.
+---
+
+[shovey_item_honeycomb]
+Rayon de miel
+---
+
+[shovey_item_honeycomb_line]
+Un doux cadeau de la ruche.
+---
+
+[shovey_item_firefly_jar]
+Bocal de lucioles
+---
+
+[shovey_item_firefly_jar_line]
+Une petite lanterne des bois.
+---
+
+[shovey_item_frost_leaf]
+Feuille givrée
+---
+
+[shovey_item_frost_leaf_line]
+L’hiver conservé dans une feuille.
+---
+
+[shovey_item_glow_crystal]
+Cristal lumineux
+---
+
+[shovey_item_glow_crystal_line]
+Une lumière des profondeurs.
+---
+
+[shovey_item_tiny_fossil]
+Minuscule fossile
+---
+
+[shovey_item_tiny_fossil_line]
+Une toute petite histoire très ancienne.
+---
+
+[shovey_item_chipped_teacup]
+Tasse ébréchée
+---
+
+[shovey_item_chipped_teacup_line]
+Le thé est meilleur dehors.
+---
+
+[shovey_item_sleepy_starfish]
+Étoile de mer endormie
+---
+
+[shovey_item_sleepy_starfish_line]
+Elle rêve de la marée.
+---
+
+[shovey_item_brass_compass]
+Boussole en laiton
+---
+
+[shovey_item_brass_compass_line]
+Toujours tournée vers l’aventure.
+---

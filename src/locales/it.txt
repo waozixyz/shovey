@@ -942,3 +942,151 @@ Alveare
 [shovey_tip_bees]
 Spingi l’alveare accanto alle api per calmarle e aprire un passaggio. Lascialo lì mentre attraversi.
 ---
+
+[shovey_book]
+Libro dei collezionabili
+---
+
+[shovey_book_unknown]
+Ancora nascosto
+---
+
+[shovey_book_hint]
+Trova oggetti speciali in Classic.
+---
+
+[shovey_book_complete]
+Tutti i tesori trovati!
+---
+
+[shovey_book_found]
+Tesoro trovato!
+---
+
+[shovey_item_lucky_pebble]
+Sasso portafortuna
+---
+
+[shovey_item_lucky_pebble_line]
+Un po’ di fortuna per il viaggio.
+---
+
+[shovey_item_rusty_key]
+Chiave arrugginita
+---
+
+[shovey_item_rusty_key_line]
+Cosa apriva un tempo?
+---
+
+[shovey_item_message_bottle]
+Messaggio in bottiglia
+---
+
+[shovey_item_message_bottle_line]
+Un saluto da lontano.
+---
+
+[shovey_item_four_leaf_clover]
+Quadrifoglio
+---
+
+[shovey_item_four_leaf_clover_line]
+Una foglia di fortuna in più.
+---
+
+[shovey_item_snail_shell]
+Guscio di lumaca
+---
+
+[shovey_item_snail_shell_line]
+Una piccola casa abbandonata.
+---
+
+[shovey_item_golden_feather]
+Piuma dorata
+---
+
+[shovey_item_golden_feather_line]
+Un dono dalle cime degli alberi.
+---
+
+[shovey_item_giant_acorn]
+Ghianda gigante
+---
+
+[shovey_item_giant_acorn_line]
+Un banchetto per uno scoiattolo.
+---
+
+[shovey_item_silver_pinecone]
+Pigna argentata
+---
+
+[shovey_item_silver_pinecone_line]
+Chiaro di luna tra gli aghi.
+---
+
+[shovey_item_honeycomb]
+Favo
+---
+
+[shovey_item_honeycomb_line]
+Un dolce dono dell’alveare.
+---
+
+[shovey_item_firefly_jar]
+Barattolo di lucciole
+---
+
+[shovey_item_firefly_jar_line]
+Una piccola lanterna del bosco.
+---
+
+[shovey_item_frost_leaf]
+Foglia gelata
+---
+
+[shovey_item_frost_leaf_line]
+L’inverno custodito in una foglia.
+---
+
+[shovey_item_glow_crystal]
+Cristallo luminoso
+---
+
+[shovey_item_glow_crystal_line]
+Una luce dalle profondità.
+---
+
+[shovey_item_tiny_fossil]
+Piccolo fossile
+---
+
+[shovey_item_tiny_fossil_line]
+Una piccola storia antichissima.
+---
+
+[shovey_item_chipped_teacup]
+Tazza scheggiata
+---
+
+[shovey_item_chipped_teacup_line]
+Il tè è più buono all’aperto.
+---
+
+[shovey_item_sleepy_starfish]
+Stella marina assonnata
+---
+
+[shovey_item_sleepy_starfish_line]
+Sogna la marea.
+---
+
+[shovey_item_brass_compass]
+Bussola d’ottone
+---
+
+[shovey_item_brass_compass_line]
+Punta sempre all’avventura.
+---

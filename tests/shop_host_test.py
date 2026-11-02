@@ -74,7 +74,8 @@ AppHostBack :: (host: *Host) -> s32 { backs += 1; return 1 }
 '''
 source += r'''
 ShopUI :: #import "shop_fake";
-Rectangle :: struct { x: float32; y: float32; width: float32; height: float32 }
+Book :: #import "book_fake";
+#import "kryon/geometry"
 UiFrame :: struct { session: s32; top: s32; bottom: s32; width: s32; height: s32; now: float64 }
 APP_IDENTIFY :: 1;
 APP_FRAME :: 2;
@@ -145,6 +146,18 @@ pumps: s32;
 day: s64;
 Pump :: (now: float64, today: s64) { pumps += 1; day = today }
 IsOpen :: () -> bool { return open }
+''')
+(WORK / 'book_fake.zi').write_text('''open: bool;
+#import "kryon/geometry"
+BookCoverAction :: (session: s32, key: u64, bounds: Rectangle) -> bool { return false }
+BookOpen :: () { open = true }
+BookIsOpen :: () -> bool { return open }
+BookBack :: () -> bool {
+    was_open := open
+    open = false
+    return was_open
+}
+BookFrame :: (session: s32, bounds: Rectangle, fallback_owner: string) -> bool { return open }
 ''')
 for name in ('CollectionShopQueue', 'CollectionShopNavigate', 'CollectionLocaleLabel'):
     source += function(ROOT / 'src/player_host.zi', name) + '\n'
@@ -277,7 +290,7 @@ assets = WORK / 'assets'
 byte_count = builder.stage_shop_assets(assets)
 staging = assets / 'shovey/shop'
 assert byte_count == sum(path.stat().st_size for path in assets.rglob('*') if path.is_file())
-for name in ('stall', 'chest-closed', 'chest-open', 'profile', 'trophy', 'coins', 'dew'):
+for name in ('stall', 'chest-closed', 'chest-open', 'book', 'profile', 'trophy', 'coins', 'dew'):
     original = ROOT / 'assets/shovey/shop' / (name + '.png')
     assert original.read_bytes() == (staging / original.name).read_bytes(), original
 for locale in (ROOT / 'src/locales').glob('*.txt'):

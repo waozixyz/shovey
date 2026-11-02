@@ -1,0 +1,88 @@
+#import, file "../src/collectibles.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+keys: [4][96]u8;
+staged: [4][65]u8;
+durable: [4][65]u8;
+count: s32;
+missing: bool;
+ready: bool = true;
+flush: bool = true;
+writable: bool = true;
+writes: s32;
+#program_export
+FakeService :: (name: string, request: string) -> string {
+    if name != "arcade.progress-storage" { return "" }
+    if request == "ready" { return ifx ready then "ready" else "unavailable" }
+    if request == "missing" { return ifx missing then "missing" else "present" }
+    if request == "flush" {
+        if !flush { return "failed" }
+        durable = staged
+        return "flushed"
+    }
+    return ""
+}
+#program_export
+FakeRecord :: (name: string) -> string {
+    missing = true
+    for i: cast(s32)0..count - 1 {
+        if TextUntilNul(keys[i][:]) == name { missing = false; return TextUntilNul(staged[i][:]) }
+    }
+    return ""
+}
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    if !writable { return false }
+    writes += 1
+    for i: cast(s32)0..count - 1 {
+        if TextUntilNul(keys[i][:]) == name { return CopyCString(text, staged[i][:]) }
+    }
+    if count >= 4 { return false }
+    unused CopyCString(name, keys[count][:])
+    unused CopyCString(text, staged[count][:])
+    count += 1
+    return true
+}
+#program_export
+Check :: () -> s32 {
+    a := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    b := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    if CollectibleFoundCount("") != 0 { return 1 }
+    if CollectibleRecord("", 0) != 1 || CollectibleRecord("", 0) != 0 || writes != 1 { return 2 }
+    // A process restart reads only the durable record and rebuilds its cache.
+    staged = durable; collectible_cached = false; collectible_marks = .{}
+    if !CollectibleFound("", 0) || CollectibleFoundCount("") != 1 { return 3 }
+    ready = false; CollectibleInvalidate(); collectible_marks = .{}
+    if CollectibleFound("", 0) { return 17 }
+    ready = true
+    if !CollectibleFound("", 0) { return 18 }
+    if CollectibleFound(a, 0) || CollectibleRecord(a, 1) != 1 || CollectibleFoundCount(a) != 1 { return 4 }
+    if CollectibleFound(b, 1) || !CollectibleFound("", 0) || CollectibleFound("", 1) { return 5 }
+    pending: CollectiblePending
+    ready = false
+    CollectibleBegin(*pending, a, 2)
+    if !pending.active || CollectibleFinish(*pending) != -1 { return 6 }
+    // A profile switch while storage is unavailable keeps the find with A.
+    unused CollectibleFoundCount(b)
+    ready = true; writable = false
+    if CollectibleFinish(*pending) != -1 || !pending.active { return 7 }
+    writable = true; flush = false
+    if CollectibleFinish(*pending) != -1 { return 8 }
+    flush = true
+    if CollectibleFinish(*pending) != 1 || pending.active { return 9 }
+    if !CollectibleFound(a, 2) || CollectibleFound(b, 2) { return 10 }
+    CollectibleBegin(*pending, a, 2)
+    if pending.active || CollectibleFinish(*pending) != 0 { return 11 }
+    if CollectibleRecord("invalid-owner", 0) != -1 || CollectibleRecord(a, -1) != 0 || CollectibleRecord(a, 16) != 0 { return 12 }
+    // Corrupt records never replace known finds with an empty save.
+    staged[0][0] = #char "x"
+    if CollectibleRecord("", 1) != -1 { return 13 }
+    staged = durable
+    for i: cast(s32)0..COLLECTIBLE_COUNT - 1 {
+        if CollectibleAt(CollectibleLevel(i), CollectibleCell(i)) != i || CollectibleOnLevel(CollectibleLevel(i)) != i { return 14 }
+        if CollectibleIcon(i) == "" || CollectibleNameKey(i) == "" || CollectibleLineKey(i) == "" { return 15 }
+        unused CollectibleRecord(b, i)
+    }
+    if CollectibleFoundCount(b) != COLLECTIBLE_COUNT { return 16 }
+    return 42
+}

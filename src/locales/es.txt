@@ -942,3 +942,151 @@ Colmena
 [shovey_tip_bees]
 Empuja la colmena junto a las abejas para calmarlas y abrir un camino. Déjala allí mientras cruzas.
 ---
+
+[shovey_book]
+Libro de coleccionables
+---
+
+[shovey_book_unknown]
+Aún oculto
+---
+
+[shovey_book_hint]
+Encuentra objetos especiales en Classic.
+---
+
+[shovey_book_complete]
+¡Todos los tesoros encontrados!
+---
+
+[shovey_book_found]
+¡Tesoro encontrado!
+---
+
+[shovey_item_lucky_pebble]
+Piedra de la suerte
+---
+
+[shovey_item_lucky_pebble_line]
+Un poco de suerte para el camino.
+---
+
+[shovey_item_rusty_key]
+Llave oxidada
+---
+
+[shovey_item_rusty_key_line]
+¿Qué abría antes?
+---
+
+[shovey_item_message_bottle]
+Mensaje en una botella
+---
+
+[shovey_item_message_bottle_line]
+Un saludo de muy lejos.
+---
+
+[shovey_item_four_leaf_clover]
+Trébol de cuatro hojas
+---
+
+[shovey_item_four_leaf_clover_line]
+Una hoja extra de suerte.
+---
+
+[shovey_item_snail_shell]
+Concha de caracol
+---
+
+[shovey_item_snail_shell_line]
+Un pequeño hogar abandonado.
+---
+
+[shovey_item_golden_feather]
+Pluma dorada
+---
+
+[shovey_item_golden_feather_line]
+Un regalo de las copas de los árboles.
+---
+
+[shovey_item_giant_acorn]
+Bellota gigante
+---
+
+[shovey_item_giant_acorn_line]
+Un festín para una ardilla.
+---
+
+[shovey_item_silver_pinecone]
+Piña plateada
+---
+
+[shovey_item_silver_pinecone_line]
+Luz de luna entre las agujas.
+---
+
+[shovey_item_honeycomb]
+Panal
+---
+
+[shovey_item_honeycomb_line]
+Un dulce regalo de la colmena.
+---
+
+[shovey_item_firefly_jar]
+Tarro de luciérnagas
+---
+
+[shovey_item_firefly_jar_line]
+Una pequeña linterna del bosque.
+---
+
+[shovey_item_frost_leaf]
+Hoja helada
+---
+
+[shovey_item_frost_leaf_line]
+El invierno guardado en una hoja.
+---
+
+[shovey_item_glow_crystal]
+Cristal luminoso
+---
+
+[shovey_item_glow_crystal_line]
+Una luz de las profundidades.
+---
+
+[shovey_item_tiny_fossil]
+Fósil diminuto
+---
+
+[shovey_item_tiny_fossil_line]
+Una pequeña historia muy antigua.
+---
+
+[shovey_item_chipped_teacup]
+Taza desportillada
+---
+
+[shovey_item_chipped_teacup_line]
+El té sabe mejor al aire libre.
+---
+
+[shovey_item_sleepy_starfish]
+Estrella de mar dormida
+---
+
+[shovey_item_sleepy_starfish_line]
+Soñando con la marea.
+---
+
+[shovey_item_brass_compass]
+Brújula de latón
+---
+
+[shovey_item_brass_compass_line]
+Siempre apunta a la aventura.
+---
