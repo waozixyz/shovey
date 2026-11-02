@@ -306,6 +306,8 @@ def main():
             driver.press(label='Back', role='button')
             driver.wait(label='Play', role='button')
             driver.press(label='Next', role='button')
+            # Island's public cover sits between Classic and the Editor.
+            driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')
             # The editor opens on a blank board; Levels loads a story level.
             driver.wait(label='New level', role='text')

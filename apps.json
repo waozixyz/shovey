@@ -4,7 +4,10 @@
   "apps": [
     {
       "manifest": "src/catalog.json",
-      "shared_records": ["local.campaign", "campaign"],
+      "shared_records": [
+        "local.campaign",
+        "campaign"
+      ],
       "library_entries": [
         "json_scan:ArrayPositions",
         "json_scan:ElementAt",
@@ -16,6 +19,16 @@
         "landscape": "assets/shovey/title-landscape.png",
         "logo": "assets/shovey/logo.png",
         "action": "play"
+      }
+    },
+    {
+      "manifest": "packaging/island.json",
+      "external": true,
+      "cover": {
+        "portrait": "assets/island-marketing/portrait.png",
+        "landscape": "assets/island-marketing/landscape.png",
+        "logo": "assets/island-marketing/logo.png",
+        "action": "open"
       }
     },
     {

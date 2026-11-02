@@ -25,8 +25,8 @@ out.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(a.driver_source.resolve() / 'tests'))
 from ui_driver import UiDriver
 
-# The Island game is private: a public checkout has only Classic and Editor.
-island = (root / 'src/island/app.json').exists()
+# The public card is present even where Island's source is private.
+island = True
 UNLOCKED = 12
 DURATION = re.compile(r'\b(day|days|week|weeks|month|months|year|years|hour|hours|until|ends?|limited)\b', re.I)
 
@@ -183,7 +183,7 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
 with log_path.open(errors='replace') as log:
     for line in log:
         assert 'host capability' not in line, line[:1000]
-order = 'Classic, Island, Editor' if island else 'Classic, Editor (no Island in this checkout)'
+order = 'Classic, Island, Editor'
 offer = 'Island locked for a guest at 51 Dew, 85 struck, 40% off, no duration; ' if island else ''
 print(f'PASS: covers {order}; {offer}'
       f'Editor opened unlocked story level {UNLOCKED} with previews and no host capability failure.')

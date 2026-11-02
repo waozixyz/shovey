@@ -51,8 +51,10 @@ Codec :: #import "apps/node_codec";
 #import "kryon/widget_palette"
 #import "kryon/image_raster"
 #import "kryon/loading_indicator"
+#import "kryon/http_transfer"
 #import "player_loading"
 #import "island_unlock"
+#import "island_package"
 #import "player_progress_storage"
 #import "shovey_theme"
 ShopUI :: #import "shop_view";
@@ -64,6 +66,9 @@ collection_island: IslandUnlock;
 collection_island_page: bool;
 collection_island_poll: float64;
 collection_island_opening: bool;
+collection_island_package: IslandPackage;
+collection_island_blocked: bool;
+collection_island_account: [65]u8;
 
 using HostValueKind;
 
@@ -162,8 +167,8 @@ AppServiceHost :: (name: string, request: string) -> string {
         saved := EntityLeaderboardReport("arcade", "Arcade", "arcade.shovey", "Shovey", request)
         return ifx saved then "{\"status\":\"saved\"}" else "{\"status\":\"rejected\"}"
     }
-    if name == "entity.dew" { return EntityDewAnswer(request) }
-    if name == "entity.game-shop" { return EntityGameShopAnswer(request) }
+    if name == "entity.dew" { return CollectionDewAnswer(request) }
+    if name == "entity.game-shop" { return CollectionShopAnswer(request) }
     if name == "arcade.progress-storage" {
         saved := CollectionRecordsFor("arcade.shovey")
         return PlayerProgressStorage(ifx saved == null then null else *saved.files, request)
@@ -250,11 +255,11 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         }
         // The account's Dew to show and rewards a game claims from the node.
         if service == ENTITY_DEW_SERVICE {
-            result.* = AppHostText(EntityDewAnswer(request))
+            result.* = AppHostText(CollectionDewAnswer(request))
             return 1
         }
         if service == "entity.game-shop" {
-            result.* = AppHostText(EntityGameShopAnswer(request))
+            result.* = AppHostText(CollectionShopAnswer(request))
             return 1
         }
         if service == "entity.profile" {
@@ -501,7 +506,14 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
     language := ifx locale.count >= 2 then locale[:2] else "en"
     platform := AppPlatform.{.allows = CollectionAllows, .call = CollectionCall,
         .widgets = CollectionWidgets, .save = CollectionSave, .state = CollectionState,
-        .effect = CollectionEffect, .open_effect = CollectionOpenEffect, .host_api = 41}
+        .effect = CollectionEffect, .open_effect = CollectionOpenEffect,
+        .bundle = CollectionPackageBundle, .download = CollectionPackageDownload,
+        .fetch = CollectionPackageFetch, .host_api = 41}
+    collection_island_package.service = EntityGameShopAnswer
+    collection_island_package.start = HttpTransferStart
+    collection_island_package.poll = HttpTransferPollLength
+    collection_island_package.stop = HttpTransferCancel
+    collection_island_package.files = *collection_resources
     collection_ready = AppHostStart(*collection_host, bytes, "arcade.local", "arcade.shovey-player",
         "shovey", TextUntilNul(digest[:]), "local", platform, TextUntilNul(harness[:]), language)
     if collection_ready { entity_locale_text = CollectionLocaleText }
@@ -528,6 +540,7 @@ CollectionCollect :: () {
 CollectionClose :: () -> bool {
     if !EntityClose() { return false }
     if collection_ready && !AppHostStop(*collection_host) { return false }
+    IslandPackageClose(*collection_island_package)
     collection_ready = false
     collection_wallet_visible = false
     AppFileFree(collection_wallet_record)
@@ -671,6 +684,12 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     collection_toolbar_visible = true
     defer { CollectionToolbar(session, viewport) }
     CollectionIslandPump()
+    // A refused save cannot resume another account's already loaded package.
+    if collection_island_blocked {
+        Box(session, BoxProps.{.key = cast(u64)49400, .bounds = viewport,
+            .fill = Color.{42, 46, 45, 255}})
+        return true
+    }
     if collection_island_opening {
         collection_island_opening = false
         unused CollectionOpenGame(ISLAND_UNLOCK_APP)
@@ -781,7 +800,44 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     return true
 }
 
-// Shovey Island's cover in the collection, or null where it is not packaged.
+// Download grants belong to the outer player, never a hosted game's service.
+CollectionShopAnswer :: (request: string) -> string {
+    if request == "shovey.island.grant" || request == "shovey.island.grant.status" { return "" }
+    return EntityGameShopAnswer(request)
+}
+CollectionDewAnswer :: (request: string) -> string {
+    if request.count >= 5 && request[:5] == "shop:" { return CollectionShopAnswer(request[5:]) }
+    return EntityDewAnswer(request)
+}
+
+CollectionPackageEntry :: (parent: *AppNode, entry: *AppEntry) -> bool {
+    return parent != null && TextUntilNul(parent.identity.id[:]) == "arcade.shovey-player" &&
+        TextUntilNul(parent.identity.authority[:]) == "arcade.local" && IslandPackageEntryValid(entry)
+}
+CollectionPackageBundle :: (context: *void, parent: *AppNode, entry: *AppEntry) -> HostedAsset {
+    if !CollectionPackageEntry(parent, entry) { return HostedAsset.{} }
+    return IslandPackageBundle(*collection_island_package, entry)
+}
+CollectionPackageDownload :: (context: *void, parent: *AppNode, entry: *AppEntry, download: *AppDownload) -> bool {
+    if !CollectionPackageEntry(parent, entry) { return false }
+    IslandPackagePump(*collection_island_package)
+    if IslandPackageBundle(*collection_island_package, entry).found { return false }
+    download.* = AppDownload.{.bytes = entry.bytes, .progress = -1,
+        .downloading = collection_island_package.stage == 1 || collection_island_package.stage == 2,
+        .failed = collection_island_package.stage == 4}
+    return true
+}
+CollectionPackageFetch :: (context: *void, account: string, parent: *AppNode,
+    entry: *AppEntry, operation: s32, reply: *AppsReply) -> bool {
+    if account != "local" || !CollectionPackageEntry(parent, entry) { return false }
+    if operation != APPS_INSTALL { return false }
+    if !collection_island.owned { CollectionIslandShow(); reply.status = APPS_REJECTED; return true }
+    ok := IslandPackageFetch(*collection_island_package, entry)
+    reply.status = ifx !ok then APPS_REJECTED else ifx collection_island_package.stage == 3 then APPS_APPLIED else APPS_QUEUED
+    return true
+}
+
+// Shovey Island's public cover, including on a source-only reproducible build.
 CollectionIslandEntry :: () -> *AppEntry {
     root := AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
     if root == null || !root.collection { return null }
@@ -805,9 +861,38 @@ CollectionIslandShow :: () {
 // Reads this owner's saved answer; a missing node or file never blocks play.
 CollectionIslandRecord :: () -> *CollectionRecords { return CollectionRecordsFor("arcade.shovey-player") }
 
+CollectionPackageAccount :: () {
+    IslandPackagePump(*collection_island_package)
+    if TextUntilNul(collection_island_account[:]) != TextUntilNul(collection_island_package.owner[:]) {
+        collection_island_account = collection_island_package.owner
+        // Invalidate work prepared under the previous account before any frame.
+        AppHostCancelChild(*collection_host)
+        AppHostCancelLocator(*collection_host)
+        collection_host.tree.account_epoch += 1
+        runtime := AppHostActiveRuntime(*collection_host)
+        if runtime != null && TextUntilNul(runtime.node.identity.id[:]) == ISLAND_UNLOCK_APP {
+            collection_island_blocked = true
+        }
+        collection_island = .{}
+        collection_island_poll = 0.0
+    }
+    if collection_island_blocked {
+        runtime := AppHostActiveRuntime(*collection_host)
+        if runtime != null && TextUntilNul(runtime.node.identity.id[:]) == ISLAND_UNLOCK_APP {
+            // Queue the host's Back directly; a guest's Back handler cannot
+            // consume it and keep the old account's package running.
+            unused AppTreeQueue(*collection_host.tree, collection_host.tree.active, AppsRequest.{.operation = APPS_BACK})
+            unused AppTreeDrain(*collection_host.tree)
+            runtime = AppHostActiveRuntime(*collection_host)
+        }
+        collection_island_blocked = runtime != null && TextUntilNul(runtime.node.identity.id[:]) == ISLAND_UNLOCK_APP
+    }
+}
+
 CollectionIslandPump :: () {
     entry := CollectionIslandEntry()
     if entry == null { return }
+    CollectionPackageAccount()
     if entity_ready {
         now := cast(float64)MonotonicMilliseconds() / 1000.0
         request := IslandUnlockNext(*collection_island, now)

@@ -106,17 +106,37 @@ def digest(path):
 
 # The games.
 
+def island_package(record=False):
+    """Build private bytecode separately; --record updates public metadata only."""
+    if not PRIVATE_APP.is_file():
+        raise SystemExit('Island package building requires its private local source')
+    private = json.loads(PRIVATE_APP.read_text())
+    manifest = ROOT / private['manifest']
+    app = dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=True,
+               external=False, cover=private.get('cover'), requires=[], shared_code=False,
+               shared_records=[], library_entries=[], enabled=True)
+    build_games([app])
+    descriptor_path = ROOT / 'packaging/island.json'
+    descriptor = json.loads(descriptor_path.read_text())
+    bundle = OUT / 'games/shovey-island.zx'
+    exact = dict(sha256=digest(bundle), bytes=bundle.stat().st_size, version=edition_version(manifest))
+    if record:
+        descriptor_path.write_text(json.dumps(descriptor | exact, indent=2) + '\n')
+    elif any(descriptor.get(key) != value for key, value in exact.items()):
+        raise SystemExit('Island differs from its public descriptor; review then use island-package --record')
+    print('Island compiled package matches its public descriptor')
+
+
 def declared_apps():
     """The apps apps.json declares, with their catalogs, in dependency order."""
     declaration = json.loads((ROOT / 'apps.json').read_text())
     apps = []
-    # A private game comes right after the first, only where its source exists;
-    # a public checkout builds the collection without it.
-    private = json.loads(PRIVATE_APP.read_text()) if PRIVATE_APP.exists() else None
-    declared = declaration['apps'][:1] + ([private] if private else []) + declaration['apps'][1:]
-    for app in declared:
+    # The public Island descriptor is reproducible without its private source.
+    # Presence of private files never changes the public collection's contents.
+    for app in declaration['apps']:
         manifest = ROOT / app['manifest']
-        apps.append(dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=app is private,
+        apps.append(dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=False,
+                         external=app.get('external', False),
                          cover=app.get('cover'), requires=app.get('requires', []),
                          shared_code=app.get('shared_code', False),
                          shared_records=app.get('shared_records', []),
@@ -223,6 +243,8 @@ def build_games(apps):
     from release_assets import prepare_release_assets
     for app in apps:
         manifest, descriptor = app['manifest'], app['descriptor']
+        if app.get('external'):
+            continue
         if descriptor['kind'] != 'game' or descriptor['contract_version'] != 1 or descriptor['module_api'] != 2:
             raise ValueError(f'{manifest}: not a game for the player')
         name = descriptor['name']
@@ -447,15 +469,22 @@ def collection():
     for app in apps:
         descriptor = app['descriptor']
         name = descriptor['name']
-        bundle = (OUT / 'games' / (name + '.zx')).read_bytes()
+        external = app.get('external', False)
+        bundle = b'' if external else (OUT / 'games' / (name + '.zx')).read_bytes()
         covers_folder = PRIVATE_COVERS if app['private'] else COVERS
         preview, preview_suffix = cover_copy(name, 'preview', (ROOT / descriptor['preview']).read_bytes(), covers_folder)
-        copies = [(bundle, f'arcade/games/{name}.zx'), (preview, f'arcade/previews/{name}{preview_suffix}')]
+        copies = [(preview, f'arcade/previews/{name}{preview_suffix}')]
+        if not external:
+            copies.append((bundle, f'arcade/games/{name}.zx'))
         child = dict(id=descriptor['id'], title=descriptor['title'], bundle=f'assets/arcade/games/{name}.zx',
-                     protocol='node/2', expected_id=name, version=edition_version(app['manifest']),
-                     sha256=hashlib.sha256(bundle).hexdigest(), bytes=len(bundle),
+                     protocol='node/2', expected_id=name,
+                     version=descriptor['version'] if external else edition_version(app['manifest']),
+                     sha256=descriptor['sha256'] if external else hashlib.sha256(bundle).hexdigest(),
+                     bytes=descriptor['bytes'] if external else len(bundle),
                      preview=f'assets/arcade/previews/{name}{preview_suffix}',
                      icon=f'assets/arcade/previews/{name}{preview_suffix}')
+        if external:
+            child['package_id'] = descriptor['package_id']
         if app['shared_code']:
             child['shared_code'] = True
         if app['shared_records']:
@@ -802,6 +831,8 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('covers')
     commands.add_parser('collection')
+    island = commands.add_parser('island-package', help='build private compiled Island separately')
+    island.add_argument('--record', action='store_true', help='record its reviewed digest/size in the public descriptor')
     commands.add_parser('linux')
     win = commands.add_parser('windows')
     win.add_argument('--tools', default='x86_64-w64-mingw32-', help='the MinGW tool prefix')
@@ -824,6 +855,8 @@ def main():
         covers()
     elif args.command == 'collection':
         collection()
+    elif args.command == 'island-package':
+        island_package(args.record)
     elif args.command == 'linux':
         linux()
     elif args.command == 'windows':

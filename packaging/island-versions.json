@@ -1,0 +1,12 @@
+{
+  "host_api": 41,
+  "module_api": 2,
+  "node_apps": {
+    "shovey-island": {
+      "id": "xyz.waozi.shovey-island",
+      "title": "Shovey Island",
+      "version": "0.4.8",
+      "sequence": 1
+    }
+  }
+}

@@ -33,7 +33,7 @@ AppLocation :: struct { id: [128]u8; sha256: [65]u8 }
 AppLocator :: struct { identity: Identity; chain: Vec(AppLocation) }
 Entry :: struct { id: [128]u8; sha256: [65]u8 }
 AppNode :: struct { identity: Identity; collection: bool; catalog: s32 }
-Tree :: struct { active: s32 }
+Tree :: struct { active: s32; account_epoch: s64 }
 Host :: struct { tree: Tree }
 Runtime :: struct { node: *AppNode }
 CollectionRecords :: struct { files: s32 }
@@ -163,11 +163,54 @@ BookBack :: () -> bool {
 }
 BookFrame :: (session: s32, bounds: Rectangle, fallback_owner: string) -> bool { return open }
 ''')
-for name in ('CollectionShopQueue', 'CollectionShopNavigate', 'CollectionLocaleLabel'):
+source += r'''
+Package :: struct { owner: [65]u8 }
+Unlock :: struct { owned: bool }
+collection_island_package: Package;
+collection_island_account: [65]u8;
+collection_island_blocked: bool;
+collection_island: Unlock;
+collection_island_poll: float64;
+ISLAND_UNLOCK_APP :: "arcade.shovey-island";
+APPS_BACK :: 3;
+AppsRequest :: struct { operation: s32 }
+save_ok: bool;
+cancel_child: s32;
+cancel_locator: s32;
+forced_back: s32;
+shop_calls: s32;
+dew_calls: s32;
+IslandPackagePump :: (package: *Package) {}
+AppHostCancelChild :: (host: *Host) { cancel_child += 1 }
+AppHostCancelLocator :: (host: *Host) { cancel_locator += 1 }
+AppTreeQueue :: (tree: *Tree, active: s32, request: AppsRequest) -> s32 { forced_back += 1; return 1 }
+AppTreeDrain :: (tree: *Tree) -> bool { if save_ok { runtime.node = *root }; return save_ok }
+EntityGameShopAnswer :: (request: string) -> string { shop_calls += 1; return request }
+EntityDewAnswer :: (request: string) -> string { dew_calls += 1; return request }
+'''
+for name in ('CollectionPackageAccount', 'CollectionShopAnswer', 'CollectionDewAnswer', 'CollectionShopQueue', 'CollectionShopNavigate', 'CollectionLocaleLabel'):
     source += function(ROOT / 'src/player_host.zi', name) + '\n'
 source += r'''
 #program_export
 Check :: () -> s32 {
+    if CollectionShopAnswer("shovey.island.grant") != "" || CollectionShopAnswer("shovey.island.grant.status") != "" ||
+        CollectionDewAnswer("shop:shovey.island.grant") != "" || CollectionDewAnswer("shop:shovey.island.grant.status") != "" ||
+        shop_calls != 0 || dew_calls != 0 { return 40 }
+    if CollectionDewAnswer("balance") != "balance" || CollectionDewAnswer("shop:status") != "status" ||
+        shop_calls != 1 || dew_calls != 1 { return 41 }
+    unused CopyCString(ISLAND_UNLOCK_APP, leaf.identity.id[:])
+    runtime.node = *leaf
+    unused CopyCString("old-owner", collection_island_account[:])
+    // Sync already happened in another callback; durable host snapshot catches it.
+    unused CopyCString("new-owner", collection_island_package.owner[:])
+    CollectionPackageAccount()
+    if !collection_island_blocked || forced_back != 1 || collection_host.tree.account_epoch != 1 ||
+        cancel_child != 1 || cancel_locator != 1 { return 43 }
+    CollectionPackageAccount()
+    if !collection_island_blocked || forced_back != 2 || collection_host.tree.account_epoch != 1 { return 44 }
+    save_ok = true
+    CollectionPackageAccount()
+    if collection_island_blocked || runtime.node != *root || forced_back != 3 { return 45 }
     if CollectionLocaleLabel("[a]\nUno\n---\n[b]\nDos\n---\n", "b") != "Dos" { return 15 }
     if CollectionLocaleLabel("[a]\nUno\n---\n", "missing") != "" { return 16 }
     ProductionShopUI.Open(1)
@@ -270,7 +313,9 @@ result = subprocess.check_output([tool, 'run', str(WORK / 'routes.zx')], cwd=ROO
 assert result.strip() == '42', result
 host = (ROOT / 'src/player_host.zi').read_text()
 assert 'name == "entity.game-shop"' in host
-assert 'AppHostText(EntityGameShopAnswer(request))' in host
+assert 'AppHostText(CollectionShopAnswer(request))' in host
+assert 'AppHostText(CollectionDewAnswer(request))' in host
+assert 'return CollectionShopAnswer(request[5:])' in host
 assert 'AppHostText(ifx EntityShowPage(request) then "queued" else "unavailable")' in host
 # The host wallet reads the game's existing state; routes still enter the
 # verified game, whose confirmation UI owns every purchase.

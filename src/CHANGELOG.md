@@ -4,7 +4,7 @@
 
 - Match the Profile portrait to the selected Shovey skin immediately, preserving its stone frame.
 
-- Open Shovey Island from its own cover where installed, with a confirmed Dew quote and restored ownership.
+- Find Shovey Island between Classic and the Editor, unlock it with a confirmed Dew quote and download it securely for your account.
 - The Editor's level previews work again, and any level you have unlocked opens for editing.
 - Paint barrels in the Editor as pushable pieces, like crates.
 

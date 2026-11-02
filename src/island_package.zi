@@ -1,0 +1,254 @@
+// The public catalog pins Island's compiled package. Only the account service
+// can obtain a grant; guest code never receives it or chooses a download URL.
+#import "apps/catalog"
+#import "apps/protocol"
+#import "kryon/hosted_app"
+#import "kryon/app_files"
+#import "kryon/http_transfer"
+#import "std/net_http"
+#import "std/date_time_linux"
+#import "std/byte_text_linux"
+#import "std/c_string"
+#import "std/text_buffer"
+#import "std/json_scan"
+#import "std/vec"
+#import "crypto/sha256"
+
+IslandPackageService :: #type (request: string) -> string;
+IslandPackageStart :: #type (transfer: *HttpTransfer, request: HttpRequest, output: []u8, timeout: s32) -> bool;
+IslandPackagePoll :: #type (transfer: *HttpTransfer, status: *s32, length: *s64) -> s32;
+IslandPackageStop :: #type (transfer: *HttpTransfer) -> void;
+island_memory :: #system_library "c";
+IslandAllocate :: (count: usize, size: usize) -> *u8 #foreign island_memory "calloc";
+IslandFree :: (bytes: *u8) #foreign island_memory "free";
+
+IslandPackageBytes :: struct { owner: [65]u8; digest: [65]u8; bytes: string; next: *IslandPackageBytes }
+IslandPackage :: struct {
+    service: IslandPackageService
+    start: IslandPackageStart
+    poll: IslandPackagePoll
+    stop: IslandPackageStop
+    files: *AppFiles
+    owner: [65]u8
+    // Process-local authority, established by a fresh owned grant and a
+    // successful request to the gated node. Never restored from a local bit.
+    authorized: bool
+    // 0 idle, 1 waiting for grant, 2 transferring, 3 ready, 4 failed.
+    stage: s32
+    entry: AppEntry
+    transfer: HttpTransfer
+    buffer: *u8
+    cached: string
+    checking_cache: bool
+    current: *IslandPackageBytes
+    retained: *IslandPackageBytes
+    retained_bytes: s64
+}
+
+IslandPackageOwnerValid :: (owner: string) -> bool {
+    if owner.count != 64 { return false }
+    for c: owner { if !(c >= #char "0" && c <= #char "9") && !(c >= #char "a" && c <= #char "f") { return false } }
+    return true
+}
+IslandPackageEntryValid :: (entry: *AppEntry) -> bool {
+    return entry != null && TextUntilNul(entry.id[:]) == "arcade.shovey-island" &&
+        TextUntilNul(entry.expected_id[:]) == "shovey-island" &&
+        AppIdValid(TextUntilNul(entry.package_id[:])) && AppDigestValid(TextUntilNul(entry.sha256[:])) &&
+        entry.bytes >= 8 && entry.bytes < APP_DOCUMENT_LIMIT
+}
+IslandPackageMatches :: (entry: *AppEntry, bytes: string) -> bool {
+    if !IslandPackageEntryValid(entry) || bytes.count != entry.bytes || bytes[:4] != "ZX\0\0" { return false }
+    actual: [65]u8
+    Sha256Hex(TransferBytes(bytes), bytes.count, *actual[0])
+    return TextUntilNul(actual[:]) == TextUntilNul(entry.sha256[:])
+}
+IslandPackageCancel :: (package: *IslandPackage) {
+    if package.stop != null { package.stop(*package.transfer) }
+    if package.buffer != null { IslandFree(package.buffer); package.buffer = null }
+    AppFileFree(package.cached)
+    package.cached = ""
+    package.checking_cache = false
+    package.stage = 0
+}
+// Called on every access, including while a transfer is in flight. The public
+// account id remains available offline, and disappears on logout.
+IslandPackageSync :: (package: *IslandPackage) -> bool {
+    owner: [65]u8
+    status: [24]u8
+    answer := ifx package.service == null then "" else package.service("shovey.island.grant.status")
+    unused ReadStringText(answer, FieldAt(answer, 0, "owner"), owner[:])
+    unused ReadStringText(answer, FieldAt(answer, 0, "status"), status[:])
+    if !IslandPackageOwnerValid(TextUntilNul(owner[:])) || TextUntilNul(status[:]) == "signin" ||
+        TextUntilNul(status[:]) == "unowned" { owner = .{} }
+    changed := TextUntilNul(owner[:]) != TextUntilNul(package.owner[:])
+    if changed || TextUntilNul(status[:]) == "unowned" {
+        IslandPackageCancel(package)
+        package.current = null
+        package.authorized = false
+        package.owner = owner
+    }
+    return !changed && package.owner[0] != 0 && TextUntilNul(status[:]) != "unowned"
+}
+IslandPackagePath :: (package: *IslandPackage, entry: *AppEntry) -> string {
+    out: Vec(u8)
+    BuilderPrint(*out, "island/%/%.zx", TextUntilNul(package.owner[:]), TextUntilNul(entry.sha256[:]))
+    return BuilderFinish(out)
+}
+IslandPackageRetain :: (package: *IslandPackage, entry: *AppEntry, bytes: string) -> bool {
+    existing := package.retained
+    while existing != null {
+        if TextUntilNul(existing.owner[:]) == TextUntilNul(package.owner[:]) &&
+            TextUntilNul(existing.digest[:]) == TextUntilNul(entry.sha256[:]) {
+            AppFileFree(bytes)
+            package.current = existing
+            package.stage = 3
+            return true
+        }
+        existing = existing.next
+    }
+    if package.retained_bytes + bytes.count > 67108864 { return false }
+    item := New(IslandPackageBytes)
+    if item == null { return false }
+    item.owner = package.owner
+    item.digest = entry.sha256
+    item.bytes = bytes
+    item.next = package.retained
+    package.retained = item
+    package.retained_bytes += bytes.count
+    package.current = item
+    package.stage = 3
+    return true
+}
+IslandPackageBundle :: (package: *IslandPackage, entry: *AppEntry) -> HostedAsset {
+    unused IslandPackageSync(package)
+    if !package.authorized || package.owner[0] == 0 || !IslandPackageEntryValid(entry) { return HostedAsset.{} }
+    if package.current != null && TextUntilNul(package.current.owner[:]) == TextUntilNul(package.owner[:]) &&
+        TextUntilNul(package.current.digest[:]) == TextUntilNul(entry.sha256[:]) {
+        asset: HostedAsset
+        asset.found = true
+        asset.data = TextFromBytes(BytesFromPointer(TransferBytes(package.current.bytes), cast(u64)package.current.bytes.count))
+        return asset
+    }
+    if package.stage == 1 || package.stage == 2 { return HostedAsset.{} }
+    path := IslandPackagePath(package, entry)
+    defer { AppFileFree(path) }
+    bytes := AppFileRead(package.files, path)
+    if !IslandPackageMatches(entry, bytes) || !IslandPackageRetain(package, entry, bytes) {
+        AppFileFree(bytes)
+        return HostedAsset.{}
+    }
+    asset: HostedAsset
+    asset.found = true
+    asset.data = TextFromBytes(BytesFromPointer(TransferBytes(package.current.bytes), cast(u64)package.current.bytes.count))
+    return asset
+}
+IslandPackageGrantURL :: (package: *IslandPackage, answer: string, now: s64) -> string {
+    product: [32]u8
+    owner: [65]u8
+    status: [24]u8
+    grant: [512]u8
+    expires := ReadNumber(answer, FieldAt(answer, 0, "expires_at"))
+    if !AppsReadText(answer, 0, "product", product[:]) || TextUntilNul(product[:]) != "shovey.island" ||
+        !AppsReadText(answer, 0, "owner", owner[:]) || TextUntilNul(owner[:]) != TextUntilNul(package.owner[:]) ||
+        !AppsReadText(answer, 0, "status", status[:]) || TextUntilNul(status[:]) != "done" ||
+        !AppsReadText(answer, 0, "grant", grant[:]) || !expires.valid ||
+        expires.value <= cast(float64)now || expires.value > cast(float64)(now + 3600) ||
+        cast(float64)cast(s64)expires.value != expires.value { return "" }
+    token := TextUntilNul(grant[:])
+    if token.count < 88 { return "" }
+    dots: s32
+    for c: token {
+        if c == #char "." { dots += 1 }
+        else if !(c >= #char "a" && c <= #char "z") && !(c >= #char "A" && c <= #char "Z") &&
+            !(c >= #char "0" && c <= #char "9") && c != #char "-" && c != #char "_" { return "" }
+    }
+    if dots != 1 { return "" }
+    route: Vec(u8)
+    BuilderPrint(*route, "https://api.waozi.xyz")
+    if !AppEntryPackageRoute(*package.entry, *route) { VecFree(route); return "" }
+    BuilderPrint(*route, "/%", token)
+    return BuilderFinish(route)
+}
+IslandPackagePump :: (package: *IslandPackage) {
+    if !IslandPackageSync(package) { return }
+    if package.stage == 1 {
+        answer := package.service("shovey.island.grant.status")
+        status: [24]u8
+        unused AppsReadText(answer, 0, "status", status[:])
+        if TextUntilNul(status[:]) == "pending" { return }
+        url := IslandPackageGrantURL(package, answer, UnixNow())
+        defer { AppFileFree(url) }
+        if url == "" { package.stage = 4; return }
+        path := IslandPackagePath(package, *package.entry)
+        package.cached = AppFileRead(package.files, path)
+        AppFileFree(path)
+        package.checking_cache = IslandPackageMatches(*package.entry, package.cached)
+        if !package.checking_cache { AppFileFree(package.cached); package.cached = "" }
+        // Browser/Android also bound HEAD Content-Length against capacity.
+        capacity := package.entry.bytes + 1
+        package.buffer = IslandAllocate(cast(usize)capacity, 1)
+        if package.buffer == null { package.stage = 4; return }
+        // HEAD follows the same product gate, avoiding a second bytecode
+        // transfer when the exact package is already cached. The grant still
+        // has to pass the node's signature, product and expiry verification.
+        request := HttpRequest.{.method = ifx package.checking_cache then "HEAD" else "GET", .url = url, .accept = "application/octet-stream"}
+        if package.start == null || !package.start(*package.transfer, request, BytesFromPointer(package.buffer, cast(u64)capacity), 120000) {
+            IslandPackageCancel(package); package.stage = 4; return
+        }
+        package.stage = 2
+    }
+    if package.stage != 2 { return }
+    status: s32
+    length: s64
+    if package.poll == null { IslandPackageCancel(package); package.stage = 4; return }
+    done := package.poll(*package.transfer, *status, *length)
+    if done < 0 { return }
+    if package.stop != null { package.stop(*package.transfer) }
+    if package.checking_cache {
+        if done != 1 || status != 200 || length != 0 || !IslandPackageMatches(*package.entry, package.cached) ||
+            !IslandPackageRetain(package, *package.entry, package.cached) {
+            IslandPackageCancel(package); package.stage = 4; return
+        }
+        package.cached = ""
+        package.checking_cache = false
+        IslandFree(package.buffer)
+        package.buffer = null
+        package.authorized = true
+        return
+    }
+    if done != 1 || status != 200 || length != package.entry.bytes {
+        IslandPackageCancel(package); package.stage = 4; return
+    }
+    bytes := TextFromBytes(BytesFromPointer(package.buffer, cast(u64)length))
+    if done != 1 || status != 200 || !IslandPackageMatches(*package.entry, bytes) ||
+        !IslandPackageRetain(package, *package.entry, bytes) {
+        IslandPackageCancel(package); package.stage = 4; return
+    }
+    package.buffer = null
+    package.authorized = true
+    // A cache entry exists only after an owned grant and exact digest check.
+    path := IslandPackagePath(package, *package.entry)
+    defer { AppFileFree(path) }
+    unused AppFileWrite(package.files, path, package.current.bytes)
+}
+IslandPackageFetch :: (package: *IslandPackage, entry: *AppEntry) -> bool {
+    if !IslandPackageEntryValid(entry) { return false }
+    if IslandPackageBundle(package, entry).found { return true }
+    if package.owner[0] == 0 { return false }
+    if package.stage == 1 || package.stage == 2 { return true }
+    package.entry = entry.*
+    package.stage = 1
+    unused package.service("shovey.island.grant")
+    IslandPackagePump(package)
+    return package.stage != 4
+}
+IslandPackageClose :: (package: *IslandPackage) {
+    IslandPackageCancel(package)
+    while package.retained != null {
+        item := package.retained
+        package.retained = item.next
+        AppFileFree(item.bytes)
+        free(item)
+    }
+    package.* = .{}
+}

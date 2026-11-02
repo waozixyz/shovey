@@ -1,0 +1,10 @@
+{
+  "id": "arcade.shovey-island",
+  "name": "shovey-island",
+  "title": "Shovey Island",
+  "preview": "assets/island-marketing/preview.png",
+  "package_id": "xyz.waozi.shovey-island",
+  "version": "0.4.8",
+  "sha256": "39ca371025881b2ad5d7cde53327d8403e7a318a6ad2d01841e7355e1d622ac9",
+  "bytes": 8927815
+}

@@ -11,6 +11,18 @@
   "shovey-editor-preview": {
     "source_sha256": "bcbf63563187f9dcdb6c7580f638e2fb2770b221240ee5699e54dc3c00be172c"
   },
+  "shovey-island-landscape": {
+    "source_sha256": "96c8b9b47d11a8ad8928fc5aa4c4ffe96fcffcdf99714b7977c9e6a480aeaf6a"
+  },
+  "shovey-island-logo": {
+    "source_sha256": "9b76807f3d3ad89830c7807981bea0088662eea67b858ec59fc05c3790e6ad06"
+  },
+  "shovey-island-portrait": {
+    "source_sha256": "c019dcbb7265bdc207afd8ab968a487fbb0558fc1df489e4f6fa33cdf5ced86a"
+  },
+  "shovey-island-preview": {
+    "source_sha256": "f894c811755fdb4bc44311eb86e810fe55e1adf93f42e2d01afb284e90110ba3"
+  },
   "shovey-landscape": {
     "source_sha256": "40c01eb8300e4c5db52b2d75373e17cdaf7f68140c33c0a225613fc174660747"
   },

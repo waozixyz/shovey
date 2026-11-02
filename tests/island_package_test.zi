@@ -1,0 +1,149 @@
+#import "island_package"
+#import "apps/catalog"
+#import "kryon/http_transfer"
+#import "kryon/app_files"
+#import "std/net_http"
+#import "std/vec"
+#import "std/text_buffer"
+#import "std/c_string"
+#import "std/date_time_linux"
+#import "crypto/sha256"
+
+owner: string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+grant_status: string = "idle";
+grant_product: string = "shovey.island";
+grant_owner: string;
+expiry: s64;
+starts: s32;
+grants: s32;
+http_status: s32 = 200;
+pending: bool;
+corrupt: bool;
+head: bool;
+requested_url: [2048]u8;
+answer: [2048]u8;
+payload :: "ZX\0\0fixture-owned-island";
+fixture_token :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+FakeShop :: (request: string) -> string {
+    if request == "shovey.island.grant" { grants += 1; if grant_status == "idle" { grant_status = "done" } }
+    out: Vec(u8)
+    BuilderPrint(*out, "{\"product\":\"%\",\"owner\":\"%\",\"status\":\"%\",\"grant\":\"%\",\"expires_at\":%}",
+        grant_product, ifx grant_owner == "" then owner else grant_owner, grant_status, fixture_token, expiry)
+    text := BuilderFinish(out)
+    unused CopyCString(text, answer[:])
+    AppFileFree(text)
+    return TextUntilNul(answer[:])
+}
+FakeStart :: (transfer: *HttpTransfer, request: HttpRequest, output: []u8, timeout: s32) -> bool {
+    starts += 1
+    unused CopyCString(request.url, requested_url[:])
+    head = request.method == "HEAD"
+    if !head { for byte, index: payload { output[index] = ifx corrupt then cast(u8)88 else byte } }
+    return (request.method == "GET" || head) && request.token == "" && timeout == 120000
+}
+FakePoll :: (transfer: *HttpTransfer, status: *s32, length: *s64) -> s32 {
+    status.* = http_status
+    length.* = ifx head then 0 else payload.count
+    return ifx pending then -1 else 1
+}
+FakeStop :: (transfer: *HttpTransfer) {}
+Setup :: (package: *IslandPackage, files: *AppFiles) {
+    package.* = IslandPackage.{.service = FakeShop, .files = files,
+        .start = FakeStart, .poll = FakePoll, .stop = FakeStop}
+}
+Check :: (path: string) -> s32 {
+    files: AppFiles
+    if !AppFilesOpen(*files, path) { return 1 }
+    defer { AppFilesClose(*files) }
+    entry: AppEntry
+    unused CopyCString("arcade.shovey-island", entry.id[:])
+    unused CopyCString("shovey-island", entry.expected_id[:])
+    unused CopyCString("fixture.shovey.island", entry.package_id[:])
+    Sha256Hex(TransferBytes(payload), payload.count, *entry.sha256[0])
+    entry.bytes = payload.count
+    package: IslandPackage
+    Setup(*package, *files)
+    defer { IslandPackageClose(*package) }
+    expiry = UnixNow() + 3600
+    owner = ""
+    if IslandPackageFetch(*package, *entry) || starts != 0 { return 2 }
+    owner = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    grant_status = "unowned"
+    if IslandPackageFetch(*package, *entry) || starts != 0 { return 3 }
+    grant_status = "idle"
+    if !IslandPackageFetch(*package, *entry) || !IslandPackageBundle(*package, *entry).found || starts != 1 || grants != 1 { return 4 }
+    route: Vec(u8)
+    BuilderPrint(*route, "https://api.waozi.xyz/api/v2/packages/fixture.shovey.island/%.zx/%", TextUntilNul(entry.sha256[:]), fixture_token)
+    expected := BuilderFinish(route)
+    defer { AppFileFree(expected) }
+    if TextUntilNul(requested_url[:]) != expected { return 5 }
+    // Cold offline cannot trust disk bytes or an editable local owned bit.
+    IslandPackageClose(*package)
+    Setup(*package, *files)
+    grant_status = "failed"
+    if IslandPackageBundle(*package, *entry).found || starts != 1 { return 6 }
+    grant_status = "done"
+    if !IslandPackageFetch(*package, *entry) || starts != 2 || !head { return 16 }
+    grant_status = "failed"
+    if !IslandPackageBundle(*package, *entry).found { return 17 }
+    // Switching account while cached must hide the former owner's package.
+    owner = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    unused IslandPackageSync(*package)
+    seeded := IslandPackagePath(*package, *entry)
+    unused AppFileWrite(*files, seeded, payload)
+    AppFileFree(seeded)
+    if IslandPackageBundle(*package, *entry).found { return 7 }
+    grant_status = "done"
+    grant_owner = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    if IslandPackageGrantURL(*package, FakeShop("shovey.island.grant.status"), UnixNow()) != "" || starts != 2 { return 18 }
+    grant_owner = ""
+    grant_product = "another.product"
+    if IslandPackageFetch(*package, *entry) || starts != 2 { return 8 }
+    grant_product = "shovey.island"
+    expiry = UnixNow() - 1
+    if IslandPackageFetch(*package, *entry) || starts != 2 { return 9 }
+    expiry = UnixNow() + 3600
+    // A bad signature is refused by the package node; no bytes become cached.
+    http_status = 403
+    if IslandPackageFetch(*package, *entry) || IslandPackageBundle(*package, *entry).found || package.stage != 4 { return 10 }
+    http_status = 200
+    corrupt = true
+    // Remove the seeded cache for the corrupt download case.
+    seeded = IslandPackagePath(*package, *entry)
+    unused AppFileWrite(*files, seeded, "tampered")
+    AppFileFree(seeded)
+    if IslandPackageFetch(*package, *entry) || IslandPackageBundle(*package, *entry).found { return 11 }
+    corrupt = false
+    pending = true
+    if !IslandPackageFetch(*package, *entry) || package.stage != 2 { return 12 }
+    // Logout cancels the pending transfer before its answer can be accepted.
+    owner = ""
+    IslandPackagePump(*package)
+    if package.stage != 0 || package.buffer != null || IslandPackageBundle(*package, *entry).found { return 13 }
+    owner = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    pending = false
+    if !IslandPackageFetch(*package, *entry) || !IslandPackageBundle(*package, *entry).found { return 14 }
+    // Explicit unowned reply revokes cache access even for the same account.
+    grant_status = "unowned"
+    if IslandPackageBundle(*package, *entry).found { return 15 }
+    // A redownload can reuse immutable retained bytes; cache writes must use
+    // the retained allocation after the newly transferred copy is released.
+    owner = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    grant_status = "done"
+    unused IslandPackageSync(*package)
+    seeded = IslandPackagePath(*package, *entry)
+    unused AppFileWrite(*files, seeded, "tampered")
+    if !IslandPackageFetch(*package, *entry) || head { return 19 }
+    saved := AppFileRead(*files, seeded)
+    AppFileFree(seeded)
+    if !IslandPackageMatches(*entry, saved) { AppFileFree(saved); return 20 }
+    AppFileFree(saved)
+    for iteration: 0..8 {
+        owner = ""
+        IslandPackagePump(*package)
+        owner = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        if !IslandPackageFetch(*package, *entry) || !IslandPackageBundle(*package, *entry).found { return 21 }
+    }
+    if package.retained_bytes > payload.count * 2 { return 22 }
+    return 42
+}

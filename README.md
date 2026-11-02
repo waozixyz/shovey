@@ -43,6 +43,12 @@ analytics SDK. Optional account and node features are separate from local play.
 Shovey also runs inside [Arcade](https://github.com/waozixyz/arcade) and
 [Breeze](https://github.com/waozixyz/breeze).
 
+Shovey Island is an optional paid expansion. Its cover is included in every
+player; its private game package downloads after the node confirms ownership.
+The start of each signed-in session needs a connection to verify access. Once
+verified, that session can keep playing offline. Cached packages are checked
+against the public catalog's exact size and SHA-256 digest.
+
 [F-Droid submission](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/53911)
 · [Report a problem](https://github.com/waozixyz/shovey/issues)
 
