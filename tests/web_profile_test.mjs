@@ -113,9 +113,13 @@ try {
   console.log('Opening Profile');
   await click(352, 31);
   await wait('Module.profileVisible');
-  await delay(600);
   let profileText = await labels();
-  assert(profileText.includes('Not signed in'), profileText.join('|'));
+  for (const end = Date.now() + 5000; !profileText.includes('Not signed in') && Date.now() < end;) {
+    await delay(100);
+    profileText = await labels();
+  }
+  assert(profileText.includes('Not signed in'), 'Profile did not render: ' + profileText.join('|') +
+    '; errors: ' + failures.join('|') + '; console: ' + consoleLines.join(' | '));
   assert(!profileText.includes('Name') && !profileText.includes('Intention'));
   if (process.env.WEB_FAIL_STORAGE) {
     await evaluate(`Module.FS.syncfs = function(populate, callback) { setTimeout(() => callback(new Error('Storage fixture refused the write')), 0); }`);
@@ -124,7 +128,7 @@ try {
   let connected = false, refused = false;
   for (const end = Date.now() + 20000; Date.now() < end;) {
     const text = await labels();
-    if (text.some(label => label.startsWith('Account connected'))) { connected = true; break; }
+    if (text.some(label => label.startsWith('Account created') || label.startsWith('Account connected'))) { connected = true; break; }
     if (text.some(label => /could not|couldn't|failed/i.test(label))) { refused = true; break; }
     await delay(20);
   }

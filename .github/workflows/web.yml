@@ -102,6 +102,12 @@ jobs:
           name: web-browser-check
           path: waozixyz/shovey/build/web-test
           retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: web-profile-runtime
+          path: waozixyz/shovey/build/web
+          retention-days: 1
 
   site:
     name: Build the site from the newest release

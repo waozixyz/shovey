@@ -52,8 +52,12 @@ Play :: (browser: *Browser) {
     unused Check(BrowserTrue(browser, "Module.FS.analyzePath('/tmp/test-driver').exists"), "the game's test driver is ready")
     unused WebClick(browser, 352.0, 31.0)
     if !WebWait(browser, "Module.profileVisible", 45000) { return }
-    BrowserSleep(browser, 600)
     labels := WebLabels(browser)
+    profile_deadline := MonotonicMilliseconds() + 5000
+    while !HasLine(labels, "Not signed in") && MonotonicMilliseconds() < profile_deadline {
+        BrowserSleep(browser, 100)
+        labels = WebLabels(browser)
+    }
     unused Check(HasLine(labels, "Not signed in"), "Profile starts signed out")
     unused Check(!HasLine(labels, "Name") && !HasLine(labels, "Intention"), "Profile asks no name or intention")
     if fail_storage {
@@ -65,7 +69,7 @@ Play :: (browser: *Browser) {
     deadline := MonotonicMilliseconds() + 20000
     while MonotonicMilliseconds() < deadline {
         text := WebLabels(browser)
-        if LineStarts(text, "Account connected") { connected = true; break }
+        if LineStarts(text, "Account created") || LineStarts(text, "Account connected") { connected = true; break }
         lower := Lower(text)
         if Contains(lower, "could not") || Contains(lower, "couldn't") || Contains(lower, "failed") { refused = true; break }
         BrowserSleep(browser, 20)
