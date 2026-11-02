@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
             assert not DURATION.search(text), ('Island must never state a duration', text)
 
             # A guest who has not bought Island sees the locked offer.
-            driver.press(label='Open', role='button')
+            driver.press(label='Buy', role='button')
             driver.wait(key=49540)
             price = driver.wait(key=49540)
             was = driver.wait(key=49541)
@@ -108,7 +108,7 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
             driver.press(key=49512, role='button')
             driver.wait(contains='40% off', visible=True)
             driver.wait_gone(key=49540)
-            assert driver.find(label='Open', role='button', visible=True), 'Back left the Island cover'
+            assert driver.find(label='Buy', role='button', visible=True), 'Back left the Island cover'
             assert not driver.find(contains='Level 1 / ', visible=True), 'Back opened the locked game'
         driver.press(label='Next', role='button')
         driver.wait(contains='Shovey Editor', visible=True)

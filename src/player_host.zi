@@ -516,7 +516,21 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
     collection_island_package.files = *collection_resources
     collection_ready = AppHostStart(*collection_host, bytes, "arcade.local", "arcade.shovey-player",
         "shovey", TextUntilNul(digest[:]), "local", platform, TextUntilNul(harness[:]), language)
-    if collection_ready { entity_locale_text = CollectionLocaleText }
+    if collection_ready {
+        entity_locale_text = CollectionLocaleText
+        root := AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
+        collection_island_package.included = AppHostAsset(root, "assets/paid/shovey-island.zx")
+        included := collection_island_package.included
+        island := CollectionIslandEntry()
+        if included.found && IslandPackageMatches(island, included.data) {
+            // The root already accounts for these inert packaged bytes. Keep
+            // the same bounded working allowance for Classic and the Editor
+            // that the collection had before including Island. This grants
+            // no access to Island; its entitlement gate still owns that.
+            collection_host.tree.byte_limit += included.data.count
+            collection_island_package.included_digest = island.sha256
+        }
+    }
     return collection_ready
 }
 
@@ -820,6 +834,9 @@ CollectionPackageBundle :: (context: *void, parent: *AppNode, entry: *AppEntry) 
 }
 CollectionPackageDownload :: (context: *void, parent: *AppNode, entry: *AppEntry, download: *AppDownload) -> bool {
     if !CollectionPackageEntry(parent, entry) { return false }
+    // Availability describes installed bytes, not the right to execute them.
+    // The bundle callback and open effect keep enforcing paid ownership.
+    if collection_island_package.included.found { return false }
     IslandPackagePump(*collection_island_package)
     if IslandPackageBundle(*collection_island_package, entry).found { return false }
     download.* = AppDownload.{.bytes = entry.bytes, .progress = -1,
@@ -831,7 +848,8 @@ CollectionPackageFetch :: (context: *void, account: string, parent: *AppNode,
     entry: *AppEntry, operation: s32, reply: *AppsReply) -> bool {
     if account != "local" || !CollectionPackageEntry(parent, entry) { return false }
     if operation != APPS_INSTALL { return false }
-    if !collection_island.owned { CollectionIslandShow(); reply.status = APPS_REJECTED; return true }
+    // Buy successfully opens the locked offer; it does not install or grant it.
+    if !collection_island.owned { CollectionIslandShow(); reply.status = APPS_APPLIED; return true }
     ok := IslandPackageFetch(*collection_island_package, entry)
     reply.status = ifx !ok then APPS_REJECTED else ifx collection_island_package.stage == 3 then APPS_APPLIED else APPS_QUEUED
     return true
@@ -915,9 +933,12 @@ CollectionIslandPump :: () {
             }
         }
     }
+    // Included content and its action share the trusted entitlement. A local
+    // unlock record may not change either the loader or the Buy/Play label.
+    if collection_island_package.included.found { collection_island.owned = collection_island_package.authorized }
     caption: [128]u8
     unused CopyCString(IslandUnlockCaption(*collection_island, caption[:]), entry.cover.caption[:])
-    unused CopyCString(ifx collection_island.owned then "play" else "open", entry.cover.action[:])
+    unused CopyCString(ifx collection_island.owned then "play" else "buy", entry.cover.action[:])
     if collection_island_page && collection_island.owned {
         collection_island_page = false
         collection_island_opening = true

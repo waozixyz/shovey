@@ -46,7 +46,7 @@ with patch.object(player, 'OUT', work / 'out'), patch.object(player, 'PRIVATE_AP
         patch.object(player, 'build_controller', return_value=(controller, player.digest(controller))), \
         patch.object(player, 'build_entity'), patch.object(player, 'ziran', return_value='fixture'), \
         patch.object(player, 'run', side_effect=compiler):
-    player.collection()
+    player.collection(include_island=False)
     assets = player.OUT / 'collection/assets'
     catalog = json.loads((assets / 'apps/catalog.json').read_text())
     child = catalog['children'][1]
@@ -56,4 +56,26 @@ with patch.object(player, 'OUT', work / 'out'), patch.object(player, 'PRIVATE_AP
     for key in ('portrait', 'landscape', 'logo'):
         assert (assets / child['cover'][key].removeprefix('assets/')).is_file()
     assert 'src/island' not in json.dumps(catalog)
-print('Public catalog local test: Classic → Island → Editor, pinned external package, public covers and no private bytecode/source passed')
+    # A normal standalone build must copy the exact compiled bytes, independent of
+    # private source presence, and keep the catalog path external to the host gate.
+    player.collection()
+    assert json.loads((player.OUT / 'shovey.json').read_text())['island_bundled']
+    included = assets / 'paid/shovey-island.zx'
+    assert player.digest(included) == island['descriptor']['sha256']
+    assert included.stat().st_size == island['descriptor']['bytes']
+    assert not (assets / child['bundle'].removeprefix('assets/')).exists()
+    with patch.dict(player.os.environ, {'SHOVEY_ISLAND_BUNDLE': str(work / 'missing.zx')}):
+        try:
+            player.collection()
+            raise AssertionError('Standalone accepted missing Island bytes')
+        except SystemExit as error:
+            assert 'compiled Island input' in str(error)
+    wrong = work / 'wrong.zx'
+    wrong.write_bytes(b'ZX\0\0wrong')
+    with patch.dict(player.os.environ, {'SHOVEY_ISLAND_BUNDLE': str(wrong)}):
+        try:
+            player.collection()
+            raise AssertionError('Standalone accepted different Island bytes')
+        except SystemExit as error:
+            assert 'differs from packaging/island.json' in str(error)
+print('Public and standalone catalog local tests: bundled byte inventory/digest, fail-closed missing input, protected catalog path, public covers and no private source passed')

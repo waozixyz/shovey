@@ -24,11 +24,12 @@
     {
       "manifest": "packaging/island.json",
       "external": true,
+      "standalone_bundle": "shovey-island.zx",
       "cover": {
         "portrait": "assets/island-marketing/portrait.png",
         "landscape": "assets/island-marketing/landscape.png",
         "logo": "assets/island-marketing/logo.png",
-        "action": "open"
+        "action": "buy"
       }
     },
     {

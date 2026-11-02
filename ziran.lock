@@ -28,6 +28,15 @@
       "url": "https://github.com/webmproject/libwebp.git"
     },
     {
+      "commit": "a56ab8775204c29d3c1924951da84fa16c8e24a6",
+      "dependencies": {"crypto": "pc23fbf455e97614d", "daochi_client": "p6af0b5bd9fd0cd31", "kryon": "pf07e8d0660254bd9"},
+      "dependency_refs": {"crypto": "master", "daochi_client": "970d5e44b1702158cb16469892da6ff50f142427", "kryon": "d2668290986b038630caf73b2d480fc6a8fc3307"},
+      "id": "p5a410097d89ff22b",
+      "name": "Apps",
+      "ref": "a56ab8775204c29d3c1924951da84fa16c8e24a6",
+      "url": "https://github.com/waozixyz/apps.git"
+    },
+    {
       "commit": "619888d404e7d7e441921702c41a5838a8981408",
       "dependencies": {},
       "id": "p60ff905f3a963886",
@@ -108,26 +117,26 @@
       "url": "https://github.com/raysan5/raylib.git"
     },
     {
-      "commit": "0dd054932180a8e8cda4550af7030b527ee3c285",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "daochi_client": "p6af0b5bd9fd0cd31", "kryon": "pb9d1c52c45ad3f51"},
-      "dependency_refs": {"crypto": "master", "daochi_client": "970d5e44b1702158cb16469892da6ff50f142427", "kryon": "bd34ddbe3b169f3fdec1a93cea1aba9fc3c62bbf"},
-      "id": "pdea1492d0d16298f",
-      "name": "Apps",
-      "ref": "0dd054932180a8e8cda4550af7030b527ee3c285",
-      "url": "https://github.com/waozixyz/apps.git"
-    },
-    {
       "commit": "9cc6872f75447c3a24c16764f9829d0f58751cb0",
       "dependencies": {},
       "id": "pe1027b9d16704793",
       "name": "mingcute",
       "ref": "master",
       "url": "https://github.com/kryonlabs/mingcute.git"
+    },
+    {
+      "commit": "d2668290986b038630caf73b2d480fc6a8fc3307",
+      "dependencies": {"libwebp": "p3b3c785a0e17e605", "raylib": "pcc7aa76725f2fb2f"},
+      "dependency_refs": {"libwebp": "1844042d1ca751e62e61df7617dba19c98588339", "raylib": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e"},
+      "id": "pf07e8d0660254bd9",
+      "name": "kryon",
+      "ref": "d2668290986b038630caf73b2d480fc6a8fc3307",
+      "url": "https://github.com/kryonlabs/kryon.git"
     }
   ],
   "root": {
-    "dependencies": {"apps": "pdea1492d0d16298f", "crypto": "pc23fbf455e97614d", "entity": "p9696816c049d49ba", "kryon": "pb9d1c52c45ad3f51", "mingcute": "pe1027b9d16704793"},
-    "dependency_refs": {"apps": "0dd054932180a8e8cda4550af7030b527ee3c285", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "87486f488e608ce8617d9edcd293944cf119765e", "kryon": "bd34ddbe3b169f3fdec1a93cea1aba9fc3c62bbf", "mingcute": "master"},
+    "dependencies": {"apps": "p5a410097d89ff22b", "crypto": "pc23fbf455e97614d", "entity": "p9696816c049d49ba", "kryon": "pb9d1c52c45ad3f51", "mingcute": "pe1027b9d16704793"},
+    "dependency_refs": {"apps": "a56ab8775204c29d3c1924951da84fa16c8e24a6", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "87486f488e608ce8617d9edcd293944cf119765e", "kryon": "bd34ddbe3b169f3fdec1a93cea1aba9fc3c62bbf", "mingcute": "master"},
     "name": "Shovey"
   },
   "toolchain": {

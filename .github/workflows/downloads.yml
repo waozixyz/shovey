@@ -195,6 +195,18 @@ jobs:
             YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 300s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
             python3 tests/shovey_standalone_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
             --inbe-source "$GITHUB_WORKSPACE/waozixyz/breeze"
+      - name: Open local Classic and Profile with downloads off
+        run: |
+          env -u LISTEN_PID -u LISTEN_FDS -u LISTEN_FDNAMES -u NOTIFY_SOCKET -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1024x900x24' \
+            python3 tests/player_local_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze/tests"
+      - name: Open bundled Island's Buy page in English and German
+        run: |
+          env -u LISTEN_PID -u LISTEN_FDS -u LISTEN_FDNAMES -u NOTIFY_SOCKET -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1024x900x24' \
+            python3 tests/island_buy_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze/tests"
       - name: Reopen unclaimed and empty chests in the packaged game
         run: |
           make chest-fixture

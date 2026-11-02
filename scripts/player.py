@@ -101,7 +101,8 @@ def edition_version(manifest):
 
 
 def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    with Path(path).open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
 # The games.
@@ -136,7 +137,7 @@ def declared_apps():
     for app in declaration['apps']:
         manifest = ROOT / app['manifest']
         apps.append(dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=False,
-                         external=app.get('external', False),
+                         external=app.get('external', False), standalone_bundle=app.get('standalone_bundle'),
                          cover=app.get('cover'), requires=app.get('requires', []),
                          shared_code=app.get('shared_code', False),
                          shared_records=app.get('shared_records', []),
@@ -451,12 +452,28 @@ def stage_shop_assets(assets):
     return total
 
 
-def collection():
+def standalone_bundle(app):
+    """Only reviewed compiled bytes may enter the standalone distribution."""
+    descriptor = app['descriptor']
+    source = Path(os.environ.get('SHOVEY_ISLAND_BUNDLE', ROOT / 'packaging/compiled' / app['standalone_bundle']))
+    if not source.is_file():
+        raise SystemExit('Standalone requires the compiled Island input: set SHOVEY_ISLAND_BUNDLE')
+    if source.stat().st_size != descriptor['bytes'] or digest(source) != descriptor['sha256']:
+        raise SystemExit('Standalone Island input differs from packaging/island.json')
+    with source.open('rb') as stream:
+        if stream.read(4) != b'ZX\0\0':
+            raise SystemExit('Standalone Island input is not compiled ZX')
+    return source
+
+
+def collection(include_island=True):
     version = release()
     declaration, apps = declared_apps()
     if declaration['id'] != COLLECTION_ID:
         raise SystemExit('apps.json must keep the collection identity ' + COLLECTION_ID)
     OUT.mkdir(parents=True, exist_ok=True)
+    included = {app['descriptor']['id']: standalone_bundle(app) for app in apps
+                if include_island and app.get('standalone_bundle')}
     build_games(apps)
     controller, controller_digest = build_controller()
     staging = OUT / 'collection'
@@ -474,6 +491,11 @@ def collection():
         covers_folder = PRIVATE_COVERS if app['private'] else COVERS
         preview, preview_suffix = cover_copy(name, 'preview', (ROOT / descriptor['preview']).read_bytes(), covers_folder)
         copies = [(preview, f'arcade/previews/{name}{preview_suffix}')]
+        if descriptor['id'] in included:
+            target = assets / 'paid' / app['standalone_bundle']
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(included[descriptor['id']], target)
+            total += target.stat().st_size
         if not external:
             copies.append((bundle, f'arcade/games/{name}.zx'))
         child = dict(id=descriptor['id'], title=descriptor['title'], bundle=f'assets/arcade/games/{name}.zx',
@@ -522,7 +544,8 @@ def collection():
     if children[0]['version'] != version['version']:
         raise SystemExit('Classic is the collection; its changelog must name this release')
     receipt = dict(id=COLLECTION_ID, version=version['version'], sha256=digest(payload),
-                   apps_sha256=controller_digest, children=children, source_mode='project')
+                   apps_sha256=controller_digest, children=children, source_mode='project',
+                   island_bundled=bool(included))
     (OUT / 'shovey.json').write_text(json.dumps(receipt, indent=2) + '\n')
     build_entity()
     print(f'Shovey {version["version"]} collection: {payload.relative_to(ROOT)}')
@@ -533,6 +556,8 @@ def checked_collection():
     receipt = json.loads((OUT / 'shovey.json').read_text())
     if receipt['sha256'] != digest(OUT / 'shovey.zx') or receipt['version'] != release()['version']:
         raise SystemExit('The collection changed; run python3 scripts/player.py collection')
+    if not receipt.get('island_bundled'):
+        raise SystemExit('Standalone requires included Island; run python3 scripts/player.py collection')
     if not (OUT / 'entity.zx').is_file():
         raise SystemExit('The Profile is missing; run python3 scripts/player.py collection')
     return receipt
@@ -830,7 +855,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest='command', required=True)
     commands.add_parser('covers')
-    commands.add_parser('collection')
+    collection_parser = commands.add_parser('collection')
+    collection_parser.add_argument('--web', action='store_true', help='browser collection with protected Island delivery')
     island = commands.add_parser('island-package', help='build private compiled Island separately')
     island.add_argument('--record', action='store_true', help='record its reviewed digest/size in the public descriptor')
     commands.add_parser('linux')
@@ -854,7 +880,7 @@ def main():
     if args.command == 'covers':
         covers()
     elif args.command == 'collection':
-        collection()
+        collection(include_island=not args.web)
     elif args.command == 'island-package':
         island_package(args.record)
     elif args.command == 'linux':

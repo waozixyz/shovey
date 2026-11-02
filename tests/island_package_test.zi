@@ -1,4 +1,5 @@
 #import "island_package"
+#import "kryon/hosted_app"
 #import "apps/catalog"
 #import "kryon/http_transfer"
 #import "kryon/app_files"
@@ -20,11 +21,21 @@ http_status: s32 = 200;
 pending: bool;
 corrupt: bool;
 head: bool;
+bundled_owned: bool;
+connected: bool = true;
 requested_url: [2048]u8;
 answer: [2048]u8;
 payload :: "ZX\0\0fixture-owned-island";
 fixture_token :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 FakeShop :: (request: string) -> string {
+    if request == "status" {
+        out: Vec(u8)
+        BuilderPrint(*out, "{\"owner\":\"%\",\"status\":\"idle\",\"island_owned\":%,\"connected\":%}", owner, bundled_owned, connected)
+        text := BuilderFinish(out)
+        unused CopyCString(text, answer[:])
+        AppFileFree(text)
+        return TextUntilNul(answer[:])
+    }
     if request == "shovey.island.grant" { grants += 1; if grant_status == "idle" { grant_status = "done" } }
     out: Vec(u8)
     BuilderPrint(*out, "{\"product\":\"%\",\"owner\":\"%\",\"status\":\"%\",\"grant\":\"%\",\"expires_at\":%}",
@@ -145,5 +156,32 @@ Check :: (path: string) -> s32 {
         if !IslandPackageFetch(*package, *entry) || !IslandPackageBundle(*package, *entry).found { return 21 }
     }
     if package.retained_bytes > payload.count * 2 { return 22 }
+    IslandPackageClose(*package)
+    Setup(*package, *files)
+    package.included = HostedAsset.{.found = true, .data = payload}
+    transfers_before := starts
+    grants_before := grants
+    // Bundled bytes alone grant nothing, even with a seeded cache.
+    if IslandPackageFetch(*package, *entry) || IslandPackageBundle(*package, *entry).found { return 23 }
+    bundled_owned = true
+    connected = false
+    if IslandPackageFetch(*package, *entry) { return 24 }
+    connected = true
+    if !IslandPackageFetch(*package, *entry) || !IslandPackageBundle(*package, *entry).found { return 25 }
+    connected = false
+    if !IslandPackageBundle(*package, *entry).found { return 26 }
+    owner = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    if IslandPackageBundle(*package, *entry).found { return 27 }
+    connected = true
+    if !IslandPackageFetch(*package, *entry) { return 28 }
+    bundled_owned = false
+    if IslandPackageBundle(*package, *entry).found { return 29 }
+    bundled_owned = true
+    owner = ""
+    if IslandPackageBundle(*package, *entry).found { return 30 }
+    owner = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    package.included = HostedAsset.{.found = true, .data = "ZX\0\0tampered"}
+    if IslandPackageFetch(*package, *entry) { return 31 }
+    if starts != transfers_before || grants != grants_before { return 32 }
     return 42
 }

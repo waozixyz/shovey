@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -21,6 +22,7 @@ import build_artifacts
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--bundle', type=Path, required=True)
+parser.add_argument('--bundled', action='store_true', help='verify included bytes unlock without transport')
 args = parser.parse_args()
 descriptor = json.loads((ROOT / 'packaging/island.json').read_text())
 assert hashlib.file_digest(args.bundle.open('rb'), 'sha256').hexdigest() == descriptor['sha256']
@@ -31,9 +33,13 @@ work.mkdir(parents=True, exist_ok=True)
 shutil.rmtree(work / 'profile', ignore_errors=True)
 source = '''#import "player_host"
 #import "island_package"
+#import "entity/game_shop_native"
+#import "entity/game_shop"
+#import "std/json_scan"
 #import "island_unlock"
 #import "player_platform"
 #import "apps/host"
+#import "apps/tree"
 #import "apps/catalog"
 #import "kryon/Frame"
 #import "kryon/Desktop"
@@ -48,9 +54,19 @@ source = '''#import "player_host"
 #import "std/date_time_linux"
 #import "std/text_buffer"
 #import "std/vec"
+fixture_api :: #system_library "c";
+IslandIdentityProbe :: () -> s32 #foreign fixture_api "IslandIdentityProbe";
 fixture_bytes: string;
+fixture_owned: bool;
+fixture_transfers: s32;
+fixture_grants: s32;
 fixture_answer: [1024]u8;
 FixtureShop :: (request: string) -> string {
+    if request == "status" {
+        unused CopyCString(ifx fixture_owned then "{\\"owner\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\",\\"island_owned\\":true,\\"connected\\":true}" else "{\\"owner\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\",\\"island_owned\\":false,\\"connected\\":true}", fixture_answer[:])
+        return TextUntilNul(fixture_answer[:])
+    }
+    if request == "shovey.island.grant" { fixture_grants += 1 }
     out: Vec(u8)
     BuilderPrint(*out, "{\\"product\\":\\"shovey.island\\",\\"owner\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\",\\"status\\":\\"done\\",\\"grant\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\\",\\"expires_at\\":%}", UnixNow() + 3600)
     text := BuilderFinish(out)
@@ -59,6 +75,7 @@ FixtureShop :: (request: string) -> string {
     return TextUntilNul(fixture_answer[:])
 }
 FixtureStart :: (transfer: *HttpTransfer, request: HttpRequest, output: []u8, timeout: s32) -> bool {
+    fixture_transfers += 1
     if request.method != "GET" || output.count != fixture_bytes.count + 1 { return false }
     for byte, index: fixture_bytes { output[index] = byte }
     return true
@@ -77,17 +94,55 @@ main :: () -> s32 {
     defer { CloseDesktop() }
     if !CollectionOpenShovey(COLLECTION, PROFILE) { return 2 }
     defer { unused CollectionClose() }
+    if IslandIdentityProbe() != 1 { return 17 }
     collection_island_package.service = FixtureShop
     collection_island_package.start = FixtureStart
     collection_island_package.poll = FixturePoll
     collection_island_package.stop = FixtureStop
+    if BUNDLED && !collection_island_package.included.found { return 15 }
+    // The paid bytes in the root must not consume Classic's existing working
+    // allowance. Exercise the real host identity/digest/open path while the
+    // account is unowned, before ever opening Island.
+    if BUNDLED && collection_host.tree.byte_limit != APP_HOST_BYTE_LIMIT + bytes.count { return 19 }
+    if BUNDLED {
+        owner := AppHostActiveRuntime(*collection_host)
+        classic_entry := AppCatalogAt(*owner.node.catalog, AppCatalogFind(*owner.node.catalog, "arcade.shovey"))
+        if classic_entry == null { return 24 }
+        limit := collection_host.tree.byte_limit
+        charge := classic_entry.bytes + 65536 + cast(s64)size_of(AppNode)
+        if charge > APP_HOST_BYTE_LIMIT - collection_host.tree.bytes {
+            collection_host.tree.byte_limit = APP_HOST_BYTE_LIMIT
+            rejected := AppHostPrepareChild(cast(*void)(*collection_host), owner.node, classic_entry, 0)
+            collection_host.tree.byte_limit = limit
+            if rejected != -1 { return 25 }
+        }
+    }
+    if !CollectionOpenGame("arcade.shovey") { return 20 }
+    classic := AppHostActiveRuntime(*collection_host)
+    if classic == null || TextUntilNul(classic.node.identity.id[:]) != "arcade.shovey" { return 21 }
+    if fixture_transfers != 0 || fixture_grants != 0 { return 22 }
+    if !CollectionBack() { return 23 }
+    CollectionCollect()
     CollectionPackageAccount()
     entry := CollectionIslandEntry()
-    if entry == null { return 3 }
+    if entry == null || TextUntilNul(entry.cover.action[:]) != "buy" { return 3 }
     root := AppHostActiveRuntime(*collection_host)
+    if BUNDLED {
+        plan: AppInstallPlan
+        if !AppHostInstallPlan(*collection_host, root.node, entry, *plan) || plan.count != 0 { return 18 }
+        collection_island.owned = true
+        CollectionIslandPump()
+        if collection_island.owned || TextUntilNul(entry.cover.action[:]) != "buy" { return 16 }
+    }
     packed: bool
     before := AppHostChildBundle(*collection_host, root, root.node, entry, *packed)
     if packed || before.found { return 11 }
+    offer: AppsReply
+    if !CollectionPackageFetch(null, "local", root.node, entry, APPS_INSTALL, *offer) ||
+        offer.status != APPS_APPLIED || !collection_island_page ||
+        IslandPackageBundle(*collection_island_package, entry).found { return 26 }
+    collection_island_page = false
+    fixture_owned = true
     if !IslandPackageFetch(*collection_island_package, entry) { return 3 }
     if !IslandPackageBundle(*collection_island_package, entry).found { return 4 }
     collection_island.owned = true
@@ -106,9 +161,13 @@ main :: () -> s32 {
         if !EndDesktopFrame() { return 13 }
         CollectionCollect()
     }
+    if BUNDLED && (fixture_transfers != 0 || fixture_grants != 0) { return 14 }
     return 0
 }
 '''
+source = source.replace('BUNDLED', 'true' if args.bundled else 'false')
+if not args.bundled:
+    source = source.replace('    CollectionPackageAccount()', '    collection_island_package.included = .{}\n    CollectionPackageAccount()', 1)
 source = source.replace('BUNDLE', json.dumps(str(args.bundle.resolve()))).replace(
     'COLLECTION', json.dumps(str(player.OUT))).replace('PROFILE', json.dumps(str(work / 'profile')))
 fixture = work / 'island_delivery.zi'
@@ -122,6 +181,39 @@ environment['YUE_DESKTOP_RECOVERY'] = '0'
 environment['SDL_AUDIODRIVER'] = 'dummy'
 player.run([player.ziran(), 'build', '--project', *player.lock(), '--target=c', '--define', 'PLATFORM_DESKTOP',
     '--module-path', work, '--entry', 'island_delivery:main', '-o', generated, fixture], cwd=ROOT, env=environment)
+# Probe private provider state through the explicit native test host, without
+# exporting account internals or changing dependency sources. No pump runs.
+account_header = next(generated.rglob('*account_store.h'))
+shop_header = next(generated.rglob('*game_shop_native.h'))
+shop_answer = re.search(r'String (\w*EntityGameShopAnswer)\(', shop_header.read_text())[1]
+(generated / 'identity_probe.c').write_text('''#include <string.h>
+#include <stdio.h>
+#include "ACCOUNT_HEADER"
+#include "SHOP_HEADER"
+static int owned_status(int expected) {
+    String request = {(unsigned char *)"status", 6};
+    String result = SHOP_ANSWER(request);
+    char text[2048] = {0};
+    if (result.length <= 0 || result.length >= sizeof(text)) return 0;
+    memcpy(text, result.data, result.length);
+    char owner[96];
+    snprintf(owner, sizeof(owner), "\\"owner\\":\\"%s\\"", account_recovery.keys.public_id);
+    return strstr(text, owner) != NULL && strstr(text, expected ? "\\"island_owned\\":true" : "\\"island_owned\\":false") != NULL;
+}
+int32_t IslandIdentityProbe(void) {
+    memset(account_recovery.keys.public_id, 'a', 64);
+    account_recovery.keys.public_id[64] = 0;
+    owned_status(0);
+    shop_owned = 1 << SHOVEY_ISLAND_PRODUCT;
+    shop_loaded = true;
+    if (!owned_status(1)) return 0;
+    memset(account_recovery.keys.public_id, 'b', 64);
+    if (!owned_status(0)) return 0;
+    shop_owned = 1 << SHOVEY_ISLAND_PRODUCT;
+    memset(account_recovery.keys.public_id, 0, sizeof(account_recovery.keys.public_id));
+    return owned_status(0);
+}
+'''.replace('ACCOUNT_HEADER', account_header.name).replace('SHOP_HEADER', shop_header.name).replace('SHOP_ANSWER', shop_answer))
 profile = build_artifacts.request('entity:native-profile', 'linux-x86_64-gnu', ziran=player.ziran())
 renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-desktop', 'linux-x86_64-gnu', ziran=player.ziran()))
 sources = sorted(generated.rglob('*.c'))

@@ -1,5 +1,6 @@
-// The public catalog pins Island's compiled package. Only the account service
-// can obtain a grant; guest code never receives it or chooses a download URL.
+// The public catalog pins Island's compiled package. Included bytes require
+// the account service's entitlement; external bytes require a protected grant.
+// Guest code never receives grants or chooses a download URL.
 #import "apps/catalog"
 #import "apps/protocol"
 #import "kryon/hosted_app"
@@ -24,14 +25,17 @@ IslandFree :: (bytes: *u8) #foreign island_memory "free";
 
 IslandPackageBytes :: struct { owner: [65]u8; digest: [65]u8; bytes: string; next: *IslandPackageBytes }
 IslandPackage :: struct {
+    // Host-owned collection bytes, never a catalog bundle path or editable cache.
+    included: HostedAsset
+    included_digest: [65]u8
     service: IslandPackageService
     start: IslandPackageStart
     poll: IslandPackagePoll
     stop: IslandPackageStop
     files: *AppFiles
     owner: [65]u8
-    // Process-local authority, established by a fresh owned grant and a
-    // successful request to the gated node. Never restored from a local bit.
+    // Process-local authority from Entity ownership for included content, or
+    // an owned grant verified by the gated node. Never restored from a local bit.
     authorized: bool
     // 0 idle, 1 waiting for grant, 2 transferring, 3 ready, 4 failed.
     stage: s32
@@ -75,7 +79,7 @@ IslandPackageCancel :: (package: *IslandPackage) {
 IslandPackageSync :: (package: *IslandPackage) -> bool {
     owner: [65]u8
     status: [24]u8
-    answer := ifx package.service == null then "" else package.service("shovey.island.grant.status")
+    answer := ifx package.service == null then "" else package.service(ifx package.included.found then "status" else "shovey.island.grant.status")
     unused ReadStringText(answer, FieldAt(answer, 0, "owner"), owner[:])
     unused ReadStringText(answer, FieldAt(answer, 0, "status"), status[:])
     if !IslandPackageOwnerValid(TextUntilNul(owner[:])) || TextUntilNul(status[:]) == "signin" ||
@@ -86,6 +90,14 @@ IslandPackageSync :: (package: *IslandPackage) -> bool {
         package.current = null
         package.authorized = false
         package.owner = owner
+    }
+    if package.included.found {
+        // Entity clears this server-derived entitlement on account changes.
+        // Local unlock records never establish authority for bundled content.
+        owned := MatchLiteral(answer, FieldAt(answer, 0, "island_owned"), "true")
+        connected := MatchLiteral(answer, FieldAt(answer, 0, "connected"), "true")
+        package.authorized = package.owner[0] != 0 && owned && (connected || package.authorized)
+        if !package.authorized { package.stage = 0 }
     }
     return !changed && package.owner[0] != 0 && TextUntilNul(status[:]) != "unowned"
 }
@@ -122,6 +134,17 @@ IslandPackageRetain :: (package: *IslandPackage, entry: *AppEntry, bytes: string
 IslandPackageBundle :: (package: *IslandPackage, entry: *AppEntry) -> HostedAsset {
     unused IslandPackageSync(package)
     if !package.authorized || package.owner[0] == 0 || !IslandPackageEntryValid(entry) { return HostedAsset.{} }
+    if package.included.found {
+        if TextUntilNul(package.included_digest[:]) != TextUntilNul(entry.sha256[:]) || package.included.data.count != entry.bytes {
+            if !IslandPackageMatches(entry, package.included.data) { package.stage = 4; return HostedAsset.{} }
+            package.included_digest = entry.sha256
+        }
+        package.stage = 3
+        asset: HostedAsset
+        asset.found = true
+        asset.data = TextFromBytes(BytesFromPointer(TransferBytes(package.included.data), cast(u64)package.included.data.count))
+        return asset
+    }
     if package.current != null && TextUntilNul(package.current.owner[:]) == TextUntilNul(package.owner[:]) &&
         TextUntilNul(package.current.digest[:]) == TextUntilNul(entry.sha256[:]) {
         asset: HostedAsset
@@ -170,7 +193,7 @@ IslandPackageGrantURL :: (package: *IslandPackage, answer: string, now: s64) -> 
     return BuilderFinish(route)
 }
 IslandPackagePump :: (package: *IslandPackage) {
-    if !IslandPackageSync(package) { return }
+    if !IslandPackageSync(package) || package.included.found { return }
     if package.stage == 1 {
         answer := package.service("shovey.island.grant.status")
         status: [24]u8
@@ -234,7 +257,7 @@ IslandPackagePump :: (package: *IslandPackage) {
 IslandPackageFetch :: (package: *IslandPackage, entry: *AppEntry) -> bool {
     if !IslandPackageEntryValid(entry) { return false }
     if IslandPackageBundle(package, entry).found { return true }
-    if package.owner[0] == 0 { return false }
+    if package.included.found || package.owner[0] == 0 { return false }
     if package.stage == 1 || package.stage == 2 { return true }
     package.entry = entry.*
     package.stage = 1
