@@ -29,4 +29,4 @@ subprocess.run([*shlex.split(os.environ.get('CC','cc')), '-std=c11', '-O1',
     str(tool/'build/libziran-vm.a'), '-lm', '-lpthread',
     '-o', str(output/'test')],check=True)
 subprocess.run([str(output/'test'),str(output/'exclusion.zx')],check=True)
-print('Secret results local test passed: real view functions, 3 real engine wins, no rating screen/storage, legacy cache ignored/preserved, timed exact parent return, story cache/dismissal retained',flush=True)
+print('Secret results local test passed: real view functions, real engine wins for every shipped secret room, no rating screen/storage, legacy cache ignored/preserved, timed exact parent return, story cache/dismissal retained',flush=True)
