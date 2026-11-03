@@ -72,7 +72,9 @@ main :: () -> s32 {
     if !BundleStorageReady() { return 1 }
     data := DataDirectory()
     // The page preloads the released collection and its Profile.
-    bytes, found := ReadEntireFile("/app.zx")
+    bytes, found := ReadEntireFile("/app.zx/shovey.zx")
+    if found { CollectionBundleDirectory("/app.zx") }
+    else { bytes, found = ReadEntireFile("/app.zx") }
     profile, profile_found := ReadEntireFile("/entity.zx")
     defer { AppFileFree(bytes) }
     receipt := PlayerReceipt()

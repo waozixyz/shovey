@@ -68,6 +68,15 @@ ShopUI :: #import "shop_view";
 }
 ShopState :: #import "shop_state";
 #import "std/number_text"
+#if #defined(ANDROID_BUILD) || #defined(_WIN32) {
+    #import "kryon/app_asset"
+}
+// Local game payloads stay beside the small collection, so the shared host
+// accounts for one game copy while retaining normal verified add-on navigation.
+collection_bundle_root: string = "games";
+collection_bundle_root_owned: bool;
+collection_classic_bytes: string;
+collection_editor_bytes: string;
 collection_shop_request: string;
 collection_shop_locator: AppLocator;
 collection_island: IslandUnlock;
@@ -507,6 +516,7 @@ CollectionEffect :: (context: *void, account: string, locator: *AppLocator,
 // identity and record folders are those Arcade's standalone Shovey used.
 CollectionOpenShovey :: (directory: string, data: string) -> bool {
     if collection_ready { return false }
+    CollectionBundleDirectory(directory)
     payload_path := Join(directory, "shovey.zx")
     metadata_path := Join(directory, "shovey.json")
     defer { AppFileFree(payload_path); AppFileFree(metadata_path) }
@@ -514,6 +524,12 @@ CollectionOpenShovey :: (directory: string, data: string) -> bool {
     metadata, metadata_found := ReadEntireFile(metadata_path)
     defer { AppFileFree(bytes); AppFileFree(metadata) }
     return found && metadata_found && CollectionOpenShoveyBytes(bytes, metadata, data)
+}
+
+CollectionBundleDirectory :: (directory: string) {
+    if collection_bundle_root_owned { AppFileFree(collection_bundle_root) }
+    collection_bundle_root = Join(directory, "games")
+    collection_bundle_root_owned = true
 }
 
 CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> bool {
@@ -581,6 +597,14 @@ CollectionCollect :: () {
 CollectionClose :: () -> bool {
     if !EntityClose() { return false }
     if collection_ready && !AppHostStop(*collection_host) { return false }
+    if collection_host.retired != null { return false }
+    CollectionLocalBundleFree(collection_classic_bytes)
+    CollectionLocalBundleFree(collection_editor_bytes)
+    collection_classic_bytes = ""
+    collection_editor_bytes = ""
+    if collection_bundle_root_owned { AppFileFree(collection_bundle_root) }
+    collection_bundle_root = "games"
+    collection_bundle_root_owned = false
     IslandPackageClose(*collection_island_package)
     collection_ready = false
     collection_wallet_visible = false
@@ -856,8 +880,46 @@ CollectionPackageEntry :: (parent: *AppNode, entry: *AppEntry) -> bool {
         TextUntilNul(parent.identity.authority[:]) == "arcade.local" && IslandPackageEntryValid(entry)
 }
 CollectionPackageBundle :: (context: *void, parent: *AppNode, entry: *AppEntry) -> HostedAsset {
+    if parent != null && TextUntilNul(parent.identity.id[:]) == "arcade.shovey-player" &&
+    TextUntilNul(parent.identity.authority[:]) == "arcade.local" && entry != null && entry.protocol == APPS_NODE_PROTOCOL {
+        name := TextUntilNul(entry.expected_id[:])
+        if TextUntilNul(entry.id[:]) == "arcade.shovey" && name == "shovey" &&
+        TextUntilNul(entry.bundle[:]) == "assets/arcade/games/shovey.zx" {
+            return CollectionLocalBundle("shovey.zx", *collection_classic_bytes)
+        }
+        if TextUntilNul(entry.id[:]) == "arcade.shovey-editor" && name == "shovey-editor" &&
+        TextUntilNul(entry.bundle[:]) == "assets/arcade/games/shovey-editor.zx" {
+            return CollectionLocalBundle("shovey-editor.zx", *collection_editor_bytes)
+        }
+    }
     if !CollectionPackageEntry(parent, entry) { return HostedAsset.{} }
     return IslandPackageBundle(*collection_island_package, entry)
+}
+
+CollectionLocalBundle :: (name: string, cached: *string) -> HostedAsset {
+    if cached.* == "" {
+        path := Join(collection_bundle_root, name)
+        defer { AppFileFree(path) }
+        #if #defined(ANDROID_BUILD) || #defined(_WIN32) {
+            cached.* = ReadAppAsset(path)
+        } else {
+            bytes, found := ReadEntireFile(path)
+            if found { cached.* = bytes }
+        }
+    }
+    // Like IslandPackageBundle, expose a borrowed view of retained owned bytes.
+    asset: HostedAsset
+    asset.found = cached.* != ""
+    asset.data = TextFromBytes(BytesFromPointer(TransferBytes(cached.*), cast(u64)(cached.*).count))
+    return asset
+}
+
+CollectionLocalBundleFree :: (bytes: string) {
+    #if #defined(ANDROID_BUILD) || #defined(_WIN32) {
+        FreeAppAsset(bytes)
+    } else {
+        AppFileFree(bytes)
+    }
 }
 CollectionPackageDownload :: (context: *void, parent: *AppNode, entry: *AppEntry, download: *AppDownload) -> bool {
     if !CollectionPackageEntry(parent, entry) { return false }

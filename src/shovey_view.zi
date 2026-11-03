@@ -27,7 +27,7 @@ Math :: #import "std/math";
 #import "scroll_props"
 #import "scroll_widget"
 #import "kryon/loading_indicator"
-#import "tree"
+#import "kryon/tree"
 #import "number_text"
 #import "text_buffer"
 #import "c_string"
@@ -433,7 +433,7 @@ OpenLevels :: () {
     levels_focus_pending = true
 }
 
-ChangeLevel :: (level: s32) {
+ChangeLevel :: (level: s32, resume_if_active: bool = false) {
     if coin_pending.active { return }
     friend_guide.level = 0
     slide_count = 0
@@ -442,6 +442,15 @@ ChangeLevel :: (level: s32) {
         unused ShoveyLoad(*game, level)
         last_tick = frame.now
         won_at = 0.0
+        selector_open = false
+        help_open = false
+        return
+    }
+    if resume_if_active && level == game.level && !game.won && !game.lost &&
+    ShoveyLevelUnlocked(*progress, level) && completion_path.level == game.level &&
+    TextUntilNul(completion_path.map[:]) == ShoveyLevelBoard(game.level) &&
+    TextUntilNul(completion_path.owner[:]) == TextUntilNul(shared_progress.owner[:]) {
+        last_tick = frame.now
         selector_open = false
         help_open = false
         return
@@ -1386,7 +1395,7 @@ ShoveyFrame :: () {
                     .completed_label = AppLocaleHost("shovey_completed"),
                     .locked_label = AppLocaleHost("shovey_locked"),
                     .loading_label = AppLocaleHost("shovey_progress_loading")})
-            if selected.activated >= 1 && selected.activated <= listed { ChangeLevel(selected.activated) }
+            if selected.activated >= 1 && selected.activated <= listed { ChangeLevel(selected.activated, true) }
             if selected.activated >= 1001 && selected.activated <= 1003 && !coin_pending.active {
                 if ShoveySecret(game.level) { unused ShoveyReturnFromSecret(*game, *secret_visit) }
                 record := PathRecord(MapRoute.WorldMapSecretDiscoveryKey(selected.activated))

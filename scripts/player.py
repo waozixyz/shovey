@@ -482,6 +482,7 @@ def collection(include_island=True):
     (assets / 'apps').mkdir(parents=True)
     shutil.copyfile(controller, assets / 'apps/apps.zx')
     children, total = [], controller.stat().st_size
+    local_bundles = {}
     for app in apps:
         descriptor = app['descriptor']
         name = descriptor['name']
@@ -496,7 +497,10 @@ def collection(include_island=True):
             shutil.copyfile(included[descriptor['id']], target)
             total += target.stat().st_size
         if not external:
-            copies.append((bundle, f'arcade/games/{name}.zx'))
+            if include_island:
+                local_bundles[descriptor['id']] = f'games/{name}.zx'
+            else:
+                copies.append((bundle, f'arcade/games/{name}.zx'))
         child = dict(id=descriptor['id'], title=descriptor['title'], bundle=f'assets/arcade/games/{name}.zx',
                      protocol='node/2', expected_id=name,
                      version=descriptor['version'] if external else edition_version(app['manifest']),
@@ -545,6 +549,8 @@ def collection(include_island=True):
     receipt = dict(id=COLLECTION_ID, version=version['version'], sha256=digest(payload),
                    apps_sha256=controller_digest, children=children, source_mode='project',
                    island_bundled=bool(included))
+    if local_bundles:
+        receipt['local_bundles'] = local_bundles
     (OUT / 'shovey.json').write_text(json.dumps(receipt, indent=2) + '\n')
     build_entity()
     print(f'Shovey {version["version"]} collection: {payload.relative_to(ROOT)}')
@@ -559,7 +565,41 @@ def checked_collection():
         raise SystemExit('Standalone requires included Island; run python3 scripts/player.py collection')
     if not (OUT / 'entity.zx').is_file():
         raise SystemExit('The Profile is missing; run python3 scripts/player.py collection')
+    verify_local_bundles(OUT, receipt)
     return receipt
+
+
+def verify_local_bundles(folder, receipt):
+    for identity, name in receipt.get('local_bundles', {}).items():
+        child = next((item for item in receipt['children'] if item['id'] == identity), None)
+        if child is None or name != f"games/{child['expected_id']}.zx" or not re.fullmatch(r'games/[a-z0-9-]+\.zx', name):
+            raise SystemExit('The collection has an invalid local bundle path')
+        path = folder / name
+        if not path.is_file() or path.stat().st_size != child['bytes'] or digest(path) != child['sha256']:
+            raise SystemExit('A local game changed; run python3 scripts/player.py collection')
+
+
+def stage_collection_data(folder, receipt):
+    """Ship verified local payloads beside the small collection on native hosts."""
+    for name in ['shovey.zx', 'shovey.json', 'entity.zx', *receipt.get('local_bundles', {}).values()]:
+        target = folder / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(OUT / name, target)
+
+
+def web_preload(release_folder, work, receipt):
+    """Use the generic directory preload without changing signed payload bytes."""
+    verify_local_bundles(release_folder, receipt)
+    if not receipt.get('local_bundles'):
+        return release_folder / 'shovey.zx', []
+    preload = work / 'payloads'
+    if preload.exists():
+        shutil.rmtree(preload)
+    for name in ['shovey.zx', *receipt['local_bundles'].values()]:
+        target = preload / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(release_folder / name, target)
+    return preload, [release_folder / name for name in receipt['local_bundles'].values()]
 
 
 # Native hosts.
@@ -602,8 +642,7 @@ def linux_host():
 def linux():
     receipt = checked_collection()
     folder = linux_host().parent
-    for name in ('shovey.zx', 'shovey.json', 'entity.zx'):
-        shutil.copyfile(OUT / name, folder / name)
+    stage_collection_data(folder, receipt)
     startup_art(folder)
     from PIL import Image
     Image.open(ROOT / 'assets/branding/shovey-icon.png').resize((256, 256), Image.Resampling.LANCZOS).save(
@@ -658,8 +697,7 @@ def windows_host(tools):
 def windows(tools):
     receipt = checked_collection()
     folder = windows_host(tools).parent
-    for name in ('shovey.zx', 'shovey.json', 'entity.zx'):
-        shutil.copyfile(OUT / name, folder / name)
+    stage_collection_data(folder, receipt)
     pack('windows', folder, receipt['version'])
 
 
@@ -667,8 +705,9 @@ def pack(platform, folder, version):
     """The download: the player and its files in one Shovey folder."""
     stamp = int(os.environ.get('SOURCE_DATE_EPOCH') or time.time())
     DOWNLOADS.mkdir(parents=True, exist_ok=True)
+    local_bundles = json.loads((folder / 'shovey.json').read_text()).get('local_bundles', {})
     if platform == 'linux':
-        files = [('shovey', 0o755)] + [(name, 0o644) for name in LINUX_DATA]
+        files = [('shovey', 0o755)] + [(name, 0o644) for name in [*LINUX_DATA, *local_bundles.values()]]
         output = DOWNLOADS / f'shovey-v{version}-linux-x86_64.tar.gz'
         temporary = output.with_suffix('.new')
         with tarfile.open(temporary, 'w:gz') as archive:
@@ -678,7 +717,7 @@ def pack(platform, folder, version):
                 entry.size, entry.mode, entry.mtime = len(contents), mode, stamp
                 archive.addfile(entry, io.BytesIO(contents))
     else:
-        files = [('shovey.exe', 0o755)] + [(name, 0o644) for name in WINDOWS_DATA]
+        files = [('shovey.exe', 0o755)] + [(name, 0o644) for name in [*WINDOWS_DATA, *local_bundles.values()]]
         output = DOWNLOADS / f'shovey-v{version}-windows-x86_64.zip'
         temporary = output.with_suffix('.new')
         moment = time.gmtime(max(stamp, 315532800))[:6]
@@ -725,8 +764,7 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
     if assets.exists():
         shutil.rmtree(assets)
     assets.mkdir(parents=True)
-    for name in ('shovey.zx', 'shovey.json', 'entity.zx'):
-        shutil.copyfile(OUT / name, assets / name)
+    stage_collection_data(assets, receipt)
     # Android before 10 has no font lookup; the Windows player ships the same font.
     if not (OUT / 'font.ttf').is_file():
         build_entity()
@@ -786,8 +824,10 @@ def site(release_folder, output):
     work.mkdir(parents=True, exist_ok=True)
     env = environment()
     env['ZIRAN'] = str(toolchain() / 'build/bin/ziran')
-    run([sys.executable, package('entity') / 'scripts/build-web.py', '--bundle', bundle, '--profile', profile,
+    preload, linked = web_preload(release_folder, work, receipt)
+    run([sys.executable, package('entity') / 'scripts/build-web.py', '--bundle', preload, '--profile', profile,
          '--output', work / 'runtime.html', '--linked', bundle, '--linked', profile,
+         *[part for source in linked for part in ('--linked', source)],
          '--entry', 'player_web:main', '--source', 'src/player_web.zi'], cwd=ROOT, env=env)
     output = output.resolve()
     if output.exists():

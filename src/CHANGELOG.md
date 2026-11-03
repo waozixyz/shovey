@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Open Shovey on its normal title and reach the Classic Editor inside the game, preserving existing add-ons and drafts.
+
 ## [0.6.164] - 2026-11-02
 
 - Password fields start empty and show one star for each character you type.

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise local bundle staging alongside external catalog entries."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -14,6 +15,39 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 spec = importlib.util.spec_from_file_location('build_bundles', ROOT / 'scripts/build-bundles.py')
 builder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(builder)
+import player
+
+
+class PlayerPayloadTest(unittest.TestCase):
+    def test_native_payload_receipt_staging_and_corruption(self):
+        work = ROOT / 'work'
+        subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=ROOT, check=True)
+        with tempfile.TemporaryDirectory(prefix='player-payload-', dir=work) as folder:
+            root = Path(folder)
+            payload = root / 'games/shovey.zx'
+            payload.parent.mkdir()
+            payload.write_bytes(b'ZX\0\0verified game')
+            (root / 'shovey.zx').write_bytes(b'ZX\0\0small collection')
+            (root / 'entity.zx').write_bytes(b'ZX\0\0profile')
+            receipt = dict(version='test', island_bundled=True,
+                sha256=player.digest(root / 'shovey.zx'),
+                local_bundles={'arcade.shovey': 'games/shovey.zx'},
+                children=[dict(id='arcade.shovey', expected_id='shovey',
+                    bytes=payload.stat().st_size, sha256=hashlib.sha256(payload.read_bytes()).hexdigest())])
+            (root / 'shovey.json').write_text(json.dumps(receipt))
+            with patch.object(player, 'OUT', root), patch.object(player, 'release', return_value={'version': 'test'}):
+                self.assertEqual(player.checked_collection(), receipt)
+                target = root / 'native'
+                player.stage_collection_data(target, receipt)
+                self.assertEqual((target / 'games/shovey.zx').read_bytes(), payload.read_bytes())
+                self.assertEqual((target / 'shovey.zx').read_bytes(), (root / 'shovey.zx').read_bytes())
+                preload, linked = player.web_preload(target, root / 'web', receipt)
+                self.assertEqual((preload / 'games/shovey.zx').read_bytes(), payload.read_bytes())
+                self.assertEqual((preload / 'shovey.zx').read_bytes(), (root / 'shovey.zx').read_bytes())
+                self.assertEqual(linked, [target / 'games/shovey.zx'])
+                payload.write_bytes(b'corrupt payload')
+                with self.assertRaisesRegex(SystemExit, 'A local game changed'):
+                    player.checked_collection()
 
 
 class BundleCatalogTest(unittest.TestCase):
@@ -75,6 +109,18 @@ class BundleCatalogTest(unittest.TestCase):
         self.assertEqual(private.read_text(), 'preserved private output')
         self.assertFalse((self.root / 'build/game-assets/private').exists())
         self.assertFalse((self.root / 'build/game-generated/private').exists())
+
+    def test_portable_title_art_is_kept_and_editor_covers_stay_out(self):
+        rules = json.loads((ROOT / 'src/bundle.json').read_text())
+        self.write('src/bundle.json', json.dumps(rules))
+        staged = self.root / 'staged'
+        names = ('title-portrait.png', 'title-landscape.png', 'logo.png',
+                 'editor-portrait.png', 'editor-landscape.png')
+        for name in names:
+            self.write('staged/assets/shovey/' + name, 'fixture picture')
+        packed = builder.bundle_assets('src/catalog.json', 'shovey', staged, True) / 'shovey'
+        self.assertEqual({p.name for p in packed.iterdir()},
+                         {'title-portrait.png', 'title-landscape.png', 'logo.png'})
 
     def test_invalid_local_descriptor_still_fails(self):
         self.write('apps.json', json.dumps(dict(apps=[dict(manifest='broken.json')])))

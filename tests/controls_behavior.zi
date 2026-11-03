@@ -6,6 +6,9 @@
 // offer Arcade's services, like the Arcade app. Relaunching forgets what the
 // game itself remembered; the host keeps its records and services.
 service_open: bool;
+editor_requests: s32;
+navigation_supported: bool;
+navigation_reply: string = "{\"v\":1,\"status\":\"queued\",\"request\":1,\"receipt\":\"\",\"reason\":\"\"}";
 service_controls: [16]u8;
 service_sound: [16]u8;
 record_controls: [16]u8;
@@ -14,6 +17,11 @@ record_sound: [16]u8;
 #program_export
 FakeService :: (name: string, request: string) -> string {
     if !service_open { return "{\"status\":\"unavailable\"}" }
+    if name == "apps.navigation" {
+        editor_requests += 1
+        if request != "arcade.shovey-editor" { return "{\"v\":1,\"status\":\"rejected\"}" }
+        return navigation_reply
+    }
     if name == "arcade.controls" {
         if request == "get" { return TextUntilNul(service_controls[:]) }
         if request == "set-on" || request == "set-off" { unused CopyCString(request[4:], service_controls[:]) }
@@ -45,7 +53,10 @@ FakeSave :: (name: string, text: string) -> bool {
 desktop: bool;
 
 #program_export
-FakeSupports :: (capability: string) -> bool { return desktop && capability == "kryon.input.desktop" }
+FakeSupports :: (capability: string) -> bool {
+    if capability == "app-navigation" { return navigation_supported }
+    return desktop && capability == "kryon.input.desktop"
+}
 
 Relaunch :: () {
     controls_pad = -1
@@ -88,5 +99,30 @@ Check :: () -> s32 {
     desktop = false
     Relaunch()
     if ControlsChosen() { return 8 }
+    // A portable game returns to its own title; direct views use host Back.
+    game_title_enabled = false
+    game_title_requested = false
+    LeaveForGameSelection()
+    if game_title_requested { return 9 }
+    game_title_enabled = true
+    LeaveForGameSelection()
+    if !game_title_requested { return 10 }
+    // No request at all without the shared host's explicit capability.
+    service_open = true
+    if ClassicEditorAvailable() || OpenClassicEditor() || editor_requests != 0 { return 11 }
+    navigation_supported = true
+    if !ClassicEditorAvailable() || !OpenClassicEditor() || editor_requests != 1 { return 12 }
+    navigation_reply = "{\"v\":1,\"status\":\"rejected\",\"reason\":\"consent unavailable\"}"
+    if OpenClassicEditor() || editor_requests != 2 { return 13 }
+    navigation_reply = "{\"status\":\"unavailable\"}"
+    if OpenClassicEditor() || editor_requests != 3 { return 14 }
+    navigation_reply = "queued"
+    if OpenClassicEditor() || editor_requests != 4 { return 15 }
+    navigation_reply = "{\"v\":1,\"status\":\"queued\"} trailing"
+    if OpenClassicEditor() || editor_requests != 5 { return 16 }
+    navigation_reply = "{\"v\":2,\"status\":\"queued\"}"
+    if OpenClassicEditor() || editor_requests != 6 { return 17 }
+    service_open = false
+    if OpenClassicEditor() || editor_requests != 6 { return 18 }
     return 42
 }
