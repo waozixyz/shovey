@@ -1,3 +1,5 @@
+EntityReferralHost :: #import "entity/native_host";
+ReferralLocale :: #import "entity/referral_locales";
 // Shovey's player: the native provider for the shared Apps runtime that
 // runs the Shovey collection (src/player_collection.zi and its games) on
 // Linux, Windows, Android and the web. It is the host Arcade's standalone
@@ -561,6 +563,7 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
         "shovey", TextUntilNul(digest[:]), "local", platform, TextUntilNul(harness[:]), language)
     if collection_ready {
         entity_locale_text = CollectionLocaleText
+        EntityReferralHost.EntityHostReferralsLocale(TextUntilNul(collection_host.locale[:]))
         root := AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
         collection_island_package.included = AppHostAsset(root, "assets/paid/shovey-island.zx")
         included := collection_island_package.included
@@ -1098,6 +1101,7 @@ CollectionLocaleLabel :: (text: string, key: string) -> string {
 }
 
 CollectionLocaleText :: (key: string) -> string {
+    if key.count > 9 && key[:9] == "referral." { return ReferralLocale.ReferralLabel(TextUntilNul(collection_host.locale[:]), key) }
     root := AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
     if root == null { return key }
     path: Vec(u8)

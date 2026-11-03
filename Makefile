@@ -224,9 +224,9 @@ web-zx: bundles
 # The browser game compiled to WebAssembly: smooth on slow phones, where
 # the interpreted ZX lagged. Kryon's canvas runner answers the app's
 # context calls and keeps saves where the ZX player kept them, so players
-# keep their progress. It reads the live campaign with Entity's reader; the
-# Entity profile needs the ZX player for now: `make web-zx` builds that
-# edition into build/web.
+# keep their progress. Entity supplies the shared Profile overlay and owns
+# its account, referral and password services. `make web-zx` keeps the ZX
+# edition available in the same output directory.
 ZIRAN_BIN ?= $(TOOLCHAIN)/build/bin
 EMCC ?= $(or $(wildcard $(HOME)/emsdk/upstream/emscripten/emcc),emcc)
 WEB_OUT ?= build/web
@@ -234,19 +234,18 @@ WEB_NATIVE_OUT ?= build/web-native
 web: bundles
 	python3 scripts/prepare-web.py
 	rm -rf $(WEB_OUT) $(WEB_NATIVE_OUT)
-	mkdir -p $(WEB_OUT) $(WEB_NATIVE_OUT)/ir $(WEB_NATIVE_OUT)/c
-	'$(ZIRAN_BIN)/zi2zir' --root . --module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
-		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
-		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
-		--module-path '$(ENTITY)/src' --module-path 'entity=$(ENTITY)/src' $(COMPLETION_MODULES) --module-path build/web-generated --define PLATFORM_WEB --define SHOVEY_WEB --define SHOVEY_RELEASE \
-		--entry canvas_app_run:main --bind canvas_app_run:CanvasAppMain=game:Main \
+	mkdir -p $(WEB_OUT) $(WEB_NATIVE_OUT)/c
+	'$(ZIRAN)' build --project $(LOCK_FLAGS) --target=c --module-path build/web-generated \
+		--module-path src/web --module-path src/editor --module-path src/solver \
+		--define PLATFORM_WEB --define BUNDLE_NATIVE_RENDERER --define SHOVEY_WEB --define SHOVEY_RELEASE \
+		--entry web_profile_main:main --bind kryon/canvas_app_run:CanvasAppMain=game:Main \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
 		--bind editor_view:AppKeyHost=host:GameKeyHost --bind editor_view:AppSoundHost=host:AppSoundHost \
 		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
 		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
-		-o $(WEB_NATIVE_OUT)/ir '$(KRYON)/src/backend/canvas_app_run.zi' '$(KRYON)/src/backend/canvas_raster.zi' src/web/game.zi
-	'$(ZIRAN_BIN)/zi2c' --define PLATFORM_WEB --root $(WEB_NATIVE_OUT)/ir -o $(WEB_NATIVE_OUT)/c $$(find $(WEB_NATIVE_OUT)/ir -name '*.zir')
+		-o $(WEB_NATIVE_OUT)/c '$(KRYON)/src/backend/canvas_app_run.zi' '$(KRYON)/src/backend/canvas_raster.zi' \
+		src/web_profile_main.zi src/web/game.zi
 	python3 scripts/build_artifacts.py --ziran '$(ZIRAN)' web-link --cc '$(EMCC)' \
 		--include '$(TOOLCHAIN)/include' --generated $(WEB_NATIVE_OUT)/c \
 		--assets build/web-assets/assets --output $(WEB_OUT)/index.js
@@ -270,15 +269,21 @@ package-crazygames-test:
 	sh tests/package_crazygames_test.sh
 
 web-test: web
-	node tests/web_mini_test.mjs
-	node tests/web_tap_beside_board_test.mjs
-	node tests/web_copy_test.mjs
-	node tests/web_live_campaign_test.mjs
+	$(JS_RUNTIME) tests/web_mini_test.mjs
+	$(JS_RUNTIME) tests/web_tap_beside_board_test.mjs
+	$(JS_RUNTIME) tests/web_copy_test.mjs
+	$(JS_RUNTIME) tests/web_live_campaign_test.mjs
+
+# Requires Daochi's signed referral-fixture.test; all state and traffic stay local.
+.PHONY: referral-web-test
+referral-web-test: web
+	$(JS_RUNTIME) tests/referral_web_test.mjs
 
 # The profile and the live campaign run on the ZX player's web edition.
+JS_RUNTIME ?= node
 web-zx-test: web-zx
-	node tests/web_profile_test.mjs
-	node tests/web_live_campaign_test.mjs
+	$(JS_RUNTIME) tests/web_profile_test.mjs
+	$(JS_RUNTIME) tests/web_live_campaign_test.mjs
 
 previews:
 	python3 tools/levels/levels.py previews
@@ -387,6 +392,7 @@ test: barrels-test solver laws game-maps-test shop-test forest-puzzle-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
+	python3 tests/build_artifacts_test.py
 	$(call ziran_test,board_effects_test)
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py

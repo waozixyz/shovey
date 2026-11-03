@@ -1,3 +1,7 @@
+Referral :: #import "entity/referral_native";
+Payment :: #import "entity/dew_play";
+ReferralLink :: #import "entity/referral_model";
+ReferralAndroid :: #import "entity/referral_android";
 // Only the outer player owns Entity, the account Profile. Shovey's games
 // reach it through the player's services, as they do inside Arcade.
 #import "entity/native_host"
@@ -60,6 +64,8 @@ EntityOpen :: (bytes: string, data: string) -> bool {
     EntityShoveyTokens()
     root := Join(data, "entity")
     defer { EntityFree(root) }
+    unused Referral.EntityReferralsSource(ifx Payment.DewPlayEdition() then "play" else "direct", "shovey")
+    EntityHostGameContext("shovey")
     entity_ready = EntityHostOpen(bytes, root, "arcade", true)
     return entity_ready
 }
@@ -85,9 +91,14 @@ EntityShow :: () -> bool { return EntityShowPage("open") }
 
 EntityShowPage :: (page: string) -> bool {
     if !entity_ready { return false }
-    if page != "open" && page != "leaderboard" && page != "dew" { return false }
+    referral := page == "referrals" || (page.count > 10 && page[:10] == "referrals:")
+    if page != "open" && page != "leaderboard" && page != "dew" && !referral { return false }
     if entity_visible && !EntityHostSave() { return false }
-    if !EntityHostProfileRequest(page) { return false }
+    if referral {
+        code: [129]u8
+        if page.count > 10 && !ReferralLink.ReferralCodeFromLink(page[10:], code[:]) { return false }
+        if !EntityHostReferrals(TextUntilNul(code[:])) { return false }
+    } else if !EntityHostProfileRequest(page) { return false }
     entity_heading = ifx page == "leaderboard" then "shovey_shop_leaderboard" else ifx page == "dew" then "shovey_shop_dew" else "shovey_shop_profile"
     entity_visible = true
     return true
@@ -123,6 +134,14 @@ EntityFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32)
 
 EntityPump :: () {
     EntityHostPump()
+    invitation: [129]u8
+    if entity_ready && ReferralAndroid.EntityTakeReferralInvitation(invitation[:]) {
+        request: Vec(u8)
+        BuilderPrint(*request, "referrals:%", TextUntilNul(invitation[:]))
+        page := BuilderFinish(request)
+        unused EntityShowPage(page)
+        EntityFree(page)
+    }
 }
 
 EntityClose :: () -> bool {

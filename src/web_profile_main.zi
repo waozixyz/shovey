@@ -1,0 +1,5 @@
+// Keep the root entry local while the reusable provider retains package identity.
+Host :: #import "entity/canvas_profile_host";
+
+#program_export
+main :: () -> s32 { return Host.EntityCanvasMain() }

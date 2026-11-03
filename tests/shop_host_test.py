@@ -28,6 +28,7 @@ source = '''#import "std/vec"
 #import "std/c_string"
 #import "std/text_buffer"
 ProductionShopUI :: #import "shop_view";
+ReferralLink :: #import "entity/referral_model";
 Identity :: struct { id: [128]u8 }
 AppLocation :: struct { id: [128]u8; sha256: [65]u8 }
 AppLocator :: struct { identity: Identity; chain: Vec(AppLocation) }
@@ -117,8 +118,14 @@ entity_save: bool = true;
 entity_route: bool = true;
 entity_back: bool;
 profile_calls: s32;
+referral_calls: s32;
+referral_code: [129]u8;
 EntityHostSave :: () -> bool { return entity_save }
 EntityHostProfileRequest :: (page: string) -> bool { profile_calls += 1; return entity_route }
+EntityHostReferrals :: (code: string) -> bool {
+    referral_calls += 1
+    return CopyCString(code, referral_code[:]) && entity_route
+}
 EntityHostBack :: () -> bool { return entity_back }
 '''
 source += r'''
@@ -292,6 +299,16 @@ Check :: () -> s32 {
     if !EntityBack() || entity_heading != "shovey_shop_profile" || !entity_visible { return 29 }
     entity_back = false
     if !EntityBack() || entity_visible { return 30 }
+    if EntityShowPage("referrals:bad/code") ||
+        EntityShowPage("referrals:https://example.invalid/invite/abc_123") || referral_calls != 0 { return 46 }
+    if !EntityShowPage("referrals") || referral_calls != 1 || referral_code[0] != 0 ||
+        entity_heading != "shovey_shop_profile" || !entity_visible { return 47 }
+    if !EntityShowPage("referrals:abc_123") || referral_calls != 2 ||
+        TextUntilNul(referral_code[:]) != "abc_123" { return 48 }
+    if !EntityShowPage("referrals:https://dew.waozi.xyz/invite/def-456?app=shovey") ||
+        referral_calls != 3 || TextUntilNul(referral_code[:]) != "def-456" { return 49 }
+    entity_save = false
+    if EntityShowPage("referrals:other") || referral_calls != 3 { return 50 }
     return 42
 }
 '''

@@ -5,7 +5,9 @@ support archives are linked: libentity's complete Ziran graph must not be
 linked into that same graph a second time.
 """
 import argparse
+import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 import shutil
@@ -50,6 +52,46 @@ def renderer(artifact):
 
 def renderer_link(meta, *, preloads=True):
     return shared_script('kryon', 'renderer_artifact').renderer_link(meta, preloads=preloads)
+
+
+def preload_groups(files, limit=24 * 1024 * 1024):
+    """Keep original resource bytes in packages below Pages' 25 MiB limit."""
+    groups, group, size = [], [], 0
+    for path, mount in files:
+        length = path.stat().st_size
+        if length > limit:
+            raise ValueError(f'Web resource exceeds the package limit: {path}')
+        if group and size + length > limit:
+            groups.append(group)
+            group, size = [], 0
+        group.append((path, mount))
+        size += length
+    if group:
+        groups.append(group)
+    return groups
+
+
+def web_preloads(args, meta, profile, env):
+    files = [(Path(item['path']), item['mount']) for item in meta.get('preload_files', [])]
+    files += [(path, '/assets/' + path.relative_to(args.assets).as_posix())
+              for path in sorted(args.assets.rglob('*')) if path.is_file()]
+    files.append((profile.output('entity.zx'), '/entity.zx'))
+    packager = Path(shutil.which(args.cc) or args.cc).resolve().parent / 'tools/file_packager'
+    staging = args.generated.parent / 'preloads'
+    staging.mkdir(parents=True, exist_ok=True)
+    flags = []
+    for index, group in enumerate(preload_groups(files)):
+        data = args.output.with_name(f'{args.output.stem}-assets-{index}.data')
+        script = staging / f'assets-{index}.js'
+        subprocess.run([str(packager), str(data), '--preload',
+                        *[str(path.resolve()) + '@' + mount for path, mount in group],
+                        '--js-output=' + str(script), '--no-node'], check=True, env=env)
+        flags += ['--pre-js', str(script)]
+    args.output.with_name('preload-manifest.json').write_text(json.dumps([
+        dict(path=mount, bytes=path.stat().st_size,
+             sha256=hashlib.file_digest(path.open('rb'), 'sha256').hexdigest())
+        for path, mount in files], indent=2) + '\n')
+    return flags
 
 
 def android_config(args):
@@ -104,14 +146,23 @@ def main():
     elif args.command == 'web-link':
         env = environment()
         env['CC'] = str(Path(shutil.which(args.cc) or args.cc).absolute())
+        env['AR'] = str(Path(env['CC']).with_name('emar'))
         meta = renderer(request('kryon:renderer-web', 'emscripten-wasm32-emscripten',
                                 ziran=args.ziran, env=env))
+        crypto = request('entity:native-crypto', 'emscripten-wasm32-emscripten',
+                         ziran=args.ziran, env=env)
+        # The normal ZX profile is platform independent; share the artifact
+        # already consumed by the native player and the ZX browser edition.
+        profile = request('entity:native-profile', 'linux-x86_64-gnu',
+                          ziran=args.ziran, env=environment())
         sources = sorted(args.generated.rglob('*.c'))
         includes = sorted({args.generated, *(path.parent for path in sources)})
+        preloads = web_preloads(args, meta, profile, env)
         subprocess.run([args.cc, '-O2', '-I' + str(args.include),
                         *['-iquote' + str(path) for path in includes], *meta['compile_flags'],
-                        *map(str, sources), *renderer_link(meta), '--preload-file',
-                        str(args.assets) + '@/assets', '-o', str(args.output)], check=True, env=env)
+                        *map(str, sources), *renderer_link(meta, preloads=False), *crypto.link_flags(env=env),
+                        *preloads,
+                        '-o', str(args.output)], check=True, env=env)
     elif args.command == 'android-config':
         android_config(args)
 

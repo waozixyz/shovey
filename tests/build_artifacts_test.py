@@ -56,6 +56,61 @@ class DescriptorTest(unittest.TestCase):
         self.assertEqual(command[0], str(ROOT / 'scripts/ziran.sh'))
         self.assertNotIn('DISPLAY', options['env'])
 
+    def test_web_link_keeps_native_profile_compiler(self):
+        calls = []
+        class Artifact:
+            def output(self, name):
+                return self.root / name
+
+            def link_flags(self, **options):
+                return []
+
+        artifact = Artifact()
+        artifact.root = self.root
+        (self.root / 'entity.zx').write_bytes(b'profile')
+        def request(selection, platform, **options):
+            calls.append((selection, platform, options['env']))
+            return artifact
+
+        metadata = dict(compile_flags=[])
+        arguments = ['build_artifacts.py', 'web-link', '--cc', '/toolchain/emcc',
+                     '--include', str(self.root), '--generated', str(self.root),
+                     '--assets', str(self.root), '--output', str(self.root / 'index.js')]
+        with patch.dict(os.environ, CC='/usr/bin/cc', AR='/usr/bin/ar'), \
+             patch.object(sys, 'argv', arguments), \
+             patch.object(artifacts, 'request', side_effect=request), \
+             patch.object(artifacts, 'renderer', return_value=metadata), \
+             patch.object(artifacts, 'renderer_link', return_value=[]), \
+             patch.object(subprocess, 'run') as link:
+            artifacts.main()
+        self.assertEqual([(name, platform) for name, platform, _ in calls], [
+            ('kryon:renderer-web', 'emscripten-wasm32-emscripten'),
+            ('entity:native-crypto', 'emscripten-wasm32-emscripten'),
+            ('entity:native-profile', 'linux-x86_64-gnu')])
+        self.assertEqual(calls[0][2]['CC'], '/toolchain/emcc')
+        self.assertEqual(calls[1][2]['AR'], '/toolchain/emar')
+        self.assertEqual(calls[2][2]['CC'], '/usr/bin/cc')
+        self.assertEqual(calls[2][2]['AR'], '/usr/bin/ar')
+        command = link.call_args.args[0]
+        self.assertNotIn('--embed-file', command)
+        self.assertNotIn('--preload-file', command)
+        self.assertIn('--pre-js', command)
+        packages = [call.args[0] for call in link.call_args_list[:-1]]
+        self.assertTrue(any(str(self.root / 'entity.zx') + '@/entity.zx' in argv for argv in packages))
+
+    def test_preload_groups_keep_every_resource_and_mount_within_limit(self):
+        files = []
+        for name, size in [('art.webp', 3), ('font.ttf', 3), ('entity.zx', 4)]:
+            path = self.root / name
+            path.write_bytes(b'x' * size)
+            files.append((path, '/' + name))
+        groups = artifacts.preload_groups(files, limit=6)
+        self.assertEqual(groups, [files[:2], files[2:]])
+        self.assertEqual([item for group in groups for item in group], files)
+        self.assertTrue(all(sum(path.stat().st_size for path, _ in group) <= 6 for group in groups))
+        with self.assertRaisesRegex(ValueError, 'exceeds the package limit'):
+            artifacts.preload_groups(files, limit=2)
+
 
 def providers(ziran):
     """No overrides/source copies: exercise the published immutable graph."""
