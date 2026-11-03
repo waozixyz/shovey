@@ -211,8 +211,14 @@ try {
   await wait(() => evaluate(`globalThis.Module?.FS?.analyzePath('/tmp/test-driver').exists && document.querySelector('#loading-screen').classList.contains('is-hidden')`), 'Game did not reload');
   await wait(async () => (await tree()).some(n => n.label === 'Play' && (n.role === 'button' || n.kind === 'button')), 'Play cover did not appear');
   await press('Play');
-  await playFromMap();
-  await wait(async () => (await tree()).some(n => n.label.startsWith('Level 74 /')), 'Earned level did not open');
+  await wait(async () => (await tree()).some(n => n.key === 20105), 'Play did not open the map');
+  // Place 74 carries its route name (forks are named like 56-A1); the map focuses it.
+  const earnedName = (await tree()).find(n => n.key === 33074)?.label;
+  assert(earnedName, 'Earned place 74 is missing from the map');
+  await wait(async () => (await tree()).some(n => n.key === 20121 && n.label === 'Level ' + earnedName),
+    'The map did not focus earned place 74');
+  await pressKey(20122);
+  await wait(async () => (await tree()).some(n => n.label.startsWith('Level ' + earnedName + ' /')), 'Earned level did not open');
   const arrows = [['ArrowLeft', 37], ['ArrowUp', 38], ['ArrowRight', 39], ['ArrowDown', 40]];
   for (const [index, [width, height]] of [[390, 844], [960, 600]].entries()) {
     await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: true});

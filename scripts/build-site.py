@@ -8,6 +8,7 @@ covers. Without --download the newest published release is fetched with gh.
 """
 import argparse
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -40,11 +41,24 @@ def download(tag, work):
     folder = work / 'shovey'
     folder.mkdir()
     with tarfile.open(work / archive) as packed:
-        for name in RELEASE_FILES:
-            member = packed.getmember('shovey/' + name)
-            if not member.isfile():
+        def extract(name):
+            try:
+                member = packed.getmember('shovey/' + name)
+            except KeyError:
+                member = None
+            if member is None or not member.isfile():
                 raise SystemExit(f'{archive} has no file shovey/{name}')
-            (folder / name).write_bytes(packed.extractfile(member).read())
+            target = folder / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(packed.extractfile(member).read())
+        for name in RELEASE_FILES:
+            extract(name)
+        # The games the collection ships beside it; player.site checks each digest.
+        receipt = json.loads((folder / 'shovey.json').read_text())
+        for name in receipt.get('local_bundles', {}).values():
+            if not re.fullmatch(r'games/[a-z0-9-]+\.zx', name):
+                raise SystemExit(f'{archive} names an invalid local bundle {name}')
+            extract(name)
     return folder
 
 

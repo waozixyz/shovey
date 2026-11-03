@@ -129,10 +129,14 @@ try {
   await delay(1500);
   await press('Not now');
   assert(await press('Play'), 'No Play button: ' + (await tree()).map(node => node.label).join('|'));
+  // Play opens the map, which focuses Level 1 on a fresh profile; its Play starts it.
   for (let end = Date.now() + 30000; Date.now() < end;) {
-    const labels = (await tree()).map(node => node.label);
+    const nodes = await tree(), labels = nodes.map(node => node.label);
+    const mapPlay = nodes.find(node => node.key === 20122);
     if (labels.includes('How do you want to move?')) await press('Swipe and tap');
     else if (labels.some(label => /^Level 1 \//.test(label))) break;
+    else if (mapPlay && nodes.some(node => node.key === 20121 && node.label === 'Level 1'))
+      await click(mapPlay.x + mapPlay.width / 2, mapPlay.y + mapPlay.height / 2);
     await delay(250);
   }
   assert((await tree()).some(node => /^Level 1 \//.test(node.label)), 'Level 1 did not open');

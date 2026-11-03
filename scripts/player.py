@@ -599,7 +599,11 @@ def web_preload(release_folder, work, receipt):
         target = preload / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(release_folder / name, target)
-    return preload, [release_folder / name for name in receipt['local_bundles'].values()]
+    # A shared-code add-on opens with its dependencies as libraries, which
+    # native-c cannot compose on its own; the page runs it on its portable VM.
+    standalone = {child['id'] for child in receipt['children'] if not child.get('shared_code')}
+    return preload, [release_folder / name for identity, name in receipt['local_bundles'].items()
+                     if identity in standalone]
 
 
 # Native hosts.
