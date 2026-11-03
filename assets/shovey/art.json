@@ -2388,124 +2388,384 @@
       "sha256": "ddcbf989eab5971157d8cdc73494ed03660bb4c7a7679543248f45be260777e3"
     },
     {
-      "path": "world-map/riverfold-world-region-01.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "913cd1cc0bb0842df049d98094a20024eff9377170f682f31b09b4a9e7f4b344"
+      "path": "world-map/back-arrow.png",
+      "depicts": "Shovey back control: generated golden wooden left arrow with dark stone rim, true transparent alpha, no text",
+      "sha256": "9e3ac7196b021b10a79966503b7bdc9804b025ae5725cc7f92a5780508ff7494"
     },
     {
-      "path": "world-map/riverfold-world-region-02.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "99390c39fcf3d180b2d6e2e8c44c0b51ec4dd923f7f6224838abc75cbcb37fb2"
+      "path": "world-map/shovey-avatar.png",
+      "depicts": "Shovey current-position avatar: glossy green spherical hero with two white eyes, generated transparent bitmap matching game cover",
+      "sha256": "ec24a5e4106c8fa68dc6f8a1a1743ed798c408c2ae3ec789f0a38487d728ac25"
     },
     {
-      "path": "world-map/riverfold-world-region-03.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "618e5664684606f6a5aff21a875392e27d82d58385bb29318662ef655e1e40f8"
+      "path": "world-map/continuous-00-portrait.webp",
+      "depicts": "Continuous portrait world map tile 0, joined source v5",
+      "sha256": "f18295d212c5d5981ff683c15868c214339d7ae49531dd2fdfcc95754349ae89"
     },
     {
-      "path": "world-map/riverfold-world-region-04.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "a3846e0f5ca2eed446968145143bb5d6ce7a0f735d353b8bc62f281a551796e8"
+      "path": "world-map/continuous-00-landscape.webp",
+      "depicts": "Continuous landscape world map tile 0, joined source v5",
+      "sha256": "1835ff8df45bdbfd8ab3996e9534b5be800f890c4aabb0836395026c1d139a63"
     },
     {
-      "path": "world-map/riverfold-world-region-05.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "ce9507c6bc354a42db28e75c9f7d7fc56af9ede3d324bb8b9c091eedd680fbd0"
+      "path": "world-map/continuous-01-portrait.webp",
+      "depicts": "Continuous portrait world map tile 1, joined source v5",
+      "sha256": "fc10bc25d5503b719ffa2a2c7c56dfacc7d7747dca119d57fc1f3566bd56bc24"
     },
     {
-      "path": "world-map/riverfold-world-region-06.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "c7662cc901c3f6556295274a54df3eecfa890080cad73c5b1b6310470ac41914"
+      "path": "world-map/continuous-01-landscape.webp",
+      "depicts": "Continuous landscape world map tile 1, joined source v5",
+      "sha256": "a686364fe0e184b2eb6a6749424e76d4f9c897d55776bca2a76bef94f58939d4"
     },
     {
-      "path": "world-map/riverfold-world-region-07.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "e4c57ec650f940fa4c74cb6d0d7b0efb8ed199d6555ef1797156e44a2f1cb54b"
+      "path": "world-map/continuous-02-portrait.webp",
+      "depicts": "Continuous portrait world map tile 2, joined source v5",
+      "sha256": "273e75454cc19cb1c562031f3faa298961eeec1e69d2627ccf765c2547aa30e7"
     },
     {
-      "path": "world-map/riverfold-world-region-08.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "f3eb89f214fc9026bc3d7e36586ef42d7dd6e6886418c7cb0222c43e40572d6d"
+      "path": "world-map/continuous-02-landscape.webp",
+      "depicts": "Continuous landscape world map tile 2, joined source v5",
+      "sha256": "0dc2087604ff759c2bff45aa414401491637e45466a1c7b75a8794ef57454913"
     },
     {
-      "path": "world-map/riverfold-world-region-09.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "5154d6d756103f48a2d117d4117ab0ffe6ea6493c498a14414264d2a0a3f9a4b"
+      "path": "world-map/continuous-03-portrait.webp",
+      "depicts": "Continuous portrait world map tile 3, joined source v5",
+      "sha256": "dec9dd83d3a026a5fd2ad4eb4d24cf96c3af851631d376abeb49fb203baa6b6a"
     },
     {
-      "path": "world-map/riverfold-world-region-10.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "4edb5e51dba6322fbca854c48a8c65e61c293161c09ce45b96318359c537f563"
+      "path": "world-map/continuous-03-landscape.webp",
+      "depicts": "Continuous landscape world map tile 3, joined source v5",
+      "sha256": "fe90d2fa050a4488ff8b046a6636783d31cb898a61a706b244604edc1b30741f"
     },
     {
-      "path": "world-map/riverfold-world-region-11.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "cc637f0abcf4de96b5d9447f4b7a894bdd7d2b67cdb5c421b0539d83c1992725"
+      "path": "world-map/continuous-04-portrait.webp",
+      "depicts": "Continuous portrait world map tile 4, joined source v5",
+      "sha256": "e84f88a89f01a2244c1244a9cc5ace31fa8f0942110dfda856de5a58bdd70835"
     },
     {
-      "path": "world-map/riverfold-world-region-12.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "32849f971b13dba9af62458722f5f914d132f182ff20dfb98f20b8f211285926"
+      "path": "world-map/continuous-04-landscape.webp",
+      "depicts": "Continuous landscape world map tile 4, joined source v5",
+      "sha256": "9a31dbe12b94fc5dd3fa5686681921eb9507856c9e4fe447d258a39ba55e31c1"
     },
     {
-      "path": "world-map/riverfold-world-region-13.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "b5a7c5b365a4e210cb1bd19836d80b1d38489825fbcac959f26e5aaf006dd89d"
+      "path": "world-map/continuous-05-portrait.webp",
+      "depicts": "Continuous portrait world map tile 5, joined source v5",
+      "sha256": "22df201ead5d4d20430c303255ca062d736450fe069e16f4b77a166c4e865684"
     },
     {
-      "path": "world-map/riverfold-world-region-14.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "e36690837982283a4ddb8c48635b0c0f3122e093d5b7928e021c3e6bafa1cf24"
+      "path": "world-map/continuous-05-landscape.webp",
+      "depicts": "Continuous landscape world map tile 5, joined source v5",
+      "sha256": "f948b2ad98300c408922923df9e82bf891e309d3f7f6fb598dbaff862b8d3827"
     },
     {
-      "path": "world-map/riverfold-world-region-15.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "66a6051b52a7ddfcce7e342894c5c7071193e55d634c9ff32ae12a6ca1ccff4d"
+      "path": "world-map/continuous-06-portrait.webp",
+      "depicts": "Continuous portrait world map tile 6, joined source v5",
+      "sha256": "4c48e168eacfebabd127aad7259091064d1b47478e22eb818b6e81a5bb5f7a4f"
     },
     {
-      "path": "world-map/riverfold-world-region-16.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "c1572598cddd98a05e8c03ce518562b370799db10bbd7f6bddddf74b5d9bbf32"
+      "path": "world-map/continuous-06-landscape.webp",
+      "depicts": "Continuous landscape world map tile 6, joined source v5",
+      "sha256": "ac887e7798b8237f3f69384706dbc8c85cd8d69181d9aed13b2873428f743b3f"
     },
     {
-      "path": "world-map/riverfold-world-bridge-west.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "b782524b75728668f3a2ad6b6838acbd20a123059ee4c40050f63194dfc23bb4"
+      "path": "world-map/continuous-07-portrait.webp",
+      "depicts": "Continuous portrait world map tile 7, joined source v5",
+      "sha256": "a8236d4aa9d4e665d35ca960b7b641a2e4f26cb113db9a00816f591896053e1b"
     },
     {
-      "path": "world-map/riverfold-world-bridge-east.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "471598fb290c19e3c920e9174846af2ab96a73c45d5d70b051302215f358bad6"
+      "path": "world-map/continuous-07-landscape.webp",
+      "depicts": "Continuous landscape world map tile 7, joined source v5",
+      "sha256": "e02aa49676784880240fdfc30af552ba2f18da79edee49f89014ce178c30ac0a"
     },
     {
-      "path": "world-map/riverfold-world-prop-stone-stair-apron.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "d7ded14f6e4d2c4e3c11ea27348689c3f69a70369d0176a8dd9375359a091098"
+      "path": "world-map/continuous-08-portrait.webp",
+      "depicts": "Continuous portrait world map tile 8, joined source v5",
+      "sha256": "2202412ef07ff620b795ed9ec0ab6848ab77fab9c3835739f9a63d76f894b25e"
     },
     {
-      "path": "world-map/riverfold-world-prop-north-south-pond-bridge.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "d67b8b96964a4d883ab249e4bb4c8aa295007a8efe6da64a8b1d317463649ce9"
+      "path": "world-map/continuous-08-landscape.webp",
+      "depicts": "Continuous landscape world map tile 8, joined source v5",
+      "sha256": "952e30e50bf3df386c187496233b232cd6660404b3c5b10aa216ff8a5f2a0796"
     },
     {
-      "path": "world-map/riverfold-world-prop-short-pond-bridge.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "147c4a20b1d59cd2bdf1fe176b96f7b6c44ce89787f16c32e26efa04579440e2"
+      "path": "world-map/continuous-09-portrait.webp",
+      "depicts": "Continuous portrait world map tile 9, joined source v5",
+      "sha256": "f779232ba8d34d1dc188d9f2f8fa4e1c07709f0ef443f54445574025b6b3d66f"
     },
     {
-      "path": "world-map/riverfold-world-secret-29a.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "4c774e9499bc06425e44268d884592e3d51393e476cb98b2d6dc953ef2befd74"
+      "path": "world-map/continuous-09-landscape.webp",
+      "depicts": "Continuous landscape world map tile 9, joined source v5",
+      "sha256": "da284f7b003c8758cdfc827be953882ea3a3615fc8b600f60805fd0f483e509e"
     },
     {
-      "path": "world-map/riverfold-world-secret-175a.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "74559b705e276375703caf821c262794d62d025bc6e125364976382fb0c28a11"
+      "path": "world-map/continuous-10-portrait.webp",
+      "depicts": "Continuous portrait world map tile 10, joined source v5",
+      "sha256": "b6a1c6b45950ebd991bef7b34efa81093f53576825a2b0b679253e8ba2333d81"
     },
     {
-      "path": "world-map/riverfold-world-secret-175b.webp",
-      "depicts": "Riverfold authored native map terrain, connector or detached secret islet",
-      "sha256": "af5984c845e5449cae098bb86116926b533644cd72acc98c370c7c90ee5de9a6"
+      "path": "world-map/continuous-10-landscape.webp",
+      "depicts": "Continuous landscape world map tile 10, joined source v5",
+      "sha256": "953c8bba6639164dbfa71df11f08b192327a3aa4bcfc21dfc423845e2dde7362"
+    },
+    {
+      "path": "world-map/continuous-11-portrait.webp",
+      "depicts": "Continuous portrait world map tile 11, joined source v5",
+      "sha256": "9cc3018432b991fb08bce923630d87ebae0d54c2e20e4f625d27efbcd098372f"
+    },
+    {
+      "path": "world-map/continuous-11-landscape.webp",
+      "depicts": "Continuous landscape world map tile 11, joined source v5",
+      "sha256": "830eb02ea52fd365de391ea5e83a819f62b005ee9503dae472186356405790f5"
+    },
+    {
+      "path": "world-map/continuous-12-portrait.webp",
+      "depicts": "Continuous portrait world map tile 12, joined source v5",
+      "sha256": "2aa51be60eafaf83cb09fb9794cab04afefb66dfb8aac94568a47cd15936d776"
+    },
+    {
+      "path": "world-map/continuous-12-landscape.webp",
+      "depicts": "Continuous landscape world map tile 12, joined source v5",
+      "sha256": "389d75d3f5d10d682b3969561639f3844d7adfe9a2ea8f3b2734ef664fe1c19c"
+    },
+    {
+      "path": "world-map/continuous-13-portrait.webp",
+      "depicts": "Continuous portrait world map tile 13, joined source v5",
+      "sha256": "0c370cb340139b964619c3874d48f82a7cceeb4b3968b99ff82b9a57491c0910"
+    },
+    {
+      "path": "world-map/continuous-13-landscape.webp",
+      "depicts": "Continuous landscape world map tile 13, joined source v5",
+      "sha256": "f1471b3799853b1d0c51aeba98b5662b72606159b554b923c2c44fe9b4a0db7c"
+    },
+    {
+      "path": "world-map/continuous-14-portrait.webp",
+      "depicts": "Continuous portrait world map tile 14, joined source v5",
+      "sha256": "d1ece5f020553b2988af45ac34e6ab6a36fbf327b92c07a5203a491639ea85b0"
+    },
+    {
+      "path": "world-map/continuous-14-landscape.webp",
+      "depicts": "Continuous landscape world map tile 14, joined source v5",
+      "sha256": "37d46a918df9e7c2f40bfc168eb66937010df6aa2115480ded6a4db9df732002"
+    },
+    {
+      "path": "world-map/continuous-15-portrait.webp",
+      "depicts": "Continuous portrait world map tile 15, joined source v5",
+      "sha256": "85d6776ba48fb8277a49fa30bd89417bac4b9c74dfb7f0de3bd7d362db383c6c"
+    },
+    {
+      "path": "world-map/continuous-15-landscape.webp",
+      "depicts": "Continuous landscape world map tile 15, joined source v5",
+      "sha256": "cafbb43f977609c2a8417774159f09d25299de661531384f8cc07626a6a41c40"
+    },
+    {
+      "path": "world-map/continuous-16-portrait.webp",
+      "depicts": "Continuous portrait world map tile 16, joined source v5",
+      "sha256": "c28dc3d49898b5416a5be0b403d4cbcd831ac662ece4214584cb5da2e71fdada"
+    },
+    {
+      "path": "world-map/continuous-16-landscape.webp",
+      "depicts": "Continuous landscape world map tile 16, joined source v5",
+      "sha256": "f404107ed172bdd9d2f250a7fe39e350fd2fbdfd0616fbd6365029c041e03706"
+    },
+    {
+      "path": "world-map/continuous-17-portrait.webp",
+      "depicts": "Continuous portrait world map tile 17, joined source v5",
+      "sha256": "f823dec70d33ee06215b2f4d5dc7e887dd5498b14c78101a526c972d0437ae69"
+    },
+    {
+      "path": "world-map/continuous-17-landscape.webp",
+      "depicts": "Continuous landscape world map tile 17, joined source v5",
+      "sha256": "a5cfeea20257c3feb1c51feabb0769ee9aefc6fd15b16129781e2638c95ce46e"
+    },
+    {
+      "path": "world-map/continuous-18-portrait.webp",
+      "depicts": "Continuous portrait world map tile 18, joined source v5",
+      "sha256": "bd4c5d360cca1341ab0171ea110bc2ec89fe2d9c643dc036080a962ab9f930b1"
+    },
+    {
+      "path": "world-map/continuous-18-landscape.webp",
+      "depicts": "Continuous landscape world map tile 18, joined source v5",
+      "sha256": "ee169834ca21d51557b289bd2e7fae8a4bff9348a38d75fac96ab793f579d8cb"
+    },
+    {
+      "path": "world-map/continuous-19-portrait.webp",
+      "depicts": "Continuous portrait world map tile 19, joined source v5",
+      "sha256": "8c81937830b9d6dc508e9da7a6444b4004a167ed561ce8ca108582702b805af5"
+    },
+    {
+      "path": "world-map/continuous-19-landscape.webp",
+      "depicts": "Continuous landscape world map tile 19, joined source v5",
+      "sha256": "f205fa2abb91dc0e6db73170851d546a58ebec431608e9a4b10b8c33885101bb"
+    },
+    {
+      "path": "world-map/continuous-20-portrait.webp",
+      "depicts": "Continuous portrait world map tile 20, joined source v5",
+      "sha256": "7ea8b1386f72e7fd8c910178bce1922b3835e726219c8c6216f29df8cccfcf8e"
+    },
+    {
+      "path": "world-map/continuous-20-landscape.webp",
+      "depicts": "Continuous landscape world map tile 20, joined source v5",
+      "sha256": "a6924e158e1ffb5ea8ea1d3ec89a06ddc8eecf0b7ce5d8e866883e42ecbe2d55"
+    },
+    {
+      "path": "world-map/continuous-21-portrait.webp",
+      "depicts": "Continuous portrait world map tile 21, joined source v5",
+      "sha256": "475bcf3c2f6e45c584c7a86e55676998e79b64c9f78ebbf28e136f9f9178a2d9"
+    },
+    {
+      "path": "world-map/continuous-21-landscape.webp",
+      "depicts": "Continuous landscape world map tile 21, joined source v5",
+      "sha256": "3ae718ab825fa07ff6d71edd698a658b898341df2962327ecdfe95262b65ae02"
+    },
+    {
+      "path": "world-map/continuous-22-portrait.webp",
+      "depicts": "Continuous portrait world map tile 22, joined source v5",
+      "sha256": "26eb3021221f913a1dd06959450501af6f4f96bacca56dad44c35d9f1b3084e7"
+    },
+    {
+      "path": "world-map/continuous-22-landscape.webp",
+      "depicts": "Continuous landscape world map tile 22, joined source v5",
+      "sha256": "a16fc71f7999277ff75a138b068cdc0a0f35891e67afff42d7c0543798678a17"
+    },
+    {
+      "path": "world-map/continuous-23-portrait.webp",
+      "depicts": "Continuous portrait world map tile 23, joined source v5",
+      "sha256": "2722b63dad53541bc284dec4ec57e1d8d53a784d69b7d398274e7dfa9290b6a5"
+    },
+    {
+      "path": "world-map/continuous-23-landscape.webp",
+      "depicts": "Continuous landscape world map tile 23, joined source v5",
+      "sha256": "14bbe6681d26fe3692d90240a016e5ac15ed9b989a7fd39724eb7342949699c3"
+    },
+    {
+      "path": "world-map/continuous-24-portrait.webp",
+      "depicts": "Continuous portrait world map tile 24, joined source v5",
+      "sha256": "0510511b55806b58ca440e81e3b431c3c20a4c47f8fb2fa558aa7a04e92d7a18"
+    },
+    {
+      "path": "world-map/continuous-24-landscape.webp",
+      "depicts": "Continuous landscape world map tile 24, joined source v5",
+      "sha256": "99bd83409a84b860b8f6574d8d589507d7c18181c6c26a6b120cc5687cbdb926"
+    },
+    {
+      "path": "world-map/continuous-25-portrait.webp",
+      "depicts": "Continuous portrait world map tile 25, joined source v5",
+      "sha256": "e33feb50c773800c7847927690db8faa6f944e7dfa04eb9a3cd4cd3b9c9d32a1"
+    },
+    {
+      "path": "world-map/continuous-25-landscape.webp",
+      "depicts": "Continuous landscape world map tile 25, joined source v5",
+      "sha256": "c9466da88dec76b9cf80d1bac3f02bb6c81e782b657a5f3c6e153c8d9340124e"
+    },
+    {
+      "path": "world-map/continuous-26-portrait.webp",
+      "depicts": "Continuous portrait world map tile 26, joined source v5",
+      "sha256": "b30a33f456df40e74bebdfba6e6d0c1a0173ab91aa554748215a221a749b6e4d"
+    },
+    {
+      "path": "world-map/continuous-26-landscape.webp",
+      "depicts": "Continuous landscape world map tile 26, joined source v5",
+      "sha256": "a392a4e490aa48834ae2dbb3e5055ea605698d9d354ab91f03b921c851eaaa2e"
+    },
+    {
+      "path": "world-map/continuous-27-portrait.webp",
+      "depicts": "Continuous portrait world map tile 27, joined source v5",
+      "sha256": "0ef568e46dc30842e31570c4fe18afcd215d7de0e2999b4f903af45fd4006112"
+    },
+    {
+      "path": "world-map/continuous-27-landscape.webp",
+      "depicts": "Continuous landscape world map tile 27, joined source v5",
+      "sha256": "659664117e1bc928382212e7387db9472c6b915644d60fb8436ecb43143d164f"
+    },
+    {
+      "path": "world-map/continuous-28-portrait.webp",
+      "depicts": "Continuous portrait world map tile 28, joined source v5",
+      "sha256": "5937d649695a4eb1f6df35327fcbc6b6d1053be78a05bed830bca98e56ee599e"
+    },
+    {
+      "path": "world-map/continuous-28-landscape.webp",
+      "depicts": "Continuous landscape world map tile 28, joined source v5",
+      "sha256": "7147ea2139dc44829bb37795a21d023c68d98e574ca5b10c9eebdf6ad29227a4"
+    },
+    {
+      "path": "world-map/continuous-29-portrait.webp",
+      "depicts": "Continuous portrait world map tile 29, joined source v5",
+      "sha256": "c87cf136d2002162b36b94ebfab34f830ed3dc60488e889453c41b789bd3b81b"
+    },
+    {
+      "path": "world-map/continuous-29-landscape.webp",
+      "depicts": "Continuous landscape world map tile 29, joined source v5",
+      "sha256": "68db6bbb2e515d8166c4cffada4bda9e42a8ca1e56a2b24ae781d72006518574"
+    },
+    {
+      "path": "world-map/continuous-30-portrait.webp",
+      "depicts": "Continuous portrait world map tile 30, joined source v5",
+      "sha256": "b77aee965c5c897c86a0226e026fd11ad1e580714579d8d705b487907ecb0ab7"
+    },
+    {
+      "path": "world-map/continuous-30-landscape.webp",
+      "depicts": "Continuous landscape world map tile 30, joined source v5",
+      "sha256": "b021441f063de12d25b2ff89e97de9fc6513f2a94e21ed11cc9766f480171329"
+    },
+    {
+      "path": "world-map/continuous-31-portrait.webp",
+      "depicts": "Continuous portrait world map tile 31, joined source v5",
+      "sha256": "d04020c479d866c50d8eaf3ca3c0cbeff1edf1a1805caa081dc3e120d8a8cb1d"
+    },
+    {
+      "path": "world-map/continuous-31-landscape.webp",
+      "depicts": "Continuous landscape world map tile 31, joined source v5",
+      "sha256": "4e49d52dd11ffb8c2595cb81d22a939d1858c9a94d94ee8e1e199638439f687e"
+    },
+    {
+      "path": "world-map/continuous-32-portrait.webp",
+      "depicts": "Continuous portrait world map tile 32, joined source v5",
+      "sha256": "af5ac97281791f8fd56eaea5de5ad7c7a920ad8e85b4a316578d1085c0b729b7"
+    },
+    {
+      "path": "world-map/continuous-32-landscape.webp",
+      "depicts": "Continuous landscape world map tile 32, joined source v5",
+      "sha256": "5c6d7734f091e54459c5fcc8c61c8a4007368327785502cc70f4d68795b3abe4"
+    },
+    {
+      "path": "world-map/continuous-33-portrait.webp",
+      "depicts": "Continuous portrait world map tile 33, joined source v5",
+      "sha256": "fc0c85a7cb89cd136a7260ea2b36bdd8b3920a7fc030383fd0b6b74934ccae47"
+    },
+    {
+      "path": "world-map/continuous-33-landscape.webp",
+      "depicts": "Continuous landscape world map tile 33, joined source v5",
+      "sha256": "c03c5912db30981ce51784ddd3bb51885f92ea01e9eed29c4a8cf79b579eddf1"
+    },
+    {
+      "path": "world-map/continuous-34-portrait.webp",
+      "depicts": "Continuous portrait world map tile 34, joined source v5",
+      "sha256": "e5082794463e5a0af1c007269412a69e090bd75b6c366629fef68f9bffff62f8"
+    },
+    {
+      "path": "world-map/continuous-34-landscape.webp",
+      "depicts": "Continuous landscape world map tile 34, joined source v5",
+      "sha256": "07c5f0cf9797baae16c064105bf5f395182c12676db9566a895c1d2de7fd85aa"
+    },
+    {
+      "path": "world-map/continuous-35-portrait.webp",
+      "depicts": "Continuous portrait world map tile 35, joined source v5",
+      "sha256": "1465ce38e7846a114e455212dfcce91e756b8f4c694da3d6784da19d2ac43737"
+    },
+    {
+      "path": "world-map/continuous-35-landscape.webp",
+      "depicts": "Continuous landscape world map tile 35, joined source v5",
+      "sha256": "fb350d01a4792364e6f35b5e9db9e7218e818de4f0a87721f61d1adb3415e630"
+    },
+    {
+      "path": "world-map/continuous-36-portrait.webp",
+      "depicts": "Continuous portrait world map tile 36, joined source v5",
+      "sha256": "e2d6c216c38936502dfd20bdda7e6af304b421acf8ed038e454c37feeca35357"
+    },
+    {
+      "path": "world-map/continuous-36-landscape.webp",
+      "depicts": "Continuous landscape world map tile 36, joined source v5",
+      "sha256": "271bb249089151bd3a0af4e41fdc3c12bfcc345676529fa16822c630f297ad80"
     }
   ]
 }

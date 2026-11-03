@@ -247,25 +247,31 @@ IslandButton :: (session: Session, key: u64, bounds: Rectangle, label: string, a
         .emphasis = ifx accent then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
-// The current price, with the regular one struck through during an offer.
-IslandPriceRow :: (session: Session, x: float32, y: float32, width: float32, unlock: *IslandUnlock) {
+// The Unlock control carries the shown price; the page has no separate one.
+IslandUnlockLabel :: (unlock: *IslandUnlock, output: []u8) -> string {
     price, regular, percent := IslandUnlockShown(unlock)
-    price_digits: [32]u8
-    regular_digits: [32]u8
-    IslandLine(session, 49540, Rectangle.{x, y, width, 42.0}, IslandDewText(price, price_digits[:]), 32)
-    if percent <= 0 || regular <= price { return }
-    was := IslandDewText(regular, regular_digits[:])
-    row := y + 44.0
-    half := width / 2.0
-    was_props := TextProps.{.key = cast(u64)49541, .text = was, .font = 18}
-    was_width := cast(float32)TextWidth(session, was_props)
-    IslandLine(session, 49541, Rectangle.{x, row, half - 6.0, 30.0}, was, 18)
-    unused Box(session, BoxProps.{.key = cast(u64)49542,
-        .bounds = Rectangle.{x + (half - 6.0 - was_width) / 2.0 - 2.0, row + 14.0, was_width + 4.0, 2.0},
-        .fill = Color.{255, 255, 255, 230}})
-    unused Box(session, BoxProps.{.key = cast(u64)49543, .bounds = Rectangle.{x + half + 6.0, row, half - 6.0, 30.0},
+    digits: [32]u8
+    text: Vec(u8)
+    BuilderPrint(*text, "% · %", AppLocaleHost("shovey_island_unlock"), IslandDewText(price, digits[:]))
+    copied := CopyCString(TextView(VecSlice(text, 0, text.count)), output)
+    VecFree(text)
+    return ifx copied then TextUntilNul(output) else ""
+}
+
+IslandOffer :: (unlock: *IslandUnlock) -> bool {
+    price, regular, percent := IslandUnlockShown(unlock)
+    return percent > 0 && regular > price
+}
+
+// During an offer, its badge under the title.
+IslandOfferBadge :: (session: Session, x: float32, y: float32, width: float32) {
+    off := AppLocaleHost("shovey_island_off")
+    badge := cast(float32)TextWidth(session, TextProps.{.key = cast(u64)49544, .text = off, .font = 16}) + 32.0
+    if badge > width { badge = width }
+    at := x + (width - badge) / 2.0
+    unused Box(session, BoxProps.{.key = cast(u64)49543, .bounds = Rectangle.{at, y, badge, 30.0},
         .fill = Color.{214, 72, 48, 255}, .radius = 15.0})
-    IslandLine(session, 49544, Rectangle.{x + half + 6.0, row, half - 6.0, 30.0}, AppLocaleHost("shovey_island_off"), 16)
+    IslandLine(session, 49544, Rectangle.{at, y, badge, 30.0}, off, 16)
 }
 
 // Draws the locked page and acts on it; returns what the host must do.
@@ -275,7 +281,12 @@ IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnloc
     unused Image(session, ImageProps.{.key = cast(u64)49510, .bounds = viewport, .asset_path = background,
         .fit = ImageFit.ImageFitCover, .smooth = true, .alt_text = AppLocaleHost("shovey_island_title")})
     width := ifx viewport.width - 32.0 < 420.0 then viewport.width - 32.0 else 420.0
-    height: float32 = 288.0
+    offer := IslandOffer(unlock)
+    busy := unlock.stage == ISLAND_CONFIRMING || unlock.stage == ISLAND_CONFIRM_NEEDED
+    choosing := unlock.connected && !unlock.confirming && !busy
+    insufficient := choosing && unlock.notice == "shovey_island_insufficient"
+    // Title, any offer badge, a status line and the actions, bottom up.
+    height: float32 = 148.0 + (ifx offer then 38.0 else 0.0) + (ifx insufficient then 52.0 else 0.0)
     x := viewport.x + (viewport.width - width) / 2.0
     y := viewport.y + viewport.height - height - 24.0
     logo_top := viewport.y + 64.0
@@ -293,35 +304,35 @@ IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnloc
     inner_x := x + 16.0
     inner := width - 32.0
     IslandLine(session, 49521, Rectangle.{inner_x, y + 10.0, inner, 30.0}, AppLocaleHost("shovey_island_title"), 18)
-    IslandPriceRow(session, inner_x, y + 42.0, inner, unlock)
-    busy := unlock.stage == ISLAND_CONFIRMING || unlock.stage == ISLAND_CONFIRM_NEEDED
-    buttons := y + height - 100.0
+    if offer { IslandOfferBadge(session, inner_x, y + 46.0, inner) }
+    row := y + height - 56.0
+    buttons := row - 44.0 - (ifx insufficient then 52.0 else 0.0)
     half := (inner - 12.0) / 2.0
+    label: [96]u8
+    unlock_label := IslandUnlockLabel(unlock, label[:])
     if !unlock.connected {
-        if IslandButton(session, 49530, Rectangle.{inner_x, buttons + 44.0, inner, 44.0}, AppLocaleHost("shovey_island_signin"), true) {
+        if IslandButton(session, 49530, Rectangle.{inner_x, row, inner, 44.0}, unlock_label, true) {
             action = ISLAND_ACTION_SIGN_IN
         }
-    } else if unlock.confirming || busy {
-        if IslandButton(session, 49531, Rectangle.{inner_x, buttons + 44.0, half, 44.0}, AppLocaleHost("shovey_shop_cancel"), false, busy) {
+    } else if !choosing {
+        if IslandButton(session, 49531, Rectangle.{inner_x, row, half, 44.0}, AppLocaleHost("shovey_shop_cancel"), false, busy) {
             unlock.confirming = false
         }
-        if IslandButton(session, 49532, Rectangle.{inner_x + half + 12.0, buttons + 44.0, half, 44.0},
+        if IslandButton(session, 49532, Rectangle.{inner_x + half + 12.0, row, half, 44.0},
             AppLocaleHost("shovey_shop_confirm"), true, busy) {
             unused IslandUnlockBuy(unlock)
         }
     } else {
-        insufficient := unlock.notice == "shovey_island_insufficient"
-        if insufficient && IslandButton(session, 49533, Rectangle.{inner_x, buttons + 44.0, half, 44.0}, AppLocaleHost("shovey_shop_buy_dew")) {
+        if insufficient && IslandButton(session, 49533, Rectangle.{inner_x, row - 52.0, inner, 44.0}, AppLocaleHost("shovey_shop_buy_dew")) {
             action = ISLAND_ACTION_BUY_DEW
         }
-        at := ifx insufficient then inner_x + half + 12.0 else inner_x
-        if IslandButton(session, 49534, Rectangle.{at, buttons + 44.0, ifx insufficient then half else inner, 44.0},
-            AppLocaleHost("shovey_island_unlock"), true, unlock.stage != ISLAND_READY) {
+        if IslandButton(session, 49534, Rectangle.{inner_x, row, inner, 44.0}, unlock_label, true, unlock.stage != ISLAND_READY) {
             unlock.confirming = true
             unlock.notice = ""
         }
     }
     status := unlock.notice
+    if status == "" && !unlock.connected { status = "shovey_island_signin" }
     if status == "" && unlock.connected && unlock.stage != ISLAND_READY && !busy {
         status = ifx unlock.stage == ISLAND_IDLE then "shovey_island_offline" else "shovey_island_loading"
     }

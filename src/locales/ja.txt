@@ -1094,3 +1094,15 @@ Classicで特別なアイテムを探そう。
 [shovey_chest_reminder]
 デイリーチェストが待っています。Shoveyを開いて報酬を受け取りましょう。
 ---
+
+[shovey_result_complete]
+レベル % クリア
+---
+
+[shovey_result_score]
+スコア
+---
+
+[shovey_result_moves]
+手数
+---

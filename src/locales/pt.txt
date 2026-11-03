@@ -1094,3 +1094,15 @@ Sempre aponta para a aventura.
 [shovey_chest_reminder]
 Seu baú diário está esperando. Abra Shovey para coletar sua recompensa.
 ---
+
+[shovey_result_complete]
+Nível % concluído
+---
+
+[shovey_result_score]
+Pontuação
+---
+
+[shovey_result_moves]
+Movimentos
+---

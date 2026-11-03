@@ -15,7 +15,11 @@ ALICE :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 BOB :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 #program_export
-FakeLocale :: (key: string) -> string { return ifx key == "shovey_island_off" then "40% off" else key }
+FakeLocale :: (key: string) -> string {
+    if key == "shovey_island_off" { return "40% off" }
+    if key == "shovey_island_unlock" { return "Unlock" }
+    return key
+}
 #program_export
 MeasureGlyphWidth :: (value: string, font: s32, typeface: string) -> s32 { return cast(s32)value.count * font / 2 }
 #program_export
@@ -186,19 +190,44 @@ Click :: (session: Session, unlock: *IslandUnlock, key: u64, width: float32, hei
     return Draw(session, unlock, width, height)
 }
 
+// The control reads Unlock and the price, and no other node shows a price.
+OnlyUnlockPrice :: (session: Session, key: u64, label: string) -> bool {
+    at := Find(session, key)
+    if at < 0 || TreeNodeAt(session, at).semantic_label != label { return false }
+    for node: cast(s32)0..TreeCount(session) - 1 {
+        if node != at && TextContains(TreeNodeAt(session, node).semantic_label, " Dew") { return false }
+    }
+    return Find(session, 49540) < 0 && Find(session, 49541) < 0 && Find(session, 49542) < 0
+}
+
+TextContains :: (text: string, part: string) -> bool {
+    if part.count > text.count { return false }
+    for start: cast(s64)0..text.count - part.count {
+        if text[start:start + part.count] == part { return true }
+    }
+    return false
+}
+
 Page :: () -> s32 {
     session := SessionOpen()
     if !SessionValid(session) { return 1 }
     defer { SessionClose(session) }
     guest: IslandUnlock
     if Draw(session, *guest, 360.0, 640.0) != 0 { return 2 }
-    // The offer's three parts, and no way to buy while signed out.
-    if Find(session, 49540) < 0 || Find(session, 49541) < 0 || Find(session, 49542) < 0 || Find(session, 49544) < 0 { return 3 }
+    // The offer badge, the price on the Unlock control and no way to buy
+    // while signed out.
+    if Find(session, 49544) < 0 || !OnlyUnlockPrice(session, 49530, "Unlock · 51 Dew") { return 3 }
     if Find(session, 49534) >= 0 || Find(session, 49530) < 0 { return 4 }
     if Click(session, *guest, 49530, 360.0, 640.0) != ISLAND_ACTION_SIGN_IN { return 5 }
     unlock: IslandUnlock
     if !Quoted(*unlock, 51000000) { return 6 }
     if Draw(session, *unlock, 360.0, 640.0) != 0 { return 7 }
+    if !OnlyUnlockPrice(session, 49534, "Unlock · 51 Dew") { return 18 }
+    // The node's regular quote is the price the control shows, with no offer.
+    regular: IslandUnlock
+    if !Quoted(*regular, 85000000) || Draw(session, *regular, 360.0, 640.0) != 0 { return 19 }
+    if !OnlyUnlockPrice(session, 49534, "Unlock · 85 Dew") || Find(session, 49544) >= 0 { return 20 }
+    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 21 }
     // Unlock only asks; Confirm alone sends the exact request.
     unused Click(session, *unlock, 49534, 360.0, 640.0)
     if !unlock.confirming || unlock.stage != ISLAND_READY { return 8 }

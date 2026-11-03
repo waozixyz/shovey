@@ -84,6 +84,7 @@ frame: AppUiFrame;
 game: ShoveyGame;
 progress: ShoveyProgress;
 selector_open: bool;
+selector_from_cover: bool;
 levels_scroll: s32;
 levels_map: WorldMap.WorldMapViewState;
 levels_choice_offered: s32;
@@ -162,14 +163,10 @@ HeaderText :: () -> string {
     digits: [24]u8
     AppendText(header_bytes[:], *length, AppLocaleHost("shovey_level"))
     AppendText(header_bytes[:], *length, " ")
-    if ShoveySecret(game.level) {
-        if game.level == CHEST_LEVEL { AppendText(header_bytes[:], *length, "29a"); return TextView(header_bytes[:length]) }
-        // The secret levels beside the last one are named after it.
-        AppendText(header_bytes[:], *length, FormatInteger(cast(s64)ShoveyLevelCount(), digits[:]))
-        AppendText(header_bytes[:], *length, ifx game.level == SHOVEY_SECRET_UP then "a" else "b")
-        return TextView(header_bytes[:length])
-    }
-    AppendText(header_bytes[:], *length, FormatInteger(cast(s64)game.level, digits[:]))
+    display_bytes: [48]u8
+    display := MapRoute.WorldMapLevelDisplayName(game.level, display_bytes[:])
+    AppendText(header_bytes[:], *length, ifx display != "" then display else FormatInteger(cast(s64)game.level, digits[:]))
+    if ShoveySecret(game.level) { return TextView(header_bytes[:length]) }
     AppendText(header_bytes[:], *length, " / ")
     AppendText(header_bytes[:], *length, FormatInteger(cast(s64)ShoveyLevelCount(), digits[:]))
     return TextView(header_bytes[:length])
@@ -202,7 +199,7 @@ FriendPrepare :: () {
         friend_loaded = true
         unused GuideRead(*friend_guide, PathRecord("local.guide.seen"))
         before := friend_guide.seen
-        GuideSeedEarlier(*friend_guide, progress.unlocked)
+        GuideSeedEarlier(*friend_guide, ShoveyHighestUnlocked(*progress))
         if game.moves > 0 { friend_guide.seen = friend_guide.seen | GuideBoardTopics(*game) }
         if friend_guide.seen != before { FriendSave() }
     }
@@ -399,7 +396,99 @@ reported_levels: s32 = -1;
 coin_pending: CompletionCoins.CompletionCoinPending;
 coin_celebrate_at: float64 = -10.0;
 
+// Cache results while the selector is open: hashes/storage reads happen once
+// per visible place, not on every map frame. Account changes clear the cache.
+level_results: [1003]ShoveyLevelResult;
+level_results_loaded: [1003]bool;
+level_results_owner: [65]u8;
+ShoveyBestLevelResult :: (owner: string, level: s32) -> ShoveyLevelResult {
+    if level < 1 || level > 1003 || ShoveySecret(level) { return .{} }
+    if owner != TextUntilNul(level_results_owner[:]) {
+        level_results_loaded = .{}
+        unused CopyCString(owner, level_results_owner[:])
+    }
+    if !level_results_loaded[level - 1] {
+        level_results[level - 1] = GetLevelResult("shovey.classic", owner, level, ShoveyBoardMark(level), ShoveyLevelPar(level))
+        level_results_loaded[level - 1] = true
+    }
+    return level_results[level - 1]
+}
+
+result_save_failed: bool;
+RememberLevelResult :: () {
+    result_save_failed = false
+    if !game.won || game.lost || game.moves <= 0 || ShoveySecret(game.level) { return }
+    owner := TextUntilNul(completion_path.owner[:])
+    // A running attempt can outlive a live board update. Never rate that
+    // attempt against the replacement board's route.
+    if TextUntilNul(completion_path.map[:]) != ShoveyLevelBoard(game.level) { return }
+    best_moves := game.moves
+    // Reuse genuine previous winning routes for this owner and exact board.
+    name: Vec(u8)
+    BuilderPrint(*name, "local.path.best.%.index", game.level)
+    count := PathNumber(PathRecord(BuilderFinish(name)), "count")
+    for slot: cast(s32)0..count - 1 {
+        key: Vec(u8)
+        BuilderPrint(*key, "local.path.best.%.%.meta", game.level, slot)
+        text := PathRecord(BuilderFinish(key))
+        saved_owner: [65]u8
+        hash: [65]u8
+        moves := PathNumber(text, "moves")
+        if moves > 0 && moves < best_moves && PathTrue(text, "complete") &&
+        ReadStringText(text, FieldAt(text, 0, "owner"), saved_owner[:]) >= 0 &&
+        ReadStringText(text, FieldAt(text, 0, "map_hash"), hash[:]) >= 0 &&
+        TextUntilNul(saved_owner[:]) == owner && TextUntilNul(hash[:]) == TextUntilNul(completion_path.map_hash[:]) { best_moves = moves }
+    }
+    level_results_loaded[game.level - 1] = false
+    if !RecordLevelResult("shovey.classic", owner, game.level, ShoveyBoardMark(game.level), best_moves, ShoveyLevelPar(game.level), true) { result_save_failed = true; save_failed = true }
+}
+
+result_dismissed: s32;
+LevelResultScreen :: (width: float32, top: float32, bottom: float32) -> bool {
+    if !game.won { result_dismissed = 0; return false }
+    // Secret wins keep their existing pause and exact return to the parent.
+    if ShoveySecret(game.level) { SecretWinPause(); return false }
+    if result_dismissed == game.level { return false }
+    if won_at == 0.0 { Remember(); won_at = frame.now }
+    par := ifx TextUntilNul(completion_path.map[:]) != ShoveyLevelBoard(game.level) then 0 else ShoveyLevelPar(game.level)
+    result := ShoveyScoreResult(game.moves, par)
+    label_bytes: [48]u8
+    label := MapRoute.WorldMapLevelDisplayName(game.level, label_bytes[:])
+    digits: [24]u8
+    if label == "" { label = FormatInteger(cast(s64)game.level, digits[:]) }
+    title: Vec(u8)
+    // The translated template contains one label marker.
+    template := AppLocaleHost("shovey_result_complete")
+    for at: cast(s64)0..template.count - 1 {
+        if template[at] == #char "%" { BuilderPrint(*title, "%", label) }
+        else { BuilderPrint(*title, "%", template[at:at + 1]) }
+    }
+    middle := (top + bottom) / 2.0
+    Fill(20900, Rectangle.{0.0, top, width, bottom - top}, Color.{24, 43, 37, 255})
+    if Button(frame.session, ButtonProps.{.key = 20907, .id = 20907,
+        .bounds = Rectangle.{16.0, top + 16.0, 48.0, 48.0},
+        .label = AppLocaleHost("shovey_levels"), .icon_shape = ICON_LEVELS, .icon_only = true}) != 0 { OpenLevels() }
+    Caption(20901, Rectangle.{16.0, middle - 140.0, width - 32.0, 64.0}, BuilderFinish(title), 28, true)
+    stars := ifx result.stars == 3 then "★ ★ ★" else ifx result.stars == 2 then "★ ★ ☆" else ifx result.stars == 1 then "★ ☆ ☆" else "☆ ☆ ☆"
+    Caption(20902, Rectangle.{16.0, middle - 64.0, width - 32.0, 56.0}, stars, 40, true)
+    score: Vec(u8)
+    BuilderPrint(*score, "%: % / 1000", AppLocaleHost("shovey_result_score"), result.score)
+    Caption(20903, Rectangle.{16.0, middle + 4.0, width - 32.0, 36.0}, BuilderFinish(score), 22, true)
+    moves: Vec(u8)
+    BuilderPrint(*moves, "%: %", AppLocaleHost("shovey_result_moves"), game.moves)
+    Caption(20904, Rectangle.{16.0, middle + 44.0, width - 32.0, 32.0}, BuilderFinish(moves), 18, true)
+    if Button(frame.session, ButtonProps.{.key = 20905, .id = 20905,
+        .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
+        .label = AppLocaleHost("shovey_continue"), .disabled = coin_pending.active}) != 0 {
+        result_dismissed = game.level
+        if game.level < ShoveyLevelCount() { ContinueGame() }
+    }
+    if save_failed { Caption(20906, Rectangle.{16.0, bottom - 48.0, width - 32.0, 40.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
+    return true
+}
+
 Remember :: () {
+    RememberLevelResult()
     // A secret level is never saved: the game reopens on the last level.
     if ShoveySecret(game.level) { return }
     if replay_ack_failed { ReplayOpened() }
@@ -416,7 +505,7 @@ Remember :: () {
         }
     }
     ShoveyRecordWin(*progress, *game)
-    save_failed = !SaveLocalCampaign(ShoveyCampaignSave(*progress, *game)) || replay_ack_failed
+    save_failed = !SaveLocalCampaign(ShoveyCampaignSave(*progress, *game)) || replay_ack_failed || result_save_failed
     if !PathSave(*completion_path, *game) { save_failed = true }
     if game.won {
         if !PathKeepBest(*completion_path, *game) { save_failed = true }
@@ -428,12 +517,15 @@ Remember :: () {
 }
 
 OpenLevels :: () {
+    level_results_loaded = .{}
     if game.level >= 1 && game.level <= ShoveyLevelCount() { levels_played_level = game.level }
     selector_open = true
+    selector_from_cover = false
     levels_focus_pending = true
 }
 
 ChangeLevel :: (level: s32, resume_if_active: bool = false) {
+    result_dismissed = 0
     if coin_pending.active { return }
     friend_guide.level = 0
     slide_count = 0
@@ -595,6 +687,9 @@ LevelPicture :: (number: s32, picture: Rectangle, image_key: u64, board_key: u64
         AppendText(level_preview_paths[at][:], *length, ".png")
         level_preview_paths[at][length] = 0
     }
+    display_bytes: [48]u8
+    display := MapRoute.WorldMapLevelDisplayName(number, display_bytes[:])
+    if display != "" { label = display }
     if level_preview_current[at] { Image(frame.session, ImageProps.{.key = image_key,
                 .asset_path = TextUntilNul(level_preview_paths[at][:]),
                 .alt_text = label, .bounds = picture,
@@ -747,6 +842,7 @@ LiveCampaignCheck :: () {
     result := ShoveyLiveCheckStep(40, *compact)
     if result < 0 { return }
     live_checking = false
+    level_results_loaded = .{}
     if result == 0 { return }
     if shovey_live_count < SHOVEY_APPROVED_LEVEL_COUNT {
         // Older than this release: keep the levels it ships, or the newer
@@ -1201,6 +1297,18 @@ ShoveyBack :: () -> bool {
     if !selector_open && !help_open { return false }
     selector_open = false
     help_open = false
+    if selector_from_cover { selector_from_cover = false; return false }
+    return true
+}
+
+// Escape or Back while playing opens the world map as entering the game
+// does, so Back on the map then leaves for the title.
+ShoveyPlaying :: () -> bool { return !mini && loaded && !selector_open && !help_open }
+
+ShoveyBackToMap :: () -> bool {
+    if !ShoveyPlaying() { return false }
+    OpenLevels()
+    selector_from_cover = true
     return true
 }
 
@@ -1235,7 +1343,7 @@ ShoveyFrame :: () {
     }
     if !loaded {
         levels_choice_offered = 0
-        // The host's cover is the title: every open goes straight to play.
+        // The cover opens the journey first; choosing a destination starts play.
         mini = AppMini()
         LiveCampaignStart()
         levels_played_level = 0
@@ -1263,7 +1371,10 @@ ShoveyFrame :: () {
         }
         ReplayOpened()
         if latest || !mini { Remember() }
-        if ShoveyAllDone() { OpenLevels() }
+        if !mini || ShoveyAllDone() {
+            OpenLevels()
+            selector_from_cover = !mini
+        }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
         last_tick = frame.now
         loaded = true
@@ -1300,7 +1411,7 @@ ShoveyFrame :: () {
         if friend_loaded {
             before := friend_guide.seen
             friend_guide.level = 0
-            GuideSeedEarlier(*friend_guide, progress.unlocked)
+            GuideSeedEarlier(*friend_guide, ShoveyHighestUnlocked(*progress))
             if friend_guide.seen != before { FriendSave() }
         }
     }
@@ -1328,48 +1439,32 @@ ShoveyFrame :: () {
         if key == 256 || key == 4 { reward_card = -1 }
         key = 0
     }
-    if selector_open && key == 256 {
-        unused ShoveyBack()
+    if selector_open && (key == 256 || key == 4) {
+        if !ShoveyBack() { LeaveForGameSelection(); return }
         key = 0
     }
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
         account_loading := SharedProgressAccountLoading(*shared_progress)
-        if Button(frame.session, ButtonProps.{.key = cast(u64)20022, .id = 20022,
-                .bounds = Rectangle.{12.0, top + 8.0, 112.0, 48.0}, .label = AppLocaleHost("shovey_back"),
-                .icon_shape = ICON_PREVIOUS, .fit_content = true,
-                .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-            if !ShoveyBack() { LeaveForGameSelection() }
-            return
-        }
-        heading_x: float32 = 136.0
-        Caption(20103, Rectangle.{heading_x, top + 12.0, width - 144.0 - heading_x, 44.0}, AppLocaleHost("shovey_levels"), 24)
-        if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
-            ContinueGame()
-        }
-        if account_loading {
-            LoadingIndicator(frame.session, LoadingIndicatorProps.{.key = cast(u64)20106,
-                    .bounds = Rectangle.{16.0, top + 68.0, 28.0, 24.0}, .now = frame.now, .scale = 1.0})
-            Caption(20107, Rectangle.{52.0, top + 68.0, width - 68.0, 24.0},
-                AppLocaleHost("shovey_progress_loading"), 14)
-        }
-        list_top := top + ifx account_loading then 104.0 else 72.0
+        list_top := top
         listed := ShoveyLevelCount()
         if listed <= MapRoute.WORLD_MAP_CLASSIC_LEVELS {
             visible: [1003]bool
             available: [1003]bool
             completed: [1003]bool
             replay: [1003]bool
-            map_bounds := Rectangle.{0.0, list_top, width, bottom - list_top - 16.0}
+            stars: [1003]s32
+            map_bounds := Rectangle.{0.0, top, width, bottom - top}
             map_width := WorldMap.WorldMapViewWidth(map_bounds.width)
             for number: cast(s32)1..listed {
                 visible[number - 1] = true
                 available[number - 1] = ShoveyLevelUnlocked(*progress, number)
                 completed[number - 1] = progress.completed[number - 1]
-                point := WorldMap.WorldMapViewPosition(number, map_width, false)
+                point := WorldMap.WorldMapViewPositionFor(number, map_width, WorldMap.WorldMapViewProps.{.landscape = landscape})
                 if available[number - 1] && point.y >= cast(float32)levels_map.scroll_offset - 64.0 &&
                 point.y <= cast(float32)levels_map.scroll_offset + map_bounds.height + 64.0 {
+                    stars[number - 1] = ShoveyBestLevelResult(TextUntilNul(shared_progress.owner[:]), number).stars
                     replay[number - 1] = LevelReplayDot(number, ShoveyLevelBoard(number), completed[number - 1], TextUntilNul(shared_progress.owner[:]))
                 }
             }
@@ -1387,14 +1482,49 @@ ShoveyFrame :: () {
                 levels_map.reveal = true
                 levels_focus_pending = false
             }
-            selected := WorldMap.WorldMapView(frame.session, map_bounds, *levels_map,
-                WorldMap.WorldMapViewProps.{.visible = visible[:], .available = available[:],
-                    .completed = completed[:], .replay = replay[:], .loading = account_loading,
+            map_props := WorldMap.WorldMapViewProps.{.visible = visible[:], .available = available[:], .landscape = landscape,
+                    .completed = completed[:], .stars = stars[:], .replay = replay[:], .loading = account_loading,
                     .now = frame.now, .key_pressed = key,
                     .available_label = AppLocaleHost("shovey_available"),
                     .completed_label = AppLocaleHost("shovey_completed"),
                     .locked_label = AppLocaleHost("shovey_locked"),
-                    .loading_label = AppLocaleHost("shovey_progress_loading")})
+                    .loading_label = AppLocaleHost("shovey_progress_loading")}
+            selected := WorldMap.WorldMapView(frame.session, map_bounds, *levels_map, map_props)
+            panel_top := bottom - 112.0
+            Fill(cast(u64)20120, Rectangle.{0.0, panel_top, width, 112.0}, Color.{38, 66, 46, 238})
+            label_bytes: [80]u8
+            label_length: s32
+            label_digits: [24]u8
+            AppendText(label_bytes[:], *label_length, AppLocaleHost("shovey_level"))
+            AppendText(label_bytes[:], *label_length, " ")
+            focus := levels_map.focused
+            display_bytes: [48]u8
+            display := MapRoute.WorldMapLevelDisplayName(focus, display_bytes[:])
+            AppendText(label_bytes[:], *label_length, ifx display != "" then display else FormatInteger(cast(s64)focus, label_digits[:]))
+            Caption(cast(u64)20121, Rectangle.{16.0, panel_top + 8.0, width - 136.0, 40.0}, TextView(label_bytes[:label_length]), 20)
+            if Button(frame.session, ButtonProps.{.key = cast(u64)20122, .id = 20122,
+                .bounds = Rectangle.{width - 112.0, panel_top + 8.0, 96.0, 40.0},
+                .label = AppLocaleHost("shovey_play"), .disabled = !WorldMap.WorldMapViewFlag(available[:], focus)}) != 0 {
+                selected = WorldMap.WorldMapViewPlay(*levels_map, map_props)
+            }
+            selected_result := ShoveyBestLevelResult(TextUntilNul(shared_progress.owner[:]), focus)
+            if selected_result.best_moves > 0 {
+                result_text: Vec(u8)
+                BuilderPrint(*result_text, "%  %", ifx selected_result.stars == 3 then "★★★" else ifx selected_result.stars == 2 then "★★☆" else "★☆☆", selected_result.score)
+                Caption(20910, Rectangle.{232.0, panel_top + 58.0, width - 240.0, 44.0}, BuilderFinish(result_text), 16, true)
+            }
+            for direction: cast(s32)0..3 {
+                icon := ifx direction == 0 then "S2rr:M15 5L8 12L15 19" else ifx direction == 1 then "S2rr:M5 15L12 8L19 15" else ifx direction == 2 then "S2rr:M5 9L12 16L19 9" else "S2rr:M9 5L16 12L9 19"
+                if Button(frame.session, ButtonProps.{.key = cast(u64)(20123 + direction), .id = 20123 + direction,
+                    .bounds = Rectangle.{16.0 + cast(float32)direction * 52.0, panel_top + 58.0, 44.0, 44.0},
+                    .label = ifx direction == 0 then "←" else ifx direction == 1 then "↑" else ifx direction == 2 then "↓" else "→",
+                    .icon_only = true, .icon_shape = icon}) != 0 {
+                    horizontal: s32 = ifx direction == 0 then -1 else ifx direction == 3 then 1 else 0
+                    next := WorldMap.WorldMapViewNavigate(map_props, levels_map.focused, horizontal, direction == 1)
+                    if next != levels_map.focused { levels_map.focused = next; levels_map.reveal = true }
+                }
+            }
+            if levels_map.focused >= 1 && levels_map.focused <= listed { levels_played_level = levels_map.focused }
             if selected.activated >= 1 && selected.activated <= listed { ChangeLevel(selected.activated, true) }
             if selected.activated >= 1001 && selected.activated <= 1003 && !coin_pending.active {
                 if ShoveySecret(game.level) { unused ShoveyReturnFromSecret(*game, *secret_visit) }
@@ -1420,7 +1550,7 @@ ShoveyFrame :: () {
             preview_height := (cell - 12.0) * ifx landscape then 3.0 / 5.0 else 5.0 / 3.0
             row_height := cast(s32)(preview_height + 52.0 + 8.0)
             if levels_focus_pending {
-                latest := LevelSelectFocus(levels_played_level, progress.unlocked, listed)
+                latest := LevelSelectFocus(levels_played_level, ShoveyHighestUnlocked(*progress), listed)
                 levels_scroll = (latest - 1) / columns * row_height
                 levels_focus_pending = false
             }
@@ -1440,7 +1570,9 @@ ShoveyFrame :: () {
                     unlocked := ShoveyLevelUnlocked(*progress, number)
                     completed := progress.completed[number - 1]
                     digits: [24]u8
-                    label := FormatInteger(cast(s64)number, digits[:])
+                    display_bytes: [48]u8
+                    display := MapRoute.WorldMapLevelDisplayName(number, display_bytes[:])
+                    label := ifx display != "" then display else FormatInteger(cast(s64)number, digits[:])
                     // Status stays accessible in the semantic label, while the
                     // visual card uses a lock/check icon and an unlocked board.
                     status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
@@ -1494,15 +1626,24 @@ ShoveyFrame :: () {
                 End(frame.session)
             }
         }
+        // Draw after the map so this single accessible control floats above it.
+        back_bounds := Rectangle.{12.0, top + 12.0, 48.0, 48.0}
+        Image(frame.session, ImageProps.{.key = cast(u64)20109, .bounds = back_bounds,
+                .asset_path = "assets/shovey/world-map/back-arrow.png", .fit = ImageFit.ImageFitContain,
+                .smooth = true})
+        if Button(frame.session, ButtonProps.{.key = cast(u64)20022, .id = 20022,
+                .bounds = back_bounds, .label = AppLocaleHost("shovey_back"), .invisible = true}) != 0 {
+            if !ShoveyBack() { LeaveForGameSelection() }
+            return
+        }
         LevelReplayPump(24)
         RewardCard(width, bottom)
         return
     }
-    if game.won && game.level < ShoveyLevelCount() { WinPause() }
-    if game.won && ShoveySecret(game.level) { SecretWinPause() }
+    if LevelResultScreen(width, top, bottom) { return }
     EndingPump()
     if key == 72 { help_open = !help_open }
-    if key == 256 { help_open = false }
+    if key == 256 && help_open { help_open = false; key = 0 }
     if help_open {
         if Control(20022, Rectangle.{8.0, top + 6.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
             if !ShoveyBack() { LeaveForGameSelection() }
@@ -1618,6 +1759,9 @@ ShoveyFrame :: () {
     choosing := !mini && !ControlsChosen()
     guiding := !mini && !cinematic && !game.won && !ShoveySecret(game.level) && GuideNext(*friend_guide) >= 0
     friend_key := key
+    // Hosts that see Escape directly (the web page) leave the level for the
+    // world map; Pip's guide keeps it to continue. Others route it as Back.
+    if key == 256 && !guiding && !choosing && ShoveyBackToMap() { key = 0 }
     if choosing || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
     if key == 32 { changed = ShoveyAct(-1) }

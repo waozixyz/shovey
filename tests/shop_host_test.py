@@ -194,6 +194,8 @@ AppTreeQueue :: (tree: *Tree, active: s32, request: AppsRequest) -> s32 { forced
 AppTreeDrain :: (tree: *Tree) -> bool { if save_ok { runtime.node = *root }; return save_ok }
 EntityGameShopAnswer :: (request: string) -> string { shop_calls += 1; return request }
 EntityDewAnswer :: (request: string) -> string { dew_calls += 1; return request }
+kept_epoch: s64 = -1;
+CollectionKeepLocalNodes :: (previous: s64) { kept_epoch = previous }
 '''
 for name in ('CollectionPackageAccount', 'CollectionShopAnswer', 'CollectionDewAnswer', 'CollectionShopQueue', 'CollectionShopNavigate', 'CollectionLocaleLabel'):
     source += function(ROOT / 'src/player_host.zi', name) + '\n'
@@ -211,8 +213,9 @@ Check :: () -> s32 {
     // Sync already happened in another callback; durable host snapshot catches it.
     unused CopyCString("new-owner", collection_island_package.owner[:])
     CollectionPackageAccount()
+    // The title and Editor keep the previous epoch's navigation under "local".
     if !collection_island_blocked || forced_back != 1 || collection_host.tree.account_epoch != 1 ||
-        cancel_child != 1 || cancel_locator != 1 { return 43 }
+        cancel_child != 1 || cancel_locator != 1 || kept_epoch != 0 { return 43 }
     CollectionPackageAccount()
     if !collection_island_blocked || forced_back != 2 || collection_host.tree.account_epoch != 1 { return 44 }
     save_ok = true

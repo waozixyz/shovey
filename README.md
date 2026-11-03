@@ -56,6 +56,39 @@ against the public catalog's exact size and SHA-256 digest.
 
 BSD 3-Clause. See [LICENSE](LICENSE).
 
+## World map development
+
+Reusable map tools live in `scripts/` and `tests/`. The generator uses Pillow,
+NumPy and SciPy. Regenerate the tiles and native geometry from a source pair:
+
+```sh
+python3 scripts/tile_world_map.py --version 4
+```
+
+Road guides are stored in `scripts/world_map_roads.json`. Source paintings live
+under `work/world-map-source/`; generated game tiles and scene metadata live
+under `assets/shovey/world-map/`.
+
+Run spacing validation, the map suite and the Linux player build:
+
+```sh
+python3 tests/world_map_spacing_test.py
+build-queue -- make world-map-test player-linux
+```
+
+Run progression independently, or test Play, map selection and double-click
+entry on a private Xvfb display after building the player:
+
+```sh
+build-queue -- sh tests/world_map_progression_test.sh
+sh tests/world_map_selection_ui_test.sh
+```
+
+The UI runner defaults to the sibling `waozixyz/apps/breeze` checkout for its
+test driver. Set `UI_DRIVER_SOURCE` or pass `--driver-source` to use another
+location; `--binary` selects another built player. Generated logs, screenshots,
+temporary files and private profiles remain under ignored `work/` directories.
+
 ## CrazyGames submission build
 
 Run `make web-crazygames` to build the guest browser edition and write

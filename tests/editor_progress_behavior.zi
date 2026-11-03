@@ -27,5 +27,15 @@ Check :: () -> s32 {
     if EditorDeviceUnlocked("{\"status\":\"rejected\"}") != 0 ||
     EditorDeviceUnlocked("{\"status\":\"done\",\"text\":\"malformed\"}") != 0 { return 3 }
     if EditorVisibleUnlocked(1, 0) != 1 || EditorVisibleUnlocked(1000, 84) != ShoveyLevelCount() { return 4 }
+    access: [1000]bool
+    EditorMergeAccountAccess("{\"status\":\"done\",\"document\":{\"game\":\"shovey.classic\",\"unlocked\":1,\"completed\":\"0000000001000000000000000000000000000000011111111111111111111111111111\"}}", access[:])
+    if !access[0] || !access[10] || !access[70] || access[71] || access[1] { return 6 }
+    sparse := ShoveyProgressNew()
+    sparse.completed[9] = true
+    for level: cast(s32)42..70 { sparse.completed[level - 1] = true }
+    unused ShoveyLoad(*board, 71)
+    local_access: [1000]bool
+    EditorMergeCampaignAccess(ShoveyCampaignSave(*sparse, *board), local_access[:])
+    if !local_access[10] || !local_access[70] || local_access[71] || local_access[1] { return 7 }
     return 0
 }

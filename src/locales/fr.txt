@@ -1094,3 +1094,15 @@ Toujours tournée vers l’aventure.
 [shovey_chest_reminder]
 Ton coffre quotidien t’attend. Ouvre Shovey pour récupérer ta récompense.
 ---
+
+[shovey_result_complete]
+Niveau % terminé
+---
+
+[shovey_result_score]
+Score
+---
+
+[shovey_result_moves]
+Déplacements
+---

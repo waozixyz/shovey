@@ -1094,3 +1094,15 @@ Selalu menunjuk ke petualangan.
 [shovey_chest_reminder]
 Peti harianmu menunggu. Buka Shovey untuk mengambil hadiahmu.
 ---
+
+[shovey_result_complete]
+Level % selesai
+---
+
+[shovey_result_score]
+Skor
+---
+
+[shovey_result_moves]
+Langkah
+---

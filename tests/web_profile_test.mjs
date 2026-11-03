@@ -116,6 +116,11 @@ try {
     assert(row, 'Missing control: ' + label + '; buttons: ' + nodes.filter(n => (n.role === 'button' || n.kind === 'button')).map(n => n.label).join('|'));
     await click(row.x + row.width / 2, row.y + row.height / 2);
   }
+  async function keyClick(key) {
+    const row = (await tree()).find(node => node.key === key && node.visible);
+    assert(row, 'Missing visible control: ' + key);
+    await click(row.x + row.width / 2, row.y + row.height / 2);
+  }
   console.log('Opening Profile');
   await openProfile();
   let profileText = await labels();
@@ -182,16 +187,18 @@ try {
     await click(40, 28);
     await wait('!Module.profileVisible');
     await textClick('Play');
+    assert((await tree()).some(node => node.key === 20105), 'Classic did not open its map');
+    await keyClick(20122);
     const localPath = '/kryon-apps/shovey/local.campaign';
     await wait(`Module.FS.analyzePath(${JSON.stringify(localPath)}).exists`);
     if ((await labels()).includes('Download new levels when they come out?')) await textClick('Not now');
     if ((await labels()).includes('How do you want to move?')) await textClick('Swipe and tap');
     const campaign = await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`);
-    assert.match(campaign, /^C[1-5]/, 'Classic did not save its device campaign');
-    assert.equal(parseInt(campaign.slice(2, campaign.startsWith('C5') ? 6 : 4), 16), 1);
+    assert.match(campaign, /^C[1-6]/, 'Classic did not save its device campaign');
+    assert.equal(parseInt(campaign.slice(2, (campaign.startsWith('C5') || campaign.startsWith('C6')) ? 6 : 4), 16), 1);
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Opening Classic wrote unearned account progress');
     await textClick('Levels');
-    assert((await labels()).some(text => text.includes('Level')));
+    assert((await tree()).some(node => node.key === 20105), 'Levels did not return to the map');
     await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: -2200});
     await delay(500);
     assert((await tree()).some(node => node.visible && node.key > 33001 && node.key <= 33175),
@@ -200,9 +207,9 @@ try {
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Scrolling wrote account progress');
     // Editor reads the browser's Classic save, while keeping the device's
     // unlocks out of earned account progress and keeping future levels locked.
+    await keyClick(20022);
     await textClick('Back');
-    await textClick('Back');
-    const header = campaign.startsWith('C5') ? 6 : 4;
+    const header = (campaign.startsWith('C5') || campaign.startsWith('C6')) ? 6 : 4;
     const editorFixture = campaign.slice(0, 2) + (2).toString(16).padStart(header - 2, '0') + campaign.slice(header);
     await evaluate(`Module.FS.writeFile(${JSON.stringify(localPath)}, ${JSON.stringify(editorFixture)})`);
     for (let cover = 0; cover < 3 && !(await labels()).includes('Open'); cover++) await textClick('Next');

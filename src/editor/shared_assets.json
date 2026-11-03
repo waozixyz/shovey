@@ -1,12 +1,9 @@
 {
-  "about": "A bundle may hold only its own assets/<name>/ folder. The editor draws Classic's boards and plays its sounds, so builders copy these into its folder: each 'from' (a file or folder of this package) to assets/shovey-editor/<to>.",
+  "about": "The editor uses Classic's sprites and sounds to create and play authored boards. Campaign board previews are not editor resources.",
   "copies": [
     {"from": "assets/shovey/sprites", "to": "classic/sprites"},
     {"from": "assets/shovey-landscape/sprites", "to": "classic/sprites-landscape"},
     {"from": "assets/shovey/sounds", "to": "classic/sounds"},
     {"from": "assets/shovey/preview.png", "to": "classic/preview.png"}
-  ],
-  "release_copies": [
-    {"from": "assets/shovey/levels", "to": "classic/levels"}
   ]
 }

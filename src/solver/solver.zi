@@ -1,10 +1,12 @@
 // Shovey's puzzle solver, in Ziran, so it runs inside the game's bundle as
-// well as in native tools. All rules run in the shipped engine through
-// classic_rules.zi; this module only searches. It is the counterpart of tools/solver/solver.c, and it works in
+// well as in native tools. All rules run in the shipped engine through a
+// SolverRules profile, Classic's (classic_rules.zi) by default; this module
+// only searches. It is the counterpart of tools/solver/solver.c, and it works in
 // slices: SolverRun does a bounded amount of work and returns, so a game can
 // check a board a little every frame while it stays responsive.
 //
 //   SolverStart(board)           loads a board of hex digits and starts
+//   SolverStartRules(rules, board)  the same with another game's rules
 //   SolverRun(budget)            works about budget units, then returns
 //   SolverStatus()               SOLVER_RUNNING until it knows more
 //   SolverRoute()                the winning route once SOLVER_WON
@@ -200,82 +202,261 @@ solver_found_by: s32;
 // ---------------------------------------------------------------------------
 // The rules
 
-SolverWork :: () -> s64 { return solve_classic_work }
+// A game's rules for the searches. Each rule works on its module's own
+// states: the loaded board, the search's root, the decoded base and the game
+// an action changed. The optional rules may be null.
+SolverLoadRule :: #type (board: string) -> bool;
+SolverWorkRule :: #type () -> s64;
+SolverKeyRule :: #type (out: []u8) -> s32;
+SolverDecodeRule :: #type (key: string, walker: s32) -> ();
+SolverChangeRule :: #type () -> ();
+SolverActionRule :: #type (action: s32) -> bool;
+SolverTestRule :: #type () -> bool;
+SolverCountRule :: #type () -> s32;
+SolverCellRule :: #type (cell: s32) -> ();
+SolverStepRule :: #type (direction: s32) -> s32;
+SolverRouteRule :: #type (board: string) -> string;
+
+SolverRules :: struct {
+    // One letter per action, in action order.
+    letters: string
+    // 1 when a refused action changes nothing at all.
+    facings: s32
+    // Loads a board; false when the rules reject it.
+    load: SolverLoadRule
+    // Work done by the rules, in solver units.
+    work: SolverWorkRule
+    // The current game's key against the search's root or the loaded board.
+    key_root: SolverKeyRule
+    key_initial: SolverKeyRule
+    // Makes the base the state of a key against the root or the loaded board.
+    decode_root: SolverDecodeRule
+    decode_initial: SolverDecodeRule
+    // The game becomes the base.
+    reset: SolverChangeRule
+    // The root becomes the base, or the loaded board.
+    root_from_base: SolverChangeRule
+    root_initial: SolverChangeRule
+    act: SolverActionRule
+    won: SolverTestRule
+    // Optional: a lost game takes no more actions.
+    lost: SolverTestRule
+    remaining: SolverCountRule
+    walker: SolverCountRule
+    set_walker: SolverCellRule
+    // The cell a move reaches when it only moves Shovey, else -1.
+    plain_step: SolverStepRule
+    // Optional: actions that ignore Shovey's position.
+    walker_free: SolverActionRule
+    // Optional: the rules prove the game can no longer be won.
+    dead: SolverTestRule
+    estimate: SolverCountRule
+    // Optional: the chain's next target, -1 for none, and its extra estimate.
+    chain_target: SolverCountRule
+    target_estimate: SolverStepRule
+    // Optional: the greedy search may retry with a lighter depth weight.
+    greedy_retry: SolverTestRule
+    // Optional: a known winning route for the board, replayed before use.
+    story_route: SolverRouteRule
+}
+
+// The rules of the current check, copied when it starts.
+solver_rules: SolverRules;
+// Work done by the searches themselves, beside the rules' own.
+solver_work: s64;
+// Counts started checks, so a caller can tell whether its check still runs.
+solver_session: s64;
+
+SolverWork :: () -> s64 {
+    // Before the first check there are no rules yet.
+    if solver_rules.work == null { return solver_work }
+    work := solver_rules.work
+    return work() + solver_work
+}
 
 SolverLetter :: (action: s32) -> u8 {
-    letters := "0123ft"
-    return letters[action]
+    return solver_rules.letters[action]
 }
 
 SolverActionOf :: (letter: u8) -> s32 {
-    if letter >= #char "0" && letter <= #char "3" { return cast(s32)(letter - #char "0") }
-    if letter == #char "f" { return 4 }
-    if letter == #char "t" { return 5 }
+    for at: cast(s32)0..solver_actions - 1 {
+        if solver_rules.letters[at] == letter { return at }
+    }
     return -1
 }
 
 // The current game's key against the search's root.
 SolverKeyNow :: () -> s32 {
-    return SolveClassicKey(*solve_classic_game, *solve_classic_root, solver_key[:])
+    key := solver_rules.key_root
+    return key(solver_key[:])
 }
 
 SolverDecode :: (key: string, walker: s32) {
-    SolveClassicDecode(key, *solve_classic_root, solve_classic_root_shadows, walker)
+    decode := solver_rules.decode_root
+    decode(key, walker)
 }
 
 SolverReset :: () {
-    SolveClassicReset()
+    reset := solver_rules.reset
+    reset()
 }
 
 SolverAct :: (action: s32) -> bool {
-    return SolveClassicAct(action)
+    act := solver_rules.act
+    return act(action)
 }
 
-SolverWon :: () -> bool { return solve_classic_game.won }
+SolverWon :: () -> bool {
+    won := solver_rules.won
+    return won()
+}
 
-SolverLost :: () -> bool { return solve_classic_game.lost }
+SolverLost :: () -> bool {
+    if solver_rules.lost == null { return false }
+    lost := solver_rules.lost
+    return lost()
+}
 
 SolverRemaining :: () -> s32 {
-    solve_classic_work += 4
-    return ShoveyRemaining(*solve_classic_game)
+    solver_work += 4
+    remaining := solver_rules.remaining
+    return remaining()
 }
 
-SolverWalker :: () -> s32 { return SolveClassicWalker() }
+SolverWalker :: () -> s32 {
+    walker := solver_rules.walker
+    return walker()
+}
 
 SolverSetWalker :: (walker: s32) {
-    SolveClassicSetWalker(walker)
+    set_walker := solver_rules.set_walker
+    set_walker(walker)
 }
 
 SolverPlainStep :: (direction: s32) -> s32 {
-    return SolveClassicPlainStep(direction)
+    plain_step := solver_rules.plain_step
+    return plain_step(direction)
 }
 
-SolverWalkerFree :: (action: s32) -> bool { return SolveClassicWalkerFree(action) }
+SolverWalkerFree :: (action: s32) -> bool {
+    if solver_rules.walker_free == null { return false }
+    walker_free := solver_rules.walker_free
+    return walker_free(action)
+}
 
-SolverDead :: () -> bool { return SolveClassicDead() }
+SolverDead :: () -> bool {
+    if solver_rules.dead == null { return false }
+    dead := solver_rules.dead
+    return dead()
+}
 
 SolverEstimate :: () -> s32 {
-    return SolveClassicEstimate()
+    estimate := solver_rules.estimate
+    return estimate()
+}
+
+SolverChainTarget :: () -> s32 {
+    if solver_rules.chain_target == null { return -1 }
+    target := solver_rules.chain_target
+    return target()
+}
+
+SolverTargetEstimate :: (target: s32) -> s32 {
+    if solver_rules.target_estimate == null { return 0 }
+    estimate := solver_rules.target_estimate
+    return estimate(target)
 }
 
 // The root becomes the decoded base state.
 SolverRootFromBase :: () {
-    state := solve_classic_base
-    SolveClassicSetRoot(*state)
+    root := solver_rules.root_from_base
+    root()
 }
 
 // The root becomes the loaded board.
 SolverRootInitial :: () {
-    SolveClassicSetRoot(*solve_classic_initial)
+    root := solver_rules.root_initial
+    root()
 }
 
 // The current game's key against the loaded board, into out.
 SolverKeyInitial :: (out: []u8) -> s32 {
-    return SolveClassicKey(*solve_classic_game, *solve_classic_initial, out)
+    key := solver_rules.key_initial
+    return key(out)
 }
 
 SolverDecodeInitial :: (key: string, walker: s32) {
+    decode := solver_rules.decode_initial
+    decode(key, walker)
+}
+
+// ---------------------------------------------------------------------------
+// Classic's rules, the default
+
+SolverClassicWork :: () -> s64 { return solve_classic_work }
+
+SolverClassicKeyRoot :: (out: []u8) -> s32 {
+    return SolveClassicKey(*solve_classic_game, *solve_classic_root, out)
+}
+
+SolverClassicKeyInitial :: (out: []u8) -> s32 {
+    return SolveClassicKey(*solve_classic_game, *solve_classic_initial, out)
+}
+
+SolverClassicDecodeRoot :: (key: string, walker: s32) {
+    SolveClassicDecode(key, *solve_classic_root, solve_classic_root_shadows, walker)
+}
+
+SolverClassicDecodeInitial :: (key: string, walker: s32) {
     SolveClassicDecode(key, *solve_classic_initial, solve_classic_initial_shadows, walker)
+}
+
+SolverClassicRootFromBase :: () {
+    state := solve_classic_base
+    SolveClassicSetRoot(*state)
+}
+
+SolverClassicRootInitial :: () {
+    SolveClassicSetRoot(*solve_classic_initial)
+}
+
+SolverClassicWon :: () -> bool { return solve_classic_game.won }
+
+SolverClassicLost :: () -> bool { return solve_classic_game.lost }
+
+SolverClassicRemaining :: () -> s32 { return ShoveyRemaining(*solve_classic_game) }
+
+SolverClassicChainTarget :: () -> s32 {
+    target := SolveClassicHardestPlate()
+    if target < 0 { target = SolveClassicNearestPlate() }
+    return target
+}
+
+// Buttons and moss need the heavier depth weight.
+SolverClassicGreedyRetry :: () -> bool {
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if ShoveyButtonColor(solve_classic_initial.ground[at]) >= 0 || ShoveyMossColor(solve_classic_initial.ground[at]) >= 0 { return false }
+    }
+    return true
+}
+
+SolverClassicStoryRoute :: (board: string) -> string {
+    for number: cast(s32)1..SHOVEY_LEVEL_COUNT {
+        if SolverSameBoard(board, ShoveyLevelData(number)) { return ShoveyLevelSolution(number) }
+    }
+    return ""
+}
+
+SolverClassicRules :: () -> SolverRules {
+    return SolverRules.{.letters = "0123ft", .facings = 4, .load = SolveClassicLoad, .work = SolverClassicWork,
+        .key_root = SolverClassicKeyRoot, .key_initial = SolverClassicKeyInitial,
+        .decode_root = SolverClassicDecodeRoot, .decode_initial = SolverClassicDecodeInitial,
+        .reset = SolveClassicReset, .root_from_base = SolverClassicRootFromBase, .root_initial = SolverClassicRootInitial,
+        .act = SolveClassicAct, .won = SolverClassicWon, .lost = SolverClassicLost, .remaining = SolverClassicRemaining,
+        .walker = SolveClassicWalker, .set_walker = SolveClassicSetWalker, .plain_step = SolveClassicPlainStep,
+        .walker_free = SolveClassicWalkerFree, .dead = SolveClassicDead, .estimate = SolveClassicEstimate,
+        .chain_target = SolverClassicChainTarget, .target_estimate = SolveClassicPlateEstimate,
+        .greedy_retry = SolverClassicGreedyRetry, .story_route = SolverClassicStoryRoute}
 }
 
 // ---------------------------------------------------------------------------
@@ -305,7 +486,7 @@ SolverClear :: (cap: s32) {
     solver_stage = 0
     solver_next_action = 0
     solver_cap = ifx cap < SOLVER_NODES then cap else SOLVER_NODES
-    solve_classic_work += 2
+    solver_work += 2
 }
 
 // Adds the key in solver_key with walker as a node unless it is known.
@@ -345,7 +526,7 @@ SolverAdd :: (length: s32, walker: s32, parent: s32, action: s32, walk_to: s32) 
     solver_walks_used += walk
     solver_table[slot] = node + 1
     solver_table_generation[slot] = solver_generation
-    solve_classic_work += cast(s64)(2 + length / 24 + walk / 24)
+    solver_work += cast(s64)(2 + length / 24 + walk / 24)
     return node
 }
 
@@ -408,7 +589,7 @@ SolverPriority :: (depth: s32) -> u64 {
     weight := ifx solver_greedy_alt then 3 else 5
     estimate := SolverEstimate()
     if solver_search == SOLVER_CHAIN && solver_chain_target >= 0 {
-        estimate += SolveClassicPlateEstimate(solver_chain_target)
+        estimate += SolverTargetEstimate(solver_chain_target)
     }
     priority := cast(u64)estimate * cast(u64)weight + cast(u64)depth
     if priority > 4294967295 { priority = 4294967295 }
@@ -536,7 +717,7 @@ SolverRegionStep :: () -> bool {
             solver_region_move[reached] = action
             solver_region_queue[solver_region_count] = reached
             solver_region_count += 1
-            solve_classic_work += 1
+            solver_work += 1
         }
         solver_region_at += 1
         solver_region_action = 0
@@ -573,10 +754,9 @@ SolverSameBoard :: (left: string, right: string) -> bool {
 }
 
 SolverStoryRoute :: () -> string {
-    for number: cast(s32)1..SHOVEY_LEVEL_COUNT {
-        if SolverSameBoard(solver_board, ShoveyLevelData(number)) { return ShoveyLevelSolution(number) }
-    }
-    return ""
+    if solver_rules.story_route == null { return "" }
+    story := solver_rules.story_route
+    return story(solver_board)
 }
 
 SolverTryStoryRoute :: (route: string) -> bool {
@@ -703,7 +883,7 @@ SolverMacroStep :: () -> bool {
             for at: cast(s32)1..solver_region_count - 1 {
                 if solver_region_queue[at] < smallest { smallest = solver_region_queue[at] }
             }
-            solve_classic_work += cast(s64)(solver_region_count / 32)
+            solver_work += cast(s64)(solver_region_count / 32)
             if !SolverClose(solver_node, smallest) { solver_stage = 0; continue }
             solver_stage = 2
             solver_next_edge = 0
@@ -816,8 +996,7 @@ SolverChainStep :: () {
                 SolverReset()
                 solver_goal = SolverRemaining()
                 if solver_goal < 0 { solver_goal = 0 }
-                solver_chain_target = SolveClassicHardestPlate()
-                if solver_chain_target < 0 { solver_chain_target = SolveClassicNearestPlate() }
+                solver_chain_target = SolverChainTarget()
                 SolverMacroBegin(solver_limits.chain_goal, true, true)
                 solver_chain_begun[level] = true
             }
@@ -889,27 +1068,35 @@ SolverVerifyStep :: () {
 // ---------------------------------------------------------------------------
 // The interface
 
-// Loads a board of hex digits and starts checking it. False when the engine
-// rejects it.
+// Loads a board of hex digits and starts checking it with Classic's rules.
+// False when the engine rejects it.
 SolverStart :: (board: string, limits: SolverLimits = SolverDefaultLimits()) -> bool {
+    return SolverStartRules(SolverClassicRules(), board, limits)
+}
+
+// Loads a board and starts checking it with other rules, which replace the
+// previous check's. False when the rules reject the board.
+SolverStartRules :: (rules: SolverRules, board: string, limits: SolverLimits = SolverDefaultLimits()) -> bool {
+    solver_rules = rules
+    solver_session += 1
     solver_limits = limits
     solver_search = SOLVER_GREEDY
     solver_started = false
     solver_chain_target = -1
     solver_greedy_alt = false
     solver_greedy_full = false
-    solver_greedy_alt_ok = true
+    solver_greedy_alt_ok = false
     solver_seen = 0
     solver_board = board
     solver_found_by = SOLVER_GREEDY
     solver_route_length = 0
-    solver_actions = 6
-    solver_facings = 4
-    if !SolveClassicLoad(board) { solver_status = SOLVER_INVALID; return false }
-    if solver_greedy_alt_ok {
-        for at: cast(s32)0..SHOVEY_CELLS - 1 {
-            if ShoveyButtonColor(solve_classic_initial.ground[at]) >= 0 || ShoveyMossColor(solve_classic_initial.ground[at]) >= 0 { solver_greedy_alt_ok = false; break }
-        }
+    solver_actions = cast(s32)rules.letters.count
+    solver_facings = rules.facings
+    load := rules.load
+    if !load(board) { solver_status = SOLVER_INVALID; return false }
+    if rules.greedy_retry != null {
+        retry := rules.greedy_retry
+        solver_greedy_alt_ok = retry()
     }
     SolverReset()
     solver_root_walker = SolverWalker()
@@ -947,6 +1134,10 @@ SolverSearchWon :: () -> s32 { return solver_found_by }
 
 // States seen by every search so far.
 SolverStates :: () -> s64 { return solver_seen }
+
+// Changes whenever a check starts, so a caller can tell its check from a
+// later one.
+SolverSession :: () -> s64 { return solver_session }
 
 // The proven route once the status is SOLVER_WON.
 SolverRoute :: () -> string {

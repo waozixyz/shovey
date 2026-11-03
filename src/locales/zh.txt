@@ -1094,3 +1094,15 @@ Dew 不足。
 [shovey_chest_reminder]
 你的每日宝箱正在等你。打开 Shovey 领取奖励。
 ---
+
+[shovey_result_complete]
+关卡 % 已完成
+---
+
+[shovey_result_score]
+得分
+---
+
+[shovey_result_moves]
+步数
+---

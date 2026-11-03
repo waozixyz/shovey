@@ -1,12 +1,13 @@
 // The Classic journey graph. IDs identify boards, never their prerequisites.
-// Each authored fork is a compact diamond: either arm opens the merge.
-// One board per arm lets existing numeric earned prefixes stay lossless;
-// longer arms require versioned availability persistence, not a max-ID gate.
+// Two painted fork-and-merge loops; each arm's board count follows its painted length.
+// Completing either incoming arm opens its merge; storage IDs never change.
 #import, file "reward_locations.zi";
+#import "std/number_text"
+#import "std/c_string"
 
 WORLD_MAP_CLASSIC_LEVELS :: 175
-WORLD_MAP_FORK_COUNT :: 6
-WORLD_MAP_EDGE_COUNT :: 180
+WORLD_MAP_FORK_COUNT :: 2
+WORLD_MAP_EDGE_COUNT :: 176
 WORLD_MAP_SECRET_COUNT :: 3
 
 WorldMapEdge :: struct { from_level: s32; to_level: s32 }
@@ -14,16 +15,12 @@ WorldMapFork :: struct { entry: s32; left: s32; right: s32; merge: s32; segment:
 
 #scope_file
 // Flat scalar storage keeps the immutable authored tables portable.
-world_map_forks: [30]s32 = .[
-    17, 18, 19, 20, 1,
-    39, 40, 41, 42, 3,
-    65, 66, 67, 68, 5,
-    89, 90, 91, 92, 7,
-    117, 118, 119, 120, 10,
-    140, 141, 142, 143, 12,
+world_map_forks: [10]s32 = .[
+    18, 19, 24, 28, 0,
+    63, 64, 71, 73, 0,
 ];
 
-world_map_edges: [360]s32 = .[
+world_map_edges: [352]s32 = .[
     1, 2,
     2, 3,
     3, 4,
@@ -41,13 +38,13 @@ world_map_edges: [360]s32 = .[
     15, 16,
     16, 17,
     17, 18,
-    17, 19,
-    18, 20,
+    18, 19,
+    18, 24,
     19, 20,
     20, 21,
     21, 22,
     22, 23,
-    23, 24,
+    23, 28,
     24, 25,
     25, 26,
     26, 27,
@@ -64,8 +61,7 @@ world_map_edges: [360]s32 = .[
     37, 38,
     38, 39,
     39, 40,
-    39, 41,
-    40, 42,
+    40, 41,
     41, 42,
     42, 43,
     43, 44,
@@ -89,14 +85,14 @@ world_map_edges: [360]s32 = .[
     61, 62,
     62, 63,
     63, 64,
+    63, 71,
     64, 65,
     65, 66,
-    65, 67,
-    66, 68,
+    66, 67,
     67, 68,
     68, 69,
     69, 70,
-    70, 71,
+    70, 73,
     71, 72,
     72, 73,
     73, 74,
@@ -116,8 +112,7 @@ world_map_edges: [360]s32 = .[
     87, 88,
     88, 89,
     89, 90,
-    89, 91,
-    90, 92,
+    90, 91,
     91, 92,
     92, 93,
     93, 94,
@@ -145,8 +140,7 @@ world_map_edges: [360]s32 = .[
     115, 116,
     116, 117,
     117, 118,
-    117, 119,
-    118, 120,
+    118, 119,
     119, 120,
     120, 121,
     121, 122,
@@ -169,8 +163,7 @@ world_map_edges: [360]s32 = .[
     138, 139,
     139, 140,
     140, 141,
-    140, 142,
-    141, 143,
+    141, 142,
     142, 143,
     143, 144,
     144, 145,
@@ -347,7 +340,130 @@ WorldMapDiscoveredSecretAt :: (index: s32, discovery_record: string) -> WorldMap
     return WorldMapSecretDestination.{
         .level = level,
         .parent_level = ifx level == CHEST_LEVEL then CHEST_PARENT_LEVEL else WORLD_MAP_CLASSIC_LEVELS,
-        .label = ifx level == CHEST_LEVEL then "29a" else ifx level == 1001 then "175a" else "175b",
+        // Immutable authored labels; regression-tested against the formatter below.
+        .label = ifx level == CHEST_LEVEL then "21-S" else ifx level == 1001 then "159-S1" else "159-S2",
         .discovery_key = WorldMapSecretDiscoveryKey(level),
         .detached = true}
+}
+
+// Display identity never indexes boards or saved progress. Branches use one
+// main number for every board of either arm, then advance once at the OR merge.
+// This surface supports the current disjoint, two-arm forks (not nested forks).
+WorldMapDisplayIdentity :: struct {
+    level: s32
+    main_number: s32
+    branch: s32 // 0 main road, 1 A, 2 B
+    step: s32
+    fork_entry: s32
+    merge: s32
+    secret_anchor: s32 // storage ID; zero for ordinary boards
+    secret_index: s32 // 1-based within the anchor
+    secret_count: s32
+    detached: bool
+}
+
+// Follow graph edges, never storage-ID adjacency. Secrets have no successors.
+WorldMapFirstSuccessor :: (level: s32) -> s32 {
+    for index: cast(s32)0..WORLD_MAP_EDGE_COUNT - 1 {
+        edge := WorldMapEdgeAt(index)
+        if edge.from_level == level { return edge.to_level }
+    }
+    return 0
+}
+
+WorldMapLevelDisplayIdentity :: (level: s32) -> WorldMapDisplayIdentity {
+    anchor: s32 = 0
+    if level == CHEST_LEVEL { anchor = CHEST_PARENT_LEVEL }
+    if level == 1001 || level == 1002 { anchor = WORLD_MAP_CLASSIC_LEVELS }
+    target := ifx anchor != 0 then anchor else level
+    if target < 1 || target > WORLD_MAP_CLASSIC_LEVELS { return .{} }
+    result: WorldMapDisplayIdentity
+    current: s32 = 1
+    number: s32 = 1
+    for visit: cast(s32)1..WORLD_MAP_CLASSIC_LEVELS {
+        if current == target {
+            result = WorldMapDisplayIdentity.{.main_number = number}
+            break
+        }
+        fork: WorldMapFork
+        for index: cast(s32)0..WORLD_MAP_FORK_COUNT - 1 {
+            candidate := WorldMapForkAt(index)
+            if candidate.entry == current { fork = candidate; break }
+        }
+        if fork.entry != 0 {
+            for side: cast(s32)1..2 {
+                arm := ifx side == 1 then fork.left else fork.right
+                for step: cast(s32)1..WORLD_MAP_CLASSIC_LEVELS {
+                    if arm == 0 || arm == fork.merge { break }
+                    if arm == target {
+                        result = WorldMapDisplayIdentity.{.main_number = number + 1,
+                            .branch = side, .step = step, .fork_entry = fork.entry, .merge = fork.merge}
+                        break
+                    }
+                    arm = WorldMapFirstSuccessor(arm)
+                }
+                if result.main_number != 0 { break }
+            }
+            if result.main_number != 0 { break }
+            current = fork.merge
+            number += 2
+        } else {
+            current = WorldMapFirstSuccessor(current)
+            number += 1
+        }
+        if current == 0 { return .{} }
+    }
+    if result.main_number == 0 { return .{} }
+    result.level = level
+    if anchor != 0 {
+        result.secret_anchor = anchor
+        result.secret_index = ifx level == 1002 then 2 else 1
+        result.secret_count = ifx anchor == CHEST_PARENT_LEVEL then 1 else 2
+        result.detached = true
+    }
+    return result
+}
+
+// Returned text borrows caller storage. Keep a separate buffer for every label
+// retained by a UI tree. 32 bytes suffices for every current authored label.
+// Invalid IDs and insufficient buffers return empty rather than partial names.
+WorldMapLevelDisplayName :: (level: s32, output: []u8) -> string {
+    identity := WorldMapLevelDisplayIdentity(level)
+    if output.count > 0 { output[0] = 0 }
+    if identity.level == 0 { return "" }
+    bytes: [48]u8
+    digits: [24]u8
+    length: s64 = 0
+    {
+        main := FormatInteger(cast(s64)identity.main_number, digits[:])
+        for byte: main { bytes[length] = byte; length += 1 }
+    }
+    if identity.branch != 0 {
+        bytes[length] = #char "-"; length += 1
+        bytes[length] = ifx identity.branch == 1 then #char "A" else #char "B"; length += 1
+        step := FormatInteger(cast(s64)identity.step, digits[:])
+        for byte: step { bytes[length] = byte; length += 1 }
+    }
+    if identity.detached {
+        bytes[length] = #char "-"; length += 1
+        bytes[length] = #char "S"; length += 1
+        if identity.secret_count > 1 {
+            ordinal := FormatInteger(cast(s64)identity.secret_index, digits[:])
+            for byte: ordinal { bytes[length] = byte; length += 1 }
+        }
+    }
+    if cast(s64)output.count <= length { return "" }
+    unused CopyCString(TextView(bytes[:length]), output)
+    return TextView(output[:length])
+}
+
+// Use this discovery-gated variant for map secrets, with the same record used
+// by WorldMapDiscoveredSecretAt; ordinary availability cannot reveal a room.
+WorldMapDiscoveredSecretDisplayName :: (index: s32, discovery_record: string, output: []u8) -> string {
+    level := WorldMapSecretLevel(index)
+    if !WorldMapSecretVisible(level, discovery_record) {
+        if output.count > 0 { output[0] = 0 }
+        return ""
+    }
+    return WorldMapLevelDisplayName(level, output)
 }

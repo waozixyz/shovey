@@ -1,0 +1,105 @@
+// Private test host for the production public editor. No network service exists.
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/tree"
+#import "kryon/text_input_props"
+#import "std/vec"
+#import "std/text_buffer"
+#import "apps/node_types"
+Collections :: #import "entity/level_collections";
+#import, file "../src/editor/edit.zi";
+#import, file "../src/solver/solver.zi";
+#import "kryon/desktop_runtime"
+#import "kryon/cairo_raster"
+#import "kryon/tree_draw"
+#import "kryon/tree_input"
+#import "kryon/scroll_device"
+#import "kryon/test_driver"
+#import "std/file"
+#import "std/timer_linux"
+#import "translations"
+#import, file "../src/editor/editor_view.zi";
+
+test_session: Session;
+test_frame: AppUiFrame;
+test_key: s32;
+record_bytes: [20000]u8;
+
+#program_export
+FakeFrame :: () -> AppUiFrame { return test_frame }
+#program_export
+FakeLocale :: (key: string) -> string { return GameLocaleText("en", key) }
+#program_export
+FakeKey :: () -> s32 { return test_key }
+#program_export
+FakeKeyboard :: (session: Session, visible: bool) {}
+#program_export
+FakeInput :: () -> TextFieldInput { return TextFieldInput.{} }
+#program_export
+FakeSound :: (path: string) -> bool { return false }
+#program_export
+FakeSmooth :: (frames: s32) -> bool { return true }
+#program_export
+FakeSupports :: (capability: string) -> bool { return capability == Collections.COLLECTIONS_PUBLISH_SERVICE }
+#program_export
+FakeRecord :: (name: string) -> string {
+    path: Vec(u8)
+    BuilderPrint(*path, "records/%", name)
+    bytes: Vec(u8)
+    if !ReadFileInto(BuilderFinish(path), *bytes) || bytes.count > record_bytes.count { return "" }
+    length := bytes.count
+    for byte, at: VecSlice(bytes, 0, length) { record_bytes[at] = byte }
+    VecFree(bytes)
+    return TextView(record_bytes[:length])
+}
+#program_export
+FakeSave :: (name: string, text: string) -> bool {
+    path: Vec(u8)
+    BuilderPrint(*path, "records/%", name)
+    return WriteEntireFile(BuilderFinish(path), text)
+}
+#program_export
+FakeService :: (service: string, request: string) -> string {
+    if service == Collections.COLLECTIONS_DRAFTS_SERVICE { return "{\"status\":\"done\",\"account\":\"test-author\"}" }
+    if service == Collections.COLLECTIONS_PUBLISH_SERVICE {
+        unused WriteEntireFile("fake-publish.json", request)
+        return "{\"status\":\"done\",\"publication\":{\"id\":\"local-test-publication\",\"format\":\"shovey-levels-1\",\"title\":\"My Classic levels\",\"visibility\":\"private\",\"author\":\"test-author\"}}"
+    }
+    return "{\"status\":\"unavailable\"}"
+}
+
+#program_export
+RunPublicEditor :: () -> s32 {
+    if !OpenDesktopSized(1100, 1000) { return 1 }
+    test_session = SessionOpen()
+    ok := true
+    while ok && PollDesktop() {
+        BeginDesktopFrame()
+        bounds := DesktopViewport()
+        test_key = DesktopPressedKey()
+        pointer := TestDriverPointer(test_session, PollPointer())
+        TreePointerUpdate(test_session, pointer)
+        wheel := TestDriverWheel(DesktopWheelMove())
+        now := cast(float64)MonotonicMilliseconds() / 1000.0
+        BeginScrollFrame(test_session, Vector2.{pointer.x, pointer.y}, pointer.pressed, pointer.down, pointer.released, wheel, now)
+        PointerWheelSend(test_session, pointer.x, pointer.y, wheel)
+        test_frame = AppUiFrame.{.session = test_session, .width = cast(s32)bounds.width,
+            .height = cast(s32)bounds.height, .scale = 1.0, .font = 16, .now = now}
+        if BeginFrame(test_session, cast(u64)1, bounds) != FrameStatus.FrameOk { ok = false; break }
+        EditorFrame("en")
+        unused WriteEntireFile("board.hex", EditBoardHex(*editor_level.board))
+        status: Vec(u8)
+        BuilderPrint(*status, "% % %", editor_open_id, editor_classic.count, editor_check)
+        unused WriteEntireFile("state.txt", BuilderFinish(status))
+        finished := EndFrameRetained(test_session, DesktopFrameReusable())
+        if finished.status != FrameStatus.FrameOk { ok = false; break }
+        TestDriverFrame(test_session)
+        DesktopFrameUnchanged(finished.paint_unchanged)
+        ok = EndDesktopFrame()
+        if ok { PauseDesktop() }
+    }
+    SolverStop()
+    unused SessionClose(test_session)
+    CloseDesktop()
+    return ifx ok then 0 else 1
+}

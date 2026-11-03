@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from world_map_test_support import assert_fullscreen_map, start_map_destination
 
 
 
@@ -20,6 +21,9 @@ def answer_cover_question(driver):
     download new levels; tests keep the levels they ship with. The question
     shows in the covers' first frame."""
     driver.wait(label='Play', role='button', timeout=60)
+    # The question follows the collection's records, which can load a frame
+    # after Play first appears; let the covers settle before looking.
+    driver.wait_idle(frames=4)
     if driver.find(label=LEVEL_UPDATES, role='text'):
         driver.press(label='Not now', role='button')
         driver.wait_gone(label=LEVEL_UPDATES, role='text')
@@ -43,6 +47,14 @@ def answer_level_updates(driver, timeout=20):
 def wait_level_one(driver, classic_levels):
     """Level 1 of the campaign. The live campaign on the server may already
     hold levels published after this checkout, so it is never shorter."""
+    deadline = time.monotonic() + 30
+    while not driver.find(contains='Level 1 / ', role='text'):
+        if driver.find(key=20105, visible=True):
+            assert_fullscreen_map(driver)
+            start_map_destination(driver, 1)
+            break
+        assert time.monotonic() < deadline, 'Neither map nor level opened'
+        time.sleep(.05)
     label = driver.wait(contains='Level 1 / ', role='text')['label']
     assert label.startswith('Level 1 / ') and int(label.rsplit(' ', 1)[1]) >= classic_levels, label
 
@@ -52,11 +64,13 @@ def main():
     parser.add_argument('--inbe-source', type=Path, required=True)
     parser.add_argument('--classic-levels', type=int, help='Expected campaign length of an already built artifact')
     parser.add_argument('--map-only', action='store_true', help='Run the focused Classic map navigation and selection test')
+    parser.add_argument('--map-resume-only', action='store_true', help='Run the focused same-level map Play resume regression')
     args = parser.parse_args()
     assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
     assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
     root = Path(__file__).resolve().parents[1]
-    output = root / ('work/classic-map-ui-test' if args.map_only else 'build/shovey-standalone-ui-test')
+    output = root / ('work/map-play-resume-test' if args.map_resume_only else
+                     'work/classic-map-ui-test' if args.map_only else 'build/shovey-standalone-ui-test')
     subprocess.run(['git', 'check-ignore', '-q', str(output)], cwd=root, check=True)
     # Classic's heading counts its levels, which the published campaign lists.
     classic_levels = args.classic_levels or len(json.loads((root / 'levels/approved.json').read_text())['levels'])
@@ -81,7 +95,8 @@ def main():
             finally:
                 if child.poll() is None:
                     child.terminate()
-                child.wait(timeout=10)
+                returncode = child.wait(timeout=10)
+                (output / (name + '.exit.json')).write_text(json.dumps({'pid': child.pid, 'returncode': returncode}) + '\n')
 
     def move_until_saved(record):
         before = record.read_bytes() if record.exists() else b''
@@ -98,8 +113,8 @@ def main():
         # Animals keep wandering while the window rotates. Campaign unlocks,
         # completion marks, player state and board identity must stay intact.
         text = data.decode()
-        assert text[:2] in ('C1', 'C2', 'C3', 'C4', 'C5')
-        header, marks = (6, 1000) if text[:2] == 'C5' else (4, 175)
+        assert text[:2] in ('C1', 'C2', 'C3', 'C4', 'C5', 'C6')
+        header, marks = (6, 1000) if text[:2] in ('C5', 'C6') else (4, 175)
         state = text[header + marks:]
         assert state[:2] in ('P1', 'P2', 'P3')
         assert set(text[header:header + marks]) <= {'0', '1'}
@@ -222,6 +237,44 @@ def main():
         profile = Path(temporary)
         classic = profile / 'games/arcade.shovey/records/local.campaign'
         account_progress = profile / 'entity/records/local/game-progress/fd65a3d7ac3d5ceb2d4d96cc5224a740.json'
+        if args.map_resume_only:
+            with application(profile, 'focused-play'):
+                answer_cover_question(driver)
+                driver.press(label='Play', role='button')
+                wait_level_one(driver, classic_levels)
+                answer_level_updates(driver)
+                if driver.find(label='How do you want to move?', role='text'):
+                    driver.press(label='Swipe and tap')
+                    driver.wait_gone(label='How do you want to move?', role='text')
+                if driver.find(label='Got it', role='button'):
+                    driver.press(label='Got it', role='button')
+                    driver.wait_gone(label='Got it', role='button')
+                move_until_saved(classic)
+                saved = campaign_progress(classic.read_bytes())
+                before_board, before_player = board_and_player()
+                driver.press(label='Back', role='button')
+                driver.wait(label='Play', role='button')
+            with application(profile, 'focused-resume'):
+                answer_cover_question(driver)
+                driver.press(label='Play', role='button')
+                wait_level_one(driver, classic_levels)
+                after_board, after_player = board_and_player()
+                before = UiDriver.center(before_player)
+                after = UiDriver.center(after_player)
+                before_cell = ((before[0] - before_board['x']) / before_board['width'],
+                               (before[1] - before_board['y']) / before_board['height'])
+                after_cell = ((after[0] - after_board['x']) / after_board['width'],
+                              (after[1] - after_board['y']) / after_board['height'])
+                assert abs(after_cell[0] - before_cell[0]) < .01 and abs(after_cell[1] - before_cell[1]) < .01, \
+                    ('same-level map Play restarted the board', before_cell, after_cell)
+                assert campaign_progress(classic.read_bytes()) == saved
+                driver.press(label='Restart', role='button')
+                deadline = time.monotonic() + 5
+                while campaign_progress(classic.read_bytes()) == saved:
+                    assert time.monotonic() < deadline, 'explicit Restart is blocked after map resume'
+                    time.sleep(.05)
+            print('Focused same-level map Play resume local test passed: moved board/moves/save preserved, explicit Restart resets')
+            return
         with application(profile, 'play') as child:
             assert not driver.find(label='Arcade', role='text')
             # The covers ask once whether games download new levels.
@@ -230,22 +283,14 @@ def main():
             assert (profile / 'games/arcade.shovey-player/records/level-updates').read_text() == 'off'
             driver.press(label='Play', role='button')
             wait_level_one(driver, classic_levels)
-            # The first level asks how to move: swipe and tap, or the pad.
+            # Desktop play uses its default controls; a chooser may appear on touch hosts.
             answer_level_updates(driver)
-            driver.wait(label='How do you want to move?', role='text')
-            assert driver.find(label='Swipe and tap', visible=True) and driver.find(label='Movement pad', visible=True)
-            for width, height in ((412, 860), (960, 600)):
-                window = resize_owned_window(child, width, height)
-                driver.wait_idle(frames=5)
-                orientation = 'landscape' if width > height else 'portrait'
-                subprocess.run(['import', '-window', window, str(output / ('controls-choice-' + orientation + '.png'))], check=True)
-            resize_owned_window(child, 480, 820)
-            driver.press(label='Swipe and tap')
-            driver.wait_gone(label='How do you want to move?', role='text')
-            driver.wait(label='Got it', role='button')
-            driver.press(label='Got it', role='button')
-            driver.wait_gone(label='Got it', role='button')
-            assert (profile / 'games/arcade.shovey-player/records/controls').read_text() == 'off'
+            if driver.find(label='How do you want to move?', role='text'):
+                driver.press(label='Swipe and tap')
+                driver.wait_gone(label='How do you want to move?', role='text')
+            if driver.find(label='Got it', role='button'):
+                driver.press(label='Got it', role='button')
+                driver.wait_gone(label='Got it', role='button')
             assert not driver.find(label='Continue', role='button'), 'Classic must open straight on a level'
             assert driver.find(label='Shovey', role='image', visible=True), 'Shovey must be drawn as a picture'
             assert driver.find(label='Back', role='button', visible=True), 'Classic lacks its return control'
@@ -256,7 +301,7 @@ def main():
             driver.wait(label='Mute', role='button')
             assert (profile / 'games/arcade.shovey-player/records/sound').read_text() == 'on'
             driver.press(label='Levels', role='button')
-            driver.wait(label='Continue', role='button')
+            assert_fullscreen_map(driver)
             window = resize_owned_window(child, 390, 844)
             portrait_marker = driver.wait(key=33001, role='button', visible=True)
             assert portrait_marker['width'] >= 48 and portrait_marker['height'] >= 48
@@ -265,17 +310,20 @@ def main():
             driver.key('end')
             locked = driver.wait(key=33004, role='button', visible=True)
             assert not locked['enabled'], 'A future waypoint became playable'
-            assert not any(33005 <= node.get('key', 0) <= 33175 for node in driver.tree()), \
-                'Fresh progress exposed more than three locked waypoints'
+            # The whole map browses at any progress; later waypoints stay locked.
+            assert not any(33005 <= node.get('key', 0) <= 33175 and node.get('enabled') for node in driver.tree()), \
+                'Fresh progress made a later waypoint playable'
             driver.key('enter')
-            driver.wait(label='Continue', role='button')
+            # End focuses the last available level, while locked previews remain disabled.
+            wait_level_one(driver, classic_levels)
+            driver.press(label='Levels', role='button')
+            assert_fullscreen_map(driver)
             driver.key('home')
-            # Up follows explicit graph edges and skips each parallel right
-            # arm rather than treating it as the next step in a linear list.
+            # Movement cannot enter the locked previews.
             for _ in range(3):
                 driver.key('up')
             middle = driver.wait(key=33004, role='button', visible=True)
-            assert middle['selected'] and not middle['enabled'], middle
+            assert not middle['enabled'] and driver.wait(key=33001, role='button')['selected'], middle
             before_y = middle['y']
             driver.drag((24, 240), (24, 540))
             driver.wait_idle(frames=3)
@@ -297,10 +345,12 @@ def main():
             assert landscape_marker['selected'] and landscape_marker['enabled']
             assert_map_terrain_fills_height()
             subprocess.run(['import', '-window', window, str(output / 'level-selector-landscape.png')], check=True)
-            driver.press(key=33001, role='button')
+            # One press keeps the focused waypoint selected and Play opens it;
+            # two quick presses on it would open it directly.
+            start_map_destination(driver, 1)
             wait_level_one(driver, classic_levels)
             driver.press(label='Levels', role='button')
-            driver.wait(label='Continue', role='button')
+            assert_fullscreen_map(driver)
             # Back from the level list returns to the level, then to the covers.
             driver.press(key=20022)
             wait_level_one(driver, classic_levels)
@@ -308,7 +358,7 @@ def main():
             driver.press(label='Back', role='button')
             driver.wait(label='Play', role='button')
             if args.map_only:
-                print('Classic map local UI test passed: 390x844 and 960x600, keyboard 1/4, three locked previews, touch scrolling, selection and Back')
+                print('Classic map local UI test passed: 390x844 and 960x600, keyboard 1/4, locked previews, touch scrolling, selection and Back')
                 return
             answer_cover_question(driver)
             driver.press(label='Play', role='button')
@@ -355,7 +405,23 @@ def main():
             board = board_and_player()[0]
             assert all(abs(board[field] - swipe_boards[960, 600][field]) <= 1 for field in ('x', 'y', 'width', 'height'))
             swipe_in_visible_direction()
+            restart_saved = campaign_progress(classic.read_bytes())
+            restarted_board, restarted_player = board_and_player()
+            driver.press(label='Restart', role='button')
+            deadline = time.monotonic() + 5
+            while campaign_progress(classic.read_bytes()) == restart_saved:
+                assert time.monotonic() < deadline, 'explicit Restart did not reset the board'
+                time.sleep(.05)
+            driver.wait_idle(frames=3)
+            reset_board, reset_player = board_and_player()
+            assert (reset_player['x'], reset_player['y']) != (restarted_player['x'], restarted_player['y']), 'Restart kept the moved player'
+            assert (reset_board['width'], reset_board['height']) == (restarted_board['width'], restarted_board['height'])
+            move_until_saved(classic)
+            moved_board, moved_player = board_and_player()
+            assert UiDriver.center(moved_player) != UiDriver.center(reset_player), 'post-Restart move did not move Shovey'
             classic_saved = campaign_progress(classic.read_bytes())
+            resize_owned_window(child, 480, 820)
+            resume_board, resume_player = board_and_player()
             assert not account_progress.exists(), 'Movement wrote an account progress record'
             assert len(driver.find(label='Back', role='button', visible=True)) == 1, 'Shovey needs one clear Back action'
             driver.press(label='Back', role='button')
@@ -364,13 +430,15 @@ def main():
             # Island's public cover sits between Classic and the Editor.
             driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')
-            # The editor opens on a blank board; Levels loads a story level.
+            # The editor opens on a blank board; Levels lists the creator's
+            # own boards under Classic and makes a new one.
             driver.wait(label='New level', role='text')
             driver.press(label='Levels', role='button')
-            driver.wait(label='Story levels', role='text')
-            # Only levels Classic has unlocked can be a starting point.
-            assert driver.find(label='Play Classic to unlock this level.', role='button'), 'Locked story levels can be edited'
-            driver.press(label='1', role='button')
+            driver.wait(label='Classic', role='text')
+            driver.wait(label='Your levels', role='text')
+            assert not any(260000 <= node.get('key', 0) < 264000 for node in driver.tree()), 'Story levels returned to the editor'
+            driver.press(label='New level', role='button')
+            driver.wait(key=200000, timeout=20)
             driver.wait(label='Play', role='button')
             # Editing follows the device, including portrait screens whose
             # board area becomes wider after reserving the toolbar/palette.
@@ -393,6 +461,25 @@ def main():
             driver.wait(label='Levels', role='button')
             driver.key('escape')
             driver.wait(label='Open', role='button')
+        classic_bytes = classic.read_bytes()
+        text = classic_bytes.decode()
+        header, marks = (6, 1000) if text.startswith(('C5', 'C6')) else (4, 175)
+        start = header + marks
+        text = text[:2] + f'{2:0{header - 2}x}' + '1' + '0' * (marks - 1) + text[start:]
+        text = text[:start + 28] + '01' + text[start + 30:]
+        classic.write_text(text)
+        with application(profile, 'replay-controls'):
+            driver.press(label='Play', role='button')
+            start_map_destination(driver, 1)
+            driver.wait(contains='Level 1 / ', role='text')
+            deadline = time.monotonic() + 5
+            while campaign_progress(classic.read_bytes())[0][2][10:18] != '00000000':
+                assert time.monotonic() < deadline, 'completed-level replay did not restart'
+                time.sleep(.05)
+            driver.press(label='Levels', role='button')
+            start_map_destination(driver, 2)
+            driver.wait(contains='Level 2 / ', role='text')
+        classic.write_bytes(classic_bytes)
         with application(profile, 'restore'):
             driver.press(label='Next', role='button')
             driver.press(label='Next', role='button')
@@ -406,6 +493,15 @@ def main():
             answer_cover_question(driver)
             driver.press(label='Play', role='button')
             wait_level_one(driver, classic_levels)
+            resumed_board, resumed_player = board_and_player()
+            before = UiDriver.center(resume_player)
+            after = UiDriver.center(resumed_player)
+            before_cell = ((before[0] - resume_board['x']) / resume_board['width'],
+                           (before[1] - resume_board['y']) / resume_board['height'])
+            after_cell = ((after[0] - resumed_board['x']) / resumed_board['width'],
+                          (after[1] - resumed_board['y']) / resumed_board['height'])
+            assert abs(after_cell[0] - before_cell[0]) < .01 and abs(after_cell[1] - before_cell[1]) < .01, \
+                ('map Play resumed at a different position', before_cell, after_cell)
             assert campaign_progress(classic.read_bytes()) == classic_saved
             assert not account_progress.exists(), 'Restart published an unfinished board'
     print('Standalone Shovey: portrait/landscape boards, swipe directions, the floating movement pad, rotation saves, covers and independent saves passed')

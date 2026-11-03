@@ -11,6 +11,8 @@
 #import "kryon/app_context"
 #import "kryon/widget_palette"
 #import "std/number_text"
+#import "std/c_string"
+#import "std/text_buffer"
 #import, file "shovey_theme.zi";
 #import, file "controls.zi";
 Shop :: #import, file "shop_view.zi";
@@ -64,11 +66,20 @@ Frame :: (today: s64) -> bool {
         .landscape = "assets/shovey/title/shovey-landscape.jpg", .logo = "assets/shovey/title/shovey-logo.png",
         .action = AppLocaleHost("shovey_play")}
     standalone := AppSupports("shovey.standalone")
+    // A locked Island's one action reads Unlock and its price; only an offer
+    // stays as the caption.
+    owned := AppSupports("shovey.island.owned")
+    // Copied before the next host call can reuse the reply.
+    unlock_text: [128]u8
+    unlock := ""
+    if standalone && !owned && CopyCString(AppServiceHost("arcade.navigation", "island-unlock"), unlock_text[:]) {
+        unlock = TextUntilNul(unlock_text[:])
+    }
     items[1] = CarouselItem.{.label = AppLocaleHost("shovey_island_title"),
         .portrait = "assets/shovey/title/shovey-island-portrait.jpg",
         .landscape = "assets/shovey/title/shovey-island-landscape.jpg", .logo = "assets/shovey/title/shovey-island-logo.png",
-        .action = AppLocaleHost(ifx AppSupports("shovey.island.owned") then "shovey_play" else "shovey_shop_buy"),
-        .caption = ifx standalone then AppServiceHost("arcade.navigation", "island-caption") else ""}
+        .action = ifx owned then AppLocaleHost("shovey_play") else ifx unlock != "" then unlock else AppLocaleHost("shovey_island_unlock"),
+        .caption = ifx standalone && !owned then AppServiceHost("arcade.navigation", "island-offer") else ""}
     editor := CarouselItem.{.label = AppLocaleHost("shovey_editor"),
         .portrait = "assets/shovey/title/shovey-editor-portrait.jpg",
         .landscape = "assets/shovey/title/shovey-editor-landscape.jpg", .logo = "assets/shovey/title/shovey-editor-logo.png",
@@ -94,6 +105,9 @@ Frame :: (today: s64) -> bool {
     if Action(frame.session, 49206, Rectangle.{bounds.width - 56.0, y, 44.0, 44.0}, "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused AppServiceHost("entity.profile", "leaderboard") }
     if selected == 0 { prepared = false; return true }
     if selected == count - 1 { unused OpenClassicEditor() }
-    else if selected == 1 { unused AppServiceHost("apps.navigation", "arcade.shovey-island") }
+    else if selected == 1 {
+        if owned { unused AppServiceHost("apps.navigation", "arcade.shovey-island") }
+        else { unused AppServiceHost("arcade.navigation", "island") }
+    }
     return false
 }

@@ -10,7 +10,7 @@ OpenChecks :: () -> s32 {
     if !ShoveyLoad(*game, 1) { return 10 }
     if ShoveyOpenLatest(*progress, *game) || game.level != 1 { return 11 }
     game.won = true
-    if !ShoveyOpenLatest(*progress, *game) || game.level != 2 || game.won || progress.unlocked != 2 || !progress.completed[0] { return 12 }
+    if !ShoveyOpenLatest(*progress, *game) || game.level != 2 || game.won || progress.unlocked != 1 || !progress.completed[0] { return 12 }
     if !ShoveySelectLevel(*progress, *game, 1) || game.level != 1 { return 13 }
     if !ShoveyOpenLatest(*progress, *game) || game.level != 2 || game.moves != 0 { return 14 }
     game.moves = 7
@@ -29,23 +29,26 @@ ProgressChecks :: () -> s32 {
     if progress.completed[0] || progress.unlocked != 1 { return 21 }
     game.won = true
     ShoveyRecordWin(*progress, *game)
-    if !progress.completed[0] || progress.unlocked != 2 || ShoveyLevelUnlocked(*progress, 3) { return 22 }
+    if !progress.completed[0] || progress.unlocked != 1 || ShoveyLevelUnlocked(*progress, 3) { return 22 }
     if !ShoveyContinue(*progress, *game) || game.level != 2 || game.won { return 23 }
     game.moves = 5
     saved := ShoveyCampaignSave(*progress, *game)
     restored: ShoveyProgress
     position: ShoveyGame
-    if !ShoveyCampaignRestore(*restored, *position, saved) || restored.unlocked != 2 || !restored.completed[0] ||
+    if !ShoveyCampaignRestore(*restored, *position, saved) || restored.unlocked != 1 || !restored.completed[0] ||
     position.level != 2 || position.moves != 5 { return 24 }
     // A game saved before the boards changed keeps its progress and
     // restarts its level: first an old C1 save, then a changed board.
-    campaign_bytes[1] = #char "1"
-    if !ShoveyCampaignRestore(*restored, *position, TextView(campaign_bytes[:SHOVEY_CAMPAIGN_C1])) ||
+    old: [SHOVEY_CAMPAIGN_C1 + 8]u8
+    old[0] = #char "C"; old[1] = #char "1"; old[2] = #char "0"; old[3] = #char "2"
+    for index: cast(s32)0..174 { old[4 + index] = saved[6 + index] }
+    for index: cast(s32)0..1479 { old[179 + index] = saved[1006 + index] }
+    if !ShoveyCampaignRestore(*restored, *position, TextView(old[:SHOVEY_CAMPAIGN_C1])) ||
     restored.unlocked != 2 || !restored.completed[0] || position.level != 2 || position.moves != 0 { return 26 }
-    campaign_bytes[1] = #char "2"
-    campaign_bytes[SHOVEY_CAMPAIGN_C1] = ifx campaign_bytes[SHOVEY_CAMPAIGN_C1] == #char "0" then #char "1" else #char "0"
+    old[1] = #char "2"
+    old[SHOVEY_CAMPAIGN_C1] = ifx old[SHOVEY_CAMPAIGN_C1] == #char "0" then #char "1" else #char "0"
     position.moves = 9
-    if !ShoveyCampaignRestore(*restored, *position, TextView(campaign_bytes[:SHOVEY_CAMPAIGN_C1 + 8])) || position.level != 2 || position.moves != 0 { return 27 }
+    if !ShoveyCampaignRestore(*restored, *position, TextView(old[:SHOVEY_CAMPAIGN_C1 + 8])) || position.level != 2 || position.moves != 0 { return 27 }
     if ShoveySelectLevel(*progress, *game, 3) || game.level != 2 { return 25 }
     return 0
 }

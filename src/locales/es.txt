@@ -1094,3 +1094,15 @@ Siempre apunta a la aventura.
 [shovey_chest_reminder]
 Tu cofre diario te espera. Abre Shovey para recoger tu recompensa.
 ---
+
+[shovey_result_complete]
+Nivel % completado
+---
+
+[shovey_result_score]
+Puntuación
+---
+
+[shovey_result_moves]
+Movimientos
+---

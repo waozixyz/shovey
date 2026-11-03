@@ -20,6 +20,8 @@ assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
 assert os.environ.get('YUE_DESKTOP_RECOVERY') == '0'
 sys.path.insert(0, str(args.driver_source / 'tests'))
 from ui_driver import UiDriver
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from world_map_test_support import enter_classic_map
 
 output = args.output.resolve()
 output.mkdir(parents=True, exist_ok=True)
@@ -41,10 +43,13 @@ def application(profile, name):
         try:
             driver.wait(label='Play', role='button', timeout=60)
             driver.press(label='Play', role='button')
+            # The map selects the saved level; its Play resumes that board.
+            enter_classic_map(driver)
+            driver.press(key=20122, role='button')
             driver.wait(label='Levels', role='button')
             driver.wait_gone(key=49401)
             driver.key('left')
-            driver.wait(contains='29a', role='text')
+            driver.wait(label='Level 21-S', role='text')  # level 29's hidden room on the branch-named map
             time.sleep(.7)
             for direction in route:
                 driver.key(keys[int(direction)])

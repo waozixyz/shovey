@@ -1,13 +1,12 @@
 """Device-local discovery remains reachable after ordinary progress resets."""
 import argparse
 import json
-import math
 import os
 from pathlib import Path
 import subprocess
 import sys
-from world_map_test_support import private_environment, digest
-from shovey_standalone_ui_test import answer_cover_question, answer_level_updates
+from world_map_test_support import assert_fullscreen_map, private_environment, digest
+from shovey_standalone_ui_test import answer_cover_question
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -19,8 +18,6 @@ from ui_driver import UiDriver
 output = ROOT / 'work/world-map-retained-secret-test'
 subprocess.run(['git', 'check-ignore', '-q', str(output)], cwd=ROOT, check=True)
 output.mkdir(parents=True, exist_ok=True)
-manifest = json.loads((ROOT / 'assets/shovey/world-map/riverfold.json').read_text())
-secret = next(s for s in manifest['secrets'] if s['id'] == '175b')
 for width, height in ((390, 844), (960, 600)):
     profile = output / f'profile-{width}'
     records = profile / 'games/arcade.shovey/records'
@@ -37,34 +34,33 @@ for width, height in ((390, 844), (960, 600)):
             window = subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--pid', str(child.pid)], text=True).split()[0]
             assert subprocess.check_output(['xdotool', 'getwindowpid', window], text=True).strip() == str(child.pid)
             subprocess.run(['xdotool', 'windowsize', '--sync', window, str(width), str(height)], check=True)
+            # Play opens the world map directly.
             driver.press(label='Play', role='button')
-            answer_level_updates(driver)
-            if driver.find(label='How do you want to move?', role='text'):
-                driver.press(label='Swipe and tap')
-            if driver.find(label='Got it', role='button'):
-                driver.press(label='Got it')
-            driver.wait(label='Levels', role='button')
-            driver.press(label='Levels', role='button')
+            assert_fullscreen_map(driver)
             driver.key('home')
-            first = driver.wait(key=33001, role='button')
-            scale = min(width - 32, 390) / 390
-            dx = (secret['node']['x'] - manifest['nodes'][0]['x']) * scale
-            for _ in range(round(dx / int(min(width - 32, 390) / 2))):
-                driver.key('d')
-            for _ in range(math.ceil(manifest['worldHeight'] / 300)):
-                driver.key('page_up')
+            driver.wait(key=33001, role='button')
+            # The v5 map has no free camera: the wheel follows the painted road.
+            window_room = None
+            # Aim at the player's own window wherever the display placed it.
+            for _ in range(480):
+                window_room = driver.find(key=34002, role='button', visible=True)
+                if window_room: break
+                subprocess.run(['xdotool', 'mousemove', '--window', window, str(width // 2), str(height // 2), 'click', '4'], check=True)
+                driver.wait_idle(frames=2)
+            assert window_room, f'Retained discovery 159-S2 is not reachable on the v5 map at frontier 1 ({width}x{height})'
             room = driver.wait(key=34002, role='button', visible=True)
-            assert room['enabled'] and room['label'] == '175b'
+            assert room['enabled'] and room['label'] == '159-S2'
             nodes = driver.tree()
-            assert not any(33005 <= n.get('key', 0) <= 33175 for n in nodes)
+            # The whole map draws at any progress; ordinary levels past the frontier stay locked.
+            assert not any(33005 <= n.get('key', 0) <= 33175 and n.get('enabled') for n in nodes), 'A future level became playable'
             assert not any(n.get('key') in (34001, 34003) for n in nodes)
             subprocess.run(['import', '-window', window, str(output / f'retained-{width}.png')], check=True)
             driver.press(key=34002, role='button')
-            driver.wait(contains='Level 175b', role='text')
+            driver.wait(contains='Level 159-S2', role='text')
         finally:
             child.terminate()
             child.wait(timeout=10)
-(output / 'result.json').write_text(json.dumps({'frontier': 1, 'retained_secret': '175b', 'ordinary_last': 4,
+(output / 'result.json').write_text(json.dumps({'frontier': 1, 'retained_secret': '159-S2', 'ordinary_last': 4,
     'viewports': [[390, 844], [960, 600]], 'binary_sha256': digest(args.binary),
     'view_source_sha256': digest(ROOT / 'src/world_map_view.zi')}, indent=2) + '\n')
-print('Retained discovery local UI test passed: frontier1, known175b reachable/opened, ordinary5+ and undiscovered siblings absent, both sizes')
+print('Retained discovery local UI test passed: frontier1, known 159-S2 reachable/opened, ordinary5+ locked and undiscovered siblings absent, both sizes')

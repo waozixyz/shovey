@@ -139,7 +139,8 @@ SharedProgressSave :: (session: *SharedProgressSession, level: s32, won: bool) -
     while count < level { record.completed[count] = #char "0"; count += 1 }
     record.completed[count] = 0
     record.completed[level - 1] = #char "1"
-    if record.unlocked <= level { record.unlocked = level + 1 }
+    // Keep the account's legacy prefix. Completed predecessors supply all
+    // newer graph unlocks without granting skipped sibling branches.
     if !SharedProgressShouldPublish(won, !Progress.GameProgressSame(*session.record, *record)) {
         return session.bound && session.client.result.durable
     }
@@ -250,4 +251,69 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
         session.retiring = !ProgressRetireLegacy()
     }
     return ifx !Progress.GameProgressSame(*before, *session.record) then 1 else 0
+}
+
+// Local results use the same validated pack/profile namespace as earned progress.
+// They never enter the account client or affect purchases and rewards.
+#import, file "progress.zi";
+LevelResultKey :: (pack: string, owner: string, level: s32, output: []u8) -> string {
+    namespace: [256]u8
+    name := SharedProgressName(owner, pack, namespace[:])
+    if name == "" || level < 1 || level > 1003 { return "" }
+    hash: u64 = 2166136261
+    for byte: name { hash = ((hash ^ cast(u64)byte) * 16777619) & 4294967295 }
+    key: Vec(u8)
+    BuilderPrint(*key, "local.result.%.%", hash, level)
+    copied := CopyCString(TextView(VecSlice(key, 0, key.count)), output)
+    VecFree(key)
+    return ifx copied then TextUntilNul(output) else ""
+}
+
+GetLevelResult :: (pack: string, owner: string, level: s32, board_mark: u64, par: s32) -> ShoveyLevelResult {
+    key: [96]u8
+    if LevelResultKey(pack, owner, level, key[:]) == "" || !ProgressStorageReady() { return .{} }
+    text := PathRecord(TextUntilNul(key[:]))
+    saved_owner: [65]u8
+    saved_pack: [65]u8
+    mark := ReadNumber(text, FieldAt(text, 0, "board"))
+    moves := ReadNumber(text, FieldAt(text, 0, "moves"))
+    saved_level := ReadNumber(text, FieldAt(text, 0, "level"))
+    if ReadStringText(text, FieldAt(text, 0, "owner"), saved_owner[:]) < 0 ||
+    ReadStringText(text, FieldAt(text, 0, "pack"), saved_pack[:]) < 0 ||
+    TextUntilNul(saved_owner[:]) != owner || TextUntilNul(saved_pack[:]) != pack ||
+    !saved_level.valid || saved_level.value != cast(float64)level ||
+    !mark.valid || mark.value != cast(float64)board_mark || !moves.valid ||
+    moves.value < 1.0 || moves.value > 2147483647.0 || moves.value != cast(float64)cast(s32)moves.value { return .{} }
+    return ShoveyScoreResult(cast(s32)moves.value, par)
+}
+
+RecordLevelResult :: (pack: string, owner: string, level: s32, board_mark: u64, moves: s32, par: s32, won: bool) -> bool {
+    if !won || moves <= 0 { return false }
+    key: [96]u8
+    if LevelResultKey(pack, owner, level, key[:]) == "" || !ProgressStorageReady() { return false }
+    // Flush staged data before treating a previous best as durable.
+    if !ProgressStorageFlush() { return false }
+    existing := PathRecord(TextUntilNul(key[:]))
+    if existing == "" {
+        if !ProgressStorageMissing() { return false }
+    } else {
+        // Hashes shorten host keys only. A collision must never overwrite
+        // another profile or pack's record, even with an identical board.
+        saved_owner: [65]u8
+        saved_pack: [65]u8
+        saved_level := ReadNumber(existing, FieldAt(existing, 0, "level"))
+        if ReadStringText(existing, FieldAt(existing, 0, "owner"), saved_owner[:]) < 0 ||
+        ReadStringText(existing, FieldAt(existing, 0, "pack"), saved_pack[:]) < 0 ||
+        TextUntilNul(saved_owner[:]) != owner || TextUntilNul(saved_pack[:]) != pack ||
+        !saved_level.valid || saved_level.value != cast(float64)level { return false }
+    }
+    best := GetLevelResult(pack, owner, level, board_mark, par)
+    if best.best_moves > 0 && best.best_moves <= moves { return true }
+    // A failed read must not overwrite a possibly better durable result.
+    if best.best_moves == 0 && PathRecord(TextUntilNul(key[:])) == "" && !ProgressStorageMissing() { return false }
+    text: Vec(u8)
+    BuilderPrint(*text, "{\"pack\":\"%\",\"owner\":\"%\",\"level\":%,\"board\":%,\"moves\":%}", pack, owner, level, board_mark, moves)
+    saved := PathSaveRecord(TextUntilNul(key[:]), TextView(VecSlice(text, 0, text.count))) && ProgressStorageFlush()
+    VecFree(text)
+    return saved
 }

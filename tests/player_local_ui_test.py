@@ -19,6 +19,7 @@ subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=root, check=True)
 work.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(args.driver_source.resolve()))
 from ui_driver import UiDriver
+from world_map_test_support import assert_fullscreen_map, enter_classic_map, start_map_destination
 
 with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
     profile = Path(directory)
@@ -37,18 +38,20 @@ with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
         try:
             driver.wait(label='Play', role='button', timeout=60)
             if not args.profile_only:
+                # Play opens the world map; its Play starts the selected board.
                 driver.press(label='Play', role='button')
+                enter_classic_map(driver)
+                start_map_destination(driver, 1)
                 driver.wait(contains='Level 1 / ', role='text', timeout=30)
                 if driver.find(label='Got it', role='button'):
                     driver.press(label='Got it', role='button')
-                driver.wait(label='Levels', role='button')
                 assert not driver.find(contains='Request rejected')
                 assert not driver.find(contains='Download')
-                driver.press(label='Levels', role='button')
-                driver.wait(label='Continue', role='button')
-                driver.press(label='Back', role='button')
-                driver.wait(label='Levels', role='button')
-                driver.press(label='Back', role='button')
+                # Escape returns from the level to the map, then to the title.
+                driver.key('escape')
+                assert_fullscreen_map(driver)
+                assert not driver.find(contains='Level 1 / ', visible=True), 'Escape left the level on screen'
+                driver.key('escape')
                 driver.wait(label='Play', role='button')
             driver.press(key=49204, role='button')
             driver.wait(label='Sign in', timeout=30)
@@ -63,4 +66,4 @@ with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
                 child.terminate()
             child.wait(timeout=10)
 print('Player Profile local UI test passed' if args.profile_only else
-      'Player local UI tests: bundled Classic, local levels with downloads off, Profile and Back passed')
+      'Player local UI tests: bundled Classic map and level with downloads off, Escape to map and title, Profile passed')

@@ -13,7 +13,9 @@ const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.u
 const fixture = execFileSync(new URL('../build/guide-test/native', import.meta.url).pathname, ['74'], {encoding: 'utf8'});
 const campaign = JSON.parse(await readFile(new URL('../levels/approved.json', import.meta.url), 'utf8'));
 const levelOneSolution = campaign.levels[0].solution;
-const mapArt = JSON.parse(await readFile(new URL('../assets/shovey/world-map/riverfold.json', import.meta.url), 'utf8'));
+const scenes = JSON.parse(await readFile(new URL('../assets/shovey/world-map/scenes.json', import.meta.url), 'utf8'));
+// The v5 portrait map: level 1's authored centre and each painting's authored bounds.
+const mapArt = {first: scenes.nodes.portrait[0], panels: scenes.scenes.map(scene => scene.portrait.world_bounds_before_zoom)};
 // Fish wander between frames and are persisted with the next player move.
 // Compare every other saved field, including objects and the water beneath
 // each fish, and require each fish species' population to remain unchanged.
@@ -114,33 +116,32 @@ try {
     await delay(80);
   }
   async function wheelToFirst() {
-    const first = mapArt.nodes.find(node => node.level === 1);
-    for (let attempt = 0; attempt < 32; attempt++) {
+    const [firstX, firstY] = mapArt.first;
+    // One probe picks the wheel direction that heads back along the road.
+    let backward = 1, previous = Infinity, probed = false;
+    for (let attempt = 0; attempt < 64; attempt++) {
       const nodes = await tree();
       const viewport = nodes.find(node => node.key === 20105);
+      assert(viewport, 'Map viewport is missing');
       const waypoint = nodes.find(node => node.key === 33001 && node.visible && node.enabled);
       if (waypoint && waypoint.x >= viewport.x && waypoint.x + waypoint.width <= viewport.x + viewport.width &&
           waypoint.y >= viewport.y && waypoint.y + waypoint.height <= viewport.y + viewport.height) return;
-      // Infer the camera's actual translation from a submitted painting.
-      // Wheel input moves it; no focus, selection or camera state is injected.
-      const panel = nodes.find(node => node.kind === 'image' && node.key >= 60000 && node.key < 60000 + mapArt.panels.length);
+      // Infer the camera's actual translation from a submitted v5 painting.
+      // The wheel follows the road; no focus, selection or camera state is injected.
+      const panel = nodes.find(node => node.kind === 'image' && node.key >= 60001 && node.key < 60001 + mapArt.panels.length);
       assert(panel, 'No map painting available to measure manual scrolling');
-      const authored = mapArt.panels[panel.key - 60000].worldBounds;
-      const scale = panel.width / authored.width;
-      const dx = panel.x + (first.x - authored.x) * scale - (viewport.x + viewport.width / 2);
-      const dy = panel.y + (first.y - authored.y) * scale - (viewport.y + viewport.height / 2);
-      for (const [horizontal, distance] of [[true, dx], [false, dy]]) {
-        if (Math.abs(distance) < 16) continue;
-        const area = horizontal ? nodes.find(node => node.key === 20108) : viewport;
-        assert(area, 'Map scroll area is missing');
-        const x = area.x + area.width / 2, y = area.y + area.height / 2;
-        await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x, y, buttons: 0});
-        await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x, y,
-          deltaX: horizontal ? distance : 0, deltaY: horizontal ? 0 : distance});
-      }
+      const [authoredX, authoredY, authoredWidth] = mapArt.panels[panel.key - 60001];
+      const scale = panel.width / authoredWidth;
+      const distance = Math.hypot(panel.x + (firstX - authoredX) * scale - (viewport.x + viewport.width / 2),
+        panel.y + (firstY - authoredY) * scale - (viewport.y + viewport.height / 2));
+      if (!probed && previous !== Infinity) { probed = true; if (distance > previous + 1) backward = -1; }
+      previous = distance;
+      const x = viewport.x + viewport.width / 2, y = viewport.y + viewport.height / 2;
+      await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x, y, buttons: 0});
+      await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x, y, deltaX: 0, deltaY: 240 * backward});
       await delay(350);
     }
-    throw Error('Manual two-axis wheel navigation did not reveal level 1');
+    throw Error('Manual wheel navigation along the road did not reveal level 1');
   }
   await call('Runtime.enable');
   await call('Page.enable');

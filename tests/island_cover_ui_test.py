@@ -1,5 +1,5 @@
 """Covers run Classic, Island, Editor; Island stays locked; the Editor opens
-unlocked levels with working previews. Private Xvfb and a disposable profile;
+its Classic levels page and a new board. Private Xvfb and a disposable profile;
 no account is signed in and nothing is bought."""
 import argparse
 import contextlib
@@ -11,6 +11,7 @@ import sys
 import tempfile
 import time
 from PIL import Image, ImageChops, ImageStat
+from world_map_test_support import start_map_destination
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--binary', type=Path, required=True)
@@ -27,16 +28,7 @@ from ui_driver import UiDriver
 
 # The public card is present even where Island's source is private.
 island = True
-UNLOCKED = 12
 DURATION = re.compile(r'\b(day|days|week|weeks|month|months|year|years|hour|hours|until|ends?|limited)\b', re.I)
-
-
-def campaign(path):
-    """Raise a real saved game to UNLOCKED levels, keeping its board."""
-    text = path.read_text()
-    assert text[:2] == 'C2', text[:2]
-    marks = ''.join('1' if level + 1 < UNLOCKED else '0' for level in range(175))
-    path.write_text(f'C2{UNLOCKED:02x}{marks}{text[4 + 175:]}')
 
 
 with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
@@ -88,30 +80,29 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
             assert not DURATION.search(text), ('Island must never state a duration', text)
 
             # A guest who has not bought Island sees the locked offer.
-            driver.press(label='Buy', role='button')
-            driver.wait(key=49540)
-            price = driver.wait(key=49540)
-            was = driver.wait(key=49541)
-            strike = driver.wait(key=49542)
+            # The cover's one action reads Unlock and the price; only the offer stays as its caption.
+            assert not driver.find(contains='51 Dew · ', visible=True), 'The cover kept a separate price'
+            driver.press(label='Unlock · 51 Dew', role='button')
+            # Guests sign in first; the one action carries Unlock and the price.
+            action = driver.wait(key=49530, role='button')
             driver.wait(key=49544)
-            assert price['label'] == '51 Dew', price
-            assert was['label'] == '85 Dew', was
-            assert was['x'] <= strike['x'] and strike['x'] + strike['width'] <= was['x'] + was['width'] + 1, (was, strike)
-            assert was['y'] < strike['y'] < was['y'] + was['height'], (was, strike)
+            assert action['label'] == 'Unlock · 51 Dew', action
+            for key in (49540, 49541, 49542):
+                assert not driver.find(key=key), ('A separate price label remains', key)
             text = driver.text()
+            assert text.count('51 Dew') == 1 and '85 Dew' not in text, ('The price shows apart from Unlock', text)
             assert '40% off' in text, text
             assert not DURATION.search(text), ('The offer must never state a duration', text)
-            # Guests sign in first; a purchase control needs a fresh quote.
-            driver.wait(key=49530, role='button')
+            # A purchase control needs a fresh quote.
             assert not driver.find(key=49534) and not driver.find(key=49532), 'A guest was offered a purchase'
             assert not list(player.glob('island*')), 'A guest wrote an Island entitlement'
             driver.press(key=49512, role='button')
             driver.wait(contains='40% off', visible=True)
-            driver.wait_gone(key=49540)
-            assert driver.find(label='Buy', role='button', visible=True), 'Back left the Island cover'
+            driver.wait_gone(key=49530)
+            assert driver.find(label='Unlock · 51 Dew', role='button', visible=True), 'Back left the Island cover'
             assert not driver.find(contains='Level 1 / ', visible=True), 'Back opened the locked game'
         driver.press(label='Next', role='button')
-        driver.wait(contains='Shovey Editor', visible=True)
+        driver.wait(label='Editor', role='image', visible=True)
         driver.wait(label='Open', role='button')
         editor_cover = cover(child, 'editor')
         different(classic_cover, editor_cover, 'Editor shares the Classic cover')
@@ -124,8 +115,9 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
             driver.press(label='Previous', role='button')
         driver.wait(label='Play', role='button')
 
-        # Play Classic for one saved move: a real record to raise.
+        # Play Classic for one saved move.
         driver.press(label='Play', role='button')
+        start_map_destination(driver, 1)
         driver.wait(contains='Level 1 / ', role='text', timeout=30)
         with contextlib.suppress(AssertionError):
             driver.press(label='Swipe and tap', timeout=5)
@@ -139,7 +131,6 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
         driver.press(label='Back', role='button')
         driver.wait(label='Play', role='button')
 
-    campaign(classic)
     with application() as child:
         driver.wait(label='Play', role='button', timeout=60)
         driver.press(label='Next', role='button')
@@ -149,32 +140,12 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
         driver.press(label='Open', role='button')
         driver.wait(label='New level', role='text', timeout=30)
         driver.press(label='Levels', role='button')
-        driver.wait(label='Story levels', role='text')
-        driver.wait(label='1', role='image')
-        # The list reads Classic's device save on its first poll, and draws
-        # only the rows in view: scroll to a level's row to see it.
-        def row(number):
-            screen = driver.tree()[0]
-            for _ in range(120):
-                nodes = driver.find(key=260000 + number * 4, visible=True)
-                middle = nodes[0]['y'] + nodes[0]['height'] / 2 if nodes else screen['height']
-                if 140 < middle < screen['height'] - 120:
-                    return
-                driver.pointer(screen['width'] / 2, screen['height'] / 2, wheel=-2 if middle > 140 else 2)
-                driver.wait_idle(frames=2)
-            raise AssertionError(('Level never scrolled into view', number))
-        row(UNLOCKED)
-        deadline = time.monotonic() + 15
-        while not driver.find(key=260000 + UNLOCKED * 4 + 1, role='image', visible=True) and time.monotonic() < deadline:
-            time.sleep(.1)
-        preview = driver.find(key=260000 + UNLOCKED * 4 + 1, role='image', visible=True)
-        assert preview and preview[0]['label'] == str(UNLOCKED), ('Unlocked level lacks its preview', UNLOCKED, preview)
-        row(UNLOCKED + 1)
-        assert driver.find(key=260000 + (UNLOCKED + 1) * 4 + 3, visible=True), 'The next level is not locked'
-        assert not driver.find(key=260000 + (UNLOCKED + 1) * 4 + 1, visible=True), 'A locked level shows its board'
-        # An unlocked level other than the first opens for editing.
-        row(UNLOCKED)
-        driver.press(key=260000 + UNLOCKED * 4)
+        # Levels lists the creator's own boards under Classic; story levels
+        # are no longer editor starting points.
+        driver.wait(label='Classic', role='text')
+        driver.wait(label='Your levels', role='text')
+        assert not any(260000 <= node.get('key', 0) < 264000 for node in driver.tree()), 'Story levels returned to the editor'
+        driver.press(label='New level', role='button')
         driver.wait(key=200000, timeout=20)
         driver.wait(label='Play', role='button')
         driver.key('escape')
@@ -186,4 +157,4 @@ with log_path.open(errors='replace') as log:
 order = 'Classic, Island, Editor'
 offer = 'Island locked for a guest at 51 Dew, 85 struck, 40% off, no duration; ' if island else ''
 print(f'PASS: covers {order}; {offer}'
-      f'Editor opened unlocked story level {UNLOCKED} with previews and no host capability failure.')
+      'Editor opened its Classic levels page and a new board with no host capability failure.')

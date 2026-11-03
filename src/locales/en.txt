@@ -1094,3 +1094,15 @@ Always pointing to adventure.
 [shovey_chest_reminder]
 Your daily chest is waiting. Open Shovey to collect your reward.
 ---
+
+[shovey_result_complete]
+Level % complete
+---
+
+[shovey_result_score]
+Score
+---
+
+[shovey_result_moves]
+Moves
+---

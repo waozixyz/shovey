@@ -8,6 +8,24 @@
 
 #program_export
 Check :: () -> s32 {
+    if ShoveyScoreResult(0, 10).stars != 0 || ShoveyScoreResult(-1, 10).score != 0 { return 100 }
+    if ShoveyScoreResult(10, 10).stars != 3 || ShoveyScoreResult(9, 10).score != 1000 { return 101 }
+    if ShoveyScoreResult(15, 10).stars != 2 || ShoveyScoreResult(15, 10).score != 666 || ShoveyScoreResult(16, 10).stars != 1 { return 102 }
+    if ShoveyScoreResult(5, 3).stars != 2 || ShoveyScoreResult(6, 3).stars != 1 { return 103 }
+    if ShoveyScoreResult(1, 0).stars != 1 || ShoveyScoreResult(1, 0).score != 0 || ShoveyScoreResult(1, -1).stars != 1 { return 104 }
+    if ShoveyScoreResult(2147483647, 2147483647).score != 1000 { return 105 }
+    // Every static par must match an effective winning route on this board.
+    for level: cast(s32)1..cast(s32)SHOVEY_APPROVED_LEVEL_COUNT {
+        proof: ShoveyGame
+        if !ShoveyLoad(*proof, level) { return 106 }
+        for letter: ShoveyLevelSolution(level) {
+            if letter >= #char "0" && letter <= #char "3" { unused ShoveyMove(*proof, cast(s32)(letter - #char "0")) }
+            else if letter == #char "f" { unused ShoveyFire(*proof) }
+            else if letter == #char "t" { unused ShoveyTick(*proof) }
+        }
+        if !proof.won || proof.lost || proof.moves != ShoveyLevelPar(level) { return 107 }
+        if ShoveyKnownPar(level, ShoveyBoardMark(level) + 1) != 0 { return 108 }
+    }
     last := cast(s32)SHOVEY_APPROVED_LEVEL_COUNT
     if ShoveyLevelCount() != last || ShoveyLevelData(last + 1) != "" || ShoveyLevelSolution(last + 1) != "" || EditStoryCount() != last { return 1 }
     progress := ShoveyProgress.{.unlocked = last}
@@ -20,7 +38,7 @@ Check :: () -> s32 {
     }
     if !game.won { return 3 }
     ShoveyRecordWin(*progress, *game)
-    if !progress.completed[last - 1] || progress.unlocked != last + 1 || ShoveyContinue(*progress, *game) || ShoveySelectLevel(*progress, *game, last + 1) { return 4 }
+    if !progress.completed[last - 1] || progress.unlocked != last || ShoveyContinue(*progress, *game) || ShoveySelectLevel(*progress, *game, last + 1) { return 4 }
     // A campaign from the previous full release retains its later unlocks
     // and completion marks, while this release opens the last approved board.
     later := last + 5
@@ -49,7 +67,7 @@ Check :: () -> s32 {
     wide.completed[200] = true
     if !ShoveyLoad(*game, 240) { return 7 }
     saved = ShoveyCampaignSave(*wide, *game)
-    if saved[:2] != "C5" { return 8 }
+    if saved[:2] != "C6" { return 8 }
     if !ShoveyCampaignRestore(*restored, *position, saved) || restored.unlocked != 250 || !restored.completed[22] ||
     !restored.completed[200] || restored.completed[201] || position.level != 240 { return 9 }
     shovey_live_count = 0

@@ -36,6 +36,12 @@ for key,name in {'HOME':'home','XDG_CONFIG_HOME':'config','XDG_CACHE_HOME':'cach
     path=PROFILE/name;path.mkdir(mode=0o700,exist_ok=True);environment[key]=str(path)
 
 
+def world_map_art():
+    """The v5 portrait map: level 1's authored centre and each painting's authored bounds."""
+    scenes = json.loads((ROOT / 'assets/shovey/world-map/scenes.json').read_text())
+    return dict(first=scenes['nodes']['portrait'][0],
+                panels=[scene['portrait']['world_bounds_before_zoom'] for scene in scenes['scenes']])
+
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     mode = 'normal'
@@ -177,7 +183,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));let sequence=0;
 """
     campaign = json.loads((ROOT / 'levels/approved.json').read_text())
     config = dict(fixture=fixture, levelOneSolution=campaign['levels'][0]['solution'],
-                  mapArt=json.loads((ROOT/'assets/shovey/world-map/riverfold.json').read_text()),
+                  mapArt=world_map_art(),
                   driverSetup=setup, target=f'http://127.0.0.1:{server.server_port}/')
     prelude += ''.join('const '+k+'='+json.dumps(v)+';' for k,v in config.items()) + stationary
     # Execute the CI server's actual MIME expressions in Chromium: root

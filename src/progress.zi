@@ -27,14 +27,23 @@ ShoveyProgressNew :: () -> ShoveyProgress { return ShoveyProgress.{.unlocked = 1
         if level <= WORLD_MAP_CLASSIC_LEVELS {
             return WorldMapLevelAvailable(progress.unlocked, progress.completed[:], level)
         }
-        return level <= progress.unlocked
+        return level <= progress.unlocked || (level > 1 && progress.completed[level - 2])
     }
+}
+
+ShoveyHighestUnlocked :: (progress: *ShoveyProgress) -> s32 {
+    highest: s32 = 1
+    for level: cast(s32)1..ShoveyLevelCount() {
+        if ShoveyLevelUnlocked(progress, level) { highest = level }
+    }
+    return highest
 }
 
 ShoveyRecordWin :: (progress: *ShoveyProgress, game: *ShoveyGame) {
     if !game.won || game.level < 1 || game.level >= ShoveyFinaleLevel() || !ShoveyLevelUnlocked(progress, game.level) { return }
     progress.completed[game.level - 1] = true
-    if game.level >= progress.unlocked { progress.unlocked = game.level + 1 }
+    // The numeric prefix is legacy earned access. New wins expose their
+    // graph successors through completion marks, not a maximum level ID.
 }
 
 // Selecting a level always starts its first board. Continuing a game
@@ -56,6 +65,8 @@ ShoveyOpenLatest :: (progress: *ShoveyProgress, game: *ShoveyGame, selected_leve
     // A historical campaign beyond this release's cap resumes at the cap.
     if ShoveyLevelCount() == WORLD_MAP_CLASSIC_LEVELS && progress.unlocked <= ShoveyLevelCount() {
         latest = WorldMapFocusLevel(progress.unlocked, progress.completed[:], game.level)
+    } else if ShoveyLevelCount() > WORLD_MAP_CLASSIC_LEVELS {
+        latest = ShoveyHighestUnlocked(progress)
     }
     if game.level == latest && !game.won && !game.lost { return false }
     return ShoveySelectLevel(progress, game, latest)
@@ -64,7 +75,7 @@ ShoveyOpenLatest :: (progress: *ShoveyProgress, game: *ShoveyGame, selected_leve
 ShoveyContinue :: (progress: *ShoveyProgress, game: *ShoveyGame) -> bool {
     ShoveyRecordWin(progress, game)
     if !game.won || game.level >= ShoveyLevelCount() { return false }
-    if ShoveyLevelCount() == WORLD_MAP_CLASSIC_LEVELS {
+    if game.level < WORLD_MAP_CLASSIC_LEVELS {
         next := WorldMapNextLevel(progress.unlocked, progress.completed[:], game.level)
         return next != 0 && ShoveySelectLevel(progress, game, next)
     }
@@ -101,14 +112,11 @@ ShoveyBoardMark :: (level: s32) -> u64 {
 
 ShoveyCampaignSave :: (progress: *ShoveyProgress, game: *ShoveyGame) -> string {
     alphabet := "0123456789abcdef"
-    wide := progress.unlocked > 175
-    for index: cast(s32)175..SHOVEY_PROGRESS_LEVELS - 1 {
-        if progress.completed[index] { wide = true }
-    }
-    header: s32 = ifx wide then 6 else 4
-    marks: s32 = ifx wide then SHOVEY_PROGRESS_LEVELS else 175
+    wide := true
+    header: s32 = 6
+    marks: s32 = SHOVEY_PROGRESS_LEVELS
     campaign_bytes[0] = #char "C"
-    campaign_bytes[1] = ifx wide then #char "5" else #char "2"
+    campaign_bytes[1] = #char "6"
     for digit: cast(s32)0..header - 3 {
         campaign_bytes[2 + digit] = alphabet[(progress.unlocked >> ((header - 3 - digit) * 4)) & 15]
     }
@@ -129,7 +137,8 @@ ShoveyCampaignSave :: (progress: *ShoveyProgress, game: *ShoveyGame) -> string {
 }
 
 ShoveyCampaignRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, text: string) -> bool {
-    wide := text.count > SHOVEY_CAMPAIGN_C5 && text[:2] == "C5"
+    graph := text.count > SHOVEY_CAMPAIGN_C5 && text[:2] == "C6"
+    wide := graph || (text.count > SHOVEY_CAMPAIGN_C5 && text[:2] == "C5")
     header: s32 = ifx wide then 6 else 4
     marks: s32 = ifx wide then SHOVEY_PROGRESS_LEVELS else 175
     start := header + marks
@@ -152,13 +161,21 @@ ShoveyCampaignRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, text: st
         byte := text[header + index]
         if byte != #char "0" && byte != #char "1" { return false }
         restored.completed[index] = byte == #char "1"
-        if restored.completed[index] && index + 1 >= restored.unlocked { return false }
+        if !graph && restored.completed[index] && index + 1 >= restored.unlocked { return false }
     }
     position: ShoveyGame
     if !ShoveyRestore(*position, text[start:end]) { return false }
     // A merge (or the second arm of a fork) can already be earned through an
     // explicit predecessor while lying beyond the saved numeric prefix.
-    if position.level > restored.unlocked && !ShoveyLevelUnlocked(*restored, position.level) { return false }
+    if position.level > restored.unlocked && !ShoveyLevelUnlocked(*restored, position.level) {
+        if position.level > WORLD_MAP_CLASSIC_LEVELS { return false }
+        // A save from an earlier journey graph can resume on a board whose new
+        // predecessor is unfinished. Keep every mark; resume where play continues.
+        if !ShoveyLoad(*position, WorldMapFocusLevel(restored.unlocked, restored.completed[:], position.level)) { return false }
+        progress.* = restored
+        game.* = position
+        return true
+    }
     // Older releases exposed unfinished levels. Keep all earned progress,
     // but reopen an approved board instead of discarding the campaign.
     if position.level > ShoveyLevelCount() {
@@ -182,4 +199,26 @@ ShoveyCampaignRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, text: st
     progress.* = restored
     game.* = position
     return true
+}
+
+// Results are separate from earned access: old completion marks contain no moves.
+#load "level_par.zi";
+ShoveyLevelResult :: struct {
+    best_moves: s32
+    stars: s32
+    score: s32
+}
+
+ShoveyScoreResult :: (moves: s32, par: s32) -> ShoveyLevelResult {
+    if moves <= 0 { return .{} }
+    result := ShoveyLevelResult.{.best_moves = moves, .stars = 1}
+    // An unknown route earns completion, never an invented efficiency award.
+    if par <= 0 { return result }
+    result.stars = ifx moves <= par then 3 else ifx cast(s64)moves <= (cast(s64)par * 3 + 1) / 2 then 2 else 1
+    result.score = cast(s32)(1000 * cast(s64)par / (ifx moves > par then moves else par))
+    return result
+}
+
+ShoveyLevelPar :: (level: s32) -> s32 {
+    return ShoveyKnownPar(level, ShoveyBoardMark(level))
 }

@@ -1,4 +1,4 @@
-"""The localized Buy cover opens the locked offer in the production player."""
+"""The localized Unlock-and-price cover action opens the locked offer in the production player."""
 import argparse
 import os
 from pathlib import Path
@@ -18,7 +18,10 @@ subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=root, check=True)
 work.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(args.driver_source.resolve()))
 from ui_driver import UiDriver
-for language, play, next_label, buy in [('en_US.UTF-8', 'Play', 'Next', 'Buy'), ('de_DE.UTF-8', 'Spielen', 'Weiter', 'Kaufen')]:
+for language, play, next_label, unlock in [('en_US.UTF-8', 'Play', 'Next', 'Unlock'),
+        ('de_DE.UTF-8', 'Spielen', 'Weiter', 'Freischalten')]:
+    # A guest has no quote yet, so the launch price is what both actions show.
+    buy = unlock + ' · 51 Dew'
     with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
         profile = Path(directory)
         records = profile / 'games/arcade.shovey-player/records'
@@ -36,8 +39,10 @@ for language, play, next_label, buy in [('en_US.UTF-8', 'Play', 'Next', 'Buy'), 
                 driver.press(label=next_label, role='button')
                 driver.wait(label=buy, role='button')
                 driver.press(label=buy, role='button')
-                driver.wait(key=49540)
-                driver.wait(key=49530, role='button')
+                # The one action carries Unlock and the price; no separate price line.
+                action = driver.wait(key=49530, role='button')
+                assert action['label'] == buy, action
+                assert not driver.find(key=49540) and not driver.find(key=49541), 'A separate price label remains'
                 assert not driver.find(key=49534) and not driver.find(key=49532)
                 driver.press(key=49512, role='button')
                 driver.wait(label=buy, role='button')

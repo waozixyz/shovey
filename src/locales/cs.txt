@@ -1094,3 +1094,15 @@ Vždy ukazuje k dobrodružství.
 [shovey_chest_reminder]
 Tvá denní truhla čeká. Otevři Shovey a vyzvedni si odměnu.
 ---
+
+[shovey_result_complete]
+Úroveň % dokončena
+---
+
+[shovey_result_score]
+Skóre
+---
+
+[shovey_result_moves]
+Tahy
+---

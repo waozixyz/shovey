@@ -308,6 +308,24 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
             result.* = AppHostText(IslandUnlockCaption(*collection_island, caption[:]))
             return 1
         }
+        // The title's Island action carries the price; its caption keeps the offer.
+        if service == "arcade.navigation" && request == "island-unlock" {
+            label: [128]u8
+            result.* = AppHostText(ifx collection_island.owned then "" else IslandUnlockLabel(*collection_island, label[:]))
+            return 1
+        }
+        // A locked Island is not the title's add-on, so the host shows its
+        // unlock page directly; buying still needs the node's quote.
+        if service == "arcade.navigation" && request == "island" {
+            if collection_island.owned { result.* = AppHostText("owned"); return 1 }
+            CollectionIslandShow()
+            result.* = AppHostText("queued")
+            return 1
+        }
+        if service == "arcade.navigation" && request == "island-offer" {
+            result.* = AppHostText(ifx !collection_island.owned && IslandOffer(*collection_island) then AppLocaleHost("shovey_island_off") else "")
+            return 1
+        }
         if service == "arcade.navigation" && request == "back" {
             collection_leave_to_library = true
             result.* = AppHostText("queued")
@@ -976,6 +994,24 @@ CollectionIslandShow :: () {
 // Reads this owner's saved answer; a missing node or file never blocks play.
 CollectionIslandRecord :: () -> *CollectionRecords { return CollectionRecordsFor("arcade.shovey-player") }
 
+// Island's owner is the signed-in Entity account; the collection's own
+// account stays "local". The new epoch drops requests, preparations and
+// navigation made for the previous owner. The root, the title and the Editor
+// keep running under "local", so they keep their add-on navigation and return
+// path; Island's nodes stay invalidated.
+CollectionKeepLocalNodes :: (previous: s64) {
+    tree := *collection_host.tree
+    for index: cast(s64)0..tree.nodes.count - 1 {
+        node := tree.nodes[index].node
+        if node == null || TextUntilNul(node.account[:]) != TextUntilNul(tree.account[:]) ||
+        TextUntilNul(node.identity.id[:]) == ISLAND_UNLOCK_APP { continue }
+        if node.account_epoch == previous { node.account_epoch = tree.account_epoch }
+        if node.return_epoch == previous && TextUntilNul(node.return_target[:]) != ISLAND_UNLOCK_APP {
+            node.return_epoch = tree.account_epoch
+        }
+    }
+}
+
 CollectionPackageAccount :: () {
     IslandPackagePump(*collection_island_package)
     if TextUntilNul(collection_island_account[:]) != TextUntilNul(collection_island_package.owner[:]) {
@@ -984,6 +1020,7 @@ CollectionPackageAccount :: () {
         AppHostCancelChild(*collection_host)
         AppHostCancelLocator(*collection_host)
         collection_host.tree.account_epoch += 1
+        CollectionKeepLocalNodes(collection_host.tree.account_epoch - 1)
         runtime := AppHostActiveRuntime(*collection_host)
         if runtime != null && TextUntilNul(runtime.node.identity.id[:]) == ISLAND_UNLOCK_APP {
             collection_island_blocked = true

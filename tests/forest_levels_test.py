@@ -12,7 +12,7 @@ import re
 import subprocess
 
 from classic_63_65_68_test import data, explain, rows
-from classic_difficulty_test import cells
+from classic_difficulty_test import cells, neighbor
 
 ROOT = Path(__file__).resolve().parents[1]
 SOLVER = ROOT / 'build/solver/shovey-solve-classic'
@@ -30,6 +30,27 @@ def solve(level, method='macro-bfs', impossible=False):
     return explain(level, result.stdout.strip())
 
 
+def enclosed(level, wall):
+    """A complete outline and one connected floor, including portal links."""
+    board, terrain = (cells(level[k]) for k in ('cells', 'tiles'))
+    assert board.count(10) == board.count(7) == 1
+    border = {at for at in range(240) if at % 12 in (0, 11) or at // 12 in (0, 19)}
+    assert all(terrain[at] == wall and board[at] == 0 for at in border), 'Missing enclosing wall'
+    floor = {at for at in range(240) if terrain[at] != wall}
+    assert all(at in floor for at, kind in enumerate(board) if kind), 'Object embedded in a wall'
+    portals = {at for at, kind in enumerate(board) if kind == 8}
+    reached = {board.index(10)}
+    pending = list(reached)
+    for at in pending:
+        adjacent = {neighbor(at, side) for side in range(4)}
+        if at in portals:
+            adjacent |= portals
+        for to in adjacent & floor - reached:
+            reached.add(to)
+            pending.append(to)
+    assert reached == floor, 'Unintended disconnected floor'
+
+
 def main():
     approved = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
     retired = (ROOT / 'src/official_updates.zi').read_text()
@@ -42,36 +63,23 @@ def main():
     explain(approved[92], approved[92]['solution'])
     private = ROOT / 'levels/classic.json'
     classic = json.loads(private.read_text())['levels'] if private.exists() else approved
-    for number in (93, 97, 98, 99):
+    for number in (93, 94, 97, 98, 99):
         source = approved[number - 1]
         assert source == classic[number - 1], (number, 'campaign copies differ')
         level = dict(source, **source.get('engine_variant', {}))
         board, terrain, decorations = (cells(level[k]) for k in ('cells', 'tiles', 'decorations'))
         stored = explain(level, level['solution'])
-        found = solve(level, 'macro-bfs' if number == 93 else 'greedy')
+        found = stored if number == 94 else solve(level, 'macro-bfs' if number in (93, 97) else 'greedy')
         assert stored['goals'] == found['goals']
-        if number != 93:
-            # Buildings use brick floors, wall outlines, paved courtyards,
-            # lamps and pots. Levels 98/99 also retain their surrounding wall.
-            assert set(terrain) <= {77, 60, 96, 100}
-            perimeter = set()
-            if number in (98, 99):
-                perimeter = {at for at in range(240)
-                             if at // 12 < 3 or at // 12 == 19 or at % 12 in (0, 11)}
-                doorway = 19 * 12 + 6
-                assert terrain[doorway] == 100, 'Keep the building entrance open'
-                perimeter.remove(doorway)
-                assert all(terrain[at] == 96 for at in perimeter), 'Missing surrounding brick wall'
-            assert 80 <= terrain.count(100) <= 120
-            assert sum(kind == 96 for at, kind in enumerate(terrain) if at not in perimeter) <= 56
+        if number in (97, 98, 99):
+            # Three complete buildings, without the old disconnected yard
+            # strips or an exit through the edge of the board.
+            enclosed(level, 96)
+            assert set(terrain) <= {77, 60, 96, 100, 102}
             assert set(decorations) <= {0, 106, 139, 140}
             assert not set(board) & {64, 70, 150, 151, 152, 153, 154, 155, 156, 167, 168}
-            for at, kind in enumerate(terrain):
-                if kind != 96 or at in perimeter: continue
-                x, y = at % 12, at // 12
-                assert any(terrain[(y + dy) * 12 + x + dx] == 100
-                           for dy in (-1, 0, 1) for dx in (-1, 0, 1)
-                           if 0 <= x + dx < 12 and 0 <= y + dy < 20), 'No wall filler'
+            assert all(terrain[at] == 96 for at, kind in enumerate(decorations) if kind), 'Props occupy wall niches'
+            assert board.count(9) == board.count(18)
         if number == 93:
             assert set(terrain) <= {162, 64}
             assert board.count(167) == board.count(168) == 1
@@ -79,20 +87,41 @@ def main():
             assert board.count(71) == 2 and stored['crate_pushes'] >= 2
             no_hive = [0 if kind == 168 else kind for kind in board]
             solve(dict(level, cells=rows(no_hive)), impossible=True)
+        elif number == 94:
+            enclosed(level, 98)
+            assert not set(board) & {89, 90, 91}, 'The garden contains balls, not fish'
+            assert stored['goals'] == 13 and stored['used_features'] & 78 == 78
+            assert board.count(9) == 3 and board.count(18) == 2 and board.count(13) == 1
         elif number == 97:
-            assert board.count(9) == 3 and board.count(18) == 2
-            assert board.count(132) == board.count(128) == 1
-            assert stored['crate_pushes'] >= 11 and stored['goals'] == 3
-            assert any(e['piece'] == 9 and e['target'] == 132 for e in stored['events'])
+            assert board.count(9) == board.count(18) == stored['goals'] == 3
+            assert stored['crate_pushes'] == found['crate_pushes'] == 28
+            assert len({e['piece_id'] for e in stored['events'] if e['piece'] == 9}) == 3
         elif number == 98:
-            assert board.count(19) == 2 and board.count(9) == board.count(18) == 1
-            assert stored['crate_pushes'] >= 16 and stored['pushes'] >= 28 and stored['goals'] == 4
+            assert board.count(19) == 3 and board.count(9) == board.count(18) == 1
+            assert stored['goals'] == 4 and stored['pushes'] >= 20
+            # An odd trio must disappear together. Merging only two strands
+            # the remaining star; the actual replay drops all three at once.
+            remaining = stored['goals']
+            merges = []
+            for event in stored['events']:
+                if event['piece'] == 19 and event['remaining'] < remaining:
+                    merges.append(remaining - event['remaining'])
+                remaining = event['remaining']
+            assert merges == [3]
+            assert len({e['piece_id'] for e in stored['events'] if e['piece'] == 19}) == 3
         else:
             assert board.count(2) == 2 and board.count(9) == board.count(18) == 1
             assert stored['used_features'] & 32 and not stored['used_features'] & 128
-            assert {15, 17} <= {e['target'] for e in stored['events'] if e['piece'] in (2, 3)}
-            assert stored['goals'] == 4
-        print(f'Classic {number}: fresh solver and stored replay win; {stored["moves"]} moves, '
+            paint = [e for e in stored['events'] if e['features'] & 32]
+            assert [e['target'] for e in paint] == [17, 15]
+            assert paint[0]['piece_id'] != paint[1]['piece_id']
+            first_finish = next(e for e in stored['events'] if e['target'] == 6)
+            assert first_finish['piece_id'] == paint[0]['piece_id'] and first_finish['step'] > paint[1]['step']
+            assert any(e['piece_id'] == paint[0]['piece_id'] and e['destination'] == [8, 5]
+                       and paint[0]['step'] < e['step'] < paint[1]['step'] for e in stored['events']), 'Green ball waits in the side bay'
+            assert stored['goals'] == 3
+        proof = 'stored engine replay wins' if number == 94 else 'fresh solver and stored replay win'
+        print(f'Classic {number}: {proof}; {stored["moves"]} moves, '
               f'{stored["pushes"]} pushes, stage materials preserved', flush=True)
     print('Compatibility: original 93 remains live-readable; new builds ship its bee variant')
 

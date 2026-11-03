@@ -213,14 +213,14 @@ Check :: () -> s32 {
     if reopened.record.unlocked != 1 || account_writes != writes { return 20 }
     unused SharedProgressSave(*reopened, 1, true)
     Step(*reopened, 48.0)
-    if remote[1].unlocked != 2 || TextUntilNul(remote[1].completed[:]) != "1" { return 21 }
+    if remote[1].unlocked != 1 || TextUntilNul(remote[1].completed[:]) != "1" { return 21 }
     owner = ""; slot = 2
     SharedProgressStart(*reopened, record, 49.0)
     writes = account_writes; calls = account_reads
     unused SharedProgressSave(*reopened, 6, true)
     if account_writes != writes || account_reads != calls || !Pending(*reopened) { return 22 }
     SharedProgressStart(*reopened, record, 50.0)
-    if reopened.record.unlocked != 7 { return 23 }
+    if reopened.record.unlocked != 1 { return 23 }
     owner = "first"; slot = 0
     SharedProgressStart(*reopened, record, 51.0)
     Step(*reopened, 51.1)
@@ -272,5 +272,42 @@ Check :: () -> s32 {
     offline: SharedProgressSession
     SharedProgressStart(*offline, record, 54.0)
     if SharedProgressAccountLoading(*offline) { return 40 }
+    // Results use synthetic private storage only; no profile/account reads.
+    key_count = 0
+    staged = .{}; durable = .{}
+    flush = true; ready = true
+    result_calls := account_calls
+    if RecordLevelResult("shovey.classic", "first", 83, 123, 0, 10, true) ||
+    RecordLevelResult("shovey.classic", "../bad", 83, 123, 10, 10, true) ||
+    RecordLevelResult("shovey.classic", "first", 83, 123, 10, 10, false) { return 200 }
+    if !RecordLevelResult("shovey.classic", "first", 83, 123, 15, 10, true) { return 201 }
+    best := GetLevelResult("shovey.classic", "first", 83, 123, 10)
+    if best.best_moves != 15 || best.stars != 2 || best.score != 666 { return 202 }
+    if !RecordLevelResult("shovey.classic", "first", 83, 123, 20, 10, true) { return 203 }
+    staged = durable
+    if GetLevelResult("shovey.classic", "first", 83, 123, 10).best_moves != 15 { return 204 }
+    if !RecordLevelResult("shovey.classic", "first", 83, 123, 9, 10, true) { return 205 }
+    staged = durable
+    if GetLevelResult("shovey.classic", "first", 83, 123, 10).score != 1000 { return 206 }
+    if GetLevelResult("shovey.classic", "second", 83, 123, 10).stars != 0 ||
+    GetLevelResult("shovey.classic", "", 83, 123, 10).stars != 0 ||
+    GetLevelResult("shovey.editor", "first", 83, 123, 10).stars != 0 ||
+    GetLevelResult("shovey.classic", "first", 84, 123, 10).stars != 0 ||
+    GetLevelResult("shovey.classic", "first", 83, 124, 10).stars != 0 { return 207 }
+    if !RecordLevelResult("shovey.classic", "second", 83, 123, 5, 0, true) { return 208 }
+    if GetLevelResult("shovey.classic", "second", 83, 123, 0).stars != 1 ||
+    GetLevelResult("shovey.classic", "second", 83, 123, 0).score != 0 { return 209 }
+    flush = false
+    if RecordLevelResult("shovey.classic", "first", 83, 123, 1, 10, true) { return 210 }
+    flush = true; staged = durable
+    if GetLevelResult("shovey.classic", "first", 83, 123, 10).best_moves != 9 || account_calls != result_calls { return 211 }
+    result_key: [96]u8
+    unused LevelResultKey("shovey.classic", "first", 83, result_key[:])
+    unused FakeSave(TextUntilNul(result_key[:]), "{\"owner\":\"collision\",\"pack\":\"shovey.classic\",\"level\":83,\"board\":123,\"moves\":1}")
+    if RecordLevelResult("shovey.classic", "first", 83, 123, 2, 10, true) ||
+    GetLevelResult("shovey.classic", "first", 83, 123, 10).stars != 0 { return 212 }
+    // Secrets have stable, separate IDs and tolerate missing pars.
+    if !RecordLevelResult("shovey.classic", "first", 1003, 456, 4, 0, true) ||
+    GetLevelResult("shovey.classic", "first", 1003, 456, 0).stars != 1 { return 213 }
     return 42
 }

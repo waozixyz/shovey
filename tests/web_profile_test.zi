@@ -108,7 +108,7 @@ Play :: (browser: *Browser) {
     if HasLine(labels, "Download new levels when they come out?") { unused WebPress(browser, "Not now") }
     if HasLine(WebLabels(browser), "How do you want to move?") { unused WebPress(browser, "Swipe and tap") }
     campaign := BrowserText(browser, CAMPAIGN)
-    unused Check(BrowserTrue(browser, BuilderJoin("(c => /^C[1-5]/.test(c) && parseInt(c.slice(2, c.startsWith('C5') ? 6 : 4), 16) === 1)(", CAMPAIGN, ")")),
+    unused Check(BrowserTrue(browser, BuilderJoin("(c => /^C[1-6]/.test(c) && parseInt(c.slice(2, (c.startsWith('C5') || c.startsWith('C6')) ? 6 : 4), 16) === 1)(", CAMPAIGN, ")")),
         "Classic saves its device campaign at level 1")
     unused Check(BrowserText(browser, "accountProgress()") == earned, "opening Classic writes no unearned account progress")
     if !WebPress(browser, "Levels") { return }
@@ -120,7 +120,7 @@ Play :: (browser: *Browser) {
     // The editor reads the browser's Classic save, keeps the device's
     // unlocks out of earned account progress and keeps future levels locked.
     if !WebPress(browser, "Back") || !WebPress(browser, "Back") { return }
-    fixture := BrowserText(browser, BuilderJoin("(c => { const header = c.startsWith('C5') ? 6 : 4; return c.slice(0, 2) + (2).toString(16).padStart(header - 2, '0') + c.slice(header) })(", CAMPAIGN, ")"))
+    fixture := BrowserText(browser, BuilderJoin("(c => { const header = (c.startsWith('C5') || c.startsWith('C6')) ? 6 : 4; return c.slice(0, 2) + (2).toString(16).padStart(header - 2, '0') + c.slice(header) })(", CAMPAIGN, ")"))
     unused BrowserEvaluate(browser, BuilderJoin("Module.FS.writeFile('/kryon-apps/shovey/local.campaign', ", JsonQuote(fixture), ")"))
     for cover: 0..2 {
         if HasLine(WebLabels(browser), "Open") { break }

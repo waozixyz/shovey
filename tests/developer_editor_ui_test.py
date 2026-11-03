@@ -13,7 +13,7 @@ from editor_ui_driver import EditorUiDriver
 ROOT = Path(__file__).resolve().parents[1]
 
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
-output = ROOT / 'build/developer-editor-ui-test'
+output = Path(os.environ.get('SHOVEY_EDITOR_UI_OUTPUT', ROOT / 'build/developer-editor-ui-test'))
 output.mkdir(parents=True, exist_ok=True)
 profile = output / 'profile'
 (profile / 'backup/editor-drafts').mkdir(parents=True, exist_ok=True)
@@ -37,7 +37,7 @@ for name in ('command', 'reply'):
     (driver_folder / name).unlink(missing_ok=True)
 environment['KRYON_TEST_DRIVER'] = str(driver_folder)
 with (output / 'app.log').open('w') as log:
-    child = subprocess.Popen([str(ROOT / 'build/private-editor/shovey-level-editor'), '1'],
+    child = subprocess.Popen([str(ROOT / 'build/private-editor/shovey-level-editor'), '1', '--no-auto-publish'],
                              cwd=profile, env=environment, stdout=log, stderr=subprocess.STDOUT)
     try:
         windows = []
@@ -137,7 +137,27 @@ with (output / 'app.log').open('w') as log:
                                         second.crop((palette, 132, width, height))).getbbox(), 'Palette wheel did not scroll'
             assert not ImageChops.difference(first.crop((palette, 88, width, 124)),
                                             second.crop((palette, 88, width, 124))).getbbox(), 'Tabs scrolled with the palette'
-        print('Developer editor: seamless tiles, layers, layer-scoped right-click, undo, wheel scrolling and fixed tabs passed')
+        # The private developer editor must retain its official-level selector.
+        driver.press('Level 1 of 175')
+        selector = driver.nodes()
+        assert any(node.get('key') == 20105 and node.get('visible') for node in selector), 'Developer selector missing'
+        assert any(node.get('label') == 'Levels' and node.get('visible') for node in selector), 'Developer level list missing'
+        driver.press('Levels')
+        for number in (94, 97, 98, 99):
+            (output / f'selector-{number}.json').write_text(json.dumps(driver.nodes(), indent=2))
+            driver.press(str(number))
+            deadline = time.monotonic() + 5
+            while (profile / 'backup/editor-drafts/place').read_text().strip() != str(number) and time.monotonic() < deadline:
+                time.sleep(.025)
+            assert (profile / 'backup/editor-drafts/place').read_text().strip() == str(number), 'Developer selector opened the wrong board'
+            title = f'Level {number} of 175'
+            assert any(node.get('label') == title and node.get('visible') for node in driver.nodes()), title
+            driver.press(title)
+            driver.press('Levels')
+        subprocess.run(['xdotool', 'key', '--window', window, 'Escape'], check=True)
+        time.sleep(.15)
+        assert any(node.get('label') == 'Level 99 of 175' and node.get('visible') for node in driver.nodes())
+        print('Developer editor: selector opens 94/97/98/99; seamless tiles, layers, layer-scoped right-click, undo, wheel scrolling and fixed tabs passed')
     finally:
         child.terminate()
         child.wait(timeout=10)

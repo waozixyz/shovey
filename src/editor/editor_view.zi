@@ -1,12 +1,11 @@
 // The Shovey Editor's screens: a blank board first, then load one of your
-// levels or a story level Classic has unlocked, paint boards, play them with the real engines and
+// own levels, paint boards, play them with the real engines and
 // let the Ziran solver check them, export them for the developer, and
 // share level collections where the host offers it.
 //
 // Custom levels live in the account's own entity records where the host
 // offers them (see drafts.zi), so they follow the account to every device,
-// and in the editor's own records elsewhere (see edit.zi). A story level is
-// never changed: the first stroke on one makes a custom copy.
+// and in the editor's own records elsewhere (see edit.zi).
 #import "kryon/session"
 #import "kryon/joystick"
 #import "kryon/geometry"
@@ -50,7 +49,6 @@ Client :: #import "entity/collection_client";
 #import, file "edit.zi";
 #import, file "sharing.zi";
 #import, file "drafts.zi";
-#import, file "progress_access.zi";
 host_api :: #system_library "host_api";
 ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
 // The editor's text in the player's language, from its own locale files;
@@ -107,10 +105,6 @@ editor_frame: AppUiFrame;
 editor_language: string;
 editor_loaded: bool;
 editor_page: s32;
-// How many Classic story levels the player has unlocked, as the account's
-// shared progress says (see shared_progress.zi), read again every few seconds.
-editor_unlocked: s32;
-editor_unlocked_at: float64 = -10.0;
 editor_key: s32;
 editor_last_now: float64;
 editor_save_failed: bool;
@@ -132,10 +126,9 @@ editor_classic: EditCatalog;
 // An index that could not be read is never overwritten.
 editor_index_bad: bool;
 
-// The open level: a story level (open_story > 0) or a custom one (open_id).
+// The open authored level (open_id is zero until its first saved change).
 editor_level: EditLevel;
 editor_open_id: s32;
-editor_open_story: s32;
 editor_history: EditHistory;
 editor_piece: s32;
 editor_picking: bool;
@@ -211,7 +204,6 @@ editor_classic_names: [SPRITE_COUNT]string;
 // The palette's names in the player's language, by place.
 editor_piece_names: [EDIT_CLASSIC_PIECES]string;
 editor_view_classic: ShoveyGame;
-editor_picture_paths: [512]string;
 
 EditorText :: (key: string) -> string { return AppLocaleHost(key) }
 
@@ -300,17 +292,6 @@ EditorPictures :: () {
         BuilderPrint(*landscape, "assets/shovey-editor/classic/sprites-landscape/%", name)
         landscape_sprite_files[index] = BuilderFinish(landscape)
     }
-}
-
-// A story level's picture, made once per level.
-EditorStoryPicture :: (number: s32) -> string {
-    if number < 0 || number >= 512 { return "" }
-    if editor_picture_paths[number].count == 0 {
-        bytes: Vec(u8)
-        BuilderPrint(*bytes, "%/levels/%.png", EDITOR_CLASSIC, number)
-        editor_picture_paths[number] = BuilderFinish(bytes)
-    }
-    return editor_picture_paths[number]
 }
 
 // The descriptions of every picture, in the player's language.
@@ -554,16 +535,6 @@ EditorNameField :: () {
     }
 }
 
-EditorOpenStory :: (number: s32) {
-    if !EditStoryBoard(*editor_level.board, number) { return }
-    editor_level.route_length = 0
-    EditorClear()
-    editor_open_id = 0
-    editor_open_story = number
-    EditorNameField()
-    editor_page = EDITOR_EDIT
-}
-
 // Opens a custom level by its place in the catalog.
 EditorOpenCustom :: (at: s32) {
     catalog := EditorCatalog()
@@ -575,7 +546,6 @@ EditorOpenCustom :: (at: s32) {
     }
     EditorClear()
     editor_open_id = id
-    editor_open_story = 0
     EditorNameField()
     proof := catalog.levels[at].proof
     if proof == EDIT_PROOF_NONE || editor_level.route_length == 0 {
@@ -586,50 +556,14 @@ EditorOpenCustom :: (at: s32) {
 }
 
 // The editor opens on a blank board, saved as a level of your own on its
-// first stroke; Levels loads one of your levels or an unlocked story level.
+// first stroke; Levels loads one of your own saved levels.
 EditorBlank :: () {
     editor_level.board = EditNewBoard()
     editor_level.route_length = 0
     EditorClear()
     editor_open_id = 0
-    editor_open_story = 0
     EditorNameField()
     editor_page = EDITOR_EDIT
-}
-
-// Story levels open as a starting point only once Classic has unlocked
-// them. Debug builds open every level.
-EditorUnlocked :: () -> s32 {
-    #if #defined(SHOVEY_UNLOCK_ALL) {
-        return EditStoryCount()
-    }
-    if editor_frame.now - editor_unlocked_at >= 3.0 {
-        editor_unlocked_at = editor_frame.now
-        account: s32 = 1
-        device: s32 = 0
-        #if #defined(SHOVEY_WEB) {
-            // Read progress without changing the browser editor's draft store
-            // or granting account writes to its local drafts.
-            account = EditorAccountUnlocked(ProgressAccountService(
-                "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
-            device = EditorBrowserDeviceUnlocked(LocalCampaignRecord())
-        } else {
-            if AppSupportsHost(Collections.COLLECTIONS_DRAFTS_SERVICE) {
-                account = EditorAccountUnlocked(AppServiceHost(Collections.COLLECTIONS_DRAFTS_SERVICE,
-                    "{\"operation\":\"get\",\"kind\":\"game-progress\",\"game\":\"shovey.classic\"}"))
-            }
-            if AppSupportsHost("apps.records") {
-                device = EditorDeviceUnlocked(AppServiceHost("apps.records",
-                    "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"local.campaign\"}"))
-                if device == 0 {
-                    device = EditorDeviceUnlocked(AppServiceHost("apps.records",
-                        "{\"operation\":\"get\",\"app\":\"arcade.shovey\",\"record\":\"campaign\"}"))
-                }
-            }
-        }
-        editor_unlocked = EditorVisibleUnlocked(account, device)
-    }
-    return ifx editor_unlocked < 1 then 1 else editor_unlocked
 }
 
 EditorNewLevel :: () {
@@ -640,7 +574,6 @@ EditorNewLevel :: () {
     editor_level.route_length = 0
     EditorClear()
     editor_open_id = catalog.levels[at].id
-    editor_open_story = 0
     EditorSaveLevel()
     EditorSaveIndex()
     EditorNameField()
@@ -665,16 +598,14 @@ EditorBoardChanged :: () {
     editor_delete_armed = false
 }
 
-// A story level is copied into a new custom level before its first change.
+// The first change saves a new authored board in the creator's catalog.
 EditorMakeCopy :: () -> bool {
     if editor_open_id > 0 { return true }
     catalog := EditorCatalog()
-    at := EditAdd(catalog, editor_open_story, "")
+    at := EditAdd(catalog, 0, "")
     if at < 0 { EditorNotice("editor_full"); return false }
     editor_open_id = catalog.levels[at].id
-    editor_open_story = 0
     EditorNameField()
-    EditorNotice("editor_copied")
     return true
 }
 
@@ -746,8 +677,7 @@ EditorCheckStep :: (elapsed: float64) {
 
 EditorCheckText :: () -> string {
     // A blank board says nothing until its first stroke makes it a level.
-    if editor_open_id <= 0 && editor_open_story <= 0 { return "" }
-    if editor_open_id <= 0 { return EditorSay(1, "editor_story_note", cast(s64)editor_open_story) }
+    if editor_open_id <= 0 { return "" }
     if editor_check == CHECK_WAITING { return EditorText("editor_check_waiting") }
     if editor_check == CHECK_RUNNING { return EditorSay(1, "editor_checking", SolverStates()) }
     if editor_check == CHECK_NEVER { return EditorText("editor_never") }
@@ -847,7 +777,7 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
 }
 
 // ---------------------------------------------------------------------------
-// The levels: your own, then the story
+// The creator's own saved levels
 
 EditorLevels :: (width: float32, top: float32, bottom: float32) {
     catalog := EditorCatalog()
@@ -868,13 +798,9 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     gap: float32 = 8.0
     cell_width := (width - 32.0 - gap * cast(float32)(columns - 1)) / cast(float32)columns
     custom_height: float32 = 64.0
-    story_height := cell_width * 5.0 / 3.0 + 40.0
     customs := catalog.count + 1
     custom_rows := (customs + columns - 1) / columns
-    story_rows := (EditStoryCount() + columns - 1) / columns
-    unlocked := EditorUnlocked()
-    story_top := 36.0 + cast(float32)custom_rows * (custom_height + gap) + 40.0
-    content := story_top + cast(float32)story_rows * (story_height + gap)
+    content := 36.0 + cast(float32)custom_rows * (custom_height + gap)
     // Sharing and the developer export sit under the list.
     foot := bottom - 60.0
     foot_half := (width - 32.0 - gap) / 2.0
@@ -891,7 +817,6 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
             .content_height = cast(s32)content, .scroll_offset = editor_levels_scroll})
     editor_levels_scroll = scroll.scroll_offset
     open_custom: s32 = -1
-    open_story: s32 = 0
     make := false
     if scroll.opened {
         base := scroll.content
@@ -918,34 +843,6 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
                     .tone = ifx summary.proof != EDIT_PROOF_NONE then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
                     .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { open_custom = index - 1 }
         }
-        y := base.y + story_top
-        EditorCaption(206, Rectangle.{base.x, y - 36.0, base.width, 32.0}, EditorText("editor_story_levels"), 18)
-        for number: cast(s32)1..EditStoryCount() {
-            at := number - 1
-            cell := Rectangle.{base.x + cast(float32)(at % columns) * (cell_width + gap),
-                y + cast(float32)(at / columns) * (story_height + gap), cell_width, story_height}
-            if cell.y + cell.height < scroll.viewport.y || cell.y > scroll.viewport.y + scroll.viewport.height { continue }
-            digits: [24]u8
-            label := FormatInteger(cast(s64)number, digits[:])
-            key := cast(u64)(260000 + number * 4)
-            // A level not reached yet in Classic shows a lock, not its board.
-            locked := number > unlocked
-            if Button(editor_frame.session, ButtonProps.{.key = key, .id = 260000 + number * 4, .bounds = cell,
-                    .label = label, .invisible = true}) != 0 {
-                if locked { EditorNotice("editor_story_locked") } else { open_story = number }
-            }
-            picture := Rectangle.{cell.x + 4.0, cell.y + 4.0, cell.width - 8.0, cell.width * 5.0 / 3.0 - 8.0}
-            if locked {
-                unused Button(editor_frame.session, ButtonProps.{.key = key + 3, .id = 260000 + number * 4 + 3,
-                        .bounds = picture, .label = EditorText("editor_story_locked"), .disabled = true, .icon_only = true,
-                        .icon_shape = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17",
-                        .emphasis = ButtonEmphasis.ButtonEmphasisSoft})
-            } else {
-                EditorImage(key + 1, EditorStoryPicture(number), picture, label)
-            }
-            EditorCaption(key + 2, Rectangle.{cell.x + 6.0, cell.y + cell.width * 5.0 / 3.0, cell.width - 12.0, 32.0},
-                label, 14)
-        }
         unused End(editor_frame.session)
     }
     // Why a level does not open, over the bottom of the list.
@@ -957,7 +854,6 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     }
     if make { EditorNewLevel() }
     else if open_custom >= 0 { EditorOpenCustom(open_custom) }
-    else if open_story > 0 { EditorOpenStory(open_story) }
 }
 
 // ---------------------------------------------------------------------------
@@ -981,8 +877,7 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
     }
     // Lines borrowed from the text slots end before anything else runs.
     {
-        title := EditorSay(0, "editor_story_level", cast(s64)editor_open_story)
-        if editor_open_story == 0 { title = EditorText("editor_new_level") }
+        title := EditorText("editor_new_level")
         if summary != null { title = EditorLevelName(0, summary) }
         EditorCaption(301, Rectangle.{112.0, top + 6.0, width - 312.0, 40.0}, title, 17, true)
     }

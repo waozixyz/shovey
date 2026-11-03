@@ -5,6 +5,39 @@
 #import, file "../progress.zi";
 #import, file "../engine.zi";
 #import "levels"
+Progress :: #import "entity/game_progress";
+
+// Merge individual earned destinations; a high-numbered branch must not
+// make every smaller story board available in the editor.
+EditorMergeProgress :: (progress: *ShoveyProgress, access: []bool) {
+    for level: cast(s32)1..ShoveyLevelCount() {
+        if level <= access.count && ShoveyLevelUnlocked(progress, level) { access[level - 1] = true }
+    }
+}
+
+EditorMergeAccountAccess :: (reply: string, access: []bool) {
+    status: [16]u8
+    if ReadStringText(reply, FieldAt(reply, 0, "status"), status[:]) < 0 || TextUntilNul(status[:]) != "done" { return }
+    record: Progress.GameProgressRecord
+    if !Progress.GameProgressReply(reply, *record) || TextUntilNul(record.game[:]) != "shovey.classic" { return }
+    progress := ShoveyProgress.{.unlocked = record.unlocked}
+    if progress.unlocked > ShoveyLevelLimit() { progress.unlocked = ShoveyLevelLimit() }
+    Progress.GameProgressMarkLevels(*record, progress.completed[:])
+    EditorMergeProgress(*progress, access)
+}
+
+EditorMergeCampaignAccess :: (text: string, access: []bool) {
+    progress: ShoveyProgress; board: ShoveyGame
+    if ShoveyCampaignRestore(*progress, *board, text) { EditorMergeProgress(*progress, access) }
+}
+
+EditorMergeDeviceAccess :: (reply: string, access: []bool) {
+    status: [16]u8
+    if ReadStringText(reply, FieldAt(reply, 0, "status"), status[:]) < 0 || TextUntilNul(status[:]) != "done" { return }
+    text: [4096]u8
+    count := ReadStringText(reply, FieldAt(reply, 0, "text"), text[:])
+    if count > 0 { EditorMergeCampaignAccess(TextView(text[:count]), access) }
+}
 
 EditorAccountUnlocked :: (reply: string) -> s32 {
     status: [16]u8

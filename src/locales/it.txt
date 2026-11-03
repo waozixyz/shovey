@@ -1094,3 +1094,15 @@ Punta sempre all’avventura.
 [shovey_chest_reminder]
 Il tuo forziere giornaliero ti aspetta. Apri Shovey per ritirare la ricompensa.
 ---
+
+[shovey_result_complete]
+Livello % completato
+---
+
+[shovey_result_score]
+Punteggio
+---
+
+[shovey_result_moves]
+Mosse
+---

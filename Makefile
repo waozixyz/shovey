@@ -39,8 +39,13 @@ editor-glm-test: solver
 	python3 tests/editor_glm_test.py
 	$(call ziran_test,solver_test)
 
+.PHONY: public-editor-test
+public-editor-test: build/ziran/libziran.a
+	python3 tests/public_editor_test.py
+
 editor-save-test: editor solver
 	ZIRAN_TOOLCHAIN='$(TOOLCHAIN)' python3 tests/developer_editor_save_test.py
+	ZIRAN_TOOLCHAIN='$(TOOLCHAIN)' python3 tests/editor_file_test.py
 
 star-merge-test: editor
 	$(call ziran_test,board_effects_test)
@@ -52,7 +57,7 @@ editor-map-test: editor
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1200x24' python3 tests/developer_editor_map_ui_test.py
 
-editor-ui-test: star-merge-test editor-server-test editor-map-test
+editor-ui-test: public-editor-test star-merge-test editor-server-test editor-map-test
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_ui_test.py
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 \
@@ -332,6 +337,12 @@ level-select-test:
 	$(call ziran_test,level_select_focus_test)
 	$(call ziran_test,world_map_view_test)
 
+.PHONY: secret-results-test
+secret-results-test:
+	python3 tests/secret_results_test.py
+
+public-test test: secret-results-test
+
 .PHONY: collectibles-test
 collectibles-test:
 	sh tests/collectibles_test.sh
@@ -386,7 +397,9 @@ laws:
 	done
 	@echo "Shovey laws proved: $(words $(LAW_MODULES)) modules"
 
-test: barrels-test solver laws game-maps-test shop-test forest-puzzle-test
+# Level pictures are ignored generated assets, so a source-only checkout or
+# an earlier custom --cell preview must be regenerated before asset validation.
+test: barrels-test solver laws game-maps-test shop-test forest-puzzle-test previews
 	python3 tests/play_release_notes_test.py
 	python3 tests/pages_packaging_test.py
 	python3 tests/star_start_test.py
@@ -509,3 +522,14 @@ editor-card: levels build/ziran/libziran.a
 barrels-test: solver
 	$(call ziran_test,barrels_test)
 	python3 tests/barrels_levels_test.py
+
+# Repeatable continuous-map export from the joined v5 portrait and landscape sources.
+.PHONY: world-map-tiles world-map-test
+world-map-tiles:
+	python3 scripts/tile_world_map.py
+
+world-map-test:
+	python3 tests/world_map_art_test.py
+	sh tests/world_map_layout_test.sh
+	sh tests/world_map_progression_test.sh
+	$(MAKE) level-select-test

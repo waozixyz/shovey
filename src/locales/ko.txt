@@ -1094,3 +1094,15 @@ Classic에서 특별한 물건을 찾아보세요.
 [shovey_chest_reminder]
 일일 상자가 기다리고 있어요. Shovey를 열어 보상을 받으세요.
 ---
+
+[shovey_result_complete]
+레벨 % 완료
+---
+
+[shovey_result_score]
+점수
+---
+
+[shovey_result_moves]
+이동 횟수
+---

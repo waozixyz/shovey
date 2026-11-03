@@ -1,40 +1,75 @@
 Map :: #import, file "../src/world_map_layout.zi";
+Route :: #import, file "../src/world_map_progression.zi";
+#import "kryon/geometry"
 
 #program_export
 main :: () -> s32 {
-    if Map.WorldMapSegmentCount != 16 || Map.WorldMapLevelCount != 175 { return 1 }
-    if Map.WorldMapHeight(390.0) != 53360.0 { return 2 }
-    if Map.WorldMapLevelSegment(12) != 0 || Map.WorldMapLevelSegment(13) != 1 { return 3 }
-    if Map.WorldMapLevelSegment(95) != 7 || Map.WorldMapLevelSegment(96) != 8 { return 4 }
-    if Map.WorldMapLevelSegment(100) != 8 || Map.WorldMapLevelSegment(101) != 9 { return 5 }
-    if Map.WorldMapLevelSegment(174) != 14 || Map.WorldMapLevelSegment(175) != 15 { return 6 }
-    if Map.WorldMapLevelSegment(0) != -1 || Map.WorldMapLevelSegment(176) != -1 { return 7 }
-    if Map.WorldMapSegmentStart(-1) != -1 || Map.WorldMapSegmentEnd(16) != -1 { return 8 }
-    if Map.WorldMapLevelPosition(0, 390.0).x != -1.0 || Map.WorldMapSegmentBounds(16, 390.0).y != -1.0 { return 9 }
-    if Map.WorldMapHeight(0.0) != -1.0 || Map.WorldMapLevelPosition(1, 0.0).y != -1.0 { return 10 }
-    if Map.WorldMapFocusOffset(0, 390.0, 600.0) != 0.0 || Map.WorldMapFocusOffset(1, 390.0, 0.0) != 0.0 { return 21 }
-    widths: [2]float32 = .[200.0, 780.0]
-    w: s32 = 0
-    while w < 2 {
-        width := widths[w]
-        height := Map.WorldMapHeight(width)
-        previous := height + 1.0
-        level: s32 = 1
-        while level <= 175 {
-            index := Map.WorldMapLevelSegment(level)
-            if index < 0 || level < Map.WorldMapSegmentStart(index) || level > Map.WorldMapSegmentEnd(index) { return 11 }
-            pos := Map.WorldMapLevelPosition(level, width)
-            bounds := Map.WorldMapSegmentBounds(index, width)
-            if pos.x < 0.0 || pos.x > 5079.0 * width / 390.0 || pos.y < 0.0 || pos.y > height { return 12 }
-            if pos.y < bounds.y || pos.y > bounds.y + bounds.height { return 13 }
-            offset := Map.WorldMapFocusOffset(level, width, 600.0)
-            if offset < 0.0 || offset > height - 600.0 { return 14 }
-            previous = pos.y
-            level += 1
-        }
-        if Map.WorldMapFocusOffset(1, width, height + 1.0) != 0.0 { return 17 }
-        w += 1
+    if Map.WorldMapLevelCount != 175 || Route.WORLD_MAP_EDGE_COUNT != 176 || Route.WORLD_MAP_FORK_COUNT != 2 { return 1 }
+    {
+        // A right angle and duplicate point distinguish arc-length allocation
+        // from a straight interpolation across the scenery.
+        road: [4]Vector2 = .[Vector2.{0.0,0.0},Vector2.{0.0,0.0},Vector2.{0.0,200.0},Vector2.{300.0,200.0}]
+        centers: [6]Vector2
+        if !Map.WorldMapAllocateRoute(road[:],centers[:]) || Map.WorldMapPolylineLength(road[:]) != 500.0 { return 10 }
+        if centers[1].x != 0.0 || centers[1].y != 100.0 || centers[3].x != 100.0 || centers[3].y != 200.0 { return 11 }
+        if Map.WorldMapMinimumCenterDistance(centers[:]) < 99.99 { return 12 }
+        if Map.WorldMapPolylineSample(road[:],-1.0).y != 0.0 || Map.WorldMapPolylineSample(road[:],2.0).x != 300.0 { return 13 }
+        if Map.WorldMapAllocateRoute(road[:0],centers[:]) || Map.WorldMapAllocateRoute(road[:],centers[:1]) { return 14 }
+        // Source pixels, authored units, world units and screen pixels have
+        // explicit transforms. A nominal camera width of 312 is NOT 0.8.
+        source := Map.WorldMapSourcePoint(Vector2.{150.0,75.0},Rectangle.{50.0,25.0,200.0,100.0},Rectangle.{20.0,30.0,400.0,200.0})
+        if source.x != 220.0 || source.y != 130.0 || Map.WorldMapScale(390.0) < Map.WorldMapWorldZoom - 0.0001 || Map.WorldMapScale(390.0) > Map.WorldMapWorldZoom + 0.0001 { return 15 }
     }
-    print("World map layout: 175 levels, segments, bounds and focus passed\n")
+    for orientation: cast(s32)0..1 {
+        landscape := orientation == 1
+        full := Map.WorldMapWorldBounds(landscape)
+        // Exercise every real painted polyline, including connector bends.
+        for index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
+            edge := Route.WorldMapEdgeAt(index)
+            road: [33]Vector2
+            for sample: cast(s32)0..32 { road[sample] = Map.WorldMapRailSample(index,sample,390.0,landscape) }
+            a := Map.WorldMapLevelPosition(edge.from_level,390.0,landscape)
+            b := Map.WorldMapLevelPosition(edge.to_level,390.0,landscape)
+            if Map.WorldMapPointDistance(a,road[0]) > 0.01 || Map.WorldMapPointDistance(b,road[32]) > 0.01 { return 16 }
+            centers: [3]Vector2
+            if !Map.WorldMapAllocateRoute(road[:],centers[:]) || Map.WorldMapPointDistance(a,centers[0]) > 0.01 ||
+                Map.WorldMapPointDistance(b,centers[2]) > 0.01 { return 17 }
+            if Map.WorldMapPolylineLength(road[:]) < Map.WorldMapPointDistance(a,b) - 0.01 { return 18 }
+        }
+        // Every adjacent native painting shares exactly 128 real pixels.
+        // This is geometry for the same bands verified byte-for-byte by the
+        // bitmap test, including bands traversed between node centers.
+        for connector: cast(s32)0..Map.WorldMapSceneCount - 2 {
+            a := Map.WorldMapSceneBounds(connector,390.0,landscape)
+            b := Map.WorldMapSceneBounds(connector+1,390.0,landscape)
+            overlap := ifx landscape then a.x+a.width-b.x else b.y+b.height-a.y
+            if overlap < 128.0 * Map.WorldMapWorldZoom - 0.01 || overlap > 128.0 * Map.WorldMapWorldZoom + 0.01 { return 19 }
+        }
+        for level: cast(s32)1..175 {
+            p := Map.WorldMapLevelPosition(level, 390.0, landscape)
+            if p.x < full.x + 28.0 || p.y < full.y + 64.0 || p.x > full.x + full.width - 28.0 || p.y > full.y + full.height - 28.0 { print("bounds level=% orientation=% point=%,% full=%,%\n",level,orientation,p.x,p.y,full.width,full.height); return 2 }
+            for other: level + 1..175 {
+                q := Map.WorldMapLevelPosition(other, 390.0, landscape)
+                dx := p.x - q.x; dy := p.y - q.y
+                // Keep a useful gap between the 52px circles, including
+                // nonadjacent nodes at hairpins and on different fork arms.
+                if dx * dx + dy * dy < 80.1 * 80.1 { return 4 }
+            }
+        }
+        first := Map.WorldMapSceneBounds(0, 390.0, landscape)
+        last := Map.WorldMapSceneBounds(Map.WorldMapSceneCount - 1, 390.0, landscape)
+        if landscape {
+            if full.x != first.x || full.y != last.y || full.height != last.height ||
+                full.x + full.width - last.x - last.width > 0.01 ||
+                full.x + full.width - last.x - last.width < -0.01 { return 8 }
+        } else {
+            if full.x != last.x || full.y != last.y || full.width != last.width ||
+                full.y + full.height - first.y - first.height > 0.01 ||
+                full.y + full.height - first.y - first.height < -0.01 { return 9 }
+        }
+        if Map.WorldMapLevelPosition(0,390.0,landscape).x != -1.0 || Map.WorldMapLevelPosition(176,390.0,landscape).y != -1.0 { return 6 }
+    }
+    if Map.WorldMapHeight(0.0) != -1.0 || Map.WorldMapSegmentStart(-1) != -1 { return 7 }
+    print("Native map layout local test passed: 175 destinations, >=80px centers and exact outer painted extents in both orientations\n")
     return 0
 }

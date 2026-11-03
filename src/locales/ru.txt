@@ -1094,3 +1094,15 @@ Shovey Island
 [shovey_chest_reminder]
 Твой ежедневный сундук ждёт. Открой Shovey и забери награду.
 ---
+
+[shovey_result_complete]
+Уровень % пройден
+---
+
+[shovey_result_score]
+Счёт
+---
+
+[shovey_result_moves]
+Ходы
+---

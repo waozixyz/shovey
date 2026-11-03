@@ -1,4 +1,5 @@
 #import "kryon/session"
+#import "kryon/pointer_input"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
 #import "kryon/button_props"
@@ -12,6 +13,7 @@
 #import "kryon/shape_widget"
 #import "kryon/scroll_props"
 #import "kryon/scroll_widget"
+#import "kryon/scroll"
 #import "kryon/tree"
 #import "kryon/widget_palette"
 #import "kryon/text_props"
@@ -21,6 +23,7 @@
 #import "kryon/svg_icon_widget"
 #import "std/number_text"
 Math :: #import "std/math";
+Carousel :: #import "kryon/carousel";
 Layout :: #import, file "world_map_layout.zi";
 Route :: #import, file "world_map_progression.zi";
 Art :: #import, file "world_map_art.zi";
@@ -30,11 +33,28 @@ WorldMapViewState :: struct {
     scroll_offset: s32
     scroll_x: s32
     focused: s32
+    last_click_place: s32
+    last_click_time: float64
     reveal: bool
     viewport_width: float32
     viewport_height: float32
-    // Authored rectangles cover the viewport; independent of image loading.
-    panel_coverage_complete: bool
+    pointer_drag: bool
+    pointer_moving: bool
+    pointer_start: Vector2
+    pointer_last: Vector2
+    pointer_scroll_x: s32
+    pointer_scroll_offset: s32
+    wheel_edge: s32 // edge table index + 1, zero means no current route
+    wheel_t: float32
+    // Wheel or drag distance past either end of the road: negative before
+    // its start, positive beyond its far end. It pans the painting's long axis.
+    wheel_past: float32
+    // Road distance one drag has pushed past an end before panning begins.
+    drag_slop: float32
+    world_width: float32
+    zoomed_out: bool
+    framing_place: s32
+    wheel_branch: [4]s32
 }
 
 // Visibility is an explicit caller decision. Public callers supply actual
@@ -45,8 +65,10 @@ WorldMapViewProps :: struct {
     available: []bool
     completed: []bool
     replay: []bool
+    stars: []s32 // Earned ratings, indexed by place - 1; zero means unrecorded.
     labels: []string
     focus_only: bool
+    landscape: bool
     loading: bool
     now: float64
     key_pressed: s32
@@ -61,15 +83,166 @@ WorldMapSelection :: struct {
     activated: s32
 }
 
+// Browsing changes the camera's region without changing the selected board.
+// Cache framing per traversed edge, rather than recomputing zoom on every tick.
+WorldMapViewCameraPlace :: (state: WorldMapViewState) -> s32 {
+    if state.wheel_edge > 0 && state.wheel_edge <= Route.WORLD_MAP_EDGE_COUNT {
+        edge := Route.WorldMapEdgeAt(state.wheel_edge - 1)
+        return ifx state.wheel_t > 0.5 then edge.to_level else edge.from_level
+    }
+    return state.focused
+}
+
+// The public selector overlays its 112px Play panel on the painted map.
+// Frame choices and the selected avatar above it. A landscape painting fits
+// the full height, so the camera may lift a low destination above the panel;
+// the strip this exposes lies behind the panel. The editor's focus-only map
+// has no Play panel.
+WorldMapViewCameraViewport :: (props: WorldMapViewProps, viewport: Rectangle) -> Rectangle {
+    if !props.focus_only && viewport.height > 168.0 { viewport.height -= 112.0 }
+    return viewport
+}
+
+// A notch travels the same authored road distance before and after an adaptive
+// zoom. Otherwise a reverse notch cannot retrace a forward notch across areas
+// with different spacing limits. Rail movement itself still uses screen units.
+WorldMapViewWheelDistance :: (width: float32, notches: float32) -> float32 {
+    return notches * 90.0 * Layout.WorldMapScale(width) / WorldMapViewAuthoredScale
+}
+
 WorldMapViewFlag :: (values: []bool, place: s32) -> bool {
     return place > 0 && place <= values.count && values[place - 1]
 }
 
+// Logical pixels: do not scale or shrink the hit circles with the artwork.
+WorldMapViewTargetDiameter :: 56.0;
+WorldMapViewCircleRadius :: 26.0;
+WorldMapViewTargetBounds :: (center: Vector2) -> Rectangle {
+    return Rectangle.{center.x - 28.0, center.y - 28.0, WorldMapViewTargetDiameter, WorldMapViewTargetDiameter}
+}
+// The sprite's alpha reaches its bottom edge: place its feet on the node,
+// leaving the lower half of the circle available for the earned rating.
+WorldMapViewAvatarBounds :: (center: Vector2) -> Rectangle {
+    return Rectangle.{center.x - 26.0, center.y - 48.0, 52.0, 52.0}
+}
+WorldMapViewStars :: (props: WorldMapViewProps, place: s32) -> s32 {
+    if place < 1 || place > props.stars.count { return 0 }
+    count := props.stars[place - 1]
+    if count < 0 { return 0 }
+    if count > 3 { return 3 }
+    return count
+}
+WorldMapViewDisplayName :: (place: s32, props: WorldMapViewProps, output: []u8) -> string {
+    if place > 0 && place <= props.labels.count && props.labels[place - 1] != "" { return props.labels[place - 1] }
+    return Route.WorldMapLevelDisplayName(WorldMapViewPlace(place, props.focus_only), output)
+}
+
 WorldMapViewWidth :: (viewport_width: float32) -> float32 {
-    width := viewport_width - 32.0
-    if width > 390.0 { width = 390.0 }
-    if width < 1.0 { width = 1.0 }
-    return width
+    if viewport_width <= 0.0 { return 1.0 }
+    return 390.0
+}
+
+// Fit the full cross-axis of the painting; scrolling follows its long axis.
+WorldMapViewAuthoredScale :: 0.54;
+WorldMapViewCenterSpacing :: 80.1;
+// Portrait never shrinks below the scale that keeps its closest two boards
+// (137 art px apart at the second fork) one 56px hit circle apart. Narrower
+// windows show the painting slightly larger and the camera pans sideways.
+WorldMapViewPortraitMinimumScale :: 0.41;
+WorldMapViewNativeScale :: (props: WorldMapViewProps, viewport: Rectangle) -> float32 {
+    if props.landscape { return viewport.height / 941.0 }
+    fit := viewport.width / 1086.0
+    return ifx fit < WorldMapViewPortraitMinimumScale then WorldMapViewPortraitMinimumScale else fit
+}
+WorldMapViewFramingWidth :: (props: WorldMapViewProps, at: s32,
+        viewport: Rectangle = Rectangle.{0.0,0.0,390.0,844.0}) -> float32 {
+    unused at
+    return 390.0 * WorldMapViewNativeScale(props,viewport) / Layout.WorldMapWorldZoom
+}
+
+// At a junction, frame the entry and both browsable choices as one group.
+// Blend out as the camera leaves it, so the camera never snaps to another arm.
+WorldMapViewFramePoint :: (props: WorldMapViewProps, point: Vector2, width: float32, viewport: Rectangle, place: s32 = 0) -> Vector2 {
+    if place == 175 {
+        final := WorldMapViewPositionFor(175,width,props)
+        scale := Layout.WorldMapScale(width)
+        // The dock source anchor and boat rectangle are recorded in scenes.json.
+        minimum := Vector2.{final.x - 28.0,final.y - 48.0}
+        maximum := Vector2.{final.x + 28.0,final.y + 28.0}
+        boat_min := Vector2.{final.x + (ifx props.landscape then 75.0 else 125.0) * scale,
+            final.y + (ifx props.landscape then -243.0 else -238.0) * scale}
+        boat_max := Vector2.{final.x + (ifx props.landscape then 309.0 else 412.0) * scale,
+            final.y + (ifx props.landscape then 65.0 else 82.0) * scale}
+        if boat_min.x < minimum.x { minimum.x = boat_min.x }; if boat_min.y < minimum.y { minimum.y = boat_min.y }
+        if boat_max.x > maximum.x { maximum.x = boat_max.x }; if boat_max.y > maximum.y { maximum.y = boat_max.y }
+        if maximum.x - minimum.x <= viewport.width - 32.0 { point.x = (minimum.x + maximum.x) * 0.5 }
+        if maximum.y - minimum.y <= viewport.height - 32.0 { point.y = (minimum.y + maximum.y) * 0.5 }
+        return point
+    }
+    for index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+        fork := Route.WorldMapForkAt(index)
+        if !WorldMapViewBrowsable(props,fork.left) || !WorldMapViewBrowsable(props,fork.right) { continue }
+        entry := WorldMapViewPositionFor(fork.entry,width,props)
+        distance := WorldMapViewRouteDistance(point,entry)
+        if distance > 160.0 { continue }
+        left := WorldMapViewPositionFor(fork.left,width,props)
+        right := WorldMapViewPositionFor(fork.right,width,props)
+        minimum := entry; maximum := entry
+        if left.x < minimum.x { minimum.x = left.x }; if right.x < minimum.x { minimum.x = right.x }
+        if left.y < minimum.y { minimum.y = left.y }; if right.y < minimum.y { minimum.y = right.y }
+        if left.x > maximum.x { maximum.x = left.x }; if right.x > maximum.x { maximum.x = right.x }
+        if left.y > maximum.y { maximum.y = left.y }; if right.y > maximum.y { maximum.y = right.y }
+        weight := 1.0 - distance / 160.0
+        // Retain the rail point when a viewport cannot contain the whole group.
+        if maximum.x - minimum.x <= viewport.width - 64.0 {
+            point.x += ((minimum.x + maximum.x) * 0.5 - entry.x) * weight
+        }
+        if maximum.y - minimum.y <= viewport.height - 128.0 {
+            point.y += ((minimum.y + maximum.y) * 0.5 - entry.y) * weight
+        }
+        return point
+    }
+    // Match the opposite arm at the same longitudinal position. Only visible
+    // roads participate; a locked preview cannot pull the camera past its limit.
+    for fork_index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+        fork := Route.WorldMapForkAt(fork_index)
+        branch := WorldMapViewBranch(fork,place)
+        if branch == 0 { continue }
+        best := point
+        best_distance: float32 = 1000000000.0
+        found := false
+        for edge_index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
+            edge := Route.WorldMapEdgeAt(edge_index)
+            other_branch := WorldMapViewBranch(fork,edge.from_level)
+            if other_branch == 0 { other_branch = WorldMapViewBranch(fork,edge.to_level) }
+            if other_branch == 0 || other_branch == branch || !WorldMapViewBrowsable(props,edge.from_level) ||
+                !WorldMapViewBrowsable(props,edge.to_level) { continue }
+            previous := Layout.WorldMapRailSample(edge_index,0,width,props.landscape)
+            for sample: cast(s32)1..Layout.WorldMapRailSampleCount - 1 {
+                next := Layout.WorldMapRailSample(edge_index,sample,width,props.landscape)
+                from := ifx props.landscape then previous.x else previous.y
+                to := ifx props.landscape then next.x else next.y
+                axis := ifx props.landscape then point.x else point.y
+                if from != to && ((from <= axis && to >= axis) || (to <= axis && from >= axis)) {
+                    t := (axis - from) / (to - from)
+                    match := Vector2.{previous.x + (next.x - previous.x) * t,previous.y + (next.y - previous.y) * t}
+                    distance := WorldMapViewRouteDistance(point,match)
+                    if distance < best_distance { best = match; best_distance = distance; found = true }
+                }
+                previous = next
+            }
+        }
+        if found {
+            // Always keep the active rail and its buttons comfortably visible.
+            span := ifx props.landscape then viewport.height - 128.0 else viewport.width - 64.0
+            shift := best_distance * 0.5
+            if shift > span * 0.5 { shift = span * 0.5 }
+            if props.landscape { point.y += ifx best.y < point.y then -shift else shift }
+            else { point.x += ifx best.x < point.x then -shift else shift }
+        }
+        break
+    }
+    return point
 }
 
 // The editor's three authored aliases use the same detached positions as
@@ -79,66 +252,28 @@ WorldMapViewPlace :: (place: s32, focus_only: bool) -> s32 {
     return place
 }
 
-// Measured coordinates use 390 only as a scale reference. The painted world
-// can extend beyond that width; fork geometry is a fallback for missing art.
-WorldMapViewClassicPosition :: (place: s32, width: float32, painted: Vector2) -> Vector2 {
-    if painted.x >= 0.0 && painted.y >= 0.0 {
-        return Vector2.{painted.x * width / 390.0, painted.y * width / 390.0}
-    }
-    point := Layout.WorldMapLevelPosition(place, width)
-    for index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
-        fork := Route.WorldMapForkAt(index)
-        if place == fork.entry || place == fork.merge { point.x = width * 0.5 }
-        if place == fork.left || place == fork.right {
-            left := Layout.WorldMapLevelPosition(fork.left, width)
-            right := Layout.WorldMapLevelPosition(fork.right, width)
-            point.y = (left.y + right.y) * 0.5
-            point.x = width * ifx place == fork.left then 0.27 else 0.73
-        }
-    }
-    return point
-}
-
-// Measured islets retain their full world range. The anchor is already scaled
-// and is used only while the corresponding authored position is missing.
-WorldMapViewSecretPosition :: (place: s32, width: float32, painted: Vector2, anchor: Vector2) -> Vector2 {
-    if place < 1001 || place > 1003 { return Vector2.{-1.0, -1.0} }
-    if painted.x >= 0.0 && painted.y >= 0.0 {
-        return Vector2.{painted.x * width / 390.0, painted.y * width / 390.0}
-    }
-    scale := width / 390.0
-    if place == 1003 {
-        return Vector2.{ifx anchor.x >= width * 0.5 then 58.0 * scale else 332.0 * scale,
-            anchor.y - 42.0 * scale}
-    }
-    return Vector2.{ifx place == 1001 then 64.0 * scale else 326.0 * scale,
-        anchor.y + 76.0 * scale}
-}
-
 WorldMapViewPosition :: (place: s32, width: float32, focus_only: bool) -> Vector2 {
     place = WorldMapViewPlace(place, focus_only)
-    if place >= 1 && place <= Layout.WorldMapLevelCount {
-        return WorldMapViewClassicPosition(place, width, Art.WorldMapArtLevelPosition(place))
-    }
-    if place == 1003 {
-        anchor := WorldMapViewPosition(29, width, false)
-        return WorldMapViewSecretPosition(place, width, Art.WorldMapArtSecretPosition(place), anchor)
-    }
-    if place == 1001 || place == 1002 {
-        anchor := WorldMapViewPosition(175, width, false)
-        return WorldMapViewSecretPosition(place, width, Art.WorldMapArtSecretPosition(place), anchor)
-    }
-    return Vector2.{-1.0, -1.0}
+    if place >= 1 && place <= 175 { return Layout.WorldMapLevelPosition(place, width) }
+    point := Art.WorldMapArtSecretPosition(place)
+    if point.x < 0.0 { return point }
+    return Vector2.{point.x * width / 390.0, point.y * width / 390.0}
 }
-
+WorldMapViewPositionFor :: (place: s32, width: float32, props: WorldMapViewProps) -> Vector2 {
+    identity := WorldMapViewPlace(place, props.focus_only)
+    if identity >= 1 && identity <= 175 { return Layout.WorldMapLevelPosition(identity, width, props.landscape) }
+    if identity < 1001 || identity > 1003 { return Vector2.{-1.0, -1.0} }
+    point := Art.WorldMapArtSecretPosition(identity, props.landscape)
+    return Vector2.{point.x * width / 390.0, point.y * width / 390.0}
+}
+WorldMapViewArtBounds :: (width: float32, landscape: bool = false) -> Rectangle {
+    scale := width / 390.0
+    full := Layout.WorldMapWorldBounds(landscape)
+    return Rectangle.{full.x * scale, full.y * scale, full.width * scale, full.height * scale}
+}
 WorldMapViewFocusOffset :: (place: s32, width: float32, height: float32, focus_only: bool) -> s32 {
-    point := WorldMapViewPosition(place, width, focus_only)
-    if point.x == -1.0 && point.y == -1.0 { return 0 }
-    bounds := WorldMapViewArtBounds(width)
-    if bounds.height <= 0.0 { bounds = Rectangle.{0.0, 0.0, width, Layout.WorldMapHeight(width)} }
-    return WorldMapViewFocusOffsetInBounds(point, height, bounds)
+    return WorldMapViewFocusOffsetInBounds(WorldMapViewPosition(place, width, focus_only), height, WorldMapViewArtBounds(width))
 }
-
 WorldMapViewFocusOffsetInBounds :: (point: Vector2, height: float32, bounds: Rectangle) -> s32 {
     if !(height > 0.0) || !(bounds.height > 0.0) || point.x != point.x || point.y != point.y || bounds.y != bounds.y { return 0 }
     if point.x == -1.0 && point.y == -1.0 { return 0 }
@@ -150,7 +285,7 @@ WorldMapViewFocusOffsetInBounds :: (point: Vector2, height: float32, bounds: Rec
     return cast(s32)offset
 }
 
-// Public browsing ends three locked nodes beyond the furthest reachable
+// The keyboard's far end: three locked nodes beyond the furthest reachable
 // ordinary destination. Discovery and private editor visibility stay explicit.
 WorldMapViewPublicLast :: (props: WorldMapViewProps) -> s32 {
     if props.focus_only { return Layout.WorldMapLevelCount }
@@ -163,177 +298,88 @@ WorldMapViewPublicLast :: (props: WorldMapViewProps) -> s32 {
     return last
 }
 
+// The whole map is browsable at any progress: every ordinary destination is
+// drawn, locked ones as locked. A secret room is listed in `visible` only once
+// it has been found, so it stays hidden until then.
 WorldMapViewBrowsable :: (props: WorldMapViewProps, place: s32) -> bool {
-    return WorldMapViewFlag(props.visible, place) &&
-        (props.focus_only || place > Layout.WorldMapLevelCount || place <= WorldMapViewPublicLast(props))
+    return WorldMapViewFlag(props.visible, place)
 }
 
-// Fixed authored water is real drawn coverage, independent of discovery/loading.
-WorldMapViewArtBounds :: (width: float32) -> Rectangle {
-    water := Art.WorldMapArtWaterBounds()
-    scale := width / 390.0
-    return Rectangle.{water.x * scale, water.y * scale, water.width * scale, water.height * scale}
+// Both axes come from destinations the player can browse, never terrain.
+// Expanding a short range to fit the viewport reveals scenery, not new nodes.
+WorldMapViewCameraBounds :: (props: WorldMapViewProps, width: float32, viewport_height: float32 = 0.0, viewport_width: float32 = 390.0) -> Rectangle {
+    full := WorldMapViewArtBounds(width, props.landscape)
+    // Leave camera room at the horizontal endpoints as well as at interior
+    // levels. Otherwise the art edge clamps a revealed start off-center.
+    if props.landscape {
+        full.x -= viewport_width * 0.5
+        full.width += viewport_width
+    }
+    minimum := Vector2.{full.x + full.width, full.y + full.height}
+    maximum := Vector2.{}
+    found := false
+    for place: cast(s32)1..cast(s32)props.visible.count {
+        if !WorldMapViewBrowsable(props, place) { continue }
+        point := WorldMapViewPositionFor(place, width, props)
+        if point.x < 0.0 { continue }
+        found = true
+        if point.x < minimum.x { minimum.x = point.x }
+        if point.y < minimum.y { minimum.y = point.y }
+        if point.x > maximum.x { maximum.x = point.x }
+        if point.y > maximum.y { maximum.y = point.y }
+    }
+    if !found { minimum = WorldMapViewPositionFor(1, width, props); maximum = minimum }
+    pad_x := ifx viewport_width * 0.5 > 144.0 then viewport_width * 0.5 else 144.0
+    pad_y := ifx viewport_height * 0.5 > 176.0 then viewport_height * 0.5 else 176.0
+    minimum.x -= pad_x; minimum.y -= pad_y
+    maximum.x += pad_x; maximum.y += pad_y
+    if maximum.x - minimum.x < viewport_width {
+        extra := (viewport_width - maximum.x + minimum.x) * 0.5
+        minimum.x -= extra; maximum.x += extra
+    }
+    if maximum.y - minimum.y < viewport_height {
+        extra := (viewport_height - maximum.y + minimum.y) * 0.5
+        minimum.y -= extra; maximum.y += extra
+    }
+    // The whole painting stays reachable, end to end, at any progress.
+    art := WorldMapViewArtBounds(width, props.landscape)
+    if minimum.x > art.x { minimum.x = art.x }
+    if minimum.y > art.y { minimum.y = art.y }
+    if maximum.x < art.x + art.width { maximum.x = art.x + art.width }
+    if maximum.y < art.y + art.height { maximum.y = art.y + art.height }
+    if minimum.x < full.x { maximum.x -= minimum.x - full.x; minimum.x = full.x }
+    if minimum.y < full.y { maximum.y -= minimum.y - full.y; minimum.y = full.y }
+    if maximum.x > full.x + full.width { minimum.x -= maximum.x - full.x - full.width; maximum.x = full.x + full.width }
+    if maximum.y > full.y + full.height { minimum.y -= maximum.y - full.y - full.height; maximum.y = full.y + full.height }
+    if minimum.x < full.x { minimum.x = full.x }
+    if minimum.y < full.y { minimum.y = full.y }
+    return Rectangle.{minimum.x, minimum.y, maximum.x - minimum.x, maximum.y - minimum.y}
 }
-
-WorldMapViewPanelVisible :: (panel: WorldMapArtPanel, props: WorldMapViewProps) -> bool {
-    if panel.secret_room == 0 { return true }
-    if WorldMapViewFlag(props.visible, panel.secret_room) { return true }
-    return props.focus_only && WorldMapViewFlag(props.visible, panel.secret_room - 825)
-}
-
-WorldMapViewCameraBounds :: (props: WorldMapViewProps, width: float32, viewport_height: float32 = 0.0) -> Rectangle {
-    extent := WorldMapViewArtBounds(width)
-    if props.focus_only || WorldMapViewPublicLast(props) == Layout.WorldMapLevelCount { return extent }
-    first_y := extent.y + extent.height
-    last := WorldMapViewPublicLast(props)
-    for place: cast(s32)1..last {
-        if !WorldMapViewFlag(props.visible, place) { continue }
-        point := WorldMapViewPosition(place, width, false)
-        if point.y >= 0.0 && point.y - 56.0 < first_y { first_y = point.y - 56.0 }
-    }
-    // Device-local discoveries survive account progress changes. Include the
-    // known islet's full artwork while future ordinary nodes remain filtered.
-    for index: cast(s32)0..Art.WorldMapArtPanelCount - 1 {
-        panel := Art.WorldMapArtPanelAt(index)
-        if panel.secret_room == 0 || !WorldMapViewPanelVisible(panel, props) { continue }
-        top := panel.world_bounds.y * width / 390.0
-        if top < first_y { first_y = top }
-    }
-    if first_y > extent.y {
-        extent.height -= first_y - extent.y
-        extent.y = first_y
-    }
-    // A short public range still fills the viewport with real terrain.
-    // Extend its top into authored scenery, while node visibility stays at
-    // frontier + 3. Never push the viewport past the bottom of the artwork.
-    if extent.height < viewport_height {
-        art := WorldMapViewArtBounds(width)
-        extent.y = art.y + art.height - viewport_height
-        if extent.y < art.y { extent.y = art.y }
-        extent.height = art.y + art.height - extent.y
-    }
-    return extent
-}
-
 WorldMapViewClampAxis :: (offset: s32, start: float32, extent: float32, viewport: float32) -> s32 {
     minimum := cast(s32)start
+    if cast(float32)minimum < start { minimum += 1 }
     maximum := cast(s32)(start + extent - viewport)
     if maximum < minimum { maximum = minimum }
     if offset < minimum { return minimum }
     if offset > maximum { return maximum }
     return offset
 }
-
-WorldMapViewHorizontalRange :: struct {
-    minimum: s32
-    maximum: s32
-    complete: bool
-}
-
-// Find the continuous safe interval containing viewport.x. Sweep every panel
-// top/bottom within the visible height, merging touching horizontal coverage
-// in each band before intersecting its allowed camera interval. This handles
-// overlaps and side-by-side panels without treating their union as a bbox.
-WorldMapViewPanelIntervalAt :: (panels: []Rectangle, viewport: Rectangle) -> WorldMapViewHorizontalRange {
-    result: WorldMapViewHorizontalRange
-    if viewport.width <= 0.0 || viewport.height <= 0.0 { return result }
-    top := viewport.y
-    bottom := top + viewport.height
-    while top < bottom {
-        next_y := bottom
-        for panel: panels {
-            if panel.width <= 0.0 || panel.height <= 0.0 { continue }
-            if panel.y > top && panel.y < next_y { next_y = panel.y }
-            end_y := panel.y + panel.height
-            if end_y > top && end_y < next_y { next_y = end_y }
-        }
-        left := viewport.x
-        right := viewport.x
-        grew := true
-        while grew {
-            grew = false
-            for panel: panels {
-                if panel.width <= 0.0 || panel.height <= 0.0 ||
-                    panel.y > top || panel.y + panel.height <= top { continue }
-                end_x := panel.x + panel.width
-                if panel.x > right || end_x < left { continue }
-                if panel.x < left { left = panel.x; grew = true }
-                if end_x > right { right = end_x; grew = true }
-            }
-        }
-        // Round inward: truncation exposes fractional edges at negative
-        // origins, and a subpixel interval may contain no integer camera.
-        minimum := cast(s32)left
-        maximum := cast(s32)(right - viewport.width)
-        if cast(float32)minimum < left { minimum += 1 }
-        if cast(float32)maximum > right - viewport.width { maximum -= 1 }
-        if minimum > maximum || viewport.x < cast(float32)minimum || viewport.x > cast(float32)maximum { return .{} }
-        if !result.complete || minimum > result.minimum { result.minimum = minimum }
-        if !result.complete || maximum < result.maximum { result.maximum = maximum }
-        result.complete = true
-        top = next_y
-    }
-    return result
-}
-
-// Pure rectangle-fixture entry point. If the requested x is unsafe, the nearest
-// feasible component starts/ends at a panel edge (minus viewport width on the
-// right). Search those endpoints rather than joining disconnected intervals.
-// complete=false means an authored gap, incompatible coverage, or terrain too
-// small for this viewport; camera clamping cannot manufacture missing scenery.
-WorldMapViewPanelHorizontalRange :: (panels: []Rectangle, viewport: Rectangle) -> WorldMapViewHorizontalRange {
-    result := WorldMapViewPanelIntervalAt(panels, viewport)
-    if result.complete { return result }
-    distance: float32
-    for index: cast(s32)0..cast(s32)panels.count * 2 - 1 {
-        panel := panels[index / 2]
-        if panel.width <= 0.0 || panel.height <= 0.0 { continue }
-        edge := ifx index % 2 == 0 then panel.x else panel.x + panel.width - viewport.width
-        candidate := cast(s32)edge
-        if index % 2 == 0 && cast(float32)candidate < edge { candidate += 1 }
-        if index % 2 != 0 && cast(float32)candidate > edge { candidate -= 1 }
-        probe := viewport
-        probe.x = cast(float32)candidate
-        interval := WorldMapViewPanelIntervalAt(panels, probe)
-        if !interval.complete { continue }
-        delta := probe.x - viewport.x
-        if delta < 0.0 { delta = -delta }
-        if !result.complete || delta < distance || (delta == distance && interval.minimum < result.minimum) {
-            result = interval
-            distance = delta
-        }
-    }
-    return result
-}
-
-WorldMapViewClampPanelCamera :: (state: *WorldMapViewState, extent: Rectangle, viewport: Rectangle, panels: []Rectangle) {
+WorldMapViewClampCamera :: (state: *WorldMapViewState, extent: Rectangle, viewport: Rectangle, width: float32, props: WorldMapViewProps = WorldMapViewProps.{}) {
+    camera := WorldMapViewCameraViewport(props,viewport)
     state.scroll_x = WorldMapViewClampAxis(state.scroll_x, extent.x, extent.width, viewport.width)
-    state.scroll_offset = WorldMapViewClampAxis(state.scroll_offset, extent.y, extent.height, viewport.height)
-    visible := Rectangle.{cast(float32)state.scroll_x, cast(float32)state.scroll_offset, viewport.width, viewport.height}
-    coverage := WorldMapViewPanelHorizontalRange(panels, visible)
-    state.panel_coverage_complete = coverage.complete
-    if !coverage.complete { return }
-    if state.scroll_x < coverage.minimum { state.scroll_x = coverage.minimum }
-    if state.scroll_x > coverage.maximum { state.scroll_x = coverage.maximum }
+    state.scroll_offset = WorldMapViewClampAxis(state.scroll_offset, extent.y, extent.height, camera.height)
 }
-
-WorldMapViewClampCamera :: (state: *WorldMapViewState, extent: Rectangle, viewport: Rectangle, width: float32) {
-    // The bounded water fill covers every visible y, including detached islets.
-    // Secret-specific rectangles never participate before discovery.
-    coverage: [1]Rectangle = .[WorldMapViewArtBounds(width)]
-    WorldMapViewClampPanelCamera(state, extent, viewport, coverage[:])
-}
-
 WorldMapViewReveal :: (state: *WorldMapViewState, props: WorldMapViewProps, width: float32, viewport: Rectangle) {
+    state.wheel_edge = 0; state.wheel_past = 0.0
     if WorldMapViewBrowsable(props, state.focused) {
-        point := WorldMapViewPosition(state.focused, width, props.focus_only)
+        camera := WorldMapViewCameraViewport(props,viewport)
+        point := WorldMapViewFramePoint(props,WorldMapViewPositionFor(state.focused, width, props),width,camera,state.focused)
         state.scroll_x = cast(s32)(point.x - viewport.width * 0.5)
-        state.scroll_offset = cast(s32)(point.y - viewport.height * 0.5)
+        state.scroll_offset = cast(s32)(point.y - camera.height * 0.5)
     }
-    WorldMapViewClampCamera(state, WorldMapViewCameraBounds(props, width, viewport.height), viewport, width)
+    WorldMapViewClampCamera(state, WorldMapViewCameraBounds(props, width, viewport.height, viewport.width), viewport, width, props)
     state.reveal = false
 }
-
 WorldMapViewIntersects :: (bounds: Rectangle, viewport: Rectangle, margin: float32) -> bool {
     return bounds.x + bounds.width >= viewport.x - margin &&
         bounds.x <= viewport.x + viewport.width + margin &&
@@ -342,9 +388,7 @@ WorldMapViewIntersects :: (bounds: Rectangle, viewport: Rectangle, margin: float
 }
 
 WorldMapViewRouteDistance :: (from: Vector2, to: Vector2) -> float32 {
-    dx := cast(float64)to.x - cast(float64)from.x
-    dy := cast(float64)to.y - cast(float64)from.y
-    return cast(float32)Math.Sqrt(dx * dx + dy * dy)
+    return Layout.WorldMapPointDistance(from,to)
 }
 
 // All points share one coordinate space. An empty intermediate slice preserves
@@ -404,206 +448,504 @@ WorldMapViewSelect :: (state: *WorldMapViewState, props: WorldMapViewProps, plac
     result := WorldMapSelection.{.focused = state.focused}
     if !WorldMapViewBrowsable(props, place) || !WorldMapViewFlag(props.available, place) { return result }
     state.focused = place
+    state.wheel_edge = 0; state.wheel_past = 0.0
     result.focused = place
-    if !props.focus_only { result.activated = place }
+    state.reveal = true
     return result
+}
+
+// Resolve overlapping circles by distance, including locked nodes so a tap
+// on a locked center cannot fall through to a neighboring unlocked level.
+WorldMapViewPointerPlace :: (props: WorldMapViewProps, width: float32, origin: Vector2, point: Vector2) -> s32 {
+    nearest: s32
+    distance: float32 = 28.01
+    for place: cast(s32)1..cast(s32)props.visible.count {
+        if !WorldMapViewFlag(props.visible,place) { continue }
+        center := WorldMapViewPositionFor(place,width,props)
+        delta := WorldMapViewRouteDistance(Vector2.{origin.x + center.x,origin.y + center.y},point)
+        if delta < distance { distance = delta; nearest = place }
+    }
+    return nearest
+}
+
+WorldMapViewClick :: (state: *WorldMapViewState, props: WorldMapViewProps, place: s32) -> WorldMapSelection {
+    result := WorldMapViewSelect(state,props,place)
+    if props.focus_only || !WorldMapViewBrowsable(props,place) || !WorldMapViewFlag(props.available,place) {
+        state.last_click_place = 0
+        return result
+    }
+    if state.last_click_place == place && props.now >= state.last_click_time && props.now - state.last_click_time <= 0.4 {
+        result.activated = place
+        state.last_click_place = 0
+    } else {
+        state.last_click_place = place
+        state.last_click_time = props.now
+    }
+    return result
+}
+
+WorldMapViewPlay :: (state: *WorldMapViewState, props: WorldMapViewProps) -> WorldMapSelection {
+    result := WorldMapSelection.{.focused = state.focused}
+    if !props.focus_only && WorldMapViewBrowsable(props, state.focused) && WorldMapViewFlag(props.available, state.focused) {
+        result.activated = state.focused
+    }
+    return result
+}
+
+// Directional input follows real graph edges using their positions in the
+// active orientation. WASD and arrows share the policy and reveal the focus.
+WorldMapViewNavigate :: (props: WorldMapViewProps, place: s32, horizontal: s32, forward: bool) -> s32 {
+    here := WorldMapViewPositionFor(place, 390.0, props)
+    best := place
+    score: float32 = 0.0
+    // Neighbouring dots are chosen by their direction on the actual painting.
+    // This makes the same arrows work on vertically and horizontally laid roads.
+    for index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
+        edge := Route.WorldMapEdgeAt(index)
+        destination: s32
+        if edge.from_level == place { destination = edge.to_level }
+        if edge.to_level == place { destination = edge.from_level }
+        if destination == 0 || !WorldMapViewBrowsable(props, destination) || !WorldMapViewFlag(props.available, destination) { continue }
+        point := WorldMapViewPositionFor(destination, 390.0, props)
+        dx := point.x - here.x; dy := point.y - here.y
+        distance := WorldMapViewRouteDistance(here, point)
+        if distance <= 0.0 { continue }
+        projection := ifx horizontal != 0 then dx * cast(float32)horizontal else ifx forward then -dy else dy
+        candidate := projection / distance
+        if candidate > score { score = candidate; best = destination }
+    }
+    return best
 }
 
 WorldMapViewKeyboard :: (state: *WorldMapViewState, props: WorldMapViewProps, width: float32, height: float32) -> WorldMapSelection {
     key := props.key_pressed
-    if key == 257 || key == 32 { return WorldMapViewSelect(state, props, state.focused) }
+    if key == 257 || key == 32 { return WorldMapViewPlay(state, props) }
     next := state.focused
-    if key == 265 || key == 262 { next = WorldMapViewAdjacent(state.focused, props.visible, true) }
-    if key == 264 || key == 263 { next = WorldMapViewAdjacent(state.focused, props.visible, false) }
-    // Across a diamond, horizontal movement chooses its parallel arm.
-    for index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
-        fork := Route.WorldMapForkAt(index)
-        if key == 262 && state.focused == fork.left { next = fork.right }
-        if key == 263 && state.focused == fork.right { next = fork.left }
-    }
-    if key == 268 { next = 1 }
-    if key == 269 { next = WorldMapViewPublicLast(props) }
-    if key == 268 || key == 269 { state.reveal = true }
-    if next >= 1 && next <= Layout.WorldMapLevelCount && next != state.focused && WorldMapViewBrowsable(props, next) {
-        state.focused = next
+    if key == 265 || key == 87 { next = WorldMapViewNavigate(props, state.focused, 0, true) }
+    if key == 264 || key == 83 { next = WorldMapViewNavigate(props, state.focused, 0, false) }
+    if key == 262 || key == 68 { next = WorldMapViewNavigate(props, state.focused, 1, true) }
+    if key == 263 || key == 65 { next = WorldMapViewNavigate(props, state.focused, -1, false) }
+    if key == 268 { next = 1; state.reveal = true }
+    if key == 269 {
+        next = WorldMapViewPublicLast(props)
+        while next > 1 && !WorldMapViewFlag(props.available, next) { next -= 1 }
         state.reveal = true
     }
-    if key == 266 { state.scroll_offset -= cast(s32)(height * 0.8); state.reveal = false }
-    if key == 267 { state.scroll_offset += cast(s32)(height * 0.8); state.reveal = false }
-    // Horizontal camera movement is useful when authored panels extend
-    // sideways beyond the viewport. Arrows retain route/branch navigation.
-    if key == 65 { state.scroll_x -= cast(s32)(width * 0.5); state.reveal = false }
-    if key == 68 { state.scroll_x += cast(s32)(width * 0.5); state.reveal = false }
+    if next != state.focused && WorldMapViewBrowsable(props, next) && WorldMapViewFlag(props.available, next) { state.focused = next; state.reveal = true; state.wheel_edge = 0; state.wheel_past = 0.0 }
     return WorldMapSelection.{.focused = state.focused}
 }
 
-WorldMapViewAdjacent :: (place: s32, visible: []bool, forward: bool) -> s32 {
-    for index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
-        edge := Route.WorldMapEdgeAt(index)
-        source := ifx forward then edge.from_level else edge.to_level
-        destination := ifx forward then edge.to_level else edge.from_level
-        if source == place && WorldMapViewFlag(visible, destination) { return destination }
+// Each rail edge uses samples from the painted centerline, not a shortcut
+// between destination dots. Parameters are measured by path length.
+WorldMapViewRailSample :: (edge: s32, t: float32, width: float32, landscape: bool) -> Vector2 {
+    points: [31]Vector2
+    for index: cast(s32)0..30 { points[index] = Layout.WorldMapRailSample(edge, index + 1, width, landscape) }
+    return WorldMapViewRouteSample(Layout.WorldMapRailSample(edge, 0, width, landscape),
+        Layout.WorldMapRailSample(edge, Layout.WorldMapRailSampleCount - 1, width, landscape), points[:], t)
+}
+WorldMapViewRailLength :: (edge: s32, width: float32, landscape: bool) -> float32 {
+    length: float32
+    last := Layout.WorldMapRailSample(edge, 0, width, landscape)
+    for index: cast(s32)1..Layout.WorldMapRailSampleCount - 1 {
+        point := Layout.WorldMapRailSample(edge, index, width, landscape)
+        length += WorldMapViewRouteDistance(last, point); last = point
     }
-    return place
+    return length
+}
+// Resolve the fork arm from a board identity. Branch choices persist while
+// wheel movement crosses a merge, so reversing follows the same road home.
+WorldMapViewBranch :: (fork: Route.WorldMapFork, place: s32) -> s32 {
+    if place >= fork.left && place < fork.right { return 1 }
+    if place >= fork.right && place < fork.merge { return 2 }
+    return 0
 }
 
-WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState, props: WorldMapViewProps) -> WorldMapSelection {
-    shown: [1003]bool
-    last := WorldMapViewPublicLast(props)
-    for place: cast(s32)1..cast(s32)props.visible.count {
-        if place > 1003 { break }
-        shown[place - 1] = WorldMapViewFlag(props.visible, place) &&
-            (props.focus_only || place > Layout.WorldMapLevelCount || place <= last)
+// Use viewport coordinates, including an embedded map's nonzero origin.
+WorldMapViewPointerSide :: (viewport: Rectangle, pointer_x: float32) -> s32 {
+    return ifx pointer_x < viewport.x + viewport.width * 0.5 then -1 else 1
+}
+
+// Return the next visible graph edge, preserving a previously traversed arm.
+WorldMapViewWheelEdge :: (state: *WorldMapViewState, props: WorldMapViewProps, node: s32, forward: bool, pointer_side: s32 = 0) -> s32 {
+    desired: s32
+    for index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+        fork := Route.WorldMapForkAt(index)
+        if (forward && node == fork.entry) || (!forward && node == fork.merge) {
+            // Cursor choice applies only on entering a forward fork. A merge
+            // uses traversal memory even if the pointer has changed sides.
+            if forward && pointer_side != 0 {
+                left := WorldMapViewPositionFor(fork.left, 390.0, props)
+                right := WorldMapViewPositionFor(fork.right, 390.0, props)
+                desired = ifx (pointer_side < 0) == (left.x <= right.x) then 1 else 2
+            }
+            if desired == 0 { desired = state.wheel_branch[index] }
+            if desired == 0 { desired = WorldMapViewBranch(fork, state.focused) }
+            if desired == 0 { desired = 1 }
+            state.wheel_branch[index] = desired
+            break
+        }
     }
-    props.visible = shown[:]
-    width := WorldMapViewWidth(bounds.width)
-    result := WorldMapViewKeyboard(state, props, width, bounds.height)
-    scale := width / 390.0
-    if state.viewport_width > 0.0 && (state.viewport_width != bounds.width || state.viewport_height != bounds.height) {
-        state.reveal = true
-    }
-    state.viewport_width = bounds.width
-    state.viewport_height = bounds.height
-    extent := WorldMapViewCameraBounds(props, width)
-    viewport := bounds
-    // A native horizontal scroll track is needed only when authored artwork
-    // is wider than the viewport. Keep the full authored horizontal range.
-    sideways := extent.width > bounds.width
-    if sideways { viewport.height -= 20.0 }
-    extent = WorldMapViewCameraBounds(props, width, viewport.height)
-    if state.reveal { WorldMapViewReveal(state, props, width, viewport) }
-    WorldMapViewClampCamera(state, extent, viewport, width)
-    if sideways {
-        horizontal := Scroll(session, ScrollProps.{.key = cast(u64)20108,
-            .bounds = Rectangle.{bounds.x, bounds.y + viewport.height, bounds.width, 20.0},
-            .horizontal = true, .manual_scroll = true, .content_width = cast(s32)(extent.x + extent.width) - cast(s32)extent.x,
-            .scroll_offset = state.scroll_x - cast(s32)extent.x})
-        state.scroll_x = horizontal.scroll_offset + cast(s32)extent.x
-        if horizontal.opened { End(session) }
-    }
-    scroll := Scroll(session, ScrollProps.{.key = cast(u64)20105, .bounds = viewport,
-            .manual_scroll = true, .content_height = cast(s32)(extent.y + extent.height) - cast(s32)extent.y,
-            .scroll_offset = state.scroll_offset - cast(s32)extent.y})
-    state.scroll_offset = scroll.scroll_offset + cast(s32)extent.y
-    requested_offset := state.scroll_offset
-    // Scroll input can cross a panel join during this frame. Constrain the
-    // final camera before painting, not only the previous frame's camera.
-    WorldMapViewClampCamera(state, extent, viewport, width)
-    if !scroll.opened { return result }
-    origin := Vector2.{scroll.content.x - cast(float32)state.scroll_x,
-        scroll.content.y - cast(float32)cast(s32)extent.y + cast(float32)(requested_offset - state.scroll_offset)}
-    if extent.width < viewport.width { origin.x += (viewport.width - extent.width) * 0.5 }
-    if extent.height < viewport.height { origin.y += (viewport.height - extent.height) * 0.5 }
-    // Paint only the visible intersection: no full-world bitmap allocation.
-    water := WorldMapViewArtBounds(width)
-    water.x += origin.x
-    water.y += origin.y
-    left := water.x
-    top := water.y
-    right := water.x + water.width
-    bottom := water.y + water.height
-    if left < scroll.viewport.x { left = scroll.viewport.x }
-    if top < scroll.viewport.y { top = scroll.viewport.y }
-    if right > scroll.viewport.x + scroll.viewport.width { right = scroll.viewport.x + scroll.viewport.width }
-    if bottom > scroll.viewport.y + scroll.viewport.height { bottom = scroll.viewport.y + scroll.viewport.height }
-    if right > left && bottom > top {
-        unused Box(session, BoxProps.{.key = cast(u64)59999,
-            .bounds = Rectangle.{left, top, right - left, bottom - top}, .fill = Color.{40, 123, 151, 255}})
-    }
-    // Submit only nearby native panels. Image sources stay in source pixels;
-    // world bounds set their physical scale, never a stretched overview.
-    for index: cast(s32)0..Art.WorldMapArtPanelCount - 1 {
-        panel := Art.WorldMapArtPanelAt(index)
-        if !panel.available || !WorldMapViewPanelVisible(panel, props) { continue }
-        picture := Rectangle.{origin.x + panel.world_bounds.x * scale,
-            origin.y + panel.world_bounds.y * scale, panel.world_bounds.width * scale,
-            panel.world_bounds.height * scale}
-        if !WorldMapViewIntersects(picture, scroll.viewport, picture.height) { continue }
-        unused Image(session, ImageProps.{.key = cast(u64)(60000 + index),
-                .asset_path = panel.asset_path, .preview_path = panel.preview_path,
-                .source = panel.source, .full_size = panel.full_size, .bounds = picture,
-                .fit = ImageFit.ImageFitContain, .smooth = true})
-    }
-    // These quiet stepping stones leave the painted trail dominant. The
-    // canonical buttons use pale stone, with the current destination green.
-    unused WidgetPaletteUse(session, WidgetPalette.{.background = cast(u32)0xe7e8dfff,
-        .base = cast(u32)0xe7e8dfff, .text = cast(u32)0x25392eff,
-        .selected = cast(u32)0x42a94cff, .selected_text = cast(u32)0xffffffff,
-        .border = cast(u32)0x9bada0ff, .success = cast(u32)0xc9dfbaff,
-        .danger = cast(u32)0xe60000ff, .warning = cast(u32)0xffca0cff, .material = true})
-    // Explicit graph edges include forks and merges. Neither secret identities
-    // nor unseen destinations are ever connected by an inferred numeric path.
+    first: s32
     for index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
         edge := Route.WorldMapEdgeAt(index)
-        if !WorldMapViewFlag(props.visible, edge.from_level) || !WorldMapViewFlag(props.visible, edge.to_level) { continue }
-        from := WorldMapViewPosition(edge.from_level, 390.0, false)
-        to := WorldMapViewPosition(edge.to_level, 390.0, false)
-        intermediate := Art.WorldMapArtEdgeIntermediatePoints(edge.from_level, edge.to_level)
-        route_bounds := WorldMapViewRouteBounds(from, to, intermediate, origin, scale)
-        if !WorldMapViewIntersects(route_bounds, scroll.viewport, 64.0) { continue }
-        earned := WorldMapViewFlag(props.completed, edge.from_level)
-        for stone: cast(s32)1..5 {
-            t := cast(float32)stone / 6.0
-            point := WorldMapViewRouteSample(from, to, intermediate, t)
-            unused Circle(session, CircleProps.{.key = cast(u64)(700000 + index * 8 + stone),
-                    .center = Vector2.{origin.x + point.x * scale, origin.y + point.y * scale},
-                    .radius = 2.5, .fill = ifx earned then Color.{232, 236, 205, 210} else Color.{226, 230, 214, 155}})
+        if (forward && edge.from_level != node) || (!forward && edge.to_level != node) { continue }
+        if !WorldMapViewBrowsable(props, edge.from_level) || !WorldMapViewBrowsable(props, edge.to_level) { continue }
+        if first == 0 { first = index + 1 }
+        if desired != 0 {
+            for fork_index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+                fork := Route.WorldMapForkAt(fork_index)
+                if (forward && node != fork.entry) || (!forward && node != fork.merge) { continue }
+                arm_node := ifx forward then edge.to_level else edge.from_level
+                if WorldMapViewBranch(fork, arm_node) == desired { return index + 1 }
+            }
         }
     }
+    return first
+}
+
+// Follow the current route in distance steps, leaving the selected board alone.
+// The nearest edge is acquired after a drag or selection, then remembered so
+// passing near another arm does not silently switch branches.
+WorldMapViewWheelMove :: (state: *WorldMapViewState, props: WorldMapViewProps, width: float32, center: Vector2, distance: float32, pointer_side: s32 = 0) -> Vector2 {
+    if distance == 0.0 { return .{} }
+    if state.wheel_edge == 0 {
+        // A rail starts at the selected destination, never at the road that
+        // happens to be closest to a dragged or clamped camera.
+        node := state.focused
+        if node == 1003 { node = 29 }
+        if node == 1001 || node == 1002 { node = 175 }
+        state.wheel_edge = WorldMapViewWheelEdge(state, props, node, true, pointer_side)
+        state.wheel_t = 0.0
+        if state.wheel_edge == 0 {
+            state.wheel_edge = WorldMapViewWheelEdge(state, props, node, false)
+            state.wheel_t = 1.0
+        }
+    }
+    if state.wheel_edge == 0 { return .{} }
+    // Reversing onto the exact fork endpoint permits a fresh forward choice.
+    // Once inside an arm, pointer motion cannot jump between roads.
+    if distance > 0.0 && state.wheel_t == 0.0 && pointer_side != 0 {
+        entry := Route.WorldMapEdgeAt(state.wheel_edge - 1).from_level
+        next := WorldMapViewWheelEdge(state, props, entry, true, pointer_side)
+        if next != 0 { state.wheel_edge = next }
+    }
+    current_edge := Route.WorldMapEdgeAt(state.wheel_edge - 1)
+    for index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+        fork := Route.WorldMapForkAt(index)
+        branch := WorldMapViewBranch(fork, current_edge.from_level)
+        if branch == 0 { branch = WorldMapViewBranch(fork, current_edge.to_level) }
+        if branch != 0 { state.wheel_branch[index] = branch }
+    }
+    forward := distance > 0.0
+    remaining := ifx forward then distance else -distance
+    // Past a road end, moving on extends the pan; reversing first returns to
+    // that end before following the road again.
+    if state.wheel_past != 0.0 {
+        if (state.wheel_past > 0.0) == forward {
+            state.wheel_past += distance
+            return .{}
+        }
+        back := ifx state.wheel_past > 0.0 then state.wheel_past else -state.wheel_past
+        used := ifx remaining < back then remaining else back
+        state.wheel_past = ifx used == back then 0.0 else state.wheel_past + (ifx forward then used else -used)
+        remaining -= used
+    }
+    result := Vector2.{}
+    road_end := false
+    for step: cast(s32)0..Route.WORLD_MAP_CLASSIC_LEVELS {
+        if remaining <= 0.0 || state.wheel_edge == 0 { break }
+        edge := Route.WorldMapEdgeAt(state.wheel_edge - 1)
+        index := state.wheel_edge - 1
+        length := WorldMapViewRailLength(index, width, props.landscape)
+        if length <= 0.0 { state.wheel_edge = 0; state.wheel_past = 0.0; break }
+        available := length * (ifx forward then 1.0 - state.wheel_t else state.wheel_t)
+        move := ifx remaining < available then remaining else available
+        dt := move / length * (ifx forward then 1.0 else -1.0)
+        before := WorldMapViewRailSample(index, state.wheel_t, width, props.landscape)
+        state.wheel_t += dt
+        after := WorldMapViewRailSample(index, state.wheel_t, width, props.landscape)
+        result.x += after.x - before.x; result.y += after.y - before.y
+        remaining -= move
+        if move >= available {
+            node := ifx forward then edge.to_level else edge.from_level
+            // Record every traversed arm, including a multi-edge wheel event.
+            for fork_index: cast(s32)0..Route.WORLD_MAP_FORK_COUNT - 1 {
+                fork := Route.WorldMapForkAt(fork_index)
+                branch := WorldMapViewBranch(fork, edge.from_level)
+                if branch == 0 { branch = WorldMapViewBranch(fork, edge.to_level) }
+                if branch != 0 { state.wheel_branch[fork_index] = branch }
+            }
+            next := WorldMapViewWheelEdge(state, props, node, forward, pointer_side)
+            if next == 0 { road_end = true; break }
+            state.wheel_edge = next
+            state.wheel_t = ifx forward then 0.0 else 1.0
+        }
+    }
+    // The road ends before the painting does: keep panning toward its edge.
+    if road_end && remaining > 0.0 { state.wheel_past += ifx forward then remaining else -remaining }
+    return result
+}
+
+// Past a road end the camera pans along the painting's long axis (toward the
+// right in landscape, upward in portrait) and stops at the painting's edge.
+// Distance the edge absorbs is dropped, so reversing responds at once.
+WorldMapViewApplyPast :: (state: *WorldMapViewState, extent: Rectangle, viewport: Rectangle, width: float32, props: WorldMapViewProps) {
+    if state.wheel_past == 0.0 { return }
+    base_x := state.scroll_x; base_y := state.scroll_offset
+    if props.landscape { state.scroll_x += cast(s32)state.wheel_past } else { state.scroll_offset -= cast(s32)state.wheel_past }
+    WorldMapViewClampCamera(state, extent, viewport, width, props)
+    applied := ifx props.landscape then cast(float32)(state.scroll_x - base_x) else cast(float32)(base_y - state.scroll_offset)
+    if (state.wheel_past > 0.0 && applied < state.wheel_past) || (state.wheel_past < 0.0 && applied > state.wheel_past) {
+        state.wheel_past = applied
+    }
+}
+// Camera position is the point on the currently selected rail, clamped only
+// by the playable world's viewport bounds.
+WorldMapViewRailPoint :: (state: *WorldMapViewState, props: WorldMapViewProps, width: float32) -> Vector2 {
+    if state.wheel_edge == 0 { return WorldMapViewPositionFor(state.focused, width, props) }
+    return WorldMapViewRailSample(state.wheel_edge - 1, state.wheel_t, width, props.landscape)
+}
+
+// A zoom change can settle on an idle frame after the last wheel event.
+// Apply the same paired-road and public-footer framing as reveal/movement;
+// it must not rely on another input event to correct the camera afterward.
+WorldMapViewUpdateFraming :: (state: *WorldMapViewState, props: WorldMapViewProps, bounds: Rectangle) {
+    at := WorldMapViewCameraPlace(state.*)
+    if state.world_width == 0.0 || state.viewport_width != bounds.width || state.viewport_height != bounds.height ||
+        state.framing_place != at {
+        next_width := WorldMapViewFramingWidth(props,at,bounds)
+        if state.world_width > 0.0 && next_width != state.world_width {
+            camera := WorldMapViewCameraViewport(props,bounds)
+            place := state.focused
+            if state.wheel_edge != 0 { place = Route.WorldMapEdgeAt(state.wheel_edge - 1).to_level }
+            point := WorldMapViewFramePoint(props,WorldMapViewRailPoint(state,props,next_width),next_width,camera,place)
+            state.scroll_x = cast(s32)(point.x - camera.width * 0.5)
+            state.scroll_offset = cast(s32)(point.y - camera.height * 0.5)
+            WorldMapViewClampCamera(state,WorldMapViewCameraBounds(props,next_width,bounds.height,bounds.width),bounds,next_width,props)
+        }
+        state.world_width = next_width
+        state.zoomed_out = at > 7
+        state.framing_place = at
+    }
+}
+WorldMapViewRailDrag :: (state: *WorldMapViewState, props: WorldMapViewProps, width: float32, center: Vector2, drag: Vector2) -> Vector2 {
+    if state.wheel_edge == 0 { unused WorldMapViewWheelMove(state, props, width, center, 0.001) }
+    if state.wheel_edge == 0 { return .{} }
+    a := WorldMapViewRailSample(state.wheel_edge - 1, state.wheel_t - 0.005, width, props.landscape)
+    b := WorldMapViewRailSample(state.wheel_edge - 1, state.wheel_t + 0.005, width, props.landscape)
+    length := WorldMapViewRouteDistance(a, b)
+    if length <= 0.0 { return .{} }
+    distance := -(drag.x * (b.x - a.x) + drag.y * (b.y - a.y)) / length
+    // Dragging on along the road past either end pans on to the painting's
+    // edge, as the wheel does. The first stretch is slop, so a sideways drag
+    // at an end still keeps to the road.
+    before := state.wheel_past
+    moved := WorldMapViewWheelMove(state, props, width, center, distance)
+    if before == 0.0 && state.wheel_past != 0.0 {
+        state.drag_slop += state.wheel_past
+        state.wheel_past = 0.0
+        if state.drag_slop > WorldMapViewDragSlop { state.wheel_past = state.drag_slop - WorldMapViewDragSlop; state.drag_slop = 0.0 }
+        if state.drag_slop < -WorldMapViewDragSlop { state.wheel_past = state.drag_slop + WorldMapViewDragSlop; state.drag_slop = 0.0 }
+    }
+    return moved
+}
+WorldMapViewDragSlop :: 24.0;
+// Each native tile includes the identical final overlap of its neighbor.
+WorldMapViewSection :: (session: Session, viewport: Rectangle, origin: Vector2, width: float32, landscape: bool, section: s32) {
+    path: string
+    if landscape {
+        if section == 0 { path = "assets/shovey/world-map/continuous-00-landscape.webp" }
+        if section == 1 { path = "assets/shovey/world-map/continuous-01-landscape.webp" }
+        if section == 2 { path = "assets/shovey/world-map/continuous-02-landscape.webp" }
+        if section == 3 { path = "assets/shovey/world-map/continuous-03-landscape.webp" }
+        if section == 4 { path = "assets/shovey/world-map/continuous-04-landscape.webp" }
+        if section == 5 { path = "assets/shovey/world-map/continuous-05-landscape.webp" }
+        if section == 6 { path = "assets/shovey/world-map/continuous-06-landscape.webp" }
+        if section == 7 { path = "assets/shovey/world-map/continuous-07-landscape.webp" }
+        if section == 8 { path = "assets/shovey/world-map/continuous-08-landscape.webp" }
+        if section == 9 { path = "assets/shovey/world-map/continuous-09-landscape.webp" }
+        if section == 10 { path = "assets/shovey/world-map/continuous-10-landscape.webp" }
+        if section == 11 { path = "assets/shovey/world-map/continuous-11-landscape.webp" }
+        if section == 12 { path = "assets/shovey/world-map/continuous-12-landscape.webp" }
+        if section == 13 { path = "assets/shovey/world-map/continuous-13-landscape.webp" }
+        if section == 14 { path = "assets/shovey/world-map/continuous-14-landscape.webp" }
+        if section == 15 { path = "assets/shovey/world-map/continuous-15-landscape.webp" }
+        if section == 16 { path = "assets/shovey/world-map/continuous-16-landscape.webp" }
+        if section == 17 { path = "assets/shovey/world-map/continuous-17-landscape.webp" }
+        if section == 18 { path = "assets/shovey/world-map/continuous-18-landscape.webp" }
+        if section == 19 { path = "assets/shovey/world-map/continuous-19-landscape.webp" }
+        if section == 20 { path = "assets/shovey/world-map/continuous-20-landscape.webp" }
+        if section == 21 { path = "assets/shovey/world-map/continuous-21-landscape.webp" }
+        if section == 22 { path = "assets/shovey/world-map/continuous-22-landscape.webp" }
+        if section == 23 { path = "assets/shovey/world-map/continuous-23-landscape.webp" }
+        if section == 24 { path = "assets/shovey/world-map/continuous-24-landscape.webp" }
+        if section == 25 { path = "assets/shovey/world-map/continuous-25-landscape.webp" }
+        if section == 26 { path = "assets/shovey/world-map/continuous-26-landscape.webp" }
+        if section == 27 { path = "assets/shovey/world-map/continuous-27-landscape.webp" }
+        if section == 28 { path = "assets/shovey/world-map/continuous-28-landscape.webp" }
+        if section == 29 { path = "assets/shovey/world-map/continuous-29-landscape.webp" }
+        if section == 30 { path = "assets/shovey/world-map/continuous-30-landscape.webp" }
+        if section == 31 { path = "assets/shovey/world-map/continuous-31-landscape.webp" }
+        if section == 32 { path = "assets/shovey/world-map/continuous-32-landscape.webp" }
+        if section == 33 { path = "assets/shovey/world-map/continuous-33-landscape.webp" }
+        if section == 34 { path = "assets/shovey/world-map/continuous-34-landscape.webp" }
+        if section == 35 { path = "assets/shovey/world-map/continuous-35-landscape.webp" }
+        if section == 36 { path = "assets/shovey/world-map/continuous-36-landscape.webp" }
+    } else {
+        if section == 0 { path = "assets/shovey/world-map/continuous-00-portrait.webp" }
+        if section == 1 { path = "assets/shovey/world-map/continuous-01-portrait.webp" }
+        if section == 2 { path = "assets/shovey/world-map/continuous-02-portrait.webp" }
+        if section == 3 { path = "assets/shovey/world-map/continuous-03-portrait.webp" }
+        if section == 4 { path = "assets/shovey/world-map/continuous-04-portrait.webp" }
+        if section == 5 { path = "assets/shovey/world-map/continuous-05-portrait.webp" }
+        if section == 6 { path = "assets/shovey/world-map/continuous-06-portrait.webp" }
+        if section == 7 { path = "assets/shovey/world-map/continuous-07-portrait.webp" }
+        if section == 8 { path = "assets/shovey/world-map/continuous-08-portrait.webp" }
+        if section == 9 { path = "assets/shovey/world-map/continuous-09-portrait.webp" }
+        if section == 10 { path = "assets/shovey/world-map/continuous-10-portrait.webp" }
+        if section == 11 { path = "assets/shovey/world-map/continuous-11-portrait.webp" }
+        if section == 12 { path = "assets/shovey/world-map/continuous-12-portrait.webp" }
+        if section == 13 { path = "assets/shovey/world-map/continuous-13-portrait.webp" }
+        if section == 14 { path = "assets/shovey/world-map/continuous-14-portrait.webp" }
+        if section == 15 { path = "assets/shovey/world-map/continuous-15-portrait.webp" }
+        if section == 16 { path = "assets/shovey/world-map/continuous-16-portrait.webp" }
+        if section == 17 { path = "assets/shovey/world-map/continuous-17-portrait.webp" }
+        if section == 18 { path = "assets/shovey/world-map/continuous-18-portrait.webp" }
+        if section == 19 { path = "assets/shovey/world-map/continuous-19-portrait.webp" }
+        if section == 20 { path = "assets/shovey/world-map/continuous-20-portrait.webp" }
+        if section == 21 { path = "assets/shovey/world-map/continuous-21-portrait.webp" }
+        if section == 22 { path = "assets/shovey/world-map/continuous-22-portrait.webp" }
+        if section == 23 { path = "assets/shovey/world-map/continuous-23-portrait.webp" }
+        if section == 24 { path = "assets/shovey/world-map/continuous-24-portrait.webp" }
+        if section == 25 { path = "assets/shovey/world-map/continuous-25-portrait.webp" }
+        if section == 26 { path = "assets/shovey/world-map/continuous-26-portrait.webp" }
+        if section == 27 { path = "assets/shovey/world-map/continuous-27-portrait.webp" }
+        if section == 28 { path = "assets/shovey/world-map/continuous-28-portrait.webp" }
+        if section == 29 { path = "assets/shovey/world-map/continuous-29-portrait.webp" }
+        if section == 30 { path = "assets/shovey/world-map/continuous-30-portrait.webp" }
+        if section == 31 { path = "assets/shovey/world-map/continuous-31-portrait.webp" }
+        if section == 32 { path = "assets/shovey/world-map/continuous-32-portrait.webp" }
+        if section == 33 { path = "assets/shovey/world-map/continuous-33-portrait.webp" }
+        if section == 34 { path = "assets/shovey/world-map/continuous-34-portrait.webp" }
+        if section == 35 { path = "assets/shovey/world-map/continuous-35-portrait.webp" }
+        if section == 36 { path = "assets/shovey/world-map/continuous-36-portrait.webp" }
+    }
+    scene := Layout.WorldMapSceneBounds(section,width,landscape)
+    bounds := Rectangle.{origin.x+scene.x,origin.y+scene.y,scene.width,scene.height}
+    if WorldMapViewIntersects(bounds,viewport,0.0) {
+        unused Image(session,ImageProps.{.key=cast(u64)(60001+section),.bounds=bounds,
+            .asset_path=path,.fit=ImageFit.ImageFitStretch,.smooth=true})
+    }
+}
+WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState, props: WorldMapViewProps) -> WorldMapSelection {
+    shown: [1003]bool
+    for place: cast(s32)1..cast(s32)props.visible.count {
+        if place > 1003 { break }
+        shown[place - 1] = WorldMapViewBrowsable(props, place)
+    }
+    props.visible = shown[:]
+    WorldMapViewUpdateFraming(state,props,bounds)
+    width := state.world_width
+    camera := WorldMapViewCameraViewport(props,bounds)
+    pointer := SamplePointer()
+    if pointer.pressed && pointer.x >= bounds.x && pointer.y >= bounds.y && pointer.x < bounds.x + bounds.width && pointer.y < bounds.y + bounds.height {
+        state.pointer_drag = true; state.pointer_moving = false; state.drag_slop = 0.0
+        state.pointer_start = Vector2.{pointer.x, pointer.y}; state.pointer_last = state.pointer_start
+    }
+    result := WorldMapViewKeyboard(state, props, width, bounds.height)
+    if state.viewport_width > 0.0 && (state.viewport_width != bounds.width || state.viewport_height != bounds.height) { state.reveal = true }
+    state.viewport_width = bounds.width; state.viewport_height = bounds.height
+    extent := WorldMapViewCameraBounds(props, width, bounds.height, bounds.width)
+    if state.reveal { WorldMapViewReveal(state, props, width, bounds) }
+    WorldMapViewClampCamera(state, extent, bounds, width, props)
+    center := Vector2.{cast(float32)state.scroll_x + camera.width * 0.5, cast(float32)state.scroll_offset + camera.height * 0.5}
+    rail_moved := false
+    if state.pointer_drag && pointer.down {
+        dx := pointer.x - state.pointer_start.x; dy := pointer.y - state.pointer_start.y
+        if !state.pointer_moving && dx * dx + dy * dy > 64.0 { state.pointer_moving = true }
+        if state.pointer_moving {
+            drag := Vector2.{pointer.x - state.pointer_last.x, pointer.y - state.pointer_last.y}
+            unused WorldMapViewRailDrag(state, props, width, center, drag)
+            state.pointer_last = Vector2.{pointer.x, pointer.y}
+            state.reveal = false; rail_moved = true
+        }
+    }
+    // The shared portable wheel helper consumes pointer input without exposing
+    // a free-moving scrollbar. Scroll itself supplies clipping only.
+    wheel := Carousel.CarouselWheel(session, bounds)
+    scroll := Scroll(session, ScrollProps.{.key = cast(u64)20105, .bounds = bounds, .manual_scroll = true,
+        .content_width = cast(s32)bounds.width, .content_height = cast(s32)bounds.height,
+        .input = ScrollInput.{.enabled = true, .disabled = true}})
+    if !pointer.down && wheel != 0.0 {
+        unused WorldMapViewWheelMove(state, props, width, center, WorldMapViewWheelDistance(width,wheel), WorldMapViewPointerSide(bounds, pointer.x))
+        rail_moved = true
+    }
+    if rail_moved && state.wheel_edge != 0 {
+        point := WorldMapViewFramePoint(props,WorldMapViewRailPoint(state, props, width),width,camera,Route.WorldMapEdgeAt(state.wheel_edge - 1).to_level)
+        state.scroll_x = cast(s32)(point.x - bounds.width * 0.5)
+        state.scroll_offset = cast(s32)(point.y - camera.height * 0.5)
+        WorldMapViewClampCamera(state, extent, bounds, width, props)
+        WorldMapViewApplyPast(state, extent, bounds, width, props)
+    }
+    if !scroll.opened { return result }
+    origin := Vector2.{bounds.x - cast(float32)state.scroll_x, bounds.y - cast(float32)state.scroll_offset}
+    route_click := pointer.released && state.pointer_drag && !state.pointer_moving && pointer.y >= bounds.y && pointer.y < bounds.y + camera.height
+    if route_click {
+        place := WorldMapViewPointerPlace(props,width,origin,Vector2.{pointer.x,pointer.y})
+        if place > 0 { result = WorldMapViewClick(state,props,place) }
+    }
+    unused Box(session, BoxProps.{.key = cast(u64)59999, .bounds = scroll.viewport, .fill = Color.{97, 157, 65, 255}})
+    for section: cast(s32)0..Layout.WorldMapSceneCount - 1 { WorldMapViewSection(session, scroll.viewport, origin, width, props.landscape, section) }
+    label_storage: [1003][32]u8
     for place: cast(s32)1..cast(s32)props.visible.count {
         if !WorldMapViewFlag(props.visible, place) { continue }
-        point := WorldMapViewPosition(place, width, props.focus_only)
+        point := WorldMapViewPositionFor(place, width, props)
         if point.x < 0.0 { continue }
-        node := Rectangle.{origin.x + point.x - 28.0, origin.y + point.y - 28.0, 56.0, 56.0}
-        if !WorldMapViewIntersects(node, scroll.viewport, 56.0) { continue }
+        center := Vector2.{origin.x + point.x, origin.y + point.y}
+        node := WorldMapViewTargetBounds(center)
+        if !WorldMapViewIntersects(node, scroll.viewport, 64.0) { continue }
         available := WorldMapViewFlag(props.available, place)
         completed := WorldMapViewFlag(props.completed, place)
-        // Keep a readable stone beneath a disabled canonical button; the
-        // host may dim its face, but scenery must never swallow the number.
-        unused Circle(session, CircleProps.{.key = cast(u64)(900000 + place),
-                .center = Vector2.{node.x + 28.0, node.y + 28.0}, .radius = 28.0,
-                .fill = Color.{225, 229, 216, 255}})
-        if place == state.focused {
-            unused Circle(session, CircleProps.{.key = cast(u64)(64000 + place),
-                    .center = Vector2.{node.x + 28.0, node.y + 28.0}, .radius = 33.0,
-                    .fill = Color.{107, 202, 105, 255}})
-        }
-        digits: [24]u8
-        label := FormatInteger(cast(s64)place, digits[:])
-        identity := WorldMapViewPlace(place, props.focus_only)
-        if identity == 1001 { label = "175a" }
-        if identity == 1002 { label = "175b" }
-        if identity == 1003 { label = "29a" }
-        if place <= props.labels.count && props.labels[place - 1] != "" { label = props.labels[place - 1] }
+        label := WorldMapViewDisplayName(place, props, label_storage[place - 1][:])
         status := ifx !available then props.locked_label else ifx completed then props.completed_label else props.available_label
         if props.loading && !available { status = props.loading_label }
         if Button(session, ButtonProps.{.key = cast(u64)(33000 + place), .id = 33000 + place,
-                .bounds = node, .label = label, .detail = ifx props.focus_only then "" else status, .disabled = !available,
-                .icon_only = true,
-                .selected = place == state.focused, .circle = true, .fit_content = true,
-                .tone = ifx place == state.focused then ButtonTone.ButtonToneAccent else
-                    ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
-                .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
-            result = WorldMapViewSelect(state, props, place)
+            .bounds = node, .label = label, .detail = ifx props.focus_only then "" else status, .disabled = !available,
+            .invisible = true, .icon_only = true, .selected = place == state.focused, .circle = true}) != 0 {
+            if !state.pointer_moving && !route_click { result = WorldMapViewClick(state, props, place) }
         }
-        // Number-only paint is composed from the canonical Text widget. The
-        // canonical button retains its full translated semantic description.
-        Text(session, TextProps.{.key = cast(u64)(920000 + place), .bounds = node,
-                .text = label, .font = 18, .wrap = TextWrap.TextWrapNone,
-                .align = TextAlign.TextAlignCenter, .vertical_align = TextAlign.TextAlignCenter})
-        if !available || completed {
-            SvgIcon(session, SvgIconProps.{
-                    .bounds = Rectangle.{node.x + 40.0, node.y + 38.0, 16.0, 16.0},
-                    .shape = ifx completed then "S2rr:M5 12L10 17L19 7" else "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17",
-                    .color = Color.{37, 57, 46, 255}})
+        if place == state.focused {
+            unused Ring(session, RingProps.{.key = cast(u64)(64000 + place), .center = center,
+                .inner_radius = 27.0, .outer_radius = 28.0, .start_angle = 0.0, .end_angle = 360.0, .color = Color.{255, 250, 216, 255}})
+        }
+        unused Circle(session, CircleProps.{.key = cast(u64)(900000 + place), .center = center,
+            .radius = WorldMapViewCircleRadius, .fill = Color.{48, 76, 46, 255}})
+        unused Circle(session, CircleProps.{.key = cast(u64)(920000 + place), .center = center, .radius = 23.5,
+            .fill = ifx completed then Color.{247, 223, 129, 255} else ifx available then Color.{238, 237, 191, 255} else Color.{94, 121, 76, 255}})
+        earned := WorldMapViewStars(props, place)
+        if completed && earned > 0 {
+            for star: cast(s32)0..2 {
+                SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{center.x - 17.0 + cast(float32)star * 12.0, center.y + 8.0, 10.0, 12.0},
+                    .shape = "F:M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z",
+                    .color = ifx star < earned then Color.{110, 74, 25, 255} else Color.{204, 180, 104, 255}})
+            }
+        }
+        if !available {
+            SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{center.x - 6.0, center.y - 6.0, 12.0, 12.0},
+                .shape = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10", .color = Color.{200, 208, 162, 255}})
         }
         if WorldMapViewFlag(props.replay, place) {
-            unused Circle(session, CircleProps.{.key = cast(u64)(43000 + place),
-                    .center = Vector2.{node.x + 49.0, node.y + 7.0}, .radius = 4.0,
-                    .fill = Color.{255, 226, 150, 255}})
+            unused Circle(session, CircleProps.{.key = cast(u64)(43000 + place), .center = Vector2.{center.x + 14.0, center.y - 14.0},
+                .radius = 3.0, .fill = Color.{255, 226, 150, 255}})
         }
     }
-    unused WidgetPaletteRestore(session)
+    if WorldMapViewBrowsable(props, state.focused) {
+        point := WorldMapViewPositionFor(state.focused, width, props)
+        unused Image(session, ImageProps.{.key = cast(u64)64999,
+            .bounds = WorldMapViewAvatarBounds(Vector2.{origin.x + point.x, origin.y + point.y}),
+            .asset_path = "assets/shovey/world-map/shovey-avatar.png", .alt_text = "Shovey", .fit = ImageFit.ImageFitContain, .smooth = true})
+    }
     End(session)
+    if pointer.released || !pointer.down { state.pointer_drag = false; state.pointer_moving = false }
     return result
 }

@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-from world_map_test_support import private_environment, digest
+from world_map_test_support import private_environment, digest, assert_fullscreen_map, start_map_destination, enter_classic_map
 
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -45,6 +45,8 @@ for phase, setting in (('offline', 'off'), ('positive', 'on')):
             window = subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--pid', str(child.pid)], text=True).split()[0]
             assert subprocess.check_output(['xdotool', 'getwindowpid', window], text=True).strip() == str(child.pid)
             driver.press(label='Play', role='button')
+            enter_classic_map(driver)
+            start_map_destination(driver, 1)
             driver.wait(contains='Level 1 / ', role='text', timeout=45)
             if driver.find(label='Got it', role='button'):
                 driver.press(label='Got it')

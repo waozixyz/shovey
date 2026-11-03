@@ -48,6 +48,8 @@ for level in classic:
     assert all(kind in {0, *range(57, 72), 12, 14, 4, 5, 6, 47, 48, 49, 76, 77, 78, *range(95, 104), *range(127,131), 162, 163, 164, 166} for kind in tiles)
     assert all(kind in {0, 57, 58, 59, 84, 106, 122, *range(135, 143), *range(158, 162), 165} for kind in decorations)
     assert board.count(10) == 1, f'Classic {level["number"]}: one Shovey'
+    assert all(tiles[at] == 64 for at, kind in enumerate(board) if kind in (89, 90, 91)), \
+        f'Classic {level["number"]}: fish must start in water'
     assert board.count(7) + board.count(148) >= 1, f'Classic {level["number"]}: a home or a boat'
     # 143-147 are colour goals, 148 the boat and 149 a floating crate.
     assert all((kind <= 76 or kind in range(82, 135) or kind in range(143, 157)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'

@@ -11,6 +11,8 @@ import subprocess
 import sys
 import time
 
+from world_map_test_support import assert_fullscreen_map, start_map_destination
+
 
 
 
@@ -59,8 +61,17 @@ def answer_level_updates(driver, timeout=20):
         time.sleep(0.05)
 
 def wait_level_one(driver, classic_levels):
-    """Level 1 of the campaign. The live campaign on the server may already
-    hold levels published after this checkout, so it is never shorter."""
+    """Level 1 of the campaign, started from the world map. The live campaign
+    on the server may already hold levels published after this checkout, so
+    it is never shorter."""
+    deadline = time.monotonic() + 60
+    while not driver.find(contains='Level 1 / ', role='text'):
+        if driver.find(key=20105, visible=True):
+            assert_fullscreen_map(driver)
+            start_map_destination(driver, 1)
+            break
+        assert time.monotonic() < deadline, 'Neither map nor level opened'
+        time.sleep(.05)
     label = driver.wait(contains='Level 1 / ', role='text')['label']
     assert label.startswith('Level 1 / ') and int(label.rsplit(' ', 1)[1]) >= classic_levels, label
 

@@ -127,7 +127,7 @@ main :: (argc: s32, argv: **u8) -> s32 {
     if !SessionValid(session) { return 1 }
     defer { SessionClose(session) }
     if !DrawStartup(session, directory) { return 0 }
-    // It opens on Shovey's covers, or straight into a named game.
+    // Open the artwork titles by default; --app selects the same title or an editor.
     opened := CollectionOpenShovey(directory, data)
     if opened && !DrawStartup(session, directory) { unused CollectionClose(); return 0 }
     opened = opened && (first == "" || CollectionOpenGame(first))

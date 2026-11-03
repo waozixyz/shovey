@@ -1960,115 +1960,168 @@ Find :: (text: string, part: string, from: s64) -> s64 {
     return -1
 }
 
+// Keep the input bytes so a save changes only the selected record's values.
+file_original: [ROUTES_SIZE + LEVELS_MAX * 3072]u8;
+file_original_length: s32;
+file_record: [LEVELS_MAX]s32;
+file_target: [LEVELS_MAX]s32;
+file_dirty: s32 = -1;
+file_insert: bool;
+
 ReadLevelFile :: (text: string) -> bool {
     file_count = 0
     file_routes_used = 0
-    at: s64 = 0
-    while file_count < LEVELS_MAX {
-        cells := Find(text, "\"cells\": [", at)
-        if cells < 0 { break }
-        at = cells + 10
-        for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
-            quote := Find(text, "\"", at)
-            if quote < 0 || quote + 25 >= text.count { return false }
-            for column: cast(s32)0..SHOVEY_WIDTH - 1 { file_boards[file_count * HEX + row * SHOVEY_WIDTH * 2 + column * 2] = text[quote + 1 + cast(s64)column * 2] }
-            for column: cast(s32)0..SHOVEY_WIDTH - 1 { file_boards[file_count * HEX + row * SHOVEY_WIDTH * 2 + column * 2 + 1] = text[quote + 2 + cast(s64)column * 2] }
-            at = quote + 26
-        }
-        for cell: cast(s32)0..SHOVEY_CELLS - 1 {
-            SetKind(file_boards[file_count * HEX:(file_count + 1) * HEX], SHOVEY_CELLS + cell,
-                ShoveyDefaultTile(KindAt(file_boards[file_count * HEX:(file_count + 1) * HEX], cell)))
-        }
-        next_level := Find(text, "\"number\":", at)
-        tiles := Find(text, "\"tiles\": [", at)
-        file_tiles[file_count] = tiles >= 0 && (next_level < 0 || tiles < next_level)
-        if file_tiles[file_count] {
-            tile_at := tiles + 10
-            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
-                quote := Find(text, "\"", tile_at)
-                if quote < 0 || quote + 25 >= text.count { return false }
-                for digit: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
-                    file_boards[file_count * HEX + PIECES_HEX + row * SHOVEY_WIDTH * 2 + digit] = text[quote + 1 + cast(s64)digit]
+    file_dirty = -1
+    if text.count > file_original.count || ValueEnd(text, 0, 0) < 0 { return false }
+    file_original_length = cast(s32)text.count
+    for i: cast(s32)0..file_original_length - 1 { file_original[i] = text[i] }
+    count := ArrayPositions(text, FieldAt(text, 0, "levels"), file_record[:])
+    if count <= 0 || count > LEVELS_MAX { return false }
+    names: [3]string = .["cells", "tiles", "decorations"]
+    for index: cast(s32)0..count - 1 {
+        record := file_record[index]
+        number := ReadNumber(text, FieldAt(text, record, "number"))
+        if !number.valid || number.value != cast(float64)(index + 1) { return false }
+        variant := FieldAt(text, record, "engine_variant")
+        file_target[index] = ifx variant >= 0 then variant else record
+        for layer: cast(s32)0..2 {
+            field := ifx variant >= 0 then FieldAt(text, variant, names[layer]) else -1
+            if field < 0 { field = FieldAt(text, record, names[layer]) }
+            if layer == 0 && field < 0 { return false }
+            if layer == 1 { file_tiles[index] = field >= 0 }
+            if layer == 2 { file_decorations[index] = field >= 0 }
+            if field >= 0 {
+                rows: [SHOVEY_HEIGHT]s32
+                if ArrayPositions(text, field, rows[:]) != SHOVEY_HEIGHT { return false }
+                for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
+                    span := ReadString(text, rows[row])
+                    if !span.valid || span.end - span.start != SHOVEY_WIDTH * 2 { return false }
+                    for digit: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
+                        file_boards[index * HEX + layer * PIECES_HEX + row * SHOVEY_WIDTH * 2 + digit] = text[span.start + digit]
+                    }
                 }
-                tile_at = quote + 26
+            } else if layer == 1 {
+                for cell: cast(s32)0..SHOVEY_CELLS - 1 {
+                    SetKind(file_boards[index * HEX:(index + 1) * HEX], SHOVEY_CELLS + cell,
+                        ShoveyDefaultTile(KindAt(file_boards[index * HEX:(index + 1) * HEX], cell)))
+                }
+            } else {
+                for cell: cast(s32)0..SHOVEY_CELLS - 1 { SetKind(file_boards[index * HEX:(index + 1) * HEX], SHOVEY_CELLS * 2 + cell, 0) }
             }
         }
-        for cell: cast(s32)0..SHOVEY_CELLS - 1 { SetKind(file_boards[file_count * HEX:(file_count + 1) * HEX], SHOVEY_CELLS * 2 + cell, 0) }
-        decorations := Find(text, "\"decorations\": [", at)
-        file_decorations[file_count] = decorations >= 0 && (next_level < 0 || decorations < next_level)
-        if file_decorations[file_count] {
-            deco_at := decorations + 16
-            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
-                quote := Find(text, "\"", deco_at)
-                if quote < 0 || quote + 25 >= text.count { return false }
-                for digit: cast(s32)0..SHOVEY_WIDTH * 2 - 1 {
-                    file_boards[file_count * HEX + PIECES_HEX * 2 + row * SHOVEY_WIDTH * 2 + digit] = text[quote + 1 + cast(s64)digit]
-                }
-                deco_at = quote + 26
-            }
+        solution := ifx variant >= 0 then FieldAt(text, variant, "solution") else -1
+        if solution < 0 { solution = FieldAt(text, record, "solution") }
+        file_route_start[index] = file_routes_used
+        file_route_length[index] = -1
+        if solution >= 0 {
+            span := ReadString(text, solution)
+            if !span.valid || file_routes_used + span.end - span.start > ROUTES_SIZE { return false }
+            file_route_length[index] = span.end - span.start
+            for i: cast(s32)0..file_route_length[index] - 1 { file_routes[file_routes_used + i] = text[span.start + i] }
+            file_routes_used += file_route_length[index]
         }
-        file_route_start[file_count] = file_routes_used
-        file_route_length[file_count] = -1
-        next := Find(text, "\"number\":", at)
-        solution := Find(text, "\"solution\": \"", at)
-        if solution >= 0 && (next < 0 || solution < next) {
-            from := solution + 13
-            length: s32 = 0
-            while from + cast(s64)length < text.count && text[from + cast(s64)length] != cast(u8)34 { length += 1 }
-            if file_routes_used + length > ROUTES_SIZE { return false }
-            for index: cast(s32)0..length - 1 { file_routes[file_routes_used + index] = text[from + cast(s64)index] }
-            file_route_length[file_count] = length
-            file_routes_used += length
-            at = from + cast(s64)length
-        }
-        file_count += 1
     }
-    return file_count > 0
+    file_count = count
+    return true
 }
 
-// The level file's text, as Python's json.dumps(indent=1) writes it.
-LevelFileText :: () -> string {
-    length: s32 = 0
-    AppendText(file_text[:], *length, "{\n \"edition\": \"classic\",\n \"width\": 12,\n \"height\": 20,\n \"levels\": [\n")
-    for index: cast(s32)0..file_count - 1 {
-        AppendText(file_text[:], *length, "  {\n   \"number\": ")
-        AppendNumber(file_text[:], *length, index + 1)
-        AppendText(file_text[:], *length, ",\n   \"cells\": [\n")
+AppendFileValue :: (length: *s32, index: s32, field: s32) {
+    if field < 3 {
+        AppendText(file_text[:], length, "[")
         for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
-            AppendText(file_text[:], *length, "    \"")
-            AppendText(file_text[:], *length, TextView(file_boards[index * HEX + row * SHOVEY_WIDTH * 2:index * HEX + row * SHOVEY_WIDTH * 2 + SHOVEY_WIDTH * 2]))
-            AppendText(file_text[:], *length, ifx row < SHOVEY_HEIGHT - 1 then "\",\n" else "\"\n")
+            if row > 0 { AppendText(file_text[:], length, ",") }
+            AppendText(file_text[:], length, "\"")
+            from := index * HEX + field * PIECES_HEX + row * SHOVEY_WIDTH * 2
+            AppendText(file_text[:], length, TextView(file_boards[from:from + SHOVEY_WIDTH * 2]))
+            AppendText(file_text[:], length, "\"")
         }
-        AppendText(file_text[:], *length, "   ]")
-        if file_tiles[index] {
-            AppendText(file_text[:], *length, ",\n   \"tiles\": [\n")
-            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
-                AppendText(file_text[:], *length, "    \"")
-                from := index * HEX + PIECES_HEX + row * SHOVEY_WIDTH * 2
-                AppendText(file_text[:], *length, TextView(file_boards[from:from + SHOVEY_WIDTH * 2]))
-                AppendText(file_text[:], *length, ifx row < SHOVEY_HEIGHT - 1 then "\",\n" else "\"\n")
-            }
-            AppendText(file_text[:], *length, "   ]")
-        }
-        if file_decorations[index] {
-            AppendText(file_text[:], *length, ",\n   \"decorations\": [\n")
-            for row: cast(s32)0..SHOVEY_HEIGHT - 1 {
-                AppendText(file_text[:], *length, "    \"")
-                from := index * HEX + PIECES_HEX * 2 + row * SHOVEY_WIDTH * 2
-                AppendText(file_text[:], *length, TextView(file_boards[from:from + SHOVEY_WIDTH * 2]))
-                AppendText(file_text[:], *length, ifx row < SHOVEY_HEIGHT - 1 then "\",\n" else "\"\n")
-            }
-            AppendText(file_text[:], *length, "   ]")
-        }
-        if file_route_length[index] >= 0 {
-            AppendText(file_text[:], *length, ",\n   \"solution\": \"")
-            start := file_route_start[index]
-            AppendText(file_text[:], *length, TextView(file_routes[start:start + file_route_length[index]]))
-            AppendText(file_text[:], *length, "\"")
-        }
-        AppendText(file_text[:], *length, ifx index < file_count - 1 then "\n  },\n" else "\n  }\n")
+        AppendText(file_text[:], length, "]")
+    } else {
+        AppendText(file_text[:], length, "\"")
+        start := file_route_start[index]
+        AppendText(file_text[:], length, TextView(file_routes[start:start + file_route_length[index]]))
+        AppendText(file_text[:], length, "\"")
     }
-    AppendText(file_text[:], *length, " ]\n}\n")
+}
+
+// The original record bytes and all unknown members survive unchanged. Only
+// the edited engine object (or base object when no variant exists) is patched.
+LevelFileText :: () -> string {
+    original := TextView(file_original[:file_original_length])
+    if file_dirty < 0 { return original }
+    length: s32 = 0
+    names: [4]string = .["cells", "tiles", "decorations", "solution"]
+    old_count := file_count - ifx file_insert then 1 else 0
+    cursor: s32 = 0
+    for old: cast(s32)0..old_count - 1 {
+        record := file_record[old]
+        if file_insert && old == file_dirty {
+            AppendText(file_text[:], *length, original[cursor:record])
+            AppendText(file_text[:], *length, "{\"number\":")
+            AppendNumber(file_text[:], *length, file_dirty + 1)
+            for field: cast(s32)0..3 {
+                AppendText(file_text[:], *length, ",\"")
+                AppendText(file_text[:], *length, names[field])
+                AppendText(file_text[:], *length, "\":")
+                AppendFileValue(*length, file_dirty, field)
+            }
+            AppendText(file_text[:], *length, "},")
+            cursor = record
+        }
+        if file_insert && old >= file_dirty {
+            pos := FieldAt(original, record, "number")
+            end := ValueEnd(original, pos, 0)
+            AppendText(file_text[:], *length, original[cursor:pos])
+            AppendNumber(file_text[:], *length, old + 2)
+            cursor = end
+        }
+        if !file_insert && old == file_dirty {
+            target := file_target[old]
+            positions: [4]s32
+            for field: cast(s32)0..3 { positions[field] = FieldAt(original, target, names[field]) }
+            target_end := ValueEnd(original, target, 0) - 1
+            // Members may appear in any order; consume their original spans in order.
+            while true {
+                next := target_end
+                which: s32 = -1
+                for field: cast(s32)0..3 {
+                    if positions[field] >= cursor && positions[field] < next { next = positions[field]; which = field }
+                }
+                if which < 0 { break }
+                AppendText(file_text[:], *length, original[cursor:next])
+                AppendFileValue(*length, file_dirty, which)
+                cursor = ValueEnd(original, next, 0)
+            }
+            AppendText(file_text[:], *length, original[cursor:target_end])
+            has_members := Space(original, target + 1) < target_end
+            for field: cast(s32)0..3 {
+                if positions[field] < 0 {
+                    if has_members { AppendText(file_text[:], *length, ",") }
+                    has_members = true
+                    AppendText(file_text[:], *length, "\"")
+                    AppendText(file_text[:], *length, names[field])
+                    AppendText(file_text[:], *length, "\":")
+                    AppendFileValue(*length, file_dirty, field)
+                }
+            }
+            cursor = target_end
+        }
+    }
+    if file_insert && file_dirty == old_count {
+        array_end := ValueEnd(original, FieldAt(original, 0, "levels"), 0) - 1
+        AppendText(file_text[:], *length, original[cursor:array_end])
+        AppendText(file_text[:], *length, ",{\"number\":")
+        AppendNumber(file_text[:], *length, file_dirty + 1)
+        for field: cast(s32)0..3 {
+            AppendText(file_text[:], *length, ",\"")
+            AppendText(file_text[:], *length, names[field])
+            AppendText(file_text[:], *length, "\":")
+            AppendFileValue(*length, file_dirty, field)
+        }
+        AppendText(file_text[:], *length, "}")
+        cursor = array_end
+    }
+    AppendText(file_text[:], *length, original[cursor:file_original_length])
     return TextView(file_text[:length])
 }
 
@@ -2127,12 +2180,14 @@ StartSave :: () {
     // Only a file this editor writes back unchanged is safe to rewrite.
     if LevelFileText() != text { SaveFailed("levels/classic.json is not in the layout the editor writes."); return }
     letters := ifx Solved() then route[:route_length] else proof_route[:proof_length]
-    if file_routes_used + cast(s32)letters.count > ROUTES_SIZE { SaveFailed("the route is too long to keep."); return }
+    if file_routes_used + cast(s32)letters.count > ROUTES_SIZE || file_original_length + cast(s32)letters.count + 8192 > cast(s32)file_text.count { SaveFailed("the level file or route is too long to keep."); return }
     index := LevelNumber(current) - 1
     if !SaveSpotMatches(current, index) {
         SaveFailed("this place and levels/classic.json no longer agree; nothing was saved. Reopen the editor.")
         return
     }
+    file_dirty = index
+    file_insert = !InGame(current)
     if !InGame(current) {
         if file_count >= LEVELS_MAX { SaveFailed("there is no room for another level."); return }
         at := file_count
@@ -2382,8 +2437,6 @@ selector_focus_pending: bool;
 selector_navigation_key: s32;
 selector_view: WorldMapViewState;
 selector_authored: [ALL_PLACES]bool;
-selector_preview_layers: [SHOVEY_CELLS * 3]s32;
-selector_preview_title: [64]u8;
 
 // Browsing never opens a board: the current draft and its undo stack remain
 // untouched until the explicit Edit action goes through Open next frame.
@@ -2409,25 +2462,11 @@ SelectorKey :: (key: s32) {
     if key == 257 { SelectorEdit() }
 }
 
-SelectorPreview :: (area: Rectangle) {
-    if selector_focus < 1 || selector_focus > ALL_PLACES { selector_focus = current }
-    length: s32 = 0
-    AppendText(selector_preview_title[:], *length, "Level ")
-    AppendPlace(selector_preview_title[:], *length, selector_focus)
-    Caption(75990, Rectangle.{area.x + 8.0, area.y + 8.0, area.width - 16.0, 28.0},
-        TextView(selector_preview_title[:length]), 18)
-    unused HexBoard(Board(selector_focus), OurTiles(), selector_preview_layers[:], cast(u64)76000,
-        Rectangle.{area.x + 8.0, area.y + 44.0, area.width - 16.0, area.height - 104.0},
-        boards_landscape, "Level preview", selector_focus == CHEST_PLACE)
-    if Control(63, Rectangle.{area.x + 8.0, area.y + area.height - 48.0, area.width - 16.0, 40.0}, "Edit") {
-        SelectorEdit()
-    }
-}
 // A place clicked in the list opens at the start of the next frame, so no
 // frame mixes the list's widgets with the level's.
 selector_pick: s32;
-// The shared journey previews the focused board before Edit opens it. The
-// numbered list remains a direct shortcut, coloured by publication state.
+// The shared journey owns the whole selector region. A compact action keeps
+// explicit board opening accessible without reserving a preview pane.
 SELECTOR_COLUMNS :: 15
 ISLAND_EDITOR_SCRIPT :: "backup/island-private/open-island-editor.sh"
 SelectorScreen :: (area: Rectangle) {
@@ -2443,18 +2482,6 @@ SelectorScreen :: (area: Rectangle) {
     if Control(61, Rectangle.{area.x + area.width - 100.0, area.y, 96.0, legend_height - 4.0}, "Levels", !selector_map) { selector_map = false }
     if selector_map {
         map_area := Rectangle.{area.x, area.y + legend_height, area.width, area.height - legend_height}
-        preview_area := map_area
-        if area.width >= 900.0 {
-            preview_area.width = area.width * 0.38
-            if preview_area.width > 480.0 { preview_area.width = 480.0 }
-            map_area.width -= preview_area.width + 12.0
-            preview_area.x = map_area.x + map_area.width + 12.0
-        } else {
-            preview_area.height = map_area.height * 0.42
-            if preview_area.height > 400.0 { preview_area.height = 400.0 }
-            map_area.height -= preview_area.height + 12.0
-            preview_area.y = map_area.y + map_area.height + 12.0
-        }
         // Authoring access belongs only to this private caller. The public
         // player supplies discovery/progression visibility to the same widget.
         for index: cast(s32)0..ALL_PLACES - 1 { selector_authored[index] = true }
@@ -2465,13 +2492,17 @@ SelectorScreen :: (area: Rectangle) {
         }
         selection := WorldMapView(session, map_area, *selector_view, WorldMapViewProps.{
             .visible = selector_authored[:], .available = selector_authored[:], .focus_only = true,
+            .landscape = map_area.width >= map_area.height,
             .key_pressed = selector_navigation_key,
             .now = cast(float64)MonotonicMilliseconds() / 1000.0,
             .available_label = "Edit", .completed_label = "Edit", .locked_label = "", .loading_label = ""})
         if selection.focused > 0 && selection.focused <= ALL_PLACES && selection.focused != selector_focus {
             SelectorFocus(selection.focused)
         }
-        SelectorPreview(preview_area)
+        if Control(63, Rectangle.{map_area.x + 12.0, map_area.y + map_area.height - 56.0,
+                96.0, 40.0}, "Edit") {
+            SelectorEdit()
+        }
         return
     }
     gap: float32 = 4.0
@@ -2929,11 +2960,13 @@ Draw :: () -> bool {
     key := DesktopPressedKey()
     modifiers := DesktopModifiers()
     viewport := DesktopViewport()
-    pointer = PollPointer()
+    pointer = TestDriverPointer(session, PollPointer())
     secondary = PollSecondaryPointer()
     TreePointerUpdate(session, pointer)
+    wheel := TestDriverWheel(DesktopWheelMove())
     BeginScrollFrame(session, Vector2.{pointer.x, pointer.y}, pointer.pressed, pointer.down, pointer.released,
-        DesktopWheelMove(), cast(float64)MonotonicMilliseconds() / 1000.0)
+        wheel, cast(float64)MonotonicMilliseconds() / 1000.0)
+    PointerWheelSend(session, pointer.x, pointer.y, wheel)
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { Say("Editor frame could not begin.\n"); return false }
     Screen(viewport, key, modifiers)
     finished := EndFrameRetained(session, DesktopFrameReusable())

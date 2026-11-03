@@ -2,6 +2,7 @@
 import hashlib
 import os
 from pathlib import Path
+import time
 
 
 def private_environment(profile, extra=None):
@@ -29,3 +30,41 @@ def private_environment(profile, extra=None):
 def digest(path):
     with Path(path).open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def assert_fullscreen_map(driver):
+    """Map occupies the whole app viewport; Back is an accessible icon only."""
+    driver.wait(key=20105, visible=True)
+    driver.wait(key=20022, role='button', visible=True)
+    nodes = driver.tree()
+    screen = nodes[0]
+    viewport = next(node for node in nodes if node.get('key') == 20105)
+    assert viewport['x'] == 0 and viewport['y'] == 0, viewport
+    assert (viewport['width'], viewport['height']) == (screen['width'], screen['height']), (viewport, screen)
+    assert not any(node.get('key') in (20103, 20104) for node in nodes), 'Map chrome returned'
+    assert not any(node.get('kind') == 'text' and node.get('label') in ('Levels', 'Continue', 'Back') for node in nodes)
+    back = next(node for node in nodes if node.get('key') == 20022)
+    assert back['label'] == 'Back' and back['width'] == 48 and back['height'] == 48, back
+    return viewport
+
+
+def enter_classic_map(driver):
+    """Enter Classic through its own portable title when the host opens it."""
+    deadline = time.monotonic() + 45
+    while time.monotonic() < deadline:
+        nodes = driver.tree()
+        if any(n.get('key') == 20105 and n.get('visible') for n in nodes):
+            return assert_fullscreen_map(driver)
+        if any(n.get('key') == 20510 and n.get('visible') for n in nodes):
+            driver.press(key=20510, role='button')
+            return assert_fullscreen_map(driver)
+        driver.wait_idle(frames=2, timeout=1)
+    shown = [{k: n.get(k) for k in ('key', 'kind', 'label', 'detail')}
+             for n in nodes if n.get('visible')][-16:]
+    raise AssertionError(('Classic did not show its title or map', shown))
+
+
+def start_map_destination(driver, level=1):
+    assert_fullscreen_map(driver)
+    driver.press(key=33000 + level, role='button')
+    driver.press(key=20122, role='button')

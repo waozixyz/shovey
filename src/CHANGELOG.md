@@ -2,9 +2,18 @@
 
 ## [Unreleased]
 
-- Open the same Shovey title in Arcade and standalone, with the treasure chest, profile, wallet and swipe covers.
+## [0.6.165] - 2026-11-03
 
-- Open Shovey on its normal title and reach the Classic Editor inside the game, preserving existing add-ons and drafts.
+- Explore Classic on one painted map in portrait and landscape, full screen from first play, with a garden beside the first level. Scroll the whole map from edge to edge.
+- Forks use branch names such as A1 and B1 until they rejoin; secret levels use an S suffix away from the main route. Secret rooms stay hidden on the map until you find them.
+- See larger, evenly spaced level circles that fill with colour when completed, with progress based on stars.
+- Fewer moves earn more stars in regular levels, best scores are saved, and finishing a regular level shows its stars and score. Secret rooms return to the map without ratings or scores.
+- Move Shovey between circles with keyboard or on-screen controls, and press Escape in a level to return to the map.
+- Play rebuilt versions of levels 94 and 97–99.
+- The Editor works whether or not you are signed in. Start a new level or open one of your own.
+- Island's cover and unlock page show its price on the Unlock button, and the locked Island button opens that page.
+- Open Shovey on the same full title in Arcade and standalone, with swipeable covers, the shop, daily chest, wallet and Profile.
+- Invite friends with a referral code: receive 20 Dew immediately after accepting a valid code, without a purchase. Earn 5% Dew when invited friends buy Dew, and see everyone who accepted with their acceptance dates.
 
 ## [0.6.164] - 2026-11-02
 
