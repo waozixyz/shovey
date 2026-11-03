@@ -68,7 +68,6 @@ ShopUI :: #import "shop_view";
         ReminderWindow :: #import "kryon/Desktop";
     }
 }
-ShopState :: #import "shop_state";
 #import "std/number_text"
 #if #defined(ANDROID_BUILD) || #defined(_WIN32) {
     #import "kryon/app_asset"
@@ -113,8 +112,6 @@ collection_resource_root: string;
 collection_images: *CollectionImage;
 collection_frame_paths: Vec(string);
 collection_widget_node: *AppNode;
-collection_toolbar_visible: bool = true;
-collection_wallet_visible: bool;
 collection_wallet_record: string;
 collection_person_codec: Codec.WidgetAppPersonCodec;
 collection_shared_codec: Codec.WidgetAppSharedCodec;
@@ -204,7 +201,8 @@ CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
         return ChestReminderSlotAllowed(AppTreeNode(*collection_host.tree, AppHandle.{0, 1}),
             AppTreeNode(*collection_host.tree, collection_host.tree.active), node)
     }
-    return name == "AppRecordHost" || name == "SaveAppRecordHost" ||
+    if name == "shovey.island.owned" { return collection_island.owned }
+    return name == "shovey.standalone" || name == "AppRecordHost" || name == "SaveAppRecordHost" ||
     name == "AppFriendHost" || name == "AppSharedHost" || name == "AppSharedItemHost" ||
     name == "AppInvitationHost" || name == "RefreshAppSharedHost" || name == "SendAppSharedHost" ||
     name == "SmoothFramesHost" || name == "AppLocaleHost" || name == "AppSoundHost" ||
@@ -305,6 +303,11 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
             return 1
         }
         // A game leaves for the cover that opened it after its frame.
+        if service == "arcade.navigation" && request == "island-caption" {
+            caption: [128]u8
+            result.* = AppHostText(IslandUnlockCaption(*collection_island, caption[:]))
+            return 1
+        }
         if service == "arcade.navigation" && request == "back" {
             collection_leave_to_library = true
             result.* = AppHostText("queued")
@@ -610,7 +613,6 @@ CollectionClose :: () -> bool {
     collection_bundle_root_owned = false
     IslandPackageClose(*collection_island_package)
     collection_ready = false
-    collection_wallet_visible = false
     AppFileFree(collection_wallet_record)
     collection_wallet_record = ""
     collection_loading = .{}
@@ -652,7 +654,8 @@ CollectionOpenGame :: (id: string) -> bool {
     if id == ISLAND_UNLOCK_APP && !collection_island.owned { CollectionIslandShow(); return true }
     entry := AppCatalogAt(*root.catalog, AppCatalogFind(*root.catalog, id))
     plan: AppInstallPlan
-    if entry != null && AppHostInstallPlan(*collection_host, root, entry, *plan) && plan.count > 0 {
+    if entry != null && (TextUntilNul(entry.cover.action[:]) == "title" ||
+        (AppHostInstallPlan(*collection_host, root, entry, *plan) && plan.count > 0)) {
         unused CopyCString(id, collection_host.platform.presentation.download_id[:])
         collection_host.platform.presentation.download_request += 1
         return true
@@ -749,8 +752,6 @@ CollectionUpdatesQuestion :: (session: Session, viewport: Rectangle) {
 
 CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
     CollectionShopNavigate()
-    collection_toolbar_visible = true
-    defer { CollectionToolbar(session, viewport) }
     CollectionIslandPump()
     // A refused save cannot resume another account's already loaded package.
     if collection_island_blocked {
@@ -766,6 +767,12 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     if collection_island_page { CollectionIslandFrame(session, viewport); return true }
     runtime := AppHostActiveRuntime(*collection_host)
     if runtime == null { Report("Shovey: no app is running\n"); return false }
+    if runtime.node.collection && collection_host.platform.presentation.download_id[0] == 0 {
+        // The title belongs to the game, including its carousel and wallet.
+        // A retained collection still owns sibling navigation and installation.
+        if !CollectionOpenGame("arcade.shovey") { return false }
+        return true
+    }
     opening := !runtime.node.collection && (!collection_loading.shown ||
         collection_loading.slot != collection_host.tree.active.slot ||
         collection_loading.generation != collection_host.tree.active.generation)
@@ -775,10 +782,9 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     // Other apps get a bar with Back and their title; the library and that
     // bar keep Profile at the top right.
     covered := runtime.node.entry.cover.portrait[0] != 0
-    if !runtime.node.collection { collection_wallet_visible = false }
-    collection_toolbar_visible = !covered
     // The covers ask about new levels once; the question takes every key.
-    asking := runtime.node.collection && !collection_host.platform.presentation.cover_grid && CollectionUpdates() == 2
+    asking := !collection_host.platform.presentation.cover_grid && CollectionUpdates() == 2 &&
+        (runtime.node.collection || TextUntilNul(runtime.node.identity.id[:]) == "arcade.shovey")
     // Small cover branding sits below the wallet and account actions.
     collection_host.platform.presentation.cover_logo_width = ifx viewport.width < 600.0 then viewport.width * 0.58 else 360.0
     collection_host.platform.presentation.cover_logo_top = 120.0
@@ -831,7 +837,6 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         }
         if CollectionNeedsCover(*collection_loading, collection_host.tree.active.slot,
             collection_host.tree.active.generation, pictures_ready) {
-            collection_toolbar_visible = false
             Box(session, BoxProps.{.key = cast(u64)49400, .bounds = viewport,
                     .fill = ColorFromPacked(ShoveyPalette().background)})
             unused Button(session, ButtonProps.{.key = cast(u64)49401, .id = 49401,
@@ -1038,7 +1043,6 @@ CollectionIslandPump :: () {
 }
 
 CollectionIslandFrame :: (session: Session, viewport: Rectangle) {
-    collection_toolbar_visible = false
     entry := CollectionIslandEntry()
     if entry == null { collection_island_page = false; return }
     collection_widget_node = AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
@@ -1114,51 +1118,6 @@ CollectionLocaleText :: (key: string) -> string {
     return ifx value == "" then key else value
 }
 
-CollectionCoverAction :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string,
-    image_key: u64 = 0) -> bool {
-    portrait_key := ifx image_key != 0 then image_key else key + 1
-    unused Image(session, ImageProps.{.key = portrait_key, .bounds = bounds,
-        .asset_path = CollectionAssetPath(path), .fit = ImageFit.ImageFitContain, .smooth = true, .alt_text = CollectionLocaleText(label)})
-    return Button(session, ButtonProps.{.key = key, .id = cast(s32)key, .bounds = bounds,
-        .label = CollectionLocaleText(label), .invisible = true}) != 0
-}
-
-CollectionToolbar :: (session: Session, viewport: Rectangle) {
-    if !entity_ready || !collection_toolbar_visible || entity_visible { return }
-    runtime := AppHostActiveRuntime(*collection_host)
-    if runtime == null || !runtime.node.collection || collection_shop_request != "" { return }
-    collection_widget_node = runtime.node
-    unused WidgetPaletteUse(session, ShoveyPalette())
-    defer { unused WidgetPaletteRestore(session) }
-    y := viewport.y + 12.0
-    if !collection_wallet_visible { ShopUI.RefreshWallet(); collection_wallet_visible = true }
-    ShopUI.Pump(cast(float64)MonotonicMilliseconds() / 1000.0, UnixNow() / 86400)
-    if CollectionCoverAction(session, 49200, Rectangle.{viewport.x + 12.0, y, 44.0, 44.0},
-        "assets/shovey/shop/stall.png", "shovey_shop_shop") { unused CollectionShopQueue("shop") }
-    if CollectionCoverAction(session, 49202, Rectangle.{viewport.x + 12.0, y + 60.0, 44.0, 44.0},
-        "assets/shovey/shop/chest-closed.png", "shovey_shop_chest") { unused CollectionShopQueue("chest") }
-    if CollectionCoverAction(session, 49208, Rectangle.{viewport.x + viewport.width - 152.0, y, 44.0, 44.0},
-        "assets/shovey/shop/book.png", "shovey_book") { unused CollectionShopQueue("book") }
-    digits: [24]u8
-    CollectionCoverAmount(session, 49210, Rectangle.{viewport.x + 60.0, y, viewport.width - 224.0, 28.0},
-        "coins", FormatInteger(cast(s64)ShopState.ShopCoins(), digits[:]))
-    CollectionCoverAmount(session, 49212, Rectangle.{viewport.x + 60.0, y + 30.0, viewport.width - 224.0, 28.0},
-        "dew", ShopUI.DewText())
-    skin := ShopState.ShopSkin()
-    if CollectionCoverAction(session, 49204, Rectangle.{viewport.x + viewport.width - 104.0, y, 44.0, 44.0},
-        ShopState.ShopProfilePath(skin), "shovey_shop_profile", 50204 + cast(u64)skin) { unused EntityShowPage("open") }
-    if CollectionCoverAction(session, 49206, Rectangle.{viewport.x + viewport.width - 56.0, y, 44.0, 44.0},
-        "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused EntityShowPage("leaderboard") }
-}
-
-CollectionCoverAmount :: (session: Session, key: u64, bounds: Rectangle, currency: string, value: string) {
-    path := ifx currency == "coins" then "assets/shovey/shop/coins.png" else "assets/shovey/shop/dew.png"
-    unused Image(session, ImageProps.{.key = key, .bounds = Rectangle.{bounds.x, bounds.y + 2.0, 24.0, 24.0},
-        .asset_path = CollectionAssetPath(path), .fit = ImageFit.ImageFitContain, .smooth = true,
-        .alt_text = CollectionLocaleText(ifx currency == "coins" then "shovey_shop_coins" else "shovey_shop_dew")})
-    unused Text(session, TextProps.{.key = key + 1, .bounds = Rectangle.{bounds.x + 28.0, bounds.y + 4.0, bounds.width - 28.0, 24.0},
-        .text = value, .font = 15})
-}
 
 c :: #system_library "c";
 CollectionFree :: (memory: *void) #foreign c "free";

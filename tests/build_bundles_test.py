@@ -118,9 +118,11 @@ class BundleCatalogTest(unittest.TestCase):
                  'editor-portrait.png', 'editor-landscape.png')
         for name in names:
             self.write('staged/assets/shovey/' + name, 'fixture picture')
+        self.write('staged/assets/shovey/title/shovey-editor-portrait.jpg', 'shared title cover')
         packed = builder.bundle_assets('src/catalog.json', 'shovey', staged, True) / 'shovey'
         self.assertEqual({p.name for p in packed.iterdir()},
-                         {'title-portrait.png', 'title-landscape.png', 'logo.png'})
+                         {'title-portrait.png', 'title-landscape.png', 'logo.png', 'title'})
+        self.assertEqual((packed / 'title/shovey-editor-portrait.jpg').read_text(), 'shared title cover')
 
     def test_invalid_local_descriptor_still_fails(self):
         self.write('apps.json', json.dumps(dict(apps=[dict(manifest='broken.json')])))

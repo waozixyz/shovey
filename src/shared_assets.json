@@ -1,5 +1,6 @@
 {
   "copies": [
-    {"from": "assets/shovey-landscape", "to": "landscape"}
+    {"from": "assets/shovey-landscape", "to": "landscape"},
+    {"from": "assets/player", "to": "title"}
   ]
 }

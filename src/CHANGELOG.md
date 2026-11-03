@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Open the same Shovey title in Arcade and standalone, with the treasure chest, profile, wallet and swipe covers.
+
 - Open Shovey on its normal title and reach the Classic Editor inside the game, preserving existing add-ons and drafts.
 
 ## [0.6.164] - 2026-11-02

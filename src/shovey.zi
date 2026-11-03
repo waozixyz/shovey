@@ -1,8 +1,5 @@
 #import "apps/node_types"
 #import "apps/node_app"
-#import "kryon/carousel"
-#import "kryon/geometry"
-#import, file "shovey_theme.zi";
 #import, file "shovey_view.zi";
 Reminder :: #import, file "chest_reminder.zi";
 ReminderPolicy :: #import, file "chest_reminder_policy.zi";
@@ -10,32 +7,11 @@ DailyReminder :: #import, file "daily_chest.zi";
 ReminderRecords :: #import, file "controls.zi";
 host_api :: #system_library "host_api";
 AppLocaleHost :: (key: string) -> string #foreign host_api;
-ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
-AppKeyHost :: () -> s32 #foreign host_api;
 
-chest_reminder_session: Reminder.ChestReminderSession;
+Title :: #import, file "title_view.zi";
 shovey_title_open: bool = true;
 
-// The game owns its normal title. Every host enters through this same path.
-ShoveyTitle :: () {
-    frame = ReadAppUiHost()
-    width := cast(float32)frame.width
-    top := cast(float32)frame.top
-    bottom := cast(float32)(frame.height - frame.bottom)
-    ShoveyDress(frame.session, width, top, bottom)
-    unused CarouselArtwork(frame.session, Rectangle.{0.0, top, width, bottom - top}, cast(u64)20500,
-        ifx width > bottom - top then "assets/shovey/title-landscape.png" else "assets/shovey/title-portrait.png",
-        "assets/shovey/logo.png", AppLocaleHost("shovey_title_art"), Rectangle.{},
-        ifx width < 600.0 then width * 0.58 else 360.0, 120.0)
-    button_width := ifx width < 400.0 then width - 48.0 else 320.0
-    x := (width - button_width) / 2.0
-    y := bottom - 136.0
-    if Control(20510, Rectangle.{x, y, button_width, 48.0}, AppLocaleHost("shovey_play")) || AppKeyHost() == 257 {
-        shovey_title_open = false
-    }
-    if Control(20511, Rectangle.{x, y + 56.0, button_width, 48.0}, AppLocaleHost("shovey_editor"),
-        !ReminderRecords.ClassicEditorAvailable()) { unused ReminderRecords.OpenClassicEditor() }
-}
+chest_reminder_session: Reminder.ChestReminderSession;
 
 #program_export "ShoveyMain"
 Main :: () -> s32 { return RunNodeApp(ShoveyNodeFrame, ShoveyNodeBack) }
@@ -43,8 +19,9 @@ Main :: () -> s32 { return RunNodeApp(ShoveyNodeFrame, ShoveyNodeBack) }
 ShoveyNodeFrame :: (message: AppMessage) -> bool {
     ShoveyShopSetToday(ifx message.time > 0 then message.time / 86400 else -1)
     ReminderRecords.game_title_enabled = true
-    if shovey_title_open { ShoveyTitle() }
-    else { ShoveyFrame() }
+    if shovey_title_open {
+        if Title.Frame(ifx message.time > 0 then message.time / 86400 else -1) { shovey_title_open = false }
+    } else { ShoveyFrame() }
     if ReminderRecords.game_title_requested {
         ReminderRecords.game_title_requested = false
         shovey_title_open = true
@@ -63,7 +40,7 @@ ShoveyNodeFrame :: (message: AppMessage) -> bool {
 // Back closes the level list or help before it leaves the game.
 ShoveyNodeBack :: (message: AppMessage) -> bool {
     unused message
-    if shovey_title_open { return false }
+    if shovey_title_open { return Title.Back() }
     if ShoveyBack() { return true }
     shovey_title_open = true
     return true

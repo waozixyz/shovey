@@ -1,0 +1,99 @@
+// The game's title, shared by the standalone player and every node host.
+#import "kryon/carousel"
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/image_widget"
+#import "kryon/image_props"
+#import "kryon/button_widget"
+#import "kryon/button_props"
+#import "kryon/text_widget"
+#import "kryon/text_props"
+#import "kryon/app_context"
+#import "kryon/widget_palette"
+#import "std/number_text"
+#import, file "shovey_theme.zi";
+#import, file "controls.zi";
+Shop :: #import, file "shop_view.zi";
+Wallet :: #import, file "shop_state.zi";
+Book :: #import, file "collectible_book.zi";
+#import "apps/node_types"
+host_api :: #system_library "host_api";
+AppLocaleHost :: (key: string) -> string #foreign host_api;
+AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
+ReadAppUiHost :: () -> AppUiFrame #foreign host_api;
+AppKeyHost :: () -> s32 #foreign host_api;
+
+state: CarouselState;
+prepared: bool;
+
+Action :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string,
+    image_key: u64 = 0) -> bool {
+    unused Image(session, ImageProps.{.key = ifx image_key != 0 then image_key else key + 1,
+        .bounds = bounds, .asset_path = path, .fit = ImageFit.ImageFitContain,
+        .smooth = true, .alt_text = AppLocaleHost(label)})
+    return Button(session, ButtonProps.{.key = key, .id = cast(s32)key,
+        .bounds = bounds, .label = AppLocaleHost(label), .invisible = true}) != 0
+}
+
+Amount :: (session: Session, key: u64, bounds: Rectangle, dew: bool, value: string) {
+    unused Image(session, ImageProps.{.key = key,
+        .bounds = Rectangle.{bounds.x, bounds.y + 2.0, 24.0, 24.0},
+        .asset_path = ifx dew then "assets/shovey/shop/dew.png" else "assets/shovey/shop/coins.png",
+        .fit = ImageFit.ImageFitContain, .smooth = true,
+        .alt_text = AppLocaleHost(ifx dew then "shovey_shop_dew" else "shovey_shop_coins")})
+    Text(session, TextProps.{.key = key + 1,
+        .bounds = Rectangle.{bounds.x + 28.0, bounds.y + 4.0, bounds.width - 28.0, 24.0},
+        .text = value, .font = 15})
+}
+
+Back :: () -> bool {
+    if Book.BookBack() { return true }
+    return Shop.Back()
+}
+
+Frame :: (today: s64) -> bool {
+    frame := ReadAppUiHost()
+    bounds := Rectangle.{0.0, cast(float32)frame.top, cast(float32)frame.width,
+        cast(float32)(frame.height - frame.bottom - frame.top)}
+    if !prepared { prepared = true; Shop.RefreshWallet() }
+    if Book.BookFrame(frame.session, bounds, "") || Shop.Frame(frame.session, bounds, frame.now, today) { return false }
+    unused WidgetPaletteUse(frame.session, ShoveyPalette())
+    defer { unused WidgetPaletteRestore(frame.session) }
+    items: [3]CarouselItem
+    items[0] = CarouselItem.{.label = "Shovey", .portrait = "assets/shovey/title/shovey-portrait.jpg",
+        .landscape = "assets/shovey/title/shovey-landscape.jpg", .logo = "assets/shovey/title/shovey-logo.png",
+        .action = AppLocaleHost("shovey_play")}
+    standalone := AppSupports("shovey.standalone")
+    items[1] = CarouselItem.{.label = AppLocaleHost("shovey_island_title"),
+        .portrait = "assets/shovey/title/shovey-island-portrait.jpg",
+        .landscape = "assets/shovey/title/shovey-island-landscape.jpg", .logo = "assets/shovey/title/shovey-island-logo.png",
+        .action = AppLocaleHost(ifx AppSupports("shovey.island.owned") then "shovey_play" else "shovey_shop_buy"),
+        .caption = ifx standalone then AppServiceHost("arcade.navigation", "island-caption") else ""}
+    editor := CarouselItem.{.label = AppLocaleHost("shovey_editor"),
+        .portrait = "assets/shovey/title/shovey-editor-portrait.jpg",
+        .landscape = "assets/shovey/title/shovey-editor-landscape.jpg", .logo = "assets/shovey/title/shovey-editor-logo.png",
+        .action = AppLocaleHost("shovey_open"), .disabled = !ClassicEditorAvailable()}
+    count: s64 = 3
+    if !standalone { items[1] = editor; count = 2 }
+    else { items[2] = editor }
+    selected := Carousel(frame.session, CarouselProps.{.key = cast(u64)50000, .bounds = bounds,
+        .now = frame.now, .key_pressed = AppKeyHost(), .label = "Shovey", .scale = 1.0,
+        .previous_label = AppLocaleHost("shovey_page_previous"), .next_label = AppLocaleHost("shovey_page_next"),
+        .logo_max_width = ifx bounds.width < 600.0 then bounds.width * 0.58 else 360.0,
+        .logo_top = 120.0}, items[:count], *state)
+    Shop.Pump(frame.now, today)
+    y := bounds.y + 12.0
+    if Action(frame.session, 49200, Rectangle.{12.0, y, 44.0, 44.0}, "assets/shovey/shop/stall.png", "shovey_shop_shop") { Shop.Open(1) }
+    if Action(frame.session, 49202, Rectangle.{12.0, y + 60.0, 44.0, 44.0}, "assets/shovey/shop/chest-closed.png", "shovey_shop_chest") { Shop.Open(2) }
+    if Action(frame.session, 49208, Rectangle.{bounds.width - 152.0, y, 44.0, 44.0}, "assets/shovey/shop/book.png", "shovey_book") { Book.BookOpen() }
+    digits: [24]u8
+    Amount(frame.session, 49210, Rectangle.{60.0, y, bounds.width - 224.0, 28.0}, false, FormatInteger(cast(s64)Wallet.ShopCoins(), digits[:]))
+    Amount(frame.session, 49212, Rectangle.{60.0, y + 30.0, bounds.width - 224.0, 28.0}, true, Shop.DewText())
+    skin := Shop.Skin()
+    if Action(frame.session, 49204, Rectangle.{bounds.width - 104.0, y, 44.0, 44.0}, Shop.SkinPath(), "shovey_shop_profile", 50204 + cast(u64)skin) { unused AppServiceHost("entity.profile", "open") }
+    if Action(frame.session, 49206, Rectangle.{bounds.width - 56.0, y, 44.0, 44.0}, "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused AppServiceHost("entity.profile", "leaderboard") }
+    if selected == 0 { prepared = false; return true }
+    if selected == count - 1 { unused OpenClassicEditor() }
+    else if selected == 1 { unused AppServiceHost("apps.navigation", "arcade.shovey-island") }
+    return false
+}

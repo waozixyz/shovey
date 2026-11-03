@@ -334,21 +334,22 @@ assert 'AppHostText(CollectionShopAnswer(request))' in host
 assert 'AppHostText(CollectionDewAnswer(request))' in host
 assert 'return CollectionShopAnswer(request[5:])' in host
 assert 'AppHostText(ifx EntityShowPage(request) then "queued" else "unavailable")' in host
-# The host wallet reads the game's existing state; routes still enter the
-# verified game, whose confirmation UI owns every purchase.
-assert 'ShopUI.Pump(' in host and 'ShopState.ShopCoins()' in host
-toolbar = function(ROOT / 'src/player_host.zi', 'CollectionToolbar')
+# The same node-owned title reads the game's existing state in every host;
+# the game's confirmation UI still owns every purchase.
+title = (ROOT / 'src/title_view.zi').read_text()
+assert 'Shop.Pump(' in title and 'Wallet.ShopCoins()' in title
+toolbar = function(ROOT / 'src/title_view.zi', 'Frame')
 assert 'ShopBuy(' not in toolbar and 'ShopBuyCoins(' not in toolbar
 web = (ROOT / 'src/web/game.zi').read_text()
 assert web.index('ShoveyShopSetToday(today)') < web.index('if !AppMini() && web_covers_open')
 assert 'today := cast(s64)AppNow() / 86400' in web
 assert 'ShopUI.IsOpen()' in web and 'else { WebCovers() }' in web
 for name in ('stall', 'chest-closed', 'trophy', 'coins', 'dew'):
-    assert f'assets/shovey/shop/{name}.png' in host
+    assert f'assets/shovey/shop/{name}.png' in title
 profile_paths = function(ROOT / 'src/shop_state.zi', 'ShopProfilePath')
 assert 'assets/shovey/shop/profile-96.png' in profile_paths
-assert 'skin := ShopState.ShopSkin()' in toolbar
-assert 'ShopState.ShopProfilePath(skin)' in toolbar
+assert 'skin := Shop.Skin()' in toolbar
+assert 'Shop.SkinPath()' in toolbar
 assert '50204 + cast(u64)skin' in toolbar
 assert 'assets/shovey/sprites/player-down.png' not in toolbar
 assert 'ShopUI.SkinPath()' in web
