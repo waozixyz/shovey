@@ -124,6 +124,13 @@ class BundleCatalogTest(unittest.TestCase):
                          {'title-portrait.png', 'title-landscape.png', 'logo.png', 'title'})
         self.assertEqual((packed / 'title/shovey-editor-portrait.jpg').read_text(), 'shared title cover')
 
+    def test_locale_entries_after_blank_lines_are_kept(self):
+        self.write('locales/en.txt', '[game.one]\nOne\n---\n\n[game.two]\nLevel % complete\n---\n\n\n[game.three]\nThree\n---\n')
+        blocks, code = builder.translations(dict(locales='locales', locale_prefix='game.'))
+        self.assertEqual(blocks['en.txt'], '[game.one]\nOne\n---\n[game.two]\nLevel % complete\n---\n[game.three]\nThree\n---\n')
+        for text in ('One', 'Level % complete', 'Three'):
+            self.assertIn(text, code)
+
     def test_invalid_local_descriptor_still_fails(self):
         self.write('apps.json', json.dumps(dict(apps=[dict(manifest='broken.json')])))
         self.write('broken.json', json.dumps(dict(name='broken')))

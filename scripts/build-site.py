@@ -81,6 +81,9 @@ def main():
         version = json.loads((release / 'shovey.json').read_text())['version']
         if tag and tag != 'v' + version:
             raise SystemExit(f'{tag} carries Shovey {version}')
+        # The page's own code reads the generated levels, which a fresh
+        # checkout does not have yet.
+        subprocess.run(['make', '-s', '-C', str(ROOT), 'levels'], check=True)
         player.site(release, args.output)
 
 

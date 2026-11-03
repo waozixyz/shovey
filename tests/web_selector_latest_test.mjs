@@ -239,6 +239,10 @@ try {
     if (index === 0) {
       await press('Back');
       for (const direction of levelOneSolution) await key(...arrows[Number(direction)]);
+      // A regular level shows its stars and score; its Next level opens level 2.
+      await wait(async () => (await tree()).some(n => n.label === 'Level 1 complete') &&
+        (await tree()).some(n => n.key === 20905 && n.enabled !== false), 'Winning level 1 showed no result');
+      await pressKey(20905);
       await wait(async () => (await tree()).some(n => n.label.startsWith('Level 2 /')), 'Winning level 1 did not advance to level 2');
       await press('Levels');
       await wait(async () => (await tree()).some(n => n.key === 33002 && n.y >= 70 && n.y + n.height <= height),

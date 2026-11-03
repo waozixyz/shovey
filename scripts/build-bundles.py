@@ -62,6 +62,8 @@ def translations(descriptor):
     for locale in sorted((ROOT / descriptor['locales']).glob('*.txt')):
         blocks, values = [], {}
         for block in locale.read_text().split('---\n'):
+            # Entries may be separated by blank lines.
+            block = block.lstrip('\n')
             lines = block.splitlines()
             if lines and lines[0].startswith('[' + descriptor['locale_prefix']):
                 blocks.append(block.rstrip() + '\n---\n')

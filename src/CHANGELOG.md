@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- The level result, book, shop and item texts show again in every language.
+
 ## [0.6.166] - 2026-11-03
 
 - The Editor opens Shovey Island levels of your own once Island is unlocked; until then its Island row unlocks Island.
