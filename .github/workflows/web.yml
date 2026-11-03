@@ -397,12 +397,18 @@ jobs:
           BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
         run: |
           python3 - <<'PY'
-          import json, os
+          import hashlib, json, os
           from pathlib import Path
           root = Path('build/web-site')
           build = json.loads((root / 'build.json').read_text())
           assert build['version'] == os.environ['SHOVEY_VERSION'], 'The site artifact belongs to another release'
-          for name in ('index.html', 'arcade.json', 'runtime.js', 'runtime.wasm', 'runtime.data'):
+          for name in ('index.html', 'arcade.json', 'runtime.js', 'runtime.wasm', 'runtime.data.json'):
               assert (root / name).is_file(), f'Missing web asset: {name}'
+          # The game data ships in chunks (scripts/prepare-pages.py).
+          manifest = root / 'runtime.data.json'
+          assert hashlib.sha256(manifest.read_bytes()).hexdigest() == build['data_manifest_sha256'], 'Game data manifest does not match build.json'
+          for chunk in json.loads(manifest.read_text())['chunks']:
+              data = (root / chunk['name']).read_bytes()
+              assert len(data) == chunk['size'] and hashlib.sha256(data).hexdigest() == chunk['sha256'], f'Bad game data chunk: {chunk["name"]}'
           PY
           butler push build/web-site waozi/shovey:html5 --userversion "$SHOVEY_VERSION"
