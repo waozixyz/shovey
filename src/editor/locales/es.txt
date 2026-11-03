@@ -618,3 +618,9 @@ Colección eliminada.
 [editor_imported]
 {n} niveles añadidos como una colección privada nueva. {s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+Desbloquear
+---

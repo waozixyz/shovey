@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 
-- Open earned story levels with working previews.
+## [0.2.148] - 2026-11-03
+
+- Make Shovey Island levels of your own, with caves and every Island piece, once Island is unlocked.
+- Start a new level or open one of your own, signed in or not.
 - Paint barrels as pushable pieces, like crates.
 
 ## [0.2.147] - 2026-10-29

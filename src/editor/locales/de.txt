@@ -618,3 +618,9 @@ Sammlung gelöscht.
 [editor_imported]
 {n} Level als neue private Sammlung hinzugefügt. {s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+Freischalten
+---

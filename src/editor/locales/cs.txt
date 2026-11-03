@@ -618,3 +618,9 @@ Sbírka smazána.
 [editor_imported]
 Do nové soukromé sbírky přidáno úrovní: {n}. {s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+Odemknout
+---

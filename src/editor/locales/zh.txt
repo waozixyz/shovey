@@ -618,3 +618,9 @@ Shovey
 [editor_imported]
 已作为新的私密合集添加 {n} 个关卡。{s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+解锁
+---

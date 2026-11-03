@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.6.166] - 2026-11-03
+
+- The Editor opens Shovey Island levels of your own once Island is unlocked; until then its Island row unlocks Island.
+- On the F-Droid and direct Android APK, Island downloads after you unlock it.
+
 ## [0.6.165] - 2026-11-03
 
 - Explore Classic on one painted map in portrait and landscape, full screen from first play, with a garden beside the first level. Scroll the whole map from edge to edge.

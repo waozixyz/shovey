@@ -3,6 +3,7 @@
 # Downloads workflow both run this build, so the signed
 # shovey-VERSION-fdroid.apk reproduces byte for byte. With "gplay" it builds
 # the Google Play edition's APK instead, the only one with Play Billing.
+# Only the F-Droid edition leaves the compiled paid Island out.
 set -eu
 edition=${1:-}
 case $edition in '' | gplay) ;; *) echo "usage: android-build.sh [gplay]" >&2; exit 2 ;; esac
@@ -28,7 +29,12 @@ fi
 
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES
 make -j1 -C "$root" levels landscape
-python3 "$root/scripts/player.py" collection
+if [ "$edition" = gplay ]; then
+    python3 "$root/scripts/player.py" collection
+else
+    # Paid Island never enters the F-Droid edition; owners download it.
+    python3 "$root/scripts/player.py" collection --without-island
+fi
 if [ "$edition" = gplay ]; then
     env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS \
         python3 "$root/scripts/player.py" android --gplay

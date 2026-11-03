@@ -1,6 +1,8 @@
 """The Editor opens from its cover for everyone, signed out or signed in, and
-offers only the creator's own levels, never campaign levels. Escape in a level
-returns to the world map, and the map's Escape returns to the title.
+offers only the creator's own levels, never campaign levels. Its Shovey Island
+row reads Unlock and the price while Island is locked and opens the unlock
+page, never Island's editor. Escape in a level returns to the world map, and
+the map's Escape returns to the title.
 
 Private Xvfb and disposable profiles; the signed-in one holds an offline test
 account key. No node, wallet or purchase is used, and the owner's profile is
@@ -29,7 +31,8 @@ from ui_driver import UiDriver
 
 # The editor's own catalog buttons; story levels used 260000 and up.
 OWN_LEVELS = range(240000, 250000)
-LEVELS_PAGE = {200, 202, 120, 121, 203, 205}
+# 210 is the Shovey Island row.
+LEVELS_PAGE = {200, 202, 120, 121, 203, 205, 210}
 
 
 def offline_account(folder):
@@ -61,6 +64,23 @@ def open_editor(driver, who):
     driver.wait(label='New level', role='text', timeout=30)
 
 
+def locked_island_row(driver, who):
+    """Locked, the Island row shows Unlock and its price and opens the unlock
+    page; Back there returns to the Editor's levels."""
+    row = driver.wait(key=210, role='button')
+    shown = ' '.join(str(row.get(field, '')) for field in ('label', 'detail', 'description', 'value'))
+    assert 'Shovey Island' in shown and 'Unlock · ' in shown, (f'Locked Island row for a {who} player', row)
+    driver.press(key=210, role='button')
+    # 49530 buys; offline the page shows the waiting 49534 action instead.
+    driver.wait(key=49512, role='button', timeout=30)
+    actions = driver.find(key=49530, role='button') + driver.find(key=49534, role='button')
+    assert actions and 'Unlock' in actions[0].get('label', ''), actions
+    assert not driver.find(key=600000), 'A locked Island opened its editor'
+    driver.press(key=49512, role='button')
+    driver.wait(key=210, role='button')
+    driver.wait(label='Your levels', role='text')
+
+
 def only_own_levels(driver, who):
     """Levels lists the creator's own boards and New level; no campaign level
     can be opened from it."""
@@ -73,6 +93,7 @@ def only_own_levels(driver, who):
     buttons = [node for node in nodes if node.get('kind') == 'button' and node.get('visible')]
     others = [node.get('label') for node in buttons if node.get('key') not in LEVELS_PAGE and node.get('key') not in OWN_LEVELS]
     assert not others, (f'The Levels page offers more than own levels to a {who} player', others)
+    locked_island_row(driver, who)
     driver.press(label='New level', role='button')
     driver.wait(key=200000, timeout=20)
     driver.wait(label='Play', role='button')
@@ -140,4 +161,4 @@ for who in ('signed-out', 'signed-in'):
             assert 'host capability' not in line, line[:1000]
     results.append(who)
 print(f'Editor access local UI test passed: {" and ".join(results)} players open the Editor twice with only '
-      'their own levels; Escape goes level → map → title')
+      'their own levels, the locked Island row opens its unlock page; Escape goes level → map → title')

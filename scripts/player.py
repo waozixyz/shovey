@@ -465,7 +465,7 @@ def standalone_bundle(app):
     return source
 
 
-def collection(include_island=True):
+def collection(include_island=True, web=False):
     version = release()
     declaration, apps = declared_apps()
     if declaration['id'] != COLLECTION_ID:
@@ -497,7 +497,7 @@ def collection(include_island=True):
             shutil.copyfile(included[descriptor['id']], target)
             total += target.stat().st_size
         if not external:
-            if include_island:
+            if not web:
                 local_bundles[descriptor['id']] = f'games/{name}.zx'
             else:
                 copies.append((bundle, f'arcade/games/{name}.zx'))
@@ -556,13 +556,16 @@ def collection(include_island=True):
     print(f'Shovey {version["version"]} collection: {payload.relative_to(ROOT)}')
 
 
-def checked_collection():
-    """The built collection, its receipt and Profile, after checking they match."""
+def checked_collection(island=True):
+    """The built collection, its receipt and Profile, after checking they match.
+    Only the F-Droid edition (island=False) leaves the compiled Island out."""
     receipt = json.loads((OUT / 'shovey.json').read_text())
     if receipt['sha256'] != digest(OUT / 'shovey.zx') or receipt['version'] != release()['version']:
         raise SystemExit('The collection changed; run python3 scripts/player.py collection')
-    if not receipt.get('island_bundled'):
+    if island and not receipt.get('island_bundled'):
         raise SystemExit('Standalone requires included Island; run python3 scripts/player.py collection')
+    if not island and receipt.get('island_bundled'):
+        raise SystemExit('The F-Droid edition must not include Island; run python3 scripts/player.py collection --without-island')
     if not (OUT / 'entity.zx').is_file():
         raise SystemExit('The Profile is missing; run python3 scripts/player.py collection')
     verify_local_bundles(OUT, receipt)
@@ -760,8 +763,9 @@ def prepare_android_project(kryon):
 def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=None):
     """The APK (the normal and F-Droid edition, Google-free) or the Google
     Play edition's APK or App Bundle, on Kryon's Android host from this
-    package's lock."""
-    receipt = checked_collection()
+    package's lock. The F-Droid edition carries no compiled Island; owners get
+    it through its protected delivery."""
+    receipt = checked_collection(island=mode != 'release')
     version = release()
     kryon, compiler = package('kryon'), toolchain()
     assets = OUT / 'android/assets'
@@ -893,6 +897,8 @@ def main():
     commands.add_parser('covers')
     collection_parser = commands.add_parser('collection')
     collection_parser.add_argument('--web', action='store_true', help='browser collection with protected Island delivery')
+    collection_parser.add_argument('--without-island', action='store_true',
+                                   help='the F-Droid edition: no compiled Island, protected Island delivery')
     island = commands.add_parser('island-package', help='build private compiled Island separately')
     island.add_argument('--record', action='store_true', help='record its reviewed digest/size in the public descriptor')
     commands.add_parser('linux')
@@ -916,7 +922,7 @@ def main():
     if args.command == 'covers':
         covers()
     elif args.command == 'collection':
-        collection(include_island=not args.web)
+        collection(include_island=not (args.web or args.without_island), web=args.web)
     elif args.command == 'island-package':
         island_package(args.record)
     elif args.command == 'linux':

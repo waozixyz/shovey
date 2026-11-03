@@ -618,3 +618,9 @@ Shovey
 [editor_imported]
 新しい非公開コレクションとして {n} 個のレベルを追加しました。{s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+アンロック
+---

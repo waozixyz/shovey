@@ -618,3 +618,9 @@ Classic
 [editor_imported]
 В новую личную коллекцию добавлено уровней: {n}. {s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+Открыть
+---

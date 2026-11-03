@@ -618,3 +618,9 @@ Collection deleted.
 [editor_imported]
 Added {n} levels as a new private collection. {s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+Unlock
+---

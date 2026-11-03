@@ -618,3 +618,9 @@ Shovey
 [editor_imported]
 새 비공개 모음으로 {n}개 단계를 추가했습니다. {s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+잠금 해제
+---

@@ -66,7 +66,7 @@ jobs:
       # The locked compiler comes prebuilt, the package checkouts cached, and
       # Ubuntu packages from the canonical archive.
       - name: Set up the locked Ziran, its packages and the build tools
-        uses: ziranlang/ziran/.github/actions/setup@979159a55bcf1f9edb9eb8f26ea10aca421412e2
+        uses: ziranlang/ziran/.github/actions/setup@120e6d967c7c06594c53ae3dce490f4d64a4ea4c
         with:
           project: waozixyz/shovey
           path: ziranlang/ziran

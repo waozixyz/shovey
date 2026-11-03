@@ -87,6 +87,17 @@ collection_island_opening: bool;
 collection_island_package: IslandPackage;
 collection_island_blocked: bool;
 collection_island_account: [65]u8;
+// The Editor's Island levels: Island opened in editor mode from the Editor.
+// The Editor asks (ISLAND_EDITOR_ASKED), the collection opens Island
+// (ISLAND_EDITOR_OPENING) and it runs (ISLAND_EDITOR_OPEN); leaving it reopens
+// the Editor. A locked Island shows its unlock page first.
+ISLAND_EDITOR_NONE :: 0
+ISLAND_EDITOR_ASKED :: 1
+ISLAND_EDITOR_OPENING :: 2
+ISLAND_EDITOR_OPEN :: 3
+SHOVEY_EDITOR_APP :: "arcade.shovey-editor"
+collection_island_editor: s32;
+collection_island_unlock_for_editor: bool;
 
 using HostValueKind;
 
@@ -320,6 +331,27 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
             if collection_island.owned { result.* = AppHostText("owned"); return 1 }
             CollectionIslandShow()
             result.* = AppHostText("queued")
+            return 1
+        }
+        // The Editor's Island levels open after this frame, or the unlock page
+        // first while Island is locked.
+        if service == "arcade.navigation" && request == "island-editor" {
+            if CollectionIslandEntry() == null || TextUntilNul(node.identity.id[:]) != SHOVEY_EDITOR_APP {
+                result.* = AppHostText("unavailable")
+                return 1
+            }
+            if !collection_island.owned {
+                CollectionIslandShow()
+                collection_island_unlock_for_editor = true
+            } else { collection_island_editor = ISLAND_EDITOR_ASKED }
+            result.* = AppHostText("queued")
+            return 1
+        }
+        // Island asks each frame whether it runs as the players' editor.
+        if service == "arcade.navigation" && request == "island-mode" {
+            editor := TextUntilNul(node.identity.id[:]) == ISLAND_UNLOCK_APP && collection_island.owned &&
+                collection_island_editor >= ISLAND_EDITOR_OPENING
+            result.* = AppHostText(ifx editor then "editor" else "play")
             return 1
         }
         if service == "arcade.navigation" && request == "island-offer" {
@@ -605,7 +637,7 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
 // library it is unused, so the app closes.
 CollectionBack :: () -> bool {
     if EntityBack() { return true }
-    if collection_island_page { collection_island_page = false; return true }
+    if collection_island_page { collection_island_page = false; collection_island_unlock_for_editor = false; return true }
     return AppHostBack(*collection_host) > 0
 }
 
@@ -768,9 +800,43 @@ CollectionUpdatesQuestion :: (session: Session, viewport: Rectangle) {
     }
 }
 
+// Whether the node now running is id.
+CollectionActiveIs :: (id: string) -> bool {
+    node := AppTreeNode(*collection_host.tree, collection_host.tree.active)
+    return node != null && TextUntilNul(node.identity.id[:]) == id
+}
+
+// The Editor's Island levels. Island is the collection's own game, so the
+// Editor goes home to the collection, which opens Island in editor mode as it
+// does after an unlock; when Island closes, the title opens the Editor again.
+CollectionIslandEditorStep :: () {
+    tree := *collection_host.tree
+    if collection_island_editor == ISLAND_EDITOR_NONE || tree.busy || tree.draining { return }
+    if collection_island_editor == ISLAND_EDITOR_ASKED {
+        collection_island_editor = ISLAND_EDITOR_NONE
+        if !collection_island.owned || !CollectionActiveIs(SHOVEY_EDITOR_APP) { return }
+        // Home saves the Editor and the title on the way, as Back does.
+        if !AppHostHome(*collection_host) { return }
+        collection_island_editor = ISLAND_EDITOR_OPENING
+        if !CollectionOpenGame(ISLAND_UNLOCK_APP) { Report("Shovey: could not open the Island editor\n") }
+    }
+    if CollectionActiveIs(ISLAND_UNLOCK_APP) { collection_island_editor = ISLAND_EDITOR_OPEN; return }
+    // Island still downloading opens in editor mode once it is there.
+    if collection_island_editor == ISLAND_EDITOR_OPENING && collection_host.platform.presentation.download_id[0] != 0 { return }
+    // Back from Island, or Island refused: the title, then its Editor.
+    collection_island_editor = ISLAND_EDITOR_NONE
+    node := AppTreeNode(tree, tree.active)
+    if node != null && node.collection && !CollectionOpenGame("arcade.shovey") { return }
+    if CollectionActiveIs("arcade.shovey") {
+        unused AppTreeQueueAddon(tree, tree.active, SHOVEY_EDITOR_APP)
+        unused AppTreeDrain(tree)
+    }
+}
+
 CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
     CollectionShopNavigate()
     CollectionIslandPump()
+    CollectionIslandEditorStep()
     // A refused save cannot resume another account's already loaded package.
     if collection_island_blocked {
         Box(session, BoxProps.{.key = cast(u64)49400, .bounds = viewport,
@@ -989,6 +1055,7 @@ CollectionOpenEffect :: (context: *void, account: string, locator: *AppLocator,
 CollectionIslandShow :: () {
     IslandUnlockOpen(*collection_island)
     collection_island_page = true
+    collection_island_unlock_for_editor = false
 }
 
 // Reads this owner's saved answer; a missing node or file never blocks play.
@@ -1075,7 +1142,10 @@ CollectionIslandPump :: () {
     unused CopyCString(ifx collection_island.owned then "play" else "buy", entry.cover.action[:])
     if collection_island_page && collection_island.owned {
         collection_island_page = false
-        collection_island_opening = true
+        // Unlocked from the Editor's Island levels: open them, not the islands.
+        if collection_island_unlock_for_editor { collection_island_editor = ISLAND_EDITOR_ASKED }
+        else { collection_island_opening = true }
+        collection_island_unlock_for_editor = false
     }
 }
 
@@ -1089,7 +1159,7 @@ CollectionIslandFrame :: (session: Session, viewport: Rectangle) {
     unused WidgetPaletteUse(session, ShoveyPalette())
     action := IslandUnlockPage(session, viewport, *collection_island, background, logo)
     unused WidgetPaletteRestore(session)
-    if action == ISLAND_ACTION_BACK { collection_island_page = false }
+    if action == ISLAND_ACTION_BACK { collection_island_page = false; collection_island_unlock_for_editor = false }
     if action == ISLAND_ACTION_SIGN_IN { unused EntityShowPage("open") }
     if action == ISLAND_ACTION_BUY_DEW { unused EntityShowPage("dew") }
 }

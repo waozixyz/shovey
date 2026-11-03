@@ -618,3 +618,9 @@ Koleksi dihapus.
 [editor_imported]
 {n} level ditambahkan sebagai koleksi pribadi baru. {s}
 ---
+[editor_island]
+Shovey Island
+---
+[editor_island_unlock]
+Buka
+---

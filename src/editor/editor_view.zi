@@ -800,7 +800,11 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     custom_height: float32 = 64.0
     customs := catalog.count + 1
     custom_rows := (customs + columns - 1) / columns
-    content := 36.0 + cast(float32)custom_rows * (custom_height + gap)
+    // Shovey Island's own levels come first where the player has Island: its
+    // editor opens once Island is unlocked, and until then the row unlocks it.
+    island := AppSupportsHost("shovey.standalone")
+    island_height: float32 = ifx island then custom_height + gap else 0.0
+    content := island_height + 36.0 + cast(float32)custom_rows * (custom_height + gap)
     // Sharing and the developer export sit under the list.
     foot := bottom - 60.0
     foot_half := (width - 32.0 - gap) / 2.0
@@ -820,6 +824,23 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     make := false
     if scroll.opened {
         base := scroll.content
+        if island {
+            owned := AppSupportsHost("shovey.island.owned")
+            // Copied before the next host call can reuse the reply.
+            unlock: [128]u8
+            if owned || !CopyCString(AppServiceHost("arcade.navigation", "island-unlock"), unlock[:]) || unlock[0] == 0 {
+                unused CopyCString(EditorText("editor_island_unlock"), unlock[:])
+            }
+            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)210, .id = 210,
+                    .bounds = Rectangle.{base.x, base.y, base.width, custom_height}, .label = EditorText("editor_island"),
+                    .detail = ifx owned then "" else TextUntilNul(unlock[:]), .fit_content = true,
+                    .icon_shape = ifx owned then "" else "S1.8rr:M6 10H18V21H6ZM8 10V7A4 4 0 0 1 16 7V10M12 14V17",
+                    .tone = ifx owned then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
+                    .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+                unused AppServiceHost("arcade.navigation", "island-editor")
+            }
+            base.y += island_height
+        }
         EditorCaption(204, Rectangle.{base.x, base.y, base.width, 32.0}, EditorText("editor_your_levels"), 18)
         for index: cast(s32)0..customs - 1 {
             cell := Rectangle.{base.x + cast(float32)(index % columns) * (cell_width + gap),

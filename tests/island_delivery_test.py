@@ -53,6 +53,7 @@ source = '''#import "player_host"
 #import "std/file"
 #import "std/c_string"
 #import "std/date_time_linux"
+#import "std/timer_linux"
 #import "std/text_buffer"
 #import "std/vec"
 fixture_api :: #system_library "c";
@@ -163,7 +164,62 @@ main :: () -> s32 {
         CollectionCollect()
     }
     if BUNDLED && (fixture_transfers != 0 || fixture_grants != 0) { return 14 }
+    // Island opened as a game never shows the players' editor.
+    if FixtureFind(session, 93303) { return 27 }
+    if !CollectionBack() { return 28 }
+    // The Editor's Island levels: only an owner is taken there; the title
+    // opens Island in editor mode, and leaving Island reopens the Editor.
+    if !CollectionOpenGame("arcade.shovey") || !CollectionActiveIs("arcade.shovey") { return 29 }
+    editor := AppTreeQueueAddon(*collection_host.tree, collection_host.tree.active, SHOVEY_EDITOR_APP)
+    if editor.status != APPS_QUEUED || !FixtureSettle(editor.request) || !CollectionActiveIs(SHOVEY_EDITOR_APP) { return 30 }
+    collection_island.owned = false
+    collection_island_editor = ISLAND_EDITOR_ASKED
+    CollectionIslandEditorStep()
+    if collection_island_editor != ISLAND_EDITOR_NONE || !CollectionActiveIs(SHOVEY_EDITOR_APP) { return 31 }
+    collection_island.owned = true
+    collection_island_editor = ISLAND_EDITOR_ASKED
+    shown := false
+    for frame: 4..400 {
+        if !FixtureFrame(session, bounds, frame) { return 32 }
+        if collection_island_editor == ISLAND_EDITOR_OPEN && CollectionActiveIs(ISLAND_UNLOCK_APP) && FixtureFind(session, 93303) {
+            shown = true
+            break
+        }
+        unused SleepMilliseconds(5)
+    }
+    if !shown { return 33 }
+    if !CollectionBack() { return 34 }
+    back := false
+    for frame: 401..800 {
+        if !FixtureFrame(session, bounds, frame) { return 35 }
+        if collection_island_editor == ISLAND_EDITOR_NONE && CollectionActiveIs(SHOVEY_EDITOR_APP) { back = true; break }
+        unused SleepMilliseconds(5)
+    }
+    if !back { return 36 }
     return 0
+}
+FixtureFind :: (session: Session, key: u64) -> bool {
+    for at: cast(s32)0..TreeCount(session) - 1 { if TreeNodeAt(session, at).key == key { return true } }
+    return false
+}
+FixtureFrame :: (session: Session, bounds: Rectangle, frame: s64) -> bool {
+    BeginDesktopFrame()
+    if BeginFrame(session, cast(u64)frame, bounds) != FrameStatus.FrameOk { return false }
+    if !CollectionFrame(session, bounds, 0, 0) { return false }
+    if EndFrame(session) != FrameStatus.FrameOk { return false }
+    if !EndDesktopFrame() { return false }
+    CollectionCollect()
+    return true
+}
+// Drains the apps host until request completes.
+FixtureSettle :: (request: s64) -> bool {
+    if !AppTreeDrain(*collection_host.tree) { return false }
+    started := MonotonicMilliseconds()
+    while CollectionPending(request) && MonotonicMilliseconds() - started < 60000 {
+        unused SleepMilliseconds(5)
+        if !AppTreeDrain(*collection_host.tree) { return false }
+    }
+    return !CollectionPending(request)
 }
 '''
 source = source.replace('BUNDLED', 'true' if args.bundled else 'false')
@@ -225,4 +281,5 @@ player.run([os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections'
     *sources, '-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
     *profile.link_flags(include_archives=False), '-o', work / 'test'], cwd=ROOT, env=environment)
 player.run(['xvfb-run', '-a', '-n', '400', '-s', '-screen 0 480x820x24', work / 'test'], cwd=ROOT, env=environment)
-print('Private Island compiled package: exact public descriptor digest, protected client fixture, production host identity/open and three private display frames passed')
+print('Private Island compiled package: exact public descriptor digest, protected client fixture, production host identity/open, '
+      'three private display frames and the Editor\'s Island levels for owners only passed')
