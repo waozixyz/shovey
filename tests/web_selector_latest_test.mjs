@@ -103,6 +103,19 @@ try {
   async function press(label) {
     const node = (await tree()).find(node => node.label === label && (node.role === 'button' || node.kind === 'button'));
     assert(node, 'Missing button: ' + label);
+    await clickNode(node);
+  }
+  // Map waypoints only select; the map's Play (20122) starts the selected level.
+  async function pressKey(id) {
+    const node = (await tree()).find(node => node.key === id && (node.role === 'button' || node.kind === 'button'));
+    assert(node, 'Missing button key: ' + id);
+    await clickNode(node);
+  }
+  async function playFromMap() {
+    await wait(async () => (await tree()).some(n => n.key === 20105), 'Play did not open the map');
+    await pressKey(20122);
+  }
+  async function clickNode(node) {
     const x = node.x + node.width / 2, y = node.y + node.height / 2;
     await call('Input.dispatchMouseEvent', {type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1});
     await delay(80);
@@ -151,6 +164,7 @@ try {
   await wait(() => evaluate(`globalThis.Module?.FS?.analyzePath('/tmp/test-driver').exists && document.querySelector('#loading-screen').classList.contains('is-hidden')`), 'Game did not load');
   await wait(async () => (await tree()).some(n => n.label === 'Play' && n.kind === 'button'), 'Fresh Play cover did not appear');
   await press('Play');
+  await playFromMap();
   for (let step = 0; step < 10; step++) {
     const nodes = await tree();
     if (nodes.some(n => n.label === 'Not now')) await press('Not now');
@@ -197,6 +211,7 @@ try {
   await wait(() => evaluate(`globalThis.Module?.FS?.analyzePath('/tmp/test-driver').exists && document.querySelector('#loading-screen').classList.contains('is-hidden')`), 'Game did not reload');
   await wait(async () => (await tree()).some(n => n.label === 'Play' && (n.role === 'button' || n.kind === 'button')), 'Play cover did not appear');
   await press('Play');
+  await playFromMap();
   await wait(async () => (await tree()).some(n => n.label.startsWith('Level 74 /')), 'Earned level did not open');
   const arrows = [['ArrowLeft', 37], ['ArrowUp', 38], ['ArrowRight', 39], ['ArrowDown', 40]];
   for (const [index, [width, height]] of [[390, 844], [960, 600]].entries()) {
@@ -210,6 +225,7 @@ try {
     await delay(500);
     assert((await tree()).some(n => n.key === 33001 && n.visible && n.enabled), 'Selector snapped back during manual scrolling');
     await press('1');
+    await pressKey(20122);
     await wait(async () => (await tree()).some(n => n.label.startsWith('Level 1 /')), 'Older level did not open');
     await press('Levels');
     await wait(async () => (await tree()).some(n => n.key === 33001 && n.y >= 70 && n.y + n.height <= height),
@@ -222,7 +238,7 @@ try {
       await wait(async () => (await tree()).some(n => n.key === 33002 && n.y >= 70 && n.y + n.height <= height),
         'Finishing level 1 did not keep level 2 in view');
     }
-    await press('Continue');
+    await press('Back');
   }
   assert.equal(failures.length, 0, failures.join('|'));
   console.log('Pip artwork, keyboard play, touch dismissal without movement and saved acknowledgement; selector: earned level74 opens once, then replayed level1 and finished level2 stay visible in portrait/landscape');

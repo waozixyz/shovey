@@ -205,8 +205,8 @@ try {
       'Scrolling did not reveal later journey waypoints');
     assert.equal(await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`), campaign, 'Scrolling changed the device campaign');
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Scrolling wrote account progress');
-    // Editor reads the browser's Classic save, while keeping the device's
-    // unlocks out of earned account progress and keeping future levels locked.
+    // Editor offers only the creator's own levels, never campaign levels, even
+    // ones this device unlocked; it never changes Classic or account progress.
     await keyClick(20022);
     await textClick('Back');
     const header = (campaign.startsWith('C5') || campaign.startsWith('C6')) ? 6 : 4;
@@ -216,12 +216,12 @@ try {
     await textClick('Open');
     await textClick('Levels');
     const editorNodes = await tree();
-    assert(editorNodes.some(node => node.key === 260009 && node.label === '2'), 'Editor did not show device-unlocked level 2');
-    assert(!editorNodes.some(node => node.key === 260011), 'Device-unlocked level 2 is still locked');
-    assert(editorNodes.some(node => node.key === 260015), 'Future level 3 must stay locked');
+    assert(!editorNodes.some(node => node.key >= 260000 && node.key < 270000), 'Editor offered campaign levels');
+    assert(!editorNodes.some(node => (node.label || '').includes('Story')), 'Editor offered story levels');
+    assert(editorNodes.some(node => node.label === 'New level'), 'Editor did not offer a new own level');
     assert.equal(await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`), editorFixture, 'Editor changed Classic progress');
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Editor published device-only unlocks');
-    console.log('Web Profile, inline Dew, account persistence and device-only level navigation passed without writing unearned account progress; no screenshots.');
+    console.log('Web Profile, inline Dew, account persistence, device-only level navigation and own-levels-only Editor passed without writing unearned account progress; no screenshots.');
   }
 } finally {
   if (socket) socket.close();
