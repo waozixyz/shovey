@@ -2495,7 +2495,7 @@ SelectorScreen :: (area: Rectangle) {
             .landscape = map_area.width >= map_area.height,
             .key_pressed = selector_navigation_key,
             .now = cast(float64)MonotonicMilliseconds() / 1000.0,
-            .available_label = "Edit", .completed_label = "Edit", .locked_label = "", .loading_label = ""})
+            .available_label = "Edit", .completed_label = "Edit", .locked_label = ""})
         if selection.focused > 0 && selection.focused <= ALL_PLACES && selection.focused != selector_focus {
             SelectorFocus(selection.focused)
         }

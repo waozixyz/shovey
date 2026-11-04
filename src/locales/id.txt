@@ -208,9 +208,6 @@ Level
 [shovey_locked]
 Terkunci
 ---
-[shovey_progress_loading]
-Memuat progres akun…
----
 [shovey_completed]
 Selesai
 ---

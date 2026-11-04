@@ -69,13 +69,11 @@ WorldMapViewProps :: struct {
     labels: []string
     focus_only: bool
     landscape: bool
-    loading: bool
     now: float64
     key_pressed: s32
     available_label: string
     completed_label: string
     locked_label: string
-    loading_label: string
 }
 
 WorldMapSelection :: struct {
@@ -908,7 +906,6 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
         completed := WorldMapViewFlag(props.completed, place)
         label := WorldMapViewDisplayName(place, props, label_storage[place - 1][:])
         status := ifx !available then props.locked_label else ifx completed then props.completed_label else props.available_label
-        if props.loading && !available { status = props.loading_label }
         if Button(session, ButtonProps.{.key = cast(u64)(33000 + place), .id = 33000 + place,
             .bounds = node, .label = label, .detail = ifx props.focus_only then "" else status, .disabled = !available,
             .invisible = true, .icon_only = true, .selected = place == state.focused, .circle = true}) != 0 {

@@ -32,7 +32,7 @@ def main():
         for item in levels.load('classic'):
             assert ''.join(item['cells']).encode() not in data, 'Story data was compiled into the authoring package'
         assert b'backup/original/' not in data, 'Reference loader was compiled into the authoring package'
-    for name in ('editor_actions.py', 'publication_queue.py', 'editor_check.py'):
+    for name in ('editor_actions.py', 'level_rules.py', 'publication_queue.py', 'editor_check.py'):
         shutil.copyfile(ROOT / 'scripts' / name, payload / 'scripts' / name)
     for edition in ('shovey', 'shovey-landscape'):
         target = payload / 'assets' / edition

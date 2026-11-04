@@ -208,9 +208,6 @@ Livelli
 [shovey_locked]
 Bloccato
 ---
-[shovey_progress_loading]
-Caricamento progressi dell'account…
----
 [shovey_completed]
 Completato
 ---

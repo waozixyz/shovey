@@ -16,6 +16,13 @@ from world_map_test_support import assert_fullscreen_map, start_map_destination
 
 LEVEL_UPDATES = 'Download new levels when they come out?'
 
+
+def assert_no_progress_wait(driver):
+    """Account progress merges quietly: no screen says it is loading it."""
+    for node in driver.tree():
+        text = f"{node.get('label') or ''}\n{node.get('detail') or ''}".lower()
+        assert 'account progress' not in text, node
+
 def answer_cover_question(driver):
     """Shovey asks once on its covers whether games
     download new levels; tests keep the levels they ship with. The question
@@ -24,6 +31,7 @@ def answer_cover_question(driver):
     # The question follows the collection's records, which can load a frame
     # after Play first appears; let the covers settle before looking.
     driver.wait_idle(frames=4)
+    assert_no_progress_wait(driver)
     if driver.find(label=LEVEL_UPDATES, role='text'):
         driver.press(label='Not now', role='button')
         driver.wait_gone(label=LEVEL_UPDATES, role='text')
@@ -51,6 +59,7 @@ def wait_level_one(driver, classic_levels):
     while not driver.find(contains='Level 1 / ', role='text'):
         if driver.find(key=20105, visible=True):
             assert_fullscreen_map(driver)
+            assert_no_progress_wait(driver)
             start_map_destination(driver, 1)
             break
         assert time.monotonic() < deadline, 'Neither map nor level opened'
@@ -75,6 +84,8 @@ def main():
     # Classic's heading counts its levels, which the published campaign lists.
     classic_levels = args.classic_levels or len(json.loads((root / 'levels/approved.json').read_text())['levels'])
     output.mkdir(parents=True, exist_ok=True)
+    for path in (root / 'src/locales').glob('*.txt'):
+        assert '[shovey_progress_loading]' not in path.read_text(), path
     sys.path.insert(0, str(args.inbe_source / 'tests'))
     from ui_driver import UiDriver
     driver = UiDriver(output / 'driver')

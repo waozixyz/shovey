@@ -9,7 +9,13 @@ Client :: #import "entity/game_progress_client";
 #import, file "progress_rules.zi";
 #import, file "progress_laws.zi";
 
-SHARED_PROGRESS_LOADING_TIMEOUT :: 30.0
+// Account progress merges in the background; play never waits for it.
+// Status reads are local, so a sync is followed closely and idle play still
+// notices another device's progress within a second of Entity bringing it.
+SHARED_PROGRESS_SYNC_POLL :: 0.1
+SHARED_PROGRESS_IDLE_POLL :: 1.0
+// Pip's tips wait at most this long for a signed-in account's progress.
+SHARED_PROGRESS_MERGE_WAIT :: 30.0
 
 SharedProgressSession :: struct {
     // Public snapshots retained for every edition and the rewards adapter.
@@ -23,7 +29,9 @@ SharedProgressSession :: struct {
     client: Client.GameProgressClient
     bound: bool
     now: float64
-    loading_since: float64
+    merging_since: float64
+    revision: float64
+    revision_known: bool
     sync_check_pending: bool
     sync_pending: bool
     sync_settled_reread: bool
@@ -169,11 +177,13 @@ SharedProgressStart :: (session: *SharedProgressSession, record: Progress.GamePr
     unused SharedProgressPump(session, now)
 }
 
-SharedProgressAccountLoading :: (session: *SharedProgressSession) -> bool {
+// Whether a signed-in account's progress may still be merging. Nothing is
+// shown for it; only Pip's tips wait, so they follow the merged progress.
+SharedProgressAccountMerging :: (session: *SharedProgressSession) -> bool {
     if !session.available || !session.owner_known || !session.bound || TextUntilNul(session.owner[:]) == "" ||
     session.client.result.state == Client.GameProgressClientState.Failed ||
     session.client.result.error != Client.GameProgressClientError.None { return false }
-    if session.loading_since <= 0.0 || session.now - session.loading_since >= SHARED_PROGRESS_LOADING_TIMEOUT { return false }
+    if session.merging_since <= 0.0 || session.now - session.merging_since >= SHARED_PROGRESS_MERGE_WAIT { return false }
     return !session.client.result.hydrated || session.sync_check_pending || session.sync_pending ||
         session.sync_settled_reread
 }
@@ -200,7 +210,7 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     before := session.record
     session.owner = owner
     session.owner_known = true
-    if session.loading_since <= 0.0 { session.loading_since = now }
+    if session.merging_since <= 0.0 { session.merging_since = now }
     if !session.bound {
         pending: bool
         if !SharedProgressLoad(TextUntilNul(owner[:]), *session.record, *pending) { return 0 }
@@ -216,6 +226,15 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     was_sync_pending := session.sync_pending
     status_syncing := SharedProgressStatusField(status, "sync", "syncing")
     status_pending := SharedProgressStatusField(status, "sync", "pending")
+    // Entity's revision grows as soon as a sync round brings another
+    // device's records here, before the rest of that sync finishes. Read
+    // the device copy at once instead of waiting for the sync to settle.
+    revision := ReadNumber(status, FieldAt(status, 0, "revision"))
+    if revision.valid {
+        if session.revision_known && revision.value != session.revision { session.client.next_read = 0 }
+        session.revision = revision.value
+        session.revision_known = true
+    }
     result := Client.GameProgressClientPump(*session.client, cast(s64)(now * 1000.0), true)
     if result.state == Client.GameProgressClientState.OwnerChanged {
         session.* = .{}
@@ -223,7 +242,7 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     }
     SharedProgressSnapshot(session)
     // Keep stepping hydration, pending operations and durable acknowledgement
-    // promptly; idle account reads retain Shovey's fifteen-second interval.
+    // promptly; full idle account reads retain the client's read interval.
     if session.sync_check_pending {
         session.sync_pending = true
         session.sync_check_pending = false
@@ -234,7 +253,7 @@ SharedProgressPump :: (session: *SharedProgressSession, now: float64, playing: b
     client_idle := result.state == Client.GameProgressClientState.Ready ||
         result.state == Client.GameProgressClientState.Acknowledged
     if client_idle {
-        session.poll_at = ifx session.sync_pending then now + 0.5 else now + 15.0
+        session.poll_at = ifx session.sync_pending then now + SHARED_PROGRESS_SYNC_POLL else now + SHARED_PROGRESS_IDLE_POLL
         if was_sync_pending && !session.sync_pending {
             session.sync_settled_reread = true
             session.client.next_read = 0

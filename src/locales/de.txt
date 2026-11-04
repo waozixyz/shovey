@@ -208,9 +208,6 @@ Level
 [shovey_locked]
 Gesperrt
 ---
-[shovey_progress_loading]
-Kontofortschritt wird geladen…
----
 [shovey_completed]
 Geschafft
 ---

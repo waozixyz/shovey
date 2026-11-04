@@ -208,9 +208,6 @@ Levels
 [shovey_locked]
 Locked
 ---
-[shovey_progress_loading]
-Loading account progress…
----
 [shovey_completed]
 Completed
 ---

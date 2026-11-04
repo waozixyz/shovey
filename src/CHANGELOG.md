@@ -1,8 +1,9 @@
 # Shovey changelog
 
-## [Unreleased]
+## [0.6.167] - 2026-11-03
 
 - The level result, book, shop and item texts show again in every language.
+- Your account's progress arrives quietly and quickly; the map no longer says it is loading.
 
 ## [0.6.166] - 2026-11-03
 

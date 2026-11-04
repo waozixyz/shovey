@@ -30,6 +30,7 @@ pending_read: bool;
 read_fails: bool;
 account_syncing: bool;
 account_settled: bool;
+revision: s64;
 put_snapshot: Progress.GameProgressRecord;
 reply: [32768]u8;
 keys: [16][256]u8;
@@ -57,7 +58,7 @@ FakeService :: (name: string, request: string) -> string {
         sync := "pending"
         if account_syncing { sync = "syncing" }
         else if account_settled || synced { sync = "synced" }
-        BuilderPrint(*out, "{\"status\":\"done\",\"account\":\"%\",\"sync\":\"%\"", owner, sync)
+        BuilderPrint(*out, "{\"status\":\"done\",\"account\":\"%\",\"sync\":\"%\",\"revision\":%", owner, sync, revision)
         if !old_host { BuilderPrint(*out, ",\"game_progress\":\"account-v1\"") }
         BuilderPrint(*out, "}")
     } else if SharedProgressStatusField(request, "operation", "put") {
@@ -232,46 +233,74 @@ Check :: () -> s32 {
     available = true; old_host = true
     SharedProgressStart(*session, record, 53.0)
     if session.available || SharedProgressSave(*session, 41, true) { return 26 }
-    // The selector explains a signed-in read that has not finished, including
-    // the background record sync after Entity's local cache answers "missing".
+    // A signed-in read that has not finished, including the background
+    // record sync after Entity's local cache answers "missing", shows
+    // nothing; only Pip's tips wait for it, and never for long.
     available = true; old_host = false; account_syncing = false; account_settled = false; pending_status = false
     loading: SharedProgressSession
     pending_read = true
     SharedProgressStart(*loading, record, 35.0)
-    if !SharedProgressAccountLoading(*loading) { return 33 }
+    if !SharedProgressAccountMerging(*loading) { return 33 }
     pending_read = false; account_settled = true
     loading.poll_at = 0.0
     Step(*loading, 36.5)
-    if SharedProgressAccountLoading(*loading) || loading.record.unlocked != 40 { return 34 }
+    if SharedProgressAccountMerging(*loading) || loading.record.unlocked != 40 { return 34 }
     exists[0] = false; account_settled = false
     SharedProgressStart(*loading, record, 37.0)
-    if !SharedProgressAccountLoading(*loading) { return 35 }
+    if !SharedProgressAccountMerging(*loading) { return 35 }
     account_syncing = true
     loading.poll_at = 0.0
     unused SharedProgressPump(*loading, 37.5)
-    if !SharedProgressAccountLoading(*loading) { return 36 }
+    if !SharedProgressAccountMerging(*loading) { return 36 }
     account_syncing = false; account_settled = true
     exists[0] = true
     loading.poll_at = 0.0
     unused SharedProgressPump(*loading, 38.0)
-    if !SharedProgressAccountLoading(*loading) { return 37 }
+    if !SharedProgressAccountMerging(*loading) { return 37 }
     unused SharedProgressPump(*loading, 38.1)
     if loading.record.unlocked != 40 { return 41 }
     unused SharedProgressPump(*loading, 38.2)
-    if SharedProgressAccountLoading(*loading) { return 43 }
+    if SharedProgressAccountMerging(*loading) { return 43 }
     loading.now = 68.0
     account_syncing = true; account_settled = false
     loading.sync_pending = true
-    if SharedProgressAccountLoading(*loading) { return 38 }
+    if SharedProgressAccountMerging(*loading) { return 38 }
     failed: SharedProgressSession
     read_fails = true
     SharedProgressStart(*failed, record, 39.0)
-    if SharedProgressAccountLoading(*failed) { return 39 }
+    if SharedProgressAccountMerging(*failed) { return 39 }
     read_fails = false
     available = false
     offline: SharedProgressSession
     SharedProgressStart(*offline, record, 54.0)
-    if SharedProgressAccountLoading(*offline) { return 40 }
+    if SharedProgressAccountMerging(*offline) { return 40 }
+    // Signed in, the device's copy of account progress plays at once while
+    // the sync runs. A sync round that brings another device's progress
+    // raises Entity's revision, and that progress merges within a few idle
+    // frames, while the rest of the sync still runs, not after it settles.
+    available = true; account_syncing = true; account_settled = false; exists[0] = true
+    remote[0].unlocked = 40
+    background: SharedProgressSession
+    SharedProgressStart(*background, record, 70.0)
+    if !background.client.result.hydrated || background.record.unlocked != 40 { return 44 }
+    remote[0].unlocked = 45; revision += 1
+    merged_at := -1.0
+    for frame: cast(s32)1..30 {
+        now := 71.0 + cast(float64)frame / 15.0
+        if SharedProgressPump(*background, now) == 1 && background.record.unlocked == 45 { merged_at = now; break }
+    }
+    if merged_at < 0.0 || merged_at - 71.0 > 0.2 || !account_syncing { return 45 }
+    // Another device's later progress also shows within a second of idle.
+    account_syncing = false
+    for frame: cast(s32)1..30 { unused SharedProgressPump(*background, 72.0 + cast(float64)frame / 15.0) }
+    writes = account_writes
+    remote[0].unlocked = 46; revision += 1
+    merged_at = -1.0
+    for frame: cast(s32)1..30 {
+        now := 80.0 + cast(float64)frame / 15.0
+        if SharedProgressPump(*background, now) == 1 && background.record.unlocked == 46 { merged_at = now; break }
+    }
+    if merged_at < 0.0 || merged_at - 80.0 > 1.1 || account_writes != writes { return 46 }
     // Results use synthetic private storage only; no profile/account reads.
     key_count = 0
     staged = .{}; durable = .{}

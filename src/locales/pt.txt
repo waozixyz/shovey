@@ -208,9 +208,6 @@ Níveis
 [shovey_locked]
 Bloqueado
 ---
-[shovey_progress_loading]
-A carregar o progresso da conta…
----
 [shovey_completed]
 Concluído
 ---

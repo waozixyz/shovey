@@ -26,7 +26,6 @@ Math :: #import "std/math";
 #import "press_widget"
 #import "scroll_props"
 #import "scroll_widget"
-#import "kryon/loading_indicator"
 #import "kryon/tree"
 #import "number_text"
 #import "text_buffer"
@@ -190,7 +189,7 @@ FriendSave :: () {
 
 FriendPrepare :: () {
     if mini || ShoveySecret(game.level) || game.level == ShoveyFinaleLevel() { return }
-    if SharedProgressAccountLoading(*shared_progress) {
+    if SharedProgressAccountMerging(*shared_progress) {
         friend_guide.pending = 0
         friend_guide.waiting = 0
         return
@@ -1446,7 +1445,6 @@ ShoveyFrame :: () {
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
-        account_loading := SharedProgressAccountLoading(*shared_progress)
         list_top := top
         listed := ShoveyLevelCount()
         if listed <= MapRoute.WORLD_MAP_CLASSIC_LEVELS {
@@ -1483,12 +1481,11 @@ ShoveyFrame :: () {
                 levels_focus_pending = false
             }
             map_props := WorldMap.WorldMapViewProps.{.visible = visible[:], .available = available[:], .landscape = landscape,
-                    .completed = completed[:], .stars = stars[:], .replay = replay[:], .loading = account_loading,
+                    .completed = completed[:], .stars = stars[:], .replay = replay[:],
                     .now = frame.now, .key_pressed = key,
                     .available_label = AppLocaleHost("shovey_available"),
                     .completed_label = AppLocaleHost("shovey_completed"),
-                    .locked_label = AppLocaleHost("shovey_locked"),
-                    .loading_label = AppLocaleHost("shovey_progress_loading")}
+                    .locked_label = AppLocaleHost("shovey_locked")}
             selected := WorldMap.WorldMapView(frame.session, map_bounds, *levels_map, map_props)
             panel_top := bottom - 112.0
             Fill(cast(u64)20120, Rectangle.{0.0, panel_top, width, 112.0}, Color.{38, 66, 46, 238})
@@ -1576,10 +1573,8 @@ ShoveyFrame :: () {
                     // Status stays accessible in the semantic label, while the
                     // visual card uses a lock/check icon and an unlocked board.
                     status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
-                    level_waiting := account_loading && !unlocked
                     if Button(frame.session, ButtonProps.{.key = cast(u64)(33000 + number), .id = 33000 + number,
                             .bounds = bounds, .label = label,
-                            .detail = ifx level_waiting then AppLocaleHost("shovey_progress_loading") else "",
                             .disabled = !unlocked,
                             .selected = completed, .fit_content = true,
                             .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
@@ -1596,7 +1591,7 @@ ShoveyFrame :: () {
                         Caption(cast(u64)(41000 + number), Rectangle.{bounds.x + 10.0, bounds.y + preview_height + 12.0, bounds.width - 48.0, 28.0}, label, 18)
                     }
                     icon := ""
-                    if !unlocked && !level_waiting {
+                    if !unlocked {
                         icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10M12 14V17"
                     } else if completed {
                         icon = "S2rr:M5 12L10 17L19 7"
@@ -1610,12 +1605,6 @@ ShoveyFrame :: () {
                                 .label = status, .icon_only = true, .icon_shape = icon, .disabled = true,
                                 .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
                                 .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
-                    }
-                    if level_waiting {
-                        LoadingIndicator(frame.session, LoadingIndicatorProps.{.key = cast(u64)(38000 + number),
-                                .bounds = Rectangle.{bounds.x + bounds.width / 2.0 - 21.0,
-                                    bounds.y + preview_height * 0.5 - 18.0, 42.0, 36.0},
-                                .now = frame.now, .scale = 1.2})
                     }
                     if unlocked && LevelReplayDot(number, ShoveyLevelBoard(number), completed, TextUntilNul(shared_progress.owner[:])) {
                         unused Circle(frame.session, CircleProps.{.key = cast(u64)(43000 + number),

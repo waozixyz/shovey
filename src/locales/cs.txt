@@ -208,9 +208,6 @@ Pokračovat
 [shovey_locked]
 Zamčeno
 ---
-[shovey_progress_loading]
-Načítání postupu účtu…
----
 [shovey_completed]
 Dokončeno
 ---
