@@ -1,7 +1,7 @@
 name: Google Play
 
-# Every published Shovey release goes to Google Play's internal testing track
-# as the Google Play edition, which sells Dew through Google Play. Downloads
+# Every published Shovey release completes internal and closed testing (alpha).
+# The Google Play edition sells Dew through Google Play. Downloads
 # calls this after publishing a release; a dispatch uploads one release
 # again (choose its tag as the ref).
 on:
@@ -44,6 +44,10 @@ jobs:
     concurrency:
       group: shovey-google-play
       cancel-in-progress: false
+    outputs:
+      version: ${{ steps.sign.outputs.version }}
+      version_code: ${{ steps.sign.outputs.version_code }}
+      internal_uploaded: ${{ steps.upload.outcome == 'success' }}
     defaults:
       run:
         working-directory: waozixyz/shovey
@@ -108,6 +112,7 @@ jobs:
             --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
             --bundletool "$RUNNER_TEMP/bundletool.jar"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version_code=$(python3 -c 'import json; print(json.load(open("version.json"))["version_code"])')" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         if: ${{ !inputs.products_only }}
         with:
@@ -131,6 +136,7 @@ jobs:
           PY
           cat build/play-notes/whatsnew-en-US
       - name: Upload to Google Play internal testing
+        id: upload
         if: ${{ !inputs.products_only }}
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
@@ -177,3 +183,12 @@ jobs:
           done
           echo '::error::Dew product setup failed after three attempts. Retry with products_only=true after confirming the bundle upload.'
           exit 1
+
+  closed-testing:
+    needs: bundle
+    if: ${{ always() && needs.bundle.outputs.internal_uploaded == 'true' }}
+    uses: ./.github/workflows/play-promote.yml
+    with:
+      version: ${{ needs.bundle.outputs.version }}
+      version_code: ${{ needs.bundle.outputs.version_code }}
+    secrets: inherit

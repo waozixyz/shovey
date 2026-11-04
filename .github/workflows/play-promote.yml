@@ -1,15 +1,29 @@
-name: Google Play Production promotion
+name: Google Play closed testing
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       version:
-        description: Exact published version already completed on internal testing
         required: true
         type: string
       version_code:
-        description: Exact version code of that internal release
         required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact published version completed on internal testing
+        type: string
+      version_code:
+        description: Exact internal version code
+        type: string
+      inspect_only:
+        description: Read all Play tracks and tester configuration without publishing
+        type: boolean
+        default: false
+
+      wurm_secret_public_key:
+        description: Optional Wurm repository public key for encrypted credential setup
         type: string
 
 permissions:
@@ -26,6 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Validate the published release
+        if: ${{ !inputs.inspect_only }}
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
@@ -43,17 +58,163 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: waozixyz/entity
-          # Play administration tools are newer than the game's runtime pin.
           ref: 2062597cecba5ce1bf54a20e6d5a2bdda148a06b
           path: play-entity
           persist-credentials: false
       - name: Test promotion boundaries
         run: python3 tests/play_promotion_test.py
-      - name: Promote only the approved existing internal release
+      - name: Read tracks and complete closed testing
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: xyz.waozi.shovey
+          WURM_SECRET_PUBLIC_KEY: ${{ inputs.wurm_secret_public_key }}
           VERSION: ${{ inputs.version }}
           VERSION_CODE: ${{ inputs.version_code }}
+          INSPECT_ONLY: ${{ inputs.inspect_only }}
+          CLOSED_TRACK: ${{ vars.GOOGLE_PLAY_CLOSED_TRACK || 'alpha' }}
         run: |
-          python3 scripts/promote-play-release.py --version "$VERSION" \
-            --version-code "$VERSION_CODE" --entity-tools play-entity/tools
+          python3 - <<'PY'
+          import copy
+          import importlib.util
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import tempfile
+
+          CLOSED_TRACK = os.environ.get('CLOSED_TRACK', 'alpha')
+
+
+          def closed_release(tracks, version, code, target=CLOSED_TRACK):
+              # This allowlist is deliberately independent of workflow inputs.
+              if target != CLOSED_TRACK or target in ('production', 'internal', 'beta'):
+                  raise ValueError('Only the configured closed testing track may be promoted')
+              if not re.fullmatch(r'\d+\.\d+\.\d+', version):
+                  raise ValueError('Use a numeric release version')
+              if not re.fullmatch(r'[1-9][0-9]*', code):
+                  raise ValueError('Use a positive version code')
+              internal = next((t for t in tracks if t['track'] == 'internal'), {})
+              source = [r for r in internal.get('releases', [])
+                        if r.get('name') == version and r.get('versionCodes') == [code]
+                        and r.get('status') == 'completed']
+              if len(source) != 1:
+                  raise ValueError('The exact version must be completed on internal testing')
+              closed = next((t for t in tracks if t['track'] == target), None)
+              if closed is None:
+                  raise ValueError('Configured closed testing track is absent; inspect Play Console')
+              existing = closed.get('releases', [])
+              if (len(existing) == 1 and existing[0].get('name') == version
+                      and existing[0].get('versionCodes') == [code]
+                      and existing[0].get('status') == 'completed'
+                      and 'userFraction' not in existing[0]):
+                  return None
+              if any(int(c) > int(code) for r in existing for c in r.get('versionCodes', [])):
+                  raise ValueError('Refusing to replace a newer closed testing release')
+              release = copy.deepcopy(source[0])
+              release['status'] = 'completed'
+              release.pop('userFraction', None)
+              return {'track': target, 'releases': [release]}
+
+
+          def call(play, method, path, body=None):
+              status, answer = play.call(method, path, body)
+              if status != 200:
+                  raise RuntimeError(f'Play {method} {path}: HTTP {status}: {answer}')
+              return answer
+
+
+          def state(play, edit, label):
+              tracks = call(play, 'GET', f'/edits/{edit}/tracks').get('tracks', [])
+              testers = {}
+              for track in tracks:
+                  name = track['track']
+                  if name != 'production':
+                      status, answer = play.call('GET', f'/edits/{edit}/testers/{name}')
+                      # Report the API response shape/count without publishing group addresses.
+                      testers[name] = {'http_status': status,
+                                       'api_fields': sorted(answer) if isinstance(answer, dict) else [],
+                                       'googleGroups_count': len(answer.get('googleGroups', [])) if isinstance(answer, dict) else 0}
+                      if status != 200:
+                          testers[name]['error'] = answer
+              print(json.dumps({'phase': label, 'package': play.package,
+                                'tracks': tracks, 'testers': testers}, sort_keys=True))
+              return tracks
+
+
+          def promote(play, version, code, inspect_only=False):
+              edit = call(play, 'POST', '/edits', {})['id']
+              committed = False
+              try:
+                  tracks = state(play, edit, 'before')
+                  if inspect_only:
+                      return
+                  update = closed_release(tracks, version, code)
+                  if update is not None:
+                      # Never construct a URL from a dispatch input or an API track name.
+                      call(play, 'PUT', f'/edits/{edit}/tracks/{CLOSED_TRACK}', update)
+                      call(play, 'POST', f'/edits/{edit}:validate', {})
+                      call(play, 'POST', f'/edits/{edit}:commit', {})
+                      committed = True
+              finally:
+                  if not committed:
+                      play.call('DELETE', f'/edits/{edit}')
+              verification = call(play, 'POST', '/edits', {})['id']
+              try:
+                  tracks = state(play, verification, 'after')
+                  if closed_release(tracks, version, code) is not None:
+                      raise RuntimeError('Fresh API read did not confirm completed closed testing')
+              finally:
+                  play.call('DELETE', f'/edits/{verification}')
+
+
+          def seal_credential(public_key, credential):
+              import base64
+              import ctypes
+              sodium = ctypes.CDLL('libsodium.so.23')
+              sodium.sodium_init()
+              sodium.crypto_box_seal.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
+                                                 ctypes.c_ulonglong, ctypes.c_char_p]
+              public = base64.b64decode(public_key, validate=True)
+              if len(public) != 32:
+                  raise ValueError('Expected a GitHub repository public key')
+              message = credential.encode()
+              encrypted = ctypes.create_string_buffer(len(message) + 48)
+              if sodium.crypto_box_seal(encrypted, message, len(message), public) != 0:
+                  raise RuntimeError('Credential encryption failed')
+              return base64.b64encode(encrypted.raw)
+
+
+          def main():
+              spec = importlib.util.spec_from_file_location(
+                  'play_dew', Path('play-entity/tools/play_dew_products.py'))
+              provider = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(provider)
+              with tempfile.NamedTemporaryFile(mode='w', suffix='.json', dir='.') as key:
+                  key.write(os.environ['GOOGLE_PLAY_SERVICE_ACCOUNT_JSON'])
+                  key.flush()
+                  inspect_only = os.environ.get('INSPECT_ONLY') == 'true'
+                  packages = ('xyz.waozi.shovey', 'xyz.waozi.wurm') if inspect_only else (os.environ['PLAY_PACKAGE'],)
+                  for package in packages:
+                      promote(provider.Play(key.name, package),
+                              os.environ.get('VERSION', ''), os.environ.get('VERSION_CODE', ''), inspect_only)
+                  public_key = os.environ.get('WURM_SECRET_PUBLIC_KEY')
+                  if public_key:
+                      if not inspect_only:
+                          raise ValueError('Credential setup is only available during inspection')
+                      # Seal directly to Wurm's GitHub repository public key. Only
+                      # ciphertext leaves this runner; no private key/token is exported.
+                      Path('wurm-play-secret.encrypted').write_bytes(
+                          seal_credential(public_key, os.environ['GOOGLE_PLAY_SERVICE_ACCOUNT_JSON']))
+
+
+          if __name__ == '__main__':
+              main()
+          PY
+      - name: Save the credential sealed to Wurm's repository key
+        if: ${{ inputs.inspect_only && inputs.wurm_secret_public_key != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: wurm-play-secret-encrypted
+          path: wurm-play-secret.encrypted
+          retention-days: 1
+          if-no-files-found: error

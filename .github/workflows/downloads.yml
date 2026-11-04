@@ -374,7 +374,7 @@ jobs:
           fi
           gh workflow run game-updates.yml -R waozixyz/arcade --ref master
 
-  # The same release goes to Google Play's internal testing track as the
+  # The same release completes Google Play internal and closed testing as the
   # Google Play edition, with its Dew packs.
   google-play:
     needs: [due, release]
