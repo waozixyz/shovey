@@ -1,7 +1,7 @@
 [
   {
-    "key_id": "shovey-island-2026-11",
-    "public_key": "3a5625481b6bf6f06546d6dd548e2da79525aef231b600ff0969571dc2bec33c",
+    "key_id": "shovey-island-2026-11b",
+    "public_key": "248b3c88f065ec740fbe77b34d922bf17b30306beffacb9b252027bd874757e6",
     "app_ids": [],
     "node_app_ids": [
       "xyz.waozi.shovey-island"

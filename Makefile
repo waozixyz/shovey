@@ -356,6 +356,8 @@ shop-test: collectibles-test levels
 	sh tests/island_unlock_test.sh
 	python3 tests/island_package_test.py
 	python3 tests/island_catalog_test.py
+	python3 tests/island_campaign_config_test.py
+	python3 tests/island_live_delivery_test.py
 	APPS_NODE_RELEASE='$(APPS)/scripts/node_release.py' python3 tests/island_publication_test.py
 
 .PHONY: forest-puzzle-test

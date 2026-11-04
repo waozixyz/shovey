@@ -328,7 +328,11 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         // A locked Island is not the title's add-on, so the host shows its
         // unlock page directly; buying still needs the node's quote.
         if service == "arcade.navigation" && request == "island" {
-            if collection_island.owned { result.* = AppHostText("owned"); return 1 }
+            if collection_island.owned {
+                collection_island_opening = true
+                result.* = AppHostText("queued")
+                return 1
+            }
             CollectionIslandShow()
             result.* = AppHostText("queued")
             return 1
@@ -345,6 +349,29 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
                 collection_island_unlock_for_editor = true
             } else { collection_island_editor = ISLAND_EDITOR_ASKED }
             result.* = AppHostText("queued")
+            return 1
+        }
+        // The Editor's start asks once whether a locked Island is unlocked
+        // now, as opening the unlock page does: the ledger is read again.
+        if service == "arcade.navigation" && request == "island-refresh" {
+            if !collection_island.owned && !collection_island_page { IslandUnlockOpen(*collection_island) }
+            result.* = AppHostText("queued")
+            return 1
+        }
+        // The Editor's Levels count an owner's own Island levels, which
+        // Island's editor keeps in its index record, one line per level.
+        if service == "arcade.navigation" && request == "island-levels" {
+            if TextUntilNul(node.identity.id[:]) != SHOVEY_EDITOR_APP || !collection_island.owned {
+                result.* = AppHostText("0")
+                return 1
+            }
+            levels := CollectionIslandLevels()
+            count: [24]u8
+            text: Vec(u8)
+            BuilderPrint(*text, "%", levels)
+            unused CopyCString(TextView(VecSlice(text, 0, text.count)), count[:])
+            VecFree(text)
+            result.* = AppHostText(TextUntilNul(count[:]))
             return 1
         }
         // Island asks each frame whether it runs as the players' editor.
@@ -1056,6 +1083,25 @@ CollectionIslandShow :: () {
     IslandUnlockOpen(*collection_island)
     collection_island_page = true
     collection_island_unlock_for_editor = false
+}
+
+// The number of levels in Island editor's own index: a header line, then one
+// line per level. A missing or unreadable index counts none.
+CollectionIslandLevels :: () -> s64 {
+    saved := CollectionRecordsFor(ISLAND_UNLOCK_APP)
+    if saved == null { return 0 }
+    index := AppFileRead(*saved.files, "island-levels")
+    defer { AppFileFree(index) }
+    if index.count < 14 || index[:14] != "island-levels " { return 0 }
+    lines: s64 = 0
+    start: s64 = 0
+    while start < index.count {
+        end := start
+        while end < index.count && index[end] != cast(u8)10 { end += 1 }
+        if end > start { lines += 1 }
+        start = end + 1
+    }
+    return ifx lines > 0 then lines - 1 else 0
 }
 
 // Reads this owner's saved answer; a missing node or file never blocks play.

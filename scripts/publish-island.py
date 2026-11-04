@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 APP = "xyz.waozi.shovey-island"
 NAME = "shovey-island"
 PRODUCT = "shovey.island"
-KEY_ID = "shovey-island-2026-11"
+KEY_ID = "shovey-island-2026-11b"
 ORIGIN = "https://api.waozi.xyz"
 MAX_PACKET = 65 * 1024 * 1024
 

@@ -23,13 +23,16 @@ import build_artifacts
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--bundle', type=Path, required=True)
 parser.add_argument('--bundled', action='store_true', help='verify included bytes unlock without transport')
+parser.add_argument('--campaign', action='store_true', help='replay Island 1–30 through the compiled game (private source required)')
 args = parser.parse_args()
 descriptor = json.loads((ROOT / 'packaging/island.json').read_text())
 assert hashlib.file_digest(args.bundle.open('rb'), 'sha256').hexdigest() == descriptor['sha256']
 assert args.bundle.stat().st_size == descriptor['bytes']
-work = ROOT / 'work/island-delivery-test'
+work = ROOT / ('work/island-campaign-delivery-test' if args.campaign else 'work/island-delivery-test')
 subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=ROOT, check=True)
 work.mkdir(parents=True, exist_ok=True)
+(work / 'scratch').mkdir(exist_ok=True)
+os.environ['TMPDIR'] = str(work / 'scratch')
 shutil.rmtree(work / 'profile', ignore_errors=True)
 source = '''#import "player_host"
 #import "island_package"
@@ -60,6 +63,11 @@ fixture_api :: #system_library "c";
 IslandIdentityProbe :: () -> s32 #foreign fixture_api "IslandIdentityProbe";
 fixture_bytes: string;
 fixture_owned: bool;
+// The owner's Island entitlement as Entity restores it from the node's
+// ledger: a real-like page holding the signed Island unlock receipt.
+fixture_entitled: bool;
+FIXTURE_LEDGER :: "{\\"events\\":[{\\"receipt_id\\":\\"fixture-7\\",\\"issuer_id\\":\\"waozi\\",\\"asset_id\\":\\"waozi:token\\",\\"account_id\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\",\\"event_type\\":\\"credit\\",\\"amount_delta\\":100000000,\\"ledger_seq\\":7,\\"previous_hash\\":\\"0000000000000000000000000000000000000000000000000000000000000000\\",\\"event_hash\\":\\"1111111111111111111111111111111111111111111111111111111111111111\\",\\"created_at\\":\\"2026-11-03T12:00:00Z\\",\\"source_type\\":\\"monero\\",\\"source_ref\\":\\"fixture-deposit\\",\\"signature\\":\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\"},{\\"receipt_id\\":\\"fixture-9\\",\\"issuer_id\\":\\"waozi\\",\\"asset_id\\":\\"waozi:token\\",\\"account_id\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\",\\"app_id\\":\\"shovey\\",\\"event_type\\":\\"debit\\",\\"amount_delta\\":-51000000,\\"ledger_seq\\":9,\\"previous_hash\\":\\"0000000000000000000000000000000000000000000000000000000000000000\\",\\"event_hash\\":\\"1111111111111111111111111111111111111111111111111111111111111111\\",\\"created_at\\":\\"2026-11-03T12:00:00Z\\",\\"source_type\\":\\"unlock\\",\\"source_ref\\":\\"shovey.island\\",\\"signature\\":\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\"}]}";
+FIXTURE_LEGACY :: "{\\"events\\":[{\\"receipt_id\\":\\"fixture-4\\",\\"issuer_id\\":\\"waozi\\",\\"asset_id\\":\\"waozi:token\\",\\"account_id\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\",\\"app_id\\":\\"entity\\",\\"event_type\\":\\"debit\\",\\"amount_delta\\":-85000000,\\"ledger_seq\\":4,\\"previous_hash\\":\\"0000000000000000000000000000000000000000000000000000000000000000\\",\\"event_hash\\":\\"1111111111111111111111111111111111111111111111111111111111111111\\",\\"created_at\\":\\"2026-11-03T12:00:00Z\\",\\"source_type\\":\\"unlock\\",\\"source_ref\\":\\"shovey.island\\",\\"signature\\":\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\"}]}";
 fixture_transfers: s32;
 fixture_grants: s32;
 fixture_answer: [1024]u8;
@@ -97,6 +105,16 @@ main :: () -> s32 {
     if !CollectionOpenShovey(COLLECTION, PROFILE) { return 2 }
     defer { unused CollectionClose() }
     if IslandIdentityProbe() != 1 { return 17 }
+    // Entity's restore reads Island's unlock receipt from a node ledger page,
+    // at the launch price or from the legacy Profile app, only for its owner.
+    restore: GameShopRestore
+    if GameShopRestorePage(FIXTURE_LEDGER, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", *restore) != 0 || restore.cursor != 9 { return 38 }
+    fixture_entitled = (restore.owned & (1 << SHOVEY_ISLAND_PRODUCT)) != 0
+    if !fixture_entitled { return 38 }
+    legacy: GameShopRestore
+    if GameShopRestorePage(FIXTURE_LEGACY, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", *legacy) != 0 || (legacy.owned & (1 << SHOVEY_ISLAND_PRODUCT)) == 0 { return 39 }
+    other: GameShopRestore
+    if GameShopRestorePage(FIXTURE_LEDGER, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", *other) != 0 || (other.owned & (1 << SHOVEY_ISLAND_PRODUCT)) != 0 { return 39 }
     collection_island_package.service = FixtureShop
     collection_island_package.start = FixtureStart
     collection_island_package.poll = FixturePoll
@@ -144,7 +162,7 @@ main :: () -> s32 {
         offer.status != APPS_APPLIED || !collection_island_page ||
         IslandPackageBundle(*collection_island_package, entry).found { return 26 }
     collection_island_page = false
-    fixture_owned = true
+    fixture_owned = fixture_entitled
     if !IslandPackageFetch(*collection_island_package, entry) { return 3 }
     if !IslandPackageBundle(*collection_island_package, entry).found { return 4 }
     collection_island.owned = true
@@ -181,7 +199,9 @@ main :: () -> s32 {
     shown := false
     for frame: 4..400 {
         if !FixtureFrame(session, bounds, frame) { return 32 }
-        if collection_island_editor == ISLAND_EDITOR_OPEN && CollectionActiveIs(ISLAND_UNLOCK_APP) && FixtureFind(session, 93303) {
+        // A new island, its Tiles with the cave floor and its Objects tab.
+        if collection_island_editor == ISLAND_EDITOR_OPEN && CollectionActiveIs(ISLAND_UNLOCK_APP) && FixtureFind(session, 93303) &&
+            FixtureFind(session, 93317) && FixtureFind(session, 93318) && FixtureFind(session, 94328) {
             shown = true
             break
         }
@@ -196,7 +216,41 @@ main :: () -> s32 {
         unused SleepMilliseconds(5)
     }
     if !back { return 36 }
+    // Back from Island is the Editor's start: Classic, and Island with no
+    // Unlock tag while it is owned.
+    if !FixtureEditorStart(session, bounds, 801, true) { return 37 }
+    // Locked, the start's Island card carries Unlock and the price.
+    fixture_owned = false
+    collection_island.owned = false
+    if !FixtureEditorStart(session, bounds, 1001, false) { return 40 }
+    // The locked card opens the unlock page; once unlocked it goes straight
+    // on to Island's editor, not the islands.
+    CollectionIslandShow()
+    collection_island_unlock_for_editor = true
+    fixture_owned = fixture_entitled
+    collection_island.owned = true
+    unlocked := false
+    for frame: 1201..1600 {
+        if !FixtureFrame(session, bounds, frame) { return 41 }
+        if collection_island_editor == ISLAND_EDITOR_OPEN && CollectionActiveIs(ISLAND_UNLOCK_APP) && FixtureFind(session, 93303) {
+            unlocked = true
+            break
+        }
+        unused SleepMilliseconds(5)
+    }
+    if !unlocked || collection_island_page { return 42 }
     return 0
+}
+// The Editor's start page: Classic's card and Island's, whose Unlock tag
+// shows only while Island is locked.
+FixtureEditorStart :: (session: Session, bounds: Rectangle, first: s64, owned: bool) -> bool {
+    for frame: first..first + 199 {
+        if !FixtureFrame(session, bounds, frame) { return false }
+        if CollectionActiveIs(SHOVEY_EDITOR_APP) && FixtureFind(session, 110) && FixtureFind(session, 130) &&
+            FixtureFind(session, 136) != owned { return true }
+        unused SleepMilliseconds(5)
+    }
+    return false
 }
 FixtureFind :: (session: Session, key: u64) -> bool {
     for at: cast(s32)0..TreeCount(session) - 1 { if TreeNodeAt(session, at).key == key { return true } }
@@ -223,6 +277,33 @@ FixtureSettle :: (request: s64) -> bool {
 }
 '''
 source = source.replace('BUNDLED', 'true' if args.bundled else 'false')
+if args.campaign:
+    # Register only the independent rule modules: Island and Classic each have
+    # a shared_campaign module, so registering the whole private folder would
+    # collide with the production public host. These are disposable compiler
+    # inputs; the engine/progress bodies and the shipped package stay unchanged.
+    for name in ('island_engine', 'island_progress', 'island_kinds'):
+        code = (ROOT / 'src/island' / (name + '.zi')).read_text()
+        code = code.replace('#import, file "../island_levels.zi";', '#import "island_levels"')
+        (work / (name + '.zi')).write_text(code)
+    artwork = json.loads((ROOT / 'assets/shovey-island/art.json').read_text())
+    paths = {'assets/shovey-island/' + item['path'] for item in artwork['files']}
+    from island_campaign import shipped_levels
+    paths = {path for path in paths if not (
+        Path(path).parent.name in ('levels', 'levels-landscape') and
+        Path(path).stem.isdecimal() and int(Path(path).stem) > shipped_levels())}
+    for folder in ('tiles', 'player'):
+        paths.update('assets/shovey-island/' + folder + '-landscape/' + path.name
+                     for path in (ROOT / 'assets/shovey-island-landscape' / folder).glob('*.png'))
+    values = '\n'.join(f'    if number == {index} {{ return {json.dumps(path)} }}'
+                       for index, path in enumerate(sorted(paths)))
+    (work / 'campaign_asset_paths.zi').write_text(
+        f'CAMPAIGN_ASSET_COUNT :: {len(paths)}\n'
+        f'CampaignAssetPath :: (number: s32) -> string {{\n{values}\n    return ""\n}}\n')
+    source = '#import "island_campaign_delivery"\n' + source
+    start = source.index('    // Island opened as a game never shows')
+    end = source.index("// The Editor's start page")
+    source = source[:start] + '    return ifx CampaignDelivered(session, bounds) then 0 else 43\n}\n' + source[end:]
 if not args.bundled:
     source = source.replace('    CollectionPackageAccount()', '    collection_island_package.included = .{}\n    CollectionPackageAccount()', 1)
 source = source.replace('BUNDLE', json.dumps(str(args.bundle.resolve()))).replace(
@@ -237,7 +318,8 @@ for key in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRES
 environment['YUE_DESKTOP_RECOVERY'] = '0'
 environment['SDL_AUDIODRIVER'] = 'dummy'
 player.run([player.ziran(), 'build', '--project', *player.lock(), '--target=c', '--define', 'PLATFORM_DESKTOP',
-    '--module-path', work, '--entry', 'island_delivery:main', '-o', generated, fixture], cwd=ROOT, env=environment)
+    '--module-path', work, '--module-path', ROOT / 'tests',
+    '--entry', 'island_delivery:main', '-o', generated, fixture], cwd=ROOT, env=environment)
 # Probe private provider state through the explicit native test host, without
 # exporting account internals or changing dependency sources. No pump runs.
 account_header = next(generated.rglob('*account_store.h'))
@@ -281,5 +363,10 @@ player.run([os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections'
     *sources, '-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
     *profile.link_flags(include_archives=False), '-o', work / 'test'], cwd=ROOT, env=environment)
 player.run(['xvfb-run', '-a', '-n', '400', '-s', '-screen 0 480x820x24', work / 'test'], cwd=ROOT, env=environment)
-print('Private Island compiled package: exact public descriptor digest, protected client fixture, production host identity/open, '
-      'three private display frames and the Editor\'s Island levels for owners only passed')
+if args.campaign:
+    print('Private-Xvfb Island campaign: first 30 compiled levels load and solve through real keys; '
+          'every saved position matches its solution proof; portrait/landscape art and 12 locales present')
+else:
+    print('Private Island compiled package: exact public descriptor digest, protected client fixture, production host identity/open, '
+          'three private display frames, a node-shaped Island receipt restored for its owner only, and the Editor\'s start: '
+          'Island unlocked opens its editor with caves and objects, locked shows Unlock and unlocking goes straight on to it')

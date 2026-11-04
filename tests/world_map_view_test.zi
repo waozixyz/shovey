@@ -66,8 +66,13 @@ main :: () -> s32 {
             }
         }
     }
+    // Shovey is centred on the circle, lifted 2px, and inside its hit area.
     avatar := Map.WorldMapViewAvatarBounds(Vector2.{100.0, 100.0})
-    if avatar.x + avatar.width * 0.5 != 100.0 || avatar.y + avatar.height != 104.0 { return 32 }
+    hit := Map.WorldMapViewTargetBounds(Vector2.{100.0, 100.0})
+    if avatar.x + avatar.width * 0.5 != 100.0 || avatar.y + avatar.height * 0.5 != 98.0 { return 32 }
+    if avatar.x < hit.x || avatar.y < hit.y || avatar.x + avatar.width > hit.x + hit.width ||
+        avatar.y + avatar.height > hit.y + hit.height { return 71 }
+    if Map.WorldMapViewHighlightRadius > 31.0 { return 72 }
     if Map.WorldMapViewTargetDiameter < 56.0 || Map.WorldMapViewCircleRadius < 24.0 { return 25 }
     for orientation: cast(s32)0..1 {
         props := Map.WorldMapViewProps.{.landscape = orientation == 1}

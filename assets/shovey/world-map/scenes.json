@@ -3,7 +3,7 @@
   "source_version": 5,
   "generator": "scripts/tile_world_map.py",
   "overlap_native_pixels": 128,
-  "section_step_native_pixels": 780,
+  "section_step_native_pixels": 830,
   "scenes": [
     {
       "index": 0,
@@ -25,17 +25,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-00-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
           0,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "1835ff8df45bdbfd8ab3996e9534b5be800f890c4aabb0836395026c1d139a63",
-        "bytes": 85950
+        "sha256": "0312e95040a4bf7ba7a08f936af0b3ab8ed4419709d23b662bfce1a882a9dd87",
+        "bytes": 90698
       }
     },
     {
@@ -58,17 +58,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-01-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          774,
+          823,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "a686364fe0e184b2eb6a6749424e76d4f9c897d55776bca2a76bef94f58939d4",
-        "bytes": 76796
+        "sha256": "4c527effbcc5a22dd1e36940eaf77bee68cea17568c897a0cb16a1cc6d74dfcb",
+        "bytes": 85596
       }
     },
     {
@@ -91,17 +91,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-02-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          1548,
+          1646,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "0dc2087604ff759c2bff45aa414401491637e45466a1c7b75a8794ef57454913",
-        "bytes": 87742
+        "sha256": "945573132792890fe79ae114e09df1d0efc9304151bcb437fef624889a04e46e",
+        "bytes": 92650
       }
     },
     {
@@ -124,17 +124,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-03-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          2322,
+          2469,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "fe90d2fa050a4488ff8b046a6636783d31cb898a61a706b244604edc1b30741f",
-        "bytes": 85400
+        "sha256": "1909b7f5e8c65f6b087def5ddda4aaaf106f8b49b1a30ea9e3f082900cbd9827",
+        "bytes": 90690
       }
     },
     {
@@ -157,17 +157,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-04-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          3096,
+          3292,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "9a31dbe12b94fc5dd3fa5686681921eb9507856c9e4fe447d258a39ba55e31c1",
-        "bytes": 103010
+        "sha256": "920121f2814fd7ea1b892be00490d94d646e49884af28f7e081d78d16e1c9b10",
+        "bytes": 113356
       }
     },
     {
@@ -190,17 +190,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-05-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          3870,
+          4115,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "f948b2ad98300c408922923df9e82bf891e309d3f7f6fb598dbaff862b8d3827",
-        "bytes": 117124
+        "sha256": "5545a454b7d261e14c054856cce3176e4d86ceb1baea15f38396e2d62731ea55",
+        "bytes": 107948
       }
     },
     {
@@ -223,17 +223,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-06-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          4644,
+          4938,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "ac887e7798b8237f3f69384706dbc8c85cd8d69181d9aed13b2873428f743b3f",
-        "bytes": 91830
+        "sha256": "09fc6ed1704858ae5d24ca43f6c2fe70505ee4a6743a8b4f1d8d65a914d6b8cb",
+        "bytes": 111512
       }
     },
     {
@@ -256,17 +256,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-07-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          5418,
+          5761,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "e02aa49676784880240fdfc30af552ba2f18da79edee49f89014ce178c30ac0a",
-        "bytes": 128476
+        "sha256": "6e66aff86aaaf2c4605c9de2e45a0e04001e1f3ec0efb264a7c4a523f52a41d0",
+        "bytes": 143930
       }
     },
     {
@@ -289,17 +289,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-08-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          6192,
+          6584,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "952e30e50bf3df386c187496233b232cd6660404b3c5b10aa216ff8a5f2a0796",
-        "bytes": 157892
+        "sha256": "e6c64a9e25db21566adc0e332f228143b51a25f10b1d2a18e2c442c28d54d497",
+        "bytes": 185334
       }
     },
     {
@@ -322,17 +322,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-09-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          6966,
+          7407,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "da284f7b003c8758cdfc827be953882ea3a3615fc8b600f60805fd0f483e509e",
-        "bytes": 171050
+        "sha256": "fb4c840d818f119d3aff460028cb149449d5ddf27efe6f50d6b27fbdd9c740d7",
+        "bytes": 175254
       }
     },
     {
@@ -355,17 +355,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-10-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          7740,
+          8230,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "953c8bba6639164dbfa71df11f08b192327a3aa4bcfc21dfc423845e2dde7362",
-        "bytes": 167036
+        "sha256": "2a2322a5af02586e239f5c368b64cb2392ad021f0d6b2f72772e2ea95aa54cfa",
+        "bytes": 178188
       }
     },
     {
@@ -388,17 +388,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-11-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          8514,
+          9053,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "830eb02ea52fd365de391ea5e83a819f62b005ee9503dae472186356405790f5",
-        "bytes": 171506
+        "sha256": "2a1973a4ba132147f78ec7f12dc4faa763d8eb5f0c1211d3265d447adf2ae706",
+        "bytes": 190366
       }
     },
     {
@@ -421,17 +421,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-12-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          9288,
+          9876,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "389d75d3f5d10d682b3969561639f3844d7adfe9a2ea8f3b2734ef664fe1c19c",
-        "bytes": 183154
+        "sha256": "dbc20490c3911a1f28d06be98b503ce47df302f3989307ae1525f7d48416e72e",
+        "bytes": 202812
       }
     },
     {
@@ -454,17 +454,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-13-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          10062,
+          10699,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "f1471b3799853b1d0c51aeba98b5662b72606159b554b923c2c44fe9b4a0db7c",
-        "bytes": 186754
+        "sha256": "4fce46125c8d383dab0326452ab7355dc1816e93be8880e4ed0b40b57ea4d2f8",
+        "bytes": 159020
       }
     },
     {
@@ -487,17 +487,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-14-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          10836,
+          11522,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "37d46a918df9e7c2f40bfc168eb66937010df6aa2115480ded6a4db9df732002",
-        "bytes": 143178
+        "sha256": "9fc9cc7eb8d1513e2179a73a1738b63eb68ce6eeb13c493f01d7064fbb943950",
+        "bytes": 144738
       }
     },
     {
@@ -520,17 +520,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-15-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          11610,
+          12345,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "cafbb43f977609c2a8417774159f09d25299de661531384f8cc07626a6a41c40",
-        "bytes": 136172
+        "sha256": "e3584adbc2e47565939dcdfba8b3b529e6843932ea7281f898f50eab594a3ac7",
+        "bytes": 148672
       }
     },
     {
@@ -553,17 +553,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-16-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          12384,
+          13168,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "f404107ed172bdd9d2f250a7fe39e350fd2fbdfd0616fbd6365029c041e03706",
-        "bytes": 140936
+        "sha256": "d93cb2fa13a038e03a7b3a55dc0de3cbb524d37a606478bb7dce7ab5a850669e",
+        "bytes": 144760
       }
     },
     {
@@ -586,17 +586,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-17-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          13158,
+          13991,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "a5cfeea20257c3feb1c51feabb0769ee9aefc6fd15b16129781e2638c95ce46e",
-        "bytes": 136828
+        "sha256": "79ac4a1115bd16b14e65993ec34a05fc875c44565b62acb247275d07eaa0ef75",
+        "bytes": 141496
       }
     },
     {
@@ -619,17 +619,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-18-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          13932,
+          14814,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "ee169834ca21d51557b289bd2e7fae8a4bff9348a38d75fac96ab793f579d8cb",
-        "bytes": 137488
+        "sha256": "2590c83ba1c63c1fd485e75bd210d3896278129058a609a28afd7517b7e351cc",
+        "bytes": 132940
       }
     },
     {
@@ -652,17 +652,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-19-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          14706,
+          15637,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "f205fa2abb91dc0e6db73170851d546a58ebec431608e9a4b10b8c33885101bb",
-        "bytes": 123998
+        "sha256": "380d40ace2b03caf2226af5a1129714531c29062c53a36cb2ceb40971f1e9afd",
+        "bytes": 153430
       }
     },
     {
@@ -685,17 +685,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-20-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          15480,
+          16460,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "a6924e158e1ffb5ea8ea1d3ec89a06ddc8eecf0b7ce5d8e866883e42ecbe2d55",
-        "bytes": 140938
+        "sha256": "6dd23d28516c190155db3e47858f4abb9a4bd33e3807f60208ecca37ed4e52f8",
+        "bytes": 141874
       }
     },
     {
@@ -718,17 +718,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-21-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          16254,
+          17283,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "3ae718ab825fa07ff6d71edd698a658b898341df2962327ecdfe95262b65ae02",
-        "bytes": 141244
+        "sha256": "387fe039dbdf916225f7f806a84f802927dfda746957dfaf397d0c455b450920",
+        "bytes": 128286
       }
     },
     {
@@ -751,17 +751,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-22-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          17028,
+          18106,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "a16fc71f7999277ff75a138b068cdc0a0f35891e67afff42d7c0543798678a17",
-        "bytes": 125344
+        "sha256": "7f8f6f144ee88ff3ceecd86b84a7a13f0ef1416921ea92c230319ed1dd430622",
+        "bytes": 138742
       }
     },
     {
@@ -784,17 +784,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-23-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          17802,
+          18929,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "14bbe6681d26fe3692d90240a016e5ac15ed9b989a7fd39724eb7342949699c3",
-        "bytes": 132010
+        "sha256": "f874f8f3556e768df8581790b1ebeb9c3cdaf063c2ad5a4633991c03d3f8e201",
+        "bytes": 142020
       }
     },
     {
@@ -817,17 +817,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-24-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          18576,
+          19752,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "99bd83409a84b860b8f6574d8d589507d7c18181c6c26a6b120cc5687cbdb926",
-        "bytes": 128598
+        "sha256": "9e0b08ec09ea5ada9f0a2bf58f29637401e056418c8e71384fe97440b0cc7d50",
+        "bytes": 149748
       }
     },
     {
@@ -850,17 +850,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-25-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          19350,
+          20575,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "c9466da88dec76b9cf80d1bac3f02bb6c81e782b657a5f3c6e153c8d9340124e",
-        "bytes": 141262
+        "sha256": "89816511d3c1ba5175e186c2af834d6dd4b452fb275037a646276096b2d82ea9",
+        "bytes": 151058
       }
     },
     {
@@ -883,17 +883,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-26-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          20124,
+          21398,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "a392a4e490aa48834ae2dbb3e5055ea605698d9d354ab91f03b921c851eaaa2e",
-        "bytes": 145386
+        "sha256": "81cdb9c9ecb72c1cd30673b72efb77ee93db7bd5b4abe78af969042c292a5eba",
+        "bytes": 155968
       }
     },
     {
@@ -916,17 +916,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-27-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          20898,
+          22221,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "659664117e1bc928382212e7387db9472c6b915644d60fb8436ecb43143d164f",
-        "bytes": 139434
+        "sha256": "dd5bcacd1eb20527d7a4d792520b0b187255e3c48e4b1d16ddb3d9eef3458e05",
+        "bytes": 175898
       }
     },
     {
@@ -949,17 +949,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-28-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          21672,
+          23044,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "7147ea2139dc44829bb37795a21d023c68d98e574ca5b10c9eebdf6ad29227a4",
-        "bytes": 155058
+        "sha256": "17f72a9dd166bcdea46d281a45091e96fbc320db0df640b3e7d8b5f535773afd",
+        "bytes": 173062
       }
     },
     {
@@ -982,17 +982,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-29-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          22446,
+          23867,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "68db6bbb2e515d8166c4cffada4bda9e42a8ca1e56a2b24ae781d72006518574",
-        "bytes": 165492
+        "sha256": "df928b9904cf7560dfe6c7a0c5cb61b74760eb8f704a60f5b52790cf09c89c1d",
+        "bytes": 169278
       }
     },
     {
@@ -1015,17 +1015,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-30-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          23220,
+          24690,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "b021441f063de12d25b2ff89e97de9fc6513f2a94e21ed11cc9766f480171329",
-        "bytes": 167806
+        "sha256": "f712fa3f7905c0bd50807490e7790132c18875e6cf5a4b74c77edbed0d675257",
+        "bytes": 204694
       }
     },
     {
@@ -1048,17 +1048,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-31-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          23994,
+          25513,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "4e49d52dd11ffb8c2595cb81d22a939d1858c9a94d94ee8e1e199638439f687e",
-        "bytes": 161804
+        "sha256": "efd6a50f7c3e8490cf6c41bb425c20920a0a377d7d79497c0be16cf4c5f66c01",
+        "bytes": 173212
       }
     },
     {
@@ -1081,17 +1081,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-32-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          24768,
+          26336,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "5c6d7734f091e54459c5fcc8c61c8a4007368327785502cc70f4d68795b3abe4",
-        "bytes": 196496
+        "sha256": "e5a7d2824c30e10e7751018281b6999130c56f628b113fe4cb5e144d7fd2fbef",
+        "bytes": 143366
       }
     },
     {
@@ -1114,17 +1114,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-33-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          25542,
+          27159,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "c03c5912db30981ce51784ddd3bb51885f92ea01e9eed29c4a8cf79b579eddf1",
-        "bytes": 164202
+        "sha256": "290f12a2dcf282496ec5f778540418ab7fce78c49414b9031992098420e96983",
+        "bytes": 132024
       }
     },
     {
@@ -1147,17 +1147,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-34-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          26316,
+          27982,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "07c5f0cf9797baae16c064105bf5f395182c12676db9566a895c1d2de7fd85aa",
-        "bytes": 137080
+        "sha256": "ed6c6d64947f6d6bf261dd513d1f2747f02f4989d6bec2e1aa5c88a4c0e8a6c8",
+        "bytes": 102234
       }
     },
     {
@@ -1180,17 +1180,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-35-landscape.webp",
         "size": [
-          902,
+          951,
           941
         ],
         "world_bounds_before_zoom": [
-          27090,
+          28805,
           0,
-          902,
+          951,
           941
         ],
-        "sha256": "fb350d01a4792364e6f35b5e9db9e7218e818de4f0a87721f61d1adb3415e630",
-        "bytes": 126134
+        "sha256": "e4fb919c25164b8d6e430e861e467102828617a1242a7377599b8c2dfa903fb0",
+        "bytes": 51430
       }
     },
     {
@@ -1213,17 +1213,17 @@
       "landscape": {
         "path": "assets/shovey/world-map/continuous-36-landscape.webp",
         "size": [
-          892,
+          928,
           941
         ],
         "world_bounds_before_zoom": [
-          27864,
+          29628,
           0,
-          892,
+          928,
           941
         ],
-        "sha256": "271bb249089151bd3a0af4e41fdc3c12bfcc345676529fa16822c630f297ad80",
-        "bytes": 104732
+        "sha256": "326a85de4517179e4e838a49e384cd8b4b8e819bb930e40293cecc32758184d3",
+        "bytes": 62046
       }
     }
   ],
@@ -1238,9 +1238,9 @@
     },
     "landscape": {
       "path": "work/world-map-source/start-to-boat-landscape-joined-v5.png",
-      "sha256": "da070cfb0b47ca0339215bddbfe825e8a979bc31459fe8b507374767cba82926",
+      "sha256": "a506fa1b84f28daabfd80980a0265a9f846f6c8a84d17bada766d1c823fa0860",
       "size": [
-        28756,
+        30556,
         941
       ]
     }
@@ -1255,7 +1255,7 @@
     "landscape": [
       0,
       0,
-      28756,
+      30556,
       941
     ]
   },
@@ -78278,6 +78278,22 @@
         170.216,
         175.543,
         179.2
+      ]
+    }
+  },
+  "secret_offsets_native_pixels": {
+    "landscape": {
+      "1001": [
+        -150,
+        -198
+      ],
+      "1002": [
+        -545,
+        166
+      ],
+      "1003": [
+        -80,
+        -230
       ]
     }
   }

@@ -22,6 +22,9 @@ __pycache__/
 /.wrangler/
 
 # Island stays private, only in the local folder.
+/reference/pushy-island/
+/tools/editor/private-island/
+/levels/island-drafts/
 /src/island/
 /src/island_levels.zi
 /src/solver/island_rules.zi

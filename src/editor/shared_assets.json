@@ -1,9 +1,10 @@
 {
-  "about": "The editor uses Classic's sprites and sounds to create and play authored boards. Campaign board previews are not editor resources.",
+  "about": "The editor uses Classic's sprites and sounds to create and play authored boards, and Shovey Island's public preview on its start card. Campaign board previews are not editor resources.",
   "copies": [
     {"from": "assets/shovey/sprites", "to": "classic/sprites"},
     {"from": "assets/shovey-landscape/sprites", "to": "classic/sprites-landscape"},
     {"from": "assets/shovey/sounds", "to": "classic/sounds"},
-    {"from": "assets/shovey/preview.png", "to": "classic/preview.png"}
+    {"from": "assets/shovey/preview.png", "to": "classic/preview.png"},
+    {"from": "assets/island-marketing/preview.png", "to": "island/preview.png"}
   ]
 }

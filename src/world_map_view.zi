@@ -118,10 +118,30 @@ WorldMapViewCircleRadius :: 26.0;
 WorldMapViewTargetBounds :: (center: Vector2) -> Rectangle {
     return Rectangle.{center.x - 28.0, center.y - 28.0, WorldMapViewTargetDiameter, WorldMapViewTargetDiameter}
 }
-// The sprite's alpha reaches its bottom edge: place its feet on the node,
-// leaving the lower half of the circle available for the earned rating.
+// The ball (about 38px of the 50px sprite) sits centred in the current circle,
+// lifted 2px over its ground shadow. It stays inside the 56px hit area, so it
+// never covers a neighbouring circle at any zoom.
+WorldMapViewAvatarSize :: 50.0;
+WorldMapViewAvatarLift :: 2.0;
 WorldMapViewAvatarBounds :: (center: Vector2) -> Rectangle {
-    return Rectangle.{center.x - 26.0, center.y - 48.0, 52.0, 52.0}
+    half: float32 = WorldMapViewAvatarSize * 0.5
+    return Rectangle.{center.x - half, center.y - WorldMapViewAvatarLift - half, WorldMapViewAvatarSize, WorldMapViewAvatarSize}
+}
+// The current circle's gold ring and glow stop here, clear of neighbours.
+WorldMapViewHighlightRadius :: 31.0;
+WorldMapViewCurrentHighlight :: (session: Session, center: Vector2) {
+    unused Ring(session, RingProps.{.key = cast(u64)66001, .center = center, .inner_radius = 28.5,
+        .outer_radius = WorldMapViewHighlightRadius, .start_angle = 0.0, .end_angle = 360.0, .color = Color.{255, 222, 110, 72}})
+    unused Ring(session, RingProps.{.key = cast(u64)66002, .center = center, .inner_radius = 25.5,
+        .outer_radius = 28.5, .start_angle = 0.0, .end_angle = 360.0, .color = Color.{244, 196, 58, 255}})
+}
+WorldMapViewAvatar :: (session: Session, center: Vector2) {
+    unused Circle(session, CircleProps.{.key = cast(u64)66003, .center = Vector2.{center.x, center.y + 4.5},
+        .radius = 19.5, .fill = Color.{40, 60, 30, 60}})
+    unused Circle(session, CircleProps.{.key = cast(u64)66004, .center = Vector2.{center.x, center.y + 4.5},
+        .radius = 17.0, .fill = Color.{40, 60, 30, 84}})
+    unused Image(session, ImageProps.{.key = cast(u64)64999, .bounds = WorldMapViewAvatarBounds(center),
+        .asset_path = "assets/shovey/world-map/shovey-avatar.png", .alt_text = "Shovey", .fit = ImageFit.ImageFitContain, .smooth = true})
 }
 WorldMapViewStars :: (props: WorldMapViewProps, place: s32) -> s32 {
     if place < 1 || place > props.stars.count { return 0 }
@@ -894,6 +914,17 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
     }
     unused Box(session, BoxProps.{.key = cast(u64)59999, .bounds = scroll.viewport, .fill = Color.{97, 157, 65, 255}})
     for section: cast(s32)0..Layout.WorldMapSceneCount - 1 { WorldMapViewSection(session, scroll.viewport, origin, width, props.landscape, section) }
+    // Drawn first so neighbouring circles always paint over its glow.
+    focused_center: Vector2
+    focused_shown := false
+    if WorldMapViewBrowsable(props, state.focused) {
+        point := WorldMapViewPositionFor(state.focused, width, props)
+        if point.x >= 0.0 {
+            focused_center = Vector2.{origin.x + point.x, origin.y + point.y}
+            focused_shown = true
+            WorldMapViewCurrentHighlight(session, focused_center)
+        }
+    }
     label_storage: [1003][32]u8
     for place: cast(s32)1..cast(s32)props.visible.count {
         if !WorldMapViewFlag(props.visible, place) { continue }
@@ -911,16 +942,13 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
             .invisible = true, .icon_only = true, .selected = place == state.focused, .circle = true}) != 0 {
             if !state.pointer_moving && !route_click { result = WorldMapViewClick(state, props, place) }
         }
-        if place == state.focused {
-            unused Ring(session, RingProps.{.key = cast(u64)(64000 + place), .center = center,
-                .inner_radius = 27.0, .outer_radius = 28.0, .start_angle = 0.0, .end_angle = 360.0, .color = Color.{255, 250, 216, 255}})
-        }
         unused Circle(session, CircleProps.{.key = cast(u64)(900000 + place), .center = center,
             .radius = WorldMapViewCircleRadius, .fill = Color.{48, 76, 46, 255}})
         unused Circle(session, CircleProps.{.key = cast(u64)(920000 + place), .center = center, .radius = 23.5,
             .fill = ifx completed then Color.{247, 223, 129, 255} else ifx available then Color.{238, 237, 191, 255} else Color.{94, 121, 76, 255}})
+        // Shovey covers the current circle; its Play panel shows the rating.
         earned := WorldMapViewStars(props, place)
-        if completed && earned > 0 {
+        if completed && earned > 0 && place != state.focused {
             for star: cast(s32)0..2 {
                 SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{center.x - 17.0 + cast(float32)star * 12.0, center.y + 8.0, 10.0, 12.0},
                     .shape = "F:M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z",
@@ -932,16 +960,13 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
                 .shape = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10", .color = Color.{200, 208, 162, 255}})
         }
         if WorldMapViewFlag(props.replay, place) {
-            unused Circle(session, CircleProps.{.key = cast(u64)(43000 + place), .center = Vector2.{center.x + 14.0, center.y - 14.0},
-                .radius = 3.0, .fill = Color.{255, 226, 150, 255}})
+            // Beside Shovey on the current circle's ring, else inside the circle.
+            offset: float32 = ifx place == state.focused then 18.5 else 14.0
+            unused Circle(session, CircleProps.{.key = cast(u64)(43000 + place), .center = Vector2.{center.x + offset, center.y - offset},
+                .radius = ifx place == state.focused then 3.5 else 3.0, .fill = Color.{255, 226, 150, 255}})
         }
     }
-    if WorldMapViewBrowsable(props, state.focused) {
-        point := WorldMapViewPositionFor(state.focused, width, props)
-        unused Image(session, ImageProps.{.key = cast(u64)64999,
-            .bounds = WorldMapViewAvatarBounds(Vector2.{origin.x + point.x, origin.y + point.y}),
-            .asset_path = "assets/shovey/world-map/shovey-avatar.png", .alt_text = "Shovey", .fit = ImageFit.ImageFitContain, .smooth = true})
-    }
+    if focused_shown { WorldMapViewAvatar(session, focused_center) }
     End(session)
     if pointer.released || !pointer.down { state.pointer_drag = false; state.pointer_moving = false }
     return result

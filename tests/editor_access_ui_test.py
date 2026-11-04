@@ -1,12 +1,14 @@
-"""The Editor opens from its cover for everyone, signed out or signed in, and
-offers only the creator's own levels, never campaign levels. Its Shovey Island
-row reads Unlock and the price while Island is locked and opens the unlock
-page, never Island's editor. Escape in a level returns to the world map, and
-the map's Escape returns to the title.
+"""The Editor opens from its cover for everyone, signed out or signed in, on
+its start: big Classic and Shovey Island cards to begin a new level. Classic
+always makes a new level and opens it; Back returns to the start. While
+Island is locked its card reads Unlock and the price and opens the unlock
+page, never Island's editor. Levels holds only the creator's own levels,
+never campaign levels, with New level leading back to the start. Escape in a
+level returns to the world map, and the map's Escape returns to the title.
 
 Private Xvfb and disposable profiles; the signed-in one holds an offline test
 account key. No node, wallet or purchase is used, and the owner's profile is
-never read."""
+never read. The owned Island path is tested in island_delivery_test.py."""
 import argparse
 import contextlib
 import hashlib
@@ -31,8 +33,10 @@ from ui_driver import UiDriver
 
 # The editor's own catalog buttons; story levels used 260000 and up.
 OWN_LEVELS = range(240000, 250000)
-# 210 is the Shovey Island row.
+# Back, Publish, Explore, Export, the list, New level and the Island row.
 LEVELS_PAGE = {200, 202, 120, 121, 203, 205, 210}
+# Back, the Classic and Island cards, and Levels.
+START_PAGE = {100, 110, 130, 122}
 
 
 def offline_account(folder):
@@ -57,46 +61,77 @@ def dismiss_level_prompts(driver):
         driver.wait_idle(frames=3)
 
 
-def open_editor(driver, who):
-    action = driver.wait(label='Open', role='button')
-    assert action['enabled'], (f'The Editor is disabled for a {who} player', action)
-    driver.press(label='Open', role='button')
+def shown(node):
+    return ' '.join(str(node.get(field, '')) for field in ('label', 'detail', 'description', 'value'))
+
+
+def start_page(driver, who):
+    """The start offers exactly the two editions as big cards, Island locked."""
     driver.wait(label='New level', role='text', timeout=30)
+    classic = driver.wait(key=110, role='button')
+    island = driver.wait(key=130, role='button')
+    assert 'Classic' in shown(classic), (who, classic)
+    assert 'Shovey Island' in shown(island) and 'Unlock · ' in shown(island), (f'Locked Island card for a {who} player', island)
+    tag = driver.wait(key=133, role='text')
+    assert tag.get('label', '').startswith('Unlock · '), tag
+    for card in (classic, island):
+        assert card['width'] >= 200 and card['height'] >= 200, ('The start cards are not big', who, card)
+    assert driver.find(key=111) and driver.find(key=131), 'A start card lacks its preview'
+    buttons = [node for node in driver.tree() if node.get('kind') == 'button' and node.get('visible')]
+    others = [node.get('label') for node in buttons if node.get('key') not in START_PAGE]
+    assert not others, (f'The start offers more than its two editions to a {who} player', others)
 
 
-def locked_island_row(driver, who):
-    """Locked, the Island row shows Unlock and its price and opens the unlock
-    page; Back there returns to the Editor's levels."""
-    row = driver.wait(key=210, role='button')
-    shown = ' '.join(str(row.get(field, '')) for field in ('label', 'detail', 'description', 'value'))
-    assert 'Shovey Island' in shown and 'Unlock · ' in shown, (f'Locked Island row for a {who} player', row)
-    driver.press(key=210, role='button')
+def locked_island(driver, who, key):
+    """Locked, Island opens the unlock page; Back there returns to the Editor."""
+    driver.press(key=key, role='button')
     # 49530 buys; offline the page shows the waiting 49534 action instead.
     driver.wait(key=49512, role='button', timeout=30)
     actions = driver.find(key=49530, role='button') + driver.find(key=49534, role='button')
     assert actions and 'Unlock' in actions[0].get('label', ''), actions
-    assert not driver.find(key=600000), 'A locked Island opened its editor'
+    assert not driver.find(key=93303), f'A locked Island opened its editor for a {who} player'
     driver.press(key=49512, role='button')
-    driver.wait(key=210, role='button')
-    driver.wait(label='Your levels', role='text')
+    driver.wait(key=key, role='button')
+
+
+def classic_new_level(driver):
+    """Classic makes a new level and opens it; Back saves it and returns to the start."""
+    driver.press(key=110, role='button')
+    driver.wait(key=200000, timeout=20)
+    driver.wait(label='Play', role='button')
+    driver.key('escape')
+    driver.wait(key=110, role='button')
+    driver.wait(key=130, role='button')
 
 
 def only_own_levels(driver, who):
-    """Levels lists the creator's own boards and New level; no campaign level
-    can be opened from it."""
+    """Levels lists the creator's own boards with the new Classic level, the
+    Island row and New level; no campaign level can be opened from it."""
     driver.press(label='Levels', role='button')
-    driver.wait(label='Classic', role='text')
     driver.wait(label='Your levels', role='text')
+    driver.wait(label='Classic', role='text')
     nodes = driver.tree()
     assert not driver.find(label='Story levels'), who
     assert not any(260000 <= node.get('key', 0) < 264000 for node in nodes), (f'Campaign levels offered to a {who} player')
     buttons = [node for node in nodes if node.get('kind') == 'button' and node.get('visible')]
+    own = [node for node in buttons if node.get('key') in OWN_LEVELS]
+    assert len(own) == 1, (f'The new Classic level is missing from Levels for a {who} player', own)
     others = [node.get('label') for node in buttons if node.get('key') not in LEVELS_PAGE and node.get('key') not in OWN_LEVELS]
     assert not others, (f'The Levels page offers more than own levels to a {who} player', others)
-    locked_island_row(driver, who)
-    driver.press(label='New level', role='button')
-    driver.wait(key=200000, timeout=20)
-    driver.wait(label='Play', role='button')
+    row = driver.wait(key=210, role='button')
+    assert 'Shovey Island' in shown(row) and 'Unlock · ' in shown(row), (f'Locked Island row for a {who} player', row)
+    locked_island(driver, who, 210)
+    driver.wait(label='Your levels', role='text')
+    # New level is the start's choice of edition, not another Classic board.
+    driver.press(key=205, role='button')
+    start_page(driver, who)
+
+
+def open_editor(driver, who):
+    action = driver.wait(label='Open', role='button')
+    assert action['enabled'], (f'The Editor is disabled for a {who} player', action)
+    driver.press(label='Open', role='button')
+    start_page(driver, who)
 
 
 shutil.rmtree(work, ignore_errors=True)
@@ -131,9 +166,14 @@ for who in ('signed-out', 'signed-in'):
             driver.press(label='Next', role='button')
             driver.wait(label='Editor', role='image', visible=True)
             open_editor(driver, who)
+            locked_island(driver, who, 130)
+            start_page(driver, who)
+            classic_new_level(driver)
             only_own_levels(driver, who)
+            # Escape on the start leaves the Editor.
             driver.key('escape')
-            # It stays available and opens again after returning to the title.
+            driver.wait(label='Open', role='button')
+            # It stays available and opens again on its start after returning to the title.
             open_editor(driver, who)
             driver.key('escape')
             driver.wait(label='Open', role='button')
@@ -160,5 +200,7 @@ for who in ('signed-out', 'signed-in'):
         for line in log:
             assert 'host capability' not in line, line[:1000]
     results.append(who)
-print(f'Editor access local UI test passed: {" and ".join(results)} players open the Editor twice with only '
-      'their own levels, the locked Island row opens its unlock page; Escape goes level → map → title')
+print(f'Editor access local UI test passed: {" and ".join(results)} players open the Editor twice on its start '
+      'of big Classic and Island cards; Classic makes a level and Back returns to the start; locked Island shows '
+      'Unlock and the price and opens its unlock page from the start and from Levels, which holds only their own '
+      'levels; Escape goes level → map → title')

@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## [0.6.168] - 2026-11-04
+
+- Play the first 30 Island levels with working downloads and a working Play button.
+- Start Classic or Island levels of your own from the Editor.
+- Follow Shovey in his map circle, with more water along the landscape coast and a secret on the beach.
+
 ## [0.6.167] - 2026-11-03
 
 - The level result, book, shop and item texts show again in every language.

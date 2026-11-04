@@ -317,6 +317,9 @@ jobs:
         with:
           name: campaign-publisher
           path: build/campaign-publisher
+      - name: Verify the Island catalog and protected package
+        if: steps.current.outputs.publish == 'true'
+        run: python3 scripts/verify-island-delivery.py
       - name: Publish and verify the approved campaign
         if: steps.current.outputs.publish == 'true'
         env:

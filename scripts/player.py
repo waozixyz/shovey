@@ -110,6 +110,8 @@ def island_package(record=False):
     """Build private bytecode separately; --record updates public metadata only."""
     if not PRIVATE_APP.is_file():
         raise SystemExit('Island package building requires its private local source')
+    from island_campaign import generate
+    generate()
     private = json.loads(PRIVATE_APP.read_text())
     manifest = ROOT / private['manifest']
     app = dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=True,
@@ -273,6 +275,9 @@ def build_games(apps):
                 (resources / 'levels').mkdir(exist_ok=True)
             prepare_release_assets(ROOT, resources)
         leave_out(manifest.with_name('bundle.json'), resources, 'SHOVEY_RELEASE' in defines)
+        if name == 'shovey-island' and app.get('private'):
+            from island_campaign import stage_assets
+            stage_assets(resources)
         locales = resources / 'locales'
         locales.mkdir(exist_ok=True)
         translations = {}

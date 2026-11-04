@@ -58,7 +58,8 @@ def run():
                 wait(lambda: len(state()) == 3, 'Editor did not initialize')
                 assert board() == blank, 'Public entry prefilled a campaign board'
                 assert state()[:2] == ['0', str(turn)], state()
-                wait(lambda: any(n.get('key') == 305 for n in driver.nodes()), 'Public editor board did not render')
+                # The editor starts on its choice of edition, Classic first.
+                wait(lambda: any(n.get('key') == 110 for n in driver.nodes()), 'Public editor start did not render')
                 time.sleep(.25)
                 shot = WORK / f'public-blank-{turn}.png'
                 subprocess.run(['import', '-window', window, str(shot)], check=True)
@@ -76,11 +77,15 @@ def run():
                     assert board() == saved, 'Saved own draft changed after restarting'
                     driver.press('Levels')
                     driver.press('New level')
+                    wait(lambda: any(n.get('key') == 110 for n in driver.nodes()), 'New level did not open the start')
+                    driver.press('Classic')
                     wait(lambda: state()[:2] == ['2', '2'], 'New level did not save')
                     assert board() == blank, 'New level copied an existing board'
                     print('Public editor: blank creation, own-level list, save/reopen and fake publication passed')
                     continue
                 driver.press('New level')
+                wait(lambda: any(n.get('key') == 110 for n in driver.nodes()), 'New level did not open the start')
+                driver.press('Classic')
                 wait(lambda: state()[:2] == ['1', '1'], 'New level did not save')
                 assert board() == blank
                 # Paint through the real board control, then wait for its solver proof.

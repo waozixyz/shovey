@@ -119,19 +119,26 @@ def main():
             assert abs(again['x'] - home['x']) <= 1 and abs(again['y'] - home['y']) <= 1, ('Home did not recentre level 1', home, again)
             reach_proof.append({'progress': label, 'viewport': [width, height], 'start_batches': batch + 1})
         reached = False
-        for batch in range(40):
+        end = []
+        # Small batches cannot jump over the last board before reaching open sea.
+        for batch in range(160):
             subprocess.run(['xdotool', 'mousemove', str(width // 2), str(height // 3),
-                            'click', '--repeat', '20', '--delay', '8', '4'], check=True)
+                            'click', '--repeat', '5', '--delay', '8', '4'], check=True)
             driver.wait_idle(frames=3)
             view, (left, top, right, bottom) = painting()
+            passing_end = driver.find(key=33175, role='button', visible=True)
+            if passing_end:
+                end = passing_end
             if (top >= view['y'] - 1) if portrait else (right <= view['x'] + view['width'] + 1):
                 reached = True
                 break
         assert reached, ('far edge of the painting unreachable', label, width, (left, top, right, bottom), view)
-        # The map end shows locked boards locked and the selection unchanged.
+        if not portrait:
+            assert right >= view['x'] + view['width'] - 1, ('blank band at the sea edge', label, width, right, view)
+        # Passing the last board keeps it locked and the selection unchanged.
+        # The extended sea edge can lie a whole viewport beyond that board.
         assert driver.wait(label='Level 1', role='text'), 'Browsing changed the selected board'
-        end = driver.find(key=33175, role='button', visible=True)
-        assert end, ('the last board is not drawn at the map end', label, width)
+        assert end, ('the last board is not drawn while browsing to the map end', label, width)
         if label == 'fresh':
             assert not end[0]['enabled'], 'A locked board became playable'
         assert not driver.find(key=34001) and not driver.find(key=34002) and not driver.find(key=34003), \
@@ -417,6 +424,19 @@ def main():
                 driver.key('home')
                 selected(1)
                 reach_ends(width, height, f'frontier-{args.frontier}')
+            if args.frontier == 175 and not (args.journey or args.zoom_settle or args.forks_only):
+                for width, height in ((960, 600), (1560, 390), (2400, 600)):
+                    window = resize(child, width, height)
+                    driver.key('end')
+                    selected(175)
+                    driver.wait_idle(frames=8)
+                    view, (left, top, right, bottom) = painting()
+                    assert left <= view['x'] + 1 and right >= view['x'] + view['width'] - 1, ('blank end-view sea band', width, left, right, view)
+                    assert top <= view['y'] + 1 and bottom >= view['y'] + view['height'] - 1, ('blank end-view cross-axis band', width, top, bottom, view)
+                    subprocess.run(['import', '-window', window, str(output / f'sea-end-{width}.png')], check=True)
+                    reach_proof.append({'last_level': 175, 'viewport': [width, height], 'sea_covers_view': True})
+                driver.key('home')
+                selected(1)
             driver.press(key=20122, role='button')
             driver.wait(contains='Level 1 / ', role='text', timeout=30)
             answer_level_updates(driver)

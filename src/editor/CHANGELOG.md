@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- New level opens a clear choice of Classic or Shovey Island; a locked Island shows Unlock and its price.
+- Levels lists your Classic levels and your Shovey Island levels.
+
 ## [0.2.148] - 2026-11-03
 
 - Make Shovey Island levels of your own, with caves and every Island piece, once Island is unlocked.

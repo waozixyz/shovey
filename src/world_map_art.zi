@@ -11,8 +11,8 @@ WorldMapArtSecretPosition :: (room: s32, landscape: bool = false) -> Vector2 {
             anchor.y + (ifx landscape then -230.0 else 60.0) * scale}
     }
     if landscape {
-        return Vector2.{anchor.x + (ifx room == 1001 then -150.0 else 40.0) * scale,
-            anchor.y + (ifx room == 1001 then -198.0 else 222.0) * scale}
+        return Vector2.{anchor.x + (ifx room == 1001 then -150.0 else -545.0) * scale,
+            anchor.y + (ifx room == 1001 then -198.0 else 166.0) * scale}
     }
     // Portrait 159-S1 floats in the cove west of the last beach, a full
     // 56px circle clear of every board even on a 320px-wide window.

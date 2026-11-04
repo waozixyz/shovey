@@ -441,14 +441,16 @@ def main():
             # Island's public cover sits between Classic and the Editor.
             driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')
-            # The editor opens on a blank board; Levels lists the creator's
-            # own boards under Classic and makes a new one.
+            # The editor opens on its start's choice of edition; Levels lists
+            # the creator's own boards under Classic, and New level returns to
+            # the start, whose Classic card makes a new one.
             driver.wait(label='New level', role='text')
             driver.press(label='Levels', role='button')
             driver.wait(label='Classic', role='text')
             driver.wait(label='Your levels', role='text')
             assert not any(260000 <= node.get('key', 0) < 264000 for node in driver.tree()), 'Story levels returned to the editor'
             driver.press(label='New level', role='button')
+            driver.press(key=110, role='button')
             driver.wait(key=200000, timeout=20)
             driver.wait(label='Play', role='button')
             # Editing follows the device, including portrait screens whose
@@ -467,9 +469,12 @@ def main():
                 aspect = 5 / 3 if width > height else 3 / 5
                 assert abs(board['width'] / board['height'] - aspect) < .01, ('editor play orientation', width, height, board)
                 swipe_in_visible_direction(board_key=200000)
-            # Escape returns from testing to the board, then leaves the editor.
+            # Escape returns from testing to the board, then to the start, then
+            # leaves the editor.
             driver.key('escape')
-            driver.wait(label='Levels', role='button')
+            driver.wait(key=300, role='button')
+            driver.key('escape')
+            driver.wait(key=110, role='button')
             driver.key('escape')
             driver.wait(label='Open', role='button')
         classic_bytes = classic.read_bytes()
@@ -496,7 +501,7 @@ def main():
             driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')
             driver.wait(label='New level', role='text')
-            # Escape on the board returns to the editor's cover, which stays selected.
+            # Escape on the start returns to the editor's cover, which stays selected.
             driver.key('escape')
             driver.wait(label='Open', role='button')
             driver.press(label='Previous', role='button')

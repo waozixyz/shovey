@@ -92,11 +92,13 @@ def main():
             driver.press(key=33001, role='button')
             assert driver.wait(key=33001, role='button')['selected']
             assert_fullscreen_map(driver)
-            driver.press(key=20124, role='button')
+            # The level select has no on-screen arrow buttons; W moves like Up.
+            assert not any(20123 <= n.get('key', 0) <= 20126 for n in driver.tree()), 'on-screen arrows shown'
+            driver.key(87)
             assert driver.wait(key=33002, role='button')['selected']
             driver.press(key=20122, role='button')
             driver.wait(contains='Level 2 / ', role='text', timeout=30)
-    print('Private map selection local UI test passed: click selects, arrows and button navigate, Play opens selected board, level 1 retained')
+    print('Private map selection local UI test passed: click selects, arrow and WASD keys navigate, no on-screen arrows, Play opens selected board, level 1 retained')
 
 
 if __name__ == '__main__':

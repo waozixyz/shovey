@@ -106,8 +106,7 @@ Frame :: (today: s64) -> bool {
     if selected == 0 { prepared = false; return true }
     if selected == count - 1 { unused OpenClassicEditor() }
     else if selected == 1 {
-        if owned { unused AppServiceHost("apps.navigation", "arcade.shovey-island") }
-        else { unused AppServiceHost("arcade.navigation", "island") }
+        unused AppServiceHost("arcade.navigation", "island")
     }
     return false
 }

@@ -1,5 +1,5 @@
 """Covers run Classic, Island, Editor; Island stays locked; the Editor opens
-its Classic levels page and a new board. Private Xvfb and a disposable profile;
+its start, its Classic levels page and a new board. Private Xvfb and a disposable profile;
 no account is signed in and nothing is bought."""
 import argparse
 import contextlib
@@ -145,9 +145,14 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
         driver.wait(label='Classic', role='text')
         driver.wait(label='Your levels', role='text')
         assert not any(260000 <= node.get('key', 0) < 264000 for node in driver.tree()), 'Story levels returned to the editor'
+        # New level is the start's choice of edition; Classic opens a new board.
         driver.press(label='New level', role='button')
+        driver.press(key=110, role='button')
         driver.wait(key=200000, timeout=20)
         driver.wait(label='Play', role='button')
+        # Escape saves the board and returns to the start, then leaves.
+        driver.key('escape')
+        driver.wait(key=110, role='button')
         driver.key('escape')
         driver.wait(label='Open', role='button')
 

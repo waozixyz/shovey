@@ -51,6 +51,12 @@ RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, cl
     RasterText(value, x, y, font, color)
 }
 #program_export
+RasterTextRotated :: (value: string, x: s32, y: s32, font: s32, color: Color,
+    clip: Rectangle, origin: Vector2, rotation: float32, outer_clip: Rectangle,
+    outer_clipped: bool, emphasis: bool, italic: bool) {
+    RasterText(value, x, y, font, color)
+}
+#program_export
 RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) {}
 #program_export
 RasterRoundedRectangleOutline :: (bounds: Rectangle, radius: float32, segments: s32, width: float32, color: Color) {}

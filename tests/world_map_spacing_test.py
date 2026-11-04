@@ -66,6 +66,31 @@ def main():
                 paved = (r>165)&(g>105)&(b>55)&(r-g>4)&(g-b>12)&(r-b>40)
                 if paved.mean() < .6:
                     failures.append(f'{orientation} level {level}: off paved pixels ({paved.mean():.2f})')
+            if orientation == 'landscape':
+                # Sea is cyan/blue, unlike paving, sand, grass or wooden docks.
+                offsets = data['secret_offsets_native_pixels']['landscape']
+                art = (ROOT / 'src/world_map_art.zi').read_text()
+                branch = art.split('    if landscape {', 1)[1].split('    }', 1)[0]
+                pairs = re.findall(r'ifx room == 1001 then (-?[\d.]+) else (-?[\d.]+)', branch)
+                assert len(pairs) == 2
+                assert [float(pair[1]) for pair in pairs] == offsets['1002']
+                assert [float(pair[0]) for pair in pairs] == offsets['1001']
+                secrets = {room: nodes[28 if room == '1003' else 174] + offset
+                           for room, offset in offsets.items()}
+                for label, (x, y) in [(f'level {i}', p) for i, p in enumerate(nodes, 1)] + list(secrets.items()):
+                    x, y = round(x), round(y)
+                    patch = np.asarray(image.crop((x-3, y-3, x+4, y+4)).convert('RGB')).astype(np.int16)
+                    r, g, b = np.moveaxis(patch, -1, 0)
+                    water = (g > r + 30) & (b > r + 30) & (b > 100)
+                    if water.mean() > .2:
+                        failures.append(f'landscape {label}: centre in water ({water.mean():.2f})')
+                x, y = map(round, secrets['1002'])
+                r, g, b = np.moveaxis(np.asarray(image.crop((x-3, y-3, x+4, y+4))).astype(np.int16), -1, 0)
+                assert ((r > 200) & (g > 140) & (b < 155) & (r-g > 20) & (g-b > 35)).mean() >= .9, '159-S2 must sit on clear sand'
+                assert np.linalg.norm(nodes - secrets['1002'], axis=1).min() >= 170
+                # Height-fit camera: last level plus half of a 4:1 viewport.
+                assert image.width - nodes[-1, 0] - image.height * 4 / 2 >= 200
+                print('Landscape: all 175 levels and 3 secrets clear of water; 159-S2 on sand; 4:1 end-view margin >=200px')
         rectangles = table(layout, f'world_map_scene_{orientation}').reshape(-1, 4)
         assert len(rectangles) == expected
         previous = None

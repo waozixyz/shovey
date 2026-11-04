@@ -1498,28 +1498,20 @@ ShoveyFrame :: () {
             display_bytes: [48]u8
             display := MapRoute.WorldMapLevelDisplayName(focus, display_bytes[:])
             AppendText(label_bytes[:], *label_length, ifx display != "" then display else FormatInteger(cast(s64)focus, label_digits[:]))
-            Caption(cast(u64)20121, Rectangle.{16.0, panel_top + 8.0, width - 136.0, 40.0}, TextView(label_bytes[:label_length]), 20)
-            if Button(frame.session, ButtonProps.{.key = cast(u64)20122, .id = 20122,
-                .bounds = Rectangle.{width - 112.0, panel_top + 8.0, 96.0, 40.0},
-                .label = AppLocaleHost("shovey_play"), .disabled = !WorldMap.WorldMapViewFlag(available[:], focus)}) != 0 {
-                selected = WorldMap.WorldMapViewPlay(*levels_map, map_props)
-            }
+            // Keys, taps and drags choose a level. The name, with its best
+            // rating beneath, sits beside a Play button centred in the panel.
             selected_result := ShoveyBestLevelResult(TextUntilNul(shared_progress.owner[:]), focus)
-            if selected_result.best_moves > 0 {
+            rated := selected_result.best_moves > 0
+            Caption(cast(u64)20121, Rectangle.{16.0, panel_top + 8.0, width - 152.0, ifx rated then 48.0 else 96.0}, TextView(label_bytes[:label_length]), 20)
+            if rated {
                 result_text: Vec(u8)
                 BuilderPrint(*result_text, "%  %", ifx selected_result.stars == 3 then "★★★" else ifx selected_result.stars == 2 then "★★☆" else "★☆☆", selected_result.score)
-                Caption(20910, Rectangle.{232.0, panel_top + 58.0, width - 240.0, 44.0}, BuilderFinish(result_text), 16, true)
+                Caption(20910, Rectangle.{16.0, panel_top + 56.0, width - 152.0, 40.0}, BuilderFinish(result_text), 16)
             }
-            for direction: cast(s32)0..3 {
-                icon := ifx direction == 0 then "S2rr:M15 5L8 12L15 19" else ifx direction == 1 then "S2rr:M5 15L12 8L19 15" else ifx direction == 2 then "S2rr:M5 9L12 16L19 9" else "S2rr:M9 5L16 12L9 19"
-                if Button(frame.session, ButtonProps.{.key = cast(u64)(20123 + direction), .id = 20123 + direction,
-                    .bounds = Rectangle.{16.0 + cast(float32)direction * 52.0, panel_top + 58.0, 44.0, 44.0},
-                    .label = ifx direction == 0 then "←" else ifx direction == 1 then "↑" else ifx direction == 2 then "↓" else "→",
-                    .icon_only = true, .icon_shape = icon}) != 0 {
-                    horizontal: s32 = ifx direction == 0 then -1 else ifx direction == 3 then 1 else 0
-                    next := WorldMap.WorldMapViewNavigate(map_props, levels_map.focused, horizontal, direction == 1)
-                    if next != levels_map.focused { levels_map.focused = next; levels_map.reveal = true }
-                }
+            if Button(frame.session, ButtonProps.{.key = cast(u64)20122, .id = 20122,
+                .bounds = Rectangle.{width - 120.0, panel_top + 28.0, 104.0, 56.0},
+                .label = AppLocaleHost("shovey_play"), .disabled = !WorldMap.WorldMapViewFlag(available[:], focus)}) != 0 {
+                selected = WorldMap.WorldMapViewPlay(*levels_map, map_props)
             }
             if levels_map.focused >= 1 && levels_map.focused <= listed { levels_played_level = levels_map.focused }
             if selected.activated >= 1 && selected.activated <= listed { ChangeLevel(selected.activated, true) }

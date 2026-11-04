@@ -26,9 +26,8 @@ from scipy.sparse.csgraph import connected_components, dijkstra
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'work/world-map-source'
 DEST = ROOT / 'assets/shovey/world-map'
-# Largest target step that keeps 37 shared scenes for the left-extended
-# landscape, so the portrait crops stay identical.
-SECTION_STEP = 780
+# Keep 37 shared scenes after the sea extension; portrait crops stay identical.
+SECTION_STEP = 830
 SECTION_OVERLAP = 128
 MAX_TILE_SIZE = 1086
 # Lossy WebP quality for every game tile (method 6). The one setting to change.
@@ -371,6 +370,11 @@ def main():
     def source(orientation,version): return SOURCE/f'start-to-boat-{ "landscape-" if orientation=="landscape" else ""}joined-v{version}.png'
     version=args.version or max(v for v in range(5,10) if all(source(o,v).exists() for o in ('portrait','landscape')))
     guides=json.loads((ROOT/'scripts/world_map_roads.json').read_text())
+    previous_data=json.loads((DEST/'scenes.json').read_text()) if (DEST/'scenes.json').exists() else {}
+    # An art-only extension must not reflow existing levels or their rails.
+    preserve_geometry=guides.get('preserve_geometry',False) and not args.write_graph
+    if preserve_geometry:
+        assert previous_data.get('source_version')==version, 'art-only export needs existing geometry for this source version'
     layout_path=ROOT/'src/world_map_layout.zi';layout=layout_path.read_text()
     graph_path=ROOT/'src/world_map_progression.zi'
     extents = []
@@ -384,6 +388,12 @@ def main():
         src=source(orientation,version); image=Image.open(src).convert('RGB');w,h=image.size;images[orientation]=image
         data['sources'][orientation]={'path':str(src.relative_to(ROOT)),'sha256':digest(src),'size':[w,h]}
         data['world_bounds_before_zoom'][orientation]=[0,0,w,h]
+        expected_size=guides.get('source_sizes',{}).get(orientation)
+        if expected_size: assert [w,h]==expected_size, (orientation,'source size',image.size,expected_size)
+        if preserve_geometry:
+            data['roads'][orientation]=previous_data['roads'][orientation]
+            roads[orientation]=data['roads'][orientation]
+            continue
         preview=image.resize((round(w*PREVIEW),round(h*PREVIEW)),Image.Resampling.LANCZOS)
         if orientation=='landscape':preview=preview.transpose(Image.Transpose.ROTATE_270)
         traced=RoadTracer(preview).trace(guides[orientation])
@@ -401,16 +411,25 @@ def main():
     assert all(len(roads[o])==len(route_ids) for o in roads),('road guides do not match the graph routes',len(route_ids))
     assert len(edges)<=RAIL_GROUP*RAIL_GROUPS
     paths={};bounds={}
-    previous=json.loads((DEST/'scenes.json').read_text()).get('spacing',{}) if (DEST/'scenes.json').exists() and not args.write_graph else {}
+    previous=previous_data.get('spacing',{}) if not args.write_graph else {}
     for orientation in ('portrait','landscape'):
         image=images[orientation];w,h=image.size;rgb=np.asarray(image)
-        worst,shifts,routes,placed=place_levels(roads[orientation],counts,rgb,previous.get(orientation,{}).get('junction_shifts_native_px'))
         positions={};rails={}
-        for ids,road,along in zip(route_ids,routes,placed):
-            for identity,point in zip(ids,sample(road,along)):
-                if identity in positions: assert math.dist(positions[identity],point)<.01,(orientation,identity)
-                positions[identity]=point
-            for index,(a,b) in enumerate(zip(ids,ids[1:])):rails[a,b]=sample(road,np.linspace(along[index],along[index+1],33))
+        if preserve_geometry:
+            positions={i:np.array(point) for i,point in enumerate(previous_data['nodes'][orientation],1)}
+            name='world_map_landscape_positions' if orientation=='landscape' else 'world_map_positions'
+            assert np.array_equal(np.array(table(layout,name)).reshape(-1,2),list(positions.values()))
+            points=np.concatenate([table(layout,f'world_map_rail_{orientation}{group}') for group in range(RAIL_GROUPS)]).reshape(-1,33,2)
+            rails=dict(zip(edges,points))
+            shifts=previous[orientation]['junction_shifts_native_px']
+            worst=previous[orientation]['worst_relative_error']
+        else:
+            worst,shifts,routes,placed=place_levels(roads[orientation],counts,rgb,previous.get(orientation,{}).get('junction_shifts_native_px'))
+            for ids,road,along in zip(route_ids,routes,placed):
+                for identity,point in zip(ids,sample(road,along)):
+                    if identity in positions: assert math.dist(positions[identity],point)<.01,(orientation,identity)
+                    positions[identity]=point
+                for index,(a,b) in enumerate(zip(ids,ids[1:])):rails[a,b]=sample(road,np.linspace(along[index],along[index+1],33))
         assert len(positions)==WORLD_MAP_LEVELS and set(rails)==set(edges)
         for level,point in positions.items():
             assert paved_fraction(rgb,point)>=.6,('level off the paving',orientation,level,point.round(1).tolist())
@@ -465,7 +484,16 @@ def main():
                 lambda m: m[1]+mapping+m[2], view, count=1, flags=re.S)
     view=re.sub(r'(return \(ifx props.landscape then viewport.height else viewport.width\) / )[^\n]+',
                 lambda m: m[1]+f'(ifx props.landscape then {lh}.0 else {w}.0)', view)
-    view_path.write_text(view)
+    if preserve_geometry:
+        # The shared scene count and cross-axis dimensions are unchanged.
+        # Do not touch the view while another task works on its avatar drawing.
+        assert count==len(previous_data['scenes'])
+        assert all(path in view_path.read_text() for values in paths.values() for path in values)
+        assert w==previous_data['sources']['portrait']['size'][0] and lh==previous_data['sources']['landscape']['size'][1]
+    else:
+        view_path.write_text(view)
+    if 'secret_offsets_native_pixels' in guides:
+        data['secret_offsets_native_pixels']=guides['secret_offsets_native_pixels']
     (DEST/'scenes.json').write_text(json.dumps(data,indent=2)+'\n')
     art_path=ROOT/'assets/shovey/art.json';art=json.loads(art_path.read_text())
     art['files']=[e for e in art['files'] if not(e['path'].startswith('world-map/') and e['path'].endswith('.webp'))]
