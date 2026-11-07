@@ -3,6 +3,7 @@
 import importlib.util
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -81,6 +82,10 @@ class BundleCatalogTest(unittest.TestCase):
         # Format 62 and the reminder capability must reject older hosts before entry.
         minimum_host = json.loads((ROOT / 'src/catalog.json').read_text())['host_api']
         self.assertEqual(minimum_host, 43)
+        # The standalone player must run the host the catalogs require, or it
+        # refuses its own games as an unverifiable child.
+        host = re.search(r'^PLAYER_HOST_API :: (\d+)$', (ROOT / 'src/player_host.zi').read_text(), re.M)
+        self.assertEqual(int(host[1]), minimum_host)
         descriptor = dict(name='public', assets='art', locales='locales', locale_prefix='game.',
                           entry='game:Entry', source='game.zi', preview='preview.png', host_api=minimum_host)
         self.write('public/catalog.json', json.dumps(descriptor))

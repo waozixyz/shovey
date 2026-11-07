@@ -14,7 +14,7 @@ ref = "b5ac5d1a303326009012d68016c1d8859b6b3a13"
 
 [dependencies.apps]
 git = "https://github.com/waozixyz/apps.git"
-ref = "3c0a7d9e7f941381a7c07169f94240b9fe801bb8"
+ref = "cd72a242f8cdfd3ec3fc839fc11d9e7d7fc3b8fc"
 
 [dependencies.mingcute]
 git = "https://github.com/kryonlabs/mingcute.git"

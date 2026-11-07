@@ -28,6 +28,15 @@
       "url": "https://github.com/libsdl-org/SDL.git"
     },
     {
+      "commit": "cd72a242f8cdfd3ec3fc839fc11d9e7d7fc3b8fc",
+      "dependencies": {"crypto": "pc23fbf455e97614d", "daochi_client": "p6af0b5bd9fd0cd31", "kryon": "pbb0d432304fad5c6"},
+      "dependency_refs": {"crypto": "master", "daochi_client": "970d5e44b1702158cb16469892da6ff50f142427", "kryon": "b5ac5d1a303326009012d68016c1d8859b6b3a13"},
+      "id": "p2b1c0e80f47c3873",
+      "name": "Apps",
+      "ref": "cd72a242f8cdfd3ec3fc839fc11d9e7d7fc3b8fc",
+      "url": "https://github.com/waozixyz/apps.git"
+    },
+    {
       "commit": "1844042d1ca751e62e61df7617dba19c98588339",
       "dependencies": {},
       "id": "p3b3c785a0e17e605",
@@ -91,15 +100,6 @@
       "url": "https://github.com/curl/curl.git"
     },
     {
-      "commit": "3c0a7d9e7f941381a7c07169f94240b9fe801bb8",
-      "dependencies": {"crypto": "pc23fbf455e97614d", "daochi_client": "p6af0b5bd9fd0cd31", "kryon": "pbb0d432304fad5c6"},
-      "dependency_refs": {"crypto": "master", "daochi_client": "970d5e44b1702158cb16469892da6ff50f142427", "kryon": "b5ac5d1a303326009012d68016c1d8859b6b3a13"},
-      "id": "pb91195370ac0cb93",
-      "name": "Apps",
-      "ref": "3c0a7d9e7f941381a7c07169f94240b9fe801bb8",
-      "url": "https://github.com/waozixyz/apps.git"
-    },
-    {
       "commit": "b5ac5d1a303326009012d68016c1d8859b6b3a13",
       "dependencies": {"libwebp": "p3b3c785a0e17e605", "raylib": "pcc7aa76725f2fb2f", "sdl3": "p16cd0434af3dff7b"},
       "dependency_refs": {"libwebp": "1844042d1ca751e62e61df7617dba19c98588339", "raylib": "fafa2cea97d0cb379d832086ba45a989fa6f9c8e", "sdl3": "829a65d769d935c4852f8159e964312c0957260a"},
@@ -135,8 +135,8 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "pb91195370ac0cb93", "crypto": "pc23fbf455e97614d", "entity": "p6ab8e2a733002786", "kryon": "pbb0d432304fad5c6", "mingcute": "pe1027b9d16704793"},
-    "dependency_refs": {"apps": "3c0a7d9e7f941381a7c07169f94240b9fe801bb8", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "2c56268db0b270ad53e51af9cae5dc46876a65d9", "kryon": "b5ac5d1a303326009012d68016c1d8859b6b3a13", "mingcute": "master"},
+    "dependencies": {"apps": "p2b1c0e80f47c3873", "crypto": "pc23fbf455e97614d", "entity": "p6ab8e2a733002786", "kryon": "pbb0d432304fad5c6", "mingcute": "pe1027b9d16704793"},
+    "dependency_refs": {"apps": "cd72a242f8cdfd3ec3fc839fc11d9e7d7fc3b8fc", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "2c56268db0b270ad53e51af9cae5dc46876a65d9", "kryon": "b5ac5d1a303326009012d68016c1d8859b6b3a13", "mingcute": "master"},
     "name": "Shovey"
   },
   "toolchain": {

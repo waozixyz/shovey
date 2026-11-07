@@ -58,6 +58,11 @@ Codec :: #import "apps/node_codec";
 #import "island_unlock"
 #import "island_package"
 #import "player_progress_storage"
+
+// The host interface this player runs: Inner Breeze host API 43, the one the
+// player, editor and Island catalogs declare (src/catalog.json host_api).
+PLAYER_HOST_API :: 43
+
 #import "shovey_theme"
 ShopUI :: #import "shop_view";
 #import, file "chest_reminder_host_policy.zi";
@@ -633,7 +638,7 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
         .widgets = CollectionWidgets, .save = CollectionSave, .state = CollectionState,
         .effect = CollectionEffect, .open_effect = CollectionOpenEffect,
         .bundle = CollectionPackageBundle, .download = CollectionPackageDownload,
-        .fetch = CollectionPackageFetch, .host_api = APPS_NOTIFICATION_HOST_API}
+        .fetch = CollectionPackageFetch, .host_api = PLAYER_HOST_API}
     collection_island_package.service = EntityGameShopAnswer
     collection_island_package.start = HttpTransferStart
     collection_island_package.poll = HttpTransferPollLength
