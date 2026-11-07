@@ -78,9 +78,9 @@ class BundleCatalogTest(unittest.TestCase):
         builder.build(*[self.root / name for name in ('toolchain', 'kryon', 'apps', 'mingcute')])
 
     def test_external_descriptor_is_not_read_or_embedded(self):
-        # The reminder's new capability must reject older hosts before entry.
+        # Format 62 and the reminder capability must reject older hosts before entry.
         minimum_host = json.loads((ROOT / 'src/catalog.json').read_text())['host_api']
-        self.assertEqual(minimum_host, 42)
+        self.assertEqual(minimum_host, 43)
         descriptor = dict(name='public', assets='art', locales='locales', locale_prefix='game.',
                           entry='game:Entry', source='game.zi', preview='preview.png', host_api=minimum_host)
         self.write('public/catalog.json', json.dumps(descriptor))

@@ -1,7 +1,8 @@
 # Shovey Editor changelog
 
-## [Unreleased]
+## [0.2.149] - 2026-11-07
 
+- Runs in the latest Inner Breeze and Arcade.
 - New level opens a clear choice of Classic or Shovey Island; a locked Island shows Unlock and its price.
 - Levels lists your Classic levels and your Shovey Island levels.
 

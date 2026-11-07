@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [0.6.169] - 2026-11-07
+
+- Runs in the latest Inner Breeze and Arcade.
+
 ## [0.6.168] - 2026-11-04
 
 - Play the first 30 Island levels with working downloads and a working Play button.

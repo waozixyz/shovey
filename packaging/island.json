@@ -4,7 +4,7 @@
   "title": "Shovey Island",
   "preview": "assets/island-marketing/preview.png",
   "package_id": "xyz.waozi.shovey-island",
-  "version": "0.4.9",
-  "sha256": "5a77c2049565620a3de869f07f5d7763da62fa9a219bd869c5710bfed5726a82",
-  "bytes": 6019576
+  "version": "0.4.10",
+  "sha256": "581710d955702f0ee6b5b2111ea647985bdb0de66dfac781474d75fdacf0ca26",
+  "bytes": 6502780
 }
