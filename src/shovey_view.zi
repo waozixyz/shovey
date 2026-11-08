@@ -284,6 +284,18 @@ Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, d
             .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
+// Keep native button semantics, hover and keyboard focus on the compact bar.
+HeaderControl :: (id: s32, bounds: Rectangle, label: string, icon: string) -> bool {
+    Box(frame.session, BoxProps.{.key = cast(u64)(80000 + id), .bounds = bounds,
+            .fill = Color.{35, 53, 38, 255}, .border = Color.{112, 119, 73, 255}, .radius = 8.0})
+    pressed := Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id,
+            .bounds = bounds, .label = label, .icon_only = true, .square = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisGhost}) != 0
+    SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{bounds.x + 10.0, bounds.y + 10.0, 24.0, 24.0},
+            .shape = icon, .color = Color.{241, 233, 202, 255}})
+    return pressed
+}
+
 // One of a set of choices; the chosen one stands out and reads as selected.
 Choice :: (id: s32, bounds: Rectangle, label: string, chosen: bool) -> bool {
     return Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label,
@@ -1697,31 +1709,28 @@ ShoveyFrame :: () {
     walking := walk_count > 0 && walk_level == game.level && !game.won && !game.lost
     if !walking { walk_count = 0 }
     cinematic := walking || board_sail >= 0.0
-    // Return sits at the edge, then the game's own navigation and status.
+    // A single 52px row; the board and tutorial keep their existing origin.
     if !cinematic {
-        if !mini && Control(20022, Rectangle.{8.0, top + 4.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
-            if !ShoveyBack() { LeaveForGameSelection() }
+        Fill(20024, Rectangle.{0.0, top, width, 52.0}, Color.{27, 43, 31, 255})
+        if HeaderControl(20022, Rectangle.{8.0, top + 4.0, 44.0, 44.0},
+                AppLocaleHost("shovey_back"), ICON_PREVIOUS) {
+            unused ShoveyBackToMap()
             return
         }
-        levels_x: float32 = ifx mini then 8.0 else 92.0
-        if Control(20002, Rectangle.{levels_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_levels"), false, "", ICON_LEVELS) {
-            OpenLevels()
-        }
         restart_x := ifx mini then width - 52.0 else width - 156.0
-        Caption(20001, Rectangle.{levels_x + 48.0, top + 4.0, restart_x - levels_x - 48.0, 44.0}, HeaderText(), 14, true)
-        if Control(20016, Rectangle.{restart_x, top + 4.0, 44.0, 44.0}, AppLocaleHost("shovey_restart"), false, "", ICON_RESTART) {
-            ChangeLevel(game.level)
-        }
-        if !mini && Control(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
-            AppLocaleHost(ifx help_open then "shovey_close_help" else "shovey_help"), false, "",
-            ifx help_open then ICON_CLOSE else ICON_HELP) {
-            help_open = !help_open
-        }
-        if !mini && Control(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
-            AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"), false, "",
-            ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) {
-            SoundSetMuted(!SoundMuted())
-        }
+        badge_width := restart_x - 64.0
+        if badge_width > 232.0 { badge_width = 232.0 }
+        badge := Rectangle.{56.0 + (restart_x - 56.0 - badge_width) * 0.5, top + 8.0, badge_width, 36.0}
+        Box(frame.session, BoxProps.{.key = cast(u64)20025, .bounds = badge,
+                .fill = Color.{35, 53, 38, 255}, .border = Color.{112, 119, 73, 255}, .radius = 8.0})
+        Caption(20001, badge, HeaderText(), 14, true)
+        if HeaderControl(20016, Rectangle.{restart_x, top + 4.0, 44.0, 44.0},
+                AppLocaleHost("shovey_restart"), ICON_RESTART) { ChangeLevel(game.level) }
+        if !mini && HeaderControl(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
+                AppLocaleHost("shovey_help"), ICON_HELP) { help_open = true }
+        if !mini && HeaderControl(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
+                AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"),
+                ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) { SoundSetMuted(!SoundMuted()) }
     }
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0

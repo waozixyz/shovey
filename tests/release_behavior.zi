@@ -14,6 +14,12 @@ Check :: () -> s32 {
     if ShoveyScoreResult(5, 3).stars != 2 || ShoveyScoreResult(6, 3).stars != 1 { return 103 }
     if ShoveyScoreResult(1, 0).stars != 1 || ShoveyScoreResult(1, 0).score != 0 || ShoveyScoreResult(1, -1).stars != 1 { return 104 }
     if ShoveyScoreResult(2147483647, 2147483647).score != 1000 { return 105 }
+    if ShoveyScoreResult(11, 10).stars != 3 || ShoveyScoreResult(12, 10).stars != 2 { return 109 }
+    // Level 1 includes all walking actions; its saved 55 is near the exact 51.
+    if ShoveyLevelPar(1) != 51 || ShoveyScoreResult(51, 51).stars != 3 || ShoveyScoreResult(55, 51).stars != 3 || ShoveyScoreResult(55, 51).score != 927 { return 110 }
+    if ShoveyScoreResult(56, 51).stars != 3 || ShoveyScoreResult(57, 51).stars != 2 || ShoveyScoreResult(77, 51).stars != 2 || ShoveyScoreResult(78, 51).stars != 1 { return 111 }
+    for par: cast(s32)1..9 { if ShoveyScoreResult(par, par).stars != 3 || ShoveyScoreResult(par + 1, par).stars == 3 { return 112 } }
+    if ShoveyScoreResult(2147483647, 2000000000).stars != 3 || ShoveyScoreResult(2147483647, 1400000000).stars != 1 { return 113 }
     // Every static par must match an effective winning route on this board.
     for level: cast(s32)1..cast(s32)SHOVEY_APPROVED_LEVEL_COUNT {
         proof: ShoveyGame

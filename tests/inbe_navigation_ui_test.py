@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from world_map_test_support import start_map_destination
 
 from PIL import Image, ImageChops
 
@@ -158,16 +159,25 @@ def main():
                     # Exercise Shovey's own action, below Inbe's return bar.
                     back = driver.find(label='Back', role='button', visible=True)
                     assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working Back action'
-                    # Shovey's Back returns to Arcade's covers.
+                    # Native gameplay Back visits the map before the covers;
+                    # a host-owned Back may go straight to the covers.
                     driver.press(key=max(back, key=lambda node: node['y'])['key'])
+                    deadline = time.monotonic() + 20
+                    while not driver.find(key=49200, role='button'):
+                        if driver.find(key=20105, visible=True):
+                            driver.press(key=20022, role='button')
+                            break
+                        assert time.monotonic() < deadline, 'Back did not reach map or covers'
+                        time.sleep(.05)
                     driver.wait(label='Play', role='button')
                     driver.press(label='Play', role='button')
+                    start_map_destination(driver, 1)
                     driver.wait(label='Restart', role='button', timeout=30)
-                    driver.press(label='Levels', role='button')
+                    driver.press(key=20022, role='button')
                     back = driver.find(label='Back', role='button', visible=True)
                     assert len(back) == 1 if args.host_navigation_only else len(back) >= 2, 'Missing working selector Back action'
-                    # Back from the level list returns to the level.
-                    driver.press(key=max(back, key=lambda node: node['y'])['key'])
+                    # Play from the map resumes the same selected level.
+                    driver.press(key=20122)
                     driver.wait(label='Restart', role='button')
                     driver.key('left')
                 else:
@@ -229,7 +239,7 @@ def main():
                     assert options == {'Practice', 'Arcade'}, f'Leaderboard offered apps without a ranking: {options}'
                     driver.press(role='option', label='Arcade')
                     driver.wait(label='Shovey', role='button')
-                    driver.wait(label='Levels', role='button')
+                    driver.wait(label='Back', role='button')
                     capture(child, window, 'leaderboard-arcade')
     print('Inbe: Classic and Editor preserve host navigation or return from immersive play; '
           'Classic reports its solved levels to an Arcade board in Leaderboard')

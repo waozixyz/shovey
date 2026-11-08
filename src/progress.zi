@@ -214,7 +214,8 @@ ShoveyScoreResult :: (moves: s32, par: s32) -> ShoveyLevelResult {
     result := ShoveyLevelResult.{.best_moves = moves, .stars = 1}
     // An unknown route earns completion, never an invented efficiency award.
     if par <= 0 { return result }
-    result.stars = ifx moves <= par then 3 else ifx cast(s64)moves <= (cast(s64)par * 3 + 1) / 2 then 2 else 1
+    // Three stars allow small detours; whole actions keep short pars exact.
+    result.stars = ifx cast(s64)moves <= cast(s64)par * 11 / 10 then 3 else ifx cast(s64)moves <= (cast(s64)par * 3 + 1) / 2 then 2 else 1
     result.score = cast(s32)(1000 * cast(s64)par / (ifx moves > par then moves else par))
     return result
 }

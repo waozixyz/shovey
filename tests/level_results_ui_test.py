@@ -18,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--driver-source', type=Path, required=True)
+    parser.add_argument('--route-file', type=Path, help='Bounded copied Level 1 route; never reads the live profile')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     output = root / 'work/move-stars-score/ui'
@@ -44,6 +45,10 @@ def main():
             if solutions and match:
                 route = match[1]
                 break
+    if args.route_file:
+        assert args.route_file.stat().st_size <= 8192
+        route = args.route_file.read_text().strip()
+    expected_score = 1000 * 51 // max(51, len(route))
     assert route
     assert set(route) <= set('0123'), route
     with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as tmp:
@@ -87,7 +92,7 @@ def main():
                     time.sleep(.15)
                 driver.wait(label='Level 1 complete', role='text', timeout=20)
                 driver.wait(label='★ ★ ★', role='text')
-                driver.wait(label='Score: 1000 / 1000', role='text')
+                driver.wait(label=f'Score: {expected_score} / 1000', role='text')
                 driver.wait(label=f'Moves: {len(route)}', role='text')
                 driver.wait(key=20905, label='Continue', role='button')
                 # The result stays readable until the player explicitly continues.
@@ -107,7 +112,7 @@ def main():
                 driver.press(key=20905, role='button')
                 driver.wait_gone(label='Level 1 complete', role='text')
                 driver.wait(contains='Level 2 / ', role='text')
-                driver.press(label='Levels', role='button')
+                driver.press(label='Back', role='button')
                 driver.wait(key=33001, role='button')
                 driver.press(key=33001, role='button')
                 driver.wait(label='Level 1', role='text')
@@ -177,7 +182,7 @@ def main():
             finally:
                 if child.poll() is None: child.terminate()
                 child.wait(timeout=10)
-    print('Results local UI test passed: real win, branch-label hook, 3 stars, score1000, durable result, explicit Continue; all12 locale templates present')
+    print(f'Results local UI test passed: real {len(route)}-action win, 3 stars, score{expected_score}, durable result/reload, explicit Continue; all12 locale templates present')
 
 
 if __name__ == '__main__':

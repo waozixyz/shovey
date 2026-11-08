@@ -50,10 +50,10 @@ for phase, setting in (('offline', 'off'), ('positive', 'on')):
             driver.wait(contains='Level 1 / ', role='text', timeout=45)
             if driver.find(label='Got it', role='button'):
                 driver.press(label='Got it')
-            driver.wait(label='Levels', role='button')
+            driver.wait(label='Back', role='button')
             assert not driver.find(contains='Request rejected'), 'Actual package quota rejected bundled Classic'
             if phase == 'offline':
-                driver.press(label='Levels', role='button')
+                driver.press(label='Back', role='button')
                 driver.wait(key=33001, role='button')
                 driver.wait_idle(frames=8)
                 subprocess.run(['import', '-window', window, str(output / 'offline-map.png')], check=True)

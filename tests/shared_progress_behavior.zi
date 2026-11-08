@@ -330,6 +330,24 @@ Check :: () -> s32 {
     if RecordLevelResult("shovey.classic", "first", 83, 123, 1, 10, true) { return 210 }
     flush = true; staged = durable
     if GetLevelResult("shovey.classic", "first", 83, 123, 10).best_moves != 9 || account_calls != result_calls { return 211 }
+    // Legacy raw moves are rescored on load without altering the stored best.
+    if !RecordLevelResult("shovey.classic", "first", 1, 3097574224, 55, 0, true) { return 214 }
+    staged = durable
+    legacy_key: [96]u8
+    legacy_text: [16384]u8
+    unused LevelResultKey("shovey.classic", "first", 1, legacy_key[:])
+    unused CopyCString(FakeRecord(TextUntilNul(legacy_key[:])), legacy_text[:])
+    best = GetLevelResult("shovey.classic", "first", 1, 3097574224, 51)
+    if best.best_moves != 55 || best.stars != 3 || best.score != 927 { return 215 }
+    if FakeRecord(TextUntilNul(legacy_key[:])) != TextUntilNul(legacy_text[:]) { return 220 }
+    if !RecordLevelResult("shovey.classic", "first", 1, 3097574224, 78, 51, true) { return 216 }
+    staged = durable
+    best = GetLevelResult("shovey.classic", "first", 1, 3097574224, 51)
+    if best.best_moves != 55 || best.stars != 3 || best.score != 927 || FakeRecord(TextUntilNul(legacy_key[:])) != TextUntilNul(legacy_text[:]) { return 217 }
+    if !RecordLevelResult("shovey.classic", "first", 1, 3097574224, 51, 51, true) { return 218 }
+    staged = durable
+    best = GetLevelResult("shovey.classic", "first", 1, 3097574224, 51)
+    if best.best_moves != 51 || best.stars != 3 || best.score != 1000 || account_calls != result_calls { return 219 }
     result_key: [96]u8
     unused LevelResultKey("shovey.classic", "first", 83, result_key[:])
     unused FakeSave(TextUntilNul(result_key[:]), "{\"owner\":\"collision\",\"pack\":\"shovey.classic\",\"level\":83,\"board\":123,\"moves\":1}")

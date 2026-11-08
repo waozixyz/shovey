@@ -166,7 +166,7 @@ def main():
                         capture(child, window, width, height, f'{orientation}-secret-{identity}')
                         driver.press(key=20122, role='button')
                         driver.wait(contains='Level ' + label, role='text', timeout=30)
-                        driver.press(label='Levels', role='button');assert_fullscreen_map(driver)
+                        driver.press(label='Back', role='button');assert_fullscreen_map(driver)
                 else:
                     visited = {1}
                     for target in range(143 if args.landscape_beach_only else 2, 176):

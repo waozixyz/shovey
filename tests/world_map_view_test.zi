@@ -188,10 +188,31 @@ main :: () -> s32 {
             if Map.WorldMapViewPublicLast(props) != expected { return 1 }
             extent := Map.WorldMapViewCameraBounds(props, width, viewport.height, viewport.width)
             if extent.width < viewport.width - 1.0 || extent.height < viewport.height - 1.0 { return 2 }
-            // At any progress the camera reaches both ends of the painting.
+            // Portrait reaches both ends of the painting; landscape reaches
+            // exactly the camera range that centers the outermost targets.
             art := Map.WorldMapViewArtBounds(width, size == 1)
-            if size == 0 && (extent.y > art.y + 0.5 || extent.y + extent.height < art.y + art.height - 0.5) { return 14 }
-            if size == 1 && (extent.x > art.x + 0.5 || extent.x + extent.width < art.x + art.width - 0.5) { return 15 }
+            if size == 0 && (extent.x > art.x + 0.5 || extent.x + extent.width < art.x + art.width - 0.5 ||
+                extent.y > art.y + 0.5 || extent.y + extent.height < art.y + art.height - 0.5) { return 14 }
+            if size == 1 {
+                left := Map.WorldMapViewPositionFor(1,width,props).x
+                right := left
+                for place: cast(s32)2..175 {
+                    point := Map.WorldMapViewPositionFor(place,width,props)
+                    if point.x < left { left = point.x }
+                    if point.x > right { right = point.x }
+                }
+                final := Map.WorldMapViewPositionFor(175,width,props)
+                if final.x < left { left = final.x }
+                if final.x > right { right = final.x }
+                expected_margin := viewport.width * 0.5
+                left_gap := left - extent.x
+                right_gap := extent.x + extent.width - right
+                if left_gap < expected_margin - 1.0 || left_gap > expected_margin + 1.0 ||
+                    right_gap < expected_margin - 1.0 || right_gap > expected_margin + 1.0 {
+                    print("landscape extent targets=%,% bounds=%,%,%,% gaps=%,% expected=%\n",left,right,extent.x,extent.y,extent.width,extent.height,left_gap,right_gap,expected_margin)
+                    return 15
+                }
+            }
             for place: cast(s32)1..175 {
                 if !Map.WorldMapViewBrowsable(props, place) { continue }
                 point := Map.WorldMapViewPositionFor(place,width,props)
@@ -206,6 +227,49 @@ main :: () -> s32 {
             x := point.x - cast(float32)state.scroll_x; y := point.y - cast(float32)state.scroll_offset
             camera := Map.WorldMapViewCameraViewport(props,viewport)
             if x < 28.0 || x > viewport.width - 28.0 || y < 64.0 || y > camera.height - 28.0 { return 3 }
+        }
+    }
+    {
+        visible: [1003]bool; available: [1003]bool
+        for place: cast(s32)1..175 { visible[place - 1] = true; available[place - 1] = true }
+        props := Map.WorldMapViewProps.{.visible = visible[:],.available = available[:],.landscape = true}
+        viewport_widths: [2]float32 = .[640.0, 1280.0]
+        for viewport_width: viewport_widths {
+            viewport := Rectangle.{0.0,0.0,viewport_width,600.0}
+            width := Map.WorldMapViewWidth(viewport.width)
+            extent := Map.WorldMapViewCameraBounds(props,width,viewport.height,viewport.width)
+            first := Map.WorldMapViewPositionFor(1,width,props)
+            last := Map.WorldMapViewPositionFor(175,width,props)
+            state := Map.WorldMapViewState.{.focused = 1}
+            state.scroll_x = -999999
+            Map.WorldMapViewClampCamera(*state,extent,viewport,width,props)
+            if first.x - cast(float32)state.scroll_x < viewport.width * 0.5 - 1.0 ||
+                first.x - cast(float32)state.scroll_x > viewport.width * 0.5 + 1.0 { return 84 }
+            state.scroll_x = 999999
+            Map.WorldMapViewClampCamera(*state,extent,viewport,width,props)
+            if last.x - cast(float32)state.scroll_x < viewport.width * 0.5 - 1.0 ||
+                last.x - cast(float32)state.scroll_x > viewport.width * 0.5 + 1.0 { return 85 }
+
+            // The last edge must keep moving on the first reverse notch,
+            // including after the endpoint absorbed a large overscroll.
+            far := Map.WorldMapViewState.{.focused = 175}
+            Map.WorldMapViewReveal(*far,props,width,viewport)
+            unused Map.WorldMapViewWheelMove(*far,props,width,last,100000.0)
+            Map.WorldMapViewApplyPast(*far,extent,viewport,width,props)
+            unused Map.WorldMapViewWheelMove(*far,props,width,last,-50.0)
+            rail := Map.WorldMapViewRailPoint(*far,props,width)
+            framed := Map.WorldMapViewFramePoint(props,rail,width,viewport,175)
+            if framed.x != rail.x || framed.y != rail.y || Map.WorldMapViewRouteDistance(rail,last) < 1.0 { return 90 }
+            props.key_pressed = 269
+            state = Map.WorldMapViewState.{.focused = 1}
+            if Map.WorldMapViewKeyboard(*state,props,width,viewport.height).focused != 175 || !state.reveal { return 86 }
+            Map.WorldMapViewReveal(*state,props,width,viewport)
+            if state.focused != 175 || state.reveal { return 87 }
+            props.key_pressed = 268
+            unused Map.WorldMapViewKeyboard(*state,props,width,viewport.height)
+            if state.focused != 1 || !state.reveal { return 88 }
+            Map.WorldMapViewReveal(*state,props,width,viewport)
+            if state.focused != 1 || state.reveal { return 89 }
         }
     }
     {

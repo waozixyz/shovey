@@ -87,10 +87,9 @@ def main():
                       max(n['x'] + n['width'] for n in tiles), max(n['y'] + n['height'] for n in tiles))
 
     def reach_ends(width, height, label):
-        """Home shows the start; the wheel reaches both painting edges at any
-        progress. Portrait shows the painting's foot. Landscape centres level 1
-        on its road, the painted left extension fills the screen beside it, and
-        scrolling back pans on past level 1 to the painting's left edge."""
+        """Portrait retains the painting; desktop stops at the outer targets.
+        Wheel overscroll is absorbed and the first reverse notch moves again.
+        """
         portrait = width < height
         driver.key('home')
         selected(1)
@@ -100,24 +99,19 @@ def main():
         if portrait:
             assert bottom <= view['y'] + view['height'] + 1, ('start edge not reached', label, width, bottom, view)
         else:
-            assert left <= view['x'] + 1, ('blank ground left of the start', label, width, left, view)
-            for batch in range(20):
-                subprocess.run(['xdotool', 'mousemove', str(width // 2), str(height // 3),
-                                'click', '--repeat', '10', '--delay', '8', '5'], check=True)
-                driver.wait_idle(frames=3)
-                view, (left, top, right, bottom) = painting()
-                if left >= view['x'] - 1:
-                    break
-            assert left >= view['x'] - 1, ('start edge not reached', label, width, left, view)
-            assert left <= view['x'] + 1, ('scrolled past the start edge', label, width, left, view)
-            assert driver.wait(label='Level 1', role='text'), 'Browsing changed the selected board'
-            # Home centres level 1 again, exactly where it began.
+            # Landscape stops with the first target centered, not at distant art.
+            subprocess.run(['xdotool', 'mousemove', str(width // 2), str(height // 3),
+                            'click', '--repeat', '200', '--delay', '8', '5'], check=True)
+            driver.wait_idle(frames=5)
+            first = driver.wait(key=33001, role='button', visible=True)
+            assert abs(driver.center(first)[0] - (view['x'] + view['width'] / 2)) <= 2, first
+            assert driver.wait(label='Level 1', role='text'), 'Browsing changed selection'
             driver.key('home')
             selected(1)
             driver.wait_idle(frames=5)
             again = driver.wait(key=33001, role='button', visible=True)
-            assert abs(again['x'] - home['x']) <= 1 and abs(again['y'] - home['y']) <= 1, ('Home did not recentre level 1', home, again)
-            reach_proof.append({'progress': label, 'viewport': [width, height], 'start_batches': batch + 1})
+            assert abs(again['x'] - home['x']) <= 1 and abs(again['y'] - home['y']) <= 1
+            reach_proof.append({'progress': label, 'viewport': [width, height], 'start_center': driver.center(first)})
         reached = False
         end = []
         # Small batches cannot jump over the last board before reaching open sea.
@@ -129,14 +123,22 @@ def main():
             passing_end = driver.find(key=33175, role='button', visible=True)
             if passing_end:
                 end = passing_end
-            if (top >= view['y'] - 1) if portrait else (right <= view['x'] + view['width'] + 1):
+            if (top >= view['y'] - 1) if portrait else (passing_end and driver.center(passing_end[0])[0] <= view['x'] + view['width'] / 2 + 2):
                 reached = True
                 break
         assert reached, ('far edge of the painting unreachable', label, width, (left, top, right, bottom), view)
         if not portrait:
-            assert right >= view['x'] + view['width'] - 1, ('blank band at the sea edge', label, width, right, view)
-        # Passing the last board keeps it locked and the selection unchanged.
-        # The extended sea edge can lie a whole viewport beyond that board.
+            last = driver.wait(key=33175, role='button', visible=True)
+            assert abs(driver.center(last)[0] - (view['x'] + view['width'] / 2)) <= 2, last
+            subprocess.run(['xdotool', 'click', '--repeat', '100', '--delay', '8', '4'], check=True)
+            driver.wait_idle(frames=5)
+            clamped = driver.wait(key=33175, role='button', visible=True)
+            assert abs(clamped['x'] - last['x']) <= 1, (last, clamped)
+            subprocess.run(['xdotool', 'click', '5'], check=True)
+            driver.wait_idle(frames=5)
+            reversed_end = driver.find(key=33175, role='button', visible=True)
+            assert not reversed_end or reversed_end[0]['x'] > clamped['x'] + 1, ('Overscroll delayed reversal', last, clamped, reversed_end, view)
+        # Browsing never changes the played board or unlocks a locked target.
         assert driver.wait(label='Level 1', role='text'), 'Browsing changed the selected board'
         assert end, ('the last board is not drawn while browsing to the map end', label, width)
         if label == 'fresh':
@@ -402,13 +404,18 @@ def main():
                 dx = second['x'] - first['x']; dy = second['y'] - first['y']
                 length = math.hypot(dx, dy)
                 assert length > 10
-                # A drag perpendicular to the incoming road must not pan away
-                # from it; dragging along that road advances the camera.
+                # Direct manipulation follows the finger on both axes, with
+                # camera bounds absorbing excess travel. It is not rail-locked.
                 x0, y0 = width // 2, 180
-                driver.drag((x0, y0), (x0 - dy * 70 / length, y0 + dx * 70 / length))
+                drag_x, drag_y = -dy * 70 / length, dx * 70 / length
+                driver.drag((x0, y0), (x0 + drag_x, y0 + drag_y))
                 driver.wait_idle(frames=6)
                 stayed = selected(1)
-                assert abs(stayed['x'] - first['x']) <= 3 and abs(stayed['y'] - first['y']) <= 3, ('Perpendicular drag left the rail', width, first, stayed, second)
+                for axis, delta in (('x', drag_x), ('y', drag_y)):
+                    moved_axis = stayed[axis] - first[axis]
+                    assert min(0, delta) - 3 <= moved_axis <= max(0, delta) + 3, ('Drag escaped bounds/direction', width, axis, delta, first, stayed)
+                driver.key('home')
+                first = selected(1)
                 driver.drag((x0, y0), (x0 - dx * 120 / length, y0 - dy * 120 / length))
                 driver.wait_idle(frames=6)
                 assert driver.wait(label='Level 1', role='text')
@@ -440,9 +447,9 @@ def main():
             driver.press(key=20122, role='button')
             driver.wait(contains='Level 1 / ', role='text', timeout=30)
             answer_level_updates(driver)
-            driver.wait(label='Levels', role='button')
+            driver.wait(label='Back', role='button')
             driver.wait_idle(frames=5)
-            driver.press(key=20002, role='button')
+            driver.press(key=20022, role='button')
             assert_fullscreen_map(driver)
             selected(1)
         with app(profile, 'relaunch'):
@@ -457,7 +464,7 @@ def main():
     elif args.forks_only:
         print('Private map camera local test passed: two orientations, cursor forks and reverse memory, stable selection, reopen and relaunch')
     else:
-        print('Private map camera local test passed: two orientations, whole painting end to end at fresh and advanced progress, wheel, rail-constrained drag, selection, reopen and relaunch')
+        print('Private map camera local test passed: portrait painting and desktop target bounds at fresh/advanced progress, endpoint overscroll/reverse, bounded direct drag, resize, selection, reopen and relaunch')
 
 
 if __name__ == '__main__':

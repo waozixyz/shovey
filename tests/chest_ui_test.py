@@ -46,7 +46,7 @@ def application(profile, name):
             # The map selects the saved level; its Play resumes that board.
             enter_classic_map(driver)
             driver.press(key=20122, role='button')
-            driver.wait(label='Levels', role='button')
+            driver.wait(label='Back', role='button')
             driver.wait_gone(key=49401)
             driver.key('left')
             driver.wait(label='Level 21-S', role='text')  # level 29's hidden room on the branch-named map

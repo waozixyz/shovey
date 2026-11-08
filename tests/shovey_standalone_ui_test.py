@@ -311,7 +311,7 @@ def main():
             driver.press(label='Unmute', role='button')
             driver.wait(label='Mute', role='button')
             assert (profile / 'games/arcade.shovey-player/records/sound').read_text() == 'on'
-            driver.press(label='Levels', role='button')
+            driver.press(label='Back', role='button')
             assert_fullscreen_map(driver)
             window = resize_owned_window(child, 390, 844)
             portrait_marker = driver.wait(key=33001, role='button', visible=True)
@@ -327,7 +327,7 @@ def main():
             driver.key('enter')
             # End focuses the last available level, while locked previews remain disabled.
             wait_level_one(driver, classic_levels)
-            driver.press(label='Levels', role='button')
+            driver.press(label='Back', role='button')
             assert_fullscreen_map(driver)
             driver.key('home')
             # Movement cannot enter the locked previews.
@@ -360,14 +360,12 @@ def main():
             # two quick presses on it would open it directly.
             start_map_destination(driver, 1)
             wait_level_one(driver, classic_levels)
-            driver.press(label='Levels', role='button')
-            assert_fullscreen_map(driver)
-            # Back from the level list returns to the level, then to the covers.
-            driver.press(key=20022)
-            wait_level_one(driver, classic_levels)
-            assert not driver.find(label='Continue', role='button', visible=True)
             driver.press(label='Back', role='button')
+            assert_fullscreen_map(driver)
+            # Back from the map returns to the covers, not to gameplay again.
+            driver.press(key=20022)
             driver.wait(label='Play', role='button')
+            assert not driver.find(label='Restart', role='button', visible=True)
             if args.map_only:
                 print('Classic map local UI test passed: 390x844 and 960x600, keyboard 1/4, locked previews, touch scrolling, selection and Back')
                 return
@@ -436,6 +434,8 @@ def main():
             assert not account_progress.exists(), 'Movement wrote an account progress record'
             assert len(driver.find(label='Back', role='button', visible=True)) == 1, 'Shovey needs one clear Back action'
             driver.press(label='Back', role='button')
+            assert_fullscreen_map(driver)
+            driver.press(key=20022, role='button')
             driver.wait(label='Play', role='button')
             driver.press(label='Next', role='button')
             # Island's public cover sits between Classic and the Editor.
@@ -492,7 +492,7 @@ def main():
             while campaign_progress(classic.read_bytes())[0][2][10:18] != '00000000':
                 assert time.monotonic() < deadline, 'completed-level replay did not restart'
                 time.sleep(.05)
-            driver.press(label='Levels', role='button')
+            driver.press(label='Back', role='button')
             start_map_destination(driver, 2)
             driver.wait(contains='Level 2 / ', role='text')
         classic.write_bytes(classic_bytes)

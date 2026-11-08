@@ -182,6 +182,9 @@ WorldMapViewFramingWidth :: (props: WorldMapViewProps, at: s32,
 // At a junction, frame the entry and both browsable choices as one group.
 // Blend out as the camera leaves it, so the camera never snaps to another arm.
 WorldMapViewFramePoint :: (props: WorldMapViewProps, point: Vector2, width: float32, viewport: Rectangle, place: s32 = 0) -> Vector2 {
+    // Landscape endpoints are centered on targets. Pinning the camera to the
+    // boat here also pins every point on the incoming edge, delaying reversal.
+    if place == 175 && props.landscape { return point }
     if place == 175 {
         final := WorldMapViewPositionFor(175,width,props)
         scale := Layout.WorldMapScale(width)
@@ -326,15 +329,11 @@ WorldMapViewBrowsable :: (props: WorldMapViewProps, place: s32) -> bool {
 
 // Both axes come from destinations the player can browse, never terrain.
 // Expanding a short range to fit the viewport reveals scenery, not new nodes.
+// Landscape desktop panning reaches exactly the camera positions that center
+// the outermost level targets; portrait retains the whole painting.
 WorldMapViewCameraBounds :: (props: WorldMapViewProps, width: float32, viewport_height: float32 = 0.0, viewport_width: float32 = 390.0) -> Rectangle {
-    full := WorldMapViewArtBounds(width, props.landscape)
-    // Leave camera room at the horizontal endpoints as well as at interior
-    // levels. Otherwise the art edge clamps a revealed start off-center.
-    if props.landscape {
-        full.x -= viewport_width * 0.5
-        full.width += viewport_width
-    }
-    minimum := Vector2.{full.x + full.width, full.y + full.height}
+    art := WorldMapViewArtBounds(width, props.landscape)
+    minimum := Vector2.{art.x + art.width, art.y + art.height}
     maximum := Vector2.{}
     found := false
     for place: cast(s32)1..cast(s32)props.visible.count {
@@ -348,7 +347,8 @@ WorldMapViewCameraBounds :: (props: WorldMapViewProps, width: float32, viewport_
         if point.y > maximum.y { maximum.y = point.y }
     }
     if !found { minimum = WorldMapViewPositionFor(1, width, props); maximum = minimum }
-    pad_x := ifx viewport_width * 0.5 > 144.0 then viewport_width * 0.5 else 144.0
+    pad_x := cast(float32)(ifx props.landscape then viewport_width * 0.5 else 144.0)
+    if !props.landscape && viewport_width * 0.5 > 144.0 { pad_x = viewport_width * cast(float32)0.5 }
     pad_y := ifx viewport_height * 0.5 > 176.0 then viewport_height * 0.5 else 176.0
     minimum.x -= pad_x; minimum.y -= pad_y
     maximum.x += pad_x; maximum.y += pad_y
@@ -360,18 +360,25 @@ WorldMapViewCameraBounds :: (props: WorldMapViewProps, width: float32, viewport_
         extra := (viewport_height - maximum.y + minimum.y) * 0.5
         minimum.y -= extra; maximum.y += extra
     }
-    // The whole painting stays reachable, end to end, at any progress.
-    art := WorldMapViewArtBounds(width, props.landscape)
-    if minimum.x > art.x { minimum.x = art.x }
-    if minimum.y > art.y { minimum.y = art.y }
-    if maximum.x < art.x + art.width { maximum.x = art.x + art.width }
-    if maximum.y < art.y + art.height { maximum.y = art.y + art.height }
-    if minimum.x < full.x { maximum.x -= minimum.x - full.x; minimum.x = full.x }
-    if minimum.y < full.y { maximum.y -= minimum.y - full.y; minimum.y = full.y }
-    if maximum.x > full.x + full.width { minimum.x -= maximum.x - full.x - full.width; maximum.x = full.x + full.width }
-    if maximum.y > full.y + full.height { minimum.y -= maximum.y - full.y - full.height; maximum.y = full.y + full.height }
-    if minimum.x < full.x { minimum.x = full.x }
-    if minimum.y < full.y { minimum.y = full.y }
+    if !props.landscape {
+        // The whole painting stays reachable, end to end, at any progress.
+        if minimum.x > art.x { minimum.x = art.x }
+        if minimum.y > art.y { minimum.y = art.y }
+        if maximum.x < art.x + art.width { maximum.x = art.x + art.width }
+        if maximum.y < art.y + art.height { maximum.y = art.y + art.height }
+        if minimum.x < art.x { maximum.x -= minimum.x - art.x; minimum.x = art.x }
+        if minimum.y < art.y { maximum.y -= minimum.y - art.y; minimum.y = art.y }
+        if maximum.x > art.x + art.width { minimum.x -= maximum.x - art.x - art.width; maximum.x = art.x + art.width }
+        if maximum.y > art.y + art.height { minimum.y -= maximum.y - art.y - art.height; maximum.y = art.y + art.height }
+        if minimum.x < art.x { minimum.x = art.x }
+        if minimum.y < art.y { minimum.y = art.y }
+    } else {
+        if minimum.y > art.y { minimum.y = art.y }
+        if maximum.y < art.y + art.height { maximum.y = art.y + art.height }
+        if minimum.y < art.y { maximum.y -= minimum.y - art.y; minimum.y = art.y }
+        if maximum.y > art.y + art.height { minimum.y -= maximum.y - art.y - art.height; maximum.y = art.y + art.height }
+        if minimum.y < art.y { minimum.y = art.y }
+    }
     return Rectangle.{minimum.x, minimum.y, maximum.x - minimum.x, maximum.y - minimum.y}
 }
 WorldMapViewClampAxis :: (offset: s32, start: float32, extent: float32, viewport: float32) -> s32 {
@@ -708,8 +715,8 @@ WorldMapViewWheelMove :: (state: *WorldMapViewState, props: WorldMapViewProps, w
     return result
 }
 
-// Past a road end the camera pans along the painting's long axis (toward the
-// right in landscape, upward in portrait) and stops at the painting's edge.
+// Past a road end the camera pans along the map's long axis (toward the right
+// in landscape, upward in portrait) and stops at its useful content edge.
 // Distance the edge absorbs is dropped, so reversing responds at once.
 WorldMapViewApplyPast :: (state: *WorldMapViewState, extent: Rectangle, viewport: Rectangle, width: float32, props: WorldMapViewProps) {
     if state.wheel_past == 0.0 { return }
@@ -758,8 +765,8 @@ WorldMapViewRailDrag :: (state: *WorldMapViewState, props: WorldMapViewProps, wi
     length := WorldMapViewRouteDistance(a, b)
     if length <= 0.0 { return .{} }
     distance := -(drag.x * (b.x - a.x) + drag.y * (b.y - a.y)) / length
-    // Dragging on along the road past either end pans on to the painting's
-    // edge, as the wheel does. The first stretch is slop, so a sideways drag
+    // Dragging on along the road past either end pans on to the useful
+    // content edge, as the wheel does. The first stretch is slop, so a sideways drag
     // at an end still keeps to the road.
     before := state.wheel_past
     moved := WorldMapViewWheelMove(state, props, width, center, distance)

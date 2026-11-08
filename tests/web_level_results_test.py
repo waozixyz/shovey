@@ -320,7 +320,7 @@ def main():
                 game.press(key=20905)
                 assert not game.find(label='Level 1 complete')
                 assert any(n.get('label', '').startswith('Level 2 / ') for n in game.tree())
-                game.press(label='Levels')
+                game.press(label='Back')
                 game.press(key=33001)
                 best = game.wait(key=20910)['label']
                 assert '★★★' in best and '1000' in best, best

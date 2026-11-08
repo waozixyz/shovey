@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from world_map_test_support import start_map_destination
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
     catalog = json.loads((root / 'apps.json').read_text())['apps']
 
     def select_cover(action, direction):
-        assert sum(entry['cover']['action'] == action.lower() for entry in catalog) == 1
+        assert sum(entry['cover']['action'] == ("internal" if action == "Open" else action.lower()) for entry in catalog) == 1
         for index in range(len(catalog)):
             if driver.find(label=action, role='button'):
                 return
@@ -44,7 +45,7 @@ def main():
         for key in (61000, 61001, 61002, 61003):
             assert not driver.find(key=key), f'In-game shortcut leaked: {key}'
 
-    for width, height in ((320, 640), (900, 640)):
+    for width, height in ((320, 640), (480, 820), (960, 600)):
         with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as folder:
             profile = Path(folder)
             records = profile / 'games/arcade.shovey/records'
@@ -73,6 +74,7 @@ def main():
                     assert len(windows) == 1
                     window = windows[0]
                     assert subprocess.check_output(['xdotool', 'getwindowpid', window], text=True).strip() == str(child.pid)
+                    subprocess.run(['xdotool', 'windowmove', window, '0', '0'], check=True)
                     subprocess.run(['xdotool', 'windowsize', '--sync', window, str(width), str(height)], check=True)
                     deadline = time.monotonic() + 10
                     while driver.tree()[0]['width'] != width:
@@ -99,20 +101,42 @@ def main():
                         assert logo['width'] <= (width * .58 + 1 if width < 600 else 361)
                     subprocess.run(['import', '-window', window, str(output / f'{width}.png')], check=True)
                     driver.press(label='Play', role='button')
+                    start_map_destination(driver, 1)
                     driver.wait(label='How do you want to move?', role='text')
                     without_game_shortcuts()
                     driver.press(label='Swipe and tap', role='button')
                     driver.wait_gone(label='How do you want to move?', role='text')
+                    subprocess.run(['import', '-window', window, str(output / f'gameplay-tutorial-{width}.png')], check=True)
                     if driver.find(label='Got it', role='button'):
                         driver.press(label='Got it', role='button')
                         driver.wait_gone(label='Got it', role='button')
-                    driver.wait(label='Levels', role='button')
+                    buttons = [driver.wait(key=key, role='button') for key in (20022, 20016, 20017, 20023)]
+                    for button in buttons:
+                        assert button['width'] == 44 and button['height'] == 44, button
+                        assert button['y'] == buttons[0]['y'], buttons
+                        assert 0 <= button['x'] <= width - 44, button
+                    title = driver.wait(key=20001, role='text')
+                    assert title['width'] > 90 and title['x'] >= buttons[0]['x'] + 44
+                    assert title['x'] + title['width'] <= buttons[1]['x']
+                    subprocess.run(['import', '-window', window, str(output / f'gameplay-{width}.png')], check=True)
+                    sound_before = buttons[3]['label']
+                    driver.press(key=20023, role='button')
+                    assert driver.wait(key=20023, role='button')['label'] != sound_before
+                    driver.press(key=20023, role='button')
+                    assert driver.wait(key=20023, role='button')['label'] == sound_before
+                    driver.press(key=20017, role='button')
+                    driver.wait(key=20017, label='Close help', role='button')
+                    driver.press(key=20017, role='button')
+                    driver.wait(key=20016, role='button')
+                    driver.press(key=20016, role='button')
+                    driver.wait(key=20016, role='button')
+                    back = driver.wait(key=20022, label='Back', role='button')
+                    assert not driver.find(key=20002, visible=True), 'Redundant gameplay Levels control returned'
                     without_game_shortcuts()
-                    driver.press(label='Levels', role='button')
-                    driver.wait(label='Continue', role='button')
+                    driver.press(key=20022, role='button')
+                    assert driver.wait(key=33001, role='button')['selected'], 'Back did not retain the played level'
+                    driver.wait(key=20122, role="button")
                     without_game_shortcuts()
-                    driver.press(label='Back', role='button')
-                    driver.wait(label='Levels', role='button')
                     driver.press(label='Back', role='button')
                     driver.wait(key=49200, role='button')
                     select_cover('Open', 'Next')
@@ -141,7 +165,7 @@ def main():
                     if child.poll() is None:
                         child.terminate()
                     child.wait(timeout=10)
-    print('Header local UI test passed: 320/900px layouts, compact clear titles, stored guest coins, Dew readout, title-only Market/Chest, Back routing and Profile navigation')
+    print('Header local UI test passed: 320/480/960px layouts, 44px gameplay controls, sound/help/restart, compact clear titles, stored guest coins, Dew readout, title-only Market/Chest, Back routing and Profile navigation')
 
 
 if __name__ == '__main__':
