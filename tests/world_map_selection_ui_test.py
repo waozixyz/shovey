@@ -74,6 +74,21 @@ def main():
             assert driver.wait(key=33001, role='button')['selected']
             assert driver.wait(key=20122, role='button')['enabled']
             subprocess.run(['import', '-window', window, str(output / 'garden-320.png')], check=True)
+            node = driver.wait(key=33001, role='button')
+            before = (node['x'], node['y'])
+            start = driver.center(node)
+            driver.drag(start, (start[0] + 30, start[1] + 75))
+            driver.wait_idle(frames=4)
+            moved = driver.wait(key=33001, role='button')
+            assert moved['selected'], 'Dragging changed the selected level'
+            assert abs(moved['y'] - before[1]) > 12, ('Drag did not pan', before, moved)
+            assert_fullscreen_map(driver)
+            # Keyboard navigation reveals the selected node again after panning.
+            driver.key('up'); driver.key('down')
+            driver.wait_idle(frames=4)
+            assert driver.wait(key=33001, role='button')['selected']
+            subprocess.run(['import', '-window', window, str(output / 'drag-320.png')], check=True)
+
             assert_fullscreen_map(driver)
             node = driver.wait(key=33001, role='button')
             assert node['y'] + node['height'] <= 608, ('Node hidden beneath bottom panel',node)

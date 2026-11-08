@@ -1,5 +1,6 @@
 #import "kryon/session"
 #import "kryon/pointer_input"
+#import "kryon/input_protocol"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
 #import "kryon/button_props"
@@ -488,6 +489,9 @@ WorldMapViewPointerPlace :: (props: WorldMapViewProps, width: float32, origin: V
 
 WorldMapViewClick :: (state: *WorldMapViewState, props: WorldMapViewProps, place: s32) -> WorldMapSelection {
     result := WorldMapViewSelect(state,props,place)
+    // A visible pointer target stays under the pointer after selection. A
+    // recenter here moved it away between the two clicks after a manual pan.
+    if WorldMapViewFlag(props.available,place) { state.reveal = false }
     if props.focus_only || !WorldMapViewBrowsable(props,place) || !WorldMapViewFlag(props.available,place) {
         state.last_click_place = 0
         return result
@@ -855,6 +859,24 @@ WorldMapViewSection :: (session: Session, viewport: Rectangle, origin: Vector2, 
             .asset_path=path,.fit=ImageFit.ImageFitStretch,.smooth=true})
     }
 }
+// Kept independent of rendering so fast releases and cancellation are tested.
+WorldMapViewDrag :: (state: *WorldMapViewState, pointer: PointerFrame) {
+    if state.pointer_drag && (pointer.down || pointer.released) {
+        dx := pointer.x - state.pointer_start.x; dy := pointer.y - state.pointer_start.y
+        if !state.pointer_moving && dx * dx + dy * dy > 64.0 { state.pointer_moving = true }
+        if state.pointer_moving {
+            // Direct manipulation follows the finger in both axes. Projecting
+            // onto the road made sideways drags stall at bends and branch ends.
+            state.scroll_x -= cast(s32)(pointer.x - state.pointer_last.x)
+            state.scroll_offset -= cast(s32)(pointer.y - state.pointer_last.y)
+            state.pointer_last = Vector2.{pointer.x, pointer.y}
+            state.reveal = false
+            state.last_click_place = 0
+            state.wheel_edge = 0; state.wheel_past = 0.0
+        }
+    }
+}
+
 WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState, props: WorldMapViewProps) -> WorldMapSelection {
     shown: [1003]bool
     for place: cast(s32)1..cast(s32)props.visible.count {
@@ -866,7 +888,7 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
     width := state.world_width
     camera := WorldMapViewCameraViewport(props,bounds)
     pointer := SamplePointer()
-    if pointer.pressed && pointer.x >= bounds.x && pointer.y >= bounds.y && pointer.x < bounds.x + bounds.width && pointer.y < bounds.y + bounds.height {
+    if pointer.pressed && pointer.x >= bounds.x && pointer.y >= bounds.y && pointer.x < bounds.x + bounds.width && pointer.y < bounds.y + camera.height {
         state.pointer_drag = true; state.pointer_moving = false; state.drag_slop = 0.0
         state.pointer_start = Vector2.{pointer.x, pointer.y}; state.pointer_last = state.pointer_start
     }
@@ -878,16 +900,8 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
     WorldMapViewClampCamera(state, extent, bounds, width, props)
     center := Vector2.{cast(float32)state.scroll_x + camera.width * 0.5, cast(float32)state.scroll_offset + camera.height * 0.5}
     rail_moved := false
-    if state.pointer_drag && pointer.down {
-        dx := pointer.x - state.pointer_start.x; dy := pointer.y - state.pointer_start.y
-        if !state.pointer_moving && dx * dx + dy * dy > 64.0 { state.pointer_moving = true }
-        if state.pointer_moving {
-            drag := Vector2.{pointer.x - state.pointer_last.x, pointer.y - state.pointer_last.y}
-            unused WorldMapViewRailDrag(state, props, width, center, drag)
-            state.pointer_last = Vector2.{pointer.x, pointer.y}
-            state.reveal = false; rail_moved = true
-        }
-    }
+    WorldMapViewDrag(state, pointer)
+    WorldMapViewClampCamera(state, extent, bounds, width, props)
     // The shared portable wheel helper consumes pointer input without exposing
     // a free-moving scrollbar. Scroll itself supplies clipping only.
     wheel := Carousel.CarouselWheel(session, bounds)
@@ -907,7 +921,7 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
     }
     if !scroll.opened { return result }
     origin := Vector2.{bounds.x - cast(float32)state.scroll_x, bounds.y - cast(float32)state.scroll_offset}
-    route_click := pointer.released && state.pointer_drag && !state.pointer_moving && pointer.y >= bounds.y && pointer.y < bounds.y + camera.height
+    route_click := pointer.released && state.pointer_drag && !state.pointer_moving && pointer.x >= bounds.x && pointer.x < bounds.x + bounds.width && pointer.y >= bounds.y && pointer.y < bounds.y + camera.height
     if route_click {
         place := WorldMapViewPointerPlace(props,width,origin,Vector2.{pointer.x,pointer.y})
         if place > 0 { result = WorldMapViewClick(state,props,place) }
@@ -945,14 +959,21 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
         unused Circle(session, CircleProps.{.key = cast(u64)(900000 + place), .center = center,
             .radius = WorldMapViewCircleRadius, .fill = Color.{48, 76, 46, 255}})
         unused Circle(session, CircleProps.{.key = cast(u64)(920000 + place), .center = center, .radius = 23.5,
-            .fill = ifx completed then Color.{247, 223, 129, 255} else ifx available then Color.{238, 237, 191, 255} else Color.{94, 121, 76, 255}})
-        // Shovey covers the current circle; its Play panel shows the rating.
+            .fill = ifx completed then Color.{247, 223, 129, 255} else ifx available then Color.{117, 222, 175, 255} else Color.{79, 91, 103, 255}})
+        // Ratings sit below each circle, including the selected destination.
         earned := WorldMapViewStars(props, place)
-        if completed && earned > 0 && place != state.focused {
-            for star: cast(s32)0..2 {
-                SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{center.x - 17.0 + cast(float32)star * 12.0, center.y + 8.0, 10.0, 12.0},
+        if completed {
+            // Older completion records carry no performance rating. Show one
+            // completion star without inventing a rating or result record.
+            count: s32 = ifx earned > 0 then 3 else 1
+            badge_width: float32 = ifx earned > 0 then 60.0 else 28.0
+            unused Box(session,BoxProps.{.key=cast(u64)(940000+place),
+                .bounds=Rectangle.{center.x-badge_width*0.5,center.y+24.0,badge_width,24.0},
+                .fill=Color.{24,59,40,235},.radius=10.0})
+            for star: cast(s32)0..count-1 {
+                SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{center.x + (ifx count == 1 then -7.5 else -24.0 + cast(float32)star * 17.0), center.y + 27.0, 15.0, 17.0},
                     .shape = "F:M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z",
-                    .color = ifx star < earned then Color.{110, 74, 25, 255} else Color.{204, 180, 104, 255}})
+                    .color = ifx earned == 0 || star < earned then Color.{255, 224, 72, 255} else Color.{64, 72, 54, 255}})
             }
         }
         if !available {

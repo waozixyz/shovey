@@ -66,8 +66,7 @@ Frame :: (today: s64) -> bool {
         .landscape = "assets/shovey/title/shovey-landscape.jpg", .logo = "assets/shovey/title/shovey-logo.png",
         .action = AppLocaleHost("shovey_play")}
     standalone := AppSupports("shovey.standalone")
-    // A locked Island's one action reads Unlock and its price; only an offer
-    // stays as the caption.
+    // A locked Island carries its offer on the Unlock action.
     owned := AppSupports("shovey.island.owned")
     // Copied before the next host call can reuse the reply.
     unlock_text: [128]u8
@@ -79,7 +78,7 @@ Frame :: (today: s64) -> bool {
         .portrait = "assets/shovey/title/shovey-island-portrait.jpg",
         .landscape = "assets/shovey/title/shovey-island-landscape.jpg", .logo = "assets/shovey/title/shovey-island-logo.png",
         .action = ifx owned then AppLocaleHost("shovey_play") else ifx unlock != "" then unlock else AppLocaleHost("shovey_island_unlock"),
-        .caption = ifx standalone && !owned then AppServiceHost("arcade.navigation", "island-offer") else ""}
+        .action_ribbon = ifx standalone && !owned then AppServiceHost("arcade.navigation", "island-offer") else ""}
     editor := CarouselItem.{.label = AppLocaleHost("shovey_editor"),
         .portrait = "assets/shovey/title/shovey-editor-portrait.jpg",
         .landscape = "assets/shovey/title/shovey-editor-landscape.jpg", .logo = "assets/shovey/title/shovey-editor-logo.png",

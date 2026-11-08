@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from PIL import Image
 
 from shovey_standalone_ui_test import answer_cover_question, answer_level_updates
 from world_map_test_support import private_environment, start_map_destination
@@ -112,9 +113,69 @@ def main():
                 driver.wait(label='Level 1', role='text')
                 driver.wait(key=20910, contains='★★★', role='text')
                 subprocess.run(['import', '-window', window, str(output / 'completed-map.png')], check=True)
+                completed = driver.wait(key=33001, role='button')
+                assert completed['detail'] == 'Completed', completed
+                # Three bright stars are below the focused circle, clear of the avatar.
+                with Image.open(output / 'completed-map.png') as image:
+                    cx, cy = driver.center(completed)
+                    band = image.convert('RGB').crop((int(cx-26), int(cy+26), int(cx+28), int(cy+46)))
+                    assert sum(r > 220 and g > 180 and b < 120 for r,g,b in band.getdata()) > 80, 'Map rating hidden'
+
             finally:
                 if child.poll() is None:
                     child.terminate()
+                child.wait(timeout=10)
+        with (output / 'reload.log').open('w') as log:
+            driver.reset()
+            child = subprocess.Popen([str(args.binary.resolve())], cwd=args.binary.resolve().parent,
+                env=private_environment(profile, driver.environment()), stdout=log, stderr=subprocess.STDOUT)
+            driver.attach(child, output / 'reload.log')
+            try:
+                answer_cover_question(driver)
+                driver.press(label='Play', role='button')
+                driver.wait(key=20105)
+                driver.press(key=33001, role='button')
+                driver.wait(key=20910, contains='★★★', role='text')
+                window = subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--pid', str(child.pid)], text=True).split()[0]
+                for width, height in ((320,720), (960,600)):
+                    subprocess.run(['xdotool','windowsize','--sync',window,str(width),str(height)],check=True)
+                    driver.wait_idle(frames=6)
+                    assert driver.wait(key=33001, role='button')['detail'] == 'Completed'
+                    driver.wait(key=20910, contains='★★★', role='text')
+                    subprocess.run(['import','-window',window,str(output / f'reloaded-stars-{width}.png')],check=True)
+            finally:
+                if child.poll() is None: child.terminate()
+                child.wait(timeout=10)
+        # Legacy campaign completions have no local.result entry. They still
+        # get a completion badge, without a fabricated performance rating.
+        results[0].unlink()
+        with (output / 'legacy.log').open('w') as log:
+            driver.reset()
+            child = subprocess.Popen([str(args.binary.resolve())], cwd=args.binary.resolve().parent,
+                env=private_environment(profile, driver.environment()), stdout=log, stderr=subprocess.STDOUT)
+            driver.attach(child, output / 'legacy.log')
+            try:
+                answer_cover_question(driver)
+                driver.press(label='Play', role='button')
+                driver.wait(key=20105)
+                driver.press(key=33001, role='button')
+                window = subprocess.check_output(['xdotool','search','--onlyvisible','--pid',str(child.pid)],text=True).split()[0]
+                subprocess.run(['xdotool','windowmove',window,'0','0'],check=True)
+                for width,height in ((320,720),(960,600)):
+                    subprocess.run(['xdotool','windowsize','--sync',window,str(width),str(height)],check=True)
+                    driver.wait_idle(frames=6)
+                    completed = driver.wait(key=33001,role='button')
+                    assert completed['detail'] == 'Completed'
+                    assert not driver.find(key=20910), 'Legacy completion fabricated a performance rating'
+                    screenshot = output / f'legacy-completion-{width}.png'
+                    subprocess.run(['import','-window',window,str(screenshot)],check=True)
+                    with Image.open(screenshot) as image:
+                        cx,cy = driver.center(completed)
+                        band = image.convert('RGB').crop((int(cx-14),int(cy+24),int(cx+14),int(cy+48)))
+                        assert sum(r > 220 and g > 180 and b < 120 for r,g,b in band.getdata()) > 20, 'Legacy completion star hidden'
+                    assert not results[0].exists(), 'Viewing legacy progress wrote a result record'
+            finally:
+                if child.poll() is None: child.terminate()
                 child.wait(timeout=10)
     print('Results local UI test passed: real win, branch-label hook, 3 stars, score1000, durable result, explicit Continue; all12 locale templates present')
 

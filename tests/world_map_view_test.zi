@@ -5,6 +5,16 @@ Route :: #import, file "../src/world_map_progression.zi";
 
 #program_export
 main :: () -> s32 {
+    {
+        drag := Map.WorldMapViewState.{.pointer_drag=true,.pointer_start=Vector2.{100.0,100.0},.pointer_last=Vector2.{100.0,100.0},.scroll_x=300,.scroll_offset=500,.last_click_place=1}
+        Map.WorldMapViewDrag(*drag, .{.x=104.0,.y=104.0,.down=true})
+        if drag.pointer_moving || drag.scroll_x != 300 || drag.scroll_offset != 500 { return 81 }
+        Map.WorldMapViewDrag(*drag, .{.x=140.0,.y=160.0,.released=true})
+        if !drag.pointer_moving || drag.scroll_x != 260 || drag.scroll_offset != 440 || drag.last_click_place != 0 { return 82 }
+        cancelled := Map.WorldMapViewState.{.pointer_start=Vector2.{100.0,100.0},.pointer_last=Vector2.{100.0,100.0},.scroll_offset=500}
+        Map.WorldMapViewDrag(*cancelled, .{.x=140.0,.y=160.0,.released=true})
+        if cancelled.pointer_moving || cancelled.scroll_offset != 500 { return 83 }
+    }
     for orientation: cast(s32)0..1 {
         props := Map.WorldMapViewProps.{.landscape = orientation == 1}
         for size: cast(s32)0..2 {
@@ -26,8 +36,11 @@ main :: () -> s32 {
         props := Map.WorldMapViewProps.{.visible=shown[:],.available=flags[:],.now=1.0}
         state: Map.WorldMapViewState
         if Map.WorldMapViewClick(*state,props,1).activated != 0 || state.focused != 1 { return 53 }
+        state.scroll_x = 120; state.scroll_offset = 340
+        if state.reveal { return 77 }
         props.now = 1.2
         if Map.WorldMapViewClick(*state,props,1).activated != 1 { return 54 }
+        if state.scroll_x != 120 || state.scroll_offset != 340 || state.reveal { return 78 }
         props.now = 2.0
         unused Map.WorldMapViewClick(*state,props,1)
         props.now = 2.6

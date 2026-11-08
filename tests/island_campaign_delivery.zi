@@ -14,6 +14,8 @@
 #import "kryon/tree"
 #import "kryon/tree_input"
 #import "kryon/pointer_input"
+#import "kryon/input_protocol"
+#import "kryon/ScrollDevice"
 #import "kryon/geometry"
 #import "kryon/app_files"
 #import "kryon/app_context_host"
@@ -24,10 +26,91 @@
 #import "std/text_buffer"
 #import "std/vec"
 
+campaign_api :: #system_library "c";
+CampaignCapture :: (number: s32) -> s32 #foreign campaign_api "CampaignCapture";
+CampaignPointerSend :: (x: s32,y: s32,phase: s32) -> s32 #foreign campaign_api "CampaignPointerSend";
+
+CampaignMap :: (session: Session, bounds: Rectangle, completed: bool) -> bool {
+    levels: s32 = -1
+    for index: cast(s32)0..TreeCount(session)-1 {
+        if TreeNodeAt(session,index).key == 80005 { levels=index }
+    }
+    if levels < 0 || !CampaignClick(session,bounds,levels) { return false }
+    for size: cast(s32)0..1 {
+        width: s32 = ifx size == 0 then 320 else 960
+        height: s32 = ifx size == 0 then 720 else 600
+        if !ResizeDesktop(width,height) { return false }
+        area := Rectangle.{0.0,0.0,cast(float32)width,cast(float32)height}
+        for frame: 1..4 { if !CampaignFrame(session,area,0) { return false } }
+        if completed && size == 0 {
+            for step: 1..15 { if !CampaignFrame(session,area,263) { return false } }
+        }
+        // Exercise the production Scroll device with a drag beginning on a
+        // level target. The map moves, selection stays, and release is no tap.
+        if !CampaignMapDrag(session,area,size == 1) { Report("Island map drag failed\n"); return false }
+        if !CampaignFrame(session,area,263) { return false }
+        if completed && !CampaignFrame(session,area,262) { return false }
+        if !CampaignMapDrag(session,area,size == 1,true) { Report("Island map cross-axis drag failed\n"); return false }
+        if !CampaignFrame(session,area,263) { return false }
+        if completed && !CampaignFrame(session,area,262) { return false }
+        if completed {
+            // Nearby turns 15 and 17 are the narrow layout's closest targets.
+            // Each must select independently without starting a level.
+            for target: cast(s32)0..1 {
+                wanted := ifx target == 0 then 82017 else 82015
+                button: s32 = -1
+                for index: cast(s32)0..TreeCount(session)-1 {
+                    if TreeNodeAt(session,index).key == cast(u64)wanted { button=index }
+                }
+                if button < 0 || !CampaignClick(session,area,button) { return false }
+                selected_wanted: bool
+                for index: cast(s32)0..TreeCount(session)-1 {
+                    node := TreeNodeAt(session,index)
+                    if node.key == cast(u64)wanted && node.selected { selected_wanted=true }
+                }
+                if !selected_wanted { return false }
+            }
+        }
+        selected: bool
+        art: bool
+        play: s32 = -1
+        for index: cast(s32)0..TreeCount(session)-1 {
+            node := TreeNodeAt(session,index)
+            if node.key == 81004 { art=true }
+            if node.key == 81002 { play=index }
+            if node.key >= 82001 && node.key <= 82030 && node.selected {
+                selected=true
+                if node.bounds.width != 56.0 || node.bounds.height != 56.0 { return false }
+            }
+            if node.key >= 82001 && node.key <= 82030 {
+                for other: index+1..TreeCount(session)-1 {
+                    next := TreeNodeAt(session,other)
+                    if next.key >= 82001 && next.key <= 82030 {
+                        dx := node.bounds.x-next.bounds.x; dy := node.bounds.y-next.bounds.y
+                        if dx*dx+dy*dy < 3364.0 { Report("Island targets overlap\n"); return false }
+                    }
+                }
+            }
+        }
+        if !art || !selected || play < 0 || CampaignCapture(size + ifx completed then 2 else 0) != 0 { return false }
+    }
+    // Enter uses the same gate and selected level as the visible Play action.
+    area := Rectangle.{0.0,0.0,960.0,600.0}
+    if !CampaignFrame(session,area,257) || !CampaignFrame(session,area,0) { return false }
+    if !ResizeDesktop(cast(s32)bounds.width,cast(s32)bounds.height) { return false }
+    return CampaignFrame(session,bounds,0) && CampaignFrame(session,bounds,0)
+}
+
 CampaignFrame :: (session: Session, bounds: Rectangle, key: s32) -> bool {
     if !PollDesktop() { return false }
+    return CampaignPointerFrame(session,bounds,key,PollPointer())
+}
+
+CampaignPointerFrame :: (session: Session, bounds: Rectangle, key: s32, pointer: PointerFrame) -> bool {
     BeginDesktopFrame()
-    TreePointerUpdate(session, PollPointer())
+    TreePointerUpdate(session, pointer)
+    BeginScrollFrame(session,Vector2.{pointer.x,pointer.y},pointer.pressed,pointer.down,pointer.released,0.0,
+        cast(float64)MonotonicMilliseconds()/1000.0)
     // This is the retained root key, not a frame counter. Keep the same
     // identities between press and activation, as the desktop player does.
     if BeginFrame(session, cast(u64)1, bounds) != FrameStatus.FrameOk { return false }
@@ -35,6 +118,40 @@ CampaignFrame :: (session: Session, bounds: Rectangle, key: s32) -> bool {
     if EndFrame(session) != FrameStatus.FrameOk || !EndDesktopFrame() { return false }
     CollectionCollect()
     return true
+}
+
+CampaignMapDrag :: (session: Session, bounds: Rectangle, horizontal: bool, cross: bool=false) -> bool {
+    target: u64
+    before: Rectangle
+    painting: Rectangle
+    for index: cast(s32)0..TreeCount(session)-1 {
+        node := TreeNodeAt(session,index)
+        if node.key >= 82001 && node.key <= 82030 && node.selected { target=node.key; before=node.bounds }
+        if node.key == 81004 { painting=node.bounds }
+    }
+    if target == 0 { return false }
+    x := before.x+28.0; y := before.y+28.0
+    dx: float32 = ifx horizontal then -48.0 else 0.0
+    dy: float32 = ifx horizontal then 0.0 else 48.0
+    if cross {
+        if horizontal { dx=0.0; dy=ifx painting.y < (bounds.height-88.0-painting.height)*0.5 then 80.0 else -80.0 }
+        else { dy=0.0; dx=ifx painting.x < (bounds.width-painting.width)*0.5 then 80.0 else -80.0 }
+    }
+    if CampaignPointerSend(cast(s32)x,cast(s32)y,0) != 0 || !CampaignFrame(session,bounds,0) { return false }
+    for step: cast(s32)1..4 {
+        if CampaignPointerSend(cast(s32)(x+dx*cast(float32)step/4.0),cast(s32)(y+dy*cast(float32)step/4.0),1) != 0 ||
+            !CampaignFrame(session,bounds,0) { return false }
+    }
+    if CampaignPointerSend(cast(s32)(x+dx),cast(s32)(y+dy),2) != 0 || !CampaignFrame(session,bounds,0) { return false }
+    for index: cast(s32)0..TreeCount(session)-1 {
+        node := TreeNodeAt(session,index)
+        if node.key == target && node.selected {
+            delta := ifx horizontal != cross then before.x-node.bounds.x else node.bounds.y-before.y
+            if delta < 0.0 { delta=0.0-delta }
+            return delta > 32.0
+        }
+    }
+    return false
 }
 
 CampaignClick :: (session: Session, bounds: Rectangle, index: s32) -> bool {
@@ -152,7 +269,7 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
             }
             if HostedAppAsset(AppContextRuntime(*runtime.app), "assets/shovey-island/levels/31.png").found ||
                 HostedAppAsset(AppContextRuntime(*runtime.app), "assets/shovey-island/levels-landscape/31.png").found { return false }
-            if !CampaignEmptyBook(session, bounds) { return false }
+            if !CampaignEmptyBook(session, bounds) || !CampaignMap(session,bounds,false) { return false }
         }
         languages: [12]string = .["en", "cs", "de", "es", "fr", "id", "it", "ja", "ko", "pt", "ru", "zh"]
         for language: languages {
@@ -215,5 +332,5 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
         Report(text)
         AppFileFree(text)
     }
-    return true
+    return CampaignMap(session,bounds,true)
 }

@@ -877,7 +877,9 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     }
     if collection_island_opening {
         collection_island_opening = false
-        unused CollectionOpenGame(ISLAND_UNLOCK_APP)
+        // The cover belongs to Classic. Save it and return to its collection
+        // before opening the sibling Island app, as the Editor route does.
+        if AppHostHome(*collection_host) { unused CollectionOpenGame(ISLAND_UNLOCK_APP) }
     }
     if entity_visible { return EntityFrame(session, viewport, key, modifiers) }
     if collection_island_page { CollectionIslandFrame(session, viewport); return true }

@@ -417,7 +417,8 @@ def build_controller():
     with the digest this package trusts."""
     apps = package('apps')
     output = OUT / 'apps-ui'
-    run([sys.executable, apps / 'scripts/build-ui.py', '--output', output], cwd=ROOT)
+    run([sys.executable, apps / 'scripts/build-ui.py', '--output', output,
+         '--project', ROOT, '--compiler', ziran()], cwd=ROOT)
     controller = output / 'apps.zx'
     trusted = CONTROLLER_SHA256.read_text().strip()
     actual = digest(controller)

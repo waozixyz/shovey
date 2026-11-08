@@ -166,9 +166,10 @@ main :: () -> s32 {
     if !IslandPackageFetch(*collection_island_package, entry) { return 3 }
     if !IslandPackageBundle(*collection_island_package, entry).found { return 4 }
     collection_island.owned = true
-    if !CollectionOpenGame(ISLAND_UNLOCK_APP) { return 5 }
-    runtime := AppHostActiveRuntime(*collection_host)
-    if runtime == null || TextUntilNul(runtime.node.identity.id[:]) != ISLAND_UNLOCK_APP { return 6 }
+    // Reproduce Play on Classic's Island cover: Island is a sibling of the
+    // currently running Classic title, rather than a child of it.
+    if !CollectionOpenGame("arcade.shovey") { return 5 }
+    collection_island_opening = true
     session := SessionOpen()
     if !SessionValid(session) { return 7 }
     defer { SessionClose(session) }
@@ -181,6 +182,8 @@ main :: () -> s32 {
         if !EndDesktopFrame() { return 13 }
         CollectionCollect()
     }
+    runtime := AppHostActiveRuntime(*collection_host)
+    if runtime == null || TextUntilNul(runtime.node.identity.id[:]) != ISLAND_UNLOCK_APP { return 6 }
     if BUNDLED && (fixture_transfers != 0 || fixture_grants != 0) { return 14 }
     // Island opened as a game never shows the players' editor.
     if FixtureFind(session, 93303) { return 27 }
@@ -327,6 +330,8 @@ shop_header = next(generated.rglob('*game_shop_native.h'))
 shop_answer = re.search(r'String (\w*EntityGameShopAnswer)\(', shop_header.read_text())[1]
 (generated / 'identity_probe.c').write_text('''#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "ACCOUNT_HEADER"
 #include "SHOP_HEADER"
 static int owned_status(int expected) {
@@ -338,6 +343,21 @@ static int owned_status(int expected) {
     char owner[96];
     snprintf(owner, sizeof(owner), "\\"owner\\":\\"%s\\"", account_recovery.keys.public_id);
     return strstr(text, owner) != NULL && strstr(text, expected ? "\\"island_owned\\":true" : "\\"island_owned\\":false") != NULL;
+}
+int32_t CampaignPointerSend(int32_t x,int32_t y,int32_t phase) {
+    const char *display=getenv("DISPLAY"), *recovery=getenv("YUE_DESKTOP_RECOVERY");
+    if (!display || display[0] != ':' || atoi(display+1)<400 || !recovery || strcmp(recovery,"0")) return 1;
+    char command[1024];
+    snprintf(command,sizeof(command),"window=$(xdotool search --onlyvisible --pid %ld); xdotool mousemove --sync --window $window %d %d %s",(long)getpid(),x,y,phase==0 ? "mousedown 1" : phase==2 ? "mouseup 1" : "");
+    return system(command);
+}
+int32_t CampaignCapture(int32_t number) {
+    const char *display = getenv("DISPLAY");
+    const char *recovery = getenv("YUE_DESKTOP_RECOVERY");
+    if (!display || display[0] != ':' || atoi(display+1) < 400 || !recovery || strcmp(recovery,"0")) return 1;
+    char command[4096];
+    snprintf(command,sizeof(command),"window=$(xdotool search --onlyvisible --pid %ld); xdotool windowmove $window 0 0 && import -window $window 'CAPTURE_FOLDER/island-map-%d.png'",(long)getpid(),number);
+    return system(command);
 }
 int32_t IslandIdentityProbe(void) {
     memset(account_recovery.keys.public_id, 'a', 64);
@@ -352,7 +372,7 @@ int32_t IslandIdentityProbe(void) {
     memset(account_recovery.keys.public_id, 0, sizeof(account_recovery.keys.public_id));
     return owned_status(0);
 }
-'''.replace('ACCOUNT_HEADER', account_header.name).replace('SHOP_HEADER', shop_header.name).replace('SHOP_ANSWER', shop_answer))
+'''.replace('ACCOUNT_HEADER', account_header.name).replace('SHOP_HEADER', shop_header.name).replace('SHOP_ANSWER', shop_answer).replace('CAPTURE_FOLDER', str(work)))
 profile = build_artifacts.request('entity:native-profile', 'linux-x86_64-gnu', ziran=player.ziran())
 renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-desktop', 'linux-x86_64-gnu', ziran=player.ziran()))
 sources = sorted(generated.rglob('*.c'))
@@ -362,7 +382,7 @@ player.run([os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections'
     *renderer['compile_flags'], *['-I' + path for path in renderer['include_directories']],
     *sources, '-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
     *profile.link_flags(include_archives=False), '-o', work / 'test'], cwd=ROOT, env=environment)
-player.run(['xvfb-run', '-a', '-n', '400', '-s', '-screen 0 480x820x24', work / 'test'], cwd=ROOT, env=environment)
+player.run(['xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1280x1000x24', work / 'test'], cwd=ROOT, env=environment)
 if args.campaign:
     print('Private-Xvfb Island campaign: first 30 compiled levels load and solve through real keys; '
           'every saved position matches its solution proof; portrait/landscape art and 12 locales present')

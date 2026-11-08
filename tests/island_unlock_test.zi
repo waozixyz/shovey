@@ -226,6 +226,10 @@ Page :: () -> s32 {
     // while signed out.
     if Find(session, 49544) < 0 || !OnlyUnlockPrice(session, 49530, "Unlock · 51 Dew") { return 3 }
     if Find(session, 49534) >= 0 || Find(session, 49530) < 0 { return 4 }
+    ribbon := TreeNodeAt(session, Find(session, 49544)).bounds
+    button := TreeNodeAt(session, Find(session, 49530)).bounds
+    if ribbon.y >= button.y || ribbon.y + ribbon.height <= button.y || ribbon.x < button.x ||
+        ribbon.x + ribbon.width > button.x + button.width { return 22 }
     if Click(session, *guest, 49530, 360.0, 640.0) != ISLAND_ACTION_SIGN_IN { return 5 }
     unlock: IslandUnlock
     if !Quoted(*unlock, 51000000) { return 6 }

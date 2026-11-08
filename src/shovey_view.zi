@@ -1459,10 +1459,10 @@ ShoveyFrame :: () {
                 visible[number - 1] = true
                 available[number - 1] = ShoveyLevelUnlocked(*progress, number)
                 completed[number - 1] = progress.completed[number - 1]
+                if completed[number - 1] { stars[number - 1] = ShoveyBestLevelResult(TextUntilNul(shared_progress.owner[:]), number).stars }
                 point := WorldMap.WorldMapViewPositionFor(number, map_width, WorldMap.WorldMapViewProps.{.landscape = landscape})
                 if available[number - 1] && point.y >= cast(float32)levels_map.scroll_offset - 64.0 &&
                 point.y <= cast(float32)levels_map.scroll_offset + map_bounds.height + 64.0 {
-                    stars[number - 1] = ShoveyBestLevelResult(TextUntilNul(shared_progress.owner[:]), number).stars
                     replay[number - 1] = LevelReplayDot(number, ShoveyLevelBoard(number), completed[number - 1], TextUntilNul(shared_progress.owner[:]))
                 }
             }

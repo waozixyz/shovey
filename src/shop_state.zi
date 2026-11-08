@@ -36,7 +36,7 @@ ShopSkinProduct :: (id: s32) -> s32 {
     if id == 5 { return 14 }
     return 0
 }
-// Entity atomic Dew units (10,000,000 per Dew), zero for coin/default skins.
+// Entity atomic Dew units (1,000,000 per Dew), zero for coin/default skins.
 ShopSkinDew :: (id: s32) -> s64 { return Products.GameShopPrice(ShopSkinProduct(id)) }
 // Bundle-relative preview. Board animation uses the same prefix with
 // player-{up,down,left,right}.png or charged-{up,down,left,right}.png.

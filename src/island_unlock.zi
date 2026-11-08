@@ -20,6 +20,7 @@
 #import "kryon/image_props"
 #import "kryon/image_widget"
 #import "entity/dew_model"
+#import "kryon/carousel"
 
 host_api :: #system_library "host_api";
 AppLocaleHost :: (key: string) -> string #foreign host_api;
@@ -263,17 +264,6 @@ IslandOffer :: (unlock: *IslandUnlock) -> bool {
     return percent > 0 && regular > price
 }
 
-// During an offer, its badge under the title.
-IslandOfferBadge :: (session: Session, x: float32, y: float32, width: float32) {
-    off := AppLocaleHost("shovey_island_off")
-    badge := cast(float32)TextWidth(session, TextProps.{.key = cast(u64)49544, .text = off, .font = 16}) + 32.0
-    if badge > width { badge = width }
-    at := x + (width - badge) / 2.0
-    unused Box(session, BoxProps.{.key = cast(u64)49543, .bounds = Rectangle.{at, y, badge, 30.0},
-        .fill = Color.{214, 72, 48, 255}, .radius = 15.0})
-    IslandLine(session, 49544, Rectangle.{at, y, badge, 30.0}, off, 16)
-}
-
 // Draws the locked page and acts on it; returns what the host must do.
 IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnlock,
     background: string, logo: string) -> s32 {
@@ -285,7 +275,7 @@ IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnloc
     busy := unlock.stage == ISLAND_CONFIRMING || unlock.stage == ISLAND_CONFIRM_NEEDED
     choosing := unlock.connected && !unlock.confirming && !busy
     insufficient := choosing && unlock.notice == "shovey_island_insufficient"
-    // Title, any offer badge, a status line and the actions, bottom up.
+    // Reserve room above the action for its attached ribbon.
     height: float32 = 148.0 + (ifx offer then 38.0 else 0.0) + (ifx insufficient then 52.0 else 0.0)
     x := viewport.x + (viewport.width - width) / 2.0
     y := viewport.y + viewport.height - height - 24.0
@@ -304,7 +294,6 @@ IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnloc
     inner_x := x + 16.0
     inner := width - 32.0
     IslandLine(session, 49521, Rectangle.{inner_x, y + 10.0, inner, 30.0}, AppLocaleHost("shovey_island_title"), 18)
-    if offer { IslandOfferBadge(session, inner_x, y + 46.0, inner) }
     row := y + height - 56.0
     buttons := row - 44.0 - (ifx insufficient then 52.0 else 0.0)
     half := (inner - 12.0) / 2.0
@@ -330,6 +319,9 @@ IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnloc
             unlock.confirming = true
             unlock.notice = ""
         }
+    }
+    if offer && (!unlock.connected || choosing) {
+        CarouselActionRibbon(session, 49543, Rectangle.{inner_x, row, inner, 44.0}, AppLocaleHost("shovey_island_off"))
     }
     status := unlock.notice
     if status == "" && !unlock.connected { status = "shovey_island_signin" }
