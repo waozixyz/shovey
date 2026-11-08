@@ -203,6 +203,13 @@ SaveAppRecordHost :: (name: string, text: string) -> bool { return FakeSave(name
     RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) { Pixmap.RasterText(value, x, y, font, color) }
     #program_export "ShopTestRasterTextClipped"
     RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) { Pixmap.RasterTextClipped(value, x, y, font, color, clip) }
+    #program_export "ShopTestRasterTextRotated"
+    RasterTextRotated :: (value: string, x: s32, y: s32, font: s32, color: Color,
+        clip: Rectangle, origin: Vector2, rotation: float32, outer_clip: Rectangle,
+        outer_clipped: bool, emphasis: bool, italic: bool) {
+        Pixmap.RasterTextRotated(value, x, y, font, color, clip, origin, rotation,
+            outer_clip, outer_clipped, emphasis, italic)
+    }
     #program_export "ShopTestRasterRoundedRectangle"
     RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) { Pixmap.RasterRoundedRectangle(bounds, radius, segments, color) }
     #program_export "ShopTestRasterRoundedRectangleOutline"
@@ -234,6 +241,11 @@ RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) {  }
 
 #program_export
 RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) {  }
+
+#program_export
+RasterTextRotated :: (value: string, x: s32, y: s32, font: s32, color: Color,
+    clip: Rectangle, origin: Vector2, rotation: float32, outer_clip: Rectangle,
+    outer_clipped: bool, emphasis: bool, italic: bool) {}
 
 #program_export
 RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) {  }
