@@ -33,15 +33,12 @@ if [ -f ziran.local.toml ]; then flags=; fi
 toolchain=$(./scripts/ziran.sh pkg path ziran $flags)
 kryon=$(./scripts/ziran.sh pkg path kryon $flags)
 entity=$(./scripts/ziran.sh pkg path entity $flags)
-work="$root/work/shop-view-test"
+work="$root/build/tests/shop-view-test"
 git check-ignore -q "$work"
 mkdir -p "$work"
 if [ "$fixture" != --fixture-only ]; then
-"$toolchain/build/bin/ziran" bundle --root "$root" \
+"$toolchain/build/bin/ziran" bundle --project --root "$root/src" \
     --module-path "$root/tests" \
-    --module-path "$toolchain/std" --module-path "std=$toolchain/std" \
-    --module-path "entity=$entity/src" \
-    --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
     --bind-host shop_view_test \
     --entry shop_view_test:Check -o "$work/view.zx" "$root/tests/shop_view_test.zi"
 result=$("$toolchain/build/bin/ziran" run "$work/view.zx")

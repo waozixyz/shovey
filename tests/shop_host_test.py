@@ -13,7 +13,7 @@ from PIL import Image
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-WORK_ROOT = ROOT / 'work/shop-host-test'
+WORK_ROOT = ROOT / 'build/tests/shop-host-test'
 subprocess.run(['git', 'check-ignore', '-q', str(WORK_ROOT)], cwd=ROOT, check=True)
 WORK_ROOT.mkdir(parents=True, exist_ok=True)
 WORK = Path(tempfile.mkdtemp(prefix='run-', dir=WORK_ROOT))
@@ -322,12 +322,9 @@ toolchain = Path(subprocess.check_output(['./scripts/ziran.sh', 'pkg', 'path', '
 entity = Path(subprocess.check_output(['./scripts/ziran.sh', 'pkg', 'path', 'entity', *flags], cwd=ROOT, text=True).strip())
 kryon = Path(subprocess.check_output(['./scripts/ziran.sh', 'pkg', 'path', 'kryon', *flags], cwd=ROOT, text=True).strip())
 tool = str(toolchain / 'build/bin/ziran')
-subprocess.run([tool, 'bundle', '--root', str(WORK), '--module-path', str(ROOT / 'src'),
-                '--module-path', str(toolchain / 'std'),
-                '--module-path', f'std={toolchain / "std"}', '--entry', 'routes:Check',
+subprocess.run([tool, 'bundle', '--project', '--root', str(WORK),
+                '--module-path', str(WORK), '--entry', 'routes:Check',
                 '--bind-host', 'routes',
-                '--module-path', f'entity={entity / "src"}',
-                '--module-path', f'kryon={kryon / "src/ui"}', '--module-path', f'kryon={kryon / "src/backend"}',
                 '-o', str(WORK / 'routes.zx'), str(fixture)], cwd=ROOT, check=True)
 result = subprocess.check_output([tool, 'run', str(WORK / 'routes.zx')], cwd=ROOT, text=True)
 assert result.strip() == '42', result

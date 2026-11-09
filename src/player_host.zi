@@ -882,7 +882,7 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         if AppHostHome(*collection_host) { unused CollectionOpenGame(ISLAND_UNLOCK_APP) }
     }
     if entity_visible { return EntityFrame(session, viewport, key, modifiers) }
-    if collection_island_page { CollectionIslandFrame(session, viewport); return true }
+
     runtime := AppHostActiveRuntime(*collection_host)
     if runtime == null { Report("Shovey: no app is running\n"); return false }
     if runtime.node.collection && collection_host.platform.presentation.download_id[0] == 0 {
@@ -988,6 +988,7 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
                 .text = title, .font = 16,
                 .bounds = Rectangle.{viewport.x + 112.0, viewport.y + 20.0, viewport.width - 232.0, 28.0}})
     }
+    if collection_island_page { CollectionIslandFrame(session, viewport) }
     return true
 }
 
@@ -1197,7 +1198,7 @@ CollectionIslandPump :: () {
         collection_island_page = false
         // Unlocked from the Editor's Island levels: open them, not the islands.
         if collection_island_unlock_for_editor { collection_island_editor = ISLAND_EDITOR_ASKED }
-        else { collection_island_opening = true }
+        // The existing cover updates to Play in place.
         collection_island_unlock_for_editor = false
     }
 }
@@ -1206,11 +1207,8 @@ CollectionIslandFrame :: (session: Session, viewport: Rectangle) {
     entry := CollectionIslandEntry()
     if entry == null { collection_island_page = false; return }
     collection_widget_node = AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
-    landscape := viewport.width > viewport.height && entry.cover.landscape[0] != 0
-    background := CollectionAssetPath(ifx landscape then TextUntilNul(entry.cover.landscape[:]) else TextUntilNul(entry.cover.portrait[:]))
-    logo := CollectionAssetPath(TextUntilNul(entry.cover.logo[:]))
     unused WidgetPaletteUse(session, ShoveyPalette())
-    action := IslandUnlockPage(session, viewport, *collection_island, background, logo)
+    action := IslandUnlockPanel(session, viewport, *collection_island)
     unused WidgetPaletteRestore(session)
     if action == ISLAND_ACTION_BACK { collection_island_page = false; collection_island_unlock_for_editor = false }
     if action == ISLAND_ACTION_SIGN_IN { unused EntityShowPage("open") }

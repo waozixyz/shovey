@@ -236,8 +236,6 @@ def leave_out(rules_path, resources, release_build):
 
 def build_games(apps):
     """Each enabled game's portable bundle, built as Arcade builds it."""
-    kryon, tools, entity = package('kryon'), toolchain(), package('entity')
-    daochi_client, crypto = package('DaochiClient'), package('crypto')
     staged_root, games = OUT / 'game-assets', OUT / 'games'
     games.mkdir(parents=True, exist_ok=True)
     by_id = {app['descriptor']['id']: app for app in apps}
@@ -316,18 +314,11 @@ def build_games(apps):
         (generated / 'translations.zi').write_text(code)
         bundle = games / (name + '.zx')
         source = ROOT / descriptor['source']
-        run([ziran(), 'bundle', '--root', source.parent, '--module-path', ROOT / 'src',
-             '--module-path', generated,
-             '--module-path', kryon / 'src/ui', '--module-path', 'kryon=' + str(kryon / 'src/ui'),
-             '--module-path', 'kryon=' + str(kryon / 'src/backend'),
-             '--module-path', 'std=' + str(tools / 'std'), '--module-path', tools / 'std',
-             '--module-path', 'apps=' + str(package('apps') / 'src'),
-             '--module-path', 'mingcute=' + str(package('mingcute') / 'src'),
-             '--module-path', 'entity=' + str(entity / 'src'),
-             '--module-path', 'daochi_client=' + str(daochi_client),
-             '--module-path', 'crypto=' + str(crypto / 'src'),
+        run([ziran(), 'bundle', '--project', *lock(), '--root', source.parent,
+             '--module-path', generated, '--module-path', ROOT / 'src/editor', '--module-path', ROOT / 'src/solver',
+             *(['--module-path', source.parent] if app.get('private') else []),
              *[flag for define in defines for flag in ('--define', define)],
-             *[flag for entry in app['library_entries'] for flag in ('--retain', entry)],
+             *[flag for entry in app['library_entries'] for flag in ('--retain', 'std_' + entry if entry.startswith('json_scan:') else entry)],
              *[flag for dependency in app['requires'] if app['shared_code']
                for flag in ('--library', games / (by_id[dependency]['descriptor']['name'] + '.zx'))],
              '--define', 'KRYON_HOSTED_UI', '--asset-dir', 'assets=' + str(staged / 'assets'),

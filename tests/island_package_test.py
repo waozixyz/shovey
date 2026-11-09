@@ -17,7 +17,7 @@ for name in ('ziran', 'kryon', 'apps', 'crypto'):
     parser.add_argument('--' + name, type=Path)
 args = parser.parse_args()
 tools = {name: getattr(args, name) or player.package(name) for name in ('ziran', 'kryon', 'apps', 'crypto')}
-work = ROOT / 'work/island-package-test'
+work = ROOT / 'build/tests/island-package-test'
 subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=ROOT, check=True)
 work.mkdir(parents=True, exist_ok=True)
 native = work / 'native'
@@ -27,13 +27,8 @@ environment = os.environ.copy()
 for key in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER', 'GDK_DISPLAY'):
     environment.pop(key, None)
 environment['YUE_DESKTOP_RECOVERY'] = '0'
-subprocess.run([str(tools['ziran'] / 'build/bin/ziran'), 'build', '--target=c', '--no-main',
+subprocess.run([str(tools['ziran'] / 'build/bin/ziran'), 'build', '--project', '--target=c', '--no-main',
     '--root', str(ROOT / 'src'), '--module-path', str(ROOT / 'tests'),
-    '--module-path', 'std=' + str(tools['ziran'] / 'std'), '--module-path', str(tools['ziran'] / 'std'),
-    '--module-path', 'apps=' + str(tools['apps'] / 'src'),
-    '--module-path', 'kryon=' + str(tools['kryon'] / 'src/ui'),
-    '--module-path', 'kryon=' + str(tools['kryon'] / 'src/backend'),
-    '--module-path', 'crypto=' + str(tools['crypto'] / 'src'),
     '--entry', 'island_package_test:Check', '-o', str(native), str(ROOT / 'tests/island_package_test.zi')],
     cwd=ROOT, env=environment, check=True)
 (native / 'main.c').write_text('''#include <stdio.h>

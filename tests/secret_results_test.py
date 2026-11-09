@@ -7,20 +7,19 @@ root=Path(__file__).resolve().parents[1]
 os.chdir(root)
 for name in ('DISPLAY','WAYLAND_DISPLAY','XAUTHORITY','DBUS_SESSION_BUS_ADDRESS','SESSION_MANAGER','GDK_DISPLAY'):
     os.environ.pop(name,None)
-output=root/'work/secret-level-ratings'
+os.environ['YUE_DESKTOP_RECOVERY']='0'
+output=root/'build/tests/secret-level-ratings'
 subprocess.run(['git','check-ignore','-q',str(output)],check=True)
 output.mkdir(parents=True,exist_ok=True)
 lock=[] if (root/'ziran.local.toml').exists() else ['--locked']
 def pkg(name):
     return Path(subprocess.check_output(['./scripts/ziran.sh','pkg','path',name,*lock],text=True).strip())
 tool=pkg('ziran'); kryon=pkg('kryon')
-cmd=[str(tool/'build/bin/ziran'),'bundle','--root',str(root),'--define','SHOVEY_RELEASE','--define','KRYON_HOSTED_UI']
-for module in [root/'src',kryon/'src/ui',f'kryon={kryon}/src/ui',f'kryon={kryon}/src/backend',tool/'std',f'std={tool}/std']:
-    cmd+=['--module-path',str(module)]
-for alias,name in [('apps','apps'),('mingcute','mingcute'),('entity','entity'),('daochi_client','DaochiClient'),('crypto','crypto')]:
-    path=pkg(name)
-    cmd+=['--module-path',f'{alias}={path}' if alias=='daochi_client' else f'{alias}={path}/src']
-cmd+=['--entry','secret_results_behavior:Check','-o','work/secret-level-ratings/exclusion.zx','tests/secret_results_behavior.zi']
+cmd=[str(tool/'build/bin/ziran'),'bundle','--project','--root',str(root),
+    '--define','SHOVEY_RELEASE','--define','KRYON_HOSTED_UI',
+    '--module-path',str(root/'tests'),'--module-path',str(root/'src/editor'),
+    '--module-path',str(root/'src/solver'),
+    '--entry','secret_results_behavior:Check','-o',str(output/'exclusion.zx'),'tests/secret_results_behavior.zi']
 subprocess.run(cmd,check=True)
 # Bind every imported host capability to a rejecting callback: a secret must
 # use none, even though the full view also contains ordinary UI/storage paths.

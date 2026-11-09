@@ -264,12 +264,9 @@ IslandOffer :: (unlock: *IslandUnlock) -> bool {
     return percent > 0 && regular > price
 }
 
-// Draws the locked page and acts on it; returns what the host must do.
-IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnlock,
-    background: string, logo: string) -> s32 {
+// Draws purchase controls inside the current screen; returns the host action.
+IslandUnlockPanel :: (session: Session, viewport: Rectangle, unlock: *IslandUnlock) -> s32 {
     action: s32 = ISLAND_ACTION_NONE
-    unused Image(session, ImageProps.{.key = cast(u64)49510, .bounds = viewport, .asset_path = background,
-        .fit = ImageFit.ImageFitCover, .smooth = true, .alt_text = AppLocaleHost("shovey_island_title")})
     width := ifx viewport.width - 32.0 < 420.0 then viewport.width - 32.0 else 420.0
     offer := IslandOffer(unlock)
     busy := unlock.stage == ISLAND_CONFIRMING || unlock.stage == ISLAND_CONFIRM_NEEDED
@@ -279,21 +276,14 @@ IslandUnlockPage :: (session: Session, viewport: Rectangle, unlock: *IslandUnloc
     height: float32 = 148.0 + (ifx offer then 38.0 else 0.0) + (ifx insufficient then 52.0 else 0.0)
     x := viewport.x + (viewport.width - width) / 2.0
     y := viewport.y + viewport.height - height - 24.0
-    logo_top := viewport.y + 64.0
-    logo_height := y - logo_top - 12.0
-    if logo_height > 180.0 { logo_height = 180.0 }
-    if logo_height > 40.0 {
-        unused Image(session, ImageProps.{.key = cast(u64)49511, .asset_path = logo, .fit = ImageFit.ImageFitContain, .smooth = true,
-            .bounds = Rectangle.{x, logo_top, width, logo_height}, .alt_text = AppLocaleHost("shovey_island_title")})
-    }
-    if IslandButton(session, 49512, Rectangle.{viewport.x + 12.0, viewport.y + 12.0, 84.0, 44.0}, AppLocaleHost("shovey_shop_back")) {
-        action = ISLAND_ACTION_BACK
-    }
     unused Box(session, BoxProps.{.key = cast(u64)49520, .bounds = Rectangle.{x, y, width, height},
         .fill = Color.{38, 44, 43, 235}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
     inner_x := x + 16.0
     inner := width - 32.0
-    IslandLine(session, 49521, Rectangle.{inner_x, y + 10.0, inner, 30.0}, AppLocaleHost("shovey_island_title"), 18)
+    IslandLine(session, 49521, Rectangle.{inner_x, y + 10.0, inner - 96.0, 30.0}, AppLocaleHost("shovey_island_title"), 18)
+    if IslandButton(session, 49536, Rectangle.{inner_x + inner - 84.0, y + 8.0, 84.0, 36.0}, AppLocaleHost("shovey_shop_cancel")) {
+        action = ISLAND_ACTION_BACK
+    }
     row := y + height - 56.0
     buttons := row - 44.0 - (ifx insufficient then 52.0 else 0.0)
     half := (inner - 12.0) / 2.0

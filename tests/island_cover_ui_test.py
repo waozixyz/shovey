@@ -20,7 +20,7 @@ a = p.parse_args()
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
 assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
 root = Path(__file__).resolve().parents[1]
-out = root / 'work/island-cover-ui-test'
+out = root / 'build/tests/island-cover-ui-test'
 subprocess.run(['git', 'check-ignore', '-q', str(out)], cwd=root, check=True)
 out.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(a.driver_source.resolve() / 'tests'))
@@ -90,13 +90,15 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
             for key in (49540, 49541, 49542):
                 assert not driver.find(key=key), ('A separate price label remains', key)
             text = driver.text()
-            assert text.count('51 Dew') == 1 and '85 Dew' not in text, ('The price shows apart from Unlock', text)
+            assert '85 Dew' not in text, ('The offer has a separate regular price', text)
+            assert driver.find(label='Unlock · 51 Dew', role='button'), 'The existing Island cover disappeared'
+            assert not any(driver.find(key=key) for key in (49510, 49511, 49512))
             assert '40% off' in text, text
             assert not DURATION.search(text), ('The offer must never state a duration', text)
             # A purchase control needs a fresh quote.
             assert not driver.find(key=49534) and not driver.find(key=49532), 'A guest was offered a purchase'
             assert not list(player.glob('island*')), 'A guest wrote an Island entitlement'
-            driver.press(key=49512, role='button')
+            driver.press(key=49536, role='button')
             driver.wait(contains='40% off', visible=True)
             driver.wait_gone(key=49530)
             assert driver.find(label='Unlock · 51 Dew', role='button', visible=True), 'Back left the Island cover'
@@ -118,7 +120,10 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
         # Play Classic for one saved move.
         driver.press(label='Play', role='button')
         start_map_destination(driver, 1)
-        driver.wait(contains='Level 1 / ', role='text', timeout=30)
+        for key in (20022, 20820, 20016, 20017, 20023):
+            driver.wait(key=key, role='button', timeout=30)
+        driver.wait(label='Wall', role='image')
+        assert not driver.find(contains='Level 1 / ', role='text'), 'The removed heading returned'
         with contextlib.suppress(AssertionError):
             driver.press(label='Swipe and tap', timeout=5)
             driver.press(label='Got it', role='button', timeout=5)
@@ -160,6 +165,6 @@ with log_path.open(errors='replace') as log:
     for line in log:
         assert 'host capability' not in line, line[:1000]
 order = 'Classic, Island, Editor'
-offer = 'Island locked for a guest at 51 Dew, 85 struck, 40% off, no duration; ' if island else ''
+offer = 'Island locked for a guest at 51 Dew, 40% off, no duration; ' if island else ''
 print(f'PASS: covers {order}; {offer}'
       'Editor opened its Classic levels page and a new board with no host capability failure.')

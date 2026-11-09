@@ -1,0 +1,83 @@
+#import "kryon/control_props"
+#import "kryon/drawing_props"
+// Shared Classic and Island game controls.
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/button_widget"
+#import "kryon/button_props"
+#import "kryon/box_widget"
+#import "kryon/box_props"
+#import "kryon/image_widget"
+#import "kryon/image_props"
+#import "kryon/text_widget"
+#import "kryon/text_props"
+#import, file "controls.zi";
+GameHeaderControl :: (session: Session, id: s32, bounds: Rectangle, label: string, icon: string, island_art: bool = false) -> bool {
+    Box(session, BoxProps.{.key = cast(u64)(80000 + id), .bounds = bounds,
+        .fill = Color.{35,53,38,255}, .border = Color.{112,119,73,255}, .radius = 8.0})
+    pressed := Button(session, ButtonProps.{.key=cast(u64)id,.id=id,.bounds=bounds,.label=label,
+        .icon_only=true,.square=true,.emphasis=ButtonEmphasis.ButtonEmphasisGhost}) != 0
+    art := (ifx island_art then "assets/shovey-island/shop/book.png" else "assets/shovey/shop/book.png")
+    if icon == ICON_RESTART { art = (ifx island_art then "assets/shovey-island/controls/restart.png" else "assets/shovey/controls/restart.png") }
+    if icon == ICON_HELP { art = (ifx island_art then "assets/shovey-island/controls/hint.png" else "assets/shovey/controls/hint.png") }
+    if icon == ICON_LEVELS { art = (ifx island_art then "assets/shovey-island/controls/levels.png" else "assets/shovey/controls/levels.png") }
+    if icon == ICON_PREVIOUS || icon == ICON_GAMES || icon == ICON_CLOSE { art = (ifx island_art then "assets/shovey-island/controls/back.png" else "assets/shovey/controls/back.png") }
+    if icon == ICON_SOUND_ON { art = (ifx island_art then "assets/shovey-island/controls/sound-on.png" else "assets/shovey/controls/sound-on.png") }
+    if icon == ICON_SOUND_OFF { art = (ifx island_art then "assets/shovey-island/controls/sound-off.png" else "assets/shovey/controls/sound-off.png") }
+    Image(session,ImageProps.{.key=cast(u64)(180000+id),.bounds=Rectangle.{bounds.x+6.0,bounds.y+6.0,bounds.width-12.0,bounds.height-12.0},
+        .asset_path=art,.alt_text=label,.fit=ImageFit.ImageFitContain,.smooth=true})
+    return pressed
+}
+
+#import "kryon/text_align"
+#import "std/text_buffer"
+GameResultFill :: (session: Session, key: u64, bounds: Rectangle, color: Color) { unused Box(session, BoxProps.{.key=key,.bounds=bounds,.fill=color}) }
+GameResultCaption :: (session: Session, key: u64, bounds: Rectangle, text: string, font: s32, center: bool) {
+    Text(session,TextProps.{.key=key,.bounds=bounds,.text=text,.font=font,.align=ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,.vertical_align=TextAlign.TextAlignCenter})
+}
+GameResult :: (session: Session, width: float32, top: float32, bottom: float32, title: string,
+    stars_count: s32, score_value: s32, moves_count: s32, levels_label: string, score_label: string,
+    moves_label: string, continue_label: string, save_label: string, saving_failed: bool, continue_disabled: bool = false, island_art: bool = false) -> s32 {
+    middle := (top + bottom) / 2.0
+    GameResultFill(session, 20900, Rectangle.{0.0, top, width, bottom - top}, Color.{24, 43, 37, 255})
+    if GameHeaderControl(session,20907,Rectangle.{16.0,top+16.0,48.0,48.0},levels_label,ICON_LEVELS,island_art) { return 1 }
+    GameResultCaption(session, 20901, Rectangle.{16.0, middle - 140.0, width - 32.0, 64.0}, title, 28, true)
+    stars := ifx stars_count == 3 then "★ ★ ★" else ifx stars_count == 2 then "★ ★ ☆" else ifx stars_count == 1 then "★ ☆ ☆" else "☆ ☆ ☆"
+    GameResultCaption(session, 20902, Rectangle.{16.0, middle - 64.0, width - 32.0, 56.0}, stars, 40, true)
+    score: Vec(u8)
+    BuilderPrint(*score, "%: % / 1000", score_label, score_value)
+    GameResultCaption(session, 20903, Rectangle.{16.0, middle + 4.0, width - 32.0, 36.0}, BuilderFinish(score), 22, true)
+    moves: Vec(u8)
+    BuilderPrint(*moves, "%: %", moves_label, moves_count)
+    GameResultCaption(session, 20904, Rectangle.{16.0, middle + 44.0, width - 32.0, 32.0}, BuilderFinish(moves), 18, true)
+    if Button(session, ButtonProps.{.key = 20905, .id = 20905,
+        .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
+        .label = continue_label, .disabled = continue_disabled}) != 0 {
+        return 2
+    }
+    if saving_failed { GameResultCaption(session, 20906, Rectangle.{16.0, bottom - 48.0, width - 32.0, 40.0}, save_label, 14, true) }
+    return 0
+}
+
+// The same compact toolbar and keyboard mapping serve both campaigns.
+GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: []string,mini: bool=false, island_art: bool=false) -> s32 {
+    GameResultFill(session,cast(u64)(ids[0]+2),Rectangle.{0.0,top,width,52.0},Color.{27,43,31,255})
+    icons: [6]string = .[ICON_PREVIOUS,ICON_LEVELS,"",ICON_RESTART,ICON_HELP,ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON]
+    for slot: cast(s32)0..5 {
+        if slot==1 { continue }
+        if mini && slot!=0 && slot!=3 { continue }
+        x := width-cast(float32)(6-slot)*52.0
+        if slot==0 { x=8.0 }
+        if slot==2 { x=56.0 }
+        if mini && slot==3 { x=width-52.0 }
+        if GameHeaderControl(session,ids[slot],Rectangle.{x,top+4.0,44.0,44.0},labels[slot],icons[slot],island_art) { return slot+1 }
+    }
+    return 0
+}
+GameKeyDirection :: (key: s32) -> s32 {
+    if key==263 || key==65 { return 0 }
+    if key==265 || key==87 { return 1 }
+    if key==262 || key==68 { return 2 }
+    if key==264 || key==83 { return 3 }
+    return -1
+}

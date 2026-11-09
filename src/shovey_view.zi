@@ -1,3 +1,4 @@
+#import, file "game_ui.zi";
 #import "session"
 FingerSwipe :: #import "mingcute/mingcute_filled_finger_swipe";
 Math :: #import "std/math";
@@ -274,14 +275,7 @@ Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, d
 
 // Keep native button semantics, hover and keyboard focus on the compact bar.
 HeaderControl :: (id: s32, bounds: Rectangle, label: string, icon: string) -> bool {
-    Box(frame.session, BoxProps.{.key = cast(u64)(80000 + id), .bounds = bounds,
-            .fill = Color.{35, 53, 38, 255}, .border = Color.{112, 119, 73, 255}, .radius = 8.0})
-    pressed := Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id,
-            .bounds = bounds, .label = label, .icon_only = true, .square = true,
-            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisGhost}) != 0
-    SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{bounds.x + 10.0, bounds.y + 10.0, 24.0, 24.0},
-            .shape = icon, .color = Color.{241, 233, 202, 255}})
-    return pressed
+    return GameHeaderControl(frame.session, id, bounds, label, icon)
 }
 
 // One of a set of choices; the chosen one stands out and reads as selected.
@@ -462,27 +456,11 @@ LevelResultScreen :: (width: float32, top: float32, bottom: float32) -> bool {
         if template[at] == #char "%" { BuilderPrint(*title, "%", label) }
         else { BuilderPrint(*title, "%", template[at:at + 1]) }
     }
-    middle := (top + bottom) / 2.0
-    Fill(20900, Rectangle.{0.0, top, width, bottom - top}, Color.{24, 43, 37, 255})
-    if Button(frame.session, ButtonProps.{.key = 20907, .id = 20907,
-        .bounds = Rectangle.{16.0, top + 16.0, 48.0, 48.0},
-        .label = AppLocaleHost("shovey_levels"), .icon_shape = ICON_LEVELS, .icon_only = true}) != 0 { OpenLevels() }
-    Caption(20901, Rectangle.{16.0, middle - 140.0, width - 32.0, 64.0}, BuilderFinish(title), 28, true)
-    stars := ifx result.stars == 3 then "★ ★ ★" else ifx result.stars == 2 then "★ ★ ☆" else ifx result.stars == 1 then "★ ☆ ☆" else "☆ ☆ ☆"
-    Caption(20902, Rectangle.{16.0, middle - 64.0, width - 32.0, 56.0}, stars, 40, true)
-    score: Vec(u8)
-    BuilderPrint(*score, "%: % / 1000", AppLocaleHost("shovey_result_score"), result.score)
-    Caption(20903, Rectangle.{16.0, middle + 4.0, width - 32.0, 36.0}, BuilderFinish(score), 22, true)
-    moves: Vec(u8)
-    BuilderPrint(*moves, "%: %", AppLocaleHost("shovey_result_moves"), game.moves)
-    Caption(20904, Rectangle.{16.0, middle + 44.0, width - 32.0, 32.0}, BuilderFinish(moves), 18, true)
-    if Button(frame.session, ButtonProps.{.key = 20905, .id = 20905,
-        .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
-        .label = AppLocaleHost("shovey_continue"), .disabled = coin_pending.active}) != 0 {
-        result_dismissed = game.level
-        if game.level < ShoveyLevelCount() { ContinueGame() }
-    }
-    if save_failed { Caption(20906, Rectangle.{16.0, bottom - 48.0, width - 32.0, 40.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
+    action := GameResult(frame.session,width,top,bottom,BuilderFinish(title),result.stars,result.score,game.moves,
+        AppLocaleHost("shovey_levels"),AppLocaleHost("shovey_result_score"),AppLocaleHost("shovey_result_moves"),
+        AppLocaleHost("shovey_continue"),AppLocaleHost("shovey_save_failed"),save_failed,coin_pending.active)
+    if action == 1 { OpenLevels() }
+    if action == 2 { result_dismissed = game.level; if game.level < ShoveyLevelCount() { ContinueGame() } }
     return true
 }
 
@@ -1700,21 +1678,15 @@ ShoveyFrame :: () {
     cinematic := walking || board_sail >= 0.0
     // A single 52px row; the board and tutorial keep their existing origin.
     if !cinematic {
-        Fill(20024, Rectangle.{0.0, top, width, 52.0}, Color.{27, 43, 31, 255})
-        if HeaderControl(20022, Rectangle.{8.0, top + 4.0, 44.0, 44.0},
-                AppLocaleHost("shovey_back"), ICON_PREVIOUS) {
-            unused ShoveyBackToMap()
-            return
-        }
-        restart_x := ifx mini then width - 52.0 else width - 156.0
-        if !mini && Book.BookCoverAction(frame.session, 20820, Rectangle.{56.0, top + 4.0, 44.0, 44.0}) { Book.BookOpen() }
-        if HeaderControl(20016, Rectangle.{restart_x, top + 4.0, 44.0, 44.0},
-                AppLocaleHost("shovey_restart"), ICON_RESTART) { ChangeLevel(game.level) }
-        if !mini && HeaderControl(20017, Rectangle.{width - 104.0, top + 4.0, 44.0, 44.0},
-                AppLocaleHost("shovey_hint"), ICON_HINT) { HintOpen() }
-        if !mini && HeaderControl(20023, Rectangle.{width - 52.0, top + 4.0, 44.0, 44.0},
-                AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"),
-                ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) { SoundSetMuted(!SoundMuted()) }
+        ids: [6]s32 = .[20022,20005,20820,20016,20017,20023]
+        labels: [6]string = .[AppLocaleHost("shovey_back"),AppLocaleHost("shovey_levels"),AppLocaleHost("shovey_book"),AppLocaleHost("shovey_restart"),AppLocaleHost("shovey_hint"),AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute")]
+        action := GameToolbar(frame.session,width,top,ids[:],labels[:],mini)
+        if action==1 { unused ShoveyBackToMap(); return }
+        if action==3 { Book.BookOpen() }
+        if action==4 { ChangeLevel(game.level) }
+        if action==5 { HintOpen() }
+        if action==6 { SoundSetMuted(!SoundMuted()) }
+
     }
     // The board fills the space under the bar, in portrait or landscape.
     status_y := top + 52.0
@@ -1724,11 +1696,7 @@ ShoveyFrame :: () {
     landscape := BoardLandscape(area.width, area.height)
     before_direction := game.direction
     changed := false
-    keyed: s32 = -1
-    if key == 263 || key == 65 { keyed = 0 }
-    if key == 265 || key == 87 { keyed = 1 }
-    if key == 262 || key == 68 { keyed = 2 }
-    if key == 264 || key == 83 { keyed = 3 }
+    keyed := GameKeyDirection(key)
     // Until the controls question is answered it takes every key.
     choosing := !mini && !ControlsChosen()
     guiding := !mini && !cinematic && !game.won && !ShoveySecret(game.level) && GuideNext(*friend_guide) >= 0

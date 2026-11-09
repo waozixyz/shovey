@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Share Classic and Island controls, layout and score results, using game artwork.
+- Unlock Island on the current screen while preserving purchases and saved progress.
+- Require ordinary fruit before finishing Island levels; allow house entry from below and clear forward star throws.
+- Rebuild Island level 13 with a safe start and a fruit-and-star puzzle.
 - Replace gameplay Help with saved level hints, extra hint packs and one-time treasure/floor rewards; keep movement settings accessible.
 - Open the collectibles book during play, hide undiscovered entry text and remove hiding-location spoilers and the gameplay level counter.
 - Recover from missing or stalled level pictures instead of leaving the loading cover locked.

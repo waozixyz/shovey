@@ -1,7 +1,8 @@
 // Optional private-source proof for island_delivery_test.py --campaign.
 // Keys run the reviewed compiled game; native rules independently replay the
-// same route. Compare every saved position, including the automatic next island.
+// same route. Compare every saved position, including the explicit next island.
 #import "player_host"
+#import "island_unlock"
 #import "player_platform"
 #import "apps/host"
 #import "island_engine"
@@ -25,15 +26,61 @@
 #import "std/bundle_host"
 #import "std/text_buffer"
 #import "std/vec"
+#import "std/json_scan"
+#import "shared_progress"
+#import "progress"
 
 campaign_api :: #system_library "c";
 CampaignCapture :: (number: s32) -> s32 #foreign campaign_api "CampaignCapture";
 CampaignPointerSend :: (x: s32,y: s32,phase: s32) -> s32 #foreign campaign_api "CampaignPointerSend";
 
+// Assert the real five shared controls at both narrow desktop widths.
+CampaignToolbar :: (session: Session, bounds: Rectangle, island: bool, capture: s32) -> bool {
+    ids: [5]s32 = ifx island then .[80018,80022,80015,80006,80019] else .[20022,20820,20016,20017,20023]
+    for size: cast(s32)0..1 {
+        width: s32 = ifx size==0 then 320 else 480
+        if !ResizeDesktop(width,820) { return false }
+        area := Rectangle.{0.0,0.0,cast(float32)width,820.0}
+        for frame: 1..4 { if !CampaignFrame(session,area,0) { return false } }
+        xs: [5]float32 = .[8.0,56.0,cast(float32)(width-156),cast(float32)(width-104),cast(float32)(width-52)]
+        for id,slot: ids {
+            found: bool
+            for index: cast(s32)0..TreeCount(session)-1 {
+                node := TreeNodeAt(session,index)
+                if node.key==cast(u64)id {
+                    if node.bounds.x!=xs[slot] || node.bounds.width!=44.0 || node.bounds.height!=44.0 { return false }
+                    found=true
+                }
+                if island && (node.key==80004 || node.key==80005) { return false }
+            }
+            if !found { Report("Missing shared toolbar control\n"); return false }
+        }
+        if CampaignCapture(capture+size)!=0 { return false }
+    }
+    if !ResizeDesktop(cast(s32)bounds.width,cast(s32)bounds.height) { return false }
+    return CampaignFrame(session,bounds,0)
+}
+
+CampaignScreenshot :: (number: s32) -> s32 { return CampaignCapture(number) }
+
+CampaignCheckAssets :: () -> bool {
+    runtime := AppHostActiveRuntime(*collection_host)
+    if runtime == null { return false }
+    paths: [7]string = .["assets/shovey-island/shop/book.png", "assets/shovey-island/controls/back.png",
+        "assets/shovey-island/controls/levels.png", "assets/shovey-island/controls/restart.png",
+        "assets/shovey-island/controls/hint.png", "assets/shovey-island/controls/sound-on.png",
+        "assets/shovey-island/controls/sound-off.png"]
+    for path: paths {
+        if !HostedAppAsset(AppContextRuntime(*runtime.app),path).found { Report(path); return false }
+    }
+    return true
+}
+
+
 CampaignMap :: (session: Session, bounds: Rectangle, completed: bool) -> bool {
     levels: s32 = -1
     for index: cast(s32)0..TreeCount(session)-1 {
-        if TreeNodeAt(session,index).key == 80005 { levels=index }
+        if TreeNodeAt(session,index).key == 80018 || TreeNodeAt(session,index).key == 20907 { levels=index }
     }
     if levels < 0 || !CampaignClick(session,bounds,levels) { return false }
     for size: cast(s32)0..1 {
@@ -260,16 +307,16 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
             for index: cast(s32)0..TreeCount(session) - 1 {
                 node := TreeNodeAt(session, index)
                 label := node.semantic_label
-                if node.key == 80004 && label.count >= 5 && label[label.count - 5:] == " / 30" { count_shown = true }
+                if node.key == 80018 && node.bounds.y == 4.0 { count_shown = true }
             }
-            if !count_shown { Report("Compiled Island did not show its 30-level campaign\n"); return false }
+            if !count_shown { Report("Compiled Island did not show the shared toolbar\n"); return false }
             for index: cast(s32)0..CAMPAIGN_ASSET_COUNT - 1 {
                 path := CampaignAssetPath(index)
                 if !HostedAppAsset(AppContextRuntime(*runtime.app), path).found { Report(path); return false }
             }
             if HostedAppAsset(AppContextRuntime(*runtime.app), "assets/shovey-island/levels/31.png").found ||
                 HostedAppAsset(AppContextRuntime(*runtime.app), "assets/shovey-island/levels-landscape/31.png").found { return false }
-            if !CampaignEmptyBook(session, bounds) || !CampaignMap(session,bounds,false) { return false }
+            if !CampaignEmptyBook(session, bounds) || !CampaignToolbar(session,bounds,true,5) || !CampaignMap(session,bounds,false) { return false }
         }
         languages: [12]string = .["en", "cs", "de", "es", "fr", "id", "it", "ja", "ko", "pt", "ru", "zh"]
         for language: languages {
@@ -280,6 +327,7 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
             AppFileFree(name)
             if !resource.found || resource.data.count == 0 { return false }
         }
+        if number==13 && (game.terrain[game.player]==0 || CampaignCapture(10)!=0) { return false }
         // No steps or remote account state are injected into the guest.
         // Its real key handler must produce each expected saved position.
         route := IslandLevelSolution(number)
@@ -298,7 +346,6 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
             unused IslandMove(*game, direction)
             if game.won { won = true }
             IslandRecordWin(*progress, *game)
-            unused IslandContinue(*progress, *game)
             expected := IslandCampaignSave(*progress, *game)
             // A raft may still be gliding. Retry this key only until its
             // independently replayed position is saved, then release it.
@@ -324,6 +371,39 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
                 return false
             }
         }
+        // A win remains visible until the player presses Continue.
+        if !CampaignFrame(session,bounds,0) { return false }
+        continue_button: s32 = -1
+        scored: bool
+        for index: cast(s32)0..TreeCount(session)-1 {
+            node := TreeNodeAt(session,index)
+            if node.key==20905 { continue_button=index }
+            if node.key==20903 && node.semantic_label=="Score: 1000 / 1000" { scored=true }
+        }
+        key: [96]u8
+        name := LevelResultKey("shovey.island","",number,key[:])
+        records := CollectionRecordsFor("arcade.shovey-island")
+        saved := AppFileRead(*records.files,name)
+        best_moves := ReadNumber(saved,FieldAt(saved,0,"moves"))
+        AppFileFree(saved)
+        if !best_moves.valid || best_moves.value!=cast(float64)game.moves { Report("Missing persisted Island score\n"); return false }
+        if continue_button<0 || !scored { Report("Missing Island result\n"); return false }
+        if number==13 && CampaignCapture(11)!=0 { return false }
+        if number < IslandLevelCount() {
+            if !CampaignClick(session,bounds,continue_button) { return false }
+            unused IslandContinue(*progress,*game)
+        }
+        if number==13 {
+            if !CollectionBack() { return false }
+            CollectionCollect()
+            if !CollectionOpenGame(ISLAND_UNLOCK_APP) { return false }
+            for frame: 1..6 { if !CampaignFrame(session,bounds,0) { return false } }
+            records=CollectionRecordsFor("arcade.shovey-island")
+            reloaded := AppFileRead(*records.files,name)
+            retained := ReadNumber(reloaded,FieldAt(reloaded,0,"moves"))
+            AppFileFree(reloaded)
+            if !retained.valid || retained.value!=best_moves.value { Report("Island score lost on reopen\n"); return false }
+        }
         expected_unlocked := ifx number < IslandLevelCount() then number + 1 else number
         if !won || !progress.completed[number - 1] || progress.unlocked != expected_unlocked { return false }
         message: Vec(u8)
@@ -332,5 +412,12 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
         Report(text)
         AppFileFree(text)
     }
-    return CampaignMap(session,bounds,true)
+    if !CampaignMap(session,bounds,true) || !CollectionBack() { return false }
+    CollectionCollect()
+    if !CollectionOpenGame("arcade.shovey") { return false }
+    for frame: 1..10 { if !CampaignFrame(session,bounds,0) { return false } }
+    if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { return false }
+    if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { return false }
+    if !CampaignFrame(session,bounds,256) { return false }
+    return CampaignToolbar(session,bounds,false,7)
 }

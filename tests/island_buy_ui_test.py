@@ -14,7 +14,7 @@ args = parser.parse_args()
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
 assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
 root = Path(__file__).resolve().parents[1]
-work = root / 'work/island-buy-ui-test'
+work = root / 'build/tests/island-buy-ui-test'
 subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=root, check=True)
 work.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(args.driver_source.resolve() / 'tests'))
@@ -53,16 +53,20 @@ for language, play, next_label, unlock in [('en_US.UTF-8', 'Play', 'Next', 'Unlo
                     assert ribbon['y'] + ribbon['height'] > button['y'], (button, ribbon)
                     assert ribbon['x'] >= button['x'] and ribbon['x'] + ribbon['width'] <= button['x'] + button['width'], (button, ribbon)
                     subprocess.run(['import', '-window', window, str(work / f'{language}-ribbon-{width}.png')], check=True)
+                cover_key = button['key']
                 driver.press(label=buy, role='button')
                 # The one action carries Unlock and the price; no separate price line.
                 action = driver.wait(key=49530, role='button')
+                assert driver.find(key=cover_key), 'Existing Island cover disappeared during unlock'
+                assert not any(driver.find(key=key) for key in (49510, 49511, 49512))
+                driver.wait(key=49536, role='button')
                 assert action['label'] == buy, action
                 ribbon = driver.wait(key=49544, role='text')
                 assert action['y'] - 24 <= ribbon['y'] < action['y'] < ribbon['y'] + ribbon['height'], (action, ribbon)
-                subprocess.run(['import', '-window', window, str(work / f'{language}-unlock-page.png')], check=True)
+                subprocess.run(['import', '-window', window, str(work / f'{language}-unlock-panel.png')], check=True)
                 assert not driver.find(key=49540) and not driver.find(key=49541), 'A separate price label remains'
                 assert not driver.find(key=49534) and not driver.find(key=49532)
-                driver.press(key=49512, role='button')
+                driver.press(key=49536, role='button')
                 driver.wait(label=buy, role='button')
                 assert not driver.find(key=4, role='text'), 'Opening Buy left an action failure on the cover'
                 assert not list(records.glob('island*'))
@@ -70,4 +74,4 @@ for language, play, next_label, unlock in [('en_US.UTF-8', 'Play', 'Next', 'Unlo
                 if child.poll() is None:
                     child.terminate()
                 child.wait(timeout=10)
-print('Island Buy local UI tests: English/German action dispatch, guest lock and Back passed')
+print('Island Buy local UI tests: English/German action dispatch, guest lock, existing cover and Cancel passed')

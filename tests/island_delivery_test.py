@@ -28,7 +28,7 @@ args = parser.parse_args()
 descriptor = json.loads((ROOT / 'packaging/island.json').read_text())
 assert hashlib.file_digest(args.bundle.open('rb'), 'sha256').hexdigest() == descriptor['sha256']
 assert args.bundle.stat().st_size == descriptor['bytes']
-work = ROOT / ('work/island-campaign-delivery-test' if args.campaign else 'work/island-delivery-test')
+work = ROOT / ('build/tests/island-campaign-delivery-test' if args.campaign else 'build/tests/island-delivery-test')
 subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=ROOT, check=True)
 work.mkdir(parents=True, exist_ok=True)
 (work / 'scratch').mkdir(exist_ok=True)
@@ -166,6 +166,10 @@ main :: () -> s32 {
     if !IslandPackageFetch(*collection_island_package, entry) { return 3 }
     if !IslandPackageBundle(*collection_island_package, entry).found { return 4 }
     collection_island.owned = true
+    collection_island_page = true
+    collection_island_opening = false
+    CollectionIslandPump()
+    if collection_island_page || collection_island_opening || TextUntilNul(entry.cover.action[:]) != "play" { return 45 }
     // Reproduce Play on Classic's Island cover: Island is a sibling of the
     // currently running Classic title, rather than a child of it.
     if !CollectionOpenGame("arcade.shovey") { return 5 }
@@ -204,13 +208,18 @@ main :: () -> s32 {
         if !FixtureFrame(session, bounds, frame) { return 32 }
         // A new island, its Tiles with the cave floor and its Objects tab.
         if collection_island_editor == ISLAND_EDITOR_OPEN && CollectionActiveIs(ISLAND_UNLOCK_APP) && FixtureFind(session, 93303) &&
-            FixtureFind(session, 93317) && FixtureFind(session, 93318) && FixtureFind(session, 94328) {
+            FixtureFind(session, 93317) && FixtureFind(session, 93318) && FixtureLabel(session, "Cave floor") {
             shown = true
             break
         }
         unused SleepMilliseconds(5)
     }
-    if !shown { return 33 }
+    if !shown {
+        diagnostic: Vec(u8)
+        BuilderPrint(*diagnostic,"Editor route: mode %, active %, play %, tabs %/%, cave floor %\n",collection_island_editor,CollectionActiveIs(ISLAND_UNLOCK_APP),FixtureFind(session,93303),FixtureFind(session,93317),FixtureFind(session,93318),FixtureLabel(session,"Cave floor"))
+        Report(BuilderFinish(diagnostic))
+        return 33
+    }
     if !CollectionBack() { return 34 }
     back := false
     for frame: 401..800 {
@@ -255,6 +264,10 @@ FixtureEditorStart :: (session: Session, bounds: Rectangle, first: s64, owned: b
     }
     return false
 }
+FixtureLabel :: (session: Session, label: string) -> bool {
+    for at: cast(s32)0..TreeCount(session)-1 { if TreeNodeAt(session,at).semantic_label==label { return true } }
+    return false
+}
 FixtureFind :: (session: Session, key: u64) -> bool {
     for at: cast(s32)0..TreeCount(session) - 1 { if TreeNodeAt(session, at).key == key { return true } }
     return false
@@ -291,6 +304,8 @@ if args.campaign:
         (work / (name + '.zi')).write_text(code)
     artwork = json.loads((ROOT / 'assets/shovey-island/art.json').read_text())
     paths = {'assets/shovey-island/' + item['path'] for item in artwork['files']}
+    paths.update('assets/shovey-island/controls/' + name + '.png' for name in ('back','levels','restart','hint','sound-on','sound-off'))
+    paths.add('assets/shovey-island/shop/book.png')
     from island_campaign import shipped_levels
     paths = {path for path in paths if not (
         Path(path).parent.name in ('levels', 'levels-landscape') and
@@ -304,6 +319,9 @@ if args.campaign:
         f'CAMPAIGN_ASSET_COUNT :: {len(paths)}\n'
         f'CampaignAssetPath :: (number: s32) -> string {{\n{values}\n    return ""\n}}\n')
     source = '#import "island_campaign_delivery"\n' + source
+    source = source.replace('    collection_island_page = false\n    fixture_owned', '    proof_session := SessionOpen()\n    proof_bounds := Rectangle.{0.0,0.0,480.0,820.0}\n    unused CollectionUpdatesSet(false)\n    if !SessionValid(proof_session) { return 46 }\n    for frame: 1..400 {\n        if !FixtureFrame(proof_session,proof_bounds,frame) { return 47 }\n        if FixtureFind(proof_session,49536) { break }\n        unused SleepMilliseconds(5)\n    }\n    diagnostic: Vec(u8)\n    BuilderPrint(*diagnostic,"Unlock proof: page %, owned %, nodes %, cancel %, old back %, old background %, old logo %\\n",collection_island_page,collection_island.owned,TreeCount(proof_session),FixtureFind(proof_session,49536),FixtureFind(proof_session,49512),FixtureFind(proof_session,49510),FixtureFind(proof_session,49511))\n    Report(BuilderFinish(diagnostic))\n    unused CampaignScreenshot(9)\n    if !FixtureFind(proof_session,49536) || FixtureFind(proof_session,49512) || FixtureFind(proof_session,49510) || FixtureFind(proof_session,49511) || CampaignScreenshot(9)!=0 { return 44 }\n    SessionClose(proof_session)\n    collection_island_page = false\n    if !AppHostHome(*collection_host) { return 48 }\n    CollectionCollect()\n    fixture_owned',1)
+
+    source = source.replace('    collection_island_opening = true\n    session :=', '    if !AppHostHome(*collection_host) { return 49 }\n    CollectionCollect()\n    if !CollectionOpenGame(ISLAND_UNLOCK_APP) { return 49 }\n    if !CampaignCheckAssets() { return 50 }\n    if !AppHostHome(*collection_host) { return 51 }\n    CollectionCollect()\n    if !CollectionOpenGame("arcade.shovey") { return 51 }\n    collection_island_opening = true\n    session :=',1)
     start = source.index('    // Island opened as a game never shows')
     end = source.index("// The Editor's start page")
     source = source[:start] + '    return ifx CampaignDelivered(session, bounds) then 0 else 43\n}\n' + source[end:]

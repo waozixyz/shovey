@@ -24,16 +24,13 @@ if [ -f ziran.local.toml ]; then flags=; fi
 toolchain=$(./scripts/ziran.sh pkg path ziran $flags)
 kryon=$(./scripts/ziran.sh pkg path kryon $flags)
 entity=$(./scripts/ziran.sh pkg path entity $flags)
-work="$root/work/island-unlock-test"
+work="$root/build/tests/island-unlock-test"
 git check-ignore -q "$work"
 mkdir -p "$work"
 native="$work/native"
 rm -rf "$native"
-"$toolchain/build/bin/ziran" build --target=c --no-main --root "$root/src" \
+"$toolchain/build/bin/ziran" build --project --target=c --no-main --root "$root/src" \
     --module-path "$root/tests" \
-    --module-path "$toolchain/std" --module-path "std=$toolchain/std" \
-    --module-path "entity=$entity/src" \
-    --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
     --bind-host island_unlock_test \
     --bind island_unlock:AppLocaleHost=island_unlock_test:FakeLocale \
     --entry island_unlock_test:Check -o "$native" "$root/tests/island_unlock_test.zi"
@@ -51,4 +48,4 @@ includes=$(find "$native" -type d -printf ' -iquote %p')
 "${CC:-cc}" -std=c11 -O1 -ffunction-sections -fdata-sections -I"$toolchain/include" $includes \
     $(find "$native" -name '*.c') "$root/build/ziran/libziran.a" -Wl,--gc-sections -lm -lpthread -lz -ldl -o "$work/unlock"
 "$work/unlock"
-echo 'Island unlock local tests: exact quote, confirmation, refusals, offline restore, account isolation and page passed'
+echo 'Island unlock local tests: exact quote, confirmation, refusals, offline restore, account isolation and in-place panel passed'

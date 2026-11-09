@@ -356,5 +356,18 @@ Check :: () -> s32 {
     // Secrets have stable, separate IDs and tolerate missing pars.
     if !RecordLevelResult("shovey.classic", "first", 1003, 456, 4, 0, true) ||
     GetLevelResult("shovey.classic", "first", 1003, 456, 0).stars != 1 { return 213 }
+    // Island uses the same score laws and durable best-result store, with
+    // independent campaign, owner and board identities.
+    if !RecordLevelResult("shovey.island","first",13,913,15,10,true) { return 230 }
+    staged=durable
+    island_best := GetLevelResult("shovey.island","first",13,913,10)
+    expected_island := Campaign.ShoveyScoreResult(15,10)
+    if island_best.score!=expected_island.score || island_best.stars!=expected_island.stars || island_best.best_moves!=15 { return 231 }
+    if !RecordLevelResult("shovey.island","first",13,913,30,10,true) { return 232 }
+    staged=durable
+    if GetLevelResult("shovey.island","first",13,913,10).best_moves!=15 { return 233 }
+    if GetLevelResult("shovey.classic","first",13,913,10).stars!=0 ||
+       GetLevelResult("shovey.island","second",13,913,10).stars!=0 ||
+       GetLevelResult("shovey.island","first",13,914,10).stars!=0 { return 234 }
     return 42
 }

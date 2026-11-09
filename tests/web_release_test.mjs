@@ -14,6 +14,9 @@ import {driverSetup} from './web_driver.mjs';
 
 const root = process.argv[2] || new URL('../build/web-site/', import.meta.url).pathname;
 const profile = await mkdtemp(join(tmpdir(), 'shovey-release-'));
+const gameplayControls = [20022, 20820, 20016, 20017, 20023];
+const isGameplay = nodes => gameplayControls.every(key => nodes.some(node => node.key === key)) &&
+  nodes.some(node => node.label === 'Wall' && (node.role === 'image' || node.kind === 'image'));
 const types = {'.html': 'text/html', '.wasm': 'application/wasm', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json'};
 const server = createServer(async (request, response) => {
   try {
@@ -113,7 +116,8 @@ try {
   await call('Page.enable');
   await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
   await call('Emulation.setDeviceMetricsOverride', {width: 720, height: 1280, deviceScaleFactor: 1, mobile: true});
-  await call('Page.navigate', {url: `http://127.0.0.1:${server.address().port}/`});
+  // A fresh private profile can verify the actual deployed custom domain too.
+  await call('Page.navigate', {url: process.env.SHOVEY_TEST_URL || `http://127.0.0.1:${server.address().port}/`});
   await wait(`!!(globalThis.Module && Module.profileReady) || !!document.getElementById('loading')?.classList.contains('error')`);
   assert(!await evaluate(`document.getElementById('loading').classList.contains('error')`), 'The page could not start Shovey');
   const runtime = (await evaluate(`performance.getEntriesByType('resource').map(entry => entry.name)`)).map(name => new URL(name))
@@ -134,12 +138,13 @@ try {
     const nodes = await tree(), labels = nodes.map(node => node.label);
     const mapPlay = nodes.find(node => node.key === 20122);
     if (labels.includes('How do you want to move?')) await press('Swipe and tap');
-    else if (labels.some(label => /^Level 1 \//.test(label))) break;
+    else if (isGameplay(nodes)) break;
     else if (mapPlay && nodes.some(node => node.key === 20121 && node.label === 'Level 1'))
       await click(mapPlay.x + mapPlay.width / 2, mapPlay.y + mapPlay.height / 2);
     await delay(250);
   }
-  assert((await tree()).some(node => /^Level 1 \//.test(node.label)), 'Level 1 did not open');
+  assert(isGameplay(await tree()), 'Level 1 did not open with the shared gameplay controls');
+  assert(!(await tree()).some(node => /^Level 1 \//.test(node.label)), 'Removed gameplay heading returned');
   const frames = evaluate(`new Promise(done => { let count = 0, start = performance.now(); function frame(now) { count++; if (now - start < 3000) requestAnimationFrame(frame); else done(count); } requestAnimationFrame(frame); })`);
   for (let step = 0; step < 10; step++) { await key(step % 2 ? 'ArrowLeft' : 'ArrowRight', step % 2 ? 37 : 39); await delay(200); }
   assert(await frames > 30, 'The level stopped drawing while walking');

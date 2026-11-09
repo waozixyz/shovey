@@ -21,8 +21,8 @@ ZIRAN_TEST_MODULES = --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLC
 	--module-path 'mingcute=$(MINGCUTE)/src'
 define ziran_test
 rm -rf build/tests/$(1)
-'$(TOOLCHAIN)/build/bin/zi2c' --exe --root tests $(ZIRAN_TEST_MODULES) $(3) --entry $(1):main -o build/tests/$(1) tests/$(1).zi
-env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+'$(TOOLCHAIN)/build/bin/ziran' build --project --target=c --exe --root src --module-path tests --module-path src/solver --module-path tools/solver $(3) --entry $(1):main -o build/tests/$(1) tests/$(1).zi
+env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 \
 	build/tests/$(1)/$(1) $(2)
 endef
 
@@ -537,7 +537,7 @@ world-map-test:
 	$(MAKE) level-select-test
 
 .PHONY: hints-loading-test
-hints-loading-test:
+hints-loading-test: levels
 	$(call ziran_test,hints_loading_test,,--define SHOVEY_RELEASE)
 	'$(TOOLCHAIN)/build/bin/ziran' bundle --root tests $(ZIRAN_TEST_MODULES) --define SHOVEY_RELEASE --entry hints_loading_test:main -o build/tests/hints_loading_test.zx tests/hints_loading_test.zi
 	test "$$('$(TOOLCHAIN)/build/bin/ziran' run build/tests/hints_loading_test.zx | tail -n 1)" = 0
@@ -550,3 +550,11 @@ island-collectible-book-test-private:
 	$(call ziran_test,island_collectible_book_test,,--bind-host island_collectible_book_test)
 	'$(TOOLCHAIN)/build/bin/ziran' bundle --root tests $(ZIRAN_TEST_MODULES)  --bind-host island_collectible_book_test --entry island_collectible_book_test:main -o build/tests/island_collectible_book_test.zx tests/island_collectible_book_test.zi
 	test "$$('$(TOOLCHAIN)/build/bin/ziran' run build/tests/island_collectible_book_test.zx | tail -n 1)" = 0
+
+.PHONY: island-gameplay-test
+island-gameplay-test:
+	@if test -f src/island/island_engine.zi; then $(MAKE) island-gameplay-test-private; else echo "Private Island source unavailable; gameplay test skipped"; fi
+
+island-gameplay-test-private:
+	python3 scripts/island_campaign.py
+	$(call ziran_test,island_gameplay_test,,--module-path src/island)
