@@ -74,7 +74,7 @@ Vpravo
 Uložení se nezdařilo. Zkus další tah.
 ---
 [shovey_controls]
-Šipky / WASD · R znovu · H nápověda · Mezerník hodit
+Šipky / WASD · R znovu · H Nápověda · Mezerník hodit
 ---
 [shovey_controls_setting]
 Dotykové ovládání
@@ -197,7 +197,8 @@ Vejdi do páky a brána se otevře.
 Každá koule patří do jamky své barvy.
 ---
 [shovey_instructions]
-Použij šipky nebo WASD. Posouvej vždy jeden předmět; tahat nelze. Koule patří do jamek stejné barvy a bedny na označená pole. Barva přebarví kouli. Posbírej jablka a spoj hvězdné bloky. Splň úkoly před návratem domů. Bedny drží tlakové dveře otevřené. Klíče otevírají zámky. Mezerník hodí sebranou střelu ve směru pohledu Shoveyho. Některé předměty obrátí ovládání, zanechají stopu nebo způsobí klouzání až k překážce. Nabitý Shovey může rozsvítit obvod; nenabíjej ho dvakrát. Bloky při posunu mění barvu z červené na modrou a žlutou; jejich cíle potřebují červenou. R začne znovu, H otevře návod.
+Použij šipky nebo WASD. Posouvej vždy jeden předmět; tahat nelze. Koule patří do jamek stejné barvy a bedny na označená pole. Barva přebarví kouli. Posbírej jablka a spoj hvězdné bloky. Splň úkoly před návratem domů. Bedny drží tlakové dveře otevřené. Klíče otevírají zámky. Mezerník hodí sebranou střelu ve směru pohledu Shoveyho. Některé předměty obrátí ovládání, zanechají stopu nebo způsobí klouzání až k překážce. Nabitý Shovey může rozsvítit obvod; nenabíjej ho dvakrát. Bloky při posunu mění barvu z červené na modrou a žlutou; jejich cíle potřebují červenou.
+Šipky / WASD · R znovu · H Nápověda · Mezerník hodit
 ---
 [shovey_continue]
 Pokračovat
@@ -1102,4 +1103,80 @@ Skóre
 
 [shovey_result_moves]
 Tahy
+---
+
+[shovey_hint]
+Nápověda
+---
+
+[shovey_hint_free]
+Bezplatné nápovědy
+---
+
+[shovey_hint_bank]
+Další nápovědy
+---
+
+[shovey_hint_thinking]
+Hledání nápovědy…
+---
+
+[shovey_hint_offer]
+Odhal další tahy. Každá úroveň má 3 bezplatné nápovědy.
+---
+
+[shovey_hint_restart]
+Začni znovu, pak:
+---
+
+[shovey_hint_next]
+Další tahy:
+---
+
+[shovey_hint_left]
+← Vlevo
+---
+
+[shovey_hint_up]
+↑ Nahoru
+---
+
+[shovey_hint_right]
+→ Vpravo
+---
+
+[shovey_hint_down]
+↓ Dolů
+---
+
+[shovey_hint_throw]
+Hodit
+---
+
+[shovey_hint_wait]
+Počkat
+---
+
+[shovey_hint_unavailable]
+Nápověda není dostupná. Žádná se nespotřebovala.
+---
+
+[shovey_hint_use]
+Použít nápovědu
+---
+
+[shovey_hint_pack]
+3 další nápovědy
+---
+
+[shovey_hint_loot]
+Hledej nápovědy na zemi a v truhlách. Za každých 100 mincí z denních truhel získáš také nápovědu.
+---
+
+[shovey_settings]
+Nastavení
+---
+
+[shovey_hint_board]
+Tip k úrovni (zdarma)
 ---

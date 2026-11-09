@@ -74,7 +74,7 @@ Derecha
 No se pudo guardar. Haz otro movimiento para reintentar.
 ---
 [shovey_controls]
-Flechas / WASD · R reiniciar · H ayuda · Espacio lanzar
+Flechas / WASD · R reiniciar · H Pista · Espacio lanzar
 ---
 [shovey_controls_setting]
 Controles táctiles
@@ -197,7 +197,8 @@ Camina contra la palanca para abrir la puerta.
 Cada bola va al agujero de su color.
 ---
 [shovey_instructions]
-Usa las flechas o WASD. Empuja un objeto a la vez; no puedes tirar de ellos. Lleva las bolas a los agujeros de su color y las cajas a sus casillas marcadas. La pintura cambia el color de una bola. Recoge las manzanas y junta los bloques estrella. Completa las tareas antes de volver a casa. Las cajas mantienen abiertas las puertas de presión. Las llaves abren cerraduras. Espacio lanza un proyectil recogido hacia donde mira Shovey. Algunos objetos invierten los controles, dejan un rastro o hacen deslizar a Shovey hasta un obstáculo. Shovey cargado puede encender un circuito; evita cargarlo dos veces. Los bloques cambian de rojo a azul y amarillo con cada empujón; sus destinos requieren rojo. R reinicia y H abre esta guía.
+Usa las flechas o WASD. Empuja un objeto a la vez; no puedes tirar de ellos. Lleva las bolas a los agujeros de su color y las cajas a sus casillas marcadas. La pintura cambia el color de una bola. Recoge las manzanas y junta los bloques estrella. Completa las tareas antes de volver a casa. Las cajas mantienen abiertas las puertas de presión. Las llaves abren cerraduras. Espacio lanza un proyectil recogido hacia donde mira Shovey. Algunos objetos invierten los controles, dejan un rastro o hacen deslizar a Shovey hasta un obstáculo. Shovey cargado puede encender un circuito; evita cargarlo dos veces. Los bloques cambian de rojo a azul y amarillo con cada empujón; sus destinos requieren rojo.
+Flechas / WASD · R reiniciar · H Pista · Espacio lanzar
 ---
 [shovey_continue]
 Continuar
@@ -1102,4 +1103,80 @@ Puntuación
 
 [shovey_result_moves]
 Movimientos
+---
+
+[shovey_hint]
+Pista
+---
+
+[shovey_hint_free]
+Pistas gratis
+---
+
+[shovey_hint_bank]
+Pistas extra
+---
+
+[shovey_hint_thinking]
+Buscando una pista…
+---
+
+[shovey_hint_offer]
+Revela los próximos movimientos. Cada nivel tiene 3 pistas gratis.
+---
+
+[shovey_hint_restart]
+Reinicia y luego:
+---
+
+[shovey_hint_next]
+Próximos movimientos:
+---
+
+[shovey_hint_left]
+← Izquierda
+---
+
+[shovey_hint_up]
+↑ Arriba
+---
+
+[shovey_hint_right]
+→ Derecha
+---
+
+[shovey_hint_down]
+↓ Abajo
+---
+
+[shovey_hint_throw]
+Lanzar
+---
+
+[shovey_hint_wait]
+Esperar
+---
+
+[shovey_hint_unavailable]
+No hay pistas disponibles. No se usó ninguna.
+---
+
+[shovey_hint_use]
+Usar pista
+---
+
+[shovey_hint_pack]
+3 pistas extra
+---
+
+[shovey_hint_loot]
+Encuentra pistas en el suelo y en cofres. Cada 100 monedas de cofres diarios también da una pista.
+---
+
+[shovey_settings]
+Ajustes
+---
+
+[shovey_hint_board]
+Consejos del tablero (gratis)
 ---

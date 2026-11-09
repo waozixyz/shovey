@@ -46,6 +46,7 @@ def main():
             assert not driver.find(key=key), f'In-game shortcut leaked: {key}'
 
     for width, height in ((320, 640), (480, 820), (960, 600)):
+        print(f"header {width}x{height}: start", flush=True)
         with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as folder:
             profile = Path(folder)
             records = profile / 'games/arcade.shovey/records'
@@ -67,6 +68,7 @@ def main():
                 driver.attach(child, log_path)
                 try:
                     driver.wait(label='Play', role='button', timeout=60)
+                    driver.wait_gone(key=49401, role='button', timeout=20)
                     if driver.find(label='Download new levels when they come out?', role='text'):
                         driver.press(label='Not now', role='button')
                     windows = subprocess.check_output(
@@ -74,8 +76,8 @@ def main():
                     assert len(windows) == 1
                     window = windows[0]
                     assert subprocess.check_output(['xdotool', 'getwindowpid', window], text=True).strip() == str(child.pid)
-                    subprocess.run(['xdotool', 'windowmove', window, '0', '0'], check=True)
-                    subprocess.run(['xdotool', 'windowsize', '--sync', window, str(width), str(height)], check=True)
+                    subprocess.run(['xdotool', 'windowmove', window, '0', '0'], check=True, timeout=20)
+                    subprocess.run(['xdotool', 'windowsize', '--sync', window, str(width), str(height)], check=True, timeout=20)
                     deadline = time.monotonic() + 10
                     while driver.tree()[0]['width'] != width:
                         assert time.monotonic() < deadline, 'Window did not resize'
@@ -99,42 +101,97 @@ def main():
                     for logo in logos:
                         assert separated(logo, market) and separated(logo, chest)
                         assert logo['width'] <= (width * .58 + 1 if width < 600 else 361)
-                    subprocess.run(['import', '-window', window, str(output / f'{width}.png')], check=True)
+                    subprocess.run(['import', '-window', window, str(output / f'{width}.png')], check=True, timeout=20)
                     driver.press(label='Play', role='button')
                     start_map_destination(driver, 1)
+                    driver.wait_gone(key=49401, role='button', timeout=20)
                     driver.wait(label='How do you want to move?', role='text')
                     without_game_shortcuts()
                     driver.press(label='Swipe and tap', role='button')
                     driver.wait_gone(label='How do you want to move?', role='text')
-                    subprocess.run(['import', '-window', window, str(output / f'gameplay-tutorial-{width}.png')], check=True)
+                    subprocess.run(['import', '-window', window, str(output / f'gameplay-tutorial-{width}.png')], check=True, timeout=20)
                     if driver.find(label='Got it', role='button'):
                         driver.press(label='Got it', role='button')
                         driver.wait_gone(label='Got it', role='button')
+                    print("header: toolbar ready", flush=True)
                     buttons = [driver.wait(key=key, role='button') for key in (20022, 20016, 20017, 20023)]
                     for button in buttons:
                         assert button['width'] == 44 and button['height'] == 44, button
                         assert button['y'] == buttons[0]['y'], buttons
                         assert 0 <= button['x'] <= width - 44, button
-                    title = driver.wait(key=20001, role='text')
-                    assert title['width'] > 90 and title['x'] >= buttons[0]['x'] + 44
-                    assert title['x'] + title['width'] <= buttons[1]['x']
-                    subprocess.run(['import', '-window', window, str(output / f'gameplay-{width}.png')], check=True)
+                    assert not driver.find(key=20001, role='text'), 'Level counter returned to gameplay'
+                    book_button = driver.wait(key=20820, role='button')
+                    for button in buttons: assert separated(book_button, button)
+                    subprocess.run(['import', '-window', window, str(output / f'gameplay-{width}.png')], check=True, timeout=20)
                     sound_before = buttons[3]['label']
                     driver.press(key=20023, role='button')
                     assert driver.wait(key=20023, role='button')['label'] != sound_before
                     driver.press(key=20023, role='button')
                     assert driver.wait(key=20023, role='button')['label'] == sound_before
+                    driver.press(key=20016, role='button')
+                    driver.wait_idle(frames=3, timeout=5)
                     driver.press(key=20017, role='button')
-                    driver.wait(key=20017, label='Close help', role='button')
-                    driver.press(key=20017, role='button')
+                    driver.wait(key=20900, label='Hint', role='text')
+                    driver.press(key=20903, role='button')
+                    driver.wait(label='Free hints: 2 · Extra hints: 0', role='text')
+                    advice = driver.wait(key=20902, role='text')['label']
+                    print(f"header: advice {advice!r}", flush=True)
+                    assert advice.startswith('Next moves:'), repr(advice)
+                    if width == 320:
+                        print("header: resize to short landscape", flush=True)
+                        subprocess.run(['xdotool', 'windowsize', '--sync', window, '960', '360'], check=True, timeout=20)
+                        driver.wait_idle(frames=8, timeout=5)
+                        driver.pointer(450, 280, wheel=-12)
+                        driver.wait_idle(frames=8, timeout=5)
+                        driver.press(key=20907, role='button')
+                        driver.wait(label='Touch controls', role='text')
+                        driver.press(key=20017, role='button')
+                        driver.wait(key=20016, role='button')
+                        subprocess.run(['xdotool', 'windowsize', '--sync', window, str(width), str(height)], check=True, timeout=20)
+                        driver.wait_idle(frames=8, timeout=5)
+                    elif width == 480:
+                        driver.press(key=20907, role='button')
+                        driver.wait(label='Touch controls', role='text')
+                        driver.key('escape')
+                        driver.wait(key=20016, role='button')
+                    else:
+                        driver.press(key=20905, role='button')
                     driver.wait(key=20016, role='button')
                     driver.press(key=20016, role='button')
                     driver.wait(key=20016, role='button')
+                    driver.press(key=20017, role='button')
+                    driver.wait(label='Free hints: 2 · Extra hints: 0', role='text')
+                    driver.press(key=20905, role='button')
+                    driver.press(key=20820, role='button')
+                    driver.wait(label='Collectibles', role='text')
+                    assert not driver.find(label='Still hidden', role='text')
+                    assert not driver.find(label='Level 15', role='text')
+                    driver.press(key=64001, role='button')
+
+                    next_level = 1
+                    if width == 320:
+                        route = json.loads((root / 'levels/approved.json').read_text())['levels'][0]['solution']
+                        directions = {'0': (-1, 0), '1': (0, -1), '2': (1, 0), '3': (0, 1)}
+                        for action in route:
+                            dx, dy = directions[action]
+                            me = driver.wait(label='Shovey')
+                            x = me['x'] + me['width'] * (.5 + dx)
+                            y = me['y'] + me['height'] * (.5 + dy)
+                            for down in (False, True, False):
+                                driver.pointer(x, y, down=down)
+                                driver.wait_idle(frames=1, timeout=1)
+                            driver.release_pointer()
+                            driver.wait_idle(frames=3, timeout=2)
+                        driver.wait(label='Level 1 complete', role='text')
+                        driver.press(key=20905, label='Continue', role='button')
+                        driver.wait_gone(label='Level 1 complete', role='text')
+                        driver.wait(key=20022, role='button')
+                        next_level = 2
                     back = driver.wait(key=20022, label='Back', role='button')
                     assert not driver.find(key=20002, visible=True), 'Redundant gameplay Levels control returned'
                     without_game_shortcuts()
                     driver.press(key=20022, role='button')
-                    assert driver.wait(key=33001, role='button')['selected'], 'Back did not retain the played level'
+                    assert driver.wait(key=33000 + next_level, role='button')['selected'], 'Back did not retain the played level'
                     driver.wait(key=20122, role="button")
                     without_game_shortcuts()
                     driver.press(label='Back', role='button')
@@ -146,7 +203,7 @@ def main():
                                     119 <= node['y'] <= 121 and node['width'] <= 361]
                     assert editor_logos and any('Editor' in node['label'] for node in editor_logos)
                     assert not driver.find(label='Editor', role='text'), 'Redundant caption returned'
-                    subprocess.run(['import', '-window', window, str(output / f'{width}-editor.png')], check=True)
+                    subprocess.run(['import', '-window', window, str(output / f'{width}-editor.png')], check=True, timeout=20)
                     select_cover('Play', 'Previous')
                     driver.wait(label='Play', role='button')
                     for key in (49200, 49202):
@@ -165,7 +222,7 @@ def main():
                     if child.poll() is None:
                         child.terminate()
                     child.wait(timeout=10)
-    print('Header local UI test passed: 320/480/960px layouts, 44px gameplay controls, sound/help/restart, compact clear titles, stored guest coins, Dew readout, title-only Market/Chest, Back routing and Profile navigation')
+    print('Header local UI test passed: 320/480/960px layouts, 44px gameplay controls, sound/hints/restart/book, compact clear titles, stored guest coins, Dew readout, title-only Market/Chest, Back routing and Profile navigation')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,82 @@
+// Render the actual private Island book with the retained widget tree.
+#import, file "../src/island/keepsake_book.zi";
+#import, file "../src/island/keepsakes.zi";
+#import, file "../src/island/island_kinds.zi";
+#import "kryon/tree_draw"
+#import "kryon/tree"
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "std/c_string"
+using FrameStatus;
+name_reads: s32;
+forbidden: bool;
+TextFor :: (key: string) -> string {
+    if key == "island_catalog_unknown" { forbidden = true }
+    for index: cast(s32)0..ISLAND_KEEPSAKE_COUNT - 1 {
+        kind := IslandKeepsakeKind(index)
+        if key == IslandKeepsakeHintKey(kind) { forbidden = true }
+        if key == IslandKeepsakeKey(kind) { name_reads += 1 }
+    }
+    return key
+}
+Find :: (session: Session, key: u64) -> bool {
+    for at: cast(s32)0..TreeCount(session) - 1 { if TreeNodeAt(session, at).key == key { return true } }
+    return false
+}
+#program_export
+main :: () -> s32 {
+    session := SessionOpen()
+    catalog: IslandCatalog
+    levels: [ISLAND_KEEPSAKE_COUNT]s32
+    levels[0] = 15; levels[1] = 98
+    scroll: s32
+    for width: cast(s32)0..1 {
+        screen: float32 = ifx width == 0 then 320.0 else 900.0
+        name_reads = 0; forbidden = false
+        BeginFrame(session, cast(u64)1, Rectangle.{0.0, 0.0, screen, 640.0})
+        unused IslandStickerBook(session, cast(u64)1000, Rectangle.{0.0, 0.0, screen, 640.0}, *catalog, levels[:], *scroll, TextFor)
+        if EndFrame(session) != cast(FrameStatus)FrameOk { return 1 }
+        if forbidden || name_reads != 0 || !Find(session, cast(u64)1101) || Find(session, cast(u64)1102) || Find(session, cast(u64)1103) { return 2 }
+    }
+    unused IslandCatalogEarn(*catalog, IslandKeepsakeKind(0))
+    BeginFrame(session, cast(u64)1, Rectangle.{0.0, 0.0, 320.0, 640.0})
+    unused IslandStickerBook(session, cast(u64)1000, Rectangle.{0.0, 0.0, 320.0, 640.0}, *catalog, levels[:], *scroll, TextFor)
+    if EndFrame(session) != cast(FrameStatus)FrameOk || forbidden || name_reads != 1 { return 3 }
+    if !Find(session, cast(u64)1102) || Find(session, cast(u64)1103) || Find(session, cast(u64)1112) { return 4 }
+    SessionClose(session)
+    return 0
+}
+
+#program_export
+MeasureGlyphWidth :: (value: string, font: s32, typeface: string) -> s32 { return cast(s32)value.count * font / 2 }
+#program_export
+MeasureGlyphLineHeight :: (font: s32, typeface: string) -> s32 { return font }
+#program_export
+RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) {}
+#program_export
+RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) {}
+
+#program_export
+RasterTextRotated :: (value: string, x: s32, y: s32, font: s32, color: Color,
+    clip: Rectangle, origin: Vector2, rotation: float32, outer_clip: Rectangle,
+    outer_clipped: bool, emphasis: bool, italic: bool) {}
+
+#program_export
+RasterTriangles :: (points: []Vector2, color: Color) {}
+#program_export
+RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) {}
+#program_export
+RasterRoundedRectangleOutline :: (bounds: Rectangle, radius: float32, segments: s32, width: float32, color: Color) {}
+#program_export
+RasterLine :: (line: Rectangle, color: Color) {}
+#program_export
+RasterImage :: (asset_path: string, texture_id: u32, source: Rectangle, destination: Rectangle,
+    clip: Rectangle, origin: Vector2, rotation: float32, radius: float32, tint: Color) {}
+#program_export
+RasterImageMesh :: (asset_path: string, texture_id: u32, source: Rectangle, points: []Vector2,
+    columns: s32, rows: s32, clip: Rectangle, tint: Color) {}
+#program_export
+ImageWidth :: (asset_path: string) -> s32 { return 32 }
+#program_export
+ImageHeight :: (asset_path: string) -> s32 { return 32 }

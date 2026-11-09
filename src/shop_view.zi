@@ -71,6 +71,7 @@ Copy :: (key: string) -> string {
     if key == "skin_crystal" { locale_key = "shovey_shop_skin_crystal" }
     if key == "skin_stone" { locale_key = "shovey_shop_skin_stone" }
     if key == "skin_gold" { locale_key = "shovey_shop_skin_gold" }
+    if key == "hints" { locale_key = "shovey_hint" }
     return Localized(locale_key)
 }
 page: s32;
@@ -106,6 +107,8 @@ Open :: (next: s32) {
     if next != 1 && next != 2 { return }
     page = next; confirm = 0; scroll = 0; notice = ""; host_route = false
 }
+#program_export
+OpenHints :: () { Open(1); tab = 3 }
 #program_export
 Skin :: () -> s32 { return ShopSkin() }
 SkinPath :: () -> string { return ShopProfilePath(ShopSkin()) }
@@ -194,6 +197,15 @@ Card :: (session: Session, key: u64, bounds: Rectangle, selected: bool = false) 
         .fill = Color.{59, 64, 63, 255}, .border = ifx selected then Color.{52, 185, 48, 255} else Color.{93, 98, 97, 255}})
 }
 Confirmation :: (session: Session, bounds: Rectangle) {
+    if confirm == 200 {
+        Label(session, 61602, Rectangle.{bounds.x, bounds.y + 16.0, bounds.width, 100.0}, Localized("shovey_hint_pack"), 20, true)
+        Price(session, 61603, Rectangle.{bounds.x, bounds.y + 120.0, bounds.width, 30.0}, 30, 0)
+        if Action(session, 61610, Rectangle.{bounds.x, bounds.y + 202.0, bounds.width, 44.0}, "confirm", ShopCoins() < 30) {
+            if ShopBuyHints() { confirm = 0; notice = "" } else { notice = "purchase_failed" }
+        }
+        if Action(session, 61611, Rectangle.{bounds.x, bounds.y + 256.0, bounds.width, 44.0}, "cancel") { confirm = 0; notice = "" }
+        return
+    }
     pack := confirm >= 100
     id := ifx pack then confirm - 100 else confirm - 1
     Picture(session, 61601, Rectangle.{bounds.x + (bounds.width - 104.0) / 2.0, bounds.y + 8.0, 104.0, 104.0},
@@ -292,9 +304,9 @@ Frame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool
     Amount(session, 61204, Rectangle.{x + 72.0, bounds.y + 96.0, width - 72.0, 28.0}, true, DewText())
     top := bounds.y + 138.0
     if page == 1 {
-        tabs: [3]string = .["skins", "coins", "dew"]
-        for at: cast(s32)0..2 {
-            w := (width - 16.0) / 3.0
+        tabs: [4]string = .["skins", "coins", "dew", "hints"]
+        for at: cast(s32)0..3 {
+            w := (width - 24.0) / 4.0
             if Action(session, cast(u64)(61300 + at), Rectangle.{x + cast(float32)at * (w + 8.0), top, w, 40.0}, tabs[at], false, tab == at) {
                 tab = at; confirm = 0; scroll = 0; notice = ""
             }
@@ -322,6 +334,14 @@ Frame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool
         else if page == 2 { Chest(session, area, today, columns) }
         else if tab == 0 { Skins(session, area, columns) }
         else if tab == 1 { CoinPacks(session, area) }
+        else if tab == 3 {
+            digits: [24]u8
+            Label(session, 62600, Rectangle.{area.x, area.y, area.width, 44.0}, Localized("shovey_hint_pack"), 20, true)
+            Label(session, 62601, Rectangle.{area.x, area.y + 50.0, area.width, 44.0}, FormatInteger(cast(s64)ShopHintBank(), digits[:]), 20, true)
+            Label(session, 62602, Rectangle.{area.x, area.y + 100.0, area.width, 80.0}, Localized("shovey_hint_loot"), 16, true)
+            Price(session, 62603, Rectangle.{area.x, area.y + 186.0, area.width, 30.0}, 30, 0)
+            if Action(session, 62610, Rectangle.{area.x, area.y + 230.0, area.width, 44.0}, "buy", ShopCoins() < 30) { confirm = 200 }
+        }
         else {
             Picture(session, 62500, Rectangle.{area.x + (area.width - 108.0) / 2.0, area.y + 4.0, 108.0, 108.0}, "assets/shovey/shop/dew.png", Copy("dew"))
             Label(session, 62501, Rectangle.{area.x, area.y + 118.0, area.width, 36.0}, TextUntilNul(dew_balance[:]), 24, true)

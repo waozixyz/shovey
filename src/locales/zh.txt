@@ -74,7 +74,7 @@
 无法保存。再次移动即可重试。
 ---
 [shovey_controls]
-方向键 / WASD · R 重开 · H 帮助 · 空格 投掷
+方向键 / WASD · R 重开 · H 提示 · 空格 投掷
 ---
 [shovey_controls_setting]
 触控方式
@@ -197,7 +197,8 @@
 每个球都要进同色的洞。
 ---
 [shovey_instructions]
-使用方向键或WASD移动。一次只能推动一个物体，不能拉动物体。把球推入同色的洞，把箱子推到标记方格。颜料会改变球的颜色。收集苹果，让星形方块互相接触。完成目标后再回家。箱子可让压力门保持开启，钥匙可开锁。空格键可朝Shovey面向的方向投出拾取的投掷物。有些道具会反转控制、留下足迹，或让Shovey一直滑行到障碍物处。带电的Shovey可以点亮光路，但不要连续充电两次。变色方块每推动一次就依次变为红→蓝→黄，目标位置需要红色。R重新开始，H打开本指南。
+使用方向键或WASD移动。一次只能推动一个物体，不能拉动物体。把球推入同色的洞，把箱子推到标记方格。颜料会改变球的颜色。收集苹果，让星形方块互相接触。完成目标后再回家。箱子可让压力门保持开启，钥匙可开锁。空格键可朝Shovey面向的方向投出拾取的投掷物。有些道具会反转控制、留下足迹，或让Shovey一直滑行到障碍物处。带电的Shovey可以点亮光路，但不要连续充电两次。变色方块每推动一次就依次变为红→蓝→黄，目标位置需要红色。
+方向键 / WASD · R 重开 · H 提示 · 空格 投掷
 ---
 [shovey_continue]
 继续
@@ -1102,4 +1103,80 @@ Dew 不足。
 
 [shovey_result_moves]
 步数
+---
+
+[shovey_hint]
+提示
+---
+
+[shovey_hint_free]
+免费提示
+---
+
+[shovey_hint_bank]
+额外提示
+---
+
+[shovey_hint_thinking]
+正在寻找提示…
+---
+
+[shovey_hint_offer]
+显示接下来的动作。每关有3次免费提示。
+---
+
+[shovey_hint_restart]
+重新开始，然后：
+---
+
+[shovey_hint_next]
+接下来的动作：
+---
+
+[shovey_hint_left]
+← 左
+---
+
+[shovey_hint_up]
+↑ 上
+---
+
+[shovey_hint_right]
+→ 右
+---
+
+[shovey_hint_down]
+↓ 下
+---
+
+[shovey_hint_throw]
+投掷
+---
+
+[shovey_hint_wait]
+等待
+---
+
+[shovey_hint_unavailable]
+暂无提示，未消耗次数。
+---
+
+[shovey_hint_use]
+使用提示
+---
+
+[shovey_hint_pack]
+3次额外提示
+---
+
+[shovey_hint_loot]
+在地面和宝箱中寻找提示。每日宝箱每累计100枚金币还可获得一次提示。
+---
+
+[shovey_settings]
+设置
+---
+
+[shovey_hint_board]
+棋盘提示（免费）
 ---

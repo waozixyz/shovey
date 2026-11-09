@@ -11,7 +11,7 @@ Products :: #import "entity/game_shop";
 
 SHOP_SKIN_COUNT :: 8;
 SHOP_COIN_MASK :: 206; // Ember, Frost, Berry, Stone, Gold (bits 1,2,3,6,7).
-ShopLocal :: struct { selected: s32; owned: s32; spent: s32 }
+ShopLocal :: struct { selected: s32; owned: s32; spent: s32; hint_packs: s32; hint_used: s32; hint_free: [1004]u8; hint_loot: [1004]u8 }
 shop_local: ShopLocal;
 shop_owner: [65]u8;
 shop_known: bool;
@@ -70,6 +70,7 @@ ShopRecordName :: (output: []u8) -> string {
     return TextUntilNul(output)
 }
 ShopLoad :: () {
+    shop_storage_ok = false
     if !Records.ProgressStorageReady() || !Records.ProgressStorageFlush() { return }
     name: [96]u8
     text := Records.PathRecord(ShopRecordName(name[:]))
@@ -80,13 +81,27 @@ ShopLoad :: () {
     next: ShopLocal
     next.selected = ShopInteger(text, "selected", SHOP_SKIN_COUNT - 1)
     next.owned = ShopInteger(text, "owned", SHOP_COIN_MASK)
-    next.spent = ShopInteger(text, "spent", 1600)
+    next.spent = ShopInteger(text, "spent", 1000000000)
     if next.selected < 0 || next.owned < 0 || next.spent < 0 || (next.owned & SHOP_COIN_MASK) != next.owned { return }
     cost: s32
     for id: cast(s32)1..SHOP_SKIN_COUNT - 1 {
         if (next.owned & (1 << id)) != 0 { cost += ShopSkinCoins(id) }
     }
-    if cost != next.spent { return }
+    if FieldAt(text, 0, "hint_packs") >= 0 {
+        next.hint_packs = ShopInteger(text, "hint_packs", 1000000)
+        next.hint_used = ShopInteger(text, "hint_used", 1000000000)
+        free: [1005]u8
+        loot: [1005]u8
+        if next.hint_packs < 0 || next.hint_used < 0 ||
+        ReadStringText(text, FieldAt(text, 0, "hint_free"), free[:]) != 1004 ||
+        ReadStringText(text, FieldAt(text, 0, "hint_loot"), loot[:]) != 1004 { return }
+        for at: 0..1003 {
+            if free[at] < 48 || free[at] > 51 || loot[at] < 48 || loot[at] > 49 { return }
+            next.hint_free[at] = free[at] - 48
+            next.hint_loot[at] = loot[at] - 48
+        }
+    }
+    if cost + next.hint_packs * 30 != next.spent { return }
     shop_local = next
     shop_storage_ok = true
 }
@@ -122,14 +137,19 @@ ShopSave :: (next: ShopLocal) -> bool {
     if !shop_known || !shop_storage_ok || !Records.ProgressStorageReady() { return false }
     name: [96]u8
     out: Vec(u8)
-    BuilderPrint(*out, "{\"version\":1,\"owner\":\"%\",\"selected\":%,\"owned\":%,\"spent\":%}",
+    BuilderPrint(*out, "{\"version\":1,\"owner\":\"%\",\"selected\":%,\"owned\":%,\"spent\":%",
         TextUntilNul(shop_owner[:]), next.selected, next.owned, next.spent)
+    BuilderPrint(*out, ",\"hint_packs\":%,\"hint_used\":%,\"hint_free\":\"", next.hint_packs, next.hint_used)
+    for value: next.hint_free { BuilderPrint(*out, "%", cast(s32)value) }
+    BuilderPrint(*out, "\",\"hint_loot\":\"")
+    for value: next.hint_loot { BuilderPrint(*out, "%", cast(s32)value) }
+    BuilderPrint(*out, "\"}")
     // One record publishes the choice, unlock and debit together. Keep the
     // previous in-memory state if the storage provider rejects the write.
     record := ShopRecordName(name[:])
     previous := Records.PathRecord(record)
     // Copy borrowed host storage before another host call can reuse it.
-    previous_bytes: [512]u8
+    previous_bytes: [4096]u8
     if !CopyCString(previous, previous_bytes[:]) { VecFree(out); return false }
     saved := Records.PathSaveRecord(record, TextView(VecSlice(out, 0, out.count)))
     VecFree(out)
@@ -205,6 +225,8 @@ ShopCoins :: () -> s32 {
     return ifx balance > 0 then balance else 0
 }
 ShopSelect :: (id: s32) -> bool {
+    if !ShopOwner() { return false }
+    ShopLoad()
     if !ShopAvailable(id) { return false }
     if id == shop_local.selected { return true }
     next := shop_local
@@ -229,6 +251,8 @@ ShopPurchase :: (request: string) -> bool {
         (Products.GameShopField(reply, "status", "pending") || Products.GameShopField(reply, "status", "done"))
 }
 ShopBuy :: (id: s32) -> bool {
+    if !ShopOwner() { return false }
+    ShopLoad()
     if id <= 0 || id >= SHOP_SKIN_COUNT || ShopAvailable(id) { return false }
     product := ShopSkinProduct(id)
     if product > 0 { return ShopPurchase(Products.GameShopProduct(product)) }
@@ -243,4 +267,46 @@ ShopBuyCoins :: (pack: s32) -> bool {
     if Products.ShoveyCoinPackCoins(pack) <= 0 { return false }
     requests: [3]string = .["shovey-coins:1", "shovey-coins:2", "shovey-coins:3"]
     return ShopPurchase(requests[pack - 1])
+}
+
+// Allowances and one-time rewards belong to the owner, never the attempt.
+ShopHintFree :: (level: s32) -> s32 {
+    if !ShopOwner() || !shop_storage_ok || level < 1 || level >= 1004 { return 0 }
+    return 3 - cast(s32)shop_local.hint_free[level]
+}
+ShopHintBank :: () -> s32 {
+    if !ShopOwner() || !shop_storage_ok { return 0 }
+    grants: s32
+    for value: shop_local.hint_loot { grants += cast(s32)value }
+    bank := shop_local.hint_packs * 3 + grants + shop_earned / 100 - shop_local.hint_used
+    return ifx bank > 0 then bank else 0
+}
+ShopHintUse :: (level: s32) -> bool {
+    if !ShopOwner() { return false }
+    ShopLoad()
+    if !ShopOwner() || !shop_storage_ok || level < 1 || level >= 1004 { return false }
+    next := shop_local
+    if next.hint_free[level] < 3 { next.hint_free[level] += 1 }
+    else if ShopHintBank() > 0 { next.hint_used += 1 }
+    else { return false }
+    return ShopSave(next)
+}
+ShopBuyHints :: () -> bool {
+    if !ShopOwner() { return false }
+    ShopLoad()
+    if !ShopOwner() || ShopCoins() < 30 || shop_local.hint_packs >= 1000000 { return false }
+    next := shop_local
+    next.hint_packs += 1; next.spent += 30
+    return ShopSave(next)
+}
+ShopHintFound :: (level: s32) -> bool {
+    return !ShopOwner() || !shop_storage_ok || level < 1 || level >= 1004 || shop_local.hint_loot[level] != 0
+}
+ShopHintReward :: (level: s32) -> bool {
+    if !ShopOwner() { return false }
+    ShopLoad()
+    if ShopHintFound(level) { return false }
+    next := shop_local
+    next.hint_loot[level] = 1
+    return ShopSave(next)
 }

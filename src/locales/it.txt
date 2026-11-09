@@ -74,7 +74,7 @@ Destra
 Salvataggio non riuscito. Prova un’altra mossa.
 ---
 [shovey_controls]
-Frecce / WASD · R ricomincia · H aiuto · Spazio lancia
+Frecce / WASD · R ricomincia · H Indizio · Spazio lancia
 ---
 [shovey_controls_setting]
 Comandi touch
@@ -197,7 +197,8 @@ Cammina contro la leva per aprire il cancello.
 Ogni palla va nella buca del suo colore.
 ---
 [shovey_instructions]
-Usa le frecce o WASD. Spingi un oggetto alla volta; non puoi tirare. Metti le palle nelle buche dello stesso colore e le casse sulle caselle segnate. La vernice cambia il colore delle palle. Raccogli le mele e unisci i blocchi stella. Completa i compiti prima di tornare a casa. Le casse tengono aperte le porte a pressione. Le chiavi aprono le serrature. Spazio lancia un proiettile raccolto nella direzione di Shovey. Alcuni oggetti invertono i comandi, lasciano una traccia o fanno scivolare Shovey fino a un ostacolo. Shovey carico può accendere un circuito; evita di caricarlo due volte. I blocchi cambiano da rosso a blu a giallo a ogni spinta; i loro obiettivi richiedono rosso. R ricomincia, H apre questa guida.
+Usa le frecce o WASD. Spingi un oggetto alla volta; non puoi tirare. Metti le palle nelle buche dello stesso colore e le casse sulle caselle segnate. La vernice cambia il colore delle palle. Raccogli le mele e unisci i blocchi stella. Completa i compiti prima di tornare a casa. Le casse tengono aperte le porte a pressione. Le chiavi aprono le serrature. Spazio lancia un proiettile raccolto nella direzione di Shovey. Alcuni oggetti invertono i comandi, lasciano una traccia o fanno scivolare Shovey fino a un ostacolo. Shovey carico può accendere un circuito; evita di caricarlo due volte. I blocchi cambiano da rosso a blu a giallo a ogni spinta; i loro obiettivi richiedono rosso.
+Frecce / WASD · R ricomincia · H Indizio · Spazio lancia
 ---
 [shovey_continue]
 Continua
@@ -1102,4 +1103,80 @@ Punteggio
 
 [shovey_result_moves]
 Mosse
+---
+
+[shovey_hint]
+Indizio
+---
+
+[shovey_hint_free]
+Indizi gratuiti
+---
+
+[shovey_hint_bank]
+Indizi extra
+---
+
+[shovey_hint_thinking]
+Ricerca di un indizio…
+---
+
+[shovey_hint_offer]
+Rivela le prossime mosse. Ogni livello offre 3 indizi gratuiti.
+---
+
+[shovey_hint_restart]
+Ricomincia, poi:
+---
+
+[shovey_hint_next]
+Prossime mosse:
+---
+
+[shovey_hint_left]
+← Sinistra
+---
+
+[shovey_hint_up]
+↑ Su
+---
+
+[shovey_hint_right]
+→ Destra
+---
+
+[shovey_hint_down]
+↓ Giù
+---
+
+[shovey_hint_throw]
+Lancia
+---
+
+[shovey_hint_wait]
+Aspetta
+---
+
+[shovey_hint_unavailable]
+Nessun indizio disponibile. Nessun indizio usato.
+---
+
+[shovey_hint_use]
+Usa indizio
+---
+
+[shovey_hint_pack]
+3 indizi extra
+---
+
+[shovey_hint_loot]
+Trova indizi a terra e nei forzieri. Ogni 100 monete dei forzieri giornalieri ricevi anche un indizio.
+---
+
+[shovey_settings]
+Impostazioni
+---
+
+[shovey_hint_board]
+Consigli sul tabellone (gratis)
 ---

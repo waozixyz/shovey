@@ -5,17 +5,33 @@ CollectionLoading :: struct {
     slot: s64
     ready_frame: bool
     shown: bool
+    timed_out: bool
+    pending: bool
+    pending_since_ms: s64
+    started_ms: s64
 }
 
 CollectionNeedsCover :: (state: *CollectionLoading, slot: s64, generation: s64,
-    pictures_ready: bool) -> bool {
+    pictures_ready: bool, now_ms: s64 = 0) -> bool {
     if state.slot != slot || state.generation != generation {
-        state.* = CollectionLoading.{.slot = slot, .generation = generation}
+        state.* = CollectionLoading.{.slot = slot, .generation = generation, .started_ms = now_ms}
         return true
     }
+    // Later levels and animations can request pictures after the first board.
+    // Keep short loads smooth, but bound retention for a stuck decoder too.
+    if pictures_ready { state.pending = false; state.timed_out = false }
+    else {
+        if !state.pending { state.pending = true; state.pending_since_ms = now_ms }
+        if now_ms - state.pending_since_ms >= 8000 { state.timed_out = true }
+    }
     if state.shown { return false }
+    // A decoder or optional package resource must not lock input forever.
+    // Paint can keep retrying the asset after the playable board is exposed.
+    if now_ms - state.started_ms >= 8000 { state.shown = true; state.timed_out = true; return false }
     if !pictures_ready { state.ready_frame = false; return true }
     if !state.ready_frame { state.ready_frame = true; return true }
     state.shown = true
     return false
 }
+
+CollectionPicturePending :: (found: bool, pending: bool) -> bool { return !found && pending }

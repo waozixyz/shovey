@@ -74,7 +74,7 @@ Direita
 Não foi possível salvar. Tente outro movimento.
 ---
 [shovey_controls]
-Setas / WASD · R reiniciar · H ajuda · Espaço lançar
+Setas / WASD · R reiniciar · H Dica · Espaço lançar
 ---
 [shovey_controls_setting]
 Controles de toque
@@ -197,7 +197,8 @@ Caminhe contra a alavanca para abrir o portão.
 Cada bola vai para o buraco da sua cor.
 ---
 [shovey_instructions]
-Use as setas ou WASD. Empurre um objeto por vez; não é possível puxar. Coloque as bolas nos buracos da mesma cor e as caixas nos espaços marcados. A tinta muda a cor de uma bola. Recolha as maçãs e junte os blocos estrela. Termine as tarefas antes de voltar para casa. As caixas mantêm as portas de pressão abertas. Chaves abrem fechaduras. Espaço lança um projétil coletado na direção de Shovey. Alguns itens invertem os controles, deixam um rastro ou fazem Shovey deslizar até um obstáculo. Shovey carregado pode acender um circuito; evite carregá-lo duas vezes. Os blocos mudam de vermelho para azul e amarelo a cada empurrão; os destinos exigem vermelho. R reinicia e H abre este guia.
+Use as setas ou WASD. Empurre um objeto por vez; não é possível puxar. Coloque as bolas nos buracos da mesma cor e as caixas nos espaços marcados. A tinta muda a cor de uma bola. Recolha as maçãs e junte os blocos estrela. Termine as tarefas antes de voltar para casa. As caixas mantêm as portas de pressão abertas. Chaves abrem fechaduras. Espaço lança um projétil coletado na direção de Shovey. Alguns itens invertem os controles, deixam um rastro ou fazem Shovey deslizar até um obstáculo. Shovey carregado pode acender um circuito; evite carregá-lo duas vezes. Os blocos mudam de vermelho para azul e amarelo a cada empurrão; os destinos exigem vermelho.
+Setas / WASD · R reiniciar · H Dica · Espaço lançar
 ---
 [shovey_continue]
 Continuar
@@ -1102,4 +1103,80 @@ Pontuação
 
 [shovey_result_moves]
 Movimentos
+---
+
+[shovey_hint]
+Dica
+---
+
+[shovey_hint_free]
+Dicas grátis
+---
+
+[shovey_hint_bank]
+Dicas extras
+---
+
+[shovey_hint_thinking]
+Buscando uma dica…
+---
+
+[shovey_hint_offer]
+Revele os próximos movimentos. Cada fase tem 3 dicas grátis.
+---
+
+[shovey_hint_restart]
+Reinicie e depois:
+---
+
+[shovey_hint_next]
+Próximos movimentos:
+---
+
+[shovey_hint_left]
+← Esquerda
+---
+
+[shovey_hint_up]
+↑ Cima
+---
+
+[shovey_hint_right]
+→ Direita
+---
+
+[shovey_hint_down]
+↓ Baixo
+---
+
+[shovey_hint_throw]
+Lançar
+---
+
+[shovey_hint_wait]
+Esperar
+---
+
+[shovey_hint_unavailable]
+Nenhuma dica disponível. Nenhuma dica foi usada.
+---
+
+[shovey_hint_use]
+Usar dica
+---
+
+[shovey_hint_pack]
+3 dicas extras
+---
+
+[shovey_hint_loot]
+Encontre dicas no chão e em baús. Cada 100 moedas dos baús diários também dá uma dica.
+---
+
+[shovey_settings]
+Configurações
+---
+
+[shovey_hint_board]
+Dicas do tabuleiro (grátis)
 ---

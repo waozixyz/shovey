@@ -90,7 +90,8 @@ Frame :: (session: Session, viewport: Rectangle) -> s32 {
     key := KeyboardTake(session)
     if key == PLAYER_BACK_KEY && CollectionBack() { key = 0 }
     unused KeyboardSend(session, key)
-    if !CollectionFrame(session, viewport, key, 0) { return 1 }
+    if !CollectionFrame(session, viewport, key, 0, ImagesPending() > 0) { return 1 }
+    RaylibCompletePictureFrames(CollectionCompletePictures())
     CollectionCollect()
     return 0
 }

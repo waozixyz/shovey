@@ -60,7 +60,8 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
                 driver.wait(label='Collectibles', role='text', timeout=60)
                 driver.wait(label='1 / 16', role='text')
                 driver.wait(label='Lucky pebble', role='text')
-                driver.wait(label='Still hidden', role='text')
+                assert not driver.find(label='Still hidden', role='text')
+                assert not driver.find(label='Level 15', role='text')
                 driver.wait(label='A little luck for the road.', role='text')
                 yield child
             finally:

@@ -74,7 +74,7 @@ Droite
 Enregistrement impossible. Réessaie avec un autre coup.
 ---
 [shovey_controls]
-Flèches / WASD · R recommencer · H aide · Espace lancer
+Flèches / WASD · R recommencer · H Indice · Espace lancer
 ---
 [shovey_controls_setting]
 Commandes tactiles
@@ -197,7 +197,8 @@ Marche contre le levier pour ouvrir le portail.
 Chaque boule va dans le trou de sa couleur.
 ---
 [shovey_instructions]
-Utilise les flèches ou WASD. Pousse un seul objet à la fois ; tu ne peux pas tirer. Place les boules dans les trous de même couleur et les caisses sur leurs cases. La peinture recolore une boule. Ramasse les pommes et réunis les blocs étoilés. Termine les tâches avant de rentrer. Les caisses maintiennent les portes à pression ouvertes. Les clés ouvrent les serrures. Espace lance un projectile ramassé dans la direction de Shovey. Certains objets inversent les commandes, laissent une trace ou font glisser Shovey jusqu’à un obstacle. Shovey chargé peut allumer un circuit ; évite une double charge. Les blocs changent de rouge à bleu puis jaune à chaque poussée ; leurs cibles exigent du rouge. R recommence, H ouvre ce guide.
+Utilise les flèches ou WASD. Pousse un seul objet à la fois ; tu ne peux pas tirer. Place les boules dans les trous de même couleur et les caisses sur leurs cases. La peinture recolore une boule. Ramasse les pommes et réunis les blocs étoilés. Termine les tâches avant de rentrer. Les caisses maintiennent les portes à pression ouvertes. Les clés ouvrent les serrures. Espace lance un projectile ramassé dans la direction de Shovey. Certains objets inversent les commandes, laissent une trace ou font glisser Shovey jusqu’à un obstacle. Shovey chargé peut allumer un circuit ; évite une double charge. Les blocs changent de rouge à bleu puis jaune à chaque poussée ; leurs cibles exigent du rouge.
+Flèches / WASD · R recommencer · H Indice · Espace lancer
 ---
 [shovey_continue]
 Continuer
@@ -1102,4 +1103,80 @@ Score
 
 [shovey_result_moves]
 Déplacements
+---
+
+[shovey_hint]
+Indice
+---
+
+[shovey_hint_free]
+Indices gratuits
+---
+
+[shovey_hint_bank]
+Indices bonus
+---
+
+[shovey_hint_thinking]
+Recherche d’un indice…
+---
+
+[shovey_hint_offer]
+Révélez les prochains mouvements. Chaque niveau offre 3 indices gratuits.
+---
+
+[shovey_hint_restart]
+Recommencez, puis :
+---
+
+[shovey_hint_next]
+Prochains mouvements :
+---
+
+[shovey_hint_left]
+← Gauche
+---
+
+[shovey_hint_up]
+↑ Haut
+---
+
+[shovey_hint_right]
+→ Droite
+---
+
+[shovey_hint_down]
+↓ Bas
+---
+
+[shovey_hint_throw]
+Lancer
+---
+
+[shovey_hint_wait]
+Attendre
+---
+
+[shovey_hint_unavailable]
+Aucun indice disponible. Aucun indice utilisé.
+---
+
+[shovey_hint_use]
+Utiliser un indice
+---
+
+[shovey_hint_pack]
+3 indices bonus
+---
+
+[shovey_hint_loot]
+Trouvez des indices au sol et dans les coffres. Chaque tranche de 100 pièces des coffres quotidiens offre aussi un indice.
+---
+
+[shovey_settings]
+Paramètres
+---
+
+[shovey_hint_board]
+Conseils du plateau (gratuits)
 ---

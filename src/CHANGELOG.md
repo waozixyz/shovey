@@ -1,5 +1,11 @@
 # Shovey changelog
 
+## Unreleased
+
+- Replace gameplay Help with saved level hints, extra hint packs and one-time treasure/floor rewards; keep movement settings accessible.
+- Open the collectibles book during play, hide undiscovered entry text and remove hiding-location spoilers and the gameplay level counter.
+- Recover from missing or stalled level pictures instead of leaving the loading cover locked.
+
 ## [0.6.169] - 2026-11-07
 
 - Runs in the latest Inner Breeze and Arcade.

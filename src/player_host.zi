@@ -482,7 +482,7 @@ CollectionAssetPath :: (path: string) -> string {
     if path == "" { return "" }
     if collection_widget_node == null { return "" }
     asset := AppHostAsset(collection_widget_node, path)
-    if !asset.found { collection_pictures_missing = true; return "" }
+    if !asset.found { collection_pictures_missing = collection_pictures_missing || CollectionPicturePending(false, AppHostAssetPending(collection_widget_node, path)); return "" }
     relative := Join(TextUntilNul(collection_widget_node.entry.sha256[:]), path)
     defer { AppFileFree(relative) }
     cached := collection_images
@@ -865,7 +865,7 @@ CollectionIslandEditorStep :: () {
     }
 }
 
-CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
+CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32, renderer_pending: bool = false) -> bool {
     CollectionShopNavigate()
     CollectionIslandPump()
     CollectionIslandEditorStep()
@@ -946,15 +946,15 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         unused AppHostBack(*collection_host)
         return true
     }
-    if opening {
-        pictures_ready := !collection_pictures_missing
+    if !runtime.node.collection {
+        pictures_ready := !collection_pictures_missing && !renderer_pending
         // Query every path, including those first requested by this frame's
         // TileMap. Android decodes them asynchronously on its render thread.
         for path: collection_frame_paths {
             if AssetWidth(path) < 0 { pictures_ready = false }
         }
         if CollectionNeedsCover(*collection_loading, collection_host.tree.active.slot,
-            collection_host.tree.active.generation, pictures_ready) {
+            collection_host.tree.active.generation, pictures_ready, MonotonicMilliseconds()) {
             Box(session, BoxProps.{.key = cast(u64)49400, .bounds = viewport,
                     .fill = ColorFromPacked(ShoveyPalette().background)})
             unused Button(session, ButtonProps.{.key = cast(u64)49401, .id = 49401,
@@ -1281,3 +1281,6 @@ CollectionLocaleText :: (key: string) -> string {
 
 c :: #system_library "c";
 CollectionFree :: (memory: *void) #foreign c "free";
+
+// A stalled decoder must not keep the renderer presenting its old cover.
+CollectionCompletePictures :: () -> bool { return !collection_loading.timed_out }

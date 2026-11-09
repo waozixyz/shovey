@@ -16,7 +16,7 @@ Daily :: #import, file "../src/daily_chest.zi";
 using FrameStatus;
 
 names: [8][256]u8;
-values: [8][1024]u8;
+values: [8][4096]u8;
 count: s32;
 missing: bool;
 route: string;
@@ -173,6 +173,14 @@ Check :: () -> s32 {
     if ShopUI.DewText() != "…" { return 47 }
     dew_reply = "{\"units\":0}"
     if ShopUI.DewText() != "0" { return 48 }
+    ShopUI.OpenHints()
+    if !Draw(session, 320.0, 568.0) || ShopUI.tab != 3 { return 49 }
+    bank := Wardrobe.ShopHintBank()
+    coins := Wardrobe.ShopCoins()
+    if !Bounds(session, 320.0) || !Activate(session, 62610, 320.0, 568.0) || !Activate(session, 61611, 320.0, 568.0) { return 50 }
+    if Wardrobe.ShopHintBank() != bank || Wardrobe.ShopCoins() != coins { return 51 }
+    if !Activate(session, 62610, 900.0, 500.0) || !Activate(session, 61610, 900.0, 500.0) { return 52 }
+    if Wardrobe.ShopHintBank() != bank + 3 || Wardrobe.ShopCoins() != coins - 30 || purchases != 1 { return 53 }
     unused SessionClose(session)
     return 42
 }
@@ -337,14 +345,30 @@ RasterTriangles :: (points: []Vector2, color: Color) {  }
         unused Pixmap.PixmapBeginInto(cast(u32)0xff2a2e2d, 320, 720, fixture_surface[:])
         if !Draw(session, 320.0, 720.0) || !FixtureSave("work/shop-view-test/shop.png") { return 4 }
         // A fresh retained tree ensures a full picture after clearing pixels.
-        unused SessionClose(session)
+        ShopUI.Open(1)
+    if !Draw(session, 320.0, 568.0) || !Activate(session, 61303, 320.0, 568.0) { return 49 }
+    bank := Wardrobe.ShopHintBank()
+    coins := Wardrobe.ShopCoins()
+    if !Bounds(session, 320.0) || !Activate(session, 62610, 320.0, 568.0) || !Activate(session, 61611, 320.0, 568.0) { return 50 }
+    if Wardrobe.ShopHintBank() != bank || Wardrobe.ShopCoins() != coins { return 51 }
+    if !Activate(session, 62610, 900.0, 500.0) || !Activate(session, 61610, 900.0, 500.0) { return 52 }
+    if Wardrobe.ShopHintBank() != bank + 3 || Wardrobe.ShopCoins() != coins - 30 || purchases != 1 { return 53 }
+    unused SessionClose(session)
         session = SessionOpen()
         ShopUI.Open(2)
         unused Pixmap.PixmapBeginInto(cast(u32)0xff2a2e2d, 320, 720, fixture_surface[:])
         if !Draw(session, 320.0, 720.0) || !FixtureSave("work/shop-view-test/chest.png") { return 5 }
         Pixmap.PixmapEndInto()
         Pixmap.PixmapCloseWorkers()
-        unused SessionClose(session)
+        ShopUI.Open(1)
+    if !Draw(session, 320.0, 568.0) || !Activate(session, 61303, 320.0, 568.0) { return 49 }
+    bank := Wardrobe.ShopHintBank()
+    coins := Wardrobe.ShopCoins()
+    if !Bounds(session, 320.0) || !Activate(session, 62610, 320.0, 568.0) || !Activate(session, 61611, 320.0, 568.0) { return 50 }
+    if Wardrobe.ShopHintBank() != bank || Wardrobe.ShopCoins() != coins { return 51 }
+    if !Activate(session, 62610, 900.0, 500.0) || !Activate(session, 61610, 900.0, 500.0) { return 52 }
+    if Wardrobe.ShopHintBank() != bank + 3 || Wardrobe.ShopCoins() != coins - 30 || purchases != 1 { return 53 }
+    unused SessionClose(session)
         return 42
     }
 } else {

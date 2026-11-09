@@ -45,7 +45,6 @@ book_host_route: bool;
 book_scroll: s32;
 book_count: [64]u8;
 BOOK_ITEMS :: 16 // Collectibles.COLLECTIBLE_COUNT; a local constant bounds the array.
-book_lines: [BOOK_ITEMS][160]u8;
 book_toast: [128]u8;
 
 BookCopy :: (bytes: Vec(u8), into: []u8) -> string {
@@ -164,18 +163,16 @@ BookFrame :: (session: Session, bounds: Rectangle, fallback_owner: string) -> bo
             unused Box(session, BoxProps.{.key = key, .bounds = cell, .radius = 12.0,
                     .fill = ColorFromPacked(cast(u32)(ifx earned then 0x3b403fff else 0x2e3332ff)),
                     .border = ColorFromPacked(cast(u32)(ifx earned then 0xffca0cff else 0x4a4f4eff))})
-            name := ifx earned then BookText(Collectibles.CollectibleNameKey(index)) else BookText("shovey_book_unknown")
+            name := ifx earned then BookText(Collectibles.CollectibleNameKey(index)) else ""
             unused Image(session, ImageProps.{.key = key + cast(u64)1, .asset_path = Collectibles.CollectibleIcon(index),
                     .bounds = Rectangle.{cell.x + (cell.width - picture) / 2.0, cell.y + 8.0, picture, picture},
                     .alt_text = name, .fit = ImageFit.ImageFitContain, .smooth = true,
                     .tint = ifx earned then cast(u32)0 else cast(u32)BOOK_SHADOW})
-            BookCaption(session, key + cast(u64)2, Rectangle.{cell.x + 8.0, cell.y + picture + 10.0, cell.width - 16.0, 28.0},
-                name, ifx earned then 15 else 14, true)
-            line: Vec(u8)
-            if earned { BuilderPrint(*line, "%", BookText(Collectibles.CollectibleLineKey(index))) }
-            else { BuilderPrint(*line, "% %", BookText("shovey_level"), Collectibles.CollectibleLevel(index)) }
-            BookCaption(session, key + cast(u64)3, Rectangle.{cell.x + 8.0, cell.y + picture + 38.0, cell.width - 16.0, 60.0},
-                BookCopy(line, book_lines[index][:]), 13, true)
+            if earned {
+                BookCaption(session, key + cast(u64)2, Rectangle.{cell.x + 8.0, cell.y + picture + 10.0, cell.width - 16.0, 28.0}, name, 15, true)
+                BookCaption(session, key + cast(u64)3, Rectangle.{cell.x + 8.0, cell.y + picture + 38.0, cell.width - 16.0, 60.0},
+                    BookText(Collectibles.CollectibleLineKey(index)), 13, true)
+            }
         }
         unused End(session)
     }

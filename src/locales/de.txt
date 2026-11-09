@@ -74,7 +74,7 @@ Rechts
 Speichern fehlgeschlagen. Versuche einen weiteren Zug.
 ---
 [shovey_controls]
-Pfeiltasten / WASD · R Neustart · H Hilfe · Leertaste werfen
+Pfeiltasten / WASD · R Neustart · H Hinweis · Leertaste werfen
 ---
 [shovey_controls_setting]
 Touch-Steuerung
@@ -197,7 +197,8 @@ Lauf gegen den Hebel, um das Tor zu öffnen.
 Jede Kugel braucht das Loch ihrer Farbe.
 ---
 [shovey_instructions]
-Bewege Shovey mit den Pfeiltasten oder WASD. Schiebe immer nur einen Gegenstand; Ziehen geht nicht. Kugeln gehören in Löcher derselben Farbe, Kisten auf markierte Felder. Farbe färbt Kugeln um. Sammle Äpfel und bringe Sternsteine zusammen. Erledige die Aufgaben, bevor du nach Hause gehst. Kisten halten Drucktüren offen. Schlüssel öffnen Schlösser. Die Leertaste wirft eine eingesammelte Wurfkugel in Blickrichtung. Manche Felder kehren die Steuerung um, hinterlassen eine Spur oder lassen Shovey bis zum Hindernis gleiten. Geladener Shovey kann einen Lichtkreis starten; lade ihn nicht zweimal auf. Farbsteine wechseln beim Schieben von Rot zu Blau zu Gelb. Ihre Ziele brauchen Rot. R startet neu, H öffnet die Hilfe.
+Bewege Shovey mit den Pfeiltasten oder WASD. Schiebe immer nur einen Gegenstand; Ziehen geht nicht. Kugeln gehören in Löcher derselben Farbe, Kisten auf markierte Felder. Farbe färbt Kugeln um. Sammle Äpfel und bringe Sternsteine zusammen. Erledige die Aufgaben, bevor du nach Hause gehst. Kisten halten Drucktüren offen. Schlüssel öffnen Schlösser. Die Leertaste wirft eine eingesammelte Wurfkugel in Blickrichtung. Manche Felder kehren die Steuerung um, hinterlassen eine Spur oder lassen Shovey bis zum Hindernis gleiten. Geladener Shovey kann einen Lichtkreis starten; lade ihn nicht zweimal auf. Farbsteine wechseln beim Schieben von Rot zu Blau zu Gelb. Ihre Ziele brauchen Rot.
+Pfeiltasten / WASD · R Neustart · H Hinweis · Leertaste werfen
 ---
 [shovey_continue]
 Fortsetzen
@@ -1102,4 +1103,80 @@ Punkte
 
 [shovey_result_moves]
 Züge
+---
+
+[shovey_hint]
+Hinweis
+---
+
+[shovey_hint_free]
+Gratis-Hinweise
+---
+
+[shovey_hint_bank]
+Extra-Hinweise
+---
+
+[shovey_hint_thinking]
+Hinweis wird gesucht…
+---
+
+[shovey_hint_offer]
+Zeige die nächsten Züge. Jedes Level bietet 3 Gratis-Hinweise.
+---
+
+[shovey_hint_restart]
+Neu starten, dann:
+---
+
+[shovey_hint_next]
+Nächste Züge:
+---
+
+[shovey_hint_left]
+← Links
+---
+
+[shovey_hint_up]
+↑ Hoch
+---
+
+[shovey_hint_right]
+→ Rechts
+---
+
+[shovey_hint_down]
+↓ Runter
+---
+
+[shovey_hint_throw]
+Werfen
+---
+
+[shovey_hint_wait]
+Warten
+---
+
+[shovey_hint_unavailable]
+Kein Hinweis verfügbar. Kein Hinweis verbraucht.
+---
+
+[shovey_hint_use]
+Hinweis nutzen
+---
+
+[shovey_hint_pack]
+3 Extra-Hinweise
+---
+
+[shovey_hint_loot]
+Finde Hinweise am Boden und in Truhen. Je 100 Münzen aus täglichen Truhen gibt es einen weiteren Hinweis.
+---
+
+[shovey_settings]
+Einstellungen
+---
+
+[shovey_hint_board]
+Tipp zum Spielfeld (kostenlos)
 ---

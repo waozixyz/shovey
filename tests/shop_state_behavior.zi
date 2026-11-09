@@ -23,7 +23,7 @@ last_skin_owner: [65]u8;
 last_purchase: [64]u8;
 service_reply: [1024]u8;
 record_names: [12][96]u8;
-record_text: [12][512]u8;
+record_text: [12][4096]u8;
 record_count: s32;
 save_calls: s32;
 fail_save: bool;
@@ -294,5 +294,34 @@ Check :: () -> s32 {
     account = 2
     switch_on_skin = true
     if Shop.ShopSkin() != 0 || Shop.shop_reported_skin != -1 { return 84 }
+    return HintCheck()
+}
+
+HintCheck :: () -> s32 {
+    account = 0; record_count = 0; fail_save = false; fail_flush_once = false
+    Restart(); Poll(); Shop.ShopSetEarnedCoins(200)
+    if Shop.ShopHintFree(1) != 3 || Shop.ShopHintBank() != 2 { return 130 }
+    for at: 0..2 { if !Shop.ShopHintUse(1) { return 131 } }
+    if Shop.ShopHintFree(1) != 0 || !Shop.ShopHintUse(1) || Shop.ShopHintBank() != 1 { return 132 }
+    Restart(); Poll(); Shop.ShopSetEarnedCoins(200)
+    if Shop.ShopHintFree(1) != 0 || Shop.ShopHintFree(2) != 3 || Shop.ShopHintBank() != 1 { return 133 }
+    fail_save = true
+    if Shop.ShopHintUse(2) || Shop.ShopHintFree(2) != 3 { return 134 }
+    fail_save = false; fail_grant_flush = true
+    if Shop.ShopHintUse(2) || Shop.ShopHintFree(2) != 3 { return 135 }
+    Restart(); Poll(); Shop.ShopSetEarnedCoins(200)
+    if Shop.ShopHintFree(2) != 3 || !Shop.ShopHintReward(7) || Shop.ShopHintReward(7) || Shop.ShopHintBank() != 2 { return 136 }
+    if !Shop.ShopBuyHints() || Shop.ShopHintBank() != 5 || Shop.ShopCoins() != 170 { return 137 }
+    Restart(); Poll(); Shop.ShopSetEarnedCoins(200)
+    if Shop.ShopHintBank() != 5 || Shop.ShopHintReward(7) || Shop.ShopHintFree(1) != 0 { return 138 }
+    account = 1
+    if Shop.ShopHintFree(1) != 3 || Shop.ShopHintBank() != 0 || !Shop.ShopHintUse(1) { return 139 }
+    account = 0; Shop.ShopSetEarnedCoins(200)
+    if Shop.ShopHintFree(1) != 0 || Shop.ShopHintBank() != 5 { return 140 }
+    // An older wardrobe view must not overwrite a newer hint debit.
+    Shop.shop_local.hint_free[1] = 0
+    if !Shop.ShopBuy(1) || Shop.ShopHintFree(1) != 0 || Shop.ShopHintBank() != 5 { return 141 }
+    if !Shop.ShopSelect(1) || Shop.ShopHintFree(1) != 0 { return 142 }
+    if !Shop.ShopHintReward(1003) || Shop.ShopHintReward(1003) || Shop.ShopHintBank() != 6 { return 143 }
     return 42
 }

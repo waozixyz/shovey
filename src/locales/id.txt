@@ -74,7 +74,7 @@ Kanan
 Gagal menyimpan. Coba langkah lain untuk mengulang.
 ---
 [shovey_controls]
-Panah / WASD · R ulangi · H bantuan · Spasi lempar
+Panah / WASD · R ulangi · H Petunjuk · Spasi lempar
 ---
 [shovey_controls_setting]
 Kontrol sentuh
@@ -197,7 +197,8 @@ Berjalanlah ke tuas untuk membuka gerbang.
 Setiap bola masuk ke lubang warnanya.
 ---
 [shovey_instructions]
-Gunakan tombol panah atau WASD. Dorong satu benda sekaligus; benda tidak bisa ditarik. Masukkan bola ke lubang dengan warna sama dan peti ke kotak bertanda. Cat mengubah warna bola. Kumpulkan apel dan pertemukan balok bintang. Selesaikan tugas sebelum pulang. Peti menahan pintu tekanan agar terbuka. Kunci membuka gembok. Spasi melempar proyektil yang diambil ke arah hadap Shovey. Beberapa benda membalik kontrol, meninggalkan jejak, atau membuat Shovey meluncur sampai terhalang. Shovey bermuatan dapat menyalakan rangkaian cahaya; jangan isi muatan dua kali. Balok berubah merah → biru → kuning setiap didorong; sasarannya membutuhkan merah. R mengulang, H membuka panduan ini.
+Gunakan tombol panah atau WASD. Dorong satu benda sekaligus; benda tidak bisa ditarik. Masukkan bola ke lubang dengan warna sama dan peti ke kotak bertanda. Cat mengubah warna bola. Kumpulkan apel dan pertemukan balok bintang. Selesaikan tugas sebelum pulang. Peti menahan pintu tekanan agar terbuka. Kunci membuka gembok. Spasi melempar proyektil yang diambil ke arah hadap Shovey. Beberapa benda membalik kontrol, meninggalkan jejak, atau membuat Shovey meluncur sampai terhalang. Shovey bermuatan dapat menyalakan rangkaian cahaya; jangan isi muatan dua kali. Balok berubah merah → biru → kuning setiap didorong; sasarannya membutuhkan merah.
+Panah / WASD · R ulangi · H Petunjuk · Spasi lempar
 ---
 [shovey_continue]
 Lanjutkan
@@ -1102,4 +1103,80 @@ Skor
 
 [shovey_result_moves]
 Langkah
+---
+
+[shovey_hint]
+Petunjuk
+---
+
+[shovey_hint_free]
+Petunjuk gratis
+---
+
+[shovey_hint_bank]
+Petunjuk tambahan
+---
+
+[shovey_hint_thinking]
+Mencari petunjuk…
+---
+
+[shovey_hint_offer]
+Lihat gerakan berikutnya. Setiap level punya 3 petunjuk gratis.
+---
+
+[shovey_hint_restart]
+Mulai ulang, lalu:
+---
+
+[shovey_hint_next]
+Gerakan berikutnya:
+---
+
+[shovey_hint_left]
+← Kiri
+---
+
+[shovey_hint_up]
+↑ Atas
+---
+
+[shovey_hint_right]
+→ Kanan
+---
+
+[shovey_hint_down]
+↓ Bawah
+---
+
+[shovey_hint_throw]
+Lempar
+---
+
+[shovey_hint_wait]
+Tunggu
+---
+
+[shovey_hint_unavailable]
+Petunjuk tidak tersedia. Tidak ada petunjuk yang terpakai.
+---
+
+[shovey_hint_use]
+Gunakan petunjuk
+---
+
+[shovey_hint_pack]
+3 petunjuk tambahan
+---
+
+[shovey_hint_loot]
+Temukan petunjuk di lantai dan peti. Setiap 100 koin dari peti harian juga memberi satu petunjuk.
+---
+
+[shovey_settings]
+Pengaturan
+---
+
+[shovey_hint_board]
+Tips papan (gratis)
 ---

@@ -106,7 +106,7 @@ def main():
             if driver.find(label='How do you want to move?', role='text'):
                 driver.press(label='Swipe and tap')
                 driver.wait_gone(label='How do you want to move?', role='text')
-            driver.wait(contains='Level 1 / ', role='text')
+            driver.wait(key=20017, role='button')
             # Win level 1 by tapping the cell next to Shovey for each step,
             # as a player does, then fade into level 2.
             def tap(dx, dy):
@@ -119,7 +119,12 @@ def main():
                 driver.wait_idle(frames=2, timeout=2)
             for letter in levels[0]['solution']:
                 tap(*STEPS[letter])
-            driver.wait(contains='Level 2 / ', role='text', timeout=20)
+            driver.wait(label='Level 1 complete', role='text')
+            driver.press(key=20905, label='Continue', role='button')
+            driver.wait_gone(label='Level 1 complete', role='text')
+            driver.wait(key=20022, role='button')
+            driver.press(key=20022, role='button')
+            assert driver.wait(key=33002, role='button')['selected']
             driver.wait_idle(frames=6, timeout=10)
             healthy(child, log_path, 'the fade into level 2')
     print('Level change: the first level fades in under the new-levels question and a win fades into level 2; '

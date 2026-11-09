@@ -21,7 +21,7 @@ ZIRAN_TEST_MODULES = --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLC
 	--module-path 'mingcute=$(MINGCUTE)/src'
 define ziran_test
 rm -rf build/tests/$(1)
-'$(TOOLCHAIN)/build/bin/zi2c' --exe --root tests $(ZIRAN_TEST_MODULES) --entry $(1):main -o build/tests/$(1) tests/$(1).zi
+'$(TOOLCHAIN)/build/bin/zi2c' --exe --root tests $(ZIRAN_TEST_MODULES) $(3) --entry $(1):main -o build/tests/$(1) tests/$(1).zi
 env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
 	build/tests/$(1)/$(1) $(2)
 endef
@@ -368,7 +368,7 @@ forest-puzzle-test: solver
 official-update-test: levels
 	$(call ziran_test,official_update_test)
 
-public-test: barrels-test solver laws game-maps-test level-select-test shop-test official-update-test forest-puzzle-test
+public-test: hints-loading-test barrels-test solver laws game-maps-test level-select-test shop-test official-update-test forest-puzzle-test
 	python3 tests/star_start_test.py
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
@@ -401,7 +401,7 @@ laws:
 
 # Level pictures are ignored generated assets, so a source-only checkout or
 # an earlier custom --cell preview must be regenerated before asset validation.
-test: barrels-test solver laws game-maps-test shop-test forest-puzzle-test previews
+test: hints-loading-test barrels-test solver laws game-maps-test shop-test forest-puzzle-test previews
 	python3 tests/play_release_notes_test.py
 	python3 tests/pages_packaging_test.py
 	python3 tests/star_start_test.py
@@ -535,3 +535,18 @@ world-map-test:
 	sh tests/world_map_layout_test.sh
 	sh tests/world_map_progression_test.sh
 	$(MAKE) level-select-test
+
+.PHONY: hints-loading-test
+hints-loading-test:
+	$(call ziran_test,hints_loading_test,,--define SHOVEY_RELEASE)
+	'$(TOOLCHAIN)/build/bin/ziran' bundle --root tests $(ZIRAN_TEST_MODULES) --define SHOVEY_RELEASE --entry hints_loading_test:main -o build/tests/hints_loading_test.zx tests/hints_loading_test.zi
+	test "$$('$(TOOLCHAIN)/build/bin/ziran' run build/tests/hints_loading_test.zx | tail -n 1)" = 0
+
+.PHONY: island-collectible-book-test
+island-collectible-book-test:
+	@if test -f src/island/keepsake_book.zi; then $(MAKE) island-collectible-book-test-private; else echo "Private Island source unavailable; book test skipped"; fi
+
+island-collectible-book-test-private:
+	$(call ziran_test,island_collectible_book_test,,--bind-host island_collectible_book_test)
+	'$(TOOLCHAIN)/build/bin/ziran' bundle --root tests $(ZIRAN_TEST_MODULES)  --bind-host island_collectible_book_test --entry island_collectible_book_test:main -o build/tests/island_collectible_book_test.zx tests/island_collectible_book_test.zi
+	test "$$('$(TOOLCHAIN)/build/bin/ziran' run build/tests/island_collectible_book_test.zx | tail -n 1)" = 0

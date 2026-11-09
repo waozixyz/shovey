@@ -1,0 +1,125 @@
+// Verify level routes through the engine in bounded frame slices.
+#import, file "engine.zi";
+#import "levels"
+Guide :: #import, file "guide.zi";
+#import "std/c_string"
+#import "std/text_buffer"
+LevelHint :: struct {
+    target: ShoveyGame
+    replay: ShoveyGame
+    route: string
+    at: s32
+    match: s32
+    exact_match: s32
+    status: s32 // 0 unavailable, 1 replaying, 3 ready
+    restart: bool
+    verifying: bool
+    topics: [3]s32
+    topic_count: s32
+    actions: [4]u8
+    saved: [2433]u8
+}
+HintSame :: (a: *ShoveyGame, b: *ShoveyGame, ambient: bool = false) -> bool {
+    if a.player != b.player || a.powers != b.powers || a.keys != b.keys || a.lost != b.lost || a.won != b.won { return false }
+    if (a.powers & SHOVEY_AMMO) != 0 && a.direction != b.direction { return false }
+    for at: 0..SHOVEY_CELLS - 1 {
+        left := a.ground[at]; right := b.ground[at]
+        if ambient {
+            if ShoveyAnimal(left) { left = ifx ShoveyFish(left) then 64 else 0 }
+            if ShoveyAnimal(right) { right = ifx ShoveyFish(right) then 64 else 0 }
+        }
+        if left != right || a.objects[at] != b.objects[at] { return false }
+        if (a.ground[at] == 29 || (!ambient && ShoveyAnimal(a.ground[at]))) && a.light_from[at] != b.light_from[at] { return false }
+    }
+    return true
+}
+HintActions :: (hint: *LevelHint, route: string) {
+    hint.actions = .{}
+    for at: cast(s32)0..2 {
+        if at >= route.count { break }
+        hint.actions[at] = route[at]
+    }
+    hint.status = ifx hint.actions[0] != 0 then 3 else 0
+}
+HintStart :: (hint: *LevelHint, game: *ShoveyGame) {
+    hint.* = LevelHint.{.target = game.*, .match = -1, .exact_match = -1}
+    if game.won { return }
+    unused CopyCString(ShoveySave(game), hint.saved[:])
+    hint.route = HintRoute(game)
+    if hint.route != "" && ShoveyLoad(*hint.replay, game.level) { hint.status = 1 }
+    else { HintRestart(hint) }
+}
+HintRestart :: (hint: *LevelHint) {
+    hint.restart = true
+    if hint.route == "" { HintMechanics(hint); return }
+    HintActions(hint, hint.route)
+}
+HintStep :: (hint: *LevelHint) {
+    if hint.status == 1 {
+        for unused_step: 0..31 {
+            if hint.at >= hint.route.count {
+                if hint.verifying {
+                    if hint.replay.won { HintActions(hint, hint.route[hint.match:]) }
+                    else { HintRestart(hint) }
+                    return
+                }
+                if !hint.replay.won { hint.route = ""; HintRestart(hint); return }
+                if hint.exact_match >= 0 { hint.match = hint.exact_match }
+                if hint.match >= 0 {
+                    // Ambient animals wander between moves. A candidate match
+                    // becomes advice only after winning from the actual snapshot.
+                    hint.replay = hint.target; hint.at = hint.match; hint.verifying = true
+                    return
+                }
+                HintRestart(hint); return
+            }
+            if !hint.verifying {
+                if HintSame(*hint.target, *hint.replay) { hint.exact_match = hint.at }
+                else if HintSame(*hint.target, *hint.replay, true) { hint.match = hint.at }
+            }
+            action := hint.route[hint.at]
+            if action == #char "t" { unused ShoveyTick(*hint.replay) }
+            else if action == #char "f" { unused ShoveyFire(*hint.replay) }
+            else { unused ShoveyMove(*hint.replay, cast(s32)action - 48) }
+            hint.at += 1
+        }
+    }
+}
+// An occasional floor scroll lies on the verified opening walk.
+HintFloorCell :: (level: s32) -> s32 {
+    if level < 1 || level % 7 != 0 || level > SHOVEY_APPROVED_LEVEL_COUNT { return -1 }
+    if ShoveyLevelBoard(level) != ShoveyLevelData(level) { return -1 }
+    board: ShoveyGame
+    if !ShoveyLoad(*board, level) { return -1 }
+    route := ShoveyLevelSolution(level)
+    start := board.player
+    for at: cast(s32)0..route.count - 1 {
+        if at > 20 { break }
+        action := route[at]
+        if action == #char "t" { unused ShoveyTick(*board) }
+        else if action == #char "f" { unused ShoveyFire(*board) }
+        else { unused ShoveyMove(*board, cast(s32)action - 48) }
+        if board.player != start && !board.won && !board.lost && board.objects[board.player] == 0 { return board.player }
+    }
+    return -1
+}
+
+// Downloaded campaigns keep boards in their compact cache, without routes.
+// Their board-specific mechanic tips are always free.
+HintRoute :: (game: *ShoveyGame) -> string {
+    if ShoveySecret(game.level) { return ShoveySecretSolution(game.level - 1000) }
+    if ShoveyLevelBoard(game.level) == ShoveyLevelData(game.level) { return ShoveyLevelSolution(game.level) }
+    return ""
+}
+HintMechanics :: (hint: *LevelHint) {
+    topics := Guide.GuideBoardTopics(*hint.target)
+    for topic: cast(s32)1..Guide.GUIDE_TOPICS - 1 {
+        if (topics & Guide.GuideBit(topic)) == 0 { continue }
+        hint.topics[hint.topic_count] = topic
+        hint.topic_count += 1
+        if hint.topic_count == 3 { break }
+    }
+    if hint.topic_count < 3 { hint.topics[hint.topic_count] = Guide.GUIDE_HOME; hint.topic_count += 1 }
+    hint.status = 3
+}
+HintTopicKey :: (topic: s32) -> string { return Guide.GuideTextKey(topic) }
