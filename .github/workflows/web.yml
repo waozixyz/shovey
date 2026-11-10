@@ -317,9 +317,12 @@ jobs:
         with:
           name: campaign-publisher
           path: build/campaign-publisher
-      - name: Verify the Island catalog and protected package
+      - name: Verify the released Island catalog and protected package
         if: steps.current.outputs.publish == 'true'
-        run: python3 scripts/verify-island-delivery.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Unreleased source may rebuild Island; live delivery follows the release.
+        run: python3 scripts/verify-island-delivery.py --released
       - name: Publish and verify the approved campaign
         if: steps.current.outputs.publish == 'true'
         env:

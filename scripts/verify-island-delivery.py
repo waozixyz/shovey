@@ -2,11 +2,38 @@
 """Verify the existing node delivery serves the Island package buyers request."""
 import argparse
 import json
+import re
 from pathlib import Path
 import subprocess
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'https://api.waozi.xyz'
+
+
+def released_descriptor(request=subprocess.run):
+    """Read the descriptor at the published tag's immutable source revision.
+
+    Master can contain a rebuilt, unreleased Island with a different digest.
+    The live catalog must serve the package that released players request.
+    """
+    repository = 'repos/waozixyz/shovey/'
+
+    def github(path):
+        response = request(['gh', 'api', '--hostname', 'github.com',
+                            '-H', 'Accept: application/vnd.github.raw+json',
+                            repository + path], check=True, capture_output=True)
+        return json.loads(response.stdout)
+
+    release = github('releases/latest')
+    tag = release.get('tag_name', '')
+    if release.get('draft') or release.get('prerelease') or not tag.startswith('v'):
+        raise ValueError('Expected a published stable Shovey release')
+    revision = github('commits/' + quote(tag, safe='')).get('sha', '')
+    if not re.fullmatch('[0-9a-f]{40}', revision):
+        raise ValueError('Released Shovey source must resolve to a full commit')
+    descriptor = github('contents/packaging/island.json?ref=' + revision)
+    return descriptor, tag, revision
 
 
 def verify(descriptor, request=subprocess.run):
@@ -34,7 +61,15 @@ def verify(descriptor, request=subprocess.run):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--descriptor', type=Path, default=ROOT / 'packaging/island.json')
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--descriptor', type=Path, help='Check an explicit Island descriptor')
+    source.add_argument('--released', action='store_true',
+                        help='Check the latest published Shovey release instead of this checkout')
     args = parser.parse_args()
-    verify(json.loads(args.descriptor.read_bytes()))
+    if args.released:
+        descriptor, tag, revision = released_descriptor()
+        print(f'Checking Island for {tag}: https://github.com/waozixyz/shovey/blob/{revision}/packaging/island.json', flush=True)
+    else:
+        descriptor = json.loads((args.descriptor or ROOT / 'packaging/island.json').read_bytes())
+    verify(descriptor)
     print('Live Island catalog matches the released package; its compiled bytes exist behind the buyer gate')

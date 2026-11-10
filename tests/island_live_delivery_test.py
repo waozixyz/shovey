@@ -50,5 +50,68 @@ class LiveIslandTest(unittest.TestCase):
                     delivery.verify(self.descriptor, self.request)
 
 
+class ReleasedIslandTest(unittest.TestCase):
+    def setUp(self):
+        self.revision = 'a' * 40
+        self.release = dict(tag_name='v0.6.169', draft=False, prerelease=False)
+        self.descriptor = json.loads((ROOT / 'packaging/island.json').read_bytes())
+        # A published player's bytes differ from the unreleased checkout.
+        self.descriptor.update(sha256='b' * 64, bytes=6502780)
+        self.live = dict(app_id=self.descriptor['package_id'], version=self.descriptor['version'],
+                         artifacts=[dict(variant='module', sha256=self.descriptor['sha256'],
+                                         size=self.descriptor['bytes'])])
+        self.paths = []
+
+    def request(self, command, **kwargs):
+        path = command[-1]
+        if command[0] == 'gh':
+            self.paths.append(path)
+            if path.endswith('/releases/latest'):
+                value = self.release
+            elif '/commits/' in path:
+                value = dict(sha=self.revision)
+            else:
+                self.assertEqual(path, 'repos/waozixyz/shovey/contents/packaging/island.json?ref=' + self.revision)
+                self.assertIn('Accept: application/vnd.github.raw+json', command)
+                value = self.descriptor
+            body = json.dumps(value).encode()
+        else:
+            body = json.dumps(self.live).encode() if '/latest?' in path else b'403'
+        return subprocess.CompletedProcess(command, 0, body, b'')
+
+    def test_unreleased_rebuild_uses_published_commit_and_passes_live_gate(self):
+        descriptor, tag, revision = delivery.released_descriptor(self.request)
+        self.assertNotEqual(descriptor['sha256'], json.loads((ROOT / 'packaging/island.json').read_bytes())['sha256'])
+        self.assertEqual((tag, revision), ('v0.6.169', self.revision))
+        self.assertEqual(self.paths, ['repos/waozixyz/shovey/releases/latest',
+                                     'repos/waozixyz/shovey/commits/v0.6.169',
+                                     'repos/waozixyz/shovey/contents/packaging/island.json?ref=' + self.revision])
+        self.assertEqual(delivery.verify(descriptor, self.request), self.live)
+
+    def test_new_published_descriptor_still_requires_matching_live_bytes(self):
+        self.descriptor['sha256'] = 'c' * 64
+        descriptor, _, _ = delivery.released_descriptor(self.request)
+        with self.assertRaisesRegex(ValueError, 'catalog differs'):
+            delivery.verify(descriptor, self.request)
+
+    def test_unpublished_or_unresolved_source_is_rejected(self):
+        for invalid in (dict(draft=True), dict(prerelease=True), dict(tag_name='master')):
+            with self.subTest(invalid=invalid):
+                previous = self.release.copy()
+                self.release.update(invalid)
+                with self.assertRaisesRegex(ValueError, 'published stable'):
+                    delivery.released_descriptor(self.request)
+                self.release = previous
+        self.revision = 'master'
+        with self.assertRaisesRegex(ValueError, 'full commit'):
+            delivery.released_descriptor(self.request)
+
+    def test_github_failure_does_not_fall_back_to_checkout(self):
+        def failed(command, **kwargs):
+            raise subprocess.CalledProcessError(1, command)
+        with self.assertRaises(subprocess.CalledProcessError):
+            delivery.released_descriptor(failed)
+
+
 if __name__ == '__main__':
     unittest.main()
