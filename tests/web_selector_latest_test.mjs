@@ -128,6 +128,13 @@ try {
     }
     await delay(80);
   }
+  async function playing(level) {
+    const nodes = await tree();
+    if (!nodes.some(n => n.label === 'Restart') || nodes.some(n => n.key === 20105)) return false;
+    const saved = await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`);
+    const at = saved.indexOf('P');
+    return at >= 0 && parseInt(saved.slice(at + 2, at + 4), 16) === level;
+  }
   async function wheelToFirst() {
     const [firstX, firstY] = mapArt.first;
     // One probe picks the wheel direction that heads back along the road.
@@ -218,12 +225,12 @@ try {
   await wait(async () => (await tree()).some(n => n.key === 20121 && n.label === 'Level ' + earnedName),
     'The map did not focus earned place 74');
   await pressKey(20122);
-  await wait(async () => (await tree()).some(n => n.label.startsWith('Level ' + earnedName + ' /')), 'Earned level did not open');
+  await wait(() => playing(74), 'Earned level did not open');
   const arrows = [['ArrowLeft', 37], ['ArrowUp', 38], ['ArrowRight', 39], ['ArrowDown', 40]];
   for (const [index, [width, height]] of [[390, 844], [960, 600]].entries()) {
     await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: true});
     await delay(250);
-    await press('Levels');
+    await press('Back');
     const focusedCard = index === 0 ? 33074 : 33002;
     await wait(async () => (await tree()).some(n => n.key === focusedCard && n.y >= 70 && n.y + n.height <= height),
       'Expected selector focus card is not visible');
@@ -232,23 +239,23 @@ try {
     assert((await tree()).some(n => n.key === 33001 && n.visible && n.enabled), 'Selector snapped back during manual scrolling');
     await press('1');
     await pressKey(20122);
-    await wait(async () => (await tree()).some(n => n.label.startsWith('Level 1 /')), 'Older level did not open');
-    await press('Levels');
+    await wait(() => playing(1), 'Older level did not open');
+    await press('Back');
     await wait(async () => (await tree()).some(n => n.key === 33001 && n.y >= 70 && n.y + n.height <= height),
       'Returning from level 1 moved its selector card out of view');
     if (index === 0) {
-      await press('Back');
+      await pressKey(20122);
       for (const direction of levelOneSolution) await key(...arrows[Number(direction)]);
       // A regular level shows its stars and score; its Next level opens level 2.
       await wait(async () => (await tree()).some(n => n.label === 'Level 1 complete') &&
         (await tree()).some(n => n.key === 20905 && n.enabled !== false), 'Winning level 1 showed no result');
       await pressKey(20905);
-      await wait(async () => (await tree()).some(n => n.label.startsWith('Level 2 /')), 'Winning level 1 did not advance to level 2');
-      await press('Levels');
+      await wait(() => playing(2), 'Winning level 1 did not advance to level 2');
+      await press('Back');
       await wait(async () => (await tree()).some(n => n.key === 33002 && n.y >= 70 && n.y + n.height <= height),
         'Finishing level 1 did not keep level 2 in view');
     }
-    await press('Back');
+    await pressKey(20122);
   }
   assert.equal(failures.length, 0, failures.join('|'));
   console.log('Pip artwork, keyboard play, touch dismissal without movement and saved acknowledgement; selector: earned level74 opens once, then replayed level1 and finished level2 stay visible in portrait/landscape');

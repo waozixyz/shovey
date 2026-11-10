@@ -97,28 +97,46 @@ try {
     throw Error('Timed out: ' + expression + '; errors: ' + failures.join('|'));
   }
   let serial = 0;
-  async function labels() {
+  async function tree() {
     const command = (++serial) + '\ttree\n';
     await evaluate(`Module.FS.writeFile('/tmp/test-driver/command', ${JSON.stringify(command)})`);
     await wait(`Module.FS.analyzePath('/tmp/test-driver/reply').exists`);
     const reply = JSON.parse(await evaluate(`Module.FS.readFile('/tmp/test-driver/reply', {encoding: 'utf8'})`));
     await evaluate(`Module.FS.unlink('/tmp/test-driver/reply')`);
     assert(reply.ok, JSON.stringify(reply));
-    return reply.nodes.map(node => node.label);
+    return reply.nodes;
   }
   async function count(expected) {
+    // Both selectors cull offscreen nodes; inspect both ends of the journey.
+    let highest = 0;
     for (let end = Date.now() + 30000; Date.now() < end;) {
-      const header = (await labels()).find(label => /^Level \d+ \/ \d+$/.test(label));
-      if (header && header.endsWith('/ ' + expected)) return;
-      await delay(250);
+      for (const deltaY of [100000, -100000]) {
+        await call('Input.dispatchMouseEvent', {type:'mouseWheel', x:195, y:400, deltaX:0, deltaY});
+        await delay(300);
+        for (const node of await tree()) {
+          if (node.key > 33000 && node.key < 34000) highest = Math.max(highest, node.key - 33000);
+        }
+      }
+      if (highest === expected) return;
+      assert(highest <= expected, 'The map offered an unexpected level ' + highest);
     }
     const files = await evaluate(`JSON.stringify(Module.FS.readdir('/kryon-apps/shovey').filter(name => name.startsWith('live')))`);
-    throw Error('The game never showed ' + expected + ' levels: ' + (await labels()).filter(label => label.startsWith('Level')).join('|') + '; served ' + served + '; records ' + files);
+    throw Error('Expected last level ' + expected + '; highest waypoint ' + highest + '; served ' + served + '; records ' + files);
   }
   async function open() {
-    await call('Page.navigate', {url: target + '?mini'});
+    await call('Page.navigate', {url: target});
     // The ZX edition waits for its profile; the compiled one has none.
     await wait(`(globalThis.Module?.profileReady || globalThis.Module?.FS?.analyzePath('/assets/shovey/catalog.json').exists) && document.querySelector('#loading-screen').classList.contains('is-hidden')`);
+    for (let end = Date.now() + 30000; Date.now() < end;) {
+      const play = (await tree()).find(node => node.label === 'Play' && node.kind === 'button');
+      if (!play) { await delay(100); continue; }
+      const x = play.x + play.width / 2, y = play.y + play.height / 2;
+      await call('Input.dispatchMouseEvent', {type:'mousePressed', x, y, button:'left', buttons:1, clickCount:1});
+      await delay(80);
+      await call('Input.dispatchMouseEvent', {type:'mouseReleased', x, y, button:'left', buttons:0, clickCount:1});
+      return;
+    }
+    throw Error("Play cover did not appear");
   }
   await call('Runtime.enable');
   await call('Page.enable');

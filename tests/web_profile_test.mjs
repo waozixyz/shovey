@@ -197,8 +197,8 @@ try {
     assert.match(campaign, /^C[1-6]/, 'Classic did not save its device campaign');
     assert.equal(parseInt(campaign.slice(2, (campaign.startsWith('C5') || campaign.startsWith('C6')) ? 6 : 4), 16), 1);
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Opening Classic wrote unearned account progress');
-    await textClick('Levels');
-    assert((await tree()).some(node => node.key === 20105), 'Levels did not return to the map');
+    await textClick('Back');
+    assert((await tree()).some(node => node.key === 20105), 'Back did not return to the map');
     await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: -2200});
     await delay(500);
     assert((await tree()).some(node => node.visible && node.key > 33001 && node.key <= 33175),
@@ -208,7 +208,7 @@ try {
     // Editor offers only the creator's own levels, never campaign levels, even
     // ones this device unlocked; it never changes Classic or account progress.
     await keyClick(20022);
-    await textClick('Back');
+    assert((await labels()).includes('Play'), 'Map Back did not return to the collection cover');
     const header = (campaign.startsWith('C5') || campaign.startsWith('C6')) ? 6 : 4;
     const editorFixture = campaign.slice(0, 2) + (2).toString(16).padStart(header - 2, '0') + campaign.slice(header);
     await evaluate(`Module.FS.writeFile(${JSON.stringify(localPath)}, ${JSON.stringify(editorFixture)})`);
