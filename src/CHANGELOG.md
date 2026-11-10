@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Reduce Android download size by optimizing release code and removing unused resources.
 - Share Classic and Island controls, layout and score results, using game artwork.
 - Unlock Island on the current screen while preserving purchases and saved progress.
 - Require ordinary fruit before finishing Island levels; allow house entry from below and clear forward star throws.
