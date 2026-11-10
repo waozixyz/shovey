@@ -20,8 +20,8 @@ Builds:
     commit: da1a7f9b7ed54abaa2ac7c08ecfaaa3b09b842fd
     sudo:
       - apt-get update
-      - apt-get install -y build-essential cmake pkg-config python3-pil python3-numpy
-        libssl-dev
+      - apt-get install -y build-essential cmake meson ninja-build pkg-config python3-pil
+        python3-numpy libssl-dev
     output: build/fdroid/shovey.apk
     rm:
       - packaging/compiled/shovey-island.zx

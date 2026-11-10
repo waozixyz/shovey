@@ -12,7 +12,7 @@ runs:
         # Only Ubuntu's own feeds: refreshing the runner's other feeds is slow.
         set -- -o Acquire::Retries=2 -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-
         sudo apt-get "$@" -o APT::Get::List-Cleanup=0 update
-        sudo apt-get "$@" install -y --no-install-recommends build-essential cmake pkg-config python3-pil python3-numpy libssl-dev
+        sudo apt-get "$@" install -y --no-install-recommends build-essential cmake meson ninja-build pkg-config python3-pil python3-numpy libssl-dev
     - uses: actions/setup-java@v4
       with:
         distribution: temurin
