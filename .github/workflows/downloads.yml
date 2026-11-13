@@ -173,7 +173,7 @@ jobs:
           path: ziranlang/ziran
           fetch: true
           packages: >-
-            build-essential cmake pkg-config python3-pil python3-numpy libsdl2-dev libcairo2-dev
+            build-essential cmake meson ninja-build pkg-config python3-pil python3-numpy libsdl2-dev libcairo2-dev
             libfreetype-dev libfontconfig-dev libpango1.0-dev libgtk-3-dev libcurl4-openssl-dev
             libx11-dev nasm xvfb xauth xdotool imagemagick
       # The UI tests drive the player through Inner Breeze's test driver client.
@@ -242,7 +242,7 @@ jobs:
           path: ziranlang/ziran
           fetch: true
           packages: >-
-            build-essential cmake pkg-config python3-pil python3-numpy gcc-mingw-w64-x86-64-win32
+            build-essential cmake meson ninja-build pkg-config python3-pil python3-numpy gcc-mingw-w64-x86-64-win32
             g++-mingw-w64-x86-64-win32
             binutils-mingw-w64-x86-64 libz-mingw-w64-dev nasm wine wine64 xvfb xauth unzip
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262

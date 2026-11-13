@@ -75,7 +75,7 @@ jobs:
           project: waozixyz/shovey
           path: ziranlang/ziran
           fetch: true
-          packages: build-essential cmake pkg-config python3-pil python3-numpy
+          packages: build-essential cmake meson ninja-build pkg-config python3-pil python3-numpy
       - uses: actions/setup-java@v4
         if: ${{ !inputs.products_only }}
         with:
