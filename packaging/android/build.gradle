@@ -10,7 +10,8 @@ def envOrProp = { String envName, String propName ->
 }
 def kryonDir = envOrProp('KRYON_DIR', 'kryon.dir')
 def ziranDir = envOrProp('ZIRAN_DIR', 'ziran.dir')
-if (kryonDir == null || ziranDir == null) {
+def ziranPackageId = envOrProp('ZIRAN_PACKAGE_ID', 'ziran.packageId')
+if (kryonDir == null || ziranDir == null || ziranPackageId == null) {
     throw new GradleException('Build through scripts/player.py android')
 }
 def androidAbis = (project.findProperty('app.abis') ?: 'arm64-v8a,armeabi-v7a').split(',').toList()
@@ -49,6 +50,7 @@ android {
             cmake {
                 arguments '-DKRYON_DIR=' + kryonDir,
                     '-DZIRAN_DIR=' + ziranDir,
+                    '-DZIRAN_PACKAGE_ID=' + ziranPackageId,
                     '-DAPP_EDITION=' + appEdition
             }
         }

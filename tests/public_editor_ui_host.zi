@@ -2,7 +2,7 @@
 #import "kryon/session"
 #import "kryon/geometry"
 #import "kryon/tree"
-#import "kryon/text_input_props"
+TextField :: #import "kryon/text_field";
 #import "std/vec"
 #import "std/text_buffer"
 #import "apps/node_types"
@@ -34,7 +34,7 @@ FakeKey :: () -> s32 { return test_key }
 #program_export
 FakeKeyboard :: (session: Session, visible: bool) {}
 #program_export
-FakeInput :: () -> TextFieldInput { return TextFieldInput.{} }
+FakeInput :: () -> TextField.Input { return TextField.Input.{} }
 #program_export
 FakeSound :: (path: string) -> bool { return false }
 #program_export

@@ -3,7 +3,7 @@
 #import "apps/node_types"
 WebApp :: #import "kryon/app_context";
 #import "translations"
-#import "kryon/text_input_props"
+TextField :: #import "kryon/text_field";
 #import "std/vec"
 
 #program_export
@@ -43,4 +43,4 @@ SmoothFramesHost :: (frames: s32) -> bool { unused frames; return true }
 #program_export
 GameSupportsHost :: (capability: string) -> bool { return capability == "arcade.navigation" }
 #program_export
-GameFieldInputHost :: () -> TextFieldInput { return WebApp.AppFieldInput() }
+GameFieldInputHost :: () -> TextField.Input { return WebApp.AppFieldInput() }

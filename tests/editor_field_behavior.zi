@@ -5,7 +5,7 @@ using FrameStatus;
 #import "kryon/geometry"
 #import "kryon/tree"
 #import "kryon/paint_queue"
-#import "kryon/text_input_props"
+TextField :: #import "kryon/text_field";
 #import "kryon/text_input"
 using CompositionPhase;
 #import "std/text_buffer"
@@ -38,7 +38,7 @@ FieldChecks :: () -> s32 {
     field: EditorField
     Reset(*field, "AéB")
     field.state.cursor = 3; field.state.anchor = 1
-    Host.input = TextFieldInput.{.text = "🍎", .focus = true}
+    Host.input = TextField.Input.{.text = "🍎", .focus = true}
     editor_key = 65
     Begin()
     if Draw(*field) { return 1 }
@@ -50,13 +50,13 @@ FieldChecks :: () -> s32 {
         if PendingPaintAt(editor_frame.session, at).value == "AéB" { original = true }
     }
     if !original || !Finish() || !Host.painted_original { return 3 }
-    Host.input = TextFieldInput.{.left = true, .shift = true}
+    Host.input = TextField.Input.{.left = true, .shift = true}
     Begin()
     if Draw(*field) || field.state.cursor != 1 || field.state.anchor != 5 || !Finish() { return 4 }
-    Host.input = TextFieldInput.{.commit = true}
+    Host.input = TextField.Input.{.commit = true}
     Begin()
     if !Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "A🍎B" { return 5 }
-    Host.input = TextFieldInput.{.escape = true}
+    Host.input = TextField.Input.{.escape = true}
     Begin()
     if Draw(*field) || field.state.focused || !Finish() { return 6 }
     Close()
@@ -64,52 +64,52 @@ FieldChecks :: () -> s32 {
     // Byte capacity counts Unicode bytes, not characters. Failed insertion
     // leaves the current value and scalar-boundary caret intact.
     Reset(*field, "AéB")
-    Host.input = TextFieldInput.{.text = "🍎", .focus = true}
+    Host.input = TextField.Input.{.text = "🍎", .focus = true}
     Begin()
     if Draw(*field, 6) || !Finish() || EditField(field.bytes[:], field.state.length) != "AéB" ||
         field.state.cursor != 4 || field.state.anchor != 4 { return 7 }
-    Host.input = TextFieldInput.{.select_all = true, .text = "ééé"}
+    Host.input = TextField.Input.{.select_all = true, .text = "ééé"}
     Begin()
     if Draw(*field, 6) || !Finish() || field.state.length != 6 { return 8 }
-    Host.input = TextFieldInput.{.text = "x"}
+    Host.input = TextField.Input.{.text = "x"}
     Begin()
     if Draw(*field, 6) || !Finish() || EditField(field.bytes[:], field.state.length) != "ééé" { return 9 }
-    Host.input = TextFieldInput.{.blur = true}
+    Host.input = TextField.Input.{.blur = true}
     Begin()
     if Draw(*field, 6) || !Finish() || field.state.focused { return 10 }
     Close()
 
     Reset(*field, "abcdefghijklmnop")
-    Host.input = TextFieldInput.{.focus = true}
+    Host.input = TextField.Input.{.focus = true}
     Begin()
     if Draw(*field, EDIT_NAME, 60.0) || !Finish() || field.state.scroll_x <= 0 { return 11 }
-    Host.input = TextFieldInput.{.home = true}
+    Host.input = TextField.Input.{.home = true}
     Begin()
     if Draw(*field, EDIT_NAME, 60.0) || !Finish() || field.state.cursor != 0 || field.state.scroll_x != 0 { return 12 }
     Close()
 
     // Invalid typed UTF-8 is rejected atomically even if a host sends it.
     Reset(*field, "AéB")
-    Host.input = TextFieldInput.{.text = TextView(malformed[:]), .focus = true}
+    Host.input = TextField.Input.{.text = TextView(malformed[:]), .focus = true}
     Begin()
     if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "AéB" ||
         field.state.cursor != 4 || field.state.anchor != 4 || !field.state.focused { return 14 }
     Close()
 
     Reset(*field, "Café")
-    Host.input = TextFieldInput.{.select_all = true, .cut = true, .focus = true}
+    Host.input = TextField.Input.{.select_all = true, .cut = true, .focus = true}
     Begin()
     if Draw(*field) || !Finish() || field.state.length != 0 ||
         TextView(Host.clipboard_bytes[:Host.clipboard_length]) != "Café" { return 18 }
-    Host.input = TextFieldInput.{.paste = true, .paste_text = "🍎"}
+    Host.input = TextField.Input.{.paste = true, .paste_text = "🍎"}
     Begin()
     if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "🍎" { return 19 }
-    Host.input = TextFieldInput.{.commit = true}
+    Host.input = TextField.Input.{.commit = true}
     Host.input.composition_event.phase = cast(CompositionPhase)CompositionCommit
     Host.input.composition_event.text = "é"
     Begin()
     if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "🍎é" { return 20 }
-    Host.input = TextFieldInput.{.commit = true}
+    Host.input = TextField.Input.{.commit = true}
     Begin()
     if !Draw(*field) || !Finish() { return 26 }
     Close()
@@ -117,16 +117,16 @@ FieldChecks :: () -> s32 {
     // Legacy invalid bytes stay intact and visible; no implicit name repair.
     Reset(*field, "old")
     field.bytes[1] = cast(u8)255
-    Host.input = TextFieldInput.{.focus = true}
+    Host.input = TextField.Input.{.focus = true}
     Begin()
     if Draw(*field) || !Finish() || field.bytes[1] != cast(u8)255 || field.state.length != 3 { return 13 }
-    Host.input = TextFieldInput.{.commit = true}
+    Host.input = TextField.Input.{.commit = true}
     Begin()
     if !Draw(*field) || !Finish() || field.bytes[1] != cast(u8)255 || field.state.length != 3 { return 17 }
-    Host.input = TextFieldInput.{.select_all = true, .text = "new"}
+    Host.input = TextField.Input.{.select_all = true, .text = "new"}
     Begin()
     if Draw(*field) || !Finish() || EditField(field.bytes[:], field.state.length) != "new" { return 15 }
-    Host.input = TextFieldInput.{.commit = true}
+    Host.input = TextField.Input.{.commit = true}
     Begin()
     if !Draw(*field) || !Finish() { return 16 }
     Close()
@@ -143,12 +143,12 @@ CollectionChecks :: () -> s32 {
     editor_share_title.state.cursor = editor_share_title.state.length
     editor_share_title.state.anchor = 0
     editor_frame.session = SessionOpen()
-    Host.input = TextFieldInput.{.text = "  Café 🍎  ", .focus = true}
+    Host.input = TextField.Input.{.text = "  Café 🍎  ", .focus = true}
     Begin()
     EditorPublishPage(800.0, 0.0, 800.0)
     if !Finish() || Host.put_count != 0 ||
         EditField(editor_collection.title[:], editor_collection.title_length) != "Original" { return 21 }
-    Host.input = TextFieldInput.{.commit = true}
+    Host.input = TextField.Input.{.commit = true}
     Begin()
     EditorPublishPage(800.0, 0.0, 800.0)
     if !Finish() || Host.put_count != 1 || editor_save_failed ||

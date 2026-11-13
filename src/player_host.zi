@@ -19,12 +19,12 @@ ReferralLocale :: #import "entity/referral_locales";
 #import "kryon/geometry"
 #import "kryon/drawing_props"
 #import "kryon/control_props"
-#import "kryon/box_widget"
-#import "kryon/box_props"
-#import "kryon/text_widget"
-#import "kryon/text_props"
-#import "kryon/button_widget"
-#import "kryon/button_props"
+
+Box :: #import "kryon/box";
+
+Text :: #import "kryon/text";
+
+Button :: #import "kryon/button";
 #import "kryon/hosted_values"
 #import "kryon/hosted_app"
 #import "kryon/widget_host"
@@ -47,12 +47,12 @@ Codec :: #import "apps/node_codec";
 #import "entity/entity_records"
 #import "entity/entity_dew"
 #import "entity/game_shop_native"
-#import "kryon/image_widget"
-#import "kryon/image_props"
+
+Image :: #import "kryon/image";
 #import "entity/leaderboard_native"
 #import "kryon/widget_palette"
 #import "kryon/image_raster"
-#import "kryon/loading_indicator"
+LoadingIndicator :: #import "kryon/loading_indicator";
 #import "kryon/http_transfer"
 #import "player_loading"
 #import "island_unlock"
@@ -67,10 +67,12 @@ PLAYER_HOST_API :: 43
 ShopUI :: #import "shop_view";
 #import, file "chest_reminder_host_policy.zi";
 #if !#defined(PLATFORM_WEB) {
-    #if #defined(ANDROID_BUILD) || #defined(_WIN32) {
+    #if #defined(ANDROID_BUILD) {
+        ReminderWindow :: #import "kryon/android_device";
+    } else #if #defined(_WIN32) {
         ReminderWindow :: #import "kryon/raylib_runtime";
     } else {
-        ReminderWindow :: #import "kryon/Desktop";
+        ReminderWindow :: #import "kryon/desktop_runtime";
     }
 }
 #import "std/number_text"
@@ -232,7 +234,9 @@ CollectionFocused :: (context: *void, node: *AppNode) -> bool {
     unused context
     foreground := false
     #if !#defined(PLATFORM_WEB) {
-        #if #defined(ANDROID_BUILD) || #defined(_WIN32) {
+        #if #defined(ANDROID_BUILD) {
+            foreground = ReminderWindow.AndroidLifecycleFocused() != 0
+        } else #if #defined(_WIN32) {
             foreground = ReminderWindow.RaylibFocused()
         } else {
             foreground = ReminderWindow.WindowFocusedHost()
@@ -806,26 +810,26 @@ CollectionUpdatesSet :: (on: bool) -> bool {
 // input until it is answered.
 CollectionUpdatesQuestion :: (session: Session, viewport: Rectangle) {
     question := "Download new levels when they come out?"
-    Box(session, BoxProps.{.key = cast(u64)49300, .bounds = viewport, .fill = Color.{0, 0, 0, 160}})
-    unused Button(session, ButtonProps.{.key = cast(u64)49301, .id = 49301, .label = question,
+    Box.Draw(session, Box.Props.{.key = cast(u64)49300, .bounds = viewport, .fill = Color.{0, 0, 0, 160}})
+    unused Button.Draw(session, Button.Props.{.key = cast(u64)49301, .id = 49301, .label = question,
             .bounds = viewport, .invisible = true})
     width := ifx viewport.width - 24.0 < 480.0 then viewport.width - 24.0 else 480.0
     height: float32 = 200.0
     x := viewport.x + (viewport.width - width) / 2.0
     y := viewport.y + (viewport.height - height) / 2.0
-    Box(session, BoxProps.{.key = cast(u64)49302, .bounds = Rectangle.{x, y, width, height},
+    Box.Draw(session, Box.Props.{.key = cast(u64)49302, .bounds = Rectangle.{x, y, width, height},
             .fill = Color.{59, 64, 63, 255}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
-    Text(session, TextProps.{.key = cast(u64)49303, .text = question, .font = 20, .wrap = TextWrap.TextWrapAuto,
+    Text.Draw(session, Text.Props.{.key = cast(u64)49303, .text = question, .size = 20, .wrap = Text.Wrap.TextWrapAuto,
             .bounds = Rectangle.{x + 16.0, y + 16.0, width - 32.0, 60.0}})
-    Text(session, TextProps.{.key = cast(u64)49304, .text = "You can change this anytime in a game's Help.", .font = 14,
-            .wrap = TextWrap.TextWrapAuto, .bounds = Rectangle.{x + 16.0, y + 80.0, width - 32.0, 44.0}})
+    Text.Draw(session, Text.Props.{.key = cast(u64)49304, .text = "You can change this anytime in a game's Help.", .size = 14,
+            .wrap = Text.Wrap.TextWrapAuto, .bounds = Rectangle.{x + 16.0, y + 80.0, width - 32.0, 44.0}})
     button_width := (width - 48.0 - 12.0) / 2.0
-    if Button(session, ButtonProps.{.key = cast(u64)49305, .id = 49305, .label = "Not now",
+    if Button.Draw(session, Button.Props.{.key = cast(u64)49305, .id = 49305, .label = "Not now",
             .bounds = Rectangle.{x + 24.0, y + 136.0, button_width, 44.0},
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
         unused CollectionUpdatesSet(false)
     }
-    if Button(session, ButtonProps.{.key = cast(u64)49306, .id = 49306, .label = "Download",
+    if Button.Draw(session, Button.Props.{.key = cast(u64)49306, .id = 49306, .label = "Download",
             .bounds = Rectangle.{x + 36.0 + button_width, y + 136.0, button_width, 44.0},
             .tone = ButtonTone.ButtonToneAccent}) != 0 {
         unused CollectionUpdatesSet(true)
@@ -871,7 +875,7 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     CollectionIslandEditorStep()
     // A refused save cannot resume another account's already loaded package.
     if collection_island_blocked {
-        Box(session, BoxProps.{.key = cast(u64)49400, .bounds = viewport,
+        Box.Draw(session, Box.Props.{.key = cast(u64)49400, .bounds = viewport,
             .fill = Color.{42, 46, 45, 255}})
         return true
     }
@@ -955,12 +959,16 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         }
         if CollectionNeedsCover(*collection_loading, collection_host.tree.active.slot,
             collection_host.tree.active.generation, pictures_ready, MonotonicMilliseconds()) {
-            Box(session, BoxProps.{.key = cast(u64)49400, .bounds = viewport,
+            Box.Draw(session, Box.Props.{.key = cast(u64)49400, .bounds = viewport,
                     .fill = ColorFromPacked(ShoveyPalette().background)})
-            unused Button(session, ButtonProps.{.key = cast(u64)49401, .id = 49401,
+            unused Button.Draw(session, Button.Props.{.key = cast(u64)49401, .id = 49401,
                     .bounds = viewport, .invisible = true})
-            LoadingIndicator(session, LoadingIndicatorProps.{.key = cast(u64)49402,
-                    .bounds = viewport, .now = now, .scale = 1.5})
+            loading: LoadingIndicator.Props
+            loading.key = cast(u64)49402
+            loading.bounds = viewport
+            loading.now = now
+            loading.scale = 1.5
+            LoadingIndicator.Draw(session, loading)
             return true
         }
     } else if runtime.node.collection {
@@ -977,15 +985,15 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         BuilderPrint(*title_bytes, "%", TextUntilNul(runtime.node.entry.title[:]))
         title := BuilderFinish(title_bytes)
         if !VecPush(collection_frame_paths, title) { AppFileFree(title); return false }
-        Box(session, BoxProps.{.key = cast(u64)6, .bounds = Rectangle.{viewport.x, viewport.y, viewport.width, 56.0},
+        Box.Draw(session, Box.Props.{.key = cast(u64)6, .bounds = Rectangle.{viewport.x, viewport.y, viewport.width, 56.0},
                 .fill = Color.{128, 140, 136, 40}})
-        if Button(session, ButtonProps.{.key = cast(u64)7, .id = 7, .label = "Back",
+        if Button.Draw(session, Button.Props.{.key = cast(u64)7, .id = 7, .label = "Back",
                 .bounds = Rectangle.{viewport.x + 8.0, viewport.y + 6.0, 76.0, 44.0},
                 .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
             unused AppHostBack(*collection_host)
         }
-        Text(session, TextProps.{.key = cast(u64)8,
-                .text = title, .font = 16,
+        Text.Draw(session, Text.Props.{.key = cast(u64)8,
+                .text = title, .size = 16,
                 .bounds = Rectangle.{viewport.x + 112.0, viewport.y + 20.0, viewport.width - 232.0, 28.0}})
     }
     if collection_island_page { CollectionIslandFrame(session, viewport) }

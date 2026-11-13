@@ -5,9 +5,9 @@ cmake_minimum_required(VERSION 3.22)
 project(Shovey C)
 
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../../.." ABSOLUTE)
-if(NOT DEFINED KRYON_DIR OR NOT DEFINED ZIRAN_DIR)
+if(NOT DEFINED KRYON_DIR OR NOT DEFINED ZIRAN_DIR OR NOT DEFINED ZIRAN_PACKAGE_ID)
     message(FATAL_ERROR
-        "kryon build --profile android passes -DKRYON_DIR, -DZIRAN_DIR; a manual gradle run passes them as -P properties")
+        "kryon build --profile android passes the locked package paths and identity; a manual gradle run passes them as -P properties")
 endif()
 get_filename_component(KRYON_DIR "${KRYON_DIR}" ABSOLUTE BASE_DIR "${REPO_ROOT}")
 get_filename_component(ZIRAN_DIR "${ZIRAN_DIR}" ABSOLUTE BASE_DIR "${REPO_ROOT}")
@@ -61,7 +61,8 @@ execute_process(COMMAND "${HOST_PYTHON}"
     --ziran "${ZIRAN_BIN}" --zi2c "${ZI2C_BIN}"
     --root "${REPO_ROOT}" --kryon "${KRYON_DIR}"
     --ir "${APP_ZIRAN_IR_DIR}" --output "${APP_ZIRAN_GEN_DIR}"
-    --manifest "${APP_ZIRAN_MANIFEST}" ${APP_ZIRAN_DEFINES}
+    --manifest "${APP_ZIRAN_MANIFEST}" --package-id "${ZIRAN_PACKAGE_ID}"
+    ${APP_ZIRAN_DEFINES}
     --codegen "${APP_CODEGEN}"
     WORKING_DIRECTORY "${REPO_ROOT}" COMMAND_ERROR_IS_FATAL ANY)
 include("${APP_ZIRAN_MANIFEST}")
@@ -101,4 +102,4 @@ foreach(directory ${APP_ZIRAN_INCLUDE_DIRS})
     target_compile_options(main PRIVATE "-iquote${directory}")
 endforeach()
 
-target_link_libraries(main ${SHOVEY_CRYPTO_LINK})
+target_link_libraries(main PRIVATE ${SHOVEY_CRYPTO_LINK})

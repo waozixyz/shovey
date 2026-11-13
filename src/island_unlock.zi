@@ -8,19 +8,19 @@
 #import "kryon/session"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
-#import "kryon/box_props"
-#import "kryon/box_widget"
-#import "kryon/text_props"
-#import "kryon/text_widget"
+Box :: #import "kryon/box";
+
+Text :: #import "kryon/text";
+
 #import "kryon/text_align"
 #import "kryon/text_measure"
-#import "kryon/button_props"
+Button :: #import "kryon/button";
 #import "kryon/control_props"
-#import "kryon/button_widget"
-#import "kryon/image_props"
-#import "kryon/image_widget"
+
+Image :: #import "kryon/image";
+
 #import "entity/dew_model"
-#import "kryon/carousel"
+Carousel :: #import "kryon/carousel";
 
 host_api :: #system_library "host_api";
 AppLocaleHost :: (key: string) -> string #foreign host_api;
@@ -236,13 +236,13 @@ IslandUnlockCaption :: (unlock: *IslandUnlock, output: []u8) -> string {
 }
 
 IslandLine :: (session: Session, key: u64, bounds: Rectangle, text: string, size: s32, centre: bool = true) {
-    unused Text(session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = size,
+    unused Text.Draw(session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = size,
         .align = ifx centre then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
-        .vertical_align = TextAlign.TextAlignCenter, .wrap = TextWrap.TextWrapAuto})
+        .vertical_align = TextAlign.TextAlignCenter, .wrap = Text.Wrap.TextWrapAuto})
 }
 
 IslandButton :: (session: Session, key: u64, bounds: Rectangle, label: string, accent: bool = false, disabled: bool = false) -> bool {
-    return Button(session, ButtonProps.{.key = key, .id = cast(s32)key, .bounds = bounds, .label = label,
+    return Button.Draw(session, Button.Props.{.key = key, .id = cast(s32)key, .bounds = bounds, .label = label,
         .disabled = disabled, .fit_content = true,
         .tone = ifx accent then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
         .emphasis = ifx accent then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
@@ -276,7 +276,7 @@ IslandUnlockPanel :: (session: Session, viewport: Rectangle, unlock: *IslandUnlo
     height: float32 = 148.0 + (ifx offer then 38.0 else 0.0) + (ifx insufficient then 52.0 else 0.0)
     x := viewport.x + (viewport.width - width) / 2.0
     y := viewport.y + viewport.height - height - 24.0
-    unused Box(session, BoxProps.{.key = cast(u64)49520, .bounds = Rectangle.{x, y, width, height},
+    unused Box.Draw(session, Box.Props.{.key = cast(u64)49520, .bounds = Rectangle.{x, y, width, height},
         .fill = Color.{38, 44, 43, 235}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
     inner_x := x + 16.0
     inner := width - 32.0
@@ -311,7 +311,7 @@ IslandUnlockPanel :: (session: Session, viewport: Rectangle, unlock: *IslandUnlo
         }
     }
     if offer && (!unlock.connected || choosing) {
-        CarouselActionRibbon(session, 49543, Rectangle.{inner_x, row, inner, 44.0}, AppLocaleHost("shovey_island_off"))
+        Carousel.CarouselActionRibbon(session, 49543, Rectangle.{inner_x, row, inner, 44.0}, AppLocaleHost("shovey_island_off"))
     }
     status := unlock.notice
     if status == "" && !unlock.connected { status = "shovey_island_signin" }

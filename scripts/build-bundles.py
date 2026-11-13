@@ -108,9 +108,6 @@ def translations(descriptor):
 
 def build(toolchain, kryon, apps, mingcute):
     lock_flags = [] if (ROOT / 'ziran.local.toml').exists() else ['--locked']
-    entity = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'entity', *lock_flags], cwd=ROOT, text=True).strip())
-    daochi = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'DaochiClient', *lock_flags], cwd=ROOT, text=True).strip())
-    crypto = Path(subprocess.check_output([str(toolchain / 'build/bin/ziran'), 'pkg', 'path', 'crypto', *lock_flags], cwd=ROOT, text=True).strip())
     for app in json.loads((ROOT / 'apps.json').read_text())['apps']:
         # External entries are downloaded through the host's protected package
         # path; their public descriptors have no local source or asset tree.
@@ -145,27 +142,30 @@ def build(toolchain, kryon, apps, mingcute):
         if descriptor.get('prepare_assets'):
             subprocess.run(['python3', str(ROOT / descriptor['prepare_assets']), str(resources), str(generated)],
                            cwd=ROOT, check=True)
+        prepared_levels = generated / 'levels.zi'
+        if prepared_levels.exists() and prepared_levels.read_bytes() != (ROOT / 'src/levels.zi').read_bytes():
+            raise ValueError(f'{prepared_levels}: generated campaign differs from src/levels.zi')
+        compiler_generated = generated / 'modules'
+        shutil.rmtree(compiler_generated, ignore_errors=True)
+        compiler_generated.mkdir()
         (generated / 'translations.zi').write_text(code)
+        (compiler_generated / 'translations.zi').write_text(code)
         bundle = ROOT / 'build/games' / f'{name}.zx'
         bundle.parent.mkdir(parents=True, exist_ok=True)
+        source = ROOT / descriptor['source']
         subprocess.run([
-            str(toolchain / 'build/bin/zi2zx'), 'bundle', '--root', str(ROOT),
-            '--module-path', str(generated),
-            '--module-path', str(kryon / 'src/ui'),
-            '--module-path', 'kryon=' + str(kryon / 'src/ui'),
-            '--module-path', 'kryon=' + str(kryon / 'src/backend'),
-            '--module-path', 'std=' + str(toolchain / 'std'),
-            '--module-path', str(toolchain / 'std'),
-            '--module-path', 'apps=' + str(apps / 'src'),
-            '--module-path', 'mingcute=' + str(mingcute / 'src'),
-            '--module-path', 'entity=' + str(entity / 'src'),
-            '--module-path', 'daochi_client=' + str(daochi),
-            '--module-path', 'crypto=' + str(crypto / 'src'),
+            str(toolchain / 'build/bin/ziran'), 'bundle', '--project', *lock_flags,
+            '--root', str(source.parent),
+            '--module-path', str(compiler_generated),
+            '--module-path', str(ROOT / 'src/editor'),
+            '--module-path', str(ROOT / 'src/solver'),
+            *(['--module-path', str(source.parent)] if app.get('private') else []),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
-            *[flag for name in app.get('library_entries', []) for flag in ('--retain', name)],
+            *[flag for name in app.get('library_entries', [])
+              for flag in ('--retain', 'std_' + name if name.startswith('json_scan:') else name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir',
             'assets=' + str(bundle_assets(manifest, name, staged, 'SHOVEY_RELEASE' in descriptor.get('build_defines', []))),
-            '--entry', descriptor['entry'], '-o', str(bundle), str(ROOT / descriptor['source'])],
+            '--entry', descriptor['entry'], '-o', str(bundle), str(source)],
             cwd=ROOT, check=True)
         shutil.copyfile(ROOT / descriptor['preview'], bundle.with_name(f'{name}-preview.png'))
         print(f'built {bundle.relative_to(ROOT)} ({bundle.stat().st_size // 1024} KiB)')

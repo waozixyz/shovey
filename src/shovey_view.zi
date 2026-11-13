@@ -3,37 +3,28 @@
 FingerSwipe :: #import "mingcute/mingcute_filled_finger_swipe";
 Math :: #import "std/math";
 #import "joystick"
-#import "direction_pad"
+DirectionPad :: #import "kryon/direction_pad";
 #import "geometry"
 #import "drawing_props"
-#import "text_props"
+Text :: #import "kryon/text";
 #import "text_align"
-#import "text_widget"
 #import "kryon/text_measure"
-#import "button_props"
-#import "image_widget"
-#import "image_props"
-#import "button_widget"
+Button :: #import "kryon/button";
+Image :: #import "kryon/image";
 #import "control_props"
-#import "box_props"
-#import "box_widget"
-#import "shape_props"
-#import "shape_widget"
-#import "modal_widget"
-#import "modal_props"
-#import "svg_icon_props"
-#import "svg_icon_widget"
-#import "press_props"
-#import "press_widget"
-#import "scroll_props"
-#import "scroll_widget"
+Box :: #import "kryon/box";
+Shape :: #import "kryon/shape";
+Modal :: #import "kryon/modal";
+SvgIcon :: #import "kryon/svg_icon";
+Press :: #import "kryon/press";
+Scroll :: #import "kryon/scroll";
 #import "kryon/tree"
 #import "number_text"
 #import "text_buffer"
 #import "c_string"
 #import "byte_text_linux"
 #import "apps/node_types"
-#import "tile_map"
+TileMap :: #import "kryon/tile_map";
 #import "widget_palette"
 #import, file "level_change.zi";
 #import, file "orientation.zi";
@@ -161,12 +152,12 @@ AppendText :: (bytes: []u8, length: *s32, text: string) {
 
 
 Fill :: (key: u64, bounds: Rectangle, color: Color, radius: float32 = 0.0) {
-    Box(frame.session, BoxProps.{.key = key, .bounds = bounds, .fill = color, .radius = radius})
+    Box.Draw(frame.session, Box.Props.{.key = key, .bounds = bounds, .fill = color, .radius = radius})
 }
 
 Caption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16, center: bool = false) {
-    Text(frame.session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = font,
-            .wrap = TextWrap.TextWrapAuto,
+    Text.Draw(frame.session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = font,
+            .wrap = Text.Wrap.TextWrapAuto,
             .align = ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
             .vertical_align = TextAlign.TextAlignCenter})
 }
@@ -203,14 +194,14 @@ FriendCovers :: (x: float32, y: float32, card_width: float32, height: float32, c
 
 // Pip's card: the tip, a glow on the cell it is about and Continue, which
 // Enter and Escape also press.
-FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: TileMapResult, landscape: bool) {
+FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: TileMap.TileMapResult, landscape: bool) {
     topic := GuideNext(*friend_guide)
     if topic < 0 { return }
     text := AppLocaleHost(GuideTextKey(topic))
     card_width: float32 = ifx width > 504.0 then 480.0 else width - 24.0
     text_width: float32 = card_width - 122.0
-    text_height := cast(float32)TextHeight(frame.session, TextProps.{.text = text,
-            .bounds = Rectangle.{0.0, 0.0, text_width, 0.0}, .font = 15, .wrap = TextWrap.TextWrapAuto})
+    text_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = text,
+            .bounds = Rectangle.{0.0, 0.0, text_width, 0.0}, .size = 15, .wrap = Text.Wrap.TextWrapAuto})
     height: float32 = text_height + 98.0
     // The hint sits beside Continue, or above it on a narrow card.
     hint := AppLocaleHost("shovey_friend_tap")
@@ -229,7 +220,7 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
         focus := (GuideKind(game.ground[at]) | GuideKind(game.objects[at])) & GuideBit(topic)
         if topic == GUIDE_HOME && ShoveyHome(game.ground[at]) { focus = 1 }
         if focus != 0 {
-            focus_cell = TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            focus_cell = TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
             focused = true
             break
         }
@@ -242,18 +233,18 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     if hides && !FriendCovers(x, clear, card_width, height, focus_cell) { y = clear }
     if focused { PipGlow(frame.session, cast(u64)20610, focus_cell, frame.now) }
     // Pip sits in the scene beside a speech bubble; the puzzle stays visible.
-    unused Box(frame.session, BoxProps.{.key = cast(u64)20600,
+    unused Box.Draw(frame.session, Box.Props.{.key = cast(u64)20600,
             .bounds = Rectangle.{x + 68.0, y, card_width - 68.0, height}, .radius = 18.0,
             .fill = Color.{53, 61, 54, 250}, .border = Color.{161, 193, 112, 255}})
     Caption(20601, Rectangle.{x + 108.0, y + 12.0, text_width, 24.0}, AppLocaleHost("shovey_friend_name"), 18)
     Caption(20602, Rectangle.{x + 108.0, y + 42.0, text_width, text_height + 4.0}, text, 15)
     bob := cast(float32)Math.Sin(frame.now * 2.0) * 2.5
-    Image(frame.session, ImageProps.{.key = cast(u64)20603,
+    Image.Draw(frame.session, Image.Props.{.key = cast(u64)20603,
             .bounds = Rectangle.{x - 4.0, y + height - 112.0 + bob, 110.0, 116.0},
             .asset_path = "assets/shovey/pip.png", .alt_text = AppLocaleHost("shovey_friend_name"),
-            .fit = ImageFit.ImageFitContain, .smooth = true})
+            .fit = Image.ImageFit.ImageFitContain, .smooth = true})
     hint_y := ifx hint_row then y + height - 70.0 else y + height - 46.0
-    Text(frame.session, TextProps.{.key = cast(u64)20616, .text = hint, .font = 13, .wrap = TextWrap.TextWrapAuto,
+    Text.Draw(frame.session, Text.Props.{.key = cast(u64)20616, .text = hint, .size = 13, .wrap = Text.Wrap.TextWrapAuto,
             .bounds = Rectangle.{x + 108.0, hint_y, hint_width, ifx hint_row then 22.0 else 36.0},
             .align = TextAlign.TextAlignStart, .vertical_align = TextAlign.TextAlignCenter})
     if PipContinue(frame.session, 20604, Rectangle.{x + card_width - 112.0, y + height - 48.0, 96.0, 38.0},
@@ -266,7 +257,7 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
 // screen readers and tooltips.
 Control :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, detail: string = "",
     icon: string = "") -> bool {
-    return Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id,
+    return Button.Draw(frame.session, Button.Props.{.key = cast(u64)id, .id = id,
             .bounds = bounds, .label = label, .detail = detail, .disabled = disabled,
             .icon_shape = icon, .icon_only = icon != "",
             .fit_content = true, .tone = ButtonTone.ButtonToneNeutral,
@@ -280,7 +271,7 @@ HeaderControl :: (id: s32, bounds: Rectangle, label: string, icon: string) -> bo
 
 // One of a set of choices; the chosen one stands out and reads as selected.
 Choice :: (id: s32, bounds: Rectangle, label: string, chosen: bool) -> bool {
-    return Button(frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label,
+    return Button.Draw(frame.session, Button.Props.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label,
             .selected = chosen, .tone = ifx chosen then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
             .emphasis = ifx chosen then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
@@ -290,8 +281,8 @@ Choice :: (id: s32, bounds: Rectangle, label: string, chosen: bool) -> bool {
 // changes it later. Nothing behind the question takes input meanwhile.
 ControlsChoice :: (width: float32, top: float32, bottom: float32) {
     full := Rectangle.{0.0, top, width, bottom - top}
-    Box(frame.session, BoxProps.{.key = cast(u64)20050, .bounds = full, .fill = Color.{0, 0, 0, 160}})
-    unused Press(frame.session, PressProps.{.key = cast(u64)20051, .id = 20051, .bounds = full,
+    Box.Draw(frame.session, Box.Props.{.key = cast(u64)20050, .bounds = full, .fill = Color.{0, 0, 0, 160}})
+    unused Press.Draw(frame.session, Press.Props.{.key = cast(u64)20051, .id = 20051, .bounds = full,
             .label = AppLocaleHost("shovey_controls_choose"), .now = frame.now, .capture = true})
     card_width := ifx width - 24.0 < 640.0 then width - 24.0 else 640.0
     tile_width := (card_width - 48.0 - 14.0) / 2.0
@@ -301,7 +292,7 @@ ControlsChoice :: (width: float32, top: float32, bottom: float32) {
     x := (width - card_width) / 2.0
     y := top + (bottom - top - card_height) / 2.0
     if y < top + 8.0 { y = top + 8.0 }
-    Box(frame.session, BoxProps.{.key = cast(u64)20052, .bounds = Rectangle.{x, y, card_width, card_height},
+    Box.Draw(frame.session, Box.Props.{.key = cast(u64)20052, .bounds = Rectangle.{x, y, card_width, card_height},
             .fill = Color.{59, 64, 63, 255}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
     Caption(20053, Rectangle.{x + 16.0, y + 16.0, card_width - 32.0, 34.0}, AppLocaleHost("shovey_controls_choose"), 22, true)
     Caption(20054, Rectangle.{x + 16.0, y + 50.0, card_width - 32.0, 24.0}, AppLocaleHost("shovey_controls_later"), 14, true)
@@ -314,9 +305,9 @@ ControlsChoice :: (width: float32, top: float32, bottom: float32) {
 // One way to move, shown as it plays: Shovey on the grass with a swipe, or
 // the movement pad itself, which can be tried right here.
 ChoiceTile :: (id: s32, bounds: Rectangle, pad: bool) -> bool {
-    press := Press(frame.session, PressProps.{.key = cast(u64)id, .id = id, .bounds = bounds,
+    press := Press.Draw(frame.session, Press.Props.{.key = cast(u64)id, .id = id, .bounds = bounds,
             .label = AppLocaleHost(ifx pad then "shovey_controls_pad" else "shovey_controls_swipe"), .now = frame.now})
-    Box(frame.session, BoxProps.{.key = cast(u64)(id + 1), .bounds = bounds, .fill = Color.{74, 80, 78, 255},
+    Box.Draw(frame.session, Box.Props.{.key = cast(u64)(id + 1), .bounds = bounds, .fill = Color.{74, 80, 78, 255},
             .border = ifx press.down then Color.{52, 185, 48, 255} else Color.{106, 112, 110, 255}, .radius = 14.0})
     art := Rectangle.{bounds.x + 12.0, bounds.y + 12.0, bounds.width - 24.0, bounds.height - 86.0}
     side := ifx art.width < art.height then art.width else art.height
@@ -332,12 +323,12 @@ ChoiceTile :: (id: s32, bounds: Rectangle, pad: bool) -> bool {
             }
         }
         Sprite(cast(u64)(id + 2 + 9), SPRITE_PLAYER + 2, Rectangle.{square.x + cell, square.y + cell, cell, cell}, "Shovey")
-        SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{square.x + side * 0.56, square.y + side * 0.46, side * 0.44, side * 0.44},
+        SvgIcon.Draw(frame.session, SvgIcon.Props.{.bounds = Rectangle.{square.x + side * 0.56, square.y + side * 0.46, side * 0.44, side * 0.44},
                 .shape = FingerSwipe.Shape, .color = Color.{255, 255, 255, 240}})
-        SvgIcon(frame.session, SvgIconProps.{.bounds = Rectangle.{square.x + side * 0.08, square.y + side * 0.02, side * 0.6, side * 0.3},
+        SvgIcon.Draw(frame.session, SvgIcon.Props.{.bounds = Rectangle.{square.x + side * 0.08, square.y + side * 0.02, side * 0.6, side * 0.3},
                 .shape = "S2.5rr:M3 12H19M14 7L19 12L14 17", .color = Color.{255, 236, 170, 235}})
     } else {
-        tried := DirectionPad(frame.session, DirectionPadProps.{.key = cast(u64)(id + 2), .id = id + 2, .bounds = square,
+        tried := DirectionPad.Draw(frame.session, DirectionPad.Props.{.key = cast(u64)(id + 2), .id = id + 2, .bounds = square,
                 .label = AppLocaleHost("shovey_controls_pad"), .now = frame.now, .repeat_seconds = 0.16})
         chosen = chosen || tried.step
     }
@@ -379,8 +370,8 @@ Tile :: (key: u64, kind: s32, bounds: Rectangle) {
 }
 
 Sprite :: (key: u64, index: s32, bounds: Rectangle, label: string) {
-    Image(frame.session, ImageProps.{.key = key, .asset_path = SpriteFile(index),
-            .alt_text = label, .bounds = bounds, .fit = ImageFit.ImageFitContain, .smooth = true})
+    Image.Draw(frame.session, Image.Props.{.key = key, .asset_path = SpriteFile(index),
+            .alt_text = label, .bounds = bounds, .fit = Image.ImageFit.ImageFitContain, .smooth = true})
 }
 
 // The solved-level count last reported to the leaderboard.
@@ -590,17 +581,17 @@ ThrowButton :: (width: float32, top: float32, bottom: float32) -> bool {
     bounds := Rectangle.{width - size - 16.0, bottom - size - 16.0, size, size}
     pulse := cast(float32)(0.5 + 0.5 * Math.Sin(frame.now * 4.0))
     glow := size * (0.08 + 0.06 * pulse)
-    unused Box(frame.session, BoxProps.{.key = cast(u64)20060, .radius = (size + glow * 2.0) / 2.0,
+    unused Box.Draw(frame.session, Box.Props.{.key = cast(u64)20060, .radius = (size + glow * 2.0) / 2.0,
             .bounds = Rectangle.{bounds.x - glow, bounds.y - glow, size + glow * 2.0, size + glow * 2.0},
             .fill = Color.{255, 226, 150, cast(u8)(40.0 + 50.0 * pulse)}})
-    unused Box(frame.session, BoxProps.{.key = cast(u64)20061, .bounds = bounds, .radius = size / 2.0,
+    unused Box.Draw(frame.session, Box.Props.{.key = cast(u64)20061, .bounds = bounds, .radius = size / 2.0,
             .fill = Color.{40, 46, 45, 200}, .border = Color.{255, 226, 150, 255}})
     // The drawn shot sits right of and below its frame's centre.
     shot := size * 1.25
-    Image(frame.session, ImageProps.{.key = cast(u64)20062, .asset_path = sprite_files[SPRITE_SHOT],
-            .alt_text = AppLocaleHost("shovey_ammo"), .fit = ImageFit.ImageFitContain, .smooth = true,
+    Image.Draw(frame.session, Image.Props.{.key = cast(u64)20062, .asset_path = sprite_files[SPRITE_SHOT],
+            .alt_text = AppLocaleHost("shovey_ammo"), .fit = Image.ImageFit.ImageFitContain, .smooth = true,
             .bounds = Rectangle.{bounds.x + (size - shot) / 2.0 - shot * 0.047, bounds.y + (size - shot) / 2.0 - shot * 0.078, shot, shot}})
-    press := Press(frame.session, PressProps.{.key = cast(u64)20063, .id = 20063, .bounds = bounds,
+    press := Press.Draw(frame.session, Press.Props.{.key = cast(u64)20063, .id = 20063, .bounds = bounds,
             .label = AppLocaleHost("shovey_fire"), .now = frame.now})
     return press.clicked
 }
@@ -667,10 +658,10 @@ LevelPicture :: (number: s32, picture: Rectangle, image_key: u64, board_key: u64
     display_bytes: [48]u8
     display := MapRoute.WorldMapLevelDisplayName(number, display_bytes[:])
     if display != "" { label = display }
-    if level_preview_current[at] { Image(frame.session, ImageProps.{.key = image_key,
+    if level_preview_current[at] { Image.Draw(frame.session, Image.Props.{.key = image_key,
                 .asset_path = TextUntilNul(level_preview_paths[at][:]),
                 .alt_text = label, .bounds = picture,
-                .fit = ImageFit.ImageFitContain, .smooth = true}) }
+                .fit = Image.ImageFit.ImageFitContain, .smooth = true}) }
     else { ShoveyBoardPreview(frame.session, number, picture, board_key, sprite_names[:], landscape) }
 }
 
@@ -1056,7 +1047,7 @@ OceanBackdrop :: (area: Rectangle, origin: Vector2, cell: float32, landscape: bo
     if columns < 1 || rows < 1 || cast(s64)(columns * rows) > ocean_layers.count { return }
     water := KindSprite(*game, 64, -1, frame.now, landscape)
     for at: cast(s32)0..columns * rows - 1 { ocean_layers[at] = water }
-    unused TileMap(frame.session, TileMapProps.{.key = cast(u64)20099,
+    unused TileMap.Draw(frame.session, TileMap.Props.{.key = cast(u64)20099,
             .bounds = Rectangle.{first.x, first.y, cast(float32)columns * cell, cast(float32)rows * cell},
             .columns = columns, .rows = rows, .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:],
             .names = sprite_names[:], .layers = ocean_layers[:columns * rows], .layer_count = 1, .label = "", .pixel_snap = board_pixel_snap})
@@ -1161,7 +1152,7 @@ EndingScreen :: (width: float32, top: float32, bottom: float32, key: s32) {
     shown := cast(s32)(area.height / row_height) + 2
     // The boards roll inside a still scroll area, which keeps them on the
     // screen.
-    clip := Scroll(frame.session, ScrollProps.{.key = cast(u64)20110, .bounds = area, .content_height = cast(s32)area.height})
+    clip := Scroll.Draw(frame.session, Scroll.Props.{.key = cast(u64)20110, .bounds = area, .content_height = cast(s32)area.height})
     if clip.opened {
         for slot: cast(s32)0..shown - 1 {
             row := first + slot
@@ -1185,7 +1176,7 @@ EndingScreen :: (width: float32, top: float32, bottom: float32, key: s32) {
     middle := area.y + area.height * 0.42
     Caption(20025, Rectangle.{16.0, middle - 44.0, width - 32.0, 72.0}, AppLocaleHost("shovey_the_end"), 52, true)
     Caption(20026, Rectangle.{24.0, middle + 36.0, width - 48.0, 64.0}, AppLocaleHost("shovey_finale"), 18, true)
-    press := Press(frame.session, PressProps.{.key = cast(u64)20111, .id = 20111, .bounds = area,
+    press := Press.Draw(frame.session, Press.Props.{.key = cast(u64)20111, .id = 20111, .bounds = area,
             .label = AppLocaleHost("shovey_back"), .now = frame.now})
     if press.clicked || key == 257 || key == 32 || key == 256 {
         OpenLevels()
@@ -1221,19 +1212,19 @@ RewardCard :: (width: float32, bottom: float32) {
         BuilderPrint(*detail, "%", AppLocaleHost(ifx reward_claiming == reward_card then
             "shovey_reward_pending" else "shovey_reward_unclaimed"))
     }
-    actions: [2]ActionModalAction
+    actions: [2]Modal.ActionModalAction
     count: s64 = 0
     can_retry := !reward_card_empty && reward_card_amount[0] == 0 && reward_claiming != reward_card
     if can_retry {
-        actions[0] = ActionModalAction.{.label = AppLocaleHost(ifx reward_card_signin then
+        actions[0] = Modal.ActionModalAction.{.label = AppLocaleHost(ifx reward_card_signin then
                 "shovey_reward_connect" else "shovey_reward_claim"),
             .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}
         count += 1
     }
-    actions[count] = ActionModalAction.{.label = AppLocaleHost("shovey_close"),
+    actions[count] = Modal.ActionModalAction.{.label = AppLocaleHost("shovey_close"),
         .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}
     count += 1
-    result := ActionModal(frame.session, ActionModalProps.{.key = cast(u64)20120, .id = 20120,
+    result := Modal.ActionModal(frame.session, Modal.ActionModalProps.{.key = cast(u64)20120, .id = 20120,
             .title = title, .message = TextView(VecSlice(detail, 0, detail.count)), .max_width = 440,
             .show_close = true, .close_label = AppLocaleHost("shovey_close")}, actions[:count])
     if can_retry && result.action == 1 {
@@ -1306,7 +1297,7 @@ ShoveyShopOpen :: (page: s32) { ShopUI.Open(page) }
 ShoveyShopBack :: () -> bool { return ShopUI.Back() }
 #program_export
 ShoveyShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool {
-    return ShopUI.Frame(session, bounds, now, today)
+    return ShopUI.ShopFrame(session, bounds, now, today)
 }
 
 ShoveyFrame :: () {
@@ -1409,7 +1400,7 @@ ShoveyFrame :: () {
         }
         if ShopUI.IsOpen() {
             if key == 256 || key == 4 { unused ShopUI.Back() }
-            if ShopUI.IsOpen() { unused ShopUI.Frame(frame.session, Rectangle.{0.0, top, width, bottom - top}, frame.now, ShoveyShopToday) }
+            if ShopUI.IsOpen() { unused ShopUI.ShopFrame(frame.session, Rectangle.{0.0, top, width, bottom - top}, frame.now, ShoveyShopToday) }
             return
         }
     }
@@ -1487,7 +1478,7 @@ ShoveyFrame :: () {
                 BuilderPrint(*result_text, "%  %", ifx selected_result.stars == 3 then "★★★" else ifx selected_result.stars == 2 then "★★☆" else "★☆☆", selected_result.score)
                 Caption(20910, Rectangle.{16.0, panel_top + 56.0, width - 152.0, 40.0}, BuilderFinish(result_text), 16)
             }
-            if Button(frame.session, ButtonProps.{.key = cast(u64)20122, .id = 20122,
+            if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20122, .id = 20122,
                 .bounds = Rectangle.{width - 120.0, panel_top + 28.0, 104.0, 56.0},
                 .label = AppLocaleHost("shovey_play"), .disabled = !WorldMap.WorldMapViewFlag(available[:], focus)}) != 0 {
                 selected = WorldMap.WorldMapViewPlay(*levels_map, map_props)
@@ -1522,7 +1513,7 @@ ShoveyFrame :: () {
                 levels_scroll = (latest - 1) / columns * row_height
                 levels_focus_pending = false
             }
-            scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20105,
+            scroll := Scroll.Draw(frame.session, Scroll.Props.{.key = cast(u64)20105,
                     .bounds = Rectangle.{16.0, list_top, width - 32.0, bottom - list_top - 16.0},
                     .content_height = rows * row_height, .scroll_offset = levels_scroll})
             levels_scroll = scroll.scroll_offset
@@ -1544,7 +1535,7 @@ ShoveyFrame :: () {
                     // Status stays accessible in the semantic label, while the
                     // visual card uses a lock/check icon and an unlocked board.
                     status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
-                    if Button(frame.session, ButtonProps.{.key = cast(u64)(33000 + number), .id = 33000 + number,
+                    if Button.Draw(frame.session, Button.Props.{.key = cast(u64)(33000 + number), .id = 33000 + number,
                             .bounds = bounds, .label = label,
                             .disabled = !unlocked,
                             .selected = completed, .fit_content = true,
@@ -1570,7 +1561,7 @@ ShoveyFrame :: () {
                     if icon != "" {
                         // A disabled icon button is a canonical widget, with a
                         // translated accessibility label and no extra action.
-                        unused Button(frame.session, ButtonProps.{.key = cast(u64)(37000 + number),
+                        unused Button.Draw(frame.session, Button.Props.{.key = cast(u64)(37000 + number),
                                 .bounds = ifx unlocked then Rectangle.{bounds.x + bounds.width - 32.0, bounds.y + preview_height + 12.0, 28.0, 28.0} else
                                 Rectangle.{bounds.x + bounds.width / 2.0 - 22.0, bounds.y + preview_height * 0.5 - 18.0, 44.0, 44.0},
                                 .label = status, .icon_only = true, .icon_shape = icon, .disabled = true,
@@ -1578,7 +1569,7 @@ ShoveyFrame :: () {
                                 .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
                     }
                     if unlocked && LevelReplayDot(number, ShoveyLevelBoard(number), completed, TextUntilNul(shared_progress.owner[:])) {
-                        unused Circle(frame.session, CircleProps.{.key = cast(u64)(43000 + number),
+                        unused Shape.Circle(frame.session, Shape.CircleProps.{.key = cast(u64)(43000 + number),
                                 .center = Vector2.{bounds.x + bounds.width - 13.0, bounds.y + 13.0},
                                 .radius = 4.0, .fill = Color.{255, 226, 150, 255}})
                     }
@@ -1588,10 +1579,10 @@ ShoveyFrame :: () {
         }
         // Draw after the map so this single accessible control floats above it.
         back_bounds := Rectangle.{12.0, top + 12.0, 48.0, 48.0}
-        Image(frame.session, ImageProps.{.key = cast(u64)20109, .bounds = back_bounds,
-                .asset_path = "assets/shovey/world-map/back-arrow.png", .fit = ImageFit.ImageFitContain,
+        Image.Draw(frame.session, Image.Props.{.key = cast(u64)20109, .bounds = back_bounds,
+                .asset_path = "assets/shovey/world-map/back-arrow.png", .fit = Image.ImageFit.ImageFitContain,
                 .smooth = true})
-        if Button(frame.session, ButtonProps.{.key = cast(u64)20022, .id = 20022,
+        if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20022, .id = 20022,
                 .bounds = back_bounds, .label = AppLocaleHost("shovey_back"), .invisible = true}) != 0 {
             if !ShoveyBack() { LeaveForGameSelection() }
             return
@@ -1616,8 +1607,8 @@ ShoveyFrame :: () {
             return
         }
         instructions := AppLocaleHost("shovey_instructions")
-        intro_height := cast(float32)TextHeight(frame.session, TextProps.{.text = instructions,
-                .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .font = 16, .wrap = TextWrap.TextWrapAuto}) + 16.0
+        intro_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = instructions,
+                .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .size = 16, .wrap = Text.Wrap.TextWrapAuto}) + 16.0
         // The touch controls choice comes first, above the guide, then
         // whether an installed game downloads new levels.
         // Only standalone Shovey and Arcade keep this choice (arcade.updates).
@@ -1627,7 +1618,7 @@ ShoveyFrame :: () {
         }
         friend_setting := !ShoveySecret(game.level) && game.level < ShoveyFinaleLevel()
         settings_height: float32 = (ifx updates_setting then 170.0 else 92.0) + (ifx friend_setting then 52.0 else 0.0)
-        scroll := Scroll(frame.session, ScrollProps.{.key = cast(u64)20005,
+        scroll := Scroll.Draw(frame.session, Scroll.Props.{.key = cast(u64)20005,
                 .bounds = Rectangle.{16.0, top + 62.0, width - 32.0, bottom - top - 70.0},
                 .content_height = cast(s32)(settings_height + intro_height) + SHOVEY_HELP_COUNT * 68, .scroll_offset = help_scroll})
         help_scroll = scroll.scroll_offset
@@ -1775,7 +1766,7 @@ ShoveyFrame :: () {
     }
     if board_sail >= 0.0 && sail_start_x == 0.0 && game.player >= 0 {
         // The middle of the boat, three cells wide with its hull on its cell.
-        boat_cell := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+        boat_cell := TileMap.TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
         sail_start_x = boat_cell.x + grid.cell * 1.5
         sail_start_y = boat_cell.y - grid.cell * 0.5
     }
@@ -1809,7 +1800,7 @@ ShoveyFrame :: () {
         status_icon = "S2rr:M12 4L14 10H20L15 14L17 20L12 16L7 20L9 14L4 10H10Z"
     }
     if status_icon != "" && !cinematic {
-        unused Button(frame.session, ButtonProps.{.key = cast(u64)20021, .id = 20021,
+        unused Button.Draw(frame.session, Button.Props.{.key = cast(u64)20021, .id = 20021,
                 .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
                 .label = status, .icon_shape = status_icon, .icon_only = true,
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
@@ -1819,8 +1810,8 @@ ShoveyFrame :: () {
         rise := cast(float32)coin_age * 18.0
         toast_width := ifx width < 432.0 then width - 32.0 else 400.0
         toast_x := (width - toast_width) / 2.0
-        Image(frame.session, ImageProps.{.key = 20801, .asset_path = "assets/shovey/shop/coins.png",
-            .alt_text = AppLocaleHost("shovey_shop_coins"), .bounds = Rectangle.{toast_x, top + 76.0 - rise, 40.0, 40.0}, .fit = ImageFit.ImageFitContain})
+        Image.Draw(frame.session, Image.Props.{.key = 20801, .asset_path = "assets/shovey/shop/coins.png",
+            .alt_text = AppLocaleHost("shovey_shop_coins"), .bounds = Rectangle.{toast_x, top + 76.0 - rise, 40.0, 40.0}, .fit = Image.ImageFit.ImageFitContain})
         Caption(20802, Rectangle.{toast_x + 44.0, top + 64.0 - rise, toast_width - 44.0, 64.0}, AppLocaleHost("shovey_completion_coins"), 20, true)
     }
     if save_failed { Caption(20019, Rectangle.{16.0, bottom - 28.0, width - 32.0, 24.0}, AppLocaleHost("shovey_save_failed"), 14, true) }
@@ -1847,7 +1838,7 @@ ShoveyFrame :: () {
                     .gesture = gesture, .size = feedback_size})
         }
         if gesture.tapped || gesture.held {
-            cell := TileMapCellAt(grid, gesture.x, gesture.y)
+            cell := TileMap.TileMapCellAt(grid, gesture.x, gesture.y)
             cell = BoardLogicalIndex(cell, landscape)
             // Tapping Shovey himself throws the shot he holds.
             if gesture.tapped && cell >= 0 && cell == game.player && (game.powers & SHOVEY_AMMO) != 0 && !guiding {
@@ -1856,15 +1847,15 @@ ShoveyFrame :: () {
                 step = TouchDirection(cast(float32)(cell % SHOVEY_WIDTH - game.player % SHOVEY_WIDTH),
                     cast(float32)(cell / SHOVEY_WIDTH - game.player / SHOVEY_WIDTH), 1.0)
             } else {
-                at := TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
+                at := TileMap.TileMapCell(grid, BoardDisplayIndex(game.player, landscape))
                 step = BoardEngineDirection(TouchDirection(gesture.x - at.x - at.width / 2.0,
                     gesture.y - at.y - at.height / 2.0, grid.cell / 2.0), landscape)
             }
         }
     } else {
         // Kryon keeps the floating pad thumb-sized and inset in both orientations.
-        pad := DirectionPad(frame.session, DirectionPadProps.{.key = cast(u64)20040, .id = 20040,
-                .bounds = DirectionPadBounds(Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}),
+        pad := DirectionPad.Draw(frame.session, DirectionPad.Props.{.key = cast(u64)20040, .id = 20040,
+                .bounds = DirectionPad.DirectionPadBounds(Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}),
                 .label = AppLocaleHost("shovey_controls_pad"), .now = frame.now, .repeat_seconds = 0.16, .disabled = disabled,
                 .floating = true})
         if pad.step { step = BoardEngineDirection(pad.direction, landscape) }
@@ -1876,7 +1867,7 @@ ShoveyFrame :: () {
     if guiding {
         // Any press under the bar is for Pip and continues his guide; keys
         // still move Shovey under the card.
-        tap := Press(frame.session, PressProps.{.key = cast(u64)20617, .id = 20617,
+        tap := Press.Draw(frame.session, Press.Props.{.key = cast(u64)20617, .id = 20617,
                 .bounds = Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0},
                 .label = AppLocaleHost("shovey_friend_tap"), .now = frame.now, .capture = true})
         tip_seen := false
@@ -1917,8 +1908,8 @@ ShoveyFrame :: () {
     }
     // Stepping onto the secret chest opens it.
     if ChestHere() && game.player == CHEST_CELL {
-        chest := TileMapCell(grid, BoardDisplayIndex(CHEST_CELL, landscape))
-        tapped := Press(frame.session, PressProps.{.key = cast(u64)20126, .id = 20126,
+        chest := TileMap.TileMapCell(grid, BoardDisplayIndex(CHEST_CELL, landscape))
+        tapped := Press.Draw(frame.session, Press.Props.{.key = cast(u64)20126, .id = 20126,
                 .bounds = chest, .label = AppLocaleHost("shovey_chest_found"),
                 .now = frame.now, .disabled = reward_card >= 0}).clicked
         if changed || tapped {
@@ -1957,19 +1948,19 @@ CollectibleHere :: () -> s32 {
     return index
 }
 
-CollectibleOverlay :: (grid: TileMapResult, landscape: bool) {
+CollectibleOverlay :: (grid: TileMap.TileMapResult, landscape: bool) {
     index := CollectibleHere()
     if index < 0 { return }
     cell := Collectibles.CollectibleCell(index)
     if cell == game.player || game.objects[cell] != 0 || ShoveySolidDecor(game.decorations[cell]) ||
     !ShoveyFloorAllows(*game, cell, 10) { return }
-    at := TileMapCell(grid, BoardDisplayIndex(cell, landscape))
+    at := TileMap.TileMapCell(grid, BoardDisplayIndex(cell, landscape))
     bob := cast(float32)Math.Sin(frame.now * 3.0) * at.height * 0.05
     inset := at.width * 0.12
-    Image(frame.session, ImageProps.{.key = cast(u64)20810, .asset_path = Collectibles.CollectibleIcon(index),
+    Image.Draw(frame.session, Image.Props.{.key = cast(u64)20810, .asset_path = Collectibles.CollectibleIcon(index),
             .alt_text = AppLocaleHost("shovey_book_unknown"),
             .bounds = Rectangle.{at.x + inset, at.y + inset + bob, at.width - inset * 2.0, at.height - inset * 2.0},
-            .fit = ImageFit.ImageFitContain, .smooth = true})
+            .fit = Image.ImageFit.ImageFitContain, .smooth = true})
 }
 
 // Stepping onto an item records it once for the owner of this attempt; a
@@ -2050,10 +2041,10 @@ HintPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
         unused CopyCString(TextView(VecSlice(line, 0, line.count)), hint_copy[:]); VecFree(line)
         message = TextUntilNul(hint_copy[:])
     } else if level_hint.status == 0 && level_hint.saved[0] != 0 && !hint_requested { message = AppLocaleHost("shovey_hint_unavailable") }
-    hint_height := cast(float32)TextHeight(frame.session, TextProps.{.text = message,
-        .bounds = Rectangle.{0.0, 0.0, width - 32.0, 0.0}, .font = 18, .wrap = TextWrap.TextWrapAuto}) + 16.0
+    hint_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = message,
+        .bounds = Rectangle.{0.0, 0.0, width - 32.0, 0.0}, .size = 18, .wrap = Text.Wrap.TextWrapAuto}) + 16.0
     if hint_height < 112.0 { hint_height = 112.0 }
-    panel := Scroll(frame.session, ScrollProps.{.key = cast(u64)20906, .bounds = Rectangle.{0.0, top + 60.0, width, bottom - top - 60.0}, .content_height = cast(s32)(hint_height + 310.0), .scroll_offset = hint_scroll})
+    panel := Scroll.Draw(frame.session, Scroll.Props.{.key = cast(u64)20906, .bounds = Rectangle.{0.0, top + 60.0, width, bottom - top - 60.0}, .content_height = cast(s32)(hint_height + 310.0), .scroll_offset = hint_scroll})
     hint_scroll = panel.scroll_offset
     if !panel.opened { return }
     top = panel.content.y - 60.0
@@ -2072,9 +2063,9 @@ HintPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
 }
 ICON_HINT :: "S1.6rr:M9 18H15M10 21H14M9 15C9 12 6 12 6 8C6 0 18 0 18 8C18 12 15 12 15 15ZM12 0V-2M3 3L1 1M21 3L23 1"
 
-HintFloorOverlay :: (grid: TileMapResult, landscape: bool) {
+HintFloorOverlay :: (grid: TileMap.TileMapResult, landscape: bool) {
     cell := HintFloorCell(game.level)
     if cell < 0 || HintWallet.ShopHintFound(game.level) || game.objects[cell] != 0 { return }
-    at := TileMapCell(grid, BoardDisplayIndex(cell, landscape))
-    SvgIcon(frame.session, SvgIconProps.{.bounds = at, .shape = ICON_HINT, .color = Color.{255, 202, 12, 255}})
+    at := TileMap.TileMapCell(grid, BoardDisplayIndex(cell, landscape))
+    SvgIcon.Draw(frame.session, SvgIcon.Props.{.bounds = at, .shape = ICON_HINT, .color = Color.{255, 202, 12, 255}})
 }

@@ -4,16 +4,9 @@ unset DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS SESSION_MANAGE
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 toolchain=${1:?usage: editor_sharing_test.sh TOOLCHAIN}
 cd "$root"
-entity=$(ziran pkg path entity)
-kryon=$(ziran pkg path kryon)
-apps=$(ziran pkg path apps)
-mingcute=$(ziran pkg path mingcute)
 work="$root/build/editor-sharing-test"
 mkdir -p "$work"
-"$toolchain/build/bin/ziran" bundle --root "$root" --module-path "$root/src" --module-path "$toolchain/std" \
- --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
- --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
- --module-path "apps=$apps/src" --module-path "mingcute=$mingcute/src" \
+"$toolchain/build/bin/ziran" bundle --project --root "$root/src" --module-path "$root/tests" \
  --bind editor_view:AppServiceHost=editor_sharing_behavior:FakeService \
  --bind editor_view:SaveAppRecordHost=editor_sharing_behavior:FakeSave \
  --bind editor_view:AppRecordHost=editor_sharing_behavior:FakeRecord \
@@ -24,10 +17,7 @@ result=$("$toolchain/build/bin/ziran" run "$work/sharing.zx")
 test "$result" = 42 || { echo "Editor sharing local test failed: $result" >&2; exit 1; }
 echo 'Editor sharing: real client lifecycle, owner cancellation, errors and accepted/rejected route proofs passed'
 
-"$toolchain/build/bin/ziran" build --target=c --no-main --root "$root" --module-path "$root/src" --module-path "$toolchain/std" \
- --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
- --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
- --module-path "apps=$apps/src" --module-path "mingcute=$mingcute/src" \
+"$toolchain/build/bin/ziran" build --project --target=c --no-main --root "$root/src" --module-path "$root/tests" \
  --bind editor_view:AppServiceHost=editor_sharing_behavior:FakeService \
  --bind editor_view:SaveAppRecordHost=editor_sharing_behavior:FakeSave \
  --bind editor_view:AppRecordHost=editor_sharing_behavior:FakeRecord \

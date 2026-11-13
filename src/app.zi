@@ -7,7 +7,11 @@
 #import "kryon/tree_input"
 #import "kryon/app_asset"
 #import "kryon/ScrollDevice"
-#import "kryon/raylib_runtime"
+#if #defined(ANDROID_BUILD) {
+    AndroidDevice :: #import "kryon/android_device";
+} else {
+    #import "kryon/raylib_runtime"
+}
 #import "std/timer_linux"
 #import "std/date_time_linux"
 #import "player_host"
@@ -29,16 +33,10 @@ PLAYER_BACK_KEY :: 4
 player_state: s32;
 
 PlayerStart :: () -> bool {
-    // Later animation pictures load asynchronously too. Keep the last
-    // complete frame visible while a new sprite is being decoded.
-    RaylibCompletePictureFrames(true)
-    // Android before 10 cannot name its system font; the APK carries the
-    // same font as the Windows build, so text never falls back to raylib's
-    // bitmap font.
-    #if #defined(ANDROID_BUILD) {
-        if !SelectTypeface("ui") && LoadTypefaceFile("default", "kryon-font.ttf", null, 0) {
-            unused SelectTypeface("default")
-        }
+    // Raylib loads later animation pictures asynchronously. Android's pixmap
+    // host paints with its embedded outline font and decodes assets inline.
+    #if !#defined(ANDROID_BUILD) {
+        RaylibCompletePictureFrames(true)
     }
     data := DataDirectory()
     bundle := ReadAppAsset("shovey.zx")
@@ -58,12 +56,13 @@ PlayerStart :: () -> bool {
     return entity.count > 0 && EntityOpen(entity, data)
 }
 
+#program_export
 Frame :: (session: Session, viewport: Rectangle) -> s32 {
     if player_state == 0 { player_state = ifx PlayerStart() then 1 else 2 }
     if player_state != 1 { return 1 }
     #if #defined(ANDROID_BUILD) {
         reminder_now := UnixNow()
-        if RaylibFocused() && chest_reminder_session.checked_at != reminder_now {
+        if AndroidDevice.AndroidLifecycleFocused() != 0 && chest_reminder_session.checked_at != reminder_now {
             // Native record text is borrowed until the next read.
             reminder_enabled := AppRecordHost("chest.reminder.enabled") != "off"
             reminder_policy := ChestReminderReadPolicy(ifx reminder_enabled then "on" else "off", AppRecordHost("chest.reminder.time"))
@@ -90,8 +89,14 @@ Frame :: (session: Session, viewport: Rectangle) -> s32 {
     key := KeyboardTake(session)
     if key == PLAYER_BACK_KEY && CollectionBack() { key = 0 }
     unused KeyboardSend(session, key)
-    if !CollectionFrame(session, viewport, key, 0, ImagesPending() > 0) { return 1 }
-    RaylibCompletePictureFrames(CollectionCompletePictures())
+    pictures_pending := false
+    #if !#defined(ANDROID_BUILD) {
+        pictures_pending = ImagesPending() > 0
+    }
+    if !CollectionFrame(session, viewport, key, 0, pictures_pending) { return 1 }
+    #if !#defined(ANDROID_BUILD) {
+        RaylibCompletePictureFrames(CollectionCompletePictures())
+    }
     CollectionCollect()
     return 0
 }

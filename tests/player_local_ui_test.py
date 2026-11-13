@@ -42,7 +42,7 @@ with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
                 driver.press(label='Play', role='button')
                 enter_classic_map(driver)
                 start_map_destination(driver, 1)
-                driver.wait(contains='Level 1 / ', role='text', timeout=30)
+                driver.wait(label='Restart', role='button', timeout=30)
                 if driver.find(label='Got it', role='button'):
                     driver.press(label='Got it', role='button')
                 assert not driver.find(contains='Request rejected')

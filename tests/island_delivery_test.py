@@ -46,7 +46,7 @@ source = '''#import "player_host"
 #import "apps/catalog"
 #import "apps/protocol"
 #import "kryon/Frame"
-#import "kryon/Desktop"
+#import "kryon/desktop_runtime"
 #import "kryon/tree"
 #import "kryon/session"
 #import "kryon/geometry"
@@ -70,6 +70,7 @@ FIXTURE_LEDGER :: "{\\"events\\":[{\\"receipt_id\\":\\"fixture-7\\",\\"issuer_id
 FIXTURE_LEGACY :: "{\\"events\\":[{\\"receipt_id\\":\\"fixture-4\\",\\"issuer_id\\":\\"waozi\\",\\"asset_id\\":\\"waozi:token\\",\\"account_id\\":\\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\",\\"app_id\\":\\"entity\\",\\"event_type\\":\\"debit\\",\\"amount_delta\\":-85000000,\\"ledger_seq\\":4,\\"previous_hash\\":\\"0000000000000000000000000000000000000000000000000000000000000000\\",\\"event_hash\\":\\"1111111111111111111111111111111111111111111111111111111111111111\\",\\"created_at\\":\\"2026-11-03T12:00:00Z\\",\\"source_type\\":\\"unlock\\",\\"source_ref\\":\\"shovey.island\\",\\"signature\\":\\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\\"}]}";
 fixture_transfers: s32;
 fixture_grants: s32;
+fixture_head: bool;
 fixture_answer: [1024]u8;
 FixtureShop :: (request: string) -> string {
     if request == "status" {
@@ -86,12 +87,16 @@ FixtureShop :: (request: string) -> string {
 }
 FixtureStart :: (transfer: *HttpTransfer, request: HttpRequest, output: []u8, timeout: s32) -> bool {
     fixture_transfers += 1
-    if request.method != "GET" || output.count != fixture_bytes.count + 1 { return false }
-    for byte, index: fixture_bytes { output[index] = byte }
+    fixture_head = request.method == "HEAD"
+    if (!fixture_head && request.method != "GET") || output.count != fixture_bytes.count + 1 { return false }
+    if !fixture_head { for byte, index: fixture_bytes { output[index] = byte } }
     return true
 }
 FixturePoll :: (transfer: *HttpTransfer, status: *s32, length: *s64) -> s32 {
-    status.* = 200; length.* = fixture_bytes.count; return 1
+    status.* = 200
+    length.* = ifx fixture_head then 0 else fixture_bytes.count
+    fixture_head = false
+    return 1
 }
 FixtureStop :: (transfer: *HttpTransfer) {}
 #program_export
@@ -319,7 +324,7 @@ if args.campaign:
         f'CAMPAIGN_ASSET_COUNT :: {len(paths)}\n'
         f'CampaignAssetPath :: (number: s32) -> string {{\n{values}\n    return ""\n}}\n')
     source = '#import "island_campaign_delivery"\n' + source
-    source = source.replace('    collection_island_page = false\n    fixture_owned', '    proof_session := SessionOpen()\n    proof_bounds := Rectangle.{0.0,0.0,480.0,820.0}\n    unused CollectionUpdatesSet(false)\n    if !SessionValid(proof_session) { return 46 }\n    for frame: 1..400 {\n        if !FixtureFrame(proof_session,proof_bounds,frame) { return 47 }\n        if FixtureFind(proof_session,49536) { break }\n        unused SleepMilliseconds(5)\n    }\n    diagnostic: Vec(u8)\n    BuilderPrint(*diagnostic,"Unlock proof: page %, owned %, nodes %, cancel %, old back %, old background %, old logo %\\n",collection_island_page,collection_island.owned,TreeCount(proof_session),FixtureFind(proof_session,49536),FixtureFind(proof_session,49512),FixtureFind(proof_session,49510),FixtureFind(proof_session,49511))\n    Report(BuilderFinish(diagnostic))\n    unused CampaignScreenshot(9)\n    if !FixtureFind(proof_session,49536) || FixtureFind(proof_session,49512) || FixtureFind(proof_session,49510) || FixtureFind(proof_session,49511) || CampaignScreenshot(9)!=0 { return 44 }\n    SessionClose(proof_session)\n    collection_island_page = false\n    if !AppHostHome(*collection_host) { return 48 }\n    CollectionCollect()\n    fixture_owned',1)
+    source = source.replace('    collection_island_page = false\n    fixture_owned', '    proof_session := SessionOpen()\n    proof_bounds := Rectangle.{0.0,0.0,480.0,820.0}\n    unused CollectionUpdatesSet(false)\n    if !SessionValid(proof_session) { return 46 }\n    for frame: 1..400 {\n        if !FixtureFrame(proof_session,proof_bounds,frame) { return 47 }\n        if FixtureFind(proof_session,49536) { break }\n        unused SleepMilliseconds(5)\n    }\n    diagnostic: Vec(u8)\n    BuilderPrint(*diagnostic,"Unlock proof: page %, owned %, nodes %, cancel %, old back %, old background %, old logo %\\n",collection_island_page,collection_island.owned,TreeCount(proof_session),FixtureFind(proof_session,49536),FixtureFind(proof_session,49512),FixtureFind(proof_session,49510),FixtureFind(proof_session,49511))\n    Report(BuilderFinish(diagnostic))\n    unused CampaignScreenshot(9)\n    if !FixtureFind(proof_session,49536) || FixtureFind(proof_session,49512) || FixtureFind(proof_session,49510) || FixtureFind(proof_session,49511) || CampaignScreenshot(9)!=0 { return 44 }\n    SessionClose(proof_session)\n    collection_island_page = false\n    if !AppHostHome(*collection_host) { return 48 }\n    CollectionCollect()\n    entry = CollectionIslandEntry()\n    if entry == null { return 52 }\n    fixture_owned',1)
 
     source = source.replace('    collection_island_opening = true\n    session :=', '    if !AppHostHome(*collection_host) { return 49 }\n    CollectionCollect()\n    if !CollectionOpenGame(ISLAND_UNLOCK_APP) { return 49 }\n    if !CampaignCheckAssets() { return 50 }\n    if !AppHostHome(*collection_host) { return 51 }\n    CollectionCollect()\n    if !CollectionOpenGame("arcade.shovey") { return 51 }\n    collection_island_opening = true\n    session :=',1)
     start = source.index('    // Island opened as a game never shows')
@@ -334,6 +339,7 @@ fixture.write_text(source)
 generated = work / 'c'
 shutil.rmtree(generated, ignore_errors=True)
 environment = player.environment()
+private_display = os.environ.get('SHOVEY_PRIVATE_DISPLAY')
 for key in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER', 'GDK_DISPLAY'):
     environment.pop(key, None)
 environment['YUE_DESKTOP_RECOVERY'] = '0'
@@ -346,7 +352,8 @@ player.run([player.ziran(), 'build', '--project', *player.lock(), '--target=c', 
 account_header = next(generated.rglob('*account_store.h'))
 shop_header = next(generated.rglob('*game_shop_native.h'))
 shop_answer = re.search(r'String (\w*EntityGameShopAnswer)\(', shop_header.read_text())[1]
-(generated / 'identity_probe.c').write_text('''#include <string.h>
+(generated / 'identity_probe.c').write_text('''#define _POSIX_C_SOURCE 200809L
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -362,20 +369,13 @@ static int owned_status(int expected) {
     snprintf(owner, sizeof(owner), "\\"owner\\":\\"%s\\"", account_recovery.keys.public_id);
     return strstr(text, owner) != NULL && strstr(text, expected ? "\\"island_owned\\":true" : "\\"island_owned\\":false") != NULL;
 }
-int32_t CampaignPointerSend(int32_t x,int32_t y,int32_t phase) {
-    const char *display=getenv("DISPLAY"), *recovery=getenv("YUE_DESKTOP_RECOVERY");
-    if (!display || display[0] != ':' || atoi(display+1)<400 || !recovery || strcmp(recovery,"0")) return 1;
-    char command[1024];
-    snprintf(command,sizeof(command),"window=$(xdotool search --onlyvisible --pid %ld); xdotool mousemove --sync --window $window %d %d %s",(long)getpid(),x,y,phase==0 ? "mousedown 1" : phase==2 ? "mouseup 1" : "");
-    return system(command);
-}
-int32_t CampaignCapture(int32_t number) {
+int32_t CampaignCapturePath(int32_t number) {
     const char *display = getenv("DISPLAY");
     const char *recovery = getenv("YUE_DESKTOP_RECOVERY");
     if (!display || display[0] != ':' || atoi(display+1) < 400 || !recovery || strcmp(recovery,"0")) return 1;
-    char command[4096];
-    snprintf(command,sizeof(command),"window=$(xdotool search --onlyvisible --pid %ld); xdotool windowmove $window 0 0 && import -window $window 'CAPTURE_FOLDER/island-map-%d.png'",(long)getpid(),number);
-    return system(command);
+    char path[4096];
+    snprintf(path,sizeof(path),"CAPTURE_FOLDER/island-map-%d.png",number);
+    return setenv("KRYON_CAPTURE_PATH",path,1) == 0 ? 0 : 1;
 }
 int32_t IslandIdentityProbe(void) {
     memset(account_recovery.keys.public_id, 'a', 64);
@@ -400,7 +400,11 @@ player.run([os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections'
     *renderer['compile_flags'], *['-I' + path for path in renderer['include_directories']],
     *sources, '-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
     *profile.link_flags(include_archives=False), '-o', work / 'test'], cwd=ROOT, env=environment)
-player.run(['xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1280x1000x24', work / 'test'], cwd=ROOT, env=environment)
+if private_display:
+    environment['DISPLAY'] = private_display
+    player.run([work / 'test'], cwd=ROOT, env=environment)
+else:
+    player.run(['xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1280x1000x24', work / 'test'], cwd=ROOT, env=environment)
 if args.campaign:
     print('Private-Xvfb Island campaign: first 30 compiled levels load and solve through real keys; '
           'every saved position matches its solution proof; portrait/landscape art and 12 locales present')

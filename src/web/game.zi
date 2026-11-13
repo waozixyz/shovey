@@ -5,9 +5,9 @@
 #import "kryon/app_mini"
 using Canvas :: #import "kryon/Canvas";
 #import "kryon/geometry"
-#import "kryon/carousel"
-#import "kryon/button_widget"
-#import "kryon/button_props"
+Carousel :: #import "kryon/carousel";
+
+Button :: #import "kryon/button";
 #import "kryon/control_props"
 ShopUI :: #import, file "../shop_view.zi";
 Book :: #import, file "../collectible_book.zi";
@@ -17,7 +17,7 @@ Book :: #import, file "../collectible_book.zi";
 #import, file "../editor/editor_view.zi";
 #import, file "../controls.zi";
 
-web_covers: CarouselState;
+web_covers: Carousel.CarouselState;
 // Classic and the editor, with the cover art apps.json declares for them.
 WebCovers :: () {
     page := ReadAppUiHost()
@@ -25,15 +25,15 @@ WebCovers :: () {
     top := cast(float32)page.top
     bottom := cast(float32)(page.height - page.bottom)
     ShoveyDress(page.session, width, top, bottom)
-    items: [2]CarouselItem = .[
-    CarouselItem.{.label = AppLocaleHost("shovey_title_art"),
+    items: [2]Carousel.CarouselItem = .[
+    Carousel.CarouselItem.{.label = AppLocaleHost("shovey_title_art"),
         .portrait = "assets/shovey/title-portrait.png", .landscape = "assets/shovey/title-landscape.png",
         .logo = "assets/shovey/logo.png", .action = AppLocaleHost("shovey_play")},
-    CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
+    Carousel.CarouselItem.{.label = AppLocaleHost("shovey_editor_art"),
         .portrait = "assets/shovey/editor-portrait.png", .landscape = "assets/shovey/editor-landscape.png",
         .logo = "assets/covers/shovey-editor-logo.png", .action = AppLocaleHost("shovey_open")}
     ]
-    entered := Carousel(page.session, CarouselProps.{.key = cast(u64)20210,
+    entered := Carousel.Draw(page.session, Carousel.Props.{.key = cast(u64)20210,
             .logo_max_width = ifx width < 600.0 then width * 0.58 else 360.0, .logo_top = 120.0,
             .bounds = Rectangle.{0.0, top, width, bottom - top}, .now = page.now, .key_pressed = AppKeyHost(),
             .dark = true, .label = AppLocaleHost("shovey_title_art"), .previous_label = AppLocaleHost("shovey_page_previous"),

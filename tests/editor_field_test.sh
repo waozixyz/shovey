@@ -5,16 +5,9 @@ export YUE_DESKTOP_RECOVERY=0
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 toolchain=${1:?usage: editor_field_test.sh TOOLCHAIN}
 cd "$root"
-entity=$(ziran pkg path entity)
-kryon=$(ziran pkg path kryon)
-apps=$(ziran pkg path apps)
-mingcute=$(ziran pkg path mingcute)
 work="$root/work/editor-field-test"
 mkdir -p "$work"
-set -- --root "$root" --module-path "$root/tests" --module-path "$root/src" --module-path "$toolchain/std" \
- --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
- --module-path "kryon=$kryon/src/ui" --module-path "kryon=$kryon/src/backend" \
- --module-path "apps=$apps/src" --module-path "mingcute=$mingcute/src" \
+set -- --project --root "$root/src" --module-path "$root/tests" \
  --bind-host editor_field_host
 native_test() {
     module=$1

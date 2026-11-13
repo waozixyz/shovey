@@ -2,18 +2,18 @@
 #import "kryon/session"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
-#import "kryon/box_props"
-#import "kryon/box_widget"
-#import "kryon/text_props"
-#import "kryon/text_widget"
+Box :: #import "kryon/box";
+
+Text :: #import "kryon/text";
+
 #import "kryon/text_align"
-#import "kryon/button_props"
+Button :: #import "kryon/button";
 #import "kryon/control_props"
-#import "kryon/button_widget"
-#import "kryon/image_props"
-#import "kryon/image_widget"
-#import "kryon/scroll_props"
-#import "kryon/scroll_widget"
+
+Image :: #import "kryon/image";
+
+Scroll :: #import "kryon/scroll";
+
 #import "kryon/tree"
 #import "kryon/widget_palette"
 #import "kryon/app_context"
@@ -142,23 +142,23 @@ Pump :: (now: float64, today: s64) {
     ShopSetEarnedCoins(DailyChestCoins())
 }
 Label :: (session: Session, key: u64, bounds: Rectangle, text: string, size: s32 = 16, centre: bool = false) {
-    unused Text(session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = size,
+    unused Text.Draw(session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = size,
         .align = ifx centre then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
-        .vertical_align = TextAlign.TextAlignCenter, .wrap = TextWrap.TextWrapAuto})
+        .vertical_align = TextAlign.TextAlignCenter, .wrap = Text.Wrap.TextWrapAuto})
 }
 Picture :: (session: Session, key: u64, bounds: Rectangle, path: string, alt: string) {
-    unused Image(session, ImageProps.{.key = key, .bounds = bounds, .asset_path = path,
-        .fit = ImageFit.ImageFitContain, .smooth = true, .alt_text = alt})
+    unused Image.Draw(session, Image.Props.{.key = key, .bounds = bounds, .asset_path = path,
+        .fit = Image.ImageFit.ImageFitContain, .smooth = true, .alt_text = alt})
 }
 Action :: (session: Session, key: u64, bounds: Rectangle, label: string, disabled: bool = false, selected: bool = false) -> bool {
-    return Button(session, ButtonProps.{.key = key, .id = cast(s32)key, .bounds = bounds, .label = Copy(label),
+    return Button.Draw(session, Button.Props.{.key = key, .id = cast(s32)key, .bounds = bounds, .label = Copy(label),
         .disabled = disabled, .selected = selected, .fit_content = true,
         .tone = ifx selected then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
         .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 IconAction :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string) -> bool {
     Picture(session, key + 1, bounds, path, Copy(label))
-    return Button(session, ButtonProps.{.key = key, .id = cast(s32)key, .bounds = bounds,
+    return Button.Draw(session, Button.Props.{.key = key, .id = cast(s32)key, .bounds = bounds,
         .label = Copy(label), .invisible = true}) != 0
 }
 #program_export
@@ -193,7 +193,7 @@ SkinName :: (id: s32) -> string {
     return Copy(keys[id])
 }
 Card :: (session: Session, key: u64, bounds: Rectangle, selected: bool = false) {
-    unused Box(session, BoxProps.{.key = key, .bounds = bounds, .radius = 16.0,
+    unused Box.Draw(session, Box.Props.{.key = key, .bounds = bounds, .radius = 16.0,
         .fill = Color.{59, 64, 63, 255}, .border = ifx selected then Color.{52, 185, 48, 255} else Color.{93, 98, 97, 255}})
 }
 Confirmation :: (session: Session, bounds: Rectangle) {
@@ -286,11 +286,11 @@ Chest :: (session: Session, area: Rectangle, today: s64, columns: s32) {
     }
 }
 #program_export
-Frame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool {
+ShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool {
     if page == 0 { return false }
     Pump(now, today)
     unused WidgetPaletteUse(session, ShoveyPalette())
-    unused Box(session, BoxProps.{.key = cast(u64)61100, .bounds = bounds, .fill = Color.{42, 46, 45, 255}})
+    unused Box.Draw(session, Box.Props.{.key = cast(u64)61100, .bounds = bounds, .fill = Color.{42, 46, 45, 255}})
     if Action(session, 61101, Rectangle.{bounds.x + 10.0, bounds.y + 8.0, 76.0, 44.0}, "back") { unused Back(); return true }
     Label(session, 61102, Rectangle.{bounds.x + 94.0, bounds.y + 8.0, bounds.width - 196.0, 44.0}, Copy(ifx page == 1 then "shop" else "chest"), 17)
     if IconAction(session, 61104, Rectangle.{bounds.x + bounds.width - 96.0, bounds.y + 10.0, 40.0, 40.0}, "assets/shovey/shop/profile.png", "profile") { unused AppService("entity.profile", "open") }
@@ -325,7 +325,7 @@ Frame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> bool
     else if tab == 2 { height = 270 }
     viewport_height := bounds.y + bounds.height - top - 8.0
     if viewport_height < 1.0 { return true }
-    panel := Scroll(session, ScrollProps.{.key = cast(u64)61500, .bounds = Rectangle.{x, top, width, viewport_height},
+    panel := Scroll.Draw(session, Scroll.Props.{.key = cast(u64)61500, .bounds = Rectangle.{x, top, width, viewport_height},
         .content_height = height, .scroll_offset = scroll})
     scroll = panel.scroll_offset
     if panel.opened {

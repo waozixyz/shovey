@@ -69,7 +69,7 @@ FakeSupports :: (name: string) -> bool { return false }
 Draw :: (session: Session, width: float32, height: float32, today: s64 = 20000) -> bool {
     area := Rectangle.{0.0, 0.0, width, height}
     BeginFrame(session, cast(u64)1, area)
-    if !ShopUI.Frame(session, area, 10.0, today) { return false }
+    if !ShopUI.ShopFrame(session, area, 10.0, today) { return false }
     return EndFrame(session) == cast(FrameStatus)FrameOk
 }
 Find :: (session: Session, key: u64) -> s32 {

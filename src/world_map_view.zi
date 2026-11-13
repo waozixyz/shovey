@@ -3,25 +3,24 @@
 #import "kryon/input_protocol"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
-#import "kryon/button_props"
-#import "kryon/button_widget"
+Button :: #import "kryon/button";
+
 #import "kryon/control_props"
-#import "kryon/image_props"
-#import "kryon/image_widget"
-#import "kryon/box_props"
-#import "kryon/box_widget"
-#import "kryon/shape_props"
-#import "kryon/shape_widget"
-#import "kryon/scroll_props"
-#import "kryon/scroll_widget"
-#import "kryon/scroll"
+Image :: #import "kryon/image";
+
+Box :: #import "kryon/box";
+
+Shape :: #import "kryon/shape";
+
+Scroll :: #import "kryon/scroll";
+
 #import "kryon/tree"
 #import "kryon/widget_palette"
-#import "kryon/text_props"
+Text :: #import "kryon/text";
 #import "kryon/text_align"
-#import "kryon/text_widget"
-#import "kryon/svg_icon_props"
-#import "kryon/svg_icon_widget"
+
+SvgIcon :: #import "kryon/svg_icon";
+
 #import "std/number_text"
 Math :: #import "std/math";
 Carousel :: #import "kryon/carousel";
@@ -131,18 +130,18 @@ WorldMapViewAvatarBounds :: (center: Vector2) -> Rectangle {
 // The current circle's gold ring and glow stop here, clear of neighbours.
 WorldMapViewHighlightRadius :: 31.0;
 WorldMapViewCurrentHighlight :: (session: Session, center: Vector2) {
-    unused Ring(session, RingProps.{.key = cast(u64)66001, .center = center, .inner_radius = 28.5,
+    unused Shape.Ring(session, Shape.RingProps.{.key = cast(u64)66001, .center = center, .inner_radius = 28.5,
         .outer_radius = WorldMapViewHighlightRadius, .start_angle = 0.0, .end_angle = 360.0, .color = Color.{255, 222, 110, 72}})
-    unused Ring(session, RingProps.{.key = cast(u64)66002, .center = center, .inner_radius = 25.5,
+    unused Shape.Ring(session, Shape.RingProps.{.key = cast(u64)66002, .center = center, .inner_radius = 25.5,
         .outer_radius = 28.5, .start_angle = 0.0, .end_angle = 360.0, .color = Color.{244, 196, 58, 255}})
 }
 WorldMapViewAvatar :: (session: Session, center: Vector2) {
-    unused Circle(session, CircleProps.{.key = cast(u64)66003, .center = Vector2.{center.x, center.y + 4.5},
+    unused Shape.Circle(session, Shape.CircleProps.{.key = cast(u64)66003, .center = Vector2.{center.x, center.y + 4.5},
         .radius = 19.5, .fill = Color.{40, 60, 30, 60}})
-    unused Circle(session, CircleProps.{.key = cast(u64)66004, .center = Vector2.{center.x, center.y + 4.5},
+    unused Shape.Circle(session, Shape.CircleProps.{.key = cast(u64)66004, .center = Vector2.{center.x, center.y + 4.5},
         .radius = 17.0, .fill = Color.{40, 60, 30, 84}})
-    unused Image(session, ImageProps.{.key = cast(u64)64999, .bounds = WorldMapViewAvatarBounds(center),
-        .asset_path = "assets/shovey/world-map/shovey-avatar.png", .alt_text = "Shovey", .fit = ImageFit.ImageFitContain, .smooth = true})
+    unused Image.Draw(session, Image.Props.{.key = cast(u64)64999, .bounds = WorldMapViewAvatarBounds(center),
+        .asset_path = "assets/shovey/world-map/shovey-avatar.png", .alt_text = "Shovey", .fit = Image.ImageFit.ImageFitContain, .smooth = true})
 }
 WorldMapViewStars :: (props: WorldMapViewProps, place: s32) -> s32 {
     if place < 1 || place > props.stars.count { return 0 }
@@ -862,8 +861,8 @@ WorldMapViewSection :: (session: Session, viewport: Rectangle, origin: Vector2, 
     scene := Layout.WorldMapSceneBounds(section,width,landscape)
     bounds := Rectangle.{origin.x+scene.x,origin.y+scene.y,scene.width,scene.height}
     if WorldMapViewIntersects(bounds,viewport,0.0) {
-        unused Image(session,ImageProps.{.key=cast(u64)(60001+section),.bounds=bounds,
-            .asset_path=path,.fit=ImageFit.ImageFitStretch,.smooth=true})
+        unused Image.Draw(session,Image.Props.{.key=cast(u64)(60001+section),.bounds=bounds,
+            .asset_path=path,.fit=Image.ImageFit.ImageFitStretch,.smooth=true})
     }
 }
 // Kept independent of rendering so fast releases and cancellation are tested.
@@ -912,9 +911,15 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
     // The shared portable wheel helper consumes pointer input without exposing
     // a free-moving scrollbar. Scroll itself supplies clipping only.
     wheel := Carousel.CarouselWheel(session, bounds)
-    scroll := Scroll(session, ScrollProps.{.key = cast(u64)20105, .bounds = bounds, .manual_scroll = true,
-        .content_width = cast(s32)bounds.width, .content_height = cast(s32)bounds.height,
-        .input = ScrollInput.{.enabled = true, .disabled = true}})
+    scroll_props: Scroll.Props
+    scroll_props.key = cast(u64)20105
+    scroll_props.bounds = bounds
+    scroll_props.manual_scroll = true
+    scroll_props.content_width = cast(s32)bounds.width
+    scroll_props.content_height = cast(s32)bounds.height
+    scroll_props.input.enabled = true
+    scroll_props.input.disabled = true
+    scroll := Scroll.Draw(session, scroll_props)
     if !pointer.down && wheel != 0.0 {
         unused WorldMapViewWheelMove(state, props, width, center, WorldMapViewWheelDistance(width,wheel), WorldMapViewPointerSide(bounds, pointer.x))
         rail_moved = true
@@ -933,7 +938,7 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
         place := WorldMapViewPointerPlace(props,width,origin,Vector2.{pointer.x,pointer.y})
         if place > 0 { result = WorldMapViewClick(state,props,place) }
     }
-    unused Box(session, BoxProps.{.key = cast(u64)59999, .bounds = scroll.viewport, .fill = Color.{97, 157, 65, 255}})
+    unused Box.Draw(session, Box.Props.{.key = cast(u64)59999, .bounds = scroll.viewport, .fill = Color.{97, 157, 65, 255}})
     for section: cast(s32)0..Layout.WorldMapSceneCount - 1 { WorldMapViewSection(session, scroll.viewport, origin, width, props.landscape, section) }
     // Drawn first so neighbouring circles always paint over its glow.
     focused_center: Vector2
@@ -958,14 +963,14 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
         completed := WorldMapViewFlag(props.completed, place)
         label := WorldMapViewDisplayName(place, props, label_storage[place - 1][:])
         status := ifx !available then props.locked_label else ifx completed then props.completed_label else props.available_label
-        if Button(session, ButtonProps.{.key = cast(u64)(33000 + place), .id = 33000 + place,
+        if Button.Draw(session, Button.Props.{.key = cast(u64)(33000 + place), .id = 33000 + place,
             .bounds = node, .label = label, .detail = ifx props.focus_only then "" else status, .disabled = !available,
             .invisible = true, .icon_only = true, .selected = place == state.focused, .circle = true}) != 0 {
             if !state.pointer_moving && !route_click { result = WorldMapViewClick(state, props, place) }
         }
-        unused Circle(session, CircleProps.{.key = cast(u64)(900000 + place), .center = center,
+        unused Shape.Circle(session, Shape.CircleProps.{.key = cast(u64)(900000 + place), .center = center,
             .radius = WorldMapViewCircleRadius, .fill = Color.{48, 76, 46, 255}})
-        unused Circle(session, CircleProps.{.key = cast(u64)(920000 + place), .center = center, .radius = 23.5,
+        unused Shape.Circle(session, Shape.CircleProps.{.key = cast(u64)(920000 + place), .center = center, .radius = 23.5,
             .fill = ifx completed then Color.{247, 223, 129, 255} else ifx available then Color.{117, 222, 175, 255} else Color.{79, 91, 103, 255}})
         // Ratings sit below each circle, including the selected destination.
         earned := WorldMapViewStars(props, place)
@@ -974,23 +979,23 @@ WorldMapView :: (session: Session, bounds: Rectangle, state: *WorldMapViewState,
             // completion star without inventing a rating or result record.
             count: s32 = ifx earned > 0 then 3 else 1
             badge_width: float32 = ifx earned > 0 then 60.0 else 28.0
-            unused Box(session,BoxProps.{.key=cast(u64)(940000+place),
+            unused Box.Draw(session,Box.Props.{.key=cast(u64)(940000+place),
                 .bounds=Rectangle.{center.x-badge_width*0.5,center.y+24.0,badge_width,24.0},
                 .fill=Color.{24,59,40,235},.radius=10.0})
             for star: cast(s32)0..count-1 {
-                SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{center.x + (ifx count == 1 then -7.5 else -24.0 + cast(float32)star * 17.0), center.y + 27.0, 15.0, 17.0},
+                SvgIcon.Draw(session, SvgIcon.Props.{.bounds = Rectangle.{center.x + (ifx count == 1 then -7.5 else -24.0 + cast(float32)star * 17.0), center.y + 27.0, 15.0, 17.0},
                     .shape = "F:M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8Z",
                     .color = ifx earned == 0 || star < earned then Color.{255, 224, 72, 255} else Color.{64, 72, 54, 255}})
             }
         }
         if !available {
-            SvgIcon(session, SvgIconProps.{.bounds = Rectangle.{center.x - 6.0, center.y - 6.0, 12.0, 12.0},
+            SvgIcon.Draw(session, SvgIcon.Props.{.bounds = Rectangle.{center.x - 6.0, center.y - 6.0, 12.0, 12.0},
                 .shape = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10", .color = Color.{200, 208, 162, 255}})
         }
         if WorldMapViewFlag(props.replay, place) {
             // Beside Shovey on the current circle's ring, else inside the circle.
             offset: float32 = ifx place == state.focused then 18.5 else 14.0
-            unused Circle(session, CircleProps.{.key = cast(u64)(43000 + place), .center = Vector2.{center.x + offset, center.y - offset},
+            unused Shape.Circle(session, Shape.CircleProps.{.key = cast(u64)(43000 + place), .center = Vector2.{center.x + offset, center.y - offset},
                 .radius = ifx place == state.focused then 3.5 else 3.0, .fill = Color.{255, 226, 150, 255}})
         }
     }

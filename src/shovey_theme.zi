@@ -2,11 +2,11 @@ Math :: #import "std/math";
 #import "kryon/session"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
-#import "kryon/box_props"
-#import "kryon/box_widget"
-#import "kryon/button_props"
+Box :: #import "kryon/box";
+
+Button :: #import "kryon/button";
 #import "kryon/control_props"
-#import "kryon/button_widget"
+
 #import "kryon/widget_palette"
 
 // Every Shovey screen wears the courtyard's own colours, in whatever app it
@@ -26,7 +26,7 @@ ShoveyPalette :: () -> WidgetPalette {
 // Lays the slate inside the game's content, above the host's navigation.
 ShoveyDress :: (session: Session, width: float32, top: float32, bottom: float32) {
     unused WidgetPaletteUse(session, ShoveyPalette())
-    Box(session, BoxProps.{.key = cast(u64)19990, .bounds = Rectangle.{0.0, top, width, bottom - top},
+    Box.Draw(session, Box.Props.{.key = cast(u64)19990, .bounds = Rectangle.{0.0, top, width, bottom - top},
             .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
 }
 
@@ -35,12 +35,12 @@ ShoveyDress :: (session: Session, width: float32, top: float32, bottom: float32)
 // key + 5.
 PipGlow :: (session: Session, key: u64, cell: Rectangle, now: float64) {
     pulse := cast(float32)(0.5 + 0.5 * Math.Sin(now * 4.0))
-    unused Box(session, BoxProps.{.key = key, .bounds = cell, .radius = 6.0,
+    unused Box.Draw(session, Box.Props.{.key = key, .bounds = cell, .radius = 6.0,
             .fill = Color.{207, 242, 139, cast(u8)(24.0 + 40.0 * pulse)}})
     for ring: cast(s32)0..4 {
         grow := cast(float32)ring * (1.5 + 1.5 * pulse)
         alpha := (255.0 - cast(float32)ring * 50.0) * (0.55 + 0.45 * pulse)
-        unused Box(session, BoxProps.{.key = key + cast(u64)(ring + 1), .radius = 6.0 + grow,
+        unused Box.Draw(session, Box.Props.{.key = key + cast(u64)(ring + 1), .radius = 6.0 + grow,
                 .bounds = Rectangle.{cell.x - grow, cell.y - grow, cell.width + grow * 2.0, cell.height + grow * 2.0},
                 .border = Color.{207, 242, 139, cast(u8)alpha}})
     }
@@ -51,10 +51,10 @@ PipGlow :: (session: Session, key: u64, cell: Rectangle, now: float64) {
 PipContinue :: (session: Session, key: s32, bounds: Rectangle, label: string, now: float64) -> bool {
     pulse := cast(float32)(0.5 + 0.5 * Math.Sin(now * 4.0))
     glow := 3.0 + 4.0 * pulse
-    unused Box(session, BoxProps.{.key = cast(u64)(key + 1), .radius = 12.0 + glow,
+    unused Box.Draw(session, Box.Props.{.key = cast(u64)(key + 1), .radius = 12.0 + glow,
             .bounds = Rectangle.{bounds.x - glow, bounds.y - glow, bounds.width + glow * 2.0, bounds.height + glow * 2.0},
             .fill = Color.{52, 185, 48, cast(u8)(50.0 + 70.0 * pulse)}})
-    return Button(session, ButtonProps.{.key = cast(u64)key, .id = key, .bounds = bounds, .label = label,
+    return Button.Draw(session, Button.Props.{.key = cast(u64)key, .id = key, .bounds = bounds, .label = label,
             .fit_content = true, .tone = ButtonTone.ButtonToneAccent,
             .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0
 }

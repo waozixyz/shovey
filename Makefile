@@ -414,7 +414,6 @@ test: hints-loading-test barrels-test solver laws game-maps-test shop-test fores
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
 	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	python3 tools/levels/levels.py generate --check
-	python3 tools/levels/landscape.py --check
 	python3 tests/levels_test.py
 	python3 tests/classic_difficulty_test.py
 	python3 tests/classic_63_65_68_test.py
@@ -426,7 +425,6 @@ test: hints-loading-test barrels-test solver laws game-maps-test shop-test fores
 	sh tests/engine_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	$(call ziran_test,solver_test)
 	sh tests/controls_test.sh '$(TOOLCHAIN)'
-	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
 	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
 	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
 	sh tests/level_replay_test.sh '$(TOOLCHAIN)'

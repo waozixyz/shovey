@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## [0.6.170] - 2026-11-13
+
 - Reduce Android download size by optimizing release code and removing unused resources.
 - Share Classic and Island controls, layout and score results, using game artwork.
+- Open Island on its focused map, with the first 30 levels climbing upward from the port.
 - Unlock Island on the current screen while preserving purchases and saved progress.
 - Require ordinary fruit before finishing Island levels; allow house entry from below and clear forward star throws.
 - Rebuild Island level 13 with a safe start and a fruit-and-star puzzle.

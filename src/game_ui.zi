@@ -3,19 +3,19 @@
 // Shared Classic and Island game controls.
 #import "kryon/session"
 #import "kryon/geometry"
-#import "kryon/button_widget"
-#import "kryon/button_props"
-#import "kryon/box_widget"
-#import "kryon/box_props"
-#import "kryon/image_widget"
-#import "kryon/image_props"
-#import "kryon/text_widget"
-#import "kryon/text_props"
+
+Button :: #import "kryon/button";
+
+Box :: #import "kryon/box";
+
+Image :: #import "kryon/image";
+
+Text :: #import "kryon/text";
 #import, file "controls.zi";
 GameHeaderControl :: (session: Session, id: s32, bounds: Rectangle, label: string, icon: string, island_art: bool = false) -> bool {
-    Box(session, BoxProps.{.key = cast(u64)(80000 + id), .bounds = bounds,
+    Box.Draw(session, Box.Props.{.key = cast(u64)(80000 + id), .bounds = bounds,
         .fill = Color.{35,53,38,255}, .border = Color.{112,119,73,255}, .radius = 8.0})
-    pressed := Button(session, ButtonProps.{.key=cast(u64)id,.id=id,.bounds=bounds,.label=label,
+    pressed := Button.Draw(session, Button.Props.{.key=cast(u64)id,.id=id,.bounds=bounds,.label=label,
         .icon_only=true,.square=true,.emphasis=ButtonEmphasis.ButtonEmphasisGhost}) != 0
     art := (ifx island_art then "assets/shovey-island/shop/book.png" else "assets/shovey/shop/book.png")
     if icon == ICON_RESTART { art = (ifx island_art then "assets/shovey-island/controls/restart.png" else "assets/shovey/controls/restart.png") }
@@ -24,16 +24,16 @@ GameHeaderControl :: (session: Session, id: s32, bounds: Rectangle, label: strin
     if icon == ICON_PREVIOUS || icon == ICON_GAMES || icon == ICON_CLOSE { art = (ifx island_art then "assets/shovey-island/controls/back.png" else "assets/shovey/controls/back.png") }
     if icon == ICON_SOUND_ON { art = (ifx island_art then "assets/shovey-island/controls/sound-on.png" else "assets/shovey/controls/sound-on.png") }
     if icon == ICON_SOUND_OFF { art = (ifx island_art then "assets/shovey-island/controls/sound-off.png" else "assets/shovey/controls/sound-off.png") }
-    Image(session,ImageProps.{.key=cast(u64)(180000+id),.bounds=Rectangle.{bounds.x+6.0,bounds.y+6.0,bounds.width-12.0,bounds.height-12.0},
-        .asset_path=art,.alt_text=label,.fit=ImageFit.ImageFitContain,.smooth=true})
+    Image.Draw(session,Image.Props.{.key=cast(u64)(180000+id),.bounds=Rectangle.{bounds.x+6.0,bounds.y+6.0,bounds.width-12.0,bounds.height-12.0},
+        .asset_path=art,.alt_text=label,.fit=Image.ImageFit.ImageFitContain,.smooth=true})
     return pressed
 }
 
 #import "kryon/text_align"
 #import "std/text_buffer"
-GameResultFill :: (session: Session, key: u64, bounds: Rectangle, color: Color) { unused Box(session, BoxProps.{.key=key,.bounds=bounds,.fill=color}) }
+GameResultFill :: (session: Session, key: u64, bounds: Rectangle, color: Color) { unused Box.Draw(session, Box.Props.{.key=key,.bounds=bounds,.fill=color}) }
 GameResultCaption :: (session: Session, key: u64, bounds: Rectangle, text: string, font: s32, center: bool) {
-    Text(session,TextProps.{.key=key,.bounds=bounds,.text=text,.font=font,.align=ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,.vertical_align=TextAlign.TextAlignCenter})
+    Text.Draw(session,Text.Props.{.key=key,.bounds=bounds,.text=text,.size=font,.align=ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,.vertical_align=TextAlign.TextAlignCenter})
 }
 GameResult :: (session: Session, width: float32, top: float32, bottom: float32, title: string,
     stars_count: s32, score_value: s32, moves_count: s32, levels_label: string, score_label: string,
@@ -50,7 +50,7 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
     moves: Vec(u8)
     BuilderPrint(*moves, "%: %", moves_label, moves_count)
     GameResultCaption(session, 20904, Rectangle.{16.0, middle + 44.0, width - 32.0, 32.0}, BuilderFinish(moves), 18, true)
-    if Button(session, ButtonProps.{.key = 20905, .id = 20905,
+    if Button.Draw(session, Button.Props.{.key = 20905, .id = 20905,
         .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
         .label = continue_label, .disabled = continue_disabled}) != 0 {
         return 2

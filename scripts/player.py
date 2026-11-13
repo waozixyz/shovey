@@ -71,6 +71,15 @@ def package(name):
                                         env=environment()).strip())
 
 
+def package_identity(name):
+    """The compiler identity of one of this project's direct dependencies."""
+    graph = json.loads((ROOT / 'ziran.lock').read_text())
+    try:
+        return graph['root']['dependencies'][name]
+    except KeyError as error:
+        raise SystemExit(f'ziran.lock does not select the {name} dependency') from error
+
+
 def toolchain():
     """The selected package toolchain; Ziran owns its bootstrap and tools."""
     return package('ziran')
@@ -311,11 +320,18 @@ def build_games(apps):
             if language != 'en':
                 code += '    }\n'
         code += '    return ""\n}\n'
+        prepared_levels = generated / 'levels.zi'
+        if prepared_levels.exists() and prepared_levels.read_bytes() != (ROOT / 'src/levels.zi').read_bytes():
+            raise ValueError(f'{prepared_levels}: generated campaign differs from src/levels.zi')
+        compiler_generated = generated / 'modules'
+        shutil.rmtree(compiler_generated, ignore_errors=True)
+        compiler_generated.mkdir()
         (generated / 'translations.zi').write_text(code)
+        (compiler_generated / 'translations.zi').write_text(code)
         bundle = games / (name + '.zx')
         source = ROOT / descriptor['source']
         run([ziran(), 'bundle', '--project', *lock(), '--root', source.parent,
-             '--module-path', generated, '--module-path', ROOT / 'src/editor', '--module-path', ROOT / 'src/solver',
+             '--module-path', compiler_generated, '--module-path', ROOT / 'src/editor', '--module-path', ROOT / 'src/solver',
              *(['--module-path', source.parent] if app.get('private') else []),
              *[flag for define in defines for flag in ('--define', define)],
              *[flag for entry in app['library_entries'] for flag in ('--retain', 'std_' + entry if entry.startswith('json_scan:') else entry)],
@@ -777,11 +793,16 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
     droid = prepare_android_project(kryon)
     sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or os.environ.get('ANDROID_HOME') or Path.home() / 'Android/Sdk')
     env = environment()
-    env.update(ANDROID_HOME=str(sdk), ANDROID_SDK_ROOT=str(sdk))
+    # This is the same identity `ziran tool kryon` supplies. The standalone
+    # player invokes Gradle directly, so pass it through Gradle and CMake to
+    # Kryon's source generator for the package-qualified ProjectFrame binding.
+    identity = package_identity('kryon')
+    env.update(ANDROID_HOME=str(sdk), ANDROID_SDK_ROOT=str(sdk), ZIRAN_PACKAGE_ID=identity)
     task = {'debug': 'assembleDebug', 'release': 'assembleRelease', 'gplay': 'assembleRelease',
             'bundle': 'bundleRelease'}[mode]
     command = ['sh', droid / 'gradlew', '-p', droid, '--no-daemon', '--max-workers=1', '-Papp.abis=' + abis,
                '-Pkryon.dir=' + str(kryon), '-Pziran.dir=' + str(compiler),
+               '-Pziran.packageId=' + identity,
                '-Pandroid.aapt2FromMavenOverride=' + str(sdk / 'build-tools/36.0.0/aapt2')]
     # Kryon's Google Play edition adds Play Billing, so Dew is bought through
     # Play; only it may carry a Google library.

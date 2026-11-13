@@ -54,7 +54,12 @@ def generate(root=ROOT):
             code += f'    if number == {level["number"]} {{ return {json.dumps(result, ensure_ascii=False)} }}\n'
         code += f'    return {json.dumps(empty)}\n}}\n\n'
     code += '}\n'
-    (root / 'src/island_levels.zi').write_text(code)
+    destination = root / 'src/island_levels.zi'
+    # Tests prepare the campaign repeatedly. Preserve the generated file's
+    # timestamp when its bytes already match so later compiler steps can reuse
+    # their existing outputs instead of rebuilding an unchanged campaign.
+    if not destination.exists() or destination.read_text() != code:
+        destination.write_text(code)
     return count
 
 

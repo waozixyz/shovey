@@ -2,12 +2,12 @@
 #import "kryon/session"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
-#import "kryon/text_input_props"
+TextField :: #import "kryon/text_field";
 #import "std/text_buffer"
 #import "std/json_scan"
 #import "std/c_string"
 
-input: TextFieldInput;
+input: TextField.Input;
 put_count: s32;
 put_bytes: [16000]u8;
 put_length: s32;
@@ -17,7 +17,7 @@ clipboard_bytes: [128]u8;
 clipboard_length: s32;
 
 #program_export
-AppFieldInputHost :: () -> TextFieldInput { return input }
+AppFieldInputHost :: () -> TextField.Input { return input }
 #program_export
 AppLocaleHost :: (key: string) -> string { return key }
 #program_export

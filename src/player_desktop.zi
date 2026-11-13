@@ -1,8 +1,13 @@
 #import "std/c_string"
 #import "std/byte_text_linux"
 #import "std/timer_linux"
-#import "kryon/Desktop"
-#import "kryon/Widgets"
+#import "kryon/desktop_runtime"
+#import "kryon/Cairo"
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/tree"
+#import "kryon/tree_draw"
+#import "kryon/tree_input"
 #import "kryon/Frame"
 #import "kryon/test_driver"
 #import "kryon/ScrollDevice"
@@ -10,7 +15,7 @@
 #import "player_host"
 #import "player_entity"
 #import "entity/model"
-#import "kryon/carousel"
+Carousel :: #import "kryon/carousel";
 
 sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
@@ -27,7 +32,7 @@ DrawStartup :: (session: Session, directory: string) -> bool {
     logo := Join(directory, "startup/shovey/logo.png")
     defer { EntityFree(art); EntityFree(logo) }
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { return false }
-    unused CarouselArtwork(session, viewport, cast(u64)48000, art, logo, "Shovey", Rectangle.{},
+    unused Carousel.CarouselArtwork(session, viewport, cast(u64)48000, art, logo, "Shovey", Rectangle.{},
         ifx viewport.width < 600.0 then viewport.width * 0.58 else 360.0, 120.0)
     if EndFrame(session) != FrameStatus.FrameOk { return false }
     ok := EndDesktopFrame()
@@ -37,21 +42,10 @@ DrawStartup :: (session: Session, directory: string) -> bool {
 
 Draw :: (session: Session) -> bool {
     BeginDesktopFrame()
-    KeyboardModifiersSend(session, DesktopModifiers())
-    key := DesktopPressedKey()
-    for candidate: cast(s32)0..269 {
-        if TestDriverKeyPressed(candidate) { key = candidate; break }
-    }
+    key, modifiers := DesktopInputTake(session)
+    KeyboardModifiersSend(session, modifiers)
     if key == 256 && CollectionBack() { key = 0 }
-    KeyboardSend(session, key)
-    // Text typed on the keyboard reaches the game's focused field.
-    codepoint := DesktopTypedCodepoint()
-    if codepoint == 0 { codepoint = TestDriverCodepoint() }
-    while codepoint != 0 {
-        unused TypedCodepointSend(session, codepoint)
-        codepoint = DesktopTypedCodepoint()
-        if codepoint == 0 { codepoint = TestDriverCodepoint() }
-    }
+    if key != 0 { KeyboardSend(session, key) }
     viewport := DesktopViewport()
     pointer := TestDriverPointer(session, PollPointer())
     TreePointerUpdate(session, pointer)
@@ -62,7 +56,7 @@ Draw :: (session: Session) -> bool {
         pointer.down, pointer.released, wheel,
         cast(float64)MonotonicMilliseconds() / 1000.0)
     if BeginFrame(session, cast(u64)1, viewport) != FrameStatus.FrameOk { return false }
-    collection := CollectionFrame(session, viewport, key, DesktopModifiers())
+    collection := CollectionFrame(session, viewport, key, modifiers)
     if !collection {
         TreeCancel(session)
         Report("collection frame returned false\n")

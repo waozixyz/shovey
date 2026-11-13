@@ -10,7 +10,8 @@
 #import "campaign_asset_paths"
 #import "island_levels"
 #import "kryon/Frame"
-#import "kryon/Desktop"
+#import "kryon/Cairo"
+#import "kryon/desktop_runtime"
 #import "kryon/session"
 #import "kryon/tree"
 #import "kryon/tree_input"
@@ -31,8 +32,23 @@
 #import "progress"
 
 campaign_api :: #system_library "c";
-CampaignCapture :: (number: s32) -> s32 #foreign campaign_api "CampaignCapture";
-CampaignPointerSend :: (x: s32,y: s32,phase: s32) -> s32 #foreign campaign_api "CampaignPointerSend";
+CampaignCapturePath :: (number: s32) -> s32 #foreign campaign_api "CampaignCapturePath";
+campaign_pointer: PointerFrame;
+campaign_pointer_pending: bool;
+
+CampaignCapture :: (number: s32) -> s32 {
+    return ifx CampaignCapturePath(number) == 0 && CaptureConfigured() then 0 else 1
+}
+
+CampaignPointerSend :: (x: s32, y: s32, phase: s32) -> s32 {
+    campaign_pointer.x = cast(float32)x
+    campaign_pointer.y = cast(float32)y
+    campaign_pointer.down = phase != 2
+    campaign_pointer.pressed = phase == 0
+    campaign_pointer.released = phase == 2
+    campaign_pointer_pending = true
+    return 0
+}
 
 // Assert the real five shared controls at both narrow desktop widths.
 CampaignToolbar :: (session: Session, bounds: Rectangle, island: bool, capture: s32) -> bool {
@@ -76,6 +92,41 @@ CampaignCheckAssets :: () -> bool {
     return true
 }
 
+CampaignMapVisible :: (session: Session, focus: s32, no_toolbar: bool) -> bool {
+    art: bool
+    focused: bool
+    toolbar: bool
+    for index: cast(s32)0..TreeCount(session)-1 {
+        node := TreeNodeAt(session,index)
+        if node.key == 81004 { art = true }
+        if node.key == cast(u64)(82000 + focus) && node.selected { focused = true }
+        if node.key == 80018 { toolbar = true }
+    }
+    return art && focused && (!no_toolbar || !toolbar)
+}
+
+// The compiled node must use Classic's exact entry/back sequence:
+// cover -> focused map -> level -> map -> cover. Reopening starts on the map
+// again, then Enter starts the selected level for the campaign proof below.
+CampaignStartupMap :: (session: Session, bounds: Rectangle) -> bool {
+    for frame: 1..4 { if !CampaignFrame(session,bounds,0) { return false } }
+    if !CampaignMapVisible(session,1,true) { Report("Island did not start on its focused map\n"); return false }
+    if !CollectionBack() { return false }
+    CollectionCollect()
+    if !CampaignOpen() { return false }
+    for frame: 1..4 { if !CampaignFrame(session,bounds,0) { return false } }
+    if !CampaignMapVisible(session,1,true) { return false }
+    if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { return false }
+    if !CollectionBack() { return false }
+    if !CampaignFrame(session,bounds,0) || !CampaignMapVisible(session,1,true) { return false }
+    if !CollectionBack() { return false }
+    CollectionCollect()
+    if !CampaignOpen() { return false }
+    for frame: 1..4 { if !CampaignFrame(session,bounds,0) { return false } }
+    if !CampaignMapVisible(session,1,true) { return false }
+    return CampaignFrame(session,bounds,257) && CampaignFrame(session,bounds,0)
+}
+
 
 CampaignMap :: (session: Session, bounds: Rectangle, completed: bool) -> bool {
     levels: s32 = -1
@@ -94,10 +145,13 @@ CampaignMap :: (session: Session, bounds: Rectangle, completed: bool) -> bool {
         }
         // Exercise the production Scroll device with a drag beginning on a
         // level target. The map moves, selection stays, and release is no tap.
-        if !CampaignMapDrag(session,area,size == 1) { Report("Island map drag failed\n"); return false }
+        // The approved portrait campaign climbs vertically at every width.
+        // Wide windows center the same artwork instead of switching to a
+        // horizontal landscape route.
+        if !CampaignMapDrag(session,area,false) { Report("Island map drag failed\n"); return false }
         if !CampaignFrame(session,area,263) { return false }
         if completed && !CampaignFrame(session,area,262) { return false }
-        if !CampaignMapDrag(session,area,size == 1,true) { Report("Island map cross-axis drag failed\n"); return false }
+        if !CampaignMapDrag(session,area,false,true) { Report("Island map cross-axis drag failed\n"); return false }
         if !CampaignFrame(session,area,263) { return false }
         if completed && !CampaignFrame(session,area,262) { return false }
         if completed {
@@ -150,7 +204,12 @@ CampaignMap :: (session: Session, bounds: Rectangle, completed: bool) -> bool {
 
 CampaignFrame :: (session: Session, bounds: Rectangle, key: s32) -> bool {
     if !PollDesktop() { return false }
-    return CampaignPointerFrame(session,bounds,key,PollPointer())
+    pointer := PollPointer()
+    if campaign_pointer_pending {
+        pointer = campaign_pointer
+        campaign_pointer_pending = false
+    }
+    return CampaignPointerFrame(session,bounds,key,pointer)
 }
 
 CampaignPointerFrame :: (session: Session, bounds: Rectangle, key: s32, pointer: PointerFrame) -> bool {
@@ -195,7 +254,10 @@ CampaignMapDrag :: (session: Session, bounds: Rectangle, horizontal: bool, cross
         if node.key == target && node.selected {
             delta := ifx horizontal != cross then before.x-node.bounds.x else node.bounds.y-before.y
             if delta < 0.0 { delta=0.0-delta }
-            return delta > 32.0
+            moved := delta > 32.0
+            // The 480-pixel portrait painting pans across a narrow phone, but
+            // remains centred when the viewport is at least its 724-pixel cap.
+            return ifx cross && bounds.width >= 724.0 then !moved else moved
         }
     }
     return false
@@ -228,24 +290,42 @@ CampaignOpen :: () -> bool {
 
 CampaignEmptyBook :: (session: Session, bounds: Rectangle) -> bool {
     // The game paints under its loading cover before that cover releases
-    // input. Wait for the normal reveal before using a game control.
+    // input. Wait for the normal reveal and its retained toolbar before using
+    // a game control; a host handoff can briefly expose neither tree.
+    ready: bool
     for frame: 1..400 {
         if !CampaignFrame(session, bounds, 0) { return false }
         covered: bool
+        book: bool
         for index: cast(s32)0..TreeCount(session) - 1 {
             if TreeNodeAt(session, index).key == 49401 { covered = true }
+            if TreeNodeAt(session, index).key == 80022 { book = true }
         }
-        if !covered { break }
+        if !covered && book { ready = true; break }
         unused SleepMilliseconds(5)
     }
-    // Proof keys keep playing under Pip's tutorial. Dismiss his input
-    // capture before exercising the book's normal button.
-    if !CampaignFrame(session, bounds, 256) || !CampaignFrame(session, bounds, 0) { return false }
+    if !ready { Report("Island game toolbar did not become ready\n"); return false }
+    Report("Island game toolbar became ready\n")
+    // Proof keys keep playing under Pip's tutorial. Acknowledge each card with
+    // its supported Enter action before exercising the book's normal button;
+    // Escape is gameplay Back and must keep returning to the map.
+    dismissed: bool
+    for card: cast(s32)0..30 {
+        showing: bool
+        for index: cast(s32)0..TreeCount(session) - 1 {
+            if TreeNodeAt(session, index).key == 80045 { showing = true }
+        }
+        if !showing { dismissed = true; break }
+        if !CampaignFrame(session, bounds, 257) || !CampaignFrame(session, bounds, 0) { Report("Island tutorial dismissal failed\n"); return false }
+    }
+    if !dismissed { Report("Island tutorial did not finish\n"); return false }
+    Report("Island tutorial dismissal verified\n")
     book_button: s32 = -1
     for index: cast(s32)0..TreeCount(session) - 1 {
         if TreeNodeAt(session, index).key == 80022 { book_button = index }
     }
-    if book_button < 0 || !CampaignClick(session, bounds, book_button) { return false }
+    if book_button < 0 { Report("Island book button disappeared\n"); return false }
+    if !CampaignClick(session, bounds, book_button) { Report("Island book button click failed\n"); return false }
     empty_book: bool
     close_button: s32 = -1
     for index: cast(s32)0..TreeCount(session) - 1 {
@@ -272,6 +352,7 @@ CampaignEmptyBook :: (session: Session, bounds: Rectangle) -> bool {
 }
 
 CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
+    Report("Campaign delivery proof entered\n")
     if IslandLevelCount() != 30 || IslandLevelData(31) != "" { return false }
     legacy := IslandProgressNew()
     legacy.unlocked = 150
@@ -287,6 +368,7 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
         legacy.unlocked != 150 || !legacy.completed[89] { return false }
     old.won = true
     if !IslandOpenLatest(*legacy, *old) || old.level != 30 { return false }
+    Report("Campaign legacy restore verified\n")
     progress := IslandProgressNew()
     for number: cast(s32)1..30 {
         game: IslandGame
@@ -299,8 +381,13 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
             // Use the same deferred route as the title's owned Island Play.
             if !CampaignOpen() { return false }
             if !CampaignFrame(session, bounds, 0) || !CampaignFrame(session, bounds, 0) { return false }
+            Report("Campaign deferred open verified\n")
         }
         // Each win opens the next island. No later level is injected or unlocked.
+        if number == 1 {
+            if !CampaignStartupMap(session,bounds) { return false }
+            Report("Campaign startup map navigation verified\n")
+        }
         runtime := AppHostActiveRuntime(*collection_host)
         if number == 1 {
             count_shown: bool
@@ -316,16 +403,23 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
             }
             if HostedAppAsset(AppContextRuntime(*runtime.app), "assets/shovey-island/levels/31.png").found ||
                 HostedAppAsset(AppContextRuntime(*runtime.app), "assets/shovey-island/levels-landscape/31.png").found { return false }
-            if !CampaignEmptyBook(session, bounds) || !CampaignToolbar(session,bounds,true,5) || !CampaignMap(session,bounds,false) { return false }
-        }
-        languages: [12]string = .["en", "cs", "de", "es", "fr", "id", "it", "ja", "ko", "pt", "ru", "zh"]
-        for language: languages {
-            path: Vec(u8)
-            BuilderPrint(*path, "assets/shovey-island/locales/%.txt", language)
-            name := BuilderFinish(path)
-            resource := HostedAppAsset(AppContextRuntime(*runtime.app), name)
-            AppFileFree(name)
-            if !resource.found || resource.data.count == 0 { return false }
+            // Locale resources are shared by every level, so one complete
+            // package pass proves the same 12 files without repeating it 30 times.
+            languages: [12]string = .["en", "cs", "de", "es", "fr", "id", "it", "ja", "ko", "pt", "ru", "zh"]
+            for language: languages {
+                path: Vec(u8)
+                BuilderPrint(*path, "assets/shovey-island/locales/%.txt", language)
+                name := BuilderFinish(path)
+                resource := HostedAppAsset(AppContextRuntime(*runtime.app), name)
+                AppFileFree(name)
+                if !resource.found || resource.data.count == 0 { return false }
+            }
+            if !CampaignEmptyBook(session, bounds) { Report("Campaign empty sticker book failed\n"); return false }
+            Report("Campaign empty sticker book verified\n")
+            if !CampaignToolbar(session,bounds,true,5) { Report("Campaign Island toolbar failed\n"); return false }
+            Report("Campaign Island toolbar verified\n")
+            if !CampaignMap(session,bounds,false) { Report("Campaign initial map interaction failed\n"); return false }
+            Report("Campaign initial map interaction verified\n")
         }
         if number==13 && (game.terrain[game.player]==0 || CampaignCapture(10)!=0) { return false }
         // No steps or remote account state are injected into the guest.
@@ -394,10 +488,29 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
             unused IslandContinue(*progress,*game)
         }
         if number==13 {
-            if !CollectionBack() { return false }
+            // Map-first Back behavior is covered by CampaignStartupMap. Home
+            // is the stable collection-level route for this separate record
+            // persistence check, then the sibling Island app is reopened.
+            if !AppHostHome(*collection_host) { return false }
             CollectionCollect()
             if !CollectionOpenGame(ISLAND_UNLOCK_APP) { return false }
             for frame: 1..6 { if !CampaignFrame(session,bounds,0) { return false } }
+            if !CampaignMapVisible(session,14,true) { Report("Island reopen did not return to the focused map\n"); return false }
+            if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { return false }
+            reopened: bool
+            for frame: 1..400 {
+                if !CampaignFrame(session,bounds,0) { return false }
+                covered: bool
+                toolbar: bool
+                for index: cast(s32)0..TreeCount(session)-1 {
+                    node := TreeNodeAt(session,index)
+                    if node.key == 49401 { covered = true }
+                    if node.key == 80022 { toolbar = true }
+                }
+                if !covered && toolbar { reopened = true; break }
+                unused SleepMilliseconds(5)
+            }
+            if !reopened { Report("Island gameplay did not become ready after map-first reopen\n"); return false }
             records=CollectionRecordsFor("arcade.shovey-island")
             reloaded := AppFileRead(*records.files,name)
             retained := ReadNumber(reloaded,FieldAt(reloaded,0,"moves"))
@@ -412,12 +525,15 @@ CampaignDelivered :: (session: Session, bounds: Rectangle) -> bool {
         Report(text)
         AppFileFree(text)
     }
-    if !CampaignMap(session,bounds,true) || !CollectionBack() { return false }
+    if !CampaignMap(session,bounds,true) { Report("Completed Island map proof failed\n"); return false }
+    Report("Completed Island map verified\n")
+    if !AppHostHome(*collection_host) { Report("Post-campaign collection Home failed\n"); return false }
     CollectionCollect()
-    if !CollectionOpenGame("arcade.shovey") { return false }
-    for frame: 1..10 { if !CampaignFrame(session,bounds,0) { return false } }
-    if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { return false }
-    if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { return false }
-    if !CampaignFrame(session,bounds,256) { return false }
-    return CampaignToolbar(session,bounds,false,7)
+    if !CollectionOpenGame("arcade.shovey") { Report("Post-campaign Classic open failed\n"); return false }
+    for frame: 1..10 { if !CampaignFrame(session,bounds,0) { Report("Post-campaign Classic load failed\n"); return false } }
+    if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { Report("Classic title-to-map transition failed\n"); return false }
+    if !CampaignFrame(session,bounds,257) || !CampaignFrame(session,bounds,0) { Report("Classic map-to-game transition failed\n"); return false }
+    if !CampaignFrame(session,bounds,256) { Report("Classic gameplay Back transition failed\n"); return false }
+    if !CampaignToolbar(session,bounds,false,7) { Report("Classic shared toolbar proof failed\n"); return false }
+    return true
 }

@@ -10,25 +10,24 @@
 #import "kryon/joystick"
 #import "kryon/geometry"
 #import "kryon/drawing_props"
-#import "kryon/text_props"
+Text :: #import "kryon/text";
 #import "kryon/text_align"
-#import "kryon/text_widget"
-#import "kryon/text_input_props"
-#import "kryon/text_field_widget"
-#import "kryon/text_area_widget"
-#import "kryon/button_props"
-#import "kryon/button_widget"
+
+TextField :: #import "kryon/text_field";
+TextArea :: #import "kryon/text_area";
+Button :: #import "kryon/button";
+
 #import "kryon/control_props"
-#import "kryon/image_props"
-#import "kryon/image_widget"
-#import "kryon/box_props"
-#import "kryon/box_widget"
-#import "kryon/press_props"
-#import "kryon/press_widget"
-#import "kryon/scroll_props"
-#import "kryon/scroll_widget"
+Image :: #import "kryon/image";
+
+Box :: #import "kryon/box";
+
+Press :: #import "kryon/press";
+
+Scroll :: #import "kryon/scroll";
+
 #import "kryon/tree"
-#import "kryon/tile_map"
+TileMap :: #import "kryon/tile_map";
 #import "kryon/widget_palette"
 #import "std/number_text"
 #import "std/c_string"
@@ -66,7 +65,7 @@ SmoothFramesHost :: (frames: s32) -> bool #foreign host_api;
 AppSupportsHost :: (capability: string) -> bool #foreign host_api;
 AppServiceHost :: (name: string, request: string) -> string #foreign host_api;
 // What was typed this frame into the focused text field.
-AppFieldInputHost :: () -> TextFieldInput #foreign host_api;
+AppFieldInputHost :: () -> TextField.Input #foreign host_api;
 
 EDITOR_ERASER :: "S2rr:M5 19H19M7 15L15 7L19 11L13 17H9Z"
 
@@ -98,7 +97,7 @@ SHARE_CHECK :: 6
 
 EditorField :: struct {
     bytes: [128]u8
-    state: TextFieldState
+    state: TextField.State
 }
 
 editor_frame: AppUiFrame;
@@ -237,20 +236,20 @@ EditorKeep :: (slot: s32, text: string) -> string {
 EditorCatalog :: () -> *EditCatalog { return *editor_classic }
 
 EditorCaption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16, center: bool = false) {
-    Text(editor_frame.session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = font,
-            .wrap = TextWrap.TextWrapAuto, .align = ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
+    Text.Draw(editor_frame.session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = font,
+            .wrap = Text.Wrap.TextWrapAuto, .align = ifx center then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
             .vertical_align = TextAlign.TextAlignCenter})
 }
 
 EditorControl :: (id: s32, bounds: Rectangle, label: string, disabled: bool = false, selected: bool = false, detail: string = "") -> bool {
-    return Button(editor_frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds,
+    return Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)id, .id = id, .bounds = bounds,
             .label = label, .detail = detail, .disabled = disabled, .selected = selected, .fit_content = true,
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
 EditorImage :: (key: u64, path: string, bounds: Rectangle, label: string) {
-    Image(editor_frame.session, ImageProps.{.key = key, .asset_path = path, .bounds = bounds,
-            .alt_text = label, .fit = ImageFit.ImageFitContain, .smooth = true})
+    Image.Draw(editor_frame.session, Image.Props.{.key = key, .asset_path = path, .bounds = bounds,
+            .alt_text = label, .fit = Image.ImageFit.ImageFitContain, .smooth = true})
 }
 
 EditorNotice :: (key: string) {
@@ -353,7 +352,7 @@ EditorPieceImage :: (key: u64, kind: s32, bounds: Rectangle, label: string) {
 }
 
 // Draws a board in bounds and returns where its grid landed.
-EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64, landscape: bool) -> TileMapResult {
+EditorBoard :: (board: *EditBoard, bounds: Rectangle, key: u64, landscape: bool) -> TileMap.TileMapResult {
     view := ShoveyGame.{.player = -1, .direction = 3}
     for at: cast(s32)0..EDIT_CELLS - 1 {
         kind := cast(s32)board.ground[at]
@@ -705,7 +704,7 @@ EditorCheckText :: () -> string {
 
 // What the focused field receives this frame: the host's typing, from a
 // keyboard, an input method or a phone's keyboard.
-EditorFieldInput :: () -> TextFieldInput { return AppFieldInputHost() }
+EditorFieldInput :: () -> TextField.Input { return AppFieldInputHost() }
 
 // Draws a field and applies its edit. Returns true when Enter committed it.
 EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: string, placeholder: string,
@@ -725,12 +724,12 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
     committed: bool
     changed: bool
     {
-        props := TextFieldStateProps(state, TextFieldProps.{.key = key, .bounds = bounds,
+        props := TextField.StateProps(state, TextField.Props.{.key = key, .bounds = bounds,
                 .label = label, .placeholder = placeholder, .focus_id = cast(s32)key,
                 .max_bytes = max_bytes, .max_codepoints = max_bytes,
-                .input = ifx field.state.focused then EditorFieldInput() else TextFieldInput.{}})
-        edited := TextField(editor_frame.session, props)
-        accepted = TextFieldStateApplyResult(*state, edited)
+                .input = ifx field.state.focused then EditorFieldInput() else TextField.Input.{}})
+        edited := TextField.Draw(editor_frame.session, props)
+        accepted = TextField.StateApplyResult(*state, edited)
         committed = edited.committed
         changed = edited.edit.changed
     }
@@ -742,7 +741,7 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
             state.length = field.state.length
         }
         // The draw rebuilds this slice; never retain a view of local storage.
-        state.bytes = TextFieldState.{}.bytes
+        state.bytes = TextField.State.{}.bytes
         field.state = state
     }
     // A key typed into the field does nothing else.
@@ -767,15 +766,15 @@ EditorIslandUnlock :: (output: []u8) -> string {
 // the price. The whole card is the button.
 EditorStartCard :: (key: s32, bounds: Rectangle, name: string, picture: string, locked: string) -> bool {
     session := editor_frame.session
-    Box(session, BoxProps.{.key = cast(u64)(key + 4), .bounds = bounds,
+    Box.Draw(session, Box.Props.{.key = cast(u64)(key + 4), .bounds = bounds,
             .fill = Color.{38, 44, 43, 235}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
-    pressed := Button(session, ButtonProps.{.key = cast(u64)key, .id = key, .bounds = bounds,
+    pressed := Button.Draw(session, Button.Props.{.key = cast(u64)key, .id = key, .bounds = bounds,
             .label = name, .detail = locked, .invisible = true}) != 0
     label_height: float32 = ifx locked == "" then 52.0 else 88.0
     picture_bounds := Rectangle.{bounds.x + 10.0, bounds.y + 10.0, bounds.width - 20.0, bounds.height - label_height - 10.0}
     EditorImage(cast(u64)(key + 1), picture, picture_bounds, name)
     if locked != "" {
-        Box(session, BoxProps.{.key = cast(u64)(key + 5), .bounds = picture_bounds,
+        Box.Draw(session, Box.Props.{.key = cast(u64)(key + 5), .bounds = picture_bounds,
                 .fill = Color.{20, 24, 23, 120}, .radius = 12.0})
     }
     EditorCaption(cast(u64)(key + 2), Rectangle.{bounds.x + 12.0, bounds.y + bounds.height - label_height, bounds.width - 24.0, 40.0}, name, 22, true)
@@ -783,7 +782,7 @@ EditorStartCard :: (key: s32, bounds: Rectangle, name: string, picture: string, 
         pill := bounds.width - 48.0
         if pill > 260.0 { pill = 260.0 }
         tag := Rectangle.{bounds.x + (bounds.width - pill) / 2.0, bounds.y + bounds.height - 46.0, pill, 34.0}
-        Box(session, BoxProps.{.key = cast(u64)(key + 6), .bounds = tag,
+        Box.Draw(session, Box.Props.{.key = cast(u64)(key + 6), .bounds = tag,
                 .fill = Color.{196, 120, 40, 255}, .radius = 17.0})
         EditorCaption(cast(u64)(key + 3), tag, locked, 15, true)
     }
@@ -791,7 +790,7 @@ EditorStartCard :: (key: s32, bounds: Rectangle, name: string, picture: string, 
 }
 
 EditorHome :: (width: float32, top: float32, bottom: float32) {
-    if Button(editor_frame.session, ButtonProps.{.key = cast(u64)100, .id = 100,
+    if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)100, .id = 100,
             .bounds = Rectangle.{8.0, top + 6.0, 112.0, 48.0}, .label = EditorText("editor_back"),
             .icon_shape = "S2rr:M15 5L8 12L15 19", .fit_content = true,
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
@@ -844,7 +843,7 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
 
 EditorLevels :: (width: float32, top: float32, bottom: float32) {
     catalog := EditorCatalog()
-    if Button(editor_frame.session, ButtonProps.{.key = cast(u64)200, .id = 200,
+    if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)200, .id = 200,
             .bounds = Rectangle.{8.0, top + 6.0, 112.0, 48.0}, .label = EditorText("editor_back"),
             .icon_shape = "S2rr:M15 5L8 12L15 19", .fit_content = true,
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
@@ -885,7 +884,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
         EditorExportOpen()
         return
     }
-    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)203,
+    scroll := Scroll.Draw(editor_frame.session, Scroll.Props.{.key = cast(u64)203,
             .bounds = Rectangle.{16.0, top + 56.0, width - 32.0, foot - top - 64.0},
             .content_height = cast(s32)content, .scroll_offset = editor_levels_scroll})
     editor_levels_scroll = scroll.scroll_offset
@@ -893,7 +892,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     choose := false
     if scroll.opened {
         base := scroll.content
-        if Button(editor_frame.session, ButtonProps.{.key = cast(u64)205, .id = 205,
+        if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)205, .id = 205,
                 .bounds = Rectangle.{base.x, base.y, base.width, new_height},
                 .label = EditorText("editor_new_level"), .icon_shape = "S2rr:M12 5V19M5 12H19", .fit_content = true,
                 .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { choose = true }
@@ -910,7 +909,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
                 status = EditorSay(1, "editor_by_author", 0, EditField(summary.author[:], summary.author_length))
             }
             // Keys keep the slot each level had after the old New level cell.
-            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(240000 + (index + 1) * 4), .id = 240000 + (index + 1) * 4,
+            if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)(240000 + (index + 1) * 4), .id = 240000 + (index + 1) * 4,
                     .bounds = cell, .label = EditorLevelName(0, summary), .detail = status, .fit_content = true,
                     .selected = summary.completed,
                     .tone = ifx summary.proof != EDIT_PROOF_NONE then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
@@ -923,7 +922,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
             // while Island is locked it opens the unlock page instead.
             unlock: [128]u8
             detail := ifx owned then EditorSay(2, "editor_custom_count", cast(s64)editor_island_levels) else EditorIslandUnlock(unlock[:])
-            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)210, .id = 210,
+            if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)210, .id = 210,
                     .bounds = Rectangle.{base.x, base.y + 36.0, base.width, custom_height}, .label = EditorText("editor_island"),
                     .detail = detail, .fit_content = true,
                     .icon_shape = ifx owned then "" else "S1.8rr:M6 10H18V21H6ZM8 10V7A4 4 0 0 1 16 7V10M12 14V17",
@@ -937,7 +936,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     // Why a level does not open, over the bottom of the list.
     if editor_notice_until > editor_frame.now {
         note := Rectangle.{16.0, foot - 44.0, width - 32.0, 36.0}
-        Box(editor_frame.session, BoxProps.{.key = cast(u64)207, .bounds = note,
+        Box.Draw(editor_frame.session, Box.Props.{.key = cast(u64)207, .bounds = note,
                 .fill = Color.{59, 64, 63, 235}, .radius = 12.0})
         EditorCaption(208, note, editor_notice, 14, true)
     }
@@ -950,14 +949,14 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
 
 EditorEdit :: (width: float32, top: float32, bottom: float32) {
     summary := EditorSummary()
-    if Button(editor_frame.session, ButtonProps.{.key = cast(u64)299, .id = 299,
+    if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)299, .id = 299,
             .bounds = Rectangle.{8.0, top + 6.0, 44.0, 40.0}, .label = EditorText("editor_back"),
             .icon_shape = "S2rr:M15 5L8 12L15 19", .icon_only = true,
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
         if !EditorBack() { unused AppServiceHost("arcade.navigation", "back") }
         return
     }
-    if Button(editor_frame.session, ButtonProps.{.key = cast(u64)300, .id = 300,
+    if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)300, .id = 300,
             .bounds = Rectangle.{60.0, top + 6.0, 44.0, 40.0}, .label = EditorText("editor_levels"),
             .icon_shape = "S2rr:M4 4H9V9H4ZM15 4H20V9H15ZM4 15H9V20H4ZM15 15H20V20H15Z", .icon_only = true,
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
@@ -1003,10 +1002,10 @@ EditorEdit :: (width: float32, top: float32, bottom: float32) {
     }
     grid := EditorBoard(*editor_level.board, board_area, cast(u64)200000, landscape)
     // Tap or drag to paint, one stroke while the press lasts.
-    press := Press(editor_frame.session, PressProps.{.key = cast(u64)305, .id = 305, .bounds = grid.board,
+    press := Press.Draw(editor_frame.session, Press.Props.{.key = cast(u64)305, .id = 305, .bounds = grid.board,
             .label = EditorText("editor_board"), .now = editor_frame.now, .capture = true, .hold_seconds = 3600.0})
     if press.down {
-        cell := TileMapCellAt(grid, press.x, press.y)
+        cell := TileMap.TileMapCellAt(grid, press.x, press.y)
         cell = BoardLogicalIndex(cell, landscape)
         if !editor_stroke {
             editor_stroke = true
@@ -1054,7 +1053,7 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
                 EditorSaveIndex()
             }
         }
-        if Button(editor_frame.session, ButtonProps.{.key = cast(u64)315, .id = 315,
+        if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)315, .id = 315,
                 .bounds = Rectangle.{bounds.x + bounds.width - 96.0, bounds.y + 48.0, 96.0, 40.0},
                 .label = EditorText(ifx editor_delete_armed then "editor_delete_confirm" else "editor_delete"), .fit_content = true,
                 .tone = ButtonTone.ButtonToneDanger, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { EditorDelete() }
@@ -1065,7 +1064,7 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
     half := (bounds.width - 6.0) / 2.0
     tabs: [2]string = .["editor_tiles", "editor_objects"]
     for side: cast(s32)0..1 {
-        if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(317 + side), .id = 317 + side,
+        if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)(317 + side), .id = 317 + side,
                 .bounds = Rectangle.{bounds.x + cast(float32)side * (half + 6.0), bounds.y + tools_height, half, 36.0},
                 .label = EditorText(tabs[side]), .selected = tab == side,
                 .tone = ifx tab == side then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
@@ -1086,7 +1085,7 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
         if EditorPieceIsTile(EditPieceKind(index)) == (tab == 0) && count < 128 { shown[count] = index; count += 1 }
     }
     rows := (count + columns - 1) / columns
-    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)316,
+    scroll := Scroll.Draw(editor_frame.session, Scroll.Props.{.key = cast(u64)316,
             .bounds = Rectangle.{bounds.x, bounds.y + tools_height, bounds.width, bounds.height - tools_height},
             .content_height = cast(s32)(cast(float32)rows * (size + gap)), .scroll_offset = editor_palette_scroll})
     editor_palette_scroll = scroll.scroll_offset
@@ -1100,7 +1099,7 @@ EditorPalette :: (bounds: Rectangle, custom: bool) {
             kind := EditPieceKind(index)
             name := editor_piece_names[index]
             key := cast(u64)(230000 + index * 4)
-            if Button(editor_frame.session, ButtonProps.{.key = key, .id = 230000 + index * 4, .bounds = cell,
+            if Button.Draw(editor_frame.session, Button.Props.{.key = key, .id = 230000 + index * 4, .bounds = cell,
                     .label = name, .icon_only = true, .selected = kind == chosen && !editor_picking,
                     .icon_shape = ifx kind == 0 then EDITOR_ERASER else "",
                     .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { choose = kind }
@@ -1169,7 +1168,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     }
     status_y := top + 52.0
     if status_icon != "" {
-        unused Button(editor_frame.session, ButtonProps.{.key = cast(u64)420, .id = 420,
+        unused Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)420, .id = 420,
                 .bounds = Rectangle.{width / 2.0 - 20.0, status_y - 8.0, 40.0, 40.0},
                 .label = status, .icon_shape = status_icon, .icon_only = true,
                 .disabled = true, .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisGhost})
@@ -1198,7 +1197,7 @@ EditorPlay :: (width: float32, top: float32, bottom: float32) {
     step := BoardEngineDirection(gesture.swiped, landscape)
     player := editor_play.classic.player
     if gesture.tapped || gesture.held {
-        cell := TileMapCellAt(grid, gesture.x, gesture.y)
+        cell := TileMap.TileMapCellAt(grid, gesture.x, gesture.y)
         cell = BoardLogicalIndex(cell, landscape)
         if cell >= 0 {
             step = TouchDirection(cast(float32)(cell % EDIT_WIDTH - player % EDIT_WIDTH),
@@ -1247,7 +1246,7 @@ EditorExport :: (width: float32, top: float32, bottom: float32) {
     EditorCaption(503, Rectangle.{16.0, top + 52.0, width - 32.0, 44.0}, note, 14)
     // Copy selects everything and copies it through the text area, the way
     // its own Copy command does; the text can also be selected by hand.
-    input: TextAreaInput
+    input: TextArea.Input
     if copy || editor_export_copy {
         editor_export_anchor = 0
         editor_export_cursor = editor_export_length
@@ -1256,7 +1255,7 @@ EditorExport :: (width: float32, top: float32, bottom: float32) {
         editor_export_copy = false
         EditorNotice("editor_copied_text")
     }
-    area := TextArea(editor_frame.session, TextAreaProps.{.key = cast(u64)504,
+    area := TextArea.Draw(editor_frame.session, TextArea.Props.{.key = cast(u64)504,
             .bounds = Rectangle.{16.0, top + 100.0, width - 32.0, bottom - top - 108.0},
             .value = TextView(editor_export_bytes[0:editor_export_length]), .label = EditorText("editor_export"),
             .cursor = editor_export_cursor, .anchor = editor_export_anchor, .scroll_y = editor_export_scroll,
@@ -1686,7 +1685,7 @@ EditorCollectionCheck :: () {
 }
 
 EditorArrow :: (id: s32, bounds: Rectangle, shape: string, disabled: bool) -> bool {
-    return Button(editor_frame.session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .icon_shape = shape,
+    return Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)id, .id = id, .bounds = bounds, .icon_shape = shape,
             .disabled = disabled, .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0
 }
 
@@ -1753,7 +1752,7 @@ EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
     catalog := EditorCatalog()
     rows: s32 = 0
     for at: cast(s32)0..catalog.count - 1 { if catalog.levels[at].proof != EDIT_PROOF_NONE { rows += 1 } }
-    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)613, .bounds = Rectangle.{16.0, y, width - 32.0, bottom - y - 8.0},
+    scroll := Scroll.Draw(editor_frame.session, Scroll.Props.{.key = cast(u64)613, .bounds = Rectangle.{16.0, y, width - 32.0, bottom - y - 8.0},
             .content_height = rows * 52, .scroll_offset = editor_list_scroll})
     editor_list_scroll = scroll.scroll_offset
     if scroll.opened {
@@ -1765,7 +1764,7 @@ EditorPublishPage :: (width: float32, top: float32, bottom: float32) {
             row += 1
             if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
             member := editor_share_member[at]
-            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(620000 + at * 2), .id = 620000 + at * 2, .bounds = bounds,
+            if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)(620000 + at * 2), .id = 620000 + at * 2, .bounds = bounds,
                     .label = EditorLevelName(0, summary), .selected = member, .disabled = busy,
                     .icon_shape = ifx member then "S2rr:M5 12L10 17L19 7" else "S2rr:M5 5H19V19H5Z",
                     .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
@@ -1824,7 +1823,7 @@ EditorExplore :: (width: float32, top: float32, bottom: float32) {
         EditorFind()
     }
     y += 52.0
-    scroll := Scroll(editor_frame.session, ScrollProps.{.key = cast(u64)705, .bounds = Rectangle.{16.0, y, width - 32.0, bottom - y - 8.0},
+    scroll := Scroll.Draw(editor_frame.session, Scroll.Props.{.key = cast(u64)705, .bounds = Rectangle.{16.0, y, width - 32.0, bottom - y - 8.0},
             .content_height = editor_result_count * 64, .scroll_offset = editor_list_scroll})
     editor_list_scroll = scroll.scroll_offset
     fetch: s32 = -1
@@ -1834,7 +1833,7 @@ EditorExplore :: (width: float32, top: float32, bottom: float32) {
             bounds := Rectangle.{scroll.content.x, scroll.content.y + cast(float32)(index * 64), scroll.content.width, 58.0}
             if bounds.y + bounds.height < scroll.viewport.y || bounds.y > scroll.viewport.y + scroll.viewport.height { continue }
             detail := EditorSay(index % 2 + 2, "editor_result_detail", cast(s64)meta.levels, TextUntilNul(meta.alias[:]))
-            if Button(editor_frame.session, ButtonProps.{.key = cast(u64)(700000 + index * 2), .id = 700000 + index * 2, .bounds = bounds,
+            if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)(700000 + index * 2), .id = 700000 + index * 2, .bounds = bounds,
                     .label = TextUntilNul(meta.title[:]), .detail = detail, .disabled = busy,
                     .fit_content = true, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 { fetch = index }
         }
