@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## [0.6.171] - 2026-11-14
+
 - Unlock Shovey Island with one press on its Unlock button, at the price the button shows, with no separate panel or confirmation.
 - Show Play on Island straight away for an account that already unlocked it, instead of Unlock and a price check.
+- Show Classic and Shovey Island as their title banners when starting a new level in the Editor.
 
 ## [0.6.170] - 2026-11-13
 

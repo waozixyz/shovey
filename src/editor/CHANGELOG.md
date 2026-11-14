@@ -1,6 +1,6 @@
 # Shovey Editor changelog
 
-## Unreleased
+## [0.2.150] - 2026-11-14
 
 - New level shows Classic and Shovey Island as their title banners instead of board pictures.
 - One press on Island's banner unlocks it and opens a new Island level.
