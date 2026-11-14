@@ -8,7 +8,9 @@ name: Downloads
 # like Inner Breeze. Every download is Shovey's player (scripts/player.py), built from
 # this repository's own lock; Arcade follows the release afterwards. Pushes of
 # a released version only check that nothing needs releasing. A manual run
-# retries an unreleased version. No release is left as a draft.
+# retries an unreleased version, or with "rehearse" builds and plays every
+# download of any version without publishing anything. No release is left as
+# a draft.
 on:
   push:
     branches: [master]
@@ -18,6 +20,11 @@ on:
         description: Full approved source commit (defaults to the triggering commit)
         required: false
         type: string
+      rehearse:
+        description: Build and play every download without publishing a release
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -32,6 +39,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       release_due: ${{ steps.due.outputs.release_due }}
+      build_due: ${{ steps.due.outputs.build_due }}
       version: ${{ steps.due.outputs.version }}
       revision: ${{ steps.due.outputs.revision }}
     steps:
@@ -45,6 +53,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           REQUESTED_REVISION: ${{ inputs.revision || github.sha }}
+          REHEARSE: ${{ inputs.rehearse || false }}
         run: |
           [[ "$REQUESTED_REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo 'A full source commit is required' >&2; exit 1; }
           test "$(git rev-parse HEAD)" = "$REQUESTED_REVISION"
@@ -53,16 +62,23 @@ jobs:
           version=$(python3 -c 'import re; print(re.search(r"^## \[([0-9.]+)\]", open("src/CHANGELOG.md").read(), re.M)[1])')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           state=$(gh release view "v$version" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
-          if [ "$state" != false ]; then
+          if [ "$REHEARSE" = true ]; then
+            # A rehearsal builds and plays the downloads and publishes nothing.
+            echo "release_due=false" >> "$GITHUB_OUTPUT"
+            echo "build_due=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Downloads::Rehearsal of Shovey $version: downloads are built and played, nothing is published"
+          elif [ "$state" != false ]; then
             echo "release_due=true" >> "$GITHUB_OUTPUT"
+            echo "build_due=true" >> "$GITHUB_OUTPUT"
           else
             echo "release_due=false" >> "$GITHUB_OUTPUT"
+            echo "build_due=false" >> "$GITHUB_OUTPUT"
             echo "::notice title=Downloads::Shovey $version is already released; its downloads build again with the next changelog version"
           fi
 
   android:
     needs: due
-    if: needs.due.outputs.release_due == 'true'
+    if: needs.due.outputs.build_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -76,6 +92,13 @@ jobs:
         uses: kryonlabs/kryon/.github/actions/google-free@7217475dfa7f462939e47e3f0bc918aef248b179
       # The build F-Droid's recipe runs; it has no self-update, so one APK
       # serves both.
+      # The build's own Ziran cache (compiler, package checkouts and native
+      # libraries) is addressed by what it is built from; reuse it between
+      # runs with the same lock instead of rebuilding the compiler each time.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: build/fdroid/cache/ziran
+          key: shovey-android-ubuntu-24.04-${{ hashFiles('ziran.lock') }}
       - name: Build the release APK
         run: make android-fdroid
       - name: Keep Google libraries out of the normal and F-Droid APK
@@ -106,7 +129,7 @@ jobs:
 
   android-gplay:
     needs: due
-    if: needs.due.outputs.release_due == 'true'
+    if: needs.due.outputs.build_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -114,6 +137,13 @@ jobs:
         with:
           ref: ${{ needs.due.outputs.revision }}
       - uses: ./.github/actions/android
+      # The build's own Ziran cache (compiler, package checkouts and native
+      # libraries) is addressed by what it is built from; reuse it between
+      # runs with the same lock instead of rebuilding the compiler each time.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: build/fdroid/cache/ziran
+          key: shovey-android-gplay-ubuntu-24.04-${{ hashFiles('ziran.lock') }}
       - name: Build the Google Play edition's APK
         run: make android-gplay
       # The Google check must still recognise Play Billing, or its passes on
@@ -146,14 +176,14 @@ jobs:
 
   fdroid:
     needs: due
-    if: needs.due.outputs.release_due == 'true'
+    if: needs.due.outputs.build_due == 'true'
     uses: ./.github/workflows/fdroid.yml
     with:
       revision: ${{ needs.due.outputs.revision }}
 
   linux:
     needs: due
-    if: needs.due.outputs.release_due == 'true'
+    if: needs.due.outputs.build_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -184,30 +214,46 @@ jobs:
           path: waozixyz/breeze
           sparse-checkout: tests/ui_driver.py
           sparse-checkout-cone-mode: false
+      # Ziran addresses built native libraries (codecs, raylib, curl, liboqs)
+      # by everything they are built from, so a run with the same lock and
+      # runner image reuses them and any change rebuilds them.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ziran/artifacts
+          key: shovey-native-linux-ubuntu-24.04-${{ hashFiles('waozixyz/shovey/ziran.lock') }}
       - name: Build and pack the Linux download
         run: make player-linux
-      - name: Play the unpacked download on a private display
+      - name: Unpack the download
+        id: unpack
         run: |
           rm -rf build/linux-check
           mkdir -p build/linux-check
           tar -xzf build/downloads/shovey-v*-linux-x86_64.tar.gz -C build/linux-check
+      # Each play-test runs even when an earlier one fails, so one run shows
+      # every failure.
+      - name: Play the unpacked download on a private display
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
+        run: |
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
             YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 300s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
             python3 tests/shovey_standalone_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
             --inbe-source "$GITHUB_WORKSPACE/waozixyz/breeze"
       - name: Open local Classic and Profile with downloads off
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
         run: |
           env -u LISTEN_PID -u LISTEN_FDS -u LISTEN_FDNAMES -u NOTIFY_SOCKET -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
             YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1024x900x24' \
             python3 tests/player_local_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
             --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze/tests"
       - name: Open bundled Island's Buy page in English and German
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
         run: |
           env -u LISTEN_PID -u LISTEN_FDS -u LISTEN_FDNAMES -u NOTIFY_SOCKET -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
             YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1024x900x24' \
             python3 tests/island_buy_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
             --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze"
       - name: Reopen unclaimed and empty chests in the packaged game
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
         run: |
           make chest-fixture
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
@@ -224,7 +270,7 @@ jobs:
 
   windows:
     needs: due
-    if: needs.due.outputs.release_due == 'true'
+    if: needs.due.outputs.build_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     defaults:
@@ -252,6 +298,13 @@ jobs:
           path: waozixyz/breeze
           sparse-checkout: tests/ui_driver.py
           sparse-checkout-cone-mode: false
+      # Ziran addresses built native libraries (codecs, raylib, curl, liboqs)
+      # by everything they are built from, so a run with the same lock and
+      # runner image reuses them and any change rebuilds them.
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ziran/artifacts
+          key: shovey-native-windows-ubuntu-24.04-${{ hashFiles('waozixyz/shovey/ziran.lock') }}
       - name: Cross-build and pack the Windows download
         env:
           CXX: x86_64-w64-mingw32-g++
@@ -282,6 +335,7 @@ jobs:
 
   release:
     needs: [due, android, android-gplay, fdroid, linux, windows]
+    if: needs.due.outputs.release_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:

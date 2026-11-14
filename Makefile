@@ -124,6 +124,16 @@ player-linux: player
 player-windows: player
 	python3 scripts/player.py windows
 
+# The Windows player's sources through Ziran's front end, without MinGW: a
+# call Kryon removed fails here in a minute rather than in the release build.
+.PHONY: player-windows-check
+player-windows-check: levels
+	rm -rf build/player/windows-check
+	'$(TOOLCHAIN)/build/bin/ziran' ir --project $(LOCK_FLAGS) --define _WIN32 --define PLATFORM_DESKTOP --define __x86_64__ \
+		--define PLATFORM_DESKTOP_RGFW --define GRAPHICS_API_OPENGL_11 -o build/player/windows-check src/player_windows.zi
+test: player-windows-check
+public-test: player-windows-check
+
 player-bundle: player
 	python3 scripts/player.py android --bundle
 
