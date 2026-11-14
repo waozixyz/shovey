@@ -82,25 +82,17 @@ with tempfile.TemporaryDirectory(dir=out, prefix='guest-') as folder:
             # A guest who has not bought Island sees the locked offer.
             # The cover's one action reads Unlock and the price; only the offer stays as its caption.
             assert not driver.find(contains='51 Dew · ', visible=True), 'The cover kept a separate price'
-            driver.press(label='Unlock · 51 Dew', role='button')
-            # Guests sign in first; the one action carries Unlock and the price.
-            action = driver.wait(key=49530, role='button')
-            driver.wait(key=49544)
-            assert action['label'] == 'Unlock · 51 Dew', action
+            assert '85 Dew' not in text, ('The offer has a separate regular price', text)
             for key in (49540, 49541, 49542):
                 assert not driver.find(key=key), ('A separate price label remains', key)
-            text = driver.text()
-            assert '85 Dew' not in text, ('The offer has a separate regular price', text)
-            assert driver.find(label='Unlock · 51 Dew', role='button'), 'The existing Island cover disappeared'
-            assert not any(driver.find(key=key) for key in (49510, 49511, 49512))
-            assert '40% off' in text, text
-            assert not DURATION.search(text), ('The offer must never state a duration', text)
-            # A purchase control needs a fresh quote.
-            assert not driver.find(key=49534) and not driver.find(key=49532), 'A guest was offered a purchase'
+            driver.press(label='Unlock · 51 Dew', role='button')
+            # One press and no panel: a guest is taken to sign in, and nothing is bought.
+            driver.wait(key=701, timeout=30)
+            assert not any(driver.find(key=key) for key in (49510, 49511, 49512, 49520, 49530, 49532, 49534, 49536)), \
+                'The unlock panel is back'
             assert not list(player.glob('island*')), 'A guest wrote an Island entitlement'
-            driver.press(key=49536, role='button')
+            driver.key('escape')
             driver.wait(contains='40% off', visible=True)
-            driver.wait_gone(key=49530)
             assert driver.find(label='Unlock · 51 Dew', role='button', visible=True), 'Back left the Island cover'
             assert not driver.find(contains='Level 1 / ', visible=True), 'Back opened the locked game'
         driver.press(label='Next', role='button')

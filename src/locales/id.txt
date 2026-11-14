@@ -913,8 +913,11 @@ Buka
 [shovey_island_signin]
 Masuk untuk membuka
 ---
-[shovey_island_loading]
-Memeriksa harga…
+[shovey_island_unlocking]
+Membuka…
+---
+[shovey_island_opening]
+Memuat…
 ---
 [shovey_island_offline]
 Sambungkan ke internet untuk membuka.

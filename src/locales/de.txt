@@ -913,8 +913,11 @@ Freischalten
 [shovey_island_signin]
 Zum Freischalten anmelden
 ---
-[shovey_island_loading]
-Preis wird geprüft …
+[shovey_island_unlocking]
+Wird freigeschaltet …
+---
+[shovey_island_opening]
+Wird geöffnet …
 ---
 [shovey_island_offline]
 Zum Freischalten mit dem Internet verbinden.

@@ -913,8 +913,11 @@ Odemknout
 [shovey_island_signin]
 Přihlas se a odemkni
 ---
-[shovey_island_loading]
-Ověřuji cenu…
+[shovey_island_unlocking]
+Odemykám…
+---
+[shovey_island_opening]
+Otevírám…
 ---
 [shovey_island_offline]
 K odemčení se připoj k internetu.

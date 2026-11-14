@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Unlock Shovey Island with one press on its Unlock button, at the price the button shows, with no separate panel or confirmation.
+- Show Play on Island straight away for an account that already unlocked it, instead of Unlock and a price check.
+
 ## [0.6.170] - 2026-11-13
 
 - Reduce Android download size by optimizing release code and removing unused resources.

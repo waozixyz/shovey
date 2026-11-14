@@ -48,4 +48,4 @@ includes=$(find "$native" -type d -printf ' -iquote %p')
 "${CC:-cc}" -std=c11 -O1 -ffunction-sections -fdata-sections -I"$toolchain/include" $includes \
     $(find "$native" -name '*.c') "$root/build/ziran/libziran.a" -Wl,--gc-sections -lm -lpthread -lz -ldl -o "$work/unlock"
 "$work/unlock"
-echo 'Island unlock local tests: exact quote, confirmation, refusals, offline restore, account isolation and in-place panel passed'
+echo 'Island unlock local tests: exact quote, one press at the shown price, refusals, offline restore, remembered unlock and account isolation passed'

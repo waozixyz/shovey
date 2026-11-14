@@ -8,6 +8,9 @@ Image :: #import "kryon/image";
 Button :: #import "kryon/button";
 
 Text :: #import "kryon/text";
+Box :: #import "kryon/box";
+#import "kryon/text_align"
+#import "kryon/drawing_props"
 #import "kryon/app_context"
 #import "kryon/widget_palette"
 #import "std/number_text"
@@ -66,8 +69,11 @@ Frame :: (today: s64) -> bool {
         .landscape = "assets/shovey/title/shovey-landscape.jpg", .logo = "assets/shovey/title/shovey-logo.png",
         .action = AppLocaleHost("shovey_play")}
     standalone := AppSupports("shovey.standalone")
-    // A locked Island carries its offer on the Unlock action.
+    // A locked Island carries its price and offer on the Unlock action, and
+    // one press on it unlocks. An unlock the host remembers reads Play while
+    // the node checks it.
     owned := AppSupports("shovey.island.owned")
+    shown := owned || AppSupports("shovey.island.shown")
     // Copied before the next host call can reuse the reply.
     unlock_text: [128]u8
     unlock := ""
@@ -77,7 +83,7 @@ Frame :: (today: s64) -> bool {
     items[1] = Carousel.CarouselItem.{.label = AppLocaleHost("shovey_island_title"),
         .portrait = "assets/shovey/title/shovey-island-portrait.jpg",
         .landscape = "assets/shovey/title/shovey-island-landscape.jpg", .logo = "assets/shovey/title/shovey-island-logo.png",
-        .action = ifx owned then AppLocaleHost("shovey_play") else ifx unlock != "" then unlock else AppLocaleHost("shovey_island_unlock"),
+        .action = ifx unlock != "" then unlock else ifx shown then AppLocaleHost("shovey_play") else AppLocaleHost("shovey_island_unlock"),
         .action_ribbon = ifx standalone && !owned then AppServiceHost("arcade.navigation", "island-offer") else ""}
     editor := Carousel.CarouselItem.{.label = AppLocaleHost("shovey_editor"),
         .portrait = "assets/shovey/title/shovey-editor-portrait.jpg",
@@ -92,6 +98,22 @@ Frame :: (today: s64) -> bool {
         .logo_max_width = ifx bounds.width < 600.0 then bounds.width * 0.58 else 360.0,
         .logo_top = 120.0}, items[:count], *state)
     Shop.Pump(frame.now, today)
+    // Why a press did not unlock Island, briefly, above its action.
+    if standalone && !owned && state.selected == 1 {
+        notice_text: [192]u8
+        if CopyCString(AppServiceHost("arcade.navigation", "island-notice"), notice_text[:]) && notice_text[0] != 0 {
+            width := ifx bounds.width - 48.0 < 420.0 then bounds.width - 48.0 else 420.0
+            action_y := bounds.y + bounds.height - 196.0
+            if action_y < bounds.y + bounds.height * 0.5 { action_y = bounds.y + bounds.height * 0.5 }
+            note := Rectangle.{bounds.x + (bounds.width - width) / 2.0, action_y - 86.0, width, 56.0}
+            unused Box.Draw(frame.session, Box.Props.{.key = cast(u64)49220, .bounds = note,
+                .fill = Color.{38, 44, 43, 235}, .radius = 14.0})
+            unused Text.Draw(frame.session, Text.Props.{.key = cast(u64)49221,
+                .bounds = Rectangle.{note.x + 12.0, note.y + 4.0, note.width - 24.0, note.height - 8.0},
+                .text = TextUntilNul(notice_text[:]), .size = 15, .wrap = Text.Wrap.TextWrapAuto,
+                .align = TextAlign.TextAlignCenter, .vertical_align = TextAlign.TextAlignCenter})
+        }
+    }
     y := bounds.y + 12.0
     if Action(frame.session, 49200, Rectangle.{12.0, y, 44.0, 44.0}, "assets/shovey/shop/stall.png", "shovey_shop_shop") { Shop.Open(1) }
     if Action(frame.session, 49202, Rectangle.{12.0, y + 60.0, 44.0, 44.0}, "assets/shovey/shop/chest-closed.png", "shovey_shop_chest") { Shop.Open(2) }

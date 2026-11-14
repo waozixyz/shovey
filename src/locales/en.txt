@@ -913,8 +913,11 @@ Unlock
 [shovey_island_signin]
 Sign in to unlock
 ---
-[shovey_island_loading]
-Checking the price…
+[shovey_island_unlocking]
+Unlocking…
+---
+[shovey_island_opening]
+Opening…
 ---
 [shovey_island_offline]
 Connect to the internet to unlock.

@@ -1,10 +1,14 @@
 {
-  "about": "The editor uses Classic's sprites and sounds to create and play authored boards, and Shovey Island's public preview on its start card. Campaign board previews are not editor resources.",
+  "about": "The editor uses Classic's sprites and sounds to create and play authored boards, and the title banners of Classic and Shovey Island on its start cards. Campaign board previews are not editor resources.",
   "copies": [
     {"from": "assets/shovey/sprites", "to": "classic/sprites"},
     {"from": "assets/shovey-landscape/sprites", "to": "classic/sprites-landscape"},
     {"from": "assets/shovey/sounds", "to": "classic/sounds"},
-    {"from": "assets/shovey/preview.png", "to": "classic/preview.png"},
-    {"from": "assets/island-marketing/preview.png", "to": "island/preview.png"}
+    {"from": "assets/player/shovey-landscape.jpg", "to": "classic/title/shovey-landscape.jpg"},
+    {"from": "assets/player/shovey-portrait.jpg", "to": "classic/title/shovey-portrait.jpg"},
+    {"from": "assets/player/shovey-logo.png", "to": "classic/title/shovey-logo.png"},
+    {"from": "assets/player/shovey-island-landscape.jpg", "to": "classic/title/shovey-island-landscape.jpg"},
+    {"from": "assets/player/shovey-island-portrait.jpg", "to": "classic/title/shovey-island-portrait.jpg"},
+    {"from": "assets/player/shovey-island-logo.png", "to": "classic/title/shovey-island-logo.png"}
   ]
 }

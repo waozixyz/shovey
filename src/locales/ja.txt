@@ -913,8 +913,11 @@ Shovey Island
 [shovey_island_signin]
 ログインしてアンロック
 ---
-[shovey_island_loading]
-価格を確認中…
+[shovey_island_unlocking]
+アンロック中…
+---
+[shovey_island_opening]
+開いています…
 ---
 [shovey_island_offline]
 アンロックするにはインターネットに接続してください。

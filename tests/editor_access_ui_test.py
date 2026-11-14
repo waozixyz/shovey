@@ -1,8 +1,10 @@
 """The Editor opens from its cover for everyone, signed out or signed in, on
 its start: big Classic and Shovey Island cards to begin a new level. Classic
-always makes a new level and opens it; Back returns to the start. While
-Island is locked its card reads Unlock and the price and opens the unlock
-page, never Island's editor. Levels holds only the creator's own levels,
+always makes a new level and opens it; Back returns to the start. The cards
+are the editions' title banners. While Island is locked its card carries
+Unlock and the price, and one press on it never opens Island's editor
+without an unlock: signed out it leads to sign in, and an account that
+cannot reach its node stays in the Editor. Levels holds only the creator's own levels,
 never campaign levels, with New level leading back to the start. Escape in a
 level returns to the world map, and the map's Escape returns to the title.
 
@@ -35,8 +37,8 @@ from ui_driver import UiDriver
 OWN_LEVELS = range(240000, 250000)
 # Back, Publish, Explore, Export, the list, New level and the Island row.
 LEVELS_PAGE = {200, 202, 120, 121, 203, 205, 210}
-# Back, the Classic and Island cards, and Levels.
-START_PAGE = {100, 110, 130, 122}
+# Back, the Classic and Island cards, Island's Unlock action and Levels.
+START_PAGE = {100, 110, 130, 133, 122}
 
 
 def offline_account(folder):
@@ -72,26 +74,37 @@ def start_page(driver, who):
     island = driver.wait(key=130, role='button')
     assert 'Classic' in shown(classic), (who, classic)
     assert 'Shovey Island' in shown(island) and 'Unlock · ' in shown(island), (f'Locked Island card for a {who} player', island)
-    tag = driver.wait(key=133, role='text')
+    tag = driver.wait(key=133, role='button')
     assert tag.get('label', '').startswith('Unlock · '), tag
     for card in (classic, island):
         assert card['width'] >= 200 and card['height'] >= 200, ('The start cards are not big', who, card)
-    assert driver.find(key=111) and driver.find(key=131), 'A start card lacks its preview'
+    # Each card is its title banner: the cover art and the logo over it.
+    for art in (111, 131):
+        assert 'title/shovey-' in str(driver.find(key=art)), ('A start card lacks its title banner', art)
+    assert driver.find(key=112) and driver.find(key=132), 'A start card lacks its logo'
     buttons = [node for node in driver.tree() if node.get('kind') == 'button' and node.get('visible')]
     others = [node.get('label') for node in buttons if node.get('key') not in START_PAGE]
     assert not others, (f'The start offers more than its two editions to a {who} player', others)
 
 
 def locked_island(driver, who, key):
-    """Locked, Island opens the unlock page; Back there returns to the Editor."""
+    """Locked, one press on Island shows no panel and opens no editor: signed
+    out it leads to the Profile's sign-in card; an account that cannot reach
+    its node stays in the Editor, which says why."""
     driver.press(key=key, role='button')
-    # 49530 buys; offline the page shows the waiting 49534 action instead.
-    driver.wait(key=49512, role='button', timeout=30)
-    actions = driver.find(key=49530, role='button') + driver.find(key=49534, role='button')
-    assert actions and 'Unlock' in actions[0].get('label', ''), actions
-    assert not driver.find(key=93303), f'A locked Island opened its editor for a {who} player'
-    driver.press(key=49512, role='button')
+    deadline = time.monotonic() + 60
+    while True:
+        assert not any(driver.find(key=panel) for panel in (49512, 49520, 49530, 49534, 49536)), 'The unlock panel is back'
+        assert not driver.find(key=93303), f'A locked Island opened its editor for a {who} player'
+        if driver.find(key=701, visible=True):
+            driver.key('escape')
+            break
+        if driver.find(key=138, visible=True):
+            break
+        assert time.monotonic() < deadline, f'Pressing a locked Island did nothing for a {who} player'
+        time.sleep(0.2)
     driver.wait(key=key, role='button')
+    assert not driver.find(key=93303), f'A locked Island opened its editor for a {who} player'
 
 
 def classic_new_level(driver):
@@ -184,11 +197,12 @@ for who in ('signed-out', 'signed-in'):
                 driver.press(label='Previous', role='button')
                 driver.press(label='Play', role='button')
                 start_map_destination(driver, 1)
-                driver.wait(contains='Level 1 / ', role='text', timeout=30)
+                # The level has no counter; its Restart control shows it is open.
+                driver.wait(label='Restart', role='button', timeout=30)
                 dismiss_level_prompts(driver)
                 driver.key('escape')
                 assert_fullscreen_map(driver)
-                assert not driver.find(contains='Level 1 / ', visible=True), 'Escape left the level on screen'
+                assert not driver.find(label='Restart', role='button', visible=True), 'Escape left the level on screen'
                 driver.key('escape')
                 driver.wait(label='Play', role='button')
                 assert not driver.find(key=20105, visible=True), 'Escape on the map kept the map open'
@@ -201,6 +215,6 @@ for who in ('signed-out', 'signed-in'):
             assert 'host capability' not in line, line[:1000]
     results.append(who)
 print(f'Editor access local UI test passed: {" and ".join(results)} players open the Editor twice on its start '
-      'of big Classic and Island cards; Classic makes a level and Back returns to the start; locked Island shows '
-      'Unlock and the price and opens its unlock page from the start and from Levels, which holds only their own '
+      'of big Classic and Island title banners; Classic makes a level and Back returns to the start; locked Island shows '
+      'Unlock and the price and one press never opens its editor from the start or from Levels, which holds only their own '
       'levels; Escape goes level → map → title')

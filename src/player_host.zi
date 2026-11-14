@@ -88,7 +88,6 @@ collection_editor_bytes: string;
 collection_shop_request: string;
 collection_shop_locator: AppLocator;
 collection_island: IslandUnlock;
-collection_island_page: bool;
 collection_island_poll: float64;
 collection_island_opening: bool;
 collection_island_package: IslandPackage;
@@ -97,14 +96,21 @@ collection_island_account: [65]u8;
 // The Editor's Island levels: Island opened in editor mode from the Editor.
 // The Editor asks (ISLAND_EDITOR_ASKED), the collection opens Island
 // (ISLAND_EDITOR_OPENING) and it runs (ISLAND_EDITOR_OPEN); leaving it reopens
-// the Editor. A locked Island shows its unlock page first.
+// the Editor. A locked Island unlocks first, with that same press.
 ISLAND_EDITOR_NONE :: 0
 ISLAND_EDITOR_ASKED :: 1
 ISLAND_EDITOR_OPENING :: 2
 ISLAND_EDITOR_OPEN :: 3
 SHOVEY_EDITOR_APP :: "arcade.shovey-editor"
 collection_island_editor: s32;
-collection_island_unlock_for_editor: bool;
+// Where the press that unlocks goes once the node has answered: nowhere (the
+// cover reads Play in place), into Island, or into the Editor's Island levels.
+ISLAND_AFTER_NONE :: 0
+ISLAND_AFTER_PLAY :: 1
+ISLAND_AFTER_EDITOR :: 2
+ISLAND_AFTER_SECONDS: float64 = 30.0;
+collection_island_after: s32;
+collection_island_after_until: float64;
 
 using HostValueKind;
 
@@ -220,6 +226,8 @@ CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
             AppTreeNode(*collection_host.tree, collection_host.tree.active), node)
     }
     if name == "shovey.island.owned" { return collection_island.owned }
+    // Shown as the player's own: verified, or remembered while the node checks.
+    if name == "shovey.island.shown" { return collection_island.owned || collection_island.remembered }
     return name == "shovey.standalone" || name == "AppRecordHost" || name == "SaveAppRecordHost" ||
     name == "AppFriendHost" || name == "AppSharedHost" || name == "AppSharedItemHost" ||
     name == "AppInvitationHost" || name == "RefreshAppSharedHost" || name == "SendAppSharedHost" ||
@@ -244,7 +252,7 @@ CollectionFocused :: (context: *void, node: *AppNode) -> bool {
     }
     return ChestReminderSlotFocused(AppTreeNode(*collection_host.tree, AppHandle.{0, 1}),
         AppTreeNode(*collection_host.tree, collection_host.tree.active), node,
-        foreground, entity_visible, collection_island_page)
+        foreground, entity_visible, false)
 }
 
 CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
@@ -328,42 +336,43 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
             result.* = AppHostText(IslandUnlockCaption(*collection_island, caption[:]))
             return 1
         }
-        // The title's Island action carries the price; its caption keeps the offer.
+        // The Island action carries Unlock and the price, or what its press
+        // waits for. Empty reads Play: owned, or remembered and being checked.
         if service == "arcade.navigation" && request == "island-unlock" {
             label: [128]u8
-            result.* = AppHostText(ifx collection_island.owned then "" else IslandUnlockLabel(*collection_island, label[:]))
+            shown := collection_island.owned || (collection_island.remembered && collection_island.wanted == 0)
+            result.* = AppHostText(ifx shown then "" else IslandUnlockLabel(*collection_island, label[:]))
             return 1
         }
-        // A locked Island is not the title's add-on, so the host shows its
-        // unlock page directly; buying still needs the node's quote.
+        // Why the last press did not unlock, for a few seconds after it.
+        if service == "arcade.navigation" && request == "island-notice" {
+            result.* = AppHostText(IslandUnlockNotice(*collection_island, cast(float64)MonotonicMilliseconds() / 1000.0))
+            return 1
+        }
+        // The title's Island action. Owned, Island opens after this frame;
+        // locked, this one press unlocks it at the price the action shows.
         if service == "arcade.navigation" && request == "island" {
-            if collection_island.owned {
-                collection_island_opening = true
-                result.* = AppHostText("queued")
-                return 1
-            }
-            CollectionIslandShow()
+            if collection_island.owned { collection_island_opening = true }
+            else { CollectionIslandPress(ISLAND_AFTER_NONE) }
             result.* = AppHostText("queued")
             return 1
         }
-        // The Editor's Island levels open after this frame, or the unlock page
-        // first while Island is locked.
+        // The Editor's Island levels open after this frame; a locked Island
+        // unlocks with the same press and then opens them.
         if service == "arcade.navigation" && request == "island-editor" {
             if CollectionIslandEntry() == null || TextUntilNul(node.identity.id[:]) != SHOVEY_EDITOR_APP {
                 result.* = AppHostText("unavailable")
                 return 1
             }
-            if !collection_island.owned {
-                CollectionIslandShow()
-                collection_island_unlock_for_editor = true
-            } else { collection_island_editor = ISLAND_EDITOR_ASKED }
+            if !collection_island.owned { CollectionIslandPress(ISLAND_AFTER_EDITOR) }
+            else { collection_island_editor = ISLAND_EDITOR_ASKED }
             result.* = AppHostText("queued")
             return 1
         }
         // The Editor's start asks once whether a locked Island is unlocked
-        // now, as opening the unlock page does: the ledger is read again.
+        // now: the ledger is read again.
         if service == "arcade.navigation" && request == "island-refresh" {
-            if !collection_island.owned && !collection_island_page { IslandUnlockOpen(*collection_island) }
+            if !collection_island.owned { IslandUnlockRefresh(*collection_island) }
             result.* = AppHostText("queued")
             return 1
         }
@@ -391,7 +400,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
             return 1
         }
         if service == "arcade.navigation" && request == "island-offer" {
-            result.* = AppHostText(ifx !collection_island.owned && IslandOffer(*collection_island) then AppLocaleHost("shovey_island_off") else "")
+            result.* = AppHostText(ifx IslandOffer(*collection_island) then AppLocaleHost("shovey_island_off") else "")
             return 1
         }
         if service == "arcade.navigation" && request == "back" {
@@ -673,7 +682,6 @@ CollectionOpenShoveyBytes :: (bytes: string, metadata: string, data: string) -> 
 // library it is unused, so the app closes.
 CollectionBack :: () -> bool {
     if EntityBack() { return true }
-    if collection_island_page { collection_island_page = false; collection_island_unlock_for_editor = false; return true }
     return AppHostBack(*collection_host) > 0
 }
 
@@ -737,7 +745,8 @@ CollectionPending :: (request: s64) -> bool {
 CollectionOpenGame :: (id: string) -> bool {
     root := AppTreeNode(*collection_host.tree, collection_host.tree.active)
     if root == null || !root.collection { Report("Shovey: no collection is open to start "); Report(id); Report("\n"); return false }
-    if id == ISLAND_UNLOCK_APP && !collection_island.owned { CollectionIslandShow(); return true }
+    // Only a press on the Unlock control buys; nothing else opens a locked Island.
+    if id == ISLAND_UNLOCK_APP && !collection_island.owned { return true }
     entry := AppCatalogAt(*root.catalog, AppCatalogFind(*root.catalog, id))
     plan: AppInstallPlan
     if entry != null && (TextUntilNul(entry.cover.action[:]) == "title" ||
@@ -996,7 +1005,6 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
                 .text = title, .size = 16,
                 .bounds = Rectangle.{viewport.x + 112.0, viewport.y + 20.0, viewport.width - 232.0, 28.0}})
     }
-    if collection_island_page { CollectionIslandFrame(session, viewport) }
     return true
 }
 
@@ -1072,8 +1080,9 @@ CollectionPackageFetch :: (context: *void, account: string, parent: *AppNode,
     entry: *AppEntry, operation: s32, reply: *AppsReply) -> bool {
     if account != "local" || !CollectionPackageEntry(parent, entry) { return false }
     if operation != APPS_INSTALL { return false }
-    // Buy successfully opens the locked offer; it does not install or grant it.
-    if !collection_island.owned { CollectionIslandShow(); reply.status = APPS_APPLIED; return true }
+    // A locked Island is neither installed nor granted here: its Unlock
+    // control alone buys it.
+    if !collection_island.owned { reply.status = APPS_APPLIED; return true }
     ok := IslandPackageFetch(*collection_island_package, entry)
     reply.status = ifx !ok then APPS_REJECTED else ifx collection_island_package.stage == 3 then APPS_APPLIED else APPS_QUEUED
     return true
@@ -1087,18 +1096,23 @@ CollectionIslandEntry :: () -> *AppEntry {
     return ifx at < 0 then null else AppCatalogAt(*root.catalog, at)
 }
 
-// The cover stays reachable while locked; opening it shows the unlock page.
+// The cover stays reachable while locked; opening it leaves it in place, and
+// its Unlock control alone buys.
 CollectionOpenEffect :: (context: *void, account: string, locator: *AppLocator,
     request: *AppsRequest, reply: *AppsReply) -> s32 {
     if TextUntilNul(locator.identity.id[:]) != ISLAND_UNLOCK_APP || collection_island.owned { return APP_OPEN_DECLARED }
-    CollectionIslandShow()
     return APP_OPEN_HANDLED
 }
 
-CollectionIslandShow :: () {
-    IslandUnlockOpen(*collection_island)
-    collection_island_page = true
-    collection_island_unlock_for_editor = false
+// The player's one press on Island's Unlock control, or on its Play while a
+// remembered unlock is still checked. "after" says where that press was
+// going: the Editor's Island levels, or Island itself for a remembered Play.
+CollectionIslandPress :: (after: s32) {
+    now := cast(float64)MonotonicMilliseconds() / 1000.0
+    remembered := collection_island.remembered
+    IslandUnlockPress(*collection_island, now)
+    collection_island_after = ifx after == ISLAND_AFTER_EDITOR then ISLAND_AFTER_EDITOR else ifx remembered then ISLAND_AFTER_PLAY else ISLAND_AFTER_NONE
+    collection_island_after_until = now + ISLAND_AFTER_SECONDS
 }
 
 // The number of levels in Island editor's own index: a header line, then one
@@ -1174,11 +1188,14 @@ CollectionIslandPump :: () {
     entry := CollectionIslandEntry()
     if entry == null { return }
     CollectionPackageAccount()
+    now := cast(float64)MonotonicMilliseconds() / 1000.0
+    // Included content follows the trusted entitlement before anything is
+    // asked, so a verified owner is never asked about again.
+    if collection_island_package.included.found { collection_island.owned = collection_island_package.authorized }
     if entity_ready {
-        now := cast(float64)MonotonicMilliseconds() / 1000.0
         request := IslandUnlockNext(*collection_island, now)
         waiting := collection_island.stage != ISLAND_IDLE && collection_island.stage != ISLAND_READY
-        if request != "" || waiting || collection_island_page || now >= collection_island_poll {
+        if request != "" || waiting || collection_island.wanted != 0 || now >= collection_island_poll {
             collection_island_poll = now + 5.0
             changed := IslandUnlockAnswer(*collection_island,
                 EntityGameShopAnswer(ifx request != "" then request else "status"), now)
@@ -1202,25 +1219,23 @@ CollectionIslandPump :: () {
     caption: [128]u8
     unused CopyCString(IslandUnlockCaption(*collection_island, caption[:]), entry.cover.caption[:])
     unused CopyCString(ifx collection_island.owned then "play" else "buy", entry.cover.action[:])
-    if collection_island_page && collection_island.owned {
-        collection_island_page = false
-        // Unlocked from the Editor's Island levels: open them, not the islands.
-        if collection_island_unlock_for_editor { collection_island_editor = ISLAND_EDITOR_ASKED }
-        // The existing cover updates to Play in place.
-        collection_island_unlock_for_editor = false
-    }
-}
-
-CollectionIslandFrame :: (session: Session, viewport: Rectangle) {
-    entry := CollectionIslandEntry()
-    if entry == null { collection_island_page = false; return }
-    collection_widget_node = AppTreeNode(*collection_host.tree, AppHandle.{0, 1})
-    unused WidgetPaletteUse(session, ShoveyPalette())
-    action := IslandUnlockPanel(session, viewport, *collection_island)
-    unused WidgetPaletteRestore(session)
-    if action == ISLAND_ACTION_BACK { collection_island_page = false; collection_island_unlock_for_editor = false }
+    // A press that needs an account or more Dew opens that page once.
+    action := IslandUnlockTakeAction(*collection_island)
     if action == ISLAND_ACTION_SIGN_IN { unused EntityShowPage("open") }
     if action == ISLAND_ACTION_BUY_DEW { unused EntityShowPage("dew") }
+    if collection_island.owned {
+        collection_island.wanted = 0
+        if now < collection_island_after_until {
+            // Unlocked from the Editor's Island levels: open them, not the
+            // islands. A remembered Play opens Island. Otherwise the cover
+            // reads Play in place.
+            if collection_island_after == ISLAND_AFTER_EDITOR { collection_island_editor = ISLAND_EDITOR_ASKED }
+            if collection_island_after == ISLAND_AFTER_PLAY && CollectionActiveIs("arcade.shovey") { collection_island_opening = true }
+        }
+        collection_island_after = ISLAND_AFTER_NONE
+    } else if collection_island.wanted == 0 && !IslandUnlockBusy(*collection_island) {
+        collection_island_after = ISLAND_AFTER_NONE
+    }
 }
 
 // Navigation records select a page in the verified game, never an item to buy.

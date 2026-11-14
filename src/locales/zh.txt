@@ -913,8 +913,11 @@ Shovey Island
 [shovey_island_signin]
 登录后解锁
 ---
-[shovey_island_loading]
-正在查询价格…
+[shovey_island_unlocking]
+正在解锁…
+---
+[shovey_island_opening]
+正在打开…
 ---
 [shovey_island_offline]
 请连接互联网后解锁。

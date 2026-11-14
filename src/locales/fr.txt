@@ -913,8 +913,11 @@ Débloquer
 [shovey_island_signin]
 Connecte-toi pour débloquer
 ---
-[shovey_island_loading]
-Vérification du prix…
+[shovey_island_unlocking]
+Déblocage…
+---
+[shovey_island_opening]
+Ouverture…
 ---
 [shovey_island_offline]
 Connecte-toi à Internet pour débloquer.

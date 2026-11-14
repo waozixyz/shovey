@@ -913,8 +913,11 @@ Shovey Island
 [shovey_island_signin]
 Войди, чтобы открыть
 ---
-[shovey_island_loading]
-Проверяем цену…
+[shovey_island_unlocking]
+Открываем…
+---
+[shovey_island_opening]
+Загрузка…
 ---
 [shovey_island_offline]
 Подключись к интернету, чтобы открыть.

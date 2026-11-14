@@ -21,6 +21,7 @@ Button :: #import "kryon/button";
 Image :: #import "kryon/image";
 
 Box :: #import "kryon/box";
+Carousel :: #import "kryon/carousel";
 
 Press :: #import "kryon/press";
 
@@ -262,18 +263,27 @@ EditorNotice :: (key: string) {
 
 // Where the editor finds Classic's pictures and sounds: its own packed
 // copies, or on the web page, which holds Shovey's own folder beside the
-// editor's, that folder itself.
+// editor's, that folder itself. The start's cards are the title banners of
+// Classic and Shovey Island: their cover art and logos, as the title shows.
 #if #defined(SHOVEY_WEB) {
     EDITOR_CLASSIC :: "assets/shovey"
-    EDITOR_CLASSIC_PREVIEW :: "assets/shovey/preview.png"
+    EDITOR_CLASSIC_WIDE :: "assets/shovey/title/shovey-landscape.jpg"
+    EDITOR_CLASSIC_TALL :: "assets/shovey/title/shovey-portrait.jpg"
+    EDITOR_CLASSIC_LOGO :: "assets/shovey/title/shovey-logo.png"
+    EDITOR_ISLAND_WIDE :: "assets/shovey/title/shovey-island-landscape.jpg"
+    EDITOR_ISLAND_TALL :: "assets/shovey/title/shovey-island-portrait.jpg"
+    EDITOR_ISLAND_LOGO :: "assets/shovey/title/shovey-island-logo.png"
     EDITOR_CLASSIC_SOUNDS: [9]string = .["assets/shovey/sounds/push.wav", "assets/shovey/sounds/pit.wav", "assets/shovey/sounds/goal.wav", "assets/shovey/sounds/pickup.wav", "assets/shovey/sounds/door.wav", "assets/shovey/sounds/teleport.wav", "assets/shovey/sounds/shot.wav", "assets/shovey/sounds/won.wav", "assets/shovey/sounds/lost.wav"];
 } else {
     EDITOR_CLASSIC :: "assets/shovey-editor/classic"
-    EDITOR_CLASSIC_PREVIEW :: "assets/shovey-editor/classic/preview.png"
+    EDITOR_CLASSIC_WIDE :: "assets/shovey-editor/classic/title/shovey-landscape.jpg"
+    EDITOR_CLASSIC_TALL :: "assets/shovey-editor/classic/title/shovey-portrait.jpg"
+    EDITOR_CLASSIC_LOGO :: "assets/shovey-editor/classic/title/shovey-logo.png"
+    EDITOR_ISLAND_WIDE :: "assets/shovey-editor/classic/title/shovey-island-landscape.jpg"
+    EDITOR_ISLAND_TALL :: "assets/shovey-editor/classic/title/shovey-island-portrait.jpg"
+    EDITOR_ISLAND_LOGO :: "assets/shovey-editor/classic/title/shovey-island-logo.png"
     EDITOR_CLASSIC_SOUNDS: [9]string = .["assets/shovey-editor/classic/sounds/push.wav", "assets/shovey-editor/classic/sounds/pit.wav", "assets/shovey-editor/classic/sounds/goal.wav", "assets/shovey-editor/classic/sounds/pickup.wav", "assets/shovey-editor/classic/sounds/door.wav", "assets/shovey-editor/classic/sounds/teleport.wav", "assets/shovey-editor/classic/sounds/shot.wav", "assets/shovey-editor/classic/sounds/won.wav", "assets/shovey-editor/classic/sounds/lost.wav"];
 }
-// Shovey Island's public preview, packed with the editor for its start card.
-EDITOR_ISLAND_PREVIEW :: "assets/shovey-editor/island/preview.png"
 
 // Points the board at the editor's copies of its pictures before it
 // prepares its own paths, which would name Classic's folder.
@@ -753,7 +763,8 @@ EditorFieldDraw :: (field: *EditorField, key: u64, bounds: Rectangle, label: str
 // The start: a new level of Classic, or of Shovey Island where the host
 // offers it. Picking one makes the level and opens it; Levels holds your own.
 
-// The Unlock label with Island's price, while Island is locked.
+// What Island's Unlock control reads while Island is locked: Unlock and the
+// price, or what its one press is waiting for.
 EditorIslandUnlock :: (output: []u8) -> string {
     // Copied before the next host call can reuse the reply.
     if !CopyCString(AppServiceHost("arcade.navigation", "island-unlock"), output) || output[0] == 0 {
@@ -762,29 +773,48 @@ EditorIslandUnlock :: (output: []u8) -> string {
     return TextUntilNul(output)
 }
 
-// One edition's card: its preview, its name and, while locked, Unlock and
-// the price. The whole card is the button.
-EditorStartCard :: (key: s32, bounds: Rectangle, name: string, picture: string, locked: string) -> bool {
+// Why a press on a locked Island did not unlock it, for a few seconds over
+// the bottom of the page: the host's words, such as not enough Dew.
+EditorIslandNotice :: (bounds: Rectangle) {
+    notice: [192]u8
+    if !CopyCString(AppServiceHost("arcade.navigation", "island-notice"), notice[:]) || notice[0] == 0 { return }
+    Box.Draw(editor_frame.session, Box.Props.{.key = cast(u64)137, .bounds = bounds,
+            .fill = Color.{59, 64, 63, 235}, .radius = 12.0})
+    EditorCaption(138, bounds, TextUntilNul(notice[:]), 14, true)
+}
+
+// One edition's card, drawn as its title banner: the cover art with the
+// logo over it. The whole card is the button. A locked edition carries its
+// Unlock control with the price and any offer, and one press unlocks it.
+EditorStartCard :: (key: s32, bounds: Rectangle, name: string, wide: string, tall: string, logo: string,
+    locked: string, offer: string) -> bool {
     session := editor_frame.session
-    Box.Draw(session, Box.Props.{.key = cast(u64)(key + 4), .bounds = bounds,
-            .fill = Color.{38, 44, 43, 235}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
     pressed := Button.Draw(session, Button.Props.{.key = cast(u64)key, .id = key, .bounds = bounds,
             .label = name, .detail = locked, .invisible = true}) != 0
-    label_height: float32 = ifx locked == "" then 52.0 else 88.0
-    picture_bounds := Rectangle.{bounds.x + 10.0, bounds.y + 10.0, bounds.width - 20.0, bounds.height - label_height - 10.0}
-    EditorImage(cast(u64)(key + 1), picture, picture_bounds, name)
-    if locked != "" {
-        Box.Draw(session, Box.Props.{.key = cast(u64)(key + 5), .bounds = picture_bounds,
-                .fill = Color.{20, 24, 23, 120}, .radius = 12.0})
-    }
-    EditorCaption(cast(u64)(key + 2), Rectangle.{bounds.x + 12.0, bounds.y + bounds.height - label_height, bounds.width - 24.0, 40.0}, name, 22, true)
+    Image.Draw(session, Image.Props.{.key = cast(u64)(key + 1), .bounds = bounds,
+            .asset_path = ifx bounds.height > bounds.width then tall else wide, .alt_text = name,
+            .fit = Image.ImageFit.ImageFitCover, .radius = 18.0, .smooth = true})
+    Box.Draw(session, Box.Props.{.key = cast(u64)(key + 4), .bounds = bounds,
+            .fill = Color.{0, 0, 0, 0}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+    // The logo sits in the sky of the cover, as on the title.
+    logo_width := bounds.width * 0.56
+    if logo_width > 320.0 { logo_width = 320.0 }
+    logo_height := bounds.height * 0.36
+    if logo_height > logo_width * 0.64 { logo_height = logo_width * 0.64 }
+    Image.Draw(session, Image.Props.{.key = cast(u64)(key + 2), .asset_path = logo, .alt_text = name,
+            .bounds = Rectangle.{bounds.x + (bounds.width - logo_width) / 2.0, bounds.y + bounds.height * 0.06, logo_width, logo_height},
+            .fit = Image.ImageFit.ImageFitContain, .smooth = true})
     if locked != "" {
         pill := bounds.width - 48.0
         if pill > 260.0 { pill = 260.0 }
-        tag := Rectangle.{bounds.x + (bounds.width - pill) / 2.0, bounds.y + bounds.height - 46.0, pill, 34.0}
-        Box.Draw(session, Box.Props.{.key = cast(u64)(key + 6), .bounds = tag,
-                .fill = Color.{196, 120, 40, 255}, .radius = 17.0})
-        EditorCaption(cast(u64)(key + 3), tag, locked, 15, true)
+        tag := Rectangle.{bounds.x + (bounds.width - pill) / 2.0, bounds.y + bounds.height - 72.0, pill, 52.0}
+        // The same action as the title's cover; it and the card are one press.
+        if Button.Draw(session, Button.Props.{.key = cast(u64)(key + 3), .id = key + 3, .bounds = tag,
+                .label = locked, .pill = true, .size = ControlSize.ControlSizeLarge,
+                .tone = ButtonTone.ButtonToneSuccess, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
+            pressed = true
+        }
+        Carousel.CarouselActionRibbon(session, cast(u64)(key + 7), tag, offer)
     }
     return pressed
 }
@@ -804,14 +834,14 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
     foot := bottom - 60.0
     area := Rectangle.{16.0, top + 64.0, width - 32.0, foot - top - 76.0}
     // Side by side when the screen is wide, one above the other when tall;
-    // each card stays near its preview's shape.
+    // each card stays near the shape of its cover art.
     wide := area.width >= area.height
     count: s32 = ifx island then 2 else 1
     card_width := ifx wide then (area.width - gap * cast(float32)(count - 1)) / cast(float32)count else area.width
     card_height := ifx wide then area.height else (area.height - gap * cast(float32)(count - 1)) / cast(float32)count
     if card_width > 640.0 { card_width = 640.0 }
-    if card_height > card_width * 0.6 + 100.0 { card_height = card_width * 0.6 + 100.0 }
-    if card_width > (card_height - 60.0) * 2.0 + 20.0 { card_width = (card_height - 60.0) * 2.0 + 20.0 }
+    if card_height > card_width * 1.5 { card_height = card_width * 1.5 }
+    if card_width > card_height * 1.6 { card_width = card_height * 1.6 }
     used_width := ifx wide then card_width * cast(float32)count + gap * cast(float32)(count - 1) else card_width
     used_height := ifx wide then card_height else card_height * cast(float32)count + gap * cast(float32)(count - 1)
     x := area.x + (area.width - used_width) / 2.0
@@ -819,15 +849,23 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
     classic := Rectangle.{x, y, card_width, card_height}
     island_card := ifx wide then Rectangle.{x + card_width + gap, y, card_width, card_height} else Rectangle.{x, y + card_height + gap, card_width, card_height}
     make := false
-    if EditorStartCard(110, classic, EditorText("editor_classic"), EDITOR_CLASSIC_PREVIEW, "") { make = true }
+    if EditorStartCard(110, classic, EditorText("editor_classic"), EDITOR_CLASSIC_WIDE, EDITOR_CLASSIC_TALL,
+        EDITOR_CLASSIC_LOGO, "", "") { make = true }
     if island {
         unlock: [128]u8
-        locked := ifx owned then "" else EditorIslandUnlock(unlock[:])
-        // Owned, Island's editor opens on a new island; locked, its unlock
-        // page opens first and goes on to that new island once unlocked.
-        if EditorStartCard(130, island_card, EditorText("editor_island"), EDITOR_ISLAND_PREVIEW, locked) {
+        offer: [64]u8
+        // An unlock the host remembers shows as the player's own while the
+        // node checks it.
+        shown := owned || AppSupportsHost("shovey.island.shown")
+        locked := ifx shown then "" else EditorIslandUnlock(unlock[:])
+        if locked != "" { unused CopyCString(AppServiceHost("arcade.navigation", "island-offer"), offer[:]) }
+        // Owned, Island's editor opens on a new island; locked, this one
+        // press unlocks it at the shown price and goes on to that new island.
+        if EditorStartCard(130, island_card, EditorText("editor_island"), EDITOR_ISLAND_WIDE, EDITOR_ISLAND_TALL,
+            EDITOR_ISLAND_LOGO, locked, TextUntilNul(offer[:])) {
             unused AppServiceHost("arcade.navigation", "island-editor")
         }
+        if !owned { EditorIslandNotice(Rectangle.{16.0, foot - 60.0, width - 32.0, 52.0}) }
     }
     if EditorControl(122, Rectangle.{16.0, foot, width - 32.0, 48.0}, EditorText("editor_levels")) {
         editor_levels_scroll = 0
@@ -918,15 +956,17 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
         base.y += 36.0 + cast(float32)custom_rows * (custom_height + gap)
         if island {
             EditorCaption(206, Rectangle.{base.x, base.y, base.width, 32.0}, EditorText("editor_island"), 18)
-            // Island keeps its levels in its own editor, which this opens;
-            // while Island is locked it opens the unlock page instead.
+            // Island keeps its levels in its own editor, which this opens.
             unlock: [128]u8
-            detail := ifx owned then EditorSay(2, "editor_custom_count", cast(s64)editor_island_levels) else EditorIslandUnlock(unlock[:])
+            // An unlock the host remembers shows as the player's own while
+            // the node checks it; locked, this one press unlocks it.
+            shown := owned || AppSupportsHost("shovey.island.shown")
+            detail := ifx owned then EditorSay(2, "editor_custom_count", cast(s64)editor_island_levels) else ifx shown then "" else EditorIslandUnlock(unlock[:])
             if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)210, .id = 210,
                     .bounds = Rectangle.{base.x, base.y + 36.0, base.width, custom_height}, .label = EditorText("editor_island"),
                     .detail = detail, .fit_content = true,
-                    .icon_shape = ifx owned then "" else "S1.8rr:M6 10H18V21H6ZM8 10V7A4 4 0 0 1 16 7V10M12 14V17",
-                    .tone = ifx owned then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
+                    .icon_shape = ifx shown then "" else "S1.8rr:M6 10H18V21H6ZM8 10V7A4 4 0 0 1 16 7V10M12 14V17",
+                    .tone = ifx shown then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
                     .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
                 unused AppServiceHost("arcade.navigation", "island-editor")
             }
@@ -939,6 +979,8 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
         Box.Draw(editor_frame.session, Box.Props.{.key = cast(u64)207, .bounds = note,
                 .fill = Color.{59, 64, 63, 235}, .radius = 12.0})
         EditorCaption(208, note, editor_notice, 14, true)
+    } else if island && !owned {
+        EditorIslandNotice(Rectangle.{16.0, foot - 60.0, width - 32.0, 52.0})
     }
     if choose { editor_page = EDITOR_HOME }
     else if open_custom >= 0 { EditorOpenCustom(open_custom) }

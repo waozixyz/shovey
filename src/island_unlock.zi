@@ -1,26 +1,12 @@
-// Shovey Island's unlock: the node's exact quote, its confirmation and the
-// owner's verified entitlement. The ledger decides ownership; the local record
-// only keeps that answer for an offline restart of the same owner.
+// Shovey Island's unlock: the node's exact quote, the one press that buys at
+// the price its control showed, and the owner's verified entitlement. The
+// ledger decides ownership; the local record only keeps that answer for an
+// offline restart of the same owner.
 #import "std/json_scan"
 #import "std/text_buffer"
 #import "std/c_string"
 #import "std/vec"
-#import "kryon/session"
-#import "kryon/geometry"
-#import "kryon/drawing_props"
-Box :: #import "kryon/box";
-
-Text :: #import "kryon/text";
-
-#import "kryon/text_align"
-#import "kryon/text_measure"
-Button :: #import "kryon/button";
-#import "kryon/control_props"
-
-Image :: #import "kryon/image";
-
 #import "entity/dew_model"
-Carousel :: #import "kryon/carousel";
 
 host_api :: #system_library "host_api";
 AppLocaleHost :: (key: string) -> string #foreign host_api;
@@ -41,12 +27,16 @@ ISLAND_CONFIRM_NEEDED :: 5;
 ISLAND_CONFIRMING :: 6;
 
 ISLAND_ACTION_NONE :: 0;
-ISLAND_ACTION_BACK :: 1;
 ISLAND_ACTION_SIGN_IN :: 2;
 ISLAND_ACTION_BUY_DEW :: 3;
 
+// A press on Play while the node still checks a remembered unlock: Island
+// opens once verified, and nothing is ever bought.
+ISLAND_WANTED_OPEN: s64 = -1;
+
 ISLAND_RETRY_SIGNED_OUT: float64 = 5.0;
 ISLAND_RETRY_OFFLINE: float64 = 30.0;
+ISLAND_NOTICE_SECONDS: float64 = 5.0;
 
 IslandUnlock :: struct {
     owner: [65]u8
@@ -60,22 +50,85 @@ IslandUnlock :: struct {
     percent: s32
     stage: s32
     retry_at: float64
-    // Locale key of the last outcome, or empty.
+    // Locale key of the last outcome, or empty, and how long it shows.
     notice: string
-    confirming: bool
+    notice_until: float64
+    // This owner's saved record says Island is unlocked. It shows as theirs
+    // while the node checks; only the node's answer opens it.
+    remembered: bool
+    // The price the Unlock control showed when it was pressed, or
+    // ISLAND_WANTED_OPEN. Zero when nothing was asked.
+    wanted: s64
+    // Sign in or the Dew page, for the host to open once.
+    action: s32
 }
 
 // The one exact confirmation waiting to go out.
 island_request: [64]u8;
 
-// A page opening asks again, so what it shows is the node's current price.
-IslandUnlockOpen :: (unlock: *IslandUnlock) {
-    unlock.confirming = false
-    unlock.notice = ""
+// Asks the node again, so an unlock made on another device shows and the
+// price is the node's current one. A press already under way is left alone.
+IslandUnlockRefresh :: (unlock: *IslandUnlock) {
+    if unlock.wanted != 0 { return }
     if unlock.stage == ISLAND_IDLE || unlock.stage == ISLAND_READY {
         unlock.stage = ISLAND_IDLE
         unlock.retry_at = 0.0
     }
+}
+
+// The exact confirmation is waiting to go out or for its answer.
+IslandUnlockBusy :: (unlock: *IslandUnlock) -> bool {
+    return unlock.stage == ISLAND_CONFIRM_NEEDED || unlock.stage == ISLAND_CONFIRMING
+}
+
+IslandUnlockSay :: (unlock: *IslandUnlock, notice: string, now: float64) {
+    unlock.notice = notice
+    unlock.notice_until = now + ISLAND_NOTICE_SECONDS
+}
+
+// Gives up what a press asked for, with why when there is something to say.
+IslandUnlockDrop :: (unlock: *IslandUnlock, notice: string, now: float64) {
+    if unlock.wanted == 0 { return }
+    unlock.wanted = 0
+    if notice != "" { IslandUnlockSay(unlock, notice, now) }
+}
+
+// A press bought at the price its control showed, and at no other: a
+// different quote shows first and waits for another press.
+IslandUnlockWanted :: (unlock: *IslandUnlock, now: float64) {
+    if unlock.wanted <= 0 || unlock.stage != ISLAND_READY { return }
+    if unlock.wanted != unlock.price {
+        IslandUnlockDrop(unlock, "shovey_island_changed", now)
+        return
+    }
+    if !IslandUnlockBuy(unlock) { IslandUnlockDrop(unlock, "shovey_island_failed", now) }
+}
+
+// The one press on Unlock, or on Play while a remembered unlock is checked.
+// Signed out it asks for the sign-in page; otherwise the purchase goes out
+// as soon as the node quotes the shown price, with nothing to confirm.
+IslandUnlockPress :: (unlock: *IslandUnlock, now: float64) {
+    if unlock.owned || unlock.wanted != 0 || IslandUnlockBusy(unlock) { return }
+    unlock.notice = ""
+    if unlock.remembered {
+        unlock.wanted = ISLAND_WANTED_OPEN
+        return
+    }
+    if !unlock.connected {
+        unlock.action = ISLAND_ACTION_SIGN_IN
+        return
+    }
+    price, regular, percent := IslandUnlockShown(unlock)
+    unlock.wanted = price
+    if unlock.stage == ISLAND_READY { IslandUnlockWanted(unlock, now) }
+    else if unlock.stage == ISLAND_IDLE { unlock.retry_at = 0.0 }
+}
+
+// The page the last answer asks the host to open, once.
+IslandUnlockTakeAction :: (unlock: *IslandUnlock) -> s32 {
+    action := unlock.action
+    unlock.action = ISLAND_ACTION_NONE
+    return action
 }
 
 // The request to send now, or "" to only read the status.
@@ -136,7 +189,7 @@ IslandUnlockAnswer :: (unlock: *IslandUnlock, answer: string, now: float64) -> b
         unlock.owned = true
         unlock.stage = ISLAND_IDLE
         unlock.notice = ""
-        unlock.confirming = false
+        unlock.wanted = 0
         return changed
     }
     if unlock.owned || IslandAnswerStatus(answer, "pending") { return changed }
@@ -144,10 +197,18 @@ IslandUnlockAnswer :: (unlock: *IslandUnlock, answer: string, now: float64) -> b
         if !unlock.connected {
             unlock.stage = ISLAND_IDLE
             unlock.retry_at = now + ISLAND_RETRY_SIGNED_OUT
+            // Signed out again: the saved record belongs to nobody here.
+            unlock.remembered = false
+            IslandUnlockDrop(unlock, "shovey_island_signin", now)
         } else if IslandAnswerStatus(answer, "failed") {
             unlock.stage = ISLAND_IDLE
             unlock.retry_at = now + ISLAND_RETRY_OFFLINE
+            IslandUnlockDrop(unlock, "shovey_island_offline", now)
         } else {
+            // The node's ledger holds no unlock for this owner, whatever a
+            // saved record says: Play was never a promise to buy.
+            unlock.remembered = false
+            if unlock.wanted < 0 { unlock.wanted = 0 }
             unlock.stage = ISLAND_QUOTE_NEEDED
         }
     } else if unlock.stage == ISLAND_QUOTING {
@@ -158,20 +219,29 @@ IslandUnlockAnswer :: (unlock: *IslandUnlock, answer: string, now: float64) -> b
             percent := ReadNumber(answer, FieldAt(answer, 0, "island_discount_percent"))
             unlock.percent = ifx percent.valid && percent.value > 0.0 && percent.value < 100.0 then cast(s32)percent.value else 0
             unlock.stage = ISLAND_READY
+            IslandUnlockWanted(unlock, now)
         } else {
             unlock.stage = ISLAND_IDLE
             unlock.retry_at = now + ifx unlock.connected then ISLAND_RETRY_OFFLINE else ISLAND_RETRY_SIGNED_OUT
+            IslandUnlockDrop(unlock, ifx unlock.connected then "shovey_island_offline" else "shovey_island_signin", now)
         }
     } else if unlock.stage == ISLAND_CONFIRMING {
-        unlock.confirming = false
+        unlock.wanted = 0
         if IslandAnswerStatus(answer, "price_changed") {
             // The charge never happened; show the new price before any retry.
             unlock.price = 0
-            unlock.notice = "shovey_island_changed"
+            IslandUnlockSay(unlock, "shovey_island_changed", now)
             unlock.stage = ISLAND_QUOTE_NEEDED
         } else {
             unlock.stage = ISLAND_READY
-            unlock.notice = ifx IslandAnswerStatus(answer, "insufficient") then "shovey_island_insufficient" else ifx IslandAnswerStatus(answer, "signin") then "shovey_island_signin" else "shovey_island_failed"
+            if IslandAnswerStatus(answer, "insufficient") {
+                // The Dew page opens, and the quote stays ready for after it.
+                IslandUnlockSay(unlock, "shovey_island_insufficient", now)
+                unlock.action = ISLAND_ACTION_BUY_DEW
+            } else if IslandAnswerStatus(answer, "signin") {
+                IslandUnlockSay(unlock, "shovey_island_signin", now)
+                unlock.action = ISLAND_ACTION_SIGN_IN
+            } else { IslandUnlockSay(unlock, "shovey_island_failed", now) }
         }
     }
     return changed
@@ -195,6 +265,8 @@ IslandUnlockRecord :: (unlock: *IslandUnlock, output: []u8) -> string {
 }
 
 // Only this owner's verified answer restores; a guest never owns Island.
+// The record also marks Island as remembered, for hosts whose own
+// entitlement check still has to pass before it opens.
 IslandUnlockRestore :: (unlock: *IslandUnlock, record: string) {
     if unlock.owner[0] == 0 || record == "" { return }
     owner: [65]u8
@@ -205,6 +277,7 @@ IslandUnlockRestore :: (unlock: *IslandUnlock, record: string) {
     !MatchLiteral(record, FieldAt(record, 0, "owned"), "true") { return }
     unlock.owned = true
     unlock.saved = true
+    unlock.remembered = true
     unlock.stage = ISLAND_IDLE
 }
 
@@ -235,21 +308,15 @@ IslandUnlockCaption :: (unlock: *IslandUnlock, output: []u8) -> string {
     return ifx copied then TextUntilNul(output) else ""
 }
 
-IslandLine :: (session: Session, key: u64, bounds: Rectangle, text: string, size: s32, centre: bool = true) {
-    unused Text.Draw(session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = size,
-        .align = ifx centre then TextAlign.TextAlignCenter else TextAlign.TextAlignStart,
-        .vertical_align = TextAlign.TextAlignCenter, .wrap = Text.Wrap.TextWrapAuto})
-}
-
-IslandButton :: (session: Session, key: u64, bounds: Rectangle, label: string, accent: bool = false, disabled: bool = false) -> bool {
-    return Button.Draw(session, Button.Props.{.key = key, .id = cast(s32)key, .bounds = bounds, .label = label,
-        .disabled = disabled, .fit_content = true,
-        .tone = ifx accent then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
-        .emphasis = ifx accent then ButtonEmphasis.ButtonEmphasisFilled else ButtonEmphasis.ButtonEmphasisSoft}) != 0
-}
-
-// The Unlock control carries the shown price; the page has no separate one.
+// What the Unlock control reads: Unlock and the shown price, or what a
+// press is waiting for. The price has no separate line.
 IslandUnlockLabel :: (unlock: *IslandUnlock, output: []u8) -> string {
+    if unlock.wanted < 0 {
+        return ifx CopyCString(AppLocaleHost("shovey_island_opening"), output) then TextUntilNul(output) else ""
+    }
+    if unlock.wanted > 0 || IslandUnlockBusy(unlock) {
+        return ifx CopyCString(AppLocaleHost("shovey_island_unlocking"), output) then TextUntilNul(output) else ""
+    }
     price, regular, percent := IslandUnlockShown(unlock)
     digits: [32]u8
     text: Vec(u8)
@@ -259,65 +326,15 @@ IslandUnlockLabel :: (unlock: *IslandUnlock, output: []u8) -> string {
     return ifx copied then TextUntilNul(output) else ""
 }
 
+// The offer rides on the Unlock control while it reads the price.
 IslandOffer :: (unlock: *IslandUnlock) -> bool {
+    if unlock.owned || unlock.remembered || unlock.wanted != 0 || IslandUnlockBusy(unlock) { return false }
     price, regular, percent := IslandUnlockShown(unlock)
     return percent > 0 && regular > price
 }
 
-// Draws purchase controls inside the current screen; returns the host action.
-IslandUnlockPanel :: (session: Session, viewport: Rectangle, unlock: *IslandUnlock) -> s32 {
-    action: s32 = ISLAND_ACTION_NONE
-    width := ifx viewport.width - 32.0 < 420.0 then viewport.width - 32.0 else 420.0
-    offer := IslandOffer(unlock)
-    busy := unlock.stage == ISLAND_CONFIRMING || unlock.stage == ISLAND_CONFIRM_NEEDED
-    choosing := unlock.connected && !unlock.confirming && !busy
-    insufficient := choosing && unlock.notice == "shovey_island_insufficient"
-    // Reserve room above the action for its attached ribbon.
-    height: float32 = 148.0 + (ifx offer then 38.0 else 0.0) + (ifx insufficient then 52.0 else 0.0)
-    x := viewport.x + (viewport.width - width) / 2.0
-    y := viewport.y + viewport.height - height - 24.0
-    unused Box.Draw(session, Box.Props.{.key = cast(u64)49520, .bounds = Rectangle.{x, y, width, height},
-        .fill = Color.{38, 44, 43, 235}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
-    inner_x := x + 16.0
-    inner := width - 32.0
-    IslandLine(session, 49521, Rectangle.{inner_x, y + 10.0, inner - 96.0, 30.0}, AppLocaleHost("shovey_island_title"), 18)
-    if IslandButton(session, 49536, Rectangle.{inner_x + inner - 84.0, y + 8.0, 84.0, 36.0}, AppLocaleHost("shovey_shop_cancel")) {
-        action = ISLAND_ACTION_BACK
-    }
-    row := y + height - 56.0
-    buttons := row - 44.0 - (ifx insufficient then 52.0 else 0.0)
-    half := (inner - 12.0) / 2.0
-    label: [96]u8
-    unlock_label := IslandUnlockLabel(unlock, label[:])
-    if !unlock.connected {
-        if IslandButton(session, 49530, Rectangle.{inner_x, row, inner, 44.0}, unlock_label, true) {
-            action = ISLAND_ACTION_SIGN_IN
-        }
-    } else if !choosing {
-        if IslandButton(session, 49531, Rectangle.{inner_x, row, half, 44.0}, AppLocaleHost("shovey_shop_cancel"), false, busy) {
-            unlock.confirming = false
-        }
-        if IslandButton(session, 49532, Rectangle.{inner_x + half + 12.0, row, half, 44.0},
-            AppLocaleHost("shovey_shop_confirm"), true, busy) {
-            unused IslandUnlockBuy(unlock)
-        }
-    } else {
-        if insufficient && IslandButton(session, 49533, Rectangle.{inner_x, row - 52.0, inner, 44.0}, AppLocaleHost("shovey_shop_buy_dew")) {
-            action = ISLAND_ACTION_BUY_DEW
-        }
-        if IslandButton(session, 49534, Rectangle.{inner_x, row, inner, 44.0}, unlock_label, true, unlock.stage != ISLAND_READY) {
-            unlock.confirming = true
-            unlock.notice = ""
-        }
-    }
-    if offer && (!unlock.connected || choosing) {
-        Carousel.CarouselActionRibbon(session, 49543, Rectangle.{inner_x, row, inner, 44.0}, AppLocaleHost("shovey_island_off"))
-    }
-    status := unlock.notice
-    if status == "" && !unlock.connected { status = "shovey_island_signin" }
-    if status == "" && unlock.connected && unlock.stage != ISLAND_READY && !busy {
-        status = ifx unlock.stage == ISLAND_IDLE then "shovey_island_offline" else "shovey_island_loading"
-    }
-    if status != "" { IslandLine(session, 49535, Rectangle.{inner_x, buttons, inner, 40.0}, AppLocaleHost(status), 14) }
-    return action
+// Why the last press did not unlock, for a few seconds after it.
+IslandUnlockNotice :: (unlock: *IslandUnlock, now: float64) -> string {
+    if unlock.owned || unlock.notice == "" || now >= unlock.notice_until { return "" }
+    return AppLocaleHost(unlock.notice)
 }

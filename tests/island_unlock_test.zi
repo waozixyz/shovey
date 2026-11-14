@@ -1,15 +1,8 @@
-// The quote, exact confirmation, restore and page with fake shop answers only:
-// no account, network or Dew is involved.
+// The quote, the one press that buys at the shown price, refusals and restore
+// with fake shop answers only: no account, network or Dew is involved.
 #import "island_unlock"
-#import "kryon/session"
-#import "kryon/tree"
-#import "kryon/tree_draw"
-#import "kryon/tree_input"
-#import "kryon/geometry"
-#import "kryon/drawing_props"
 #import "std/text_buffer"
 #import "std/vec"
-using FrameStatus;
 
 ALICE :: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 BOB :: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -20,40 +13,6 @@ FakeLocale :: (key: string) -> string {
     if key == "shovey_island_unlock" { return "Unlock" }
     return key
 }
-#program_export
-MeasureGlyphWidth :: (value: string, font: s32, typeface: string) -> s32 { return cast(s32)value.count * font / 2 }
-#program_export
-MeasureGlyphLineHeight :: (font: s32, typeface: string) -> s32 { return font }
-#program_export
-RasterText :: (value: string, x: s32, y: s32, font: s32, color: Color) {}
-#program_export
-RasterTextClipped :: (value: string, x: s32, y: s32, font: s32, color: Color, clip: Rectangle) {}
-
-#program_export
-RasterTextRotated :: (value: string, x: s32, y: s32, font: s32, color: Color,
-    clip: Rectangle, origin: Vector2, rotation: float32, outer_clip: Rectangle,
-    outer_clipped: bool, emphasis: bool, italic: bool) {}
-
-#program_export
-RasterTriangles :: (points: []Vector2, color: Color) {}
-#program_export
-RasterRoundedRectangle :: (bounds: Rectangle, radius: float32, segments: s32, color: Color) {}
-#program_export
-RasterRoundedRectangleOutline :: (bounds: Rectangle, radius: float32, segments: s32, width: float32, color: Color) {}
-#program_export
-RasterLine :: (line: Rectangle, color: Color) {}
-#program_export
-RasterImage :: (asset_path: string, texture_id: u32, source: Rectangle, destination: Rectangle,
-    clip: Rectangle, origin: Vector2, rotation: float32, radius: float32, tint: Color) {}
-#program_export
-RasterImageMesh :: (asset_path: string, texture_id: u32, source: Rectangle, points: []Vector2,
-    columns: s32, rows: s32, clip: Rectangle, tint: Color) {}
-#program_export
-ImageWidth :: (asset_path: string) -> s32 { return 32 }
-#program_export
-ImageHeight :: (asset_path: string) -> s32 { return 32 }
-#program_export
-FakeSupports :: (name: string) -> bool { return false }
 
 Answer :: (owner: string, connected: bool, owned: bool, price: s64, status: string) -> string {
     text: Vec(u8)
@@ -105,11 +64,13 @@ Refusals :: () -> s32 {
     if IslandUnlockNext(*unlock, 1.0) != "shovey.island.quote" { return 4 }
     unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 85000000, "done"), 1.0)
     if unlock.price != 85000000 || unlock.percent != 0 { return 5 }
-    // Not enough Dew leaves the quote ready for after a top-up.
+    // Not enough Dew leaves the quote ready for after a top-up, and asks
+    // for the Dew page once.
     unused IslandUnlockBuy(*unlock)
     if IslandUnlockNext(*unlock, 2.0) != "shovey.island:85000000" { return 6 }
     unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 85000000, "insufficient"), 2.0)
     if unlock.owned || unlock.notice != "shovey_island_insufficient" || unlock.stage != ISLAND_READY { return 7 }
+    if IslandUnlockTakeAction(*unlock) != ISLAND_ACTION_BUY_DEW || IslandUnlockTakeAction(*unlock) != ISLAND_ACTION_NONE { return 9 }
     // A failed transfer stays locked and can be tried again.
     unused IslandUnlockBuy(*unlock)
     unused IslandUnlockNext(*unlock, 3.0)
@@ -157,7 +118,7 @@ Restore :: () -> s32 {
     restart: IslandUnlock
     if !IslandUnlockAnswer(*restart, Answer(ALICE, false, false, 0, "failed"), 0.0) { return 4 }
     IslandUnlockRestore(*restart, record)
-    if !restart.owned || !restart.saved { return 5 }
+    if !restart.owned || !restart.saved || !restart.remembered { return 5 }
     unused IslandUnlockAnswer(*restart, Answer(ALICE, false, false, 0, "failed"), 1.0)
     if !restart.owned { return 6 }
     // Another owner, or a guest, never reads it as theirs.
@@ -181,94 +142,122 @@ Restore :: () -> s32 {
     return 0
 }
 
-Find :: (session: Session, key: u64) -> s32 {
-    for at: cast(s32)0..TreeCount(session) - 1 { if TreeNodeAt(session, at).key == key { return at } }
-    return -1
+Label :: (unlock: *IslandUnlock) -> string {
+    return IslandUnlockLabel(unlock, label_text[:])
 }
-Draw :: (session: Session, unlock: *IslandUnlock, width: float32, height: float32) -> s32 {
-    area := Rectangle.{0.0, 0.0, width, height}
-    BeginFrame(session, cast(u64)1, area)
-    action := IslandUnlockPanel(session, area, unlock)
-    if EndFrame(session) != cast(FrameStatus)FrameOk { return -1 }
-    if Find(session,49510) >= 0 || Find(session,49511) >= 0 { return -1 }
-    return action
-}
-Click :: (session: Session, unlock: *IslandUnlock, key: u64, width: float32, height: float32) -> s32 {
-    at := Find(session, key)
-    if at < 0 || !TreeActivateAt(session, at) { return -2 }
-    return Draw(session, unlock, width, height)
-}
+label_text: [128]u8;
 
-// The control reads Unlock and the price, and no other node shows a price.
-OnlyUnlockPrice :: (session: Session, key: u64, label: string) -> bool {
-    at := Find(session, key)
-    if at < 0 || TreeNodeAt(session, at).semantic_label != label { return false }
-    for node: cast(s32)0..TreeCount(session) - 1 {
-        if node != at && TextContains(TreeNodeAt(session, node).semantic_label, " Dew") { return false }
-    }
-    return Find(session, 49540) < 0 && Find(session, 49541) < 0 && Find(session, 49542) < 0
-}
-
-TextContains :: (text: string, part: string) -> bool {
-    if part.count > text.count { return false }
-    for start: cast(s64)0..text.count - part.count {
-        if text[start:start + part.count] == part { return true }
-    }
-    return false
-}
-
-Page :: () -> s32 {
-    session := SessionOpen()
-    if !SessionValid(session) { return 1 }
-    defer { SessionClose(session) }
+// One press on the Unlock control buys at the price it showed, and nothing
+// else does.
+Press :: () -> s32 {
+    // Signed out: the press asks for the sign-in page and buys nothing.
     guest: IslandUnlock
-    if Draw(session, *guest, 360.0, 640.0) != 0 { return 2 }
-    if Find(session, 49512) >= 0 || Find(session, 49536) < 0 { return 22 }
-    if Click(session, *guest, 49536, 360.0, 640.0) != ISLAND_ACTION_BACK { return 23 }
-    if Draw(session, *guest, 360.0, 640.0) != 0 { return 24 }
-    // The offer badge, the price on the Unlock control and no way to buy
-    // while signed out.
-    if Find(session, 49544) < 0 || !OnlyUnlockPrice(session, 49530, "Unlock · 51 Dew") { return 3 }
-    if Find(session, 49534) >= 0 || Find(session, 49530) < 0 { return 4 }
-    ribbon := TreeNodeAt(session, Find(session, 49544)).bounds
-    button := TreeNodeAt(session, Find(session, 49530)).bounds
-    if ribbon.y >= button.y || ribbon.y + ribbon.height <= button.y || ribbon.x < button.x ||
-        ribbon.x + ribbon.width > button.x + button.width { return 22 }
-    if Click(session, *guest, 49530, 360.0, 640.0) != ISLAND_ACTION_SIGN_IN { return 5 }
+    unused IslandUnlockAnswer(*guest, Answer("", false, false, 0, "signin"), 0.0)
+    if Label(*guest) != "Unlock · 51 Dew" || !IslandOffer(*guest) { return 1 }
+    IslandUnlockPress(*guest, 0.0)
+    if guest.wanted != 0 || IslandUnlockBusy(*guest) { return 2 }
+    if IslandUnlockTakeAction(*guest) != ISLAND_ACTION_SIGN_IN || IslandUnlockTakeAction(*guest) != ISLAND_ACTION_NONE { return 3 }
+    // With the node's quote the one press sends the exact confirmation.
     unlock: IslandUnlock
-    if !Quoted(*unlock, 51000000) { return 6 }
-    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 7 }
-    if !OnlyUnlockPrice(session, 49534, "Unlock · 51 Dew") { return 18 }
-    unlock.notice = "shovey_island_insufficient"
-    if Draw(session, *unlock, 360.0, 640.0) != 0 || Find(session, 49533) < 0 { return 25 }
-    if Click(session, *unlock, 49536, 360.0, 640.0) != ISLAND_ACTION_BACK { return 26 }
-    unlock.notice = ""
-    // The node's regular quote is the price the control shows, with no offer.
-    regular: IslandUnlock
-    if !Quoted(*regular, 85000000) || Draw(session, *regular, 360.0, 640.0) != 0 { return 19 }
-    if !OnlyUnlockPrice(session, 49534, "Unlock · 85 Dew") || Find(session, 49544) >= 0 { return 20 }
-    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 21 }
-    // Unlock only asks; Confirm alone sends the exact request.
-    unused Click(session, *unlock, 49534, 360.0, 640.0)
-    if !unlock.confirming || unlock.stage != ISLAND_READY { return 8 }
-    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 9 }
-    if Find(session, 49532) < 0 { return 10 }
-    unused Click(session, *unlock, 49531, 360.0, 640.0)
-    if unlock.confirming || unlock.stage != ISLAND_READY { return 11 }
-    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 12 }
-    unused Click(session, *unlock, 49534, 360.0, 640.0)
-    if Draw(session, *unlock, 360.0, 640.0) != 0 { return 13 }
-    unused Click(session, *unlock, 49532, 360.0, 640.0)
-    if unlock.stage != ISLAND_CONFIRM_NEEDED { return 14 }
-    if IslandUnlockNext(*unlock, 1.0) != "shovey.island:51000000" { return 15 }
-    // Fits narrow and wide windows.
-    node: s32 = 0
-    while node < TreeCount(session) {
-        bounds := TreeNodeAt(session, node).bounds
-        if bounds.x < -0.1 || bounds.x + bounds.width > 360.1 || bounds.y < -0.1 { return 16 }
-        node += 1
-    }
-    if Draw(session, *unlock, 1200.0, 500.0) != 0 { return 17 }
+    if !Quoted(*unlock, 51000000) { return 4 }
+    if Label(*unlock) != "Unlock · 51 Dew" { return 5 }
+    IslandUnlockPress(*unlock, 1.0)
+    if unlock.stage != ISLAND_CONFIRM_NEEDED || unlock.wanted != 51000000 { return 6 }
+    // While it is under way the control says so, shows no offer and takes
+    // no second press.
+    if Label(*unlock) != "shovey_island_unlocking" || IslandOffer(*unlock) { return 7 }
+    IslandUnlockPress(*unlock, 1.0)
+    if IslandUnlockNext(*unlock, 1.0) != "shovey.island:51000000" { return 8 }
+    IslandUnlockPress(*unlock, 1.0)
+    if IslandUnlockNext(*unlock, 1.0) != "" || unlock.stage != ISLAND_CONFIRMING { return 9 }
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, true, 51000000, "done"), 2.0)
+    if !unlock.owned || unlock.wanted != 0 || IslandUnlockTakeAction(*unlock) != ISLAND_ACTION_NONE { return 10 }
+    // A press before the quote arrives waits for it, then buys at the
+    // shown launch price once the node quotes exactly that.
+    early: IslandUnlock
+    unused IslandUnlockAnswer(*early, Answer(ALICE, true, false, 0, "idle"), 0.0)
+    if IslandUnlockNext(*early, 0.0) != "refresh" { return 11 }
+    IslandUnlockPress(*early, 0.0)
+    if early.wanted != 51000000 || early.stage != ISLAND_SYNCING { return 12 }
+    if Label(*early) != "shovey_island_unlocking" { return 13 }
+    unused IslandUnlockAnswer(*early, Answer(ALICE, true, false, 0, "done"), 0.0)
+    if IslandUnlockNext(*early, 0.0) != "shovey.island.quote" { return 14 }
+    unused IslandUnlockAnswer(*early, Answer(ALICE, true, false, 51000000, "done"), 0.0)
+    if early.stage != ISLAND_CONFIRM_NEEDED || IslandUnlockNext(*early, 0.0) != "shovey.island:51000000" { return 15 }
+    // A quote other than the shown price is never charged by that press:
+    // the new price shows and waits for a press of its own.
+    dearer: IslandUnlock
+    unused IslandUnlockAnswer(*dearer, Answer(ALICE, true, false, 0, "idle"), 0.0)
+    unused IslandUnlockNext(*dearer, 0.0)
+    IslandUnlockPress(*dearer, 0.0)
+    unused IslandUnlockAnswer(*dearer, Answer(ALICE, true, false, 0, "done"), 0.0)
+    unused IslandUnlockNext(*dearer, 0.0)
+    unused IslandUnlockAnswer(*dearer, Answer(ALICE, true, false, 85000000, "done"), 0.0)
+    if dearer.stage != ISLAND_READY || dearer.wanted != 0 || IslandUnlockNext(*dearer, 0.0) != "" { return 16 }
+    if dearer.notice != "shovey_island_changed" || IslandUnlockNotice(*dearer, 1.0) != "shovey_island_changed" { return 17 }
+    if IslandUnlockNotice(*dearer, 100.0) != "" || Label(*dearer) != "Unlock · 85 Dew" { return 18 }
+    IslandUnlockPress(*dearer, 2.0)
+    if IslandUnlockNext(*dearer, 2.0) != "shovey.island:85000000" { return 19 }
+    // Not enough Dew: the Dew page is asked for once, the quote stays, and
+    // the next press tries again.
+    unused IslandUnlockAnswer(*dearer, Answer(ALICE, true, false, 85000000, "insufficient"), 3.0)
+    if dearer.wanted != 0 || dearer.stage != ISLAND_READY || IslandUnlockTakeAction(*dearer) != ISLAND_ACTION_BUY_DEW { return 20 }
+    IslandUnlockPress(*dearer, 4.0)
+    if IslandUnlockNext(*dearer, 4.0) != "shovey.island:85000000" { return 21 }
+    // The connection lost before the quote: the press is given up, not kept
+    // for a later surprise.
+    lost: IslandUnlock
+    unused IslandUnlockAnswer(*lost, Answer(ALICE, true, false, 0, "idle"), 0.0)
+    unused IslandUnlockNext(*lost, 0.0)
+    IslandUnlockPress(*lost, 0.0)
+    unused IslandUnlockAnswer(*lost, Answer(ALICE, true, false, 0, "failed"), 0.0)
+    if lost.wanted != 0 || lost.notice != "shovey_island_offline" { return 22 }
+    if IslandUnlockNext(*lost, 31.0) != "refresh" { return 23 }
+    unused IslandUnlockAnswer(*lost, Answer(ALICE, true, false, 0, "done"), 31.0)
+    unused IslandUnlockNext(*lost, 31.0)
+    unused IslandUnlockAnswer(*lost, Answer(ALICE, true, false, 51000000, "done"), 31.0)
+    if lost.stage != ISLAND_READY || IslandUnlockNext(*lost, 32.0) != "" { return 24 }
+    // Asking the node again leaves a press under way alone.
+    IslandUnlockPress(*lost, 33.0)
+    IslandUnlockRefresh(*lost)
+    if lost.stage != ISLAND_CONFIRM_NEEDED { return 25 }
+    return 0
+}
+
+// A saved unlock reads Play while the node checks it, and a press on that
+// Play never buys.
+Remembered :: () -> s32 {
+    bought: IslandUnlock
+    unused IslandUnlockAnswer(*bought, Answer(ALICE, true, true, 0, "done"), 0.0)
+    text: [192]u8
+    record := IslandUnlockRecord(*bought, text[:])
+    // A host with included content keeps its own entitlement check: the
+    // record only marks Island as remembered.
+    unlock: IslandUnlock
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, false, 0, "pending"), 0.0)
+    IslandUnlockRestore(*unlock, record)
+    unlock.owned = false
+    if !unlock.remembered || IslandOffer(*unlock) { return 1 }
+    if IslandUnlockNext(*unlock, 0.0) != "refresh" { return 2 }
+    IslandUnlockPress(*unlock, 0.0)
+    if unlock.wanted != ISLAND_WANTED_OPEN || Label(*unlock) != "shovey_island_opening" { return 3 }
+    // The node agrees: it is the owner's, and nothing was bought.
+    unused IslandUnlockAnswer(*unlock, Answer(ALICE, true, true, 0, "done"), 1.0)
+    if !unlock.owned || unlock.wanted != 0 || unlock.stage != ISLAND_IDLE { return 4 }
+    // The node disagrees: Island locks, the press is dropped, and the quote
+    // that follows is not charged.
+    stale: IslandUnlock
+    unused IslandUnlockAnswer(*stale, Answer(ALICE, true, false, 0, "pending"), 0.0)
+    IslandUnlockRestore(*stale, record)
+    stale.owned = false
+    unused IslandUnlockNext(*stale, 0.0)
+    IslandUnlockPress(*stale, 0.0)
+    unused IslandUnlockAnswer(*stale, Answer(ALICE, true, false, 0, "done"), 1.0)
+    if stale.remembered || stale.wanted != 0 { return 5 }
+    if IslandUnlockNext(*stale, 1.0) != "shovey.island.quote" { return 6 }
+    unused IslandUnlockAnswer(*stale, Answer(ALICE, true, false, 51000000, "done"), 1.0)
+    if stale.stage != ISLAND_READY || IslandUnlockNext(*stale, 2.0) != "" || IslandUnlockBusy(*stale) { return 7 }
+    if Label(*stale) != "Unlock · 51 Dew" { return 8 }
     return 0
 }
 
@@ -282,7 +271,9 @@ Check :: () -> s32 {
     if result != 0 { return 300 + result }
     result = Restore()
     if result != 0 { return 400 + result }
-    result = Page()
+    result = Press()
     if result != 0 { return 500 + result }
+    result = Remembered()
+    if result != 0 { return 600 + result }
     return 42
 }
