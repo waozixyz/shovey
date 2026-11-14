@@ -206,7 +206,7 @@ jobs:
           env -u LISTEN_PID -u LISTEN_FDS -u LISTEN_FDNAMES -u NOTIFY_SOCKET -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
             YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1024x900x24' \
             python3 tests/island_buy_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
-            --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze/tests"
+            --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze"
       - name: Reopen unclaimed and empty chests in the packaged game
         run: |
           make chest-fixture

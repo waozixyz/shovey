@@ -37,12 +37,12 @@
       "url": "https://github.com/libsdl-org/SDL.git"
     },
     {
-      "commit": "4cdb5d3577a54178800872652ec041e3c675152d",
+      "commit": "ef52ad68b6f3b51184db7d54e21d282bd49d3599",
       "dependencies": {"curl": "p8da229d15597ab5c", "daochi_client": "p6af0b5bd9fd0cd31", "kryon": "p8bbda1e96c8bc790", "monocypher": "p002f6ed23e3a3576", "oqs": "p7098ac9cd92f7e5f", "qrcode": "p0dfa70137405b096", "zlib": "p82dbc05081cd4d96"},
       "dependency_refs": {"curl": "19b299005fbe2d895f4ad525cfdae62a2220c3ea", "daochi_client": "970d5e44b1702158cb16469892da6ff50f142427", "kryon": "3ac259c4c265e8124e4e47d3461ee1419dd4187a", "monocypher": "master", "oqs": "master", "qrcode": "master", "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"},
-      "id": "p1ddd080b1c7bf48f",
+      "id": "p1ca60c0d94e4b2f6",
       "name": "Entity",
-      "ref": "4cdb5d3577a54178800872652ec041e3c675152d",
+      "ref": "ef52ad68b6f3b51184db7d54e21d282bd49d3599",
       "url": "https://github.com/waozixyz/entity.git"
     },
     {
@@ -224,8 +224,8 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "p645f6a5c4555d8ff", "crypto": "pc23fbf455e97614d", "entity": "p1ddd080b1c7bf48f", "kryon": "p8bbda1e96c8bc790", "mingcute": "pe1027b9d16704793"},
-    "dependency_refs": {"apps": "3da8bd7138fe5447bd3998361d0826c9e82694c2", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "4cdb5d3577a54178800872652ec041e3c675152d", "kryon": "3ac259c4c265e8124e4e47d3461ee1419dd4187a", "mingcute": "master"},
+    "dependencies": {"apps": "p645f6a5c4555d8ff", "crypto": "pc23fbf455e97614d", "entity": "p1ca60c0d94e4b2f6", "kryon": "p8bbda1e96c8bc790", "mingcute": "pe1027b9d16704793"},
+    "dependency_refs": {"apps": "3da8bd7138fe5447bd3998361d0826c9e82694c2", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "ef52ad68b6f3b51184db7d54e21d282bd49d3599", "kryon": "3ac259c4c265e8124e4e47d3461ee1419dd4187a", "mingcute": "master"},
     "name": "Shovey"
   },
   "toolchain": {

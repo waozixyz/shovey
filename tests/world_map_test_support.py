@@ -64,6 +64,34 @@ def enter_classic_map(driver):
     raise AssertionError(('Classic did not show its title or map', shown))
 
 
+GAMEPLAY_CONTROLS = (20022, 20820, 20016, 20017, 20023)
+
+
+def wait_gameplay(driver, timeout=30):
+    """A level is open and takes input: its five controls and its board show.
+    The game screen no longer names the level; the map names it before it
+    starts."""
+    for key in GAMEPLAY_CONTROLS:
+        driver.wait(key=key, role='button', timeout=timeout)
+    driver.wait(label='Wall', role='image', timeout=timeout)
+
+
+def board_layout(driver):
+    """Every picture of the open board but the player and the controls, to
+    tell one board from another now that the game screen names none."""
+    apart = {'Back', 'Collectibles', 'Restart', 'Hint', 'Mute', 'Shovey'}
+    return sorted((node['label'], round(node['x']), round(node['y']))
+                  for node in driver.find(role='image', visible=True) if node['label'] not in apart)
+
+
+def wait_board_change(driver, before, timeout=20):
+    """Another board replaced the one board_layout saw."""
+    deadline = time.monotonic() + timeout
+    while board_layout(driver) == before:
+        assert time.monotonic() < deadline, 'The board did not change'
+        time.sleep(.05)
+
+
 def start_map_destination(driver, level=1):
     assert_fullscreen_map(driver)
     driver.press(key=33000 + level, role='button')

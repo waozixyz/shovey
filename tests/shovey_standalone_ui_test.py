@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from world_map_test_support import assert_fullscreen_map, start_map_destination
+from world_map_test_support import assert_fullscreen_map, board_layout, start_map_destination, wait_gameplay
 
 
 
@@ -53,10 +53,11 @@ def answer_level_updates(driver, timeout=20):
         time.sleep(0.05)
 
 def wait_level_one(driver, classic_levels):
-    """Level 1 of the campaign. The live campaign on the server may already
-    hold levels published after this checkout, so it is never shorter."""
+    """Level 1 of the campaign, started from the world map when it opens
+    first. The game screen no longer shows the campaign's length, so this
+    no longer compares it with classic_levels."""
     deadline = time.monotonic() + 30
-    while not driver.find(contains='Level 1 / ', role='text'):
+    while not driver.find(label='Restart', role='button', visible=True):
         if driver.find(key=20105, visible=True):
             assert_fullscreen_map(driver)
             assert_no_progress_wait(driver)
@@ -64,8 +65,7 @@ def wait_level_one(driver, classic_levels):
             break
         assert time.monotonic() < deadline, 'Neither map nor level opened'
         time.sleep(.05)
-    label = driver.wait(contains='Level 1 / ', role='text')['label']
-    assert label.startswith('Level 1 / ') and int(label.rsplit(' ', 1)[1]) >= classic_levels, label
+    wait_gameplay(driver)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -390,7 +390,9 @@ def main():
                 swipe_in_visible_direction()
             # The movement pad floats over the board's bottom left corner: the
             # board keeps its place and size, and the pad's arms step Shovey.
+            # Settings open from the Hint panel; their close control returns to the level.
             driver.press(key=20017)
+            driver.press(key=20907, role='button')
             driver.press(label='Movement pad', role='button')
             driver.press(key=20017)
             driver.wait(key=20040, role='button')
@@ -407,6 +409,7 @@ def main():
                 press_pad_in_visible_direction(pad)
             # Back to swipe and tap: the pad goes and the board stays put.
             driver.press(key=20017)
+            driver.press(key=20907, role='button')
             driver.press(label='Swipe and tap', role='button')
             driver.press(key=20017)
             driver.wait_gone(key=20040, role='button')
@@ -487,14 +490,16 @@ def main():
         with application(profile, 'replay-controls'):
             driver.press(label='Play', role='button')
             start_map_destination(driver, 1)
-            driver.wait(contains='Level 1 / ', role='text')
+            wait_gameplay(driver)
+            first_board = board_layout(driver)
             deadline = time.monotonic() + 5
             while campaign_progress(classic.read_bytes())[0][2][10:18] != '00000000':
                 assert time.monotonic() < deadline, 'completed-level replay did not restart'
                 time.sleep(.05)
             driver.press(label='Back', role='button')
             start_map_destination(driver, 2)
-            driver.wait(contains='Level 2 / ', role='text')
+            wait_gameplay(driver)
+            assert board_layout(driver) != first_board, 'The map opened level 1 again instead of level 2'
         classic.write_bytes(classic_bytes)
         with application(profile, 'restore'):
             driver.press(label='Next', role='button')

@@ -26,7 +26,7 @@ rules = "src/rules.zi"
 
 [dependencies.entity]
 git = "https://github.com/waozixyz/entity.git"
-ref = "4cdb5d3577a54178800872652ec041e3c675152d"
+ref = "ef52ad68b6f3b51184db7d54e21d282bd49d3599"
 
 [dependencies.crypto]
 git = "https://github.com/ziranlang/crypto.git"

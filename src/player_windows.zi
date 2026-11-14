@@ -25,19 +25,12 @@ WINDOWS_ESCAPE_KEY :: 256
 
 WindowsDraw :: (session: Session) -> bool {
     BeginRaylibFrame()
-    KeyboardModifiersSend(session, RaylibModifiers())
-    key := RaylibPressedKey()
-    if key == 0 { key = RaylibRepeatedKey() }
-    for candidate: cast(s32)0..269 {
-        if TestDriverKeyPressed(candidate) { key = candidate; break }
-    }
+    // Keys, held-key repeats, typed text and the test driver's keys arrive
+    // in order, as they do on Linux.
+    key, modifiers := RaylibInputTake(session)
+    KeyboardModifiersSend(session, modifiers)
     if key == WINDOWS_ESCAPE_KEY && CollectionBack() { key = 0 }
     if key != 0 { KeyboardSend(session, key) }
-    codepoint := RaylibTypedCodepoint()
-    while codepoint != 0 {
-        unused TypedCodepointSend(session, codepoint)
-        codepoint = RaylibTypedCodepoint()
-    }
     viewport := RaylibViewport()
     pointer := TestDriverPointer(session, PollPointer())
     TreePointerUpdate(session, pointer)

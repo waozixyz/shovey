@@ -21,7 +21,7 @@ assert os.environ.get('YUE_DESKTOP_RECOVERY') == '0'
 sys.path.insert(0, str(args.driver_source / 'tests'))
 from ui_driver import UiDriver
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from world_map_test_support import enter_classic_map
+from world_map_test_support import board_layout, enter_classic_map, wait_board_change
 
 output = args.output.resolve()
 output.mkdir(parents=True, exist_ok=True)
@@ -48,8 +48,10 @@ def application(profile, name):
             driver.press(key=20122, role='button')
             driver.wait(label='Back', role='button')
             driver.wait_gone(key=49401)
+            # Level 29's hidden room replaces the board; the game screen no longer names it.
+            before = board_layout(driver)
             driver.key('left')
-            driver.wait(label='Level 21-S', role='text')  # level 29's hidden room on the branch-named map
+            wait_board_change(driver, before)
             time.sleep(.7)
             for direction in route:
                 driver.key(keys[int(direction)])

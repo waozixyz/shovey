@@ -35,13 +35,11 @@ PlayerReceipt :: () -> string {
 PlayerFrame :: (session: Session) -> bool {
     BeginCanvasFrame()
     viewport := CanvasViewport()
-    modifiers := CanvasModifiers()
+    // Keys and typed text arrive in the order the page received them.
+    key, modifiers := CanvasInputTake(session)
     KeyboardModifiersSend(session, modifiers)
-    key := CanvasPressedKey()
     if key == 256 && CollectionBack() { key = 0 }
     KeyboardSend(session, key)
-    point := CanvasTypedCodepoint()
-    while point != 0 { unused TypedCodepointSend(session, point); point = CanvasTypedCodepoint() }
     pointer := PollPointer()
     TreePointerUpdate(session, pointer)
     TreeSecondaryPointerUpdate(session, PollSecondaryPointer())
