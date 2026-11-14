@@ -23,6 +23,9 @@ def answer_cover_question(driver, profile):
     download new levels; tests keep the levels they ship with. The question
     shows in the covers' first frame."""
     driver.wait(label='Play', role='button', timeout=60)
+    # The question follows the collection's records, which can load a frame
+    # after Play first appears; let the covers settle before looking.
+    driver.wait_idle(frames=4)
     if driver.find(label=LEVEL_UPDATES, role='text'):
         reply = driver.press(label='Not now', role='button')
         try:
@@ -64,13 +67,21 @@ def wait_level_one(driver, classic_levels):
     """Level 1 of the campaign, started from the world map when it opens
     first. The game screen no longer shows the campaign's length, so this
     no longer compares it with classic_levels."""
-    deadline = time.monotonic() + 30
+    deadline = time.monotonic() + 60
     while not driver.find(label='Restart', role='button', visible=True):
-        if driver.find(key=20105, visible=True):
+        if driver.find(label=LEVEL_UPDATES, role='text'):
+            # A slow start under Wine can raise the covers' question after
+            # Play was pressed; it takes all input, so answer and press again.
+            driver.press(label='Not now', role='button')
+            driver.wait_gone(label=LEVEL_UPDATES, role='text')
+            if not driver.find(key=20105, visible=True) and driver.find(label='Play', role='button', visible=True):
+                driver.press(label='Play', role='button')
+        elif driver.find(key=20105, visible=True):
             assert_fullscreen_map(driver)
             start_map_destination(driver, 1)
             break
-        assert time.monotonic() < deadline, 'Neither map nor level opened'
+        if time.monotonic() >= deadline:
+            raise driver._failure('Neither map nor level opened')
         time.sleep(.05)
     wait_gameplay(driver)
 
