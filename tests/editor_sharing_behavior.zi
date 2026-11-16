@@ -8,6 +8,7 @@ Client :: #import "entity/collection_client";
 #import, file "../src/editor/edit.zi";
 #import, file "../src/editor/sharing.zi";
 #import, file "../src/editor/editor_view.zi";
+#import "no_raster_images"
 owner: string = "alice";
 response: string = "{\"status\":\"pending\",\"request\":37}";
 calls: s32;

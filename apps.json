@@ -8,12 +8,6 @@
         "local.campaign",
         "campaign"
       ],
-      "library_entries": [
-        "json_scan:ArrayPositions",
-        "json_scan:ElementAt",
-        "json_scan:ReadStringValue",
-        "levels:ShoveyLevelSolution"
-      ],
       "cover": {
         "portrait": "assets/shovey/title-portrait.png",
         "landscape": "assets/shovey/title-landscape.png",
@@ -34,7 +28,6 @@
     },
     {
       "manifest": "src/editor/catalog.json",
-      "shared_code": true,
       "cover": {
         "portrait": "assets/shovey/editor-portrait.png",
         "landscape": "assets/shovey/editor-landscape.png",

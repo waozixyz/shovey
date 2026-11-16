@@ -124,8 +124,8 @@ def island_package(record=False):
     private = json.loads(PRIVATE_APP.read_text())
     manifest = ROOT / private['manifest']
     app = dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=True,
-               external=False, cover=private.get('cover'), requires=[], shared_code=False,
-               shared_records=[], library_entries=[], enabled=True)
+               external=False, cover=private.get('cover'), requires=[],
+               shared_records=[], enabled=True)
     build_games([app])
     descriptor_path = ROOT / 'packaging/island.json'
     descriptor = json.loads(descriptor_path.read_text())
@@ -149,9 +149,7 @@ def declared_apps():
         apps.append(dict(manifest=manifest, descriptor=json.loads(manifest.read_text()), private=False,
                          external=app.get('external', False), standalone_bundle=app.get('standalone_bundle'),
                          cover=app.get('cover'), requires=app.get('requires', []),
-                         shared_code=app.get('shared_code', False),
-                         shared_records=app.get('shared_records', []),
-                         library_entries=app.get('library_entries', []), enabled=app.get('enabled', True)))
+                         shared_records=app.get('shared_records', []), enabled=app.get('enabled', True)))
     by_id = {app['descriptor']['id']: app for app in apps}
     ordered, complete = [], set()
 
@@ -334,9 +332,6 @@ def build_games(apps):
              '--module-path', compiler_generated, '--module-path', ROOT / 'src/editor', '--module-path', ROOT / 'src/solver',
              *(['--module-path', source.parent] if app.get('private') else []),
              *[flag for define in defines for flag in ('--define', define)],
-             *[flag for entry in app['library_entries'] for flag in ('--retain', 'std_' + entry if entry.startswith('json_scan:') else entry)],
-             *[flag for dependency in app['requires'] if app['shared_code']
-               for flag in ('--library', games / (by_id[dependency]['descriptor']['name'] + '.zx'))],
              '--define', 'KRYON_HOSTED_UI', '--asset-dir', 'assets=' + str(staged / 'assets'),
              '--entry', descriptor['entry'], '-o', bundle, source], cwd=ROOT)
         print(f'built {bundle.relative_to(ROOT)} ({bundle.stat().st_size // 1024} KiB)')
@@ -523,8 +518,6 @@ def collection(include_island=True, web=False):
                      icon=f'assets/arcade/previews/{name}{preview_suffix}')
         if external:
             child['package_id'] = descriptor['package_id']
-        if app['shared_code']:
-            child['shared_code'] = True
         if app['shared_records']:
             child['shared_records'] = app['shared_records']
         if app['requires']:
@@ -615,11 +608,7 @@ def web_preload(release_folder, work, receipt):
         target = preload / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(release_folder / name, target)
-    # A shared-code add-on opens with its dependencies as libraries, which
-    # native-c cannot compose on its own; the page runs it on its portable VM.
-    standalone = {child['id'] for child in receipt['children'] if not child.get('shared_code')}
-    return preload, [release_folder / name for identity, name in receipt['local_bundles'].items()
-                     if identity in standalone]
+    return preload, [release_folder / name for name in receipt['local_bundles'].values()]
 
 
 # Native hosts.

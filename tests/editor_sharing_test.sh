@@ -12,6 +12,8 @@ mkdir -p "$work"
  --bind editor_view:AppRecordHost=editor_sharing_behavior:FakeRecord \
  --bind editor_view:AppLocaleHost=editor_sharing_behavior:FakeLocale \
  --bind editor_view:SmoothFramesHost=editor_sharing_behavior:FakeSmooth \
+ --bind kryon/image_raster:ImageWidth=no_raster_images:ImageWidth \
+ --bind kryon/image_raster:ImageHeight=no_raster_images:ImageHeight \
  --entry editor_sharing_behavior:Check -o "$work/sharing.zx" "$root/tests/editor_sharing_behavior.zi"
 result=$("$toolchain/build/bin/ziran" run "$work/sharing.zx")
 test "$result" = 42 || { echo "Editor sharing local test failed: $result" >&2; exit 1; }
@@ -23,6 +25,8 @@ echo 'Editor sharing: real client lifecycle, owner cancellation, errors and acce
  --bind editor_view:AppRecordHost=editor_sharing_behavior:FakeRecord \
  --bind editor_view:AppLocaleHost=editor_sharing_behavior:FakeLocale \
  --bind editor_view:SmoothFramesHost=editor_sharing_behavior:FakeSmooth \
+ --bind kryon/image_raster:ImageWidth=no_raster_images:ImageWidth \
+ --bind kryon/image_raster:ImageHeight=no_raster_images:ImageHeight \
  --entry editor_sharing_behavior:Check -o "$work/c" "$root/tests/editor_sharing_behavior.zi"
 cat > "$work/c/main.c" <<'C'
 #include <stdio.h>

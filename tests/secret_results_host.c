@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 static int unexpected(void *context, const char *module, const char *function,
-                      const VmHostValue *args, int count, VmHostValue *result) {
+                      const HostValue *args, int count, HostValue *result) {
     (void)args; (void)count; (void)result;
     (*(int *)context)++;
     fprintf(stderr, "Unexpected secret-result host call: %s:%s\n", module, function);

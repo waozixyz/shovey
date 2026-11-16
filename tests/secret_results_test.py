@@ -25,7 +25,7 @@ subprocess.run(cmd,check=True)
 # use none, even though the full view also contains ordinary UI/storage paths.
 subprocess.run([*shlex.split(os.environ.get('CC','cc')), '-std=c11', '-O1',
     '-I'+str(tool/'include'), 'tests/secret_results_host.c',
-    str(tool/'build/libziran-vm.a'), '-lm', '-lpthread',
+    str(tool/'build/libziran.a'), '-lm', '-lpthread',
     '-o', str(output/'test')],check=True)
 subprocess.run([str(output/'test'),str(output/'exclusion.zx')],check=True)
 print('Secret results local test passed: real view functions, real engine wins for every shipped secret room, no rating screen/storage, legacy cache ignored/preserved, timed exact parent return, story cache/dismissal retained',flush=True)

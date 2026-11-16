@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Build the Editor with the game's code inside its own download, as Ziran's one-format bundles require, instead of linking the game at run time.
+
 ## [0.6.171] - 2026-11-14
 
 - Unlock Shovey Island with one press on its Unlock button, at the price the button shows, with no separate panel or confirmation.

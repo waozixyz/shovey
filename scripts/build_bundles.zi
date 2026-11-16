@@ -183,8 +183,6 @@ BuildEdition :: (apps: *JsonDocument, app: s32, toolchain: string, kryon: string
     Add(*command, "--module-path", Joined("crypto=", JoinPath(crypto, "src")))
     define := JsonFirst(*descriptor, JsonMember(*descriptor, descriptor.root, "build_defines"))
     while define >= 0 { Add(*command, "--define", JsonString(*descriptor, define)); define = JsonNext(*descriptor, define) }
-    entry := JsonFirst(apps, JsonMember(apps, app, "library_entries"))
-    while entry >= 0 { Add(*command, "--retain", JsonString(apps, entry)); entry = JsonNext(apps, entry) }
     Add(*command, "--define", "KRYON_HOSTED_UI")
     Add(*command, "--asset-dir", Joined("assets=", JoinPath(root, assets)))
     Add(*command, "--entry", Text(*descriptor, "entry"))

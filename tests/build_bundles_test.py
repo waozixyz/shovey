@@ -98,14 +98,14 @@ class BundleCatalogTest(unittest.TestCase):
         # Existing private build outputs belong to their separate build path.
         private = self.write('build/games/private.zx', 'preserved private output')
         self.write('apps.json', json.dumps(dict(apps=[
-            dict(manifest='public/catalog.json', library_entries=['game:Retain']),
+            dict(manifest='public/catalog.json'),
             dict(manifest='private/missing.json', external=True),
         ])))
         self.build()
         self.assertEqual(len(self.commands), 1)
         command = self.commands[0]
         self.assertIn(str(self.root / 'game.zi'), command)
-        self.assertIn('game:Retain', command)
+        self.assertNotIn('--retain', command)
         self.assertEqual((self.root / 'build/game-assets/public/assets/public/marker.txt').read_text(), 'public art')
         packed = json.loads((self.root / 'build/game-assets/public/assets/public/catalog.json').read_text())
         self.assertEqual(packed['host_api'], minimum_host)

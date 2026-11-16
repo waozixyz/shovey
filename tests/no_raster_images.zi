@@ -1,0 +1,13 @@
+// Native tests that lay out the board without drawing it: Kryon's image
+// sizing has no raster provider there, so no picture has a size.
+#program_export
+ImageWidth :: (asset_path: string) -> s32 {
+    unused asset_path
+    return 0
+}
+
+#program_export
+ImageHeight :: (asset_path: string) -> s32 {
+    unused asset_path
+    return 0
+}

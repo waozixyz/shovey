@@ -56,7 +56,12 @@ backs: s32;
 written: string;
 AppTreeNode :: (tree: *Tree, active: s32) -> *AppNode { return *root }
 AppCatalogFind :: (catalog: *s32, id: string) -> s64 { return ifx exists && id == "arcade.shovey" then 0 else -1 }
-AppCatalogAt :: (catalog: *s32, at: s64) -> *Entry { return ifx at == 0 then *entry else null }
+AppCatalogAt :: (catalog: *s32, at: s64) -> *Entry { if at == 0 { return *entry } return null }
+// The shop's pictures are never sized here; no raster provider runs.
+#program_export
+RouteImageWidth :: (asset_path: string) -> s32 { unused asset_path; return 0 }
+#program_export
+RouteImageHeight :: (asset_path: string) -> s32 { unused asset_path; return 0 }
 AppTreeLocate :: (tree: *Tree, active: s32, locator: *AppLocator) -> bool {
     locator.identity = root.identity
     return VecPush(locator.chain, AppLocation.{.id = root.identity.id})
@@ -69,7 +74,7 @@ AppHostOpenLocator :: (host: *Host, locator: *AppLocator) -> s32 {
 }
 AppHostRoute :: (host: *Host) -> bool { route_calls += 1; return routed }
 AppHostActiveRuntime :: (host: *Host) -> *Runtime { return *runtime }
-CollectionRecordsFor :: (id: string) -> *CollectionRecords { return ifx id == "arcade.shovey" then *records else null }
+CollectionRecordsFor :: (id: string) -> *CollectionRecords { if id == "arcade.shovey" { return *records } return null }
 AppFileWrite :: (files: *s32, name: string, value: string) -> bool {
     if name != "shop.request" || (value != "shop" && value != "chest") { return false }
     writes += 1; written = value
@@ -325,6 +330,8 @@ tool = str(toolchain / 'build/bin/ziran')
 subprocess.run([tool, 'bundle', '--project', '--root', str(WORK),
                 '--module-path', str(WORK), '--entry', 'routes:Check',
                 '--bind-host', 'routes',
+                '--bind', 'kryon/image_raster:ImageWidth=routes:RouteImageWidth',
+                '--bind', 'kryon/image_raster:ImageHeight=routes:RouteImageHeight',
                 '-o', str(WORK / 'routes.zx'), str(fixture)], cwd=ROOT, check=True)
 result = subprocess.check_output([tool, 'run', str(WORK / 'routes.zx')], cwd=ROOT, text=True)
 assert result.strip() == '42', result

@@ -5,6 +5,7 @@
 #import, file "../src/shovey_board.zi";
 #import, file "../src/orientation.zi";
 #import, file "test_support.zi";
+#import, file "no_raster_images.zi";
 
 Put :: (bytes: []u8, cell: s32, kind: s32) {
     alphabet := "0123456789abcdef"

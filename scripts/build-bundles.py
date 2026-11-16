@@ -161,8 +161,6 @@ def build(toolchain, kryon, apps, mingcute):
             '--module-path', str(ROOT / 'src/solver'),
             *(['--module-path', str(source.parent)] if app.get('private') else []),
             *[flag for name in descriptor.get('build_defines', []) for flag in ('--define', name)],
-            *[flag for name in app.get('library_entries', [])
-              for flag in ('--retain', 'std_' + name if name.startswith('json_scan:') else name)],
             '--define', 'KRYON_HOSTED_UI', '--asset-dir',
             'assets=' + str(bundle_assets(manifest, name, staged, 'SHOVEY_RELEASE' in descriptor.get('build_defines', []))),
             '--entry', descriptor['entry'], '-o', str(bundle), str(source)],
