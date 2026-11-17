@@ -3,16 +3,29 @@ Map :: #import, file "../src/world_map_view.zi";
 Layout :: #import, file "../src/world_map_layout.zi";
 Route :: #import, file "../src/world_map_progression.zi";
 
+// Geometry tests install no raster assets.
+#program_export "ImageWidth"
+host_image_width :: (asset_path: string) -> s32 {
+    unused asset_path
+    return 0
+}
+
+#program_export "ImageHeight"
+host_image_height :: (asset_path: string) -> s32 {
+    unused asset_path
+    return 0
+}
+
 #program_export
 main :: () -> s32 {
     {
-        drag := Map.WorldMapViewState.{.pointer_drag=true,.pointer_start=Vector2.{100.0,100.0},.pointer_last=Vector2.{100.0,100.0},.scroll_x=300,.scroll_offset=500,.last_click_place=1}
-        Map.WorldMapViewDrag(*drag, .{.x=104.0,.y=104.0,.down=true})
+        drag := Map.WorldMapViewState.{.pointer_drag = true,.pointer_start = Vector2.{100.0,100.0},.pointer_last = Vector2.{100.0,100.0},.scroll_x = 300,.scroll_offset = 500,.last_click_place = 1}
+        Map.WorldMapViewDrag(*drag, .{.x = 104.0,.y = 104.0,.down = true})
         if drag.pointer_moving || drag.scroll_x != 300 || drag.scroll_offset != 500 { return 81 }
-        Map.WorldMapViewDrag(*drag, .{.x=140.0,.y=160.0,.released=true})
+        Map.WorldMapViewDrag(*drag, .{.x = 140.0,.y = 160.0,.released = true})
         if !drag.pointer_moving || drag.scroll_x != 260 || drag.scroll_offset != 440 || drag.last_click_place != 0 { return 82 }
-        cancelled := Map.WorldMapViewState.{.pointer_start=Vector2.{100.0,100.0},.pointer_last=Vector2.{100.0,100.0},.scroll_offset=500}
-        Map.WorldMapViewDrag(*cancelled, .{.x=140.0,.y=160.0,.released=true})
+        cancelled := Map.WorldMapViewState.{.pointer_start = Vector2.{100.0,100.0},.pointer_last = Vector2.{100.0,100.0},.scroll_offset = 500}
+        Map.WorldMapViewDrag(*cancelled, .{.x = 140.0,.y = 160.0,.released = true})
         if cancelled.pointer_moving || cancelled.scroll_offset != 500 { return 83 }
     }
     for orientation: cast(s32)0..1 {
@@ -33,7 +46,7 @@ main :: () -> s32 {
     {
         flags: [2]bool = .[true,false]
         shown: [2]bool = .[true,true]
-        props := Map.WorldMapViewProps.{.visible=shown[:],.available=flags[:],.now=1.0}
+        props := Map.WorldMapViewProps.{.visible = shown[:],.available = flags[:],.now = 1.0}
         state: Map.WorldMapViewState
         if Map.WorldMapViewClick(*state,props,1).activated != 0 || state.focused != 1 { return 53 }
         state.scroll_x = 120; state.scroll_offset = 340
@@ -52,7 +65,7 @@ main :: () -> s32 {
     {
         shown: [175]bool
         for i: cast(s32)0..174 { shown[i] = true }
-        props := Map.WorldMapViewProps.{.visible=shown[:]}
+        props := Map.WorldMapViewProps.{.visible = shown[:]}
         width: float32 = 390.0 * (320.0 / 1086.0) / Layout.WorldMapWorldZoom
         for place: cast(s32)1..175 {
             point := Map.WorldMapViewPositionFor(place,width,props)
@@ -84,7 +97,7 @@ main :: () -> s32 {
     hit := Map.WorldMapViewTargetBounds(Vector2.{100.0, 100.0})
     if avatar.x + avatar.width * 0.5 != 100.0 || avatar.y + avatar.height * 0.5 != 98.0 { return 32 }
     if avatar.x < hit.x || avatar.y < hit.y || avatar.x + avatar.width > hit.x + hit.width ||
-        avatar.y + avatar.height > hit.y + hit.height { return 71 }
+    avatar.y + avatar.height > hit.y + hit.height { return 71 }
     if Map.WorldMapViewHighlightRadius > 31.0 { return 72 }
     if Map.WorldMapViewTargetDiameter < 56.0 || Map.WorldMapViewCircleRadius < 24.0 { return 25 }
     for orientation: cast(s32)0..1 {
@@ -150,9 +163,9 @@ main :: () -> s32 {
         for index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
             edge := Route.WorldMapEdgeAt(index)
             if (edge.from_level == 18 && edge.to_level == 24) ||
-                (edge.from_level >= 24 && edge.from_level <= 62) ||
-                (edge.from_level == 63 && edge.to_level == 71) ||
-                (edge.from_level >= 71 && edge.from_level <= 96) {
+            (edge.from_level >= 24 && edge.from_level <= 62) ||
+            (edge.from_level == 63 && edge.to_level == 71) ||
+            (edge.from_level >= 71 && edge.from_level <= 96) {
                 distance += Map.WorldMapViewRailLength(index,240.0,props.landscape)
             }
             if edge.from_level == 97 { distance += Map.WorldMapViewRailLength(index,240.0,props.landscape) * 0.25 }
@@ -168,7 +181,7 @@ main :: () -> s32 {
         ratings: [4]s32 = .[-1, 0, 2, 99]
         props := Map.WorldMapViewProps.{.stars = ratings[:]}
         if Map.WorldMapViewStars(props,0) != 0 || Map.WorldMapViewStars(props,1) != 0 ||
-            Map.WorldMapViewStars(props,3) != 2 || Map.WorldMapViewStars(props,4) != 3 || Map.WorldMapViewStars(props,5) != 0 { return 30 }
+        Map.WorldMapViewStars(props,3) != 2 || Map.WorldMapViewStars(props,4) != 3 || Map.WorldMapViewStars(props,5) != 0 { return 30 }
         buffer_a: [32]u8; buffer_b: [32]u8; buffer_c: [32]u8
         a := Map.WorldMapViewDisplayName(19,props,buffer_a[:])
         b := Map.WorldMapViewDisplayName(24,props,buffer_b[:])
@@ -208,7 +221,7 @@ main :: () -> s32 {
                 left_gap := left - extent.x
                 right_gap := extent.x + extent.width - right
                 if left_gap < expected_margin - 1.0 || left_gap > expected_margin + 1.0 ||
-                    right_gap < expected_margin - 1.0 || right_gap > expected_margin + 1.0 {
+                right_gap < expected_margin - 1.0 || right_gap > expected_margin + 1.0 {
                     print("landscape extent targets=%,% bounds=%,%,%,% gaps=%,% expected=%\n",left,right,extent.x,extent.y,extent.width,extent.height,left_gap,right_gap,expected_margin)
                     return 15
                 }
@@ -244,11 +257,11 @@ main :: () -> s32 {
             state.scroll_x = -999999
             Map.WorldMapViewClampCamera(*state,extent,viewport,width,props)
             if first.x - cast(float32)state.scroll_x < viewport.width * 0.5 - 1.0 ||
-                first.x - cast(float32)state.scroll_x > viewport.width * 0.5 + 1.0 { return 84 }
+            first.x - cast(float32)state.scroll_x > viewport.width * 0.5 + 1.0 { return 84 }
             state.scroll_x = 999999
             Map.WorldMapViewClampCamera(*state,extent,viewport,width,props)
             if last.x - cast(float32)state.scroll_x < viewport.width * 0.5 - 1.0 ||
-                last.x - cast(float32)state.scroll_x > viewport.width * 0.5 + 1.0 { return 85 }
+            last.x - cast(float32)state.scroll_x > viewport.width * 0.5 + 1.0 { return 85 }
 
             // The last edge must keep moving on the first reverse notch,
             // including after the endpoint absorbed a large overscroll.
@@ -289,7 +302,7 @@ main :: () -> s32 {
             moved := Map.WorldMapViewWheelMove(*route_state,props,390.0,center,20.0)
             back := Map.WorldMapViewWheelMove(*route_state,props,390.0,center,-20.0)
             if moved.x * moved.x + moved.y * moved.y < 100.0 || moved.x + back.x > 0.01 || moved.x + back.x < -0.01 ||
-                moved.y + back.y > 0.01 || moved.y + back.y < -0.01 || route_state.focused != 2 { return 18 }
+            moved.y + back.y > 0.01 || moved.y + back.y < -0.01 || route_state.focused != 2 { return 18 }
             // Perpendicular drag cannot leave the current rail. Along-road
             // drag advances it, and reversing retraces the same segment.
             route_state = Map.WorldMapViewState.{.focused = 2, .wheel_edge = 2, .wheel_t = 0.5}
@@ -307,7 +320,7 @@ main :: () -> s32 {
             length = Map.WorldMapViewRouteDistance(tangent_a, tangent_b)
             back = Map.WorldMapViewRailDrag(*route_state,props,390.0,center,Vector2.{dx * 20.0 / length, dy * 20.0 / length})
             if along.x * along.x + along.y * along.y < 1.0 || along.x + back.x > 0.01 || along.x + back.x < -0.01 ||
-                along.y + back.y > 0.01 || along.y + back.y < -0.01 || route_state.focused != 2 { return 23 }
+            along.y + back.y > 0.01 || along.y + back.y < -0.01 || route_state.focused != 2 { return 23 }
             // Start on the incoming edge and select the right arm. Traversing
             // forward and back must remember that arm without changing focus.
             incoming: s32
@@ -366,7 +379,7 @@ main :: () -> s32 {
                 // Real pointer halves choose physical arms in either composition.
                 viewport := Rectangle.{17.0, 0.0, 390.0, 844.0}
                 if Map.WorldMapViewPointerSide(viewport, 18.0) != -1 ||
-                    Map.WorldMapViewPointerSide(viewport, 406.0) != 1 { return 33 }
+                Map.WorldMapViewPointerSide(viewport, 406.0) != 1 { return 33 }
                 left_point := Map.WorldMapViewPositionFor(fork.left,390.0,props)
                 right_point := Map.WorldMapViewPositionFor(fork.right,390.0,props)
                 for side: cast(s32)-1..1 {
@@ -390,7 +403,7 @@ main :: () -> s32 {
                     for edge_index: cast(s32)0..Route.WORLD_MAP_EDGE_COUNT - 1 {
                         candidate := Route.WorldMapEdgeAt(edge_index)
                         if (candidate.from_level == fork.entry && candidate.to_level == expected) ||
-                            Map.WorldMapViewBranch(fork,candidate.from_level) == branch {
+                        Map.WorldMapViewBranch(fork,candidate.from_level) == branch {
                             distance += Map.WorldMapViewRailLength(edge_index,390.0,props.landscape)
                         }
                     }
@@ -426,11 +439,11 @@ main :: () -> s32 {
             for place: cast(s32)1..175 {
                 a := Map.WorldMapViewPositionFor(place,width,props)
                 if a.x < anchor.x - viewport.width || a.x > anchor.x + viewport.width ||
-                    a.y < anchor.y - viewport.height || a.y > anchor.y + viewport.height { continue }
+                a.y < anchor.y - viewport.height || a.y > anchor.y + viewport.height { continue }
                 for other: place + 1..175 {
                     b := Map.WorldMapViewPositionFor(other,width,props)
                     if b.x < anchor.x - viewport.width || b.x > anchor.x + viewport.width ||
-                        b.y < anchor.y - viewport.height || b.y > anchor.y + viewport.height { continue }
+                    b.y < anchor.y - viewport.height || b.y > anchor.y + viewport.height { continue }
                     // Fit may bring nearby nodes together; targets retain logical size.
                     if Map.WorldMapViewRouteDistance(a,b) < 1.0 { return 45 }
                 }
@@ -447,8 +460,8 @@ main :: () -> s32 {
         edge := Route.WorldMapEdgeAt(state.wheel_edge - 1)
         // The whole map browses at any progress; unfound rooms stay hidden.
         if !Map.WorldMapViewBrowsable(props,edge.to_level) || state.focused != 10 ||
-            !Map.WorldMapViewBrowsable(props,45) || !Map.WorldMapViewBrowsable(props,175) ||
-            Map.WorldMapViewBrowsable(props,1001) || Map.WorldMapViewBrowsable(props,1003) { return 41 }
+        !Map.WorldMapViewBrowsable(props,45) || !Map.WorldMapViewBrowsable(props,175) ||
+        Map.WorldMapViewBrowsable(props,1001) || Map.WorldMapViewBrowsable(props,1003) { return 41 }
         if Map.WorldMapViewPlay(*state,props).activated != 10 { return 42 }
     }
     {
@@ -469,7 +482,7 @@ main :: () -> s32 {
         available[16] = true
         props := Map.WorldMapViewProps.{.visible = visible[:], .available = available[:]}
         if !Map.WorldMapViewBrowsable(props,18) || !Map.WorldMapViewBrowsable(props,19) ||
-            !Map.WorldMapViewBrowsable(props,20) || !Map.WorldMapViewBrowsable(props,21) { return 19 }
+        !Map.WorldMapViewBrowsable(props,20) || !Map.WorldMapViewBrowsable(props,21) { return 19 }
     }
     {
         visible: [1003]bool; available: [1003]bool
@@ -477,7 +490,7 @@ main :: () -> s32 {
         visible[1001] = true; available[0] = true; available[1001] = true
         props := Map.WorldMapViewProps.{.visible = visible[:], .available = available[:]}
         if Map.WorldMapViewPublicLast(props) != 4 || !Map.WorldMapViewBrowsable(props,1002) || !Map.WorldMapViewBrowsable(props,5) ||
-            Map.WorldMapViewBrowsable(props,1001) || Map.WorldMapViewBrowsable(props,1003) { return 17 }
+        Map.WorldMapViewBrowsable(props,1001) || Map.WorldMapViewBrowsable(props,1003) { return 17 }
     }
     // Past either road end the wheel pans on to the painting's edge, and
     // reversing returns to that end before following the road again.
