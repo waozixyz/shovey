@@ -105,7 +105,7 @@ def android_config(args):
     crypto = request('entity:native-crypto', platform, ziran=args.ziran, env=env,
                      options=[f'entity:edition={args.edition}', f'entity:ndk={args.ndk}',
                               f'entity:android_api={args.api}'])
-    meta = renderer(request('kryon:renderer-raylib', platform, ziran=args.ziran, env=env,
+    meta = renderer(request('kryon:renderer-desktop', platform, ziran=args.ziran, env=env,
                             options=[f'kryon:renderer.android_ndk={args.ndk}',
                                      f'kryon:renderer.android_api={args.api}']))
     values = dict(SHOVEY_CRYPTO_LINK=crypto.link_flags(env=env),

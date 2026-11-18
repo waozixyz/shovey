@@ -3,13 +3,13 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 toolchain=${1:?usage: level_replay_test.sh TOOLCHAIN}
 entity=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path entity)
-daochi=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path DaochiClient)
+mesh=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path mesh_client)
 crypto=$(cd "$root" && "$toolchain/build/bin/ziran" pkg path crypto)
 work="$root/build/level-replay-test"
 mkdir -p "$work"
 "$toolchain/build/bin/ziran" bundle --root "$root" --module-path "$toolchain/std" \
     --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
-    --module-path "daochi_client=$daochi" --module-path "crypto=$crypto/src" \
+    --module-path "mesh_client=$mesh" --module-path "crypto=$crypto/src" \
     --bind controls:AppServiceHost=completion_path_behavior:FakeService \
     --bind controls:AppRecordHost=completion_path_behavior:FakeRecord \
     --bind controls:SaveAppRecordHost=completion_path_behavior:FakeSave \
@@ -20,7 +20,7 @@ echo 'Level replay: portable local tests passed'
 mkdir -p "$work/c"
 "$toolchain/build/bin/ziran" build --target=c --no-main --root "$root" \
     --module-path "$toolchain/std" --module-path "std=$toolchain/std" \
-    --module-path "entity=$entity/src" --module-path "daochi_client=$daochi" --module-path "crypto=$crypto/src" \
+    --module-path "entity=$entity/src" --module-path "mesh_client=$mesh" --module-path "crypto=$crypto/src" \
     --bind controls:AppServiceHost=completion_path_behavior:FakeService \
     --bind controls:AppRecordHost=completion_path_behavior:FakeRecord \
     --bind controls:SaveAppRecordHost=completion_path_behavior:FakeSave \

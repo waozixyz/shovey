@@ -1,5 +1,5 @@
 // Custom levels and the player's own collections, kept in the account's own
-// records: the host's "entity.records" service (Daochi docs/entity-data.md),
+// records: the host's "entity.records" service (Mesh docs/entity-data.md),
 // through Entity's level collections (entity/level_collections), so every
 // app and device of the account sees the same drafts. Only text is built and
 // read here; the editor's view sends it where the host offers the service,

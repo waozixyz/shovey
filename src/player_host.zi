@@ -69,8 +69,6 @@ ShopUI :: #import "shop_view";
 #if !#defined(PLATFORM_WEB) {
     #if #defined(ANDROID_BUILD) {
         ReminderWindow :: #import "kryon/android_device";
-    } else #if #defined(_WIN32) {
-        ReminderWindow :: #import "kryon/raylib_runtime";
     } else {
         ReminderWindow :: #import "kryon/desktop_runtime";
     }
@@ -244,8 +242,6 @@ CollectionFocused :: (context: *void, node: *AppNode) -> bool {
     #if !#defined(PLATFORM_WEB) {
         #if #defined(ANDROID_BUILD) {
             foreground = ReminderWindow.AndroidLifecycleFocused() != 0
-        } else #if #defined(_WIN32) {
-            foreground = ReminderWindow.RaylibFocused()
         } else {
             foreground = ReminderWindow.WindowFocusedHost()
         }
@@ -878,7 +874,7 @@ CollectionIslandEditorStep :: () {
     }
 }
 
-CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32, renderer_pending: bool = false) -> bool {
+CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
     CollectionShopNavigate()
     CollectionIslandPump()
     CollectionIslandEditorStep()
@@ -960,7 +956,7 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         return true
     }
     if !runtime.node.collection {
-        pictures_ready := !collection_pictures_missing && !renderer_pending
+        pictures_ready := !collection_pictures_missing
         // Query every path, including those first requested by this frame's
         // TileMap. Android decodes them asynchronously on its render thread.
         for path: collection_frame_paths {
@@ -1302,6 +1298,3 @@ CollectionLocaleText :: (key: string) -> string {
 
 c :: #system_library "c";
 CollectionFree :: (memory: *void) #foreign c "free";
-
-// A stalled decoder must not keep the renderer presenting its old cover.
-CollectionCompletePictures :: () -> bool { return !collection_loading.timed_out }

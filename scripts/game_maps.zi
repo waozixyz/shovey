@@ -1,4 +1,4 @@
-// Prepares Daochi's map registration JSON from an approved campaign
+// Prepares Mesh's map registration JSON from an approved campaign
 // snapshot, on standard output only:
 //
 //     ziran run --target=c scripts/game_maps.zi -- --approved FILE --source-version VERSION

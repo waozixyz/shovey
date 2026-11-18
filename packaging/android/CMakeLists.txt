@@ -24,6 +24,9 @@ if(NOT EXISTS "${ZIRAN_BIN}" OR NOT EXISTS "${ZI2C_BIN}")
 endif()
 
 set(APP_ZIRAN_DEFINES --define ANDROID_BUILD)
+if(KRYON_TEST_DRIVER)
+    list(APPEND APP_ZIRAN_DEFINES --define KRYON_TEST_DRIVER)
+endif()
 # The app's edition (build.gradle app.edition): Google Play or F-Droid.
 if(NOT APP_EDITION)
     set(APP_EDITION direct)
@@ -84,20 +87,19 @@ execute_process(COMMAND "${HOST_PYTHON}" "${REPO_ROOT}/scripts/build_artifacts.p
     --edition "${SHOVEY_ARTIFACT_EDITION}" --output "${SHOVEY_ARTIFACT_CONFIG}"
     WORKING_DIRECTORY "${REPO_ROOT}" COMMAND_ERROR_IS_FATAL ANY)
 include("${SHOVEY_ARTIFACT_CONFIG}")
-add_library(raylib INTERFACE)
-target_link_libraries(raylib INTERFACE ${SHOVEY_RENDERER_LINK})
-target_compile_options(raylib INTERFACE ${SHOVEY_RENDERER_COMPILE})
-target_compile_definitions(raylib INTERFACE ${SHOVEY_RENDERER_DEFINES})
-target_include_directories(raylib INTERFACE ${SHOVEY_RENDERER_INCLUDES})
 add_library(main SHARED ${APP_ZIRAN_GENERATED_SOURCES})
 kryon_android_app(main)
 kryon_android_host(main ${APP_ZIRAN_GENERATED_SOURCES})
+target_link_libraries(main PRIVATE ${SHOVEY_RENDERER_LINK})
+target_compile_options(main PRIVATE ${SHOVEY_RENDERER_COMPILE})
+target_compile_definitions(main PRIVATE ${SHOVEY_RENDERER_DEFINES})
+target_include_directories(main PRIVATE ${SHOVEY_RENDERER_INCLUDES})
 # Keep independently built APKs identical after their debug symbols are stripped.
 target_link_options(main PRIVATE -Wl,--build-id=none)
 
 target_include_directories(main PRIVATE "${ZIRAN_DIR}/include")
 # Generated module names such as math.h must not shadow libc's <math.h> in
-# raylib and other native dependencies. Zi imports use quoted includes.
+# native dependencies. Zi imports use quoted includes.
 foreach(directory ${APP_ZIRAN_INCLUDE_DIRS})
     target_compile_options(main PRIVATE "-iquote${directory}")
 endforeach()

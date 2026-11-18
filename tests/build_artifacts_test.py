@@ -14,6 +14,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import build_artifacts as artifacts
+import player
 
 
 class DescriptorTest(unittest.TestCase):
@@ -110,6 +111,22 @@ class DescriptorTest(unittest.TestCase):
         self.assertTrue(all(sum(path.stat().st_size for path, _ in group) <= 6 for group in groups))
         with self.assertRaisesRegex(ValueError, 'exceeds the package limit'):
             artifacts.preload_groups(files, limit=2)
+
+    def test_android_wrapper_preserves_startup_arguments_and_cleans_stale_instrumentation(self):
+        with patch.object(player, 'OUT', self.root), patch.dict(os.environ, KRYON_TEST_DRIVER='1'):
+            player.android_test_resources('xyz.waozi.shovey.test', 'armeabi-v7a,arm64-v8a')
+            resources = self.root / 'android/test-driver-resources'
+            for abi in ('armeabi-v7a', 'arm64-v8a'):
+                script = resources / 'lib' / abi / 'wrap.sh'
+                subprocess.run(['sh', '-n', script], check=True)
+                # Exercise argv forwarding without touching a phone data directory.
+                text = script.read_text().replace('/data/user/0/xyz.waozi.shovey.test/files/kryon-test-driver', str(self.root / 'driver'))
+                result = subprocess.check_output(['sh', '-c', text, 'wrap', sys.executable, '-c',
+                    'import os,sys; print(os.environ["KRYON_TEST_DRIVER"]); print(repr(sys.argv[1:]))', 'two words', '$literal'], text=True)
+                self.assertEqual(result.splitlines(), [str(self.root / 'driver'), "['two words', '$literal']"])
+            with patch.dict(os.environ, KRYON_TEST_DRIVER=''):
+                player.android_test_resources('xyz.waozi.shovey', 'armeabi-v7a')
+            self.assertFalse(resources.exists(), 'normal builds must remove stale debug startup files')
 
 
 def providers(ziran):

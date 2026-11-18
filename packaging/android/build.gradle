@@ -67,9 +67,19 @@ android {
     // The collection, its receipt, the Profile and the font, staged by the player build.
     sourceSets.main.assets.srcDir "${rootProject.projectDir}/../build/player/android/assets"
     sourceSets.main.res.srcDir "${rootProject.projectDir}/../packaging/android/res"
+    // Android 8.1+ runs wrap.sh before native startup for debuggable APKs.
+    // Release builds never include the file transport's startup script.
+    if (System.getenv('KRYON_TEST_DRIVER')) {
+        sourceSets.debug.resources.srcDir "${rootProject.projectDir}/../build/player/android/test-driver-resources"
+        packagingOptions.jniLibs.useLegacyPackaging = true
+    }
 
     buildTypes {
+        debug {
+            externalNativeBuild.cmake.arguments '-DKRYON_TEST_DRIVER=' + (System.getenv('KRYON_TEST_DRIVER') ? 'ON' : 'OFF')
+        }
         release {
+            externalNativeBuild.cmake.arguments '-DKRYON_TEST_DRIVER=OFF'
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),

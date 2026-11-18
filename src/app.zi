@@ -9,8 +9,6 @@
 #import "kryon/ScrollDevice"
 #if #defined(ANDROID_BUILD) {
     AndroidDevice :: #import "kryon/android_device";
-} else {
-    #import "kryon/raylib_runtime"
 }
 #import "std/timer_linux"
 #import "std/date_time_linux"
@@ -26,18 +24,13 @@
     chest_reminder_permission_checked: bool;
 }
 
-// Android's Back key as raylib reports it.
+// Android's Back key in Kryon's shared key codes.
 PLAYER_BACK_KEY :: 4
 
 // 0 until the first frame opens the collection, then 1, or 2 when it failed.
 player_state: s32;
 
 PlayerStart :: () -> bool {
-    // Raylib loads later animation pictures asynchronously. Android's pixmap
-    // host paints with its embedded outline font and decodes assets inline.
-    #if !#defined(ANDROID_BUILD) {
-        RaylibCompletePictureFrames(true)
-    }
     data := DataDirectory()
     bundle := ReadAppAsset("shovey.zx")
     metadata := ReadAppAsset("shovey.json")
@@ -89,14 +82,8 @@ Frame :: (session: Session, viewport: Rectangle) -> s32 {
     key := KeyboardTake(session)
     if key == PLAYER_BACK_KEY && CollectionBack() { key = 0 }
     unused KeyboardSend(session, key)
-    pictures_pending := false
-    #if !#defined(ANDROID_BUILD) {
-        pictures_pending = ImagesPending() > 0
-    }
-    if !CollectionFrame(session, viewport, key, 0, pictures_pending) { return 1 }
-    #if !#defined(ANDROID_BUILD) {
-        RaylibCompletePictureFrames(CollectionCompletePictures())
-    }
+    // Both native hosts decode the collection's pictures as they draw.
+    if !CollectionFrame(session, viewport, key, 0) { return 1 }
     CollectionCollect()
     return 0
 }

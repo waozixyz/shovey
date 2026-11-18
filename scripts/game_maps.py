@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare Daochi's map registration JSON from an approved campaign snapshot.
+"""Prepare Mesh's map registration JSON from an approved campaign snapshot.
 
 This command only writes JSON to stdout. Registration uses the publisher's
 existing admin authorization separately. Keep each source snapshot: a changed

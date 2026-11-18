@@ -6,9 +6,9 @@ KRYON = $(shell $(ZIRAN) pkg path kryon $(LOCK_FLAGS))
 MINGCUTE = $(shell $(ZIRAN) pkg path mingcute $(LOCK_FLAGS))
 APPS = $(shell $(ZIRAN) pkg path apps $(LOCK_FLAGS))
 ENTITY = $(shell $(ZIRAN) pkg path entity $(LOCK_FLAGS))
-DAOCHI_CLIENT = $(shell $(ZIRAN) pkg path DaochiClient $(LOCK_FLAGS))
+MESH_CLIENT = $(shell $(ZIRAN) pkg path mesh_client $(LOCK_FLAGS))
 CRYPTO = $(shell $(ZIRAN) pkg path crypto $(LOCK_FLAGS))
-COMPLETION_MODULES = --module-path 'daochi_client=$(DAOCHI_CLIENT)' --module-path 'crypto=$(CRYPTO)/src'
+COMPLETION_MODULES = --module-path 'mesh_client=$(MESH_CLIENT)' --module-path 'crypto=$(CRYPTO)/src'
 EDITOR_OUT ?= build/private-editor
 EDITOR_DEFINES ?=
 
@@ -129,8 +129,9 @@ player-windows: player
 .PHONY: player-windows-check
 player-windows-check: levels
 	rm -rf build/player/windows-check
-	'$(TOOLCHAIN)/build/bin/ziran' ir --project $(LOCK_FLAGS) --define _WIN32 --define PLATFORM_DESKTOP --define __x86_64__ \
-		--define PLATFORM_DESKTOP_RGFW --define GRAPHICS_API_OPENGL_11 -o build/player/windows-check src/player_windows.zi
+	'$(TOOLCHAIN)/build/bin/ziran' ir --project $(LOCK_FLAGS) --target=c --target-os windows --target-cpu x64 \
+		--define _WIN32 --define PLATFORM_DESKTOP --define __x86_64__ \
+		-o build/player/windows-check src/player_windows.zi
 test: player-windows-check
 public-test: player-windows-check
 
@@ -180,16 +181,15 @@ bundles: levels landscape
 # on Kryon's native player, in one folder. DESKTOP_DEFINES='--define
 # SHOVEY_UNLOCK_ALL' makes a testing copy with every level open.
 DESKTOP_DIR ?= build/desktop/shovey
+DESKTOP_APP_DIR = $(DESKTOP_DIR)/share/kryon/shovey
 DESKTOP_DEFINES ?=
 .PHONY: desktop
 desktop: bundles
 	python3 scripts/prepare-web.py
-	$(MAKE) -C '$(KRYON)' zx-raylib
+	$(MAKE) -C '$(KRYON)' zx-player zx-window-host ZIRAN_DIR='$(TOOLCHAIN)'
 	rm -rf '$(DESKTOP_DIR)'
-	mkdir -p '$(DESKTOP_DIR)'
-	'$(TOOLCHAIN)/build/bin/ziran' bundle --root . --module-path '$(KRYON)/src/ui' \
-		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
-		--module-path 'mingcute=$(MINGCUTE)/src' --module-path 'apps=$(APPS)/src' --module-path 'entity=$(ENTITY)/src' $(COMPLETION_MODULES) --module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+	mkdir -p '$(DESKTOP_DIR)/bin' '$(DESKTOP_APP_DIR)'
+	'$(TOOLCHAIN)/build/bin/ziran' bundle --project $(LOCK_FLAGS) --root . \
 		--module-path build/web-generated --define KRYON_HOSTED_UI --define SHOVEY_WEB --define SHOVEY_RELEASE $(DESKTOP_DEFINES) \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
 		--bind editor_view:AppRecordHost=host:EditorRecordHost --bind editor_view:SaveAppRecordHost=host:EditorSaveRecordHost \
@@ -197,11 +197,11 @@ desktop: bundles
 		--bind editor_view:SmoothFramesHost=host:SmoothFramesHost --bind editor_view:AppSupportsHost=host:GameSupportsHost \
 		--bind editor_view:AppServiceHost=controls:GameServiceHost --bind editor_view:AppFieldInputHost=host:GameFieldInputHost \
 		--asset-dir assets=build/web-assets/assets --entry game:Main \
-		-o '$(DESKTOP_DIR)/app.zx' src/web/game.zi
-	cp '$(KRYON)/build/zx-raylib/zx' '$(DESKTOP_DIR)/shovey'
-	cp '$(KRYON)/build/zx-raylib/kryon-font.ttf' '$(DESKTOP_DIR)/'
-	printf 'Shovey\n' > '$(DESKTOP_DIR)/app.title'
-	'$(DESKTOP_DIR)/shovey' --check '$(DESKTOP_DIR)/app.zx'
+		-o '$(DESKTOP_APP_DIR)/app.zx' src/web/game.zi
+	cp '$(KRYON)/build/bin/zx' '$(DESKTOP_DIR)/bin/shovey'
+	cp '$(KRYON)/assets/fonts/LiberationSans-Regular.ttf' '$(DESKTOP_DIR)/bin/kryon-font.ttf'
+	printf 'Shovey\n' > '$(DESKTOP_APP_DIR)/app.title'
+	'$(DESKTOP_DIR)/bin/shovey' --check '$(DESKTOP_APP_DIR)/app.zx'
 
 web-zx: bundles
 	python3 scripts/prepare-web.py
@@ -247,8 +247,9 @@ web: bundles
 	python3 scripts/prepare-web.py
 	rm -rf $(WEB_OUT) $(WEB_NATIVE_OUT)
 	mkdir -p $(WEB_OUT) $(WEB_NATIVE_OUT)/c
-	'$(ZIRAN)' build --project $(LOCK_FLAGS) --target=c --module-path build/web-generated \
+	'$(ZIRAN)' build --project $(LOCK_FLAGS) --target=c --target-os web --target-cpu wasm32 --module-path build/web-generated \
 		--module-path src/web --module-path src/editor --module-path src/solver \
+		$(if $(KRYON_TEST_DRIVER),--define KRYON_TEST_DRIVER) \
 		--define PLATFORM_WEB --define BUNDLE_NATIVE_RENDERER --define SHOVEY_WEB --define SHOVEY_RELEASE \
 		--entry web_profile_main:main --bind kryon/canvas_app_run:CanvasAppMain=game:Main \
 		--bind editor_view:ReadAppUiHost=host:ReadAppUiHost --bind editor_view:AppLocaleHost=host:EditorLocaleHost \
@@ -280,13 +281,15 @@ web-crazygames: web
 package-crazygames-test:
 	sh tests/package_crazygames_test.sh
 
+web-test referral-web-test: KRYON_TEST_DRIVER := 1
+
 web-test: web
 	$(JS_RUNTIME) tests/web_mini_test.mjs
 	$(JS_RUNTIME) tests/web_tap_beside_board_test.mjs
 	$(JS_RUNTIME) tests/web_copy_test.mjs
 	$(JS_RUNTIME) tests/web_live_campaign_test.mjs
 
-# Requires Daochi's signed referral-fixture.test; all state and traffic stay local.
+# Requires Mesh's signed referral-fixture.test; all state and traffic stay local.
 .PHONY: referral-web-test
 referral-web-test: web
 	$(JS_RUNTIME) tests/referral_web_test.mjs

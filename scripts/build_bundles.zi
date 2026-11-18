@@ -107,7 +107,7 @@ HasDefine :: (document: *JsonDocument, define: string) -> bool {
 
 // Stages, translates and bundles one edition. Empty, or why it failed.
 BuildEdition :: (apps: *JsonDocument, app: s32, toolchain: string, kryon: string, apps_dir: string,
-                 mingcute: string, entity: string, daochi: string, crypto: string) -> string {
+                 mingcute: string, entity: string, mesh: string, crypto: string) -> string {
     manifest := JsonString(apps, JsonMember(apps, app, "manifest"))
     descriptor: JsonDocument
     if !ReadJsonFile(manifest, *descriptor) { return "cannot read an edition's catalog" }
@@ -179,7 +179,7 @@ BuildEdition :: (apps: *JsonDocument, app: s32, toolchain: string, kryon: string
     Add(*command, "--module-path", Joined("apps=", JoinPath(apps_dir, "src")))
     Add(*command, "--module-path", Joined("mingcute=", JoinPath(mingcute, "src")))
     Add(*command, "--module-path", Joined("entity=", JoinPath(entity, "src")))
-    Add(*command, "--module-path", Joined("daochi_client=", daochi))
+    Add(*command, "--module-path", Joined("mesh_client=", mesh))
     Add(*command, "--module-path", Joined("crypto=", JoinPath(crypto, "src")))
     define := JsonFirst(*descriptor, JsonMember(*descriptor, descriptor.root, "build_defines"))
     while define >= 0 { Add(*command, "--define", JsonString(*descriptor, define)); define = JsonNext(*descriptor, define) }
@@ -233,14 +233,14 @@ main :: (argc: s32, argv: **u8) -> s32 {
     ziran := JoinPath(toolchain, "build/bin/ziran")
     locked := !IsFile("ziran.local.toml")
     entity := PackagePath(ziran, "entity", "", locked)
-    daochi := PackagePath(ziran, "DaochiClient", "", locked)
+    mesh := PackagePath(ziran, "mesh_client", "", locked)
     crypto := PackagePath(ziran, "crypto", "", locked)
-    if entity.count == 0 || daochi.count == 0 || crypto.count == 0 { return Fail("Cannot find the entity, daochi_client and crypto packages") }
+    if entity.count == 0 || mesh.count == 0 || crypto.count == 0 { return Fail("Cannot find the entity, mesh_client and crypto packages") }
     apps: JsonDocument
     if !ReadJsonFile("apps.json", *apps) { return Fail("Cannot read apps.json") }
     app := JsonFirst(*apps, JsonMember(*apps, apps.root, "apps"))
     while app >= 0 {
-        error := BuildEdition(*apps, app, toolchain, values[1], values[2], values[3], entity, daochi, crypto)
+        error := BuildEdition(*apps, app, toolchain, values[1], values[2], values[3], entity, mesh, crypto)
         if error.count > 0 { return Fail(error) }
         app = JsonNext(*apps, app)
     }

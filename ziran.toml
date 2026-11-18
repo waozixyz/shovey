@@ -6,15 +6,15 @@ bridge_modules = ["app"]
 
 [toolchain]
 git = "https://github.com/ziranlang/ziran.git"
-ref = "d17c7aa1e093066ef03f307a45f6966dd9b29d4b"
+ref = "7fbc8152b0ab18b641a73d16d93ccda1e1c7f863"
 
 [dependencies.kryon]
 git = "https://github.com/kryonlabs/kryon.git"
-ref = "1b290f19aa1a4069c908a4687f04458c58a2b658"
+ref = "8e44f3f86262924f513b28cc807e67b1138e5e0b"
 
 [dependencies.apps]
 git = "https://github.com/waozixyz/apps.git"
-ref = "7854da88e219f98264dc41f1e614e4c9d292dded"
+ref = "1ce583db6e96038decf3670634b2d5196c13d4d5"
 
 [dependencies.mingcute]
 git = "https://github.com/kryonlabs/mingcute.git"
@@ -26,7 +26,7 @@ rules = "src/rules.zi"
 
 [dependencies.entity]
 git = "https://github.com/waozixyz/entity.git"
-ref = "d9c0c38bf041e97959170c48d1fc408524445a34"
+ref = "d1585317715d8f7cd9c5440819324aa46d243e91"
 
 [dependencies.crypto]
 git = "https://github.com/ziranlang/crypto.git"

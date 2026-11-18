@@ -23,6 +23,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -53,6 +54,11 @@ WINDOWS_DATA = ['shovey.zx', 'shovey.json', 'entity.zx', 'kryon-font.ttf']
 
 def environment():
     return build_artifacts.environment()
+
+
+def test_driver_defines():
+    """Include Kryon's test transport only for an explicitly requested test build."""
+    return ['--define', 'KRYON_TEST_DRIVER'] if os.environ.get('KRYON_TEST_DRIVER') else []
 
 
 def run(command, **options):
@@ -631,7 +637,7 @@ def linux_host():
     generated = folder / 'c'
     if generated.exists():
         shutil.rmtree(generated)
-    run([ziran(), 'build', '--project', *lock(), '--target=c', '--define', 'PLATFORM_DESKTOP',
+    run([ziran(), 'build', '--project', *lock(), '--target=c', '--define', 'PLATFORM_DESKTOP', *test_driver_defines(),
          '--entry', 'player_desktop:main', '-o', generated, 'src/player_desktop.zi'], cwd=ROOT)
     profile = build_artifacts.request('entity:native-profile', 'linux-x86_64-gnu', ziran=ziran())
     renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-desktop', 'linux-x86_64-gnu', ziran=ziran()))
@@ -667,9 +673,10 @@ def windows_host(tools):
                AR=shutil.which(tools + 'ar') or tools + 'ar')
     # Resolve support before replacing any existing Windows build output.
     profile = build_artifacts.request('entity:native-profile', 'windows-x86_64-mingw', ziran=ziran(), env=env)
-    renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-raylib', 'windows-x86_64-mingw',
+    renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-desktop-windows', 'windows-x86_64-mingw',
                                                                 ziran=ziran(), env=env))
-    defines = ['--define', '_WIN32', '--define', 'PLATFORM_DESKTOP', '--define', '__x86_64__']
+    defines = ['--define', '_WIN32', '--define', 'PLATFORM_DESKTOP', '--define', '__x86_64__', *test_driver_defines()]
+    target = ['--target=c', '--target-os', 'windows', '--target-cpu', 'x64']
     for name in renderer['defines']:
         defines.extend(['--define', name])
     ir, generated = folder / 'ir', folder / 'c'
@@ -677,8 +684,8 @@ def windows_host(tools):
         if path.exists():
             shutil.rmtree(path)
         path.mkdir(parents=True)
-    run([ziran(), 'ir', '--project', *lock(), *defines, '-o', ir, 'src/player_windows.zi'], cwd=ROOT)
-    run([ziran(), 'build', '--target=c', *defines, '--entry', 'player_windows:main', '--root', ir,
+    run([ziran(), 'ir', '--project', *lock(), *target, *defines, '-o', ir, 'src/player_windows.zi'], cwd=ROOT)
+    run([ziran(), 'build', *target, *defines, '--entry', 'player_windows:main', '--root', ir,
          '-o', generated, ir / 'player_windows.zir'], cwd=ROOT)
     # The program's icon in Explorer and the taskbar.
     from PIL import Image
@@ -699,7 +706,32 @@ def windows_host(tools):
          *build_artifacts.renderer_link(renderer), *profile.link_flags(include_archives=False), '-o', temporary], env=tool_env)
     run([tools + 'strip', temporary], env=tool_env)
     temporary.replace(program)
-    shutil.copyfile(renderer['resources']['font'], folder / 'kryon-font.ttf')
+    font = folder / 'kryon-font.ttf'
+    shutil.copyfile(renderer['resources']['font'], font.with_suffix('.ttf.new'))
+    font.with_suffix('.ttf.new').replace(font)
+    # The desktop renderer supplies its DLLs, font configuration and licenses.
+    # Keep their shipped paths explicit so packaging cannot collect stale output.
+    runtime = folder / 'runtime'
+    if runtime.exists():
+        shutil.rmtree(runtime)
+    runtime.mkdir()
+    with tarfile.open(renderer['runtime_archive']) as archive:
+        archive.extractall(runtime, filter='data')
+    runtime_files = []
+    for source in sorted(runtime.rglob('*')):
+        if not source.is_file():
+            continue
+        relative = source.relative_to(runtime)
+        if relative.parts[0] == 'bin':
+            relative = Path(*relative.parts[1:])
+        target = folder / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # Preserve DLLs and data already mapped by a running Windows player.
+        staged = target.with_name(target.name + '.new')
+        shutil.copyfile(source, staged)
+        staged.replace(target)
+        runtime_files.append(relative.as_posix())
+    (folder / 'runtime-files.json').write_text(json.dumps(runtime_files) + '\n')
     return program
 
 
@@ -726,7 +758,9 @@ def pack(platform, folder, version):
                 entry.size, entry.mode, entry.mtime = len(contents), mode, stamp
                 archive.addfile(entry, io.BytesIO(contents))
     else:
-        files = [('shovey.exe', 0o755)] + [(name, 0o644) for name in [*WINDOWS_DATA, *local_bundles.values()]]
+        runtime_files = json.loads((folder / 'runtime-files.json').read_text())
+        files = [('shovey.exe', 0o755)] + [(name, 0o644) for name in
+            [*WINDOWS_DATA, *local_bundles.values(), *runtime_files]]
         output = DOWNLOADS / f'shovey-v{version}-windows-x86_64.zip'
         temporary = output.with_suffix('.new')
         moment = time.gmtime(max(stamp, 315532800))[:6]
@@ -762,6 +796,22 @@ def prepare_android_project(kryon):
     return droid
 
 
+def android_test_resources(application_id, abis):
+    """Start Kryon's file transport inside an explicitly instrumented debug APK."""
+    resources = OUT / 'android/test-driver-resources'
+    shutil.rmtree(resources, ignore_errors=True)
+    if not os.environ.get('KRYON_TEST_DRIVER'):
+        return
+    directory = f'/data/user/0/{application_id}/files/kryon-test-driver'
+    for abi in abis.split(','):
+        wrapper = resources / 'lib' / abi / 'wrap.sh'
+        wrapper.parent.mkdir(parents=True, exist_ok=True)
+        wrapper.write_text('#!/system/bin/sh\n'
+                           f'export KRYON_TEST_DRIVER={shlex.quote(directory)}\n'
+                           'mkdir -p "$KRYON_TEST_DRIVER"\nexec "$@"\n')
+        wrapper.chmod(0o755)
+
+
 def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=None):
     """The APK (the normal and F-Droid edition, Google-free) or the Google
     Play edition's APK or App Bundle, on Kryon's Android host from this
@@ -780,6 +830,7 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
         build_entity()
     shutil.copyfile(OUT / 'font.ttf', assets / 'kryon-font.ttf')
     droid = prepare_android_project(kryon)
+    android_test_resources(application_id or 'xyz.waozi.shovey', abis)
     sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or os.environ.get('ANDROID_HOME') or Path.home() / 'Android/Sdk')
     env = environment()
     # This is the same identity `ziran tool kryon` supplies. The standalone
