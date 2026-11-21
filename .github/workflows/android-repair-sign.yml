@@ -1,0 +1,58 @@
+name: Sign local Android repair
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha256:
+        description: SHA-256 of the exact locally built unsigned APK in repository LFS
+        required: true
+        type: string
+      size:
+        description: Size in bytes of the exact locally built unsigned APK
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Test exact-build retrieval
+        run: python3 tests/android_repair_fetch_test.py
+      - name: Retrieve the exact local build
+        env:
+          APK_SHA256: ${{ inputs.sha256 }}
+          APK_SIZE: ${{ inputs.size }}
+        run: >-
+          python3 scripts/fetch-android-repair.py
+          --sha256 "$APK_SHA256" --size "$APK_SIZE"
+          --output build/android/repair-unsigned.apk
+      - name: Install Android signing tools
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;36.0.0"'
+      - name: Sign with the existing Shovey key
+        env:
+          KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
+          PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          key="$RUNNER_TEMP/shovey-release.p12"
+          password="$RUNNER_TEMP/shovey-release-password"
+          trap 'rm -f "$key" "$password"' EXIT
+          printf '%s' "$KEYSTORE" | base64 --decode > "$key"
+          printf '%s' "$PASSWORD" > "$password"
+          version="$(python3 -c 'import json; print(json.load(open("version.json"))["version"])')"
+          python3 scripts/android-release.py sign build/android/repair-unsigned.apk \
+            --version "$version" --keystore "$key" --password-file "$password" \
+            --output build/android/shovey.apk
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: shovey-local-repair
+          path: build/android/shovey.apk
+          if-no-files-found: error
+          retention-days: 7
