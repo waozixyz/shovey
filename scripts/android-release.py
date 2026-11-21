@@ -23,7 +23,7 @@ def build_tools():
     return next(p for p in reversed(folders) if all((p / name).is_file() for name in ('aapt', 'apksigner', 'zipalign')))
 
 
-def verify(apk, version, tools, edition='direct'):
+def verify(apk, version, tools, edition='direct', device_abi=None):
     assert re.fullmatch(r'\d+\.\d+\.\d+', version), 'A numeric release version is required'
     changelog = (ROOT / 'src/CHANGELOG.md').read_text()
     assert re.search(r'^## \[' + re.escape(version) + r'\] - ', changelog, re.M), 'Release version is absent from the changelog'
@@ -42,7 +42,8 @@ def verify(apk, version, tools, edition='direct'):
     subprocess.run([str(tools / 'zipalign'), '-c', '-P', '16', '4', str(apk)], check=True, capture_output=True)
     with zipfile.ZipFile(apk) as archive:
         abis = sorted(p.split('/')[1] for p in archive.namelist() if re.fullmatch(r'lib/[^/]+/libmain\.so', p))
-        assert abis == ['arm64-v8a', 'armeabi-v7a'], 'Both supported ARM architectures must be present'
+        expected_abis = [device_abi] if device_abi else ['arm64-v8a', 'armeabi-v7a']
+        assert abis == expected_abis, 'APK architectures differ from the requested build'
         metadata = json.loads(archive.read('assets/shovey.json'))
         payload = archive.read('assets/shovey.zx')
         assert metadata['id'] == 'arcade.shovey-player' and metadata['version'] == version
@@ -106,6 +107,8 @@ def main():
     parser.add_argument('--keystore', type=Path, default=ROOT / 'backup/android-signing/shovey-release.p12')
     parser.add_argument('--password-file', type=Path, default=ROOT / 'backup/android-signing/password')
     parser.add_argument('--alias', default='shovey')
+    parser.add_argument('--device-abi', choices=('arm64-v8a', 'armeabi-v7a'),
+                        help='Verify a local device repair; published releases still require both ARM architectures')
     parser.add_argument('--bundletool', type=Path, help='Google bundletool JAR, required for .aab files')
     parser.add_argument('--edition', choices=('direct', 'gplay'), default='direct',
                         help='direct: the normal and F-Droid APK; gplay: the Google Play APK')
@@ -113,6 +116,7 @@ def main():
     tools = build_tools()
     apk = args.apk.resolve(strict=True)
     if apk.suffix == '.aab':
+        assert not args.device_abi, 'Device repairs use APKs'
         assert args.bundletool, '--bundletool is required to verify a Play bundle'
         output = apk
         if args.action == 'sign':
@@ -147,7 +151,7 @@ def main():
         finally:
             # Only the signed APK belongs beside the output.
             aligned.unlink(missing_ok=True)
-        result = verify(temporary, args.version, tools, args.edition)
+        result = verify(temporary, args.version, tools, args.edition, args.device_abi)
         temporary.replace(output)
         result['apk'] = str(output)
         records = ROOT / 'backup/android-release'
@@ -155,7 +159,7 @@ def main():
         name = 'gplay-verification.json' if args.edition == 'gplay' else 'verification.json'
         (records / name).write_text(json.dumps(result, indent=2) + '\n')
     else:
-        verify(apk, args.version, tools, args.edition)
+        verify(apk, args.version, tools, args.edition, args.device_abi)
     print(f'Shovey {args.version}: release APK identity, signer, alignment and embedded games verified')
 
 

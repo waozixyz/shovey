@@ -22,7 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Test exact-build retrieval
-        run: python3 tests/android_repair_fetch_test.py
+        run: |
+          python3 tests/android_repair_fetch_test.py
+          python3 tests/android_repair_abi_test.py
       - name: Retrieve the exact local build
         env:
           APK_SHA256: ${{ inputs.sha256 }}
@@ -49,6 +51,7 @@ jobs:
           version="$(python3 -c 'import json; print(json.load(open("version.json"))["version"])')"
           python3 scripts/android-release.py sign build/android/repair-unsigned.apk \
             --version "$version" --keystore "$key" --password-file "$password" \
+            --device-abi arm64-v8a \
             --output build/android/shovey.apk
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
