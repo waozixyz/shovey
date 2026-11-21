@@ -11,6 +11,14 @@ on:
         description: Size in bytes of the exact locally built unsigned APK
         required: true
         type: string
+      architectures:
+        description: Architectures in the exact local build
+        required: true
+        default: arm64-v8a
+        type: choice
+        options:
+          - arm64-v8a
+          - universal
 
 permissions:
   contents: read
@@ -39,6 +47,7 @@ jobs:
         env:
           KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
           PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+          APK_ARCHITECTURES: ${{ inputs.architectures }}
         shell: bash
         run: |
           set -euo pipefail
@@ -49,9 +58,14 @@ jobs:
           printf '%s' "$KEYSTORE" | base64 --decode > "$key"
           printf '%s' "$PASSWORD" > "$password"
           version="$(python3 -c 'import json; print(json.load(open("version.json"))["version"])')"
+          case "$APK_ARCHITECTURES" in
+            arm64-v8a) abi=(--device-abi arm64-v8a) ;;
+            universal) abi=() ;;
+            *) echo 'Unsupported architecture selection' >&2; exit 1 ;;
+          esac
           python3 scripts/android-release.py sign build/android/repair-unsigned.apk \
             --version "$version" --keystore "$key" --password-file "$password" \
-            --device-abi arm64-v8a \
+            "${abi[@]}" \
             --output build/android/shovey.apk
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

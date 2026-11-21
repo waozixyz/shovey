@@ -1,6 +1,10 @@
 # Shovey changelog
 
-## Unreleased
+## [0.6.172] - 2026-11-21
+
+- Restore Android title pictures, maps, and game artwork.
+- Fix Android startup failing before the game opens.
+- Keep Classic and the Editor available in the installed game without another download.
 
 - Build the Editor with the game's code inside its own download, as Ziran's one-format bundles require, instead of linking the game at run time.
 

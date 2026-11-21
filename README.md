@@ -56,6 +56,19 @@ against the public catalog's exact size and SHA-256 digest.
 
 BSD 3-Clause. See [LICENSE](LICENSE).
 
+## Android verification
+
+After installing the signed APK on an authorized test phone, check the actual
+installed player:
+
+```sh
+python3 tests/android_player_smoke_test.py --serial PHONE_SERIAL
+```
+
+This opens Shovey without clearing its data, checks startup errors and a visible
+screen, and saves phone screenshots under `build/player/android-smoke`. Also
+verify the title artwork, Classic map, level sprites and movement on that phone.
+
 ## World map development
 
 Reusable map tools live in `scripts/` and `tests/`. The generator uses Pillow,

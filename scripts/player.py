@@ -580,6 +580,8 @@ def checked_collection(island=True):
         raise SystemExit('The F-Droid edition must not include Island; run python3 scripts/player.py collection --without-island')
     if not (OUT / 'entity.zx').is_file():
         raise SystemExit('The Profile is missing; run python3 scripts/player.py collection')
+    if not receipt.get('local_bundles'):
+        raise SystemExit('Native game payloads are missing; run python3 scripts/player.py collection')
     verify_local_bundles(OUT, receipt)
     return receipt
 

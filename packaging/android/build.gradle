@@ -48,6 +48,7 @@ android {
         }
         externalNativeBuild {
             cmake {
+                targets 'main'
                 arguments '-DKRYON_DIR=' + kryonDir,
                     '-DZIRAN_DIR=' + ziranDir,
                     '-DZIRAN_PACKAGE_ID=' + ziranPackageId,

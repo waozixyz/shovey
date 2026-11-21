@@ -38,6 +38,12 @@ class PlayerPayloadTest(unittest.TestCase):
             (root / 'shovey.json').write_text(json.dumps(receipt))
             with patch.object(player, 'OUT', root), patch.object(player, 'release', return_value={'version': 'test'}):
                 self.assertEqual(player.checked_collection(), receipt)
+                stale = dict(receipt)
+                stale.pop('local_bundles')
+                (root / 'shovey.json').write_text(json.dumps(stale))
+                with self.assertRaisesRegex(SystemExit, 'Native game payloads are missing'):
+                    player.checked_collection()
+                (root / 'shovey.json').write_text(json.dumps(receipt))
                 target = root / 'native'
                 player.stage_collection_data(target, receipt)
                 self.assertEqual((target / 'games/shovey.zx').read_bytes(), payload.read_bytes())

@@ -5,16 +5,16 @@ module_roots = ["src"]
 bridge_modules = ["app"]
 
 [toolchain]
-git = "https://github.com/ziranlang/ziran.git"
-ref = "7fbc8152b0ab18b641a73d16d93ccda1e1c7f863"
+git = "https://git.waozi.xyz/ziranlang/ziran.git"
+ref = "3432c0ca263e855cd6d1627d1e42e70749f5aa0b"
 
 [dependencies.kryon]
-git = "https://github.com/kryonlabs/kryon.git"
-ref = "8e44f3f86262924f513b28cc807e67b1138e5e0b"
+git = "https://git.waozi.xyz/kryonlabs/kryon.git"
+ref = "894f1bc6b7a0fb0e9db6f668fe20f76581f61736"
 
 [dependencies.apps]
-git = "https://github.com/waozixyz/apps.git"
-ref = "1ce583db6e96038decf3670634b2d5196c13d4d5"
+git = "https://git.waozi.xyz/waozi/apps.git"
+ref = "38e8fcef403e4ca271b5ffa68e9da60dfceab909"
 
 [dependencies.mingcute]
 git = "https://github.com/kryonlabs/mingcute.git"
@@ -25,8 +25,8 @@ shovey_theme = "src/shovey_theme.zi"
 rules = "src/rules.zi"
 
 [dependencies.entity]
-git = "https://github.com/waozixyz/entity.git"
-ref = "d1585317715d8f7cd9c5440819324aa46d243e91"
+git = "https://git.waozi.xyz/waozi/entity.git"
+ref = "3c21448152d1be12529362eb05e8c502a01f50f4"
 
 [dependencies.crypto]
 git = "https://github.com/ziranlang/crypto.git"
