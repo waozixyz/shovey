@@ -1183,3 +1183,6 @@ Settings
 [shovey_hint_board]
 Board tips (free)
 ---
+---
+[shovey_map]
+Map

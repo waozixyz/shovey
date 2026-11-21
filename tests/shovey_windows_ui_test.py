@@ -22,7 +22,7 @@ def answer_cover_question(driver, profile):
     """Shovey asks once on its covers whether games
     download new levels; tests keep the levels they ship with. The question
     shows in the covers' first frame."""
-    driver.wait(label='Play', role='button', timeout=60)
+    driver.wait(key=49224, role='button', timeout=60)
     # The question follows the collection's records, which can load a frame
     # after Play first appears; let the covers settle before looking.
     driver.wait_idle(frames=4)
@@ -124,7 +124,7 @@ def main():
                 # A new Wine prefix takes a while before the first frame, so
                 # the first reply may come long after the usual 15 seconds.
                 driver.send('status', timeout=180)
-                driver.wait(timeout=180, label='Play', role='button')
+                driver.wait(timeout=180, key=49224, role='button')
                 yield child
             finally:
                 if child.poll() is None:
@@ -174,7 +174,7 @@ def main():
         driver.wait(label='Play', role='button')
     with application('restart'):
         answer_cover_question(driver, profile)
-        driver.press(label='Play', role='button')
+        driver.press(label='Continue', role='button')
         wait_level_one(driver, classic_levels)
         assert classic.read_bytes() != fresh, 'The move was lost across a restart'
         assert not account_progress.exists(), 'Restart published an unfinished board'

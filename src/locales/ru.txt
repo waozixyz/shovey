@@ -1183,3 +1183,6 @@ Shovey Island
 [shovey_hint_board]
 Советы по полю (бесплатно)
 ---
+---
+[shovey_map]
+Карта

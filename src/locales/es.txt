@@ -1183,3 +1183,6 @@ Ajustes
 [shovey_hint_board]
 Consejos del tablero (gratis)
 ---
+---
+[shovey_map]
+Mapa

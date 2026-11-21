@@ -1,5 +1,13 @@
 # Shovey changelog
 
+## [0.6.173] - 2026-11-21
+
+- Give Map its own title-screen action; Play and Continue resume the saved attempt or enter the next available puzzle.
+- Unify game controls and Profile with warm parchment surfaces and forest-green actions.
+- Keep the Profile avatar separate from the game character and refresh account picture changes while Profile is open.
+- Avoid showing the password-backup prompt before the account's backup check finishes.
+- Keep Android camera and navigation insets black, remove extra space above controls, and eliminate gaps between map tiles.
+
 ## [0.6.172] - 2026-11-21
 
 - Restore Android title pictures, maps, and game artwork.

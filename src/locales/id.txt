@@ -1183,3 +1183,6 @@ Pengaturan
 [shovey_hint_board]
 Tips papan (gratis)
 ---
+---
+[shovey_map]
+Peta

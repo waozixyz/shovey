@@ -1183,3 +1183,6 @@ Classicで特別なアイテムを探そう。
 [shovey_hint_board]
 盤面のヒント（無料）
 ---
+---
+[shovey_map]
+マップ

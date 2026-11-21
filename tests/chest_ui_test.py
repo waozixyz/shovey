@@ -41,8 +41,8 @@ def application(profile, name):
                                  stdout=log, stderr=subprocess.STDOUT)
         driver.attach(child, log_path)
         try:
-            driver.wait(label='Play', role='button', timeout=60)
-            driver.press(label='Play', role='button')
+            driver.wait(key=49224, role='button', timeout=60)
+            driver.press(key=49224, role='button')
             # The map selects the saved level; its Play resumes that board.
             enter_classic_map(driver)
             driver.press(key=20122, role='button')

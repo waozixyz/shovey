@@ -27,7 +27,7 @@ def answer_cover_question(driver):
     """Shovey asks once on its covers whether games
     download new levels; tests keep the levels they ship with. The question
     shows in the covers' first frame."""
-    driver.wait(label='Play', role='button', timeout=60)
+    driver.wait(key=49224, role='button', timeout=60)
     # The question follows the collection's records, which can load a frame
     # after Play first appears; let the covers settle before looking.
     driver.wait_idle(frames=4)
@@ -100,7 +100,7 @@ def main():
                                      stdout=log, stderr=subprocess.STDOUT)
             driver.attach(child, log_path)
             try:
-                driver.wait(label='Play', role='button')
+                driver.wait(key=49224, role='button')
                 driver.wait(label='Next', role='button')
                 yield child
             finally:
@@ -267,7 +267,7 @@ def main():
                 driver.wait(label='Play', role='button')
             with application(profile, 'focused-resume'):
                 answer_cover_question(driver)
-                driver.press(label='Play', role='button')
+                driver.press(label='Continue', role='button')
                 wait_level_one(driver, classic_levels)
                 after_board, after_player = board_and_player()
                 before = UiDriver.center(before_player)
@@ -364,13 +364,13 @@ def main():
             assert_fullscreen_map(driver)
             # Back from the map returns to the covers, not to gameplay again.
             driver.press(key=20022)
-            driver.wait(label='Play', role='button')
+            driver.wait(key=49224, role='button')
             assert not driver.find(label='Restart', role='button', visible=True)
             if args.map_only:
                 print('Classic map local UI test passed: 390x844 and 960x600, keyboard 1/4, locked previews, touch scrolling, selection and Back')
                 return
             answer_cover_question(driver)
-            driver.press(label='Play', role='button')
+            driver.press(label='Continue', role='button')
             wait_level_one(driver, classic_levels)
             move_until_saved(classic)
             swipe_beside_board_until_saved(classic)
@@ -439,7 +439,7 @@ def main():
             driver.press(label='Back', role='button')
             assert_fullscreen_map(driver)
             driver.press(key=20022, role='button')
-            driver.wait(label='Play', role='button')
+            driver.wait(key=49224, role='button')
             driver.press(label='Next', role='button')
             # Island's public cover sits between Classic and the Editor.
             driver.press(label='Next', role='button')
@@ -463,7 +463,6 @@ def main():
                 board = driver.find(key=200000, visible=True)[0]
                 aspect = 5 / 3 if width > height else 3 / 5
                 assert abs(board['width'] / board['height'] - aspect) < .01, ('editor paint orientation', width, height, board)
-            answer_cover_question(driver)
             driver.press(label='Play', role='button')
             driver.wait(label='Testing', role='text')
             for width, height in ((390, 844), (844, 390), (480, 820)):
@@ -488,7 +487,7 @@ def main():
         text = text[:start + 28] + '01' + text[start + 30:]
         classic.write_text(text)
         with application(profile, 'replay-controls'):
-            driver.press(label='Play', role='button')
+            driver.press(key=49224, role='button')
             start_map_destination(driver, 1)
             wait_gameplay(driver)
             first_board = board_layout(driver)
@@ -512,7 +511,7 @@ def main():
             driver.press(label='Previous', role='button')
             driver.press(label='Previous', role='button')
             answer_cover_question(driver)
-            driver.press(label='Play', role='button')
+            driver.press(label='Continue', role='button')
             wait_level_one(driver, classic_levels)
             resumed_board, resumed_player = board_and_player()
             before = UiDriver.center(resume_player)

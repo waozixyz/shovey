@@ -36,10 +36,9 @@ with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
             stdout=log, stderr=subprocess.STDOUT)
         driver.attach(child, log_path)
         try:
-            driver.wait(label='Play', role='button', timeout=60)
+            driver.wait(key=49224, role='button', timeout=60)
             if not args.profile_only:
-                # Play opens the world map; its Play starts the selected board.
-                driver.press(label='Play', role='button')
+                driver.press(key=49224, role='button')
                 enter_classic_map(driver)
                 start_map_destination(driver, 1)
                 driver.wait(label='Restart', role='button', timeout=30)
@@ -52,13 +51,13 @@ with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
                 assert_fullscreen_map(driver)
                 assert not driver.find(contains='Level 1 / ', visible=True), 'Escape left the level on screen'
                 driver.key('escape')
-                driver.wait(label='Play', role='button')
+                driver.wait(key=49224, role='button')
             driver.press(key=49204, role='button')
             driver.wait(label='Sign in', timeout=30)
             driver.wait_idle(frames=8)
             assert child.poll() is None, 'Profile terminated the player'
             driver.key('escape')
-            driver.wait(label='Play', role='button')
+            driver.wait(key=49224, role='button')
             assert child.poll() is None
             assert (records / 'level-updates').read_text() == 'off'
         finally:

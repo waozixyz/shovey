@@ -233,7 +233,7 @@ CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
     name == "tile_map.sampling" || name == "arcade.controls" || name == "arcade.sound" || name == "arcade.navigation" ||
     name == "arcade.updates" || name == "arcade.progress-storage" ||
     name == PUBLICATIONS_READ_SERVICE || name == ENTITY_RECORDS_SERVICE || name == ENTITY_DEW_SERVICE ||
-    name == "entity.game-shop" || name == "entity.profile" || name == "leaderboard"
+    name == "entity.game-shop" || name == "entity.profile" || name == "entity.profile.picture" || name == "leaderboard"
 }
 
 CollectionFocused :: (context: *void, node: *AppNode) -> bool {
@@ -323,6 +323,14 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
             return 1
         }
         if service == "entity.profile" {
+            if request == "picture" {
+                picture: Vec(u8)
+                BuilderPrint(*picture, "%", EntityGameIcon())
+                text := BuilderFinish(picture)
+                defer { AppFileFree(text) }
+                result.* = AppHostText(text)
+                return 1
+            }
             result.* = AppHostText(ifx EntityShowPage(request) then "queued" else "unavailable")
             return 1
         }
@@ -483,12 +491,17 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
 }
 
 CollectionAssetAllowed :: (path: string) -> bool {
-    return path == "" || (collection_widget_node != null && (AppHostAsset(collection_widget_node, path).found ||
+    return path == "" || EntityGamePictureAvailable(path) || (collection_widget_node != null && (AppHostAsset(collection_widget_node, path).found ||
         AppHostAssetPending(collection_widget_node, path)))
 }
 
 CollectionAssetPath :: (path: string) -> string {
     if path == "" { return "" }
+    if EntityGamePictureAvailable(path) {
+        absolute := EntityGamePicture(path)
+        if !VecPush(collection_frame_paths, absolute) { AppFileFree(absolute); return "" }
+        return absolute
+    }
     if collection_widget_node == null { return "" }
     asset := AppHostAsset(collection_widget_node, path)
     if !asset.found { collection_pictures_missing = collection_pictures_missing || CollectionPicturePending(false, AppHostAssetPending(collection_widget_node, path)); return "" }

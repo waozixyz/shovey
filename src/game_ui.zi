@@ -12,9 +12,10 @@ Image :: #import "kryon/image";
 
 Text :: #import "kryon/text";
 #import, file "controls.zi";
+#import, file "shovey_theme.zi";
 GameHeaderControl :: (session: Session, id: s32, bounds: Rectangle, label: string, icon: string, island_art: bool = false) -> bool {
     Box.Draw(session, Box.Props.{.key = cast(u64)(80000 + id), .bounds = bounds,
-        .fill = Color.{35,53,38,255}, .border = Color.{112,119,73,255}, .radius = 8.0})
+        .fill = ColorFromPacked(ShoveyPalette().base), .border = ColorFromPacked(ShoveyPalette().border), .radius = 10.0})
     pressed := Button.Draw(session, Button.Props.{.key=cast(u64)id,.id=id,.bounds=bounds,.label=label,
         .icon_only=true,.square=true,.emphasis=ButtonEmphasis.ButtonEmphasisGhost}) != 0
     art := (ifx island_art then "assets/shovey-island/shop/book.png" else "assets/shovey/shop/book.png")
@@ -39,7 +40,7 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
     stars_count: s32, score_value: s32, moves_count: s32, levels_label: string, score_label: string,
     moves_label: string, continue_label: string, save_label: string, saving_failed: bool, continue_disabled: bool = false, island_art: bool = false) -> s32 {
     middle := (top + bottom) / 2.0
-    GameResultFill(session, 20900, Rectangle.{0.0, top, width, bottom - top}, Color.{24, 43, 37, 255})
+    GameResultFill(session, 20900, Rectangle.{0.0, top, width, bottom - top}, ColorFromPacked(ShoveyPalette().background))
     if GameHeaderControl(session,20907,Rectangle.{16.0,top+16.0,48.0,48.0},levels_label,ICON_LEVELS,island_art) { return 1 }
     GameResultCaption(session, 20901, Rectangle.{16.0, middle - 140.0, width - 32.0, 64.0}, title, 28, true)
     stars := ifx stars_count == 3 then "★ ★ ★" else ifx stars_count == 2 then "★ ★ ☆" else ifx stars_count == 1 then "★ ☆ ☆" else "☆ ☆ ☆"
@@ -61,7 +62,7 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
 
 // The same compact toolbar and keyboard mapping serve both campaigns.
 GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: []string,mini: bool=false, island_art: bool=false) -> s32 {
-    GameResultFill(session,cast(u64)(ids[0]+2),Rectangle.{0.0,top,width,52.0},Color.{27,43,31,255})
+    GameResultFill(session,cast(u64)(ids[0]+2),Rectangle.{0.0,top,width,52.0},ColorFromPacked(ShoveyPalette().background))
     icons: [6]string = .[ICON_PREVIOUS,ICON_LEVELS,"",ICON_RESTART,ICON_HELP,ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON]
     for slot: cast(s32)0..5 {
         if slot==1 { continue }

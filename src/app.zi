@@ -9,6 +9,9 @@
 #import "kryon/ScrollDevice"
 #if #defined(ANDROID_BUILD) {
     AndroidDevice :: #import "kryon/android_device";
+    Backdrop :: #import "kryon/box";
+    Theme :: #import "shovey_theme";
+    #import "kryon/drawing_props"
 }
 #import "std/timer_linux"
 #import "std/date_time_linux"
@@ -51,6 +54,12 @@ PlayerStart :: () -> bool {
 
 #program_export
 Frame :: (session: Session, viewport: Rectangle) -> s32 {
+    #if #defined(ANDROID_BUILD) {
+        Backdrop.Draw(session, Backdrop.Props.{.key = cast(u64)49510,
+            .bounds = AndroidDevice.AndroidWindowBounds(), .fill = Color.{0, 0, 0, 255}})
+        Backdrop.Draw(session, Backdrop.Props.{.key = cast(u64)49511,
+            .bounds = viewport, .fill = ColorFromPacked(Theme.ShoveyPalette().background)})
+    }
     if player_state == 0 { player_state = ifx PlayerStart() then 1 else 2 }
     if player_state != 1 { return 1 }
     #if #defined(ANDROID_BUILD) {

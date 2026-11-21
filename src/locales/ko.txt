@@ -1183,3 +1183,6 @@ Classic에서 특별한 물건을 찾아보세요.
 [shovey_hint_board]
 보드 도움말 (무료)
 ---
+---
+[shovey_map]
+지도

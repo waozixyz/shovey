@@ -1183,3 +1183,6 @@ Paramètres
 [shovey_hint_board]
 Conseils du plateau (gratuits)
 ---
+---
+[shovey_map]
+Carte

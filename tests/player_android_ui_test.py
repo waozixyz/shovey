@@ -8,7 +8,9 @@ import sys
 import time
 import zipfile
 
-from world_map_test_support import assert_fullscreen_map, enter_classic_map, start_map_destination, wait_gameplay
+from PIL import Image
+
+from world_map_test_support import assert_fullscreen_map, wait_gameplay
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = 'xyz.waozi.shovey.test'
@@ -81,6 +83,7 @@ def main():
     assert f"package: name='{PACKAGE}'" in badging, 'use --application-id xyz.waozi.shovey.test'
     assert 'application-debuggable' in badging, 'run-as and wrap.sh need a debug APK'
     adb('install', '-r', str(args.apk.resolve()))
+    adb('shell', 'pm', 'clear', PACKAGE)
     print('Installed separate Android test package', flush=True)
     adb('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP')
     adb('shell', 'wm', 'dismiss-keyguard')
@@ -92,6 +95,26 @@ def main():
     driver = AndroidDriver(ROOT / 'build/player/android/driver')
     campaign = 'files/games/arcade.shovey/records/local.campaign'
 
+    def title():
+        driver.wait(key=49224, role='button', timeout=60)
+
+    def capture(name):
+        target = driver.directory.parent / (name + '.png')
+        with target.open('wb') as stream:
+            subprocess.run(['adb', '-s', args.serial, 'exec-out', 'screencap', '-p'],
+                           stdout=stream, stderr=subprocess.PIPE, check=True, timeout=30)
+        screen = driver.tree()[0]
+        with Image.open(target) as image:
+            zoom = image.width / screen['width']
+            top = max(0, int(screen['y'] * zoom) - 1)
+            bottom = min(image.height, int((screen['y'] + screen['height']) * zoom) + 1)
+            for label, start, end in (('camera', 0, top), ('navigation', bottom, image.height)):
+                if end <= start:
+                    continue
+                pixels = list(image.crop((0, start, image.width, end)).convert('RGB').getdata())
+                black = sum(max(pixel) <= 3 for pixel in pixels) / len(pixels)
+                assert black > .95, (name, label, 'inset is not black', black)
+
     def saved_game():
         return remote(f'if test -f {campaign}; then cat {campaign}; fi')
 
@@ -99,63 +122,124 @@ def main():
         adb('shell', 'am', 'start', '-W', '-n', PACKAGE + '/xyz.waozi.shovey.ShoveyActivity')
         driver.pid = adb('shell', 'pidof', PACKAGE).strip().split()[0]
         driver.send('status', timeout=120)
-        driver.wait(label='Play', role='button', timeout=60)
+        title()
         driver.wait_idle(frames=4)
         if driver.find(label='Download new levels when they come out?', role='text'):
             driver.press(label='Not now', role='button')
             driver.wait_gone(label='Download new levels when they come out?', role='text')
 
-    def level():
-        driver.press(label='Play', role='button')
-        enter_classic_map(driver)
-        start_map_destination(driver, 1)
+    def level(action='Play'):
+        driver.press(label=action, role='button')
         if driver.find(label='How do you want to move?', role='text'):
             driver.press(label='Swipe and tap', role='button')
             driver.wait_gone(label='How do you want to move?', role='text')
         if driver.find(label='Got it', role='button'):
             driver.press(label='Got it', role='button')
         wait_gameplay(driver, timeout=60)
+        toolbar = driver.wait(key=20022, role='button')
+        screen = driver.tree()[0]
+        assert 0 <= toolbar['y'] - screen['y'] < 16, ('Toolbar is below the safe-area edge', toolbar, screen)
 
     try:
         adb('shell', 'am', 'force-stop', PACKAGE)
         launch()
+        capture('title')
         print('Native title and test driver ready', flush=True)
         driver.press(key=49204, role='button')
         driver.wait(label='Sign in', timeout=60)
         driver.key(4)
-        driver.wait(label='Play', role='button')
+        title()
         print('Profile and Android Back passed', flush=True)
         if args.profile_only:
             print('PASS Android USB host: native startup, Profile and Android Back; gameplay not exercised')
             return
         level()
+        capture('classic-level')
         print('Classic map and gameplay ready', flush=True)
         assert driver.find(label='Shovey', role='image', visible=True), 'the board has no player'
         driver.press(label='Restart', role='button')
         wait_gameplay(driver)
         fresh = saved_game()
+        initial_position = driver.center(driver.wait(label='Shovey', role='image'))
         moved = fresh
         for key in ('left', 'up', 'right', 'down'):
             driver.key(key)
             deadline = time.monotonic() + 3
             while time.monotonic() < deadline:
                 moved = saved_game()
-                if moved != fresh:
+                if driver.center(driver.wait(label='Shovey', role='image')) != initial_position:
                     break
                 time.sleep(.1)
-            if moved != fresh:
+            if driver.center(driver.wait(label='Shovey', role='image')) != initial_position:
                 break
+        assert driver.center(driver.wait(label='Shovey', role='image')) != initial_position, 'keyboard did not move the player'
         assert moved and moved != fresh, 'movement did not save the campaign'
+        board = driver.wait(key=22000, visible=True)
+        center = (board['x'] + board['width'] / 2, board['y'] + board['height'] / 2)
+        before = saved_game()
+        initial_position = driver.center(driver.wait(label='Shovey', role='image'))
+        for dx, dy in ((-90, 0), (0, -90), (90, 0), (0, 90)):
+            driver.drag(center, (center[0] + dx, center[1] + dy))
+            time.sleep(.3)
+            if driver.center(driver.wait(label='Shovey', role='image')) != initial_position:
+                break
+        assert driver.center(driver.wait(label='Shovey', role='image')) != initial_position, 'swipe did not move the player'
+        assert saved_game() != before, 'swipe movement did not save'
+        driver.press(key=20017, role='button')
+        driver.press(key=20907, role='button')
+        driver.press(label='Movement pad', role='button')
+        driver.press(key=20017, role='button')
+        pad = driver.wait(key=20040, role='button')
+        before = saved_game()
+        initial_position = driver.center(driver.wait(label='Shovey', role='image'))
+        cx, cy = driver.center(pad)
+        for x, y in ((cx - pad['width'] * .3, cy), (cx, cy - pad['height'] * .3),
+                     (cx + pad['width'] * .3, cy), (cx, cy + pad['height'] * .3)):
+            driver.pointer(x, y, down=True)
+            driver.pointer(x, y, down=False)
+            driver.release_pointer()
+            time.sleep(.3)
+            if driver.center(driver.wait(label='Shovey', role='image')) != initial_position:
+                break
+        assert driver.center(driver.wait(label='Shovey', role='image')) != initial_position, 'pad did not move the player'
+        assert saved_game() != before, 'movement pad did not save'
+        moved = saved_game()
+        capture('movement-pad')
         driver.key(4)  # Android Back, through the host's key input path.
         assert_fullscreen_map(driver)
         driver.key(4)
-        driver.wait(label='Play', role='button')
+        title()
+        driver.press(key=49224, role='button')
+        assert_fullscreen_map(driver)
+        capture('classic-map')
+        driver.key(4)
+        title()
+        driver.wait(label='Continue', role='button')
+        level('Continue')
+        assert saved_game() == moved, 'Continue reset the saved attempt'
+        driver.key(4)
+        assert_fullscreen_map(driver)
+        driver.key(4)
+        title()
         adb('shell', 'am', 'force-stop', PACKAGE)
         driver.reset()
         launch()
-        level()
+        level('Continue')
         assert saved_game() == moved, 'saved move was lost across app restart'
-        print('PASS Android USB: native startup, Classic map/gameplay, movement, Restart, Back, Profile and app restart')
+        driver.key(4)
+        assert_fullscreen_map(driver)
+        driver.key(4)
+        title()
+        driver.press(label='Next', role='button')
+        driver.wait(contains='Unlock', role='button')
+        capture('island-unlock')
+        driver.press(label='Next', role='button')
+        driver.press(label='Open', role='button')
+        driver.wait(label='New level', role='text')
+        driver.press(label='Levels', role='button')
+        driver.wait(label='Your levels', role='text')
+        capture('editor-levels')
+        print('PASS Android USB: title, Map, Play/Continue, artwork, keyboard/swipe/pad movement, Restart, Back, Profile, Editor, Island offer and saved app restart')
     finally:
         adb('shell', 'am', 'force-stop', PACKAGE)
 

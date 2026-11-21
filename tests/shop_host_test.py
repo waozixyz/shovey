@@ -355,9 +355,6 @@ for name in ('stall', 'chest-closed', 'trophy', 'coins', 'dew'):
     assert f'assets/shovey/shop/{name}.png' in title
 profile_paths = function(ROOT / 'src/shop_state.zi', 'ShopProfilePath')
 assert 'assets/shovey/shop/profile-96.png' in profile_paths
-assert 'skin := Shop.Skin()' in toolbar
-assert 'Shop.SkinPath()' in toolbar
-assert '50204 + cast(u64)skin' in toolbar
 assert 'assets/shovey/sprites/player-down.png' not in toolbar
 assert 'ShopUI.SkinPath()' in web
 # The collection builder embeds the exact binary files that the toolbar reads.

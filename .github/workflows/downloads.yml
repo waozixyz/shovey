@@ -363,9 +363,7 @@ jobs:
       - name: Check every download is this version
         id: version
         run: |
-          apk=$(ls build/downloads/shovey-v*.apk)
-          version=${apk##*/shovey-v}
-          version=${version%.apk}
+          version=$CHANGELOG_VERSION
           for file in "shovey-v$version.apk" "shovey-$version-fdroid.apk" "shovey-v$version-gplay.apk" "shovey-v$version-linux-x86_64.tar.gz" "shovey-v$version-windows-x86_64.zip"; do
             test -f "build/downloads/$file" || { echo "Missing $file" >&2; exit 1; }
           done

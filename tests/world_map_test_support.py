@@ -39,8 +39,9 @@ def assert_fullscreen_map(driver):
     nodes = driver.tree()
     screen = nodes[0]
     viewport = next(node for node in nodes if node.get('key') == 20105)
-    assert viewport['x'] == 0 and viewport['y'] == 0, viewport
-    assert (viewport['width'], viewport['height']) == (screen['width'], screen['height']), (viewport, screen)
+    assert screen['kind'] == 'screen', screen
+    bounds = ('x', 'y', 'width', 'height')
+    assert all(abs(viewport[key] - screen[key]) < 1 for key in bounds), (viewport, screen)
     assert not any(node.get('key') in (20103, 20104) for node in nodes), 'Map chrome returned'
     assert not any(node.get('kind') == 'text' and node.get('label') in ('Levels', 'Continue', 'Back') for node in nodes)
     back = next(node for node in nodes if node.get('key') == 20022)

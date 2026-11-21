@@ -1183,3 +1183,6 @@ Dew 不足。
 [shovey_hint_board]
 棋盘提示（免费）
 ---
+---
+[shovey_map]
+地图

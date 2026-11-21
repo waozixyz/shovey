@@ -9,21 +9,19 @@ Button :: #import "kryon/button";
 
 #import "kryon/widget_palette"
 
-// Every Shovey screen wears the courtyard's own colours, in whatever app it
-// runs: a slate backdrop, raised stone controls and Shovey's green for what
-// is chosen. The host draws the widgets, so each frame asks it for this
-// palette first; the host goes back to its own style when the frame ends.
-SHOVEY_SLATE :: 0x2a2e2dff;
+// Warm parchment around the garden, with forest green for primary actions.
+// The same palette serves the game, its controls and the account Profile.
+SHOVEY_SLATE :: 0xf5ecd9ff;
 
 ShoveyPalette :: () -> WidgetPalette {
-    return WidgetPalette.{.background = cast(u32)SHOVEY_SLATE, .base = cast(u32)0x3b403fff,
-        .text = cast(u32)0xe8eceaff, .selected = cast(u32)0x34b930ff,
-        .selected_text = cast(u32)0x00210cff, .border = cast(u32)0x5d6261ff,
-        .danger = cast(u32)0xe60000ff, .warning = cast(u32)0xffca0cff,
-        .success = cast(u32)0x34b930ff, .material = true}
+    return WidgetPalette.{.background = cast(u32)SHOVEY_SLATE, .base = cast(u32)0xfff7e5ff,
+        .text = cast(u32)0x283b2cff, .selected = cast(u32)0x3e6e46ff,
+        .selected_text = cast(u32)0xfff8e9ff, .border = cast(u32)0xc7b692ff,
+        .danger = cast(u32)0xad3932ff, .warning = cast(u32)0xb77716ff,
+        .success = cast(u32)0x3e6e46ff, .material = true}
 }
 
-// Lays the slate inside the game's content, above the host's navigation.
+// Lays the canvas inside the game's content, above the host's navigation.
 ShoveyDress :: (session: Session, width: float32, top: float32, bottom: float32) {
     unused WidgetPaletteUse(session, ShoveyPalette())
     Box.Draw(session, Box.Props.{.key = cast(u64)19990, .bounds = Rectangle.{0.0, top, width, bottom - top},

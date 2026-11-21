@@ -47,10 +47,10 @@ EntityTitle :: (fallback: string) -> string {
     return TextUntilNul(entity_page_title[:])
 }
 
-// The profile's theme tokens in Shovey's slate, like the game around it.
 EntityShoveyTokens :: () {
     names: [6]string = .["canvas", "surface", "border", "text", "accent", "link"]
-    colors: [6]u32 = .[0x2a2e2dff, 0x3b403fff, 0x5d6261ff, 0xe8eceaff, 0x34b930ff, 0x34b930ff]
+    palette := ShoveyPalette()
+    colors: [6]u32 = .[palette.background, palette.base, palette.border, palette.text, palette.selected, palette.selected]
     for index: 0..5 {
         name: [16]u8
         for byte, at: names[index] { name[at] = byte }
@@ -126,7 +126,7 @@ EntityFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32)
     if modal.dismissed || modal.right_clicked { unused EntityBack() }
     if !modal.opened { return true }
     input := TextFieldInputFor(key, modifiers, TypedTextTake(session, entity_typed[:]))
-    ok := EntityHostFrame(session, modal.layout.content, key, modifiers, input, true)
+    ok := EntityHostFrame(session, modal.layout.content, key, modifiers, input, false)
     unused End(session)
     if !ok { return false }
     return true
@@ -153,3 +153,10 @@ EntityClose :: () -> bool {
     entity_bundle = ""
     return true
 }
+
+EntityGamePicture :: (path: string) -> string {
+    if !entity_ready { return "" }
+    return EntityHostPicturePath(path)
+}
+EntityGamePictureAvailable :: (path: string) -> bool { return entity_ready && EntityHostPictureAsset(path) }
+EntityGameIcon :: () -> s32 { return EntityPublicIcon(EntityHostReadProfile()) }

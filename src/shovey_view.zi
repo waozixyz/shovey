@@ -1300,6 +1300,9 @@ ShoveyShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s6
     return ShopUI.ShopFrame(session, bounds, now, today)
 }
 
+shovey_entry: s32;
+ShoveyEnter :: (map: bool) { shovey_entry = ifx map then 2 else 1 }
+
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
     // Retry the original attempt while its winning board and normal menus
@@ -1312,7 +1315,6 @@ ShoveyFrame :: () {
     }
     if !loaded {
         levels_choice_offered = 0
-        // The cover opens the journey first; choosing a destination starts play.
         mini = AppMini()
         LiveCampaignStart()
         levels_played_level = 0
@@ -1340,13 +1342,28 @@ ShoveyFrame :: () {
         }
         ReplayOpened()
         if latest || !mini { Remember() }
-        if !mini || ShoveyAllDone() {
+        if mini && ShoveyAllDone() {
             OpenLevels()
-            selector_from_cover = !mini
         }
         ReportSolvedLevels(progress.completed[:], *reported_levels)
         last_tick = frame.now
         loaded = true
+    }
+    if shovey_entry != 0 {
+        if shovey_entry == 2 {
+            OpenLevels()
+            selector_from_cover = true
+        } else {
+            if ShoveyOpenLatest(*progress, *game, levels_played_level) {
+                PathStart(*completion_path, *game, ShoveyLevelBoard(game.level), TextUntilNul(shared_progress.owner[:]))
+                ReplayOpened()
+                Remember()
+            }
+            selector_open = false
+            help_open = false
+            last_tick = frame.now
+        }
+        shovey_entry = 0
     }
     LiveCampaignPump()
     LiveCampaignCheck()
@@ -1458,7 +1475,7 @@ ShoveyFrame :: () {
                     .locked_label = AppLocaleHost("shovey_locked")}
             selected := WorldMap.WorldMapView(frame.session, map_bounds, *levels_map, map_props)
             panel_top := bottom - 112.0
-            Fill(cast(u64)20120, Rectangle.{0.0, panel_top, width, 112.0}, Color.{38, 66, 46, 238})
+            Fill(cast(u64)20120, Rectangle.{0.0, panel_top, width, 112.0}, ColorFromPacked(ShoveyPalette().background))
             label_bytes: [80]u8
             label_length: s32
             label_digits: [24]u8
@@ -1480,6 +1497,7 @@ ShoveyFrame :: () {
             }
             if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20122, .id = 20122,
                 .bounds = Rectangle.{width - 120.0, panel_top + 28.0, 104.0, 56.0},
+                .emphasis = ButtonEmphasis.ButtonEmphasisFilled,
                 .label = AppLocaleHost("shovey_play"), .disabled = !WorldMap.WorldMapViewFlag(available[:], focus)}) != 0 {
                 selected = WorldMap.WorldMapViewPlay(*levels_map, map_props)
             }

@@ -13,9 +13,12 @@ Box :: #import "kryon/box";
 #import "kryon/drawing_props"
 #import "kryon/app_context"
 #import "kryon/widget_palette"
+#import "kryon/control_props"
 #import "std/number_text"
 #import "std/c_string"
 #import "std/text_buffer"
+#import "std/json_scan"
+#import "entity/picture_image"
 #import, file "shovey_theme.zi";
 #import, file "controls.zi";
 Shop :: #import, file "shop_view.zi";
@@ -30,6 +33,9 @@ AppKeyHost :: () -> s32 #foreign host_api;
 
 state: Carousel.CarouselState;
 prepared: bool;
+has_progress: bool;
+profile_icon: s32;
+profile_checked: float64 = -10.0;
 
 Action :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string,
     image_key: u64 = 0) -> bool {
@@ -56,18 +62,24 @@ Back :: () -> bool {
     return Shop.Back()
 }
 
+map_requested: bool;
 Frame :: (today: s64) -> bool {
     frame := ReadAppUiHost()
     bounds := Rectangle.{0.0, cast(float32)frame.top, cast(float32)frame.width,
         cast(float32)(frame.height - frame.bottom - frame.top)}
-    if !prepared { prepared = true; Shop.RefreshWallet() }
+    if !prepared {
+        prepared = true
+        Shop.RefreshWallet()
+        has_progress = LocalCampaignRecord() != ""
+        profile_checked = -10.0
+    }
     if Book.BookFrame(frame.session, bounds, "") || Shop.ShopFrame(frame.session, bounds, frame.now, today) { return false }
     unused WidgetPaletteUse(frame.session, ShoveyPalette())
     defer { unused WidgetPaletteRestore(frame.session) }
     items: [3]Carousel.CarouselItem
     items[0] = Carousel.CarouselItem.{.label = "Shovey", .portrait = "assets/shovey/title/shovey-portrait.jpg",
         .landscape = "assets/shovey/title/shovey-landscape.jpg", .logo = "assets/shovey/title/shovey-logo.png",
-        .action = AppLocaleHost("shovey_play")}
+        .action = AppLocaleHost(ifx has_progress then "shovey_continue" else "shovey_play")}
     standalone := AppSupports("shovey.standalone")
     // A locked Island carries its price and offer on the Unlock action, and
     // one press on it unlocks. An unlock the host remembers reads Play while
@@ -97,6 +109,19 @@ Frame :: (today: s64) -> bool {
         .previous_label = AppLocaleHost("shovey_page_previous"), .next_label = AppLocaleHost("shovey_page_next"),
         .logo_max_width = ifx bounds.width < 600.0 then bounds.width * 0.58 else 360.0,
         .logo_top = 120.0}, items[:count], *state)
+    if state.selected == 0 {
+        action_y := bounds.y + bounds.height - 196.0
+        if action_y < bounds.y + bounds.height * 0.5 { action_y = bounds.y + bounds.height * 0.5 }
+        map_width := ifx bounds.width - 64.0 < 260.0 then bounds.width - 64.0 else 260.0
+        if Button.Draw(frame.session, Button.Props.{.key = cast(u64)49224,
+            .bounds = Rectangle.{bounds.x + (bounds.width - map_width) * 0.5, action_y - 56.0, map_width, 44.0},
+            .label = AppLocaleHost("shovey_map"), .pill = true,
+            .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
+            prepared = false
+            map_requested = true
+            return true
+        }
+    }
     Shop.Pump(frame.now, today)
     // Why a press did not unlock Island, briefly, above its action.
     if standalone && !owned && state.selected == 1 {
@@ -121,10 +146,25 @@ Frame :: (today: s64) -> bool {
     digits: [24]u8
     Amount(frame.session, 49210, Rectangle.{60.0, y, bounds.width - 224.0, 28.0}, false, FormatInteger(cast(s64)Wallet.ShopCoins(), digits[:]))
     Amount(frame.session, 49212, Rectangle.{60.0, y + 30.0, bounds.width - 224.0, 28.0}, true, Shop.DewText())
-    skin := Shop.Skin()
-    if Action(frame.session, 49204, Rectangle.{bounds.width - 104.0, y, 44.0, 44.0}, Shop.SkinPath(), "shovey_shop_profile", 50204 + cast(u64)skin) { unused AppServiceHost("entity.profile", "open") }
+    profile_bounds := Rectangle.{bounds.width - 104.0, y, 44.0, 44.0}
+    if AppSupports("entity.profile.picture") {
+        if frame.now - profile_checked >= 1.0 {
+            profile_checked = frame.now
+            number := ReadNumber(AppServiceHost("entity.profile", "picture"), 0)
+            if number.valid { profile_icon = cast(s32)number.value }
+        }
+        image := EntityIconImage(profile_icon, profile_bounds, AppLocaleHost("shovey_shop_profile"))
+        image.key = cast(u64)(50204 + profile_icon)
+        Image.Draw(frame.session, image)
+        if Button.Draw(frame.session, Button.Props.{.key = cast(u64)49204, .bounds = profile_bounds,
+            .label = AppLocaleHost("shovey_shop_profile"), .invisible = true}) != 0 { unused AppServiceHost("entity.profile", "open") }
+    } else if Button.Draw(frame.session, Button.Props.{.key = cast(u64)49204, .bounds = profile_bounds,
+        .label = AppLocaleHost("shovey_shop_profile"), .icon_only = true, .circle = true,
+        .icon_shape = "S2rr:M20 21V19C20 16.79 18.21 15 16 15H8C5.79 15 4 16.79 4 19V21M16 7A4 4 0 1 1 8 7A4 4 0 1 1 16 7"}) != 0 {
+        unused AppServiceHost("entity.profile", "open")
+    }
     if Action(frame.session, 49206, Rectangle.{bounds.width - 56.0, y, 44.0, 44.0}, "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused AppServiceHost("entity.profile", "leaderboard") }
-    if selected == 0 { prepared = false; return true }
+    if selected == 0 { prepared = false; map_requested = false; return true }
     if selected == count - 1 { unused OpenClassicEditor() }
     else if selected == 1 {
         unused AppServiceHost("arcade.navigation", "island")

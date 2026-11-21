@@ -1183,3 +1183,6 @@ Nastavení
 [shovey_hint_board]
 Tip k úrovni (zdarma)
 ---
+---
+[shovey_map]
+Mapa
