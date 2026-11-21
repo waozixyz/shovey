@@ -36,6 +36,7 @@ def fetch(digest, size, output, open_url=None):
     payload = json.dumps({"operation": "download", "transfers": ["basic"],
                           "objects": [{"oid": digest, "size": size}]}).encode()
     request = Request(BATCH, data=payload, headers={
+        "User-Agent": "Shovey-local-repair/1.0",
         "Content-Type": "application/vnd.git-lfs+json",
         "Accept": "application/vnd.git-lfs+json"})
     with open_url(request, timeout=60) as response:
@@ -49,7 +50,8 @@ def fetch(digest, size, output, open_url=None):
     headers = action.get("header", {})
     if not isinstance(headers, dict) or any(key.lower() != "authorization" for key in headers):
         raise ValueError("Unexpected LFS download headers")
-    request = Request(checked_url(action["href"]), headers=headers)
+    request = Request(checked_url(action["href"]), headers={
+        **headers, "User-Agent": "Shovey-local-repair/1.0"})
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     partial = output.with_name(output.name + ".download")
