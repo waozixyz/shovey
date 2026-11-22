@@ -42,18 +42,19 @@ jobs:
       - name: Validate the published release
         if: ${{ !inputs.inspect_only }}
         env:
-          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
           VERSION_CODE: ${{ inputs.version_code }}
         run: |
           python3 - <<'PY'
-          import json, os, re, subprocess
+          import json, os, re, urllib.request
           version = os.environ['VERSION']
           assert re.fullmatch(r'\d+\.\d+\.\d+', version), 'Use a numeric release version'
           assert re.fullmatch(r'[1-9][0-9]*', os.environ['VERSION_CODE']), 'Use a positive version code'
-          release = json.loads(subprocess.check_output(
-              ['gh', 'release', 'view', 'v' + version, '--json', 'isDraft,publishedAt'], text=True))
-          assert not release['isDraft'] and release['publishedAt'], 'The version must already be published on GitHub'
+          url = f'https://git.waozi.xyz/api/v1/repos/waozi/shovey/releases/tags/v{version}'
+          req = urllib.request.Request(url, headers={'User-Agent': 'Shovey-Play-Promote/1.0'})
+          with urllib.request.urlopen(req, timeout=30) as resp:
+              release = json.loads(resp.read())
+          assert not release.get('draft') and release.get('published_at'), 'The version must already be published on Gitea'
           PY
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:

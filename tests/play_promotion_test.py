@@ -152,9 +152,9 @@ class PromotionTest(unittest.TestCase):
 
     def test_release_workflows_target_internal_then_closed_and_only_gplay(self):
         bundle = (ROOT / '.github/workflows/play-bundle.yml').read_text()
-        downloads = (ROOT / '.github/workflows/downloads.yml').read_text()
+        release_script = (ROOT / 'scripts/downloads-release.py').read_text()
         self.assertIn('uses: ./.github/workflows/play-promote.yml', bundle)
-        self.assertIn('uses: ./.github/workflows/play-bundle.yml', downloads)
+        self.assertIn('/actions/workflows/play-bundle.yml/dispatches', release_script)
         self.assertIn('secrets: inherit', bundle)
         uploads = re.findall(r'(?ms)^      - .*?upload-google-play@.*?(?=^      - |^  [a-z]|\Z)', bundle)
         self.assertEqual(len(uploads), 1)
