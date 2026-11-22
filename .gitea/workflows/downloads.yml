@@ -22,6 +22,13 @@ jobs:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          sparse-checkout: |
+            scripts/downloads-release.py
+            scripts/release-tools.sh
+            tests/downloads_release_test.py
+            version.json
+            src/CHANGELOG.md
+          sparse-checkout-cone-mode: false
       - name: Install release verification tools
         run: bash scripts/release-tools.sh
       - name: Test publication gates
