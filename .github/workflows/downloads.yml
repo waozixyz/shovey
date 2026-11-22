@@ -198,12 +198,22 @@ jobs:
       # Ziran addresses built native libraries (codecs, SDL, Cairo, curl, liboqs)
       # by everything they are built from, so a run with the same lock and
       # runner image reuses them and any change rebuilds them.
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        id: native-cache
         with:
           path: ~/.cache/ziran/artifacts
           key: shovey-native-linux-ubuntu-24.04-${{ hashFiles('waozixyz/shovey/ziran.lock') }}
+          restore-keys: shovey-native-linux-ubuntu-24.04-
       - name: Build and pack the Linux download
         run: make player-linux
+      # Preserve successful compilation even if a later play-test fails.
+      # Ziran verifies each restored artifact against its own inputs/digests.
+      - name: Save the Linux native build cache
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ziran/artifacts
+          key: ${{ steps.native-cache.outputs.cache-primary-key }}
       - name: Unpack the download
         id: unpack
         run: |
@@ -286,14 +296,22 @@ jobs:
       # Ziran addresses built native libraries (codecs, SDL, Cairo, curl, liboqs)
       # by everything they are built from, so a run with the same lock and
       # runner image reuses them and any change rebuilds them.
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        id: native-cache
         with:
           path: ~/.cache/ziran/artifacts
           key: shovey-native-windows-ubuntu-24.04-${{ hashFiles('waozixyz/shovey/ziran.lock') }}
+          restore-keys: shovey-native-windows-ubuntu-24.04-
       - name: Cross-build and pack the Windows download
         env:
           CXX: x86_64-w64-mingw32-g++
         run: make player-windows
+      - name: Save the Windows native build cache
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ziran/artifacts
+          key: ${{ steps.native-cache.outputs.cache-primary-key }}
       - uses: actions/upload-artifact@v4
         with:
           name: shovey-windows
