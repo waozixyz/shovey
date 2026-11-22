@@ -1,0 +1,37 @@
+name: Downloads
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - .gitea/workflows/downloads.yml
+      - .github/workflows/downloads.yml
+      - scripts/downloads-release.py
+      - version.json
+permissions:
+  contents: write
+concurrency:
+  group: shovey-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: alpha-ubuntu24.04
+    timeout-minutes: 240
+    steps:
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install release verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 apksigner aapt apksigcopier
+      - name: Test publication gates
+        run: |
+          mkdir -p build
+          python3 tests/downloads_release_test.py
+      - name: Build, verify and publish the exact current release
+        env:
+          RELEASE_REVISION: ${{ github.sha }}
+          SHOVEY_BUILD_TOKEN: ${{ secrets.SHOVEY_BUILD_TOKEN }}
+          SHOVEY_RELEASE_TOKEN: ${{ secrets.SHOVEY_RELEASE_TOKEN }}
+        run: python3 scripts/downloads-release.py

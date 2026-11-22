@@ -64,6 +64,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends openjdk-21-jdk-headless fdroidserver git
           update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+          git config --global http.version HTTP/1.1
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.revision || github.sha }}

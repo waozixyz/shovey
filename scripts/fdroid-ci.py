@@ -7,6 +7,7 @@ refuses to run anywhere else. The unsigned APK lands in WORKSPACE/tmp.
 """
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 
@@ -26,8 +27,7 @@ def main():
     run = lambda *args, **kwargs: subprocess.run(args, check=True, text=True, **kwargs)
     run('git', 'config', '--global', '--add', 'safe.directory', str(ROOT))
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-    version = subprocess.check_output(['python3', '-c', 'import re; print(re.search(r"^## \\[([0-9.]+)\\]", '
-                                       'open("src/CHANGELOG.md").read(), re.M)[1])'], cwd=ROOT, text=True).strip()
+    version = re.search(r'^## \[([0-9.]+)\]', (ROOT / 'src/CHANGELOG.md').read_text(), re.M)[1]
     # version.json holds the Android version code (update_version.sh).
     release = json.loads((ROOT / 'version.json').read_text())
     if release['version'] != version:

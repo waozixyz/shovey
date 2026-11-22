@@ -1,19 +1,10 @@
 name: Downloads
+run-name: Shovey build ${{ inputs.revision || github.sha }}
 
-# A push whose changelog names a version that is not released yet builds and
-# checks the signed Android APK, also published as shovey-VERSION-fdroid.apk
-# once F-Droid's own build of the commit matches it, the Google Play edition's
-# APK (shovey-vVERSION-gplay.apk, the only one with a Google library), and the
-# Linux and Windows downloads, then publishes them as that version's release,
-# like Inner Breeze. Every download is Shovey's player (scripts/player.py), built from
-# this repository's own lock; Arcade follows the release afterwards. Pushes of
-# a released version only check that nothing needs releasing. A manual run
-# retries an unreleased version, or with "rehearse" builds and plays every
-# download of any version without publishing anything. No release is left as
-# a draft.
+# Gitea requests an exact source commit. These jobs build/sign every edition,
+# reproduce the F-Droid APK and play the Linux/Windows downloads. Publication
+# belongs to .gitea/workflows/downloads.yml after this entire build succeeds.
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
     inputs:
       revision:
@@ -27,7 +18,7 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: shovey-downloads
@@ -61,20 +52,10 @@ jobs:
           echo "revision=$REQUESTED_REVISION" >> "$GITHUB_OUTPUT"
           version=$(python3 -c 'import re; print(re.search(r"^## \[([0-9.]+)\]", open("src/CHANGELOG.md").read(), re.M)[1])')
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          state=$(gh release view "v$version" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
-          if [ "$REHEARSE" = true ]; then
-            # A rehearsal builds and plays the downloads and publishes nothing.
-            echo "release_due=false" >> "$GITHUB_OUTPUT"
-            echo "build_due=true" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Downloads::Rehearsal of Shovey $version: downloads are built and played, nothing is published"
-          elif [ "$state" != false ]; then
-            echo "release_due=true" >> "$GITHUB_OUTPUT"
-            echo "build_due=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "release_due=false" >> "$GITHUB_OUTPUT"
-            echo "build_due=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Downloads::Shovey $version is already released; its downloads build again with the next changelog version"
-          fi
+          # The canonical Gitea Downloads workflow owns publication. GitHub
+          # provides the existing isolated build/signing jobs only.
+          echo "release_due=false" >> "$GITHUB_OUTPUT"
+          echo "build_due=true" >> "$GITHUB_OUTPUT"
 
   android:
     needs: due
@@ -340,106 +321,3 @@ jobs:
           path: waozixyz/shovey/build/shovey-windows-ui-test/
           if-no-files-found: ignore
           retention-days: 7
-
-  release:
-    needs: [due, android, android-gplay, fdroid, linux, windows]
-    if: needs.due.outputs.release_due == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: waozixyz/shovey
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      CHANGELOG_VERSION: ${{ needs.due.outputs.version }}
-      RELEASE_REVISION: ${{ needs.due.outputs.revision }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ needs.due.outputs.revision }}
-          path: waozixyz/shovey
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: shovey-*
-          path: waozixyz/shovey/build/downloads
-          merge-multiple: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: fdroid-unsigned
-          path: waozixyz/shovey/build/fdroid-rebuild
-      - name: Check every download is this version
-        id: version
-        run: |
-          version=$CHANGELOG_VERSION
-          for file in "shovey-v$version.apk" "shovey-$version-fdroid.apk" "shovey-v$version-gplay.apk" "shovey-v$version-linux-x86_64.tar.gz" "shovey-v$version-windows-x86_64.zip"; do
-            test -f "build/downloads/$file" || { echo "Missing $file" >&2; exit 1; }
-          done
-          test "$(ls build/downloads | wc -l)" = 5 || { ls build/downloads >&2; echo 'Downloads differ in version' >&2; exit 1; }
-          test "$version" = "$CHANGELOG_VERSION" || { echo "The downloads are $version but the changelog names $CHANGELOG_VERSION" >&2; exit 1; }
-          python3 scripts/android-release.py verify "build/downloads/shovey-v$version.apk" --version "$version"
-          python3 scripts/android-release.py verify "build/downloads/shovey-$version-fdroid.apk" --version "$version"
-          python3 scripts/android-release.py verify "build/downloads/shovey-v$version-gplay.apk" --edition gplay --version "$version"
-          # F-Droid copies this signature onto its own build of the recipe, so
-          # that rebuild must match the signed APK byte for byte.
-          sudo apt-get update
-          sudo apt-get install -y apksigcopier
-          rebuilt=$(find build/fdroid-rebuild/tmp -name '*.apk')
-          test "$(printf '%s\n' "$rebuilt" | wc -l)" = 1
-          # apksigcopier runs apksigner, which the runner keeps in the
-          # Android SDK's build-tools rather than on PATH.
-          tools=$(ls -d "${ANDROID_SDK_ROOT:-$ANDROID_HOME}"/build-tools/* | sort -V | tail -1)
-          PATH="$tools:$PATH" apksigcopier compare --unsigned "build/downloads/shovey-$version-fdroid.apk" "$rebuilt"
-          python3 - "$version" > build/release-notes.md <<'PY'
-          import re, sys
-          text = open('src/CHANGELOG.md').read()
-          section = re.search(r'^## \[' + re.escape(sys.argv[1]) + r'\] - .*?\n(.*?)(?=^## |\Z)', text, re.M | re.S)
-          print(section[1].strip())
-          PY
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Publish this version
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          tag="v$VERSION"
-          state=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo missing)
-          if [ "$state" = false ]; then
-            echo "Shovey $VERSION is already published; its downloads stay as they are."
-            exit 0
-          fi
-          # The downloads go up on a draft first, so the release appears
-          # only once all of them are there.
-          if [ "$state" = missing ]; then
-            gh release create "$tag" --draft --target "$RELEASE_REVISION" --title "Shovey $VERSION" --notes-file build/release-notes.md
-          else
-            gh release edit "$tag" --target "$RELEASE_REVISION" --notes-file build/release-notes.md
-            for asset in $(gh release view "$tag" --json assets --jq '.assets[].name'); do
-              gh release delete-asset "$tag" "$asset" --yes
-            done
-          fi
-          gh release upload "$tag" build/downloads/*
-          gh release edit "$tag" --draft=false --latest
-          echo "Published Shovey $VERSION."
-      # Arcade follows this release now, not at its next timer, and Breeze
-      # then publishes it to the node. RELEASE_FOLLOW_TOKEN may only start
-      # workflows in Arcade and Breeze; Game updates takes no input and finds
-      # the newest game releases itself. Without it Arcade's timer follows.
-      - name: Start Arcade's game update
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_FOLLOW_TOKEN }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "No RELEASE_FOLLOW_TOKEN: Arcade's Game updates picks this release up on its timer."
-            exit 0
-          fi
-          gh workflow run game-updates.yml -R waozixyz/arcade --ref master
-
-  # The same release completes Google Play internal and closed testing as the
-  # Google Play edition, with its Dew packs.
-  google-play:
-    needs: [due, release]
-    if: needs.due.outputs.release_due == 'true'
-    uses: ./.github/workflows/play-bundle.yml
-    with:
-      revision: ${{ needs.due.outputs.revision }}
-    secrets: inherit
