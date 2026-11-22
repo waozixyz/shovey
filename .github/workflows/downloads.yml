@@ -229,6 +229,10 @@ jobs:
           rm -rf build/linux-check
           mkdir -p build/linux-check
           tar -xzf build/downloads/shovey-v*-linux-x86_64.tar.gz -C build/linux-check
+          # The shipped tarball omits Kryon's test driver; rebuild only the host
+          # binary with KRYON_TEST_DRIVER=1 so UI tests drive the unpacked files.
+          KRYON_TEST_DRIVER=1 python3 -c "import sys; sys.path.insert(0, 'scripts'); import player; player.linux_host()"
+          install -m 0755 build/player/linux/shovey build/linux-check/shovey/shovey
       # Each play-test runs even when an earlier one fails, so one run shows
       # every failure.
       - name: Play the unpacked download on a private display
@@ -320,6 +324,10 @@ jobs:
           rm -rf build/windows-check
           mkdir -p build/windows-check
           unzip -q build/downloads/shovey-v*-windows-x86_64.zip -d build/windows-check
+          # The shipped zip omits Kryon's test driver; rebuild only the host
+          # binary with KRYON_TEST_DRIVER=1 so Wine UI tests drive the unpacked files.
+          KRYON_TEST_DRIVER=1 CXX=x86_64-w64-mingw32-g++ python3 -c "import sys; sys.path.insert(0, 'scripts'); import player; player.windows_host('x86_64-w64-mingw32-')"
+          install -m 0755 build/player/windows/shovey.exe build/windows-check/Shovey/shovey.exe
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
             WINEPREFIX="$RUNNER_TEMP/wine" timeout 900s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
             python3 tests/shovey_windows_ui_test.py --program "$PWD/build/windows-check/Shovey/shovey.exe" \
