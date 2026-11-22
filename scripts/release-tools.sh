@@ -38,7 +38,7 @@ EOF
 chmod +x "$tools/bin/apksigner" "$tools/bin/apksigcopier"
 export PATH="$tools/bin:$tools/root/usr/bin:$PATH"
 export PYTHONPATH="$tools/root/usr/lib/python3/dist-packages${PYTHONPATH:+:$PYTHONPATH}"
-export LD_LIBRARY_PATH="$tools/root/usr/lib/x86_64-linux-gnu:$tools/root/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$tools/root/usr/lib/x86_64-linux-gnu/android:$tools/root/usr/lib/x86_64-linux-gnu:$tools/root/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 apksigner version
 aapt version
 apksigcopier --version
