@@ -38,7 +38,10 @@ EOF
 chmod +x "$tools/bin/apksigner" "$tools/bin/apksigcopier"
 export PATH="$tools/bin:$tools/root/usr/bin:$PATH"
 export PYTHONPATH="$tools/root/usr/lib/python3/dist-packages${PYTHONPATH:+:$PYTHONPATH}"
-export LD_LIBRARY_PATH="$tools/root/usr/lib/x86_64-linux-gnu/android:$tools/root/usr/lib/x86_64-linux-gnu:$tools/root/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Android's backtrace library also loads 7zip from its own library directory.
+# Package extraction does not run ldconfig, so include every extracted library.
+library_dirs=$(find "$tools/root" -type f -name '*.so*' -printf '%h\n' | sort -u | paste -sd:)
+export LD_LIBRARY_PATH="$library_dirs${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 apksigner version
 aapt version
 apksigcopier --version
