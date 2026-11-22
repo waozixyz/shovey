@@ -43,14 +43,19 @@ class ReleaseTests(unittest.TestCase):
             mutations = []
             def api(base, path, token, method='GET', data=None, missing=False):
                 if method != 'GET':
-                    mutations.append((path, method, data))
+                    mutations.append((base, path, method, data))
                 if path.startswith('/releases/tags/'):
                     return None
+                if path == '/releases?per_page=30':
+                    return []
                 if path == '/commits/master':
                     return {'sha': revision}
                 if 'downloads.yml/runs?' in path:
                     return {'workflow_runs': [run]}
                 if path == '/releases':
+                    if base == release.GITHUB:
+                        return {'id': 9, 'assets': [], 'draft': True,
+                                'upload_url': 'https://uploads.github.com/repos/waozixyz/shovey/releases/9/assets{?name,label}'}
                     return {'id': 3, 'assets': [], 'target_commitish': revision}
                 if path.startswith('/tags/'):
                     return {'commit': {'sha': '2' * 40 if wrong_tag else revision}}
@@ -60,8 +65,11 @@ class ReleaseTests(unittest.TestCase):
                     self.assertEqual(len(uploads), 5)
                     self.assertEqual(len(readbacks), 5)
                     return {}
+                if path == '/releases/9':
+                    self.assertEqual(len(github_uploads), 5)
+                    return {}
                 self.fail('Unexpected API operation: ' + path)
-            uploads, readbacks = [], []
+            uploads, github_uploads, readbacks = [], [], []
             def collect(*args):
                 downloads = folder / 'downloads'
                 downloads.mkdir()
@@ -71,6 +79,9 @@ class ReleaseTests(unittest.TestCase):
             def upload(identifier, path, token):
                 uploads.append(path.name)
                 return {'browser_download_url': path.name}
+            def upload_github(upload_url, path, token):
+                github_uploads.append(path.name)
+                return {'name': path.name}
             def download(url, destination, token):
                 readbacks.append(url)
                 destination.write_bytes(b'corrupt' if bad_readback else url.encode())
@@ -83,18 +94,21 @@ class ReleaseTests(unittest.TestCase):
                     patch.object(release, 'collect', side_effect=collect), \
                     patch.object(release, 'verify') as verification, \
                     patch.object(release, 'upload', side_effect=upload), \
+                    patch.object(release, 'upload_github', side_effect=upload_github), \
                     patch.object(release, 'download', side_effect=download):
                 if conclusion != 'success' or wrong_tag or bad_readback:
                     with self.assertRaises(SystemExit):
                         release.main()
-                    self.assertFalse(any(method == 'PATCH' for _, method, _ in mutations))
+                    self.assertFalse(any(method == 'PATCH' for _, _, method, _ in mutations))
                     if conclusion != 'success':
                         self.assertEqual(mutations, [])
                         verification.assert_not_called()
                 else:
                     release.main()
                     verification.assert_called_once()
-                    self.assertEqual(mutations[-1], ('/releases/3', 'PATCH', {'draft': False}))
+                    self.assertIn((release.GITEA + '/api/v1/repos/' + release.REPO, '/releases/3', 'PATCH', {'draft': False}), mutations)
+                    self.assertEqual(mutations[-1][0:3], (release.GITHUB, '/releases/9', 'PATCH'))
+                    self.assertFalse(mutations[-1][3]['draft'])
 
     def test_failed_build_never_creates_release(self):
         self.run_gate(conclusion='failure')

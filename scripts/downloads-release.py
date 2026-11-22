@@ -9,6 +9,7 @@ import re
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 
@@ -146,6 +147,55 @@ def upload(release, path, token):
         connection.close()
 
 
+def upload_github(upload_url, path, token):
+    base = upload_url.split('{', 1)[0]
+    parsed = urllib.parse.urlsplit(base)
+    connection = http.client.HTTPSConnection(parsed.netloc, timeout=300)
+    try:
+        query = urllib.parse.urlencode({'name': path.name})
+        connection.putrequest('POST', f'{parsed.path}?{query}')
+        connection.putheader('Authorization', 'Bearer ' + token)
+        connection.putheader('User-Agent', 'Shovey-Downloads/1.0')
+        connection.putheader('Content-Type', 'application/octet-stream')
+        connection.putheader('Content-Length', str(path.stat().st_size))
+        connection.endheaders()
+        with path.open('rb') as stream:
+            while block := stream.read(1024 * 1024):
+                connection.send(block)
+        response = connection.getresponse()
+        if response.status != 201:
+            raise RuntimeError(f'GitHub asset upload HTTP {response.status}; read release state before retrying')
+        return json.loads(response.read(1024 * 1024))
+    finally:
+        connection.close()
+
+
+def mirror_github_release(version, revision, notes, downloads, token):
+    tag = 'v' + version
+    release = request(GITHUB, f'/releases/tags/{tag}', token, missing=True)
+    if release and not release.get('draft'):
+        print(f'GitHub release {tag} is already public', flush=True)
+        return
+    if not release:
+        releases = request(GITHUB, '/releases?per_page=30', token) or []
+        release = next((r for r in releases if r.get('draft') and r.get('tag_name') == tag), None)
+    if not release:
+        release = request(GITHUB, '/releases', token, 'POST', {
+            'tag_name': tag, 'target_commitish': revision,
+            'name': 'Shovey ' + version, 'body': notes, 'draft': True,
+        })
+    assets = {a['name']: a for a in release.get('assets', [])}
+    for path in sorted(downloads.iterdir()):
+        if path.name not in assets:
+            upload_github(release['upload_url'], path, token)
+    request(GITHUB, f'/releases/{release["id"]}', token, 'PATCH', {
+        'tag_name': tag, 'target_commitish': revision,
+        'name': 'Shovey ' + version, 'body': notes,
+        'draft': False, 'make_latest': 'true',
+    })
+    print(f'Mirrored https://github.com/waozixyz/shovey/releases/tag/{tag}', flush=True)
+
+
 def main():
     if os.environ.get('GITEA_ACTIONS') != 'true' or os.environ.get('GITHUB_SERVER_URL') != GITEA:
         raise SystemExit('Publication runs only in the canonical Gitea Downloads workflow')
@@ -221,6 +271,7 @@ def main():
     if request(api, '/tags/v' + version, gitea_token)['commit']['sha'] != revision:
         raise SystemExit('Published tag verification failed')
     print(f'Published {GITEA}/{REPO}/releases/tag/v{version}', flush=True)
+    mirror_github_release(version, revision, notes, downloads, github_token)
     # The Play workflow keeps its own signing and account credentials.
     play = request(GITHUB, '/actions/workflows/play-bundle.yml/runs?event=workflow_dispatch&per_page=100', github_token)['workflow_runs']
     if not any(r['head_sha'] == revision for r in play):
