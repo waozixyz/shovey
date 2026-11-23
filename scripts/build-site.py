@@ -10,6 +10,7 @@ import argparse
 import json
 import re
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -33,14 +34,17 @@ def newest_release():
 
 
 def download(tag, work):
-    """The release's Linux download, unpacked: only the files the page runs."""
-    version = tag[1:]
-    archive = f'shovey-v{version}-linux-x86_64.tar.gz'
+    archive = work / f'shovey-{tag}-linux-x86_64.tar.gz'
     subprocess.run(['gh', 'release', 'download', tag, '--repo', 'waozixyz/shovey',
-                    '--pattern', archive, '--dir', str(work)], check=True)
+                    '--pattern', archive.name, '--dir', str(work)], check=True)
+    return unpack(archive, work)
+
+
+def unpack(archive, work):
+    """Extract only the files the page runs from the Linux release archive."""
     folder = work / 'shovey'
     folder.mkdir()
-    with tarfile.open(work / archive) as packed:
+    with tarfile.open(archive) as packed:
         def extract(name):
             try:
                 member = packed.getmember('shovey/' + name)
@@ -50,7 +54,8 @@ def download(tag, work):
                 raise SystemExit(f'{archive} has no file shovey/{name}')
             target = folder / name
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(packed.extractfile(member).read())
+            with packed.extractfile(member) as contents, target.open('wb') as output:
+                shutil.copyfileobj(contents, output)
         for name in RELEASE_FILES:
             extract(name)
         # The games the collection ships beside it; player.site checks each digest.
@@ -64,7 +69,9 @@ def download(tag, work):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--download', type=Path, help='an unpacked release folder (shovey.zx, shovey.json, entity.zx)')
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--download', type=Path, help='an unpacked release folder (shovey.zx, shovey.json, entity.zx)')
+    source.add_argument('--archive', type=Path, help='the downloaded Linux release archive')
     parser.add_argument('--tag', help='the release to fetch, by default the newest published one')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/web-site')
     parser.add_argument('--pictures', type=Path,
@@ -76,8 +83,14 @@ def main():
     (ROOT / 'build').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=ROOT / 'build') as temporary:
         work = Path(temporary)
-        tag = args.tag or (None if args.download else newest_release())
-        release = args.download.resolve() if args.download else download(tag, work)
+        tag = args.tag
+        if args.download:
+            release = args.download.resolve()
+        elif args.archive:
+            release = unpack(args.archive, work)
+        else:
+            tag = tag or newest_release()
+            release = download(tag, work)
         version = json.loads((release / 'shovey.json').read_text())['version']
         if tag and tag != 'v' + version:
             raise SystemExit(f'{tag} carries Shovey {version}')
