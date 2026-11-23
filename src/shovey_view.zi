@@ -229,9 +229,10 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     if hides && !FriendCovers(x, clear, card_width, height, focus_cell) { y = clear }
     if focused { PipGlow(frame.session, cast(u64)20610, focus_cell, frame.now) }
     // Pip sits in the scene beside a speech bubble; the puzzle stays visible.
+    palette := ShoveyPalette()
     unused Box.Draw(frame.session, Box.Props.{.key = cast(u64)20600,
             .bounds = Rectangle.{x + 68.0, y, card_width - 68.0, height}, .radius = 18.0,
-            .fill = Color.{53, 61, 54, 250}, .border = Color.{161, 193, 112, 255}})
+            .fill = ColorFromPacked(palette.base), .border = ColorFromPacked(palette.selected)})
     Caption(20601, Rectangle.{x + 108.0, y + 12.0, text_width, 24.0}, AppLocaleHost("shovey_friend_name"), 18)
     Caption(20602, Rectangle.{x + 108.0, y + 42.0, text_width, text_height + 4.0}, text, 15)
     bob := cast(float32)Math.Sin(frame.now * 2.0) * 2.5
@@ -288,8 +289,9 @@ ControlsChoice :: (width: float32, top: float32, bottom: float32) {
     x := (width - card_width) / 2.0
     y := top + (bottom - top - card_height) / 2.0
     if y < top + 8.0 { y = top + 8.0 }
+    palette := ShoveyPalette()
     Box.Draw(frame.session, Box.Props.{.key = cast(u64)20052, .bounds = Rectangle.{x, y, card_width, card_height},
-            .fill = Color.{59, 64, 63, 255}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+            .fill = ColorFromPacked(palette.background), .border = ColorFromPacked(palette.border), .radius = 18.0})
     Caption(20053, Rectangle.{x + 16.0, y + 16.0, card_width - 32.0, 34.0}, AppLocaleHost("shovey_controls_choose"), 22, true)
     Caption(20054, Rectangle.{x + 16.0, y + 50.0, card_width - 32.0, 24.0}, AppLocaleHost("shovey_controls_later"), 14, true)
     tiles_y := y + 90.0
@@ -303,8 +305,9 @@ ControlsChoice :: (width: float32, top: float32, bottom: float32) {
 ChoiceTile :: (id: s32, bounds: Rectangle, pad: bool) -> bool {
     press := Press.Draw(frame.session, Press.Props.{.key = cast(u64)id, .id = id, .bounds = bounds,
             .label = AppLocaleHost(ifx pad then "shovey_controls_pad" else "shovey_controls_swipe"), .now = frame.now})
-    Box.Draw(frame.session, Box.Props.{.key = cast(u64)(id + 1), .bounds = bounds, .fill = Color.{74, 80, 78, 255},
-            .border = ifx press.down then Color.{52, 185, 48, 255} else Color.{106, 112, 110, 255}, .radius = 14.0})
+    palette := ShoveyPalette()
+    Box.Draw(frame.session, Box.Props.{.key = cast(u64)(id + 1), .bounds = bounds, .fill = ColorFromPacked(palette.base),
+            .border = ColorFromPacked(ifx press.down then palette.selected else palette.border), .radius = 14.0})
     art := Rectangle.{bounds.x + 12.0, bounds.y + 12.0, bounds.width - 24.0, bounds.height - 86.0}
     side := ifx art.width < art.height then art.width else art.height
     square := Rectangle.{art.x + (art.width - side) / 2.0, art.y + (art.height - side) / 2.0, side, side}
@@ -1408,19 +1411,19 @@ ShoveyFrame :: () {
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
+        ShoveyHeaderBar(frame.session, cast(u64)20190, 0.0, top, width)
         if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20022, .id = 20022,
-                .bounds = Rectangle.{12.0, top + 8.0, 112.0, 48.0}, .label = AppLocaleHost("shovey_back"),
+                .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = AppLocaleHost("shovey_back"),
                 .icon_shape = ICON_PREVIOUS, .fit_content = true,
                 .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
             if !ShoveyBack() { LeaveForGameSelection() }
             return
         }
-        heading_x: float32 = 136.0
-        Caption(20103, Rectangle.{heading_x, top + 12.0, width - 144.0 - heading_x, 44.0}, AppLocaleHost("shovey_levels"), 24)
-        if Control(20104, Rectangle.{width - 128.0, top + 12.0, 112.0, 44.0}, AppLocaleHost("shovey_continue")) {
+        Caption(20103, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, AppLocaleHost("shovey_levels"), 20, true)
+        if Control(20104, Rectangle.{width - 120.0, top + 6.0, 108.0, 44.0}, AppLocaleHost("shovey_continue")) {
             ContinueGame()
         }
-        list_top := top + 72.0
+        list_top := top + 64.0
         listed := ShoveyLevelCount()
         columns := cast(s32)((width - 24.0) / 112.0)
         if columns < 2 { columns = 2 }
@@ -1503,16 +1506,16 @@ ShoveyFrame :: () {
     if key == 72 && !mini { HintOpen() }
     if hint_open { HintPanel(width, top, bottom, key); return }
     if help_open {
-        if Control(20022, Rectangle.{8.0, top + 6.0, 80.0, 44.0}, AppLocaleHost("shovey_back")) {
-            if !ShoveyBack() { LeaveForGameSelection() }
-            return
-        }
-        Caption(20001, Rectangle.{100.0, top + 6.0, width - 160.0, 44.0}, AppLocaleHost("shovey_settings"), 20)
-        // Closing the guide returns to the level, like H and Escape.
-        if Control(20017, Rectangle.{width - 52.0, top + 6.0, 44.0, 44.0}, AppLocaleHost("shovey_shop_back"), false, "", ICON_CLOSE) {
+        ShoveyHeaderBar(frame.session, cast(u64)20090, 0.0, top, width)
+        // Closing settings returns to the level, like Escape.
+        if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20017, .id = 20017,
+                .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = AppLocaleHost("shovey_back"),
+                .icon_shape = ICON_PREVIOUS, .fit_content = true,
+                .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
             help_open = false
             return
         }
+        Caption(20001, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, AppLocaleHost("shovey_settings"), 20, true)
         instructions := AppLocaleHost("shovey_instructions")
         intro_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = instructions,
                 .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .size = 16, .wrap = Text.Wrap.TextWrapAuto}) + 16.0
@@ -1926,7 +1929,15 @@ HintPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
             hint_requested = false
         } else if level_hint.status == 0 { hint_requested = false }
     }
-    Caption(20900, Rectangle.{16.0, top + 12.0, width - 32.0, 44.0}, AppLocaleHost("shovey_hint"), 22, true)
+    ShoveyHeaderBar(frame.session, cast(u64)20990, 0.0, top, width)
+    if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20908, .id = 20908,
+            .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = AppLocaleHost("shovey_back"),
+            .icon_shape = ICON_PREVIOUS, .fit_content = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        hint_open = false
+        return
+    }
+    Caption(20900, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, AppLocaleHost("shovey_hint"), 20, true)
     text: Vec(u8)
     BuilderPrint(*text, "%: % · %: %", AppLocaleHost("shovey_hint_free"), HintWallet.ShopHintFree(game.level),
         AppLocaleHost("shovey_hint_bank"), HintWallet.ShopHintBank())

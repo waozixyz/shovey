@@ -28,6 +28,17 @@ ShoveyDress :: (session: Session, width: float32, top: float32, bottom: float32)
             .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
 }
 
+SHOVEY_HEADER_HEIGHT :: 56.0;
+
+// Shared top title bar surface and subtle divider matching ShoveyPalette.
+ShoveyHeaderBar :: (session: Session, key: u64, x: float32, y: float32, width: float32, height: float32 = SHOVEY_HEADER_HEIGHT) {
+    palette := ShoveyPalette()
+    unused Box.Draw(session, Box.Props.{.key = key, .bounds = Rectangle.{x, y, width, height},
+            .fill = ColorFromPacked(palette.base)})
+    unused Box.Draw(session, Box.Props.{.key = key + 1, .bounds = Rectangle.{x, y + height - 1.0, width, 1.0},
+            .fill = ColorFromPacked(palette.border)})
+}
+
 // Pip's green light, pulsing round the cell he points at: rings that breathe
 // outward and a soft tint inside, so the cell stays readable. Keys key to
 // key + 5.

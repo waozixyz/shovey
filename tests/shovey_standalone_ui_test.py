@@ -407,8 +407,7 @@ def main():
             assert_fullscreen_map(driver)
             driver.press(key=20022, role='button')
             driver.wait(key=49224, role='button')
-            driver.press(label='Next', role='button')
-            # Island's public cover sits between Classic and the Editor.
+            # Public releases hide Island, so Next moves straight from Classic to the Editor.
             driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')
             # The editor opens on its start's choice of edition; Levels lists
@@ -468,14 +467,13 @@ def main():
             assert board_layout(driver) != first_board, 'The map opened level 1 again instead of level 2'
         classic.write_bytes(classic_bytes)
         with application(profile, 'restore'):
-            driver.press(label='Next', role='button')
+            # Public releases hide Island, so Classic's Next reaches the Editor.
             driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')
             driver.wait(label='New level', role='text')
             # Escape on the start returns to the editor's cover, which stays selected.
             driver.key('escape')
             driver.wait(label='Open', role='button')
-            driver.press(label='Previous', role='button')
             driver.press(label='Previous', role='button')
             answer_cover_question(driver)
             driver.press(label='Continue', role='button')

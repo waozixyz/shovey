@@ -23,6 +23,7 @@ ReferralLocale :: #import "entity/referral_locales";
 Box :: #import "kryon/box";
 
 Text :: #import "kryon/text";
+#import "kryon/text_align"
 
 Button :: #import "kryon/button";
 #import "kryon/hosted_values"
@@ -218,14 +219,22 @@ AppSupportsHost :: (name: string) -> bool { return false }
 #program_export
 AppLocaleHost :: (key: string) -> string { return CollectionLocaleText(key) }
 
+CollectionIslandEnabled :: () -> bool {
+    #if #defined(SHOVEY_DEBUG) {
+        return true
+    }
+    return false
+}
+
 CollectionAllows :: (context: *void, node: *AppNode, name: string) -> bool {
     if name == "kryon.notification.schedule" {
         return ChestReminderSlotAllowed(AppTreeNode(*collection_host.tree, AppHandle.{0, 1}),
             AppTreeNode(*collection_host.tree, collection_host.tree.active), node)
     }
-    if name == "shovey.island.owned" { return collection_island.owned }
+    if name == "shovey.island.enabled" { return CollectionIslandEnabled() }
+    if name == "shovey.island.owned" { return CollectionIslandEnabled() && collection_island.owned }
     // Shown as the player's own: verified, or remembered while the node checks.
-    if name == "shovey.island.shown" { return collection_island.owned || collection_island.remembered }
+    if name == "shovey.island.shown" { return CollectionIslandEnabled() && (collection_island.owned || collection_island.remembered) }
     return name == "shovey.standalone" || name == "AppRecordHost" || name == "SaveAppRecordHost" ||
     name == "AppFriendHost" || name == "AppSharedHost" || name == "AppSharedItemHost" ||
     name == "AppInvitationHost" || name == "RefreshAppSharedHost" || name == "SendAppSharedHost" ||
@@ -336,6 +345,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         }
         // A game leaves for the cover that opened it after its frame.
         if service == "arcade.navigation" && request == "island-caption" {
+            if !CollectionIslandEnabled() { result.* = AppHostText(""); return 1 }
             caption: [128]u8
             result.* = AppHostText(IslandUnlockCaption(*collection_island, caption[:]))
             return 1
@@ -343,6 +353,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         // The Island action carries Unlock and the price, or what its press
         // waits for. Empty reads Play: owned, or remembered and being checked.
         if service == "arcade.navigation" && request == "island-unlock" {
+            if !CollectionIslandEnabled() { result.* = AppHostText(""); return 1 }
             label: [128]u8
             shown := collection_island.owned || (collection_island.remembered && collection_island.wanted == 0)
             result.* = AppHostText(ifx shown then "" else IslandUnlockLabel(*collection_island, label[:]))
@@ -350,12 +361,14 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         }
         // Why the last press did not unlock, for a few seconds after it.
         if service == "arcade.navigation" && request == "island-notice" {
+            if !CollectionIslandEnabled() { result.* = AppHostText(""); return 1 }
             result.* = AppHostText(IslandUnlockNotice(*collection_island, cast(float64)MonotonicMilliseconds() / 1000.0))
             return 1
         }
         // The title's Island action. Owned, Island opens after this frame;
         // locked, this one press unlocks it at the price the action shows.
         if service == "arcade.navigation" && request == "island" {
+            if !CollectionIslandEnabled() { result.* = AppHostText("unavailable"); return 1 }
             if collection_island.owned { collection_island_opening = true }
             else { CollectionIslandPress(ISLAND_AFTER_NONE) }
             result.* = AppHostText("queued")
@@ -364,7 +377,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         // The Editor's Island levels open after this frame; a locked Island
         // unlocks with the same press and then opens them.
         if service == "arcade.navigation" && request == "island-editor" {
-            if CollectionIslandEntry() == null || TextUntilNul(node.identity.id[:]) != SHOVEY_EDITOR_APP {
+            if !CollectionIslandEnabled() || CollectionIslandEntry() == null || TextUntilNul(node.identity.id[:]) != SHOVEY_EDITOR_APP {
                 result.* = AppHostText("unavailable")
                 return 1
             }
@@ -376,6 +389,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         // The Editor's start asks once whether a locked Island is unlocked
         // now: the ledger is read again.
         if service == "arcade.navigation" && request == "island-refresh" {
+            if !CollectionIslandEnabled() { result.* = AppHostText("unavailable"); return 1 }
             if !collection_island.owned { IslandUnlockRefresh(*collection_island) }
             result.* = AppHostText("queued")
             return 1
@@ -383,7 +397,7 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         // The Editor's Levels count an owner's own Island levels, which
         // Island's editor keeps in its index record, one line per level.
         if service == "arcade.navigation" && request == "island-levels" {
-            if TextUntilNul(node.identity.id[:]) != SHOVEY_EDITOR_APP || !collection_island.owned {
+            if !CollectionIslandEnabled() || TextUntilNul(node.identity.id[:]) != SHOVEY_EDITOR_APP || !collection_island.owned {
                 result.* = AppHostText("0")
                 return 1
             }
@@ -398,12 +412,13 @@ CollectionCall :: (context: *void, node: *AppNode, module: *u8, function: *u8,
         }
         // Island asks each frame whether it runs as the players' editor.
         if service == "arcade.navigation" && request == "island-mode" {
-            editor := TextUntilNul(node.identity.id[:]) == ISLAND_UNLOCK_APP && collection_island.owned &&
+            editor := CollectionIslandEnabled() && TextUntilNul(node.identity.id[:]) == ISLAND_UNLOCK_APP && collection_island.owned &&
                 collection_island_editor >= ISLAND_EDITOR_OPENING
             result.* = AppHostText(ifx editor then "editor" else "play")
             return 1
         }
         if service == "arcade.navigation" && request == "island-offer" {
+            if !CollectionIslandEnabled() { result.* = AppHostText(""); return 1 }
             result.* = AppHostText(ifx IslandOffer(*collection_island) then AppLocaleHost("shovey_island_off") else "")
             return 1
         }
@@ -835,8 +850,9 @@ CollectionUpdatesQuestion :: (session: Session, viewport: Rectangle) {
     height: float32 = 200.0
     x := viewport.x + (viewport.width - width) / 2.0
     y := viewport.y + (viewport.height - height) / 2.0
+    palette := ShoveyPalette()
     Box.Draw(session, Box.Props.{.key = cast(u64)49302, .bounds = Rectangle.{x, y, width, height},
-            .fill = Color.{59, 64, 63, 255}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+            .fill = ColorFromPacked(palette.base), .border = ColorFromPacked(palette.border), .radius = 18.0})
     Text.Draw(session, Text.Props.{.key = cast(u64)49303, .text = question, .size = 20, .wrap = Text.Wrap.TextWrapAuto,
             .bounds = Rectangle.{x + 16.0, y + 16.0, width - 32.0, 60.0}})
     Text.Draw(session, Text.Props.{.key = cast(u64)49304, .text = "You can change this anytime in a game's Help.", .size = 14,
@@ -894,7 +910,7 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
     // A refused save cannot resume another account's already loaded package.
     if collection_island_blocked {
         Box.Draw(session, Box.Props.{.key = cast(u64)49400, .bounds = viewport,
-            .fill = Color.{42, 46, 45, 255}})
+            .fill = ColorFromPacked(ShoveyPalette().background)})
         return true
     }
     if collection_island_opening {
@@ -1003,16 +1019,19 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         BuilderPrint(*title_bytes, "%", TextUntilNul(runtime.node.entry.title[:]))
         title := BuilderFinish(title_bytes)
         if !VecPush(collection_frame_paths, title) { AppFileFree(title); return false }
-        Box.Draw(session, Box.Props.{.key = cast(u64)6, .bounds = Rectangle.{viewport.x, viewport.y, viewport.width, 56.0},
-                .fill = Color.{128, 140, 136, 40}})
+        unused WidgetPaletteUse(session, ShoveyPalette())
+        defer { unused WidgetPaletteRestore(session) }
+        ShoveyHeaderBar(session, cast(u64)6, viewport.x, viewport.y, viewport.width)
         if Button.Draw(session, Button.Props.{.key = cast(u64)7, .id = 7, .label = "Back",
-                .bounds = Rectangle.{viewport.x + 8.0, viewport.y + 6.0, 76.0, 44.0},
+                .bounds = Rectangle.{viewport.x + 12.0, viewport.y + 6.0, 108.0, 44.0},
+                .icon_shape = "S2rr:M15 5L8 12L15 19", .fit_content = true,
                 .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
             unused AppHostBack(*collection_host)
         }
         Text.Draw(session, Text.Props.{.key = cast(u64)8,
-                .text = title, .size = 16,
-                .bounds = Rectangle.{viewport.x + 112.0, viewport.y + 20.0, viewport.width - 232.0, 28.0}})
+                .text = title, .size = 20, .align = TextAlign.TextAlignCenter,
+                .vertical_align = TextAlign.TextAlignCenter,
+                .bounds = Rectangle.{viewport.x + 128.0, viewport.y + 6.0, viewport.width - 256.0, 44.0}})
     }
     return true
 }
@@ -1194,6 +1213,7 @@ CollectionPackageAccount :: () {
 }
 
 CollectionIslandPump :: () {
+    if !CollectionIslandEnabled() { return }
     entry := CollectionIslandEntry()
     if entry == null { return }
     CollectionPackageAccount()

@@ -62,7 +62,7 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
 
 // The same compact toolbar and keyboard mapping serve both campaigns.
 GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: []string,mini: bool=false, island_art: bool=false) -> s32 {
-    GameResultFill(session,cast(u64)(ids[0]+2),Rectangle.{0.0,top,width,52.0},ColorFromPacked(ShoveyPalette().background))
+    ShoveyHeaderBar(session, cast(u64)(ids[0] + 2), 0.0, top, width, 52.0)
     icons: [6]string = .[ICON_PREVIOUS,ICON_LEVELS,"",ICON_RESTART,ICON_HELP,ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON]
     for slot: cast(s32)0..5 {
         if slot==1 { continue }

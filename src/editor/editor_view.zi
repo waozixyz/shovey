@@ -528,7 +528,7 @@ EditorLoad :: () {
     // locked Island asks the host to check the account again, so an unlock
     // made on another device shows here.
     editor_page = EDITOR_HOME
-    if AppSupportsHost("shovey.standalone") && !AppSupportsHost("shovey.island.owned") {
+    if AppSupportsHost("shovey.island.enabled") && !AppSupportsHost("shovey.island.owned") {
         unused AppServiceHost("arcade.navigation", "island-refresh")
     }
     editor_loaded = true
@@ -778,8 +778,9 @@ EditorIslandUnlock :: (output: []u8) -> string {
 EditorIslandNotice :: (bounds: Rectangle) {
     notice: [192]u8
     if !CopyCString(AppServiceHost("arcade.navigation", "island-notice"), notice[:]) || notice[0] == 0 { return }
+    palette := ShoveyPalette()
     Box.Draw(editor_frame.session, Box.Props.{.key = cast(u64)137, .bounds = bounds,
-            .fill = Color.{59, 64, 63, 235}, .radius = 12.0})
+            .fill = ColorFromPacked(palette.base), .border = ColorFromPacked(palette.border), .radius = 12.0})
     EditorCaption(138, bounds, TextUntilNul(notice[:]), 14, true)
 }
 
@@ -795,7 +796,7 @@ EditorStartCard :: (key: s32, bounds: Rectangle, name: string, wide: string, tal
             .asset_path = ifx bounds.height > bounds.width then tall else wide, .alt_text = name,
             .fit = Image.ImageFit.ImageFitCover, .radius = 18.0, .smooth = true})
     Box.Draw(session, Box.Props.{.key = cast(u64)(key + 4), .bounds = bounds,
-            .fill = Color.{0, 0, 0, 0}, .border = Color.{93, 98, 97, 255}, .radius = 18.0})
+            .fill = Color.{0, 0, 0, 0}, .border = ColorFromPacked(ShoveyPalette().border), .radius = 18.0})
     // The logo sits in the sky of the cover, as on the title.
     logo_width := bounds.width * 0.56
     if logo_width > 320.0 { logo_width = 320.0 }
@@ -820,15 +821,16 @@ EditorStartCard :: (key: s32, bounds: Rectangle, name: string, wide: string, tal
 }
 
 EditorHome :: (width: float32, top: float32, bottom: float32) {
+    ShoveyHeaderBar(editor_frame.session, cast(u64)190, 0.0, top, width)
     if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)100, .id = 100,
-            .bounds = Rectangle.{8.0, top + 6.0, 112.0, 48.0}, .label = EditorText("editor_back"),
+            .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = EditorText("editor_back"),
             .icon_shape = "S2rr:M15 5L8 12L15 19", .fit_content = true,
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
         unused AppServiceHost("arcade.navigation", "back")
         return
     }
-    EditorCaption(101, Rectangle.{128.0, top + 6.0, width - 256.0, 48.0}, EditorText("editor_new_level"), 22, true)
-    island := AppSupportsHost("shovey.standalone")
+    EditorCaption(101, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, EditorText("editor_new_level"), 20, true)
+    island := AppSupportsHost("shovey.island.enabled")
     owned := island && AppSupportsHost("shovey.island.owned")
     gap: float32 = 16.0
     foot := bottom - 60.0
@@ -881,15 +883,16 @@ EditorHome :: (width: float32, top: float32, bottom: float32) {
 
 EditorLevels :: (width: float32, top: float32, bottom: float32) {
     catalog := EditorCatalog()
+    ShoveyHeaderBar(editor_frame.session, cast(u64)290, 0.0, top, width)
     if Button.Draw(editor_frame.session, Button.Props.{.key = cast(u64)200, .id = 200,
-            .bounds = Rectangle.{8.0, top + 6.0, 112.0, 48.0}, .label = EditorText("editor_back"),
+            .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = EditorText("editor_back"),
             .icon_shape = "S2rr:M15 5L8 12L15 19", .fit_content = true,
             .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
         editor_page = EDITOR_HOME
         return
     }
-    EditorCaption(201, Rectangle.{128.0, top + 6.0, width - 240.0, 40.0}, EditorText("editor_your_levels"), 20, true)
-    if EditorControl(202, Rectangle.{width - 108.0, top + 6.0, 100.0, 40.0}, EditorText("editor_publish")) {
+    EditorCaption(201, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, EditorText("editor_your_levels"), 20, true)
+    if EditorControl(202, Rectangle.{width - 116.0, top + 6.0, 104.0, 44.0}, EditorText("editor_publish")) {
         EditorPublishOpen()
         return
     }
@@ -901,7 +904,7 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     custom_rows := (catalog.count + columns - 1) / columns
     // New level opens the start's choice of edition; your Classic levels
     // follow, then Shovey Island's where the host offers Island.
-    island := AppSupportsHost("shovey.standalone")
+    island := AppSupportsHost("shovey.island.enabled")
     owned := island && AppSupportsHost("shovey.island.owned")
     if owned && editor_frame.now - editor_island_checked > 2.0 {
         editor_island_checked = editor_frame.now
@@ -976,8 +979,9 @@ EditorLevels :: (width: float32, top: float32, bottom: float32) {
     // Why a level does not open, over the bottom of the list.
     if editor_notice_until > editor_frame.now {
         note := Rectangle.{16.0, foot - 44.0, width - 32.0, 36.0}
+        palette := ShoveyPalette()
         Box.Draw(editor_frame.session, Box.Props.{.key = cast(u64)207, .bounds = note,
-                .fill = Color.{59, 64, 63, 235}, .radius = 12.0})
+                .fill = ColorFromPacked(palette.base), .border = ColorFromPacked(palette.border), .radius = 12.0})
         EditorCaption(208, note, editor_notice, 14, true)
     } else if island && !owned {
         EditorIslandNotice(Rectangle.{16.0, foot - 60.0, width - 32.0, 52.0})

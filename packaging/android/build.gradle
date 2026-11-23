@@ -77,10 +77,12 @@ android {
 
     buildTypes {
         debug {
-            externalNativeBuild.cmake.arguments '-DKRYON_TEST_DRIVER=' + (System.getenv('KRYON_TEST_DRIVER') ? 'ON' : 'OFF')
+            externalNativeBuild.cmake.arguments '-DKRYON_TEST_DRIVER=' + (System.getenv('KRYON_TEST_DRIVER') ? 'ON' : 'OFF'),
+                '-DSHOVEY_DEBUG=ON'
         }
         release {
-            externalNativeBuild.cmake.arguments '-DKRYON_TEST_DRIVER=OFF'
+            externalNativeBuild.cmake.arguments '-DKRYON_TEST_DRIVER=OFF',
+                '-DSHOVEY_DEBUG=OFF'
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),

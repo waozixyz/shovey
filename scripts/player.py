@@ -61,6 +61,11 @@ def test_driver_defines():
     return ['--define', 'KRYON_TEST_DRIVER'] if os.environ.get('KRYON_TEST_DRIVER') else []
 
 
+def debug_defines():
+    """Enable debug-only features (such as Island) only in explicit debug builds."""
+    return ['--define', 'SHOVEY_DEBUG'] if os.environ.get('SHOVEY_DEBUG') else []
+
+
 def run(command, **options):
     options.setdefault('env', environment())
     subprocess.run([str(part) for part in command], check=True, **options)
@@ -640,7 +645,7 @@ def linux_host():
     if generated.exists():
         shutil.rmtree(generated)
     run([ziran(), 'build', '--project', *lock(), '--target=c', '--define', 'PLATFORM_DESKTOP', *test_driver_defines(),
-         '--entry', 'player_desktop:main', '-o', generated, 'src/player_desktop.zi'], cwd=ROOT)
+         *debug_defines(), '--entry', 'player_desktop:main', '-o', generated, 'src/player_desktop.zi'], cwd=ROOT)
     profile = build_artifacts.request('entity:native-profile', 'linux-x86_64-gnu', ziran=ziran())
     renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-desktop', 'linux-x86_64-gnu', ziran=ziran()))
     binary = folder / 'shovey'
@@ -677,7 +682,7 @@ def windows_host(tools):
     profile = build_artifacts.request('entity:native-profile', 'windows-x86_64-mingw', ziran=ziran(), env=env)
     renderer = build_artifacts.renderer(build_artifacts.request('kryon:renderer-desktop-windows', 'windows-x86_64-mingw',
                                                                 ziran=ziran(), env=env))
-    defines = ['--define', '_WIN32', '--define', 'PLATFORM_DESKTOP', '--define', '__x86_64__', *test_driver_defines()]
+    defines = ['--define', '_WIN32', '--define', 'PLATFORM_DESKTOP', '--define', '__x86_64__', *test_driver_defines(), *debug_defines()]
     target = ['--target=c', '--target-os', 'windows', '--target-cpu', 'x64']
     for name in renderer['defines']:
         defines.extend(['--define', name])
