@@ -1,5 +1,9 @@
 # Shovey changelog
 
+## [Unreleased]
+
+- Show the equipped Shovey skin as the title-bar profile picture, so a wardrobe choice appears at once instead of a separate static portrait.
+
 ## [0.6.173] - 2026-11-21
 
 - Give Map its own title-screen action; Play and Continue resume the saved attempt or enter the next available puzzle.

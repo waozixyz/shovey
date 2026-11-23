@@ -18,7 +18,6 @@ Box :: #import "kryon/box";
 #import "std/c_string"
 #import "std/text_buffer"
 #import "std/json_scan"
-#import "entity/picture_image"
 #import, file "shovey_theme.zi";
 #import, file "controls.zi";
 Shop :: #import, file "shop_view.zi";
@@ -34,8 +33,20 @@ AppKeyHost :: () -> s32 #foreign host_api;
 state: Carousel.CarouselState;
 prepared: bool;
 has_progress: bool;
-profile_icon: s32;
-profile_checked: float64 = -10.0;
+
+// The title-bar picture is the player's equipped Shovey skin, so a wardrobe
+// choice shows at once and everywhere this title is drawn. Shovey publishes
+// the same skin to the account, where the shared picture record and the game
+// HUD read it.
+TitleProfilePicture :: (bounds: Rectangle) -> Image.Props {
+    skin := Shop.Skin()
+    image := Image.Props.{.bounds = bounds, .fit = Image.ImageFit.ImageFitContain,
+        .smooth = true, .radius = bounds.width * 0.5,
+        .alt_text = AppLocaleHost("shovey_shop_profile")}
+    image.asset_path = Shop.SkinPath()
+    image.key = cast(u64)(50204 + skin)
+    return image
+}
 
 Action :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string,
     image_key: u64 = 0) -> bool {
@@ -71,7 +82,6 @@ Frame :: (today: s64) -> bool {
         prepared = true
         Shop.RefreshWallet()
         has_progress = LocalCampaignRecord() != ""
-        profile_checked = -10.0
     }
     if Book.BookFrame(frame.session, bounds, "") || Shop.ShopFrame(frame.session, bounds, frame.now, today) { return false }
     unused WidgetPaletteUse(frame.session, ShoveyPalette())
@@ -150,14 +160,7 @@ Frame :: (today: s64) -> bool {
     Amount(frame.session, 49212, Rectangle.{60.0, y + 30.0, bounds.width - 224.0, 28.0}, true, Shop.DewText())
     profile_bounds := Rectangle.{bounds.width - 104.0, y, 44.0, 44.0}
     if AppSupports("entity.profile.picture") {
-        if frame.now - profile_checked >= 1.0 {
-            profile_checked = frame.now
-            number := ReadNumber(AppServiceHost("entity.profile", "picture"), 0)
-            if number.valid { profile_icon = cast(s32)number.value }
-        }
-        image := EntityIconImage(profile_icon, profile_bounds, AppLocaleHost("shovey_shop_profile"))
-        image.key = cast(u64)(50204 + profile_icon)
-        Image.Draw(frame.session, image)
+        Image.Draw(frame.session, TitleProfilePicture(profile_bounds))
         if Button.Draw(frame.session, Button.Props.{.key = cast(u64)49204, .bounds = profile_bounds,
             .label = AppLocaleHost("shovey_shop_profile"), .invisible = true}) != 0 { unused AppServiceHost("entity.profile", "open") }
     } else if Button.Draw(frame.session, Button.Props.{.key = cast(u64)49204, .bounds = profile_bounds,
