@@ -46,6 +46,15 @@
       "url": "https://git.waozi.xyz/ziranlang/mesh-client.git"
     },
     {
+      "commit": "1a2cfd5137d7658f4a13c03886dc6114aec1f5c0",
+      "dependencies": {"curl": "p8da229d15597ab5c", "kryon": "p866483bf0248911e", "mesh_client": "p26a11bcd81564528", "monocypher": "p966a7198f42a3ddc", "oqs": "p7098ac9cd92f7e5f", "qrcode": "p45124827e484331e", "zlib": "p82dbc05081cd4d96"},
+      "dependency_refs": {"curl": "19b299005fbe2d895f4ad525cfdae62a2220c3ea", "kryon": "d0effa16a90b217a241145dd9f2f379627dfa8a7", "mesh_client": "d99d9e9802061f726773a0f89d15ec4ed3366957", "monocypher": "e65d27722a43e9ed88da1987f3ad5675503c8cad", "oqs": "22d2ddbdc236796953c905a05a2cebf5ab1b4ff3", "qrcode": "2944b2e668e735438d8ce24e47a39be3f5c36af5", "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"},
+      "id": "p358d345476663dea",
+      "name": "Entity",
+      "ref": "1a2cfd5137d7658f4a13c03886dc6114aec1f5c0",
+      "url": "https://git.waozi.xyz/waozi/entity.git"
+    },
+    {
       "commit": "1844042d1ca751e62e61df7617dba19c98588339",
       "dependencies": {},
       "id": "p3b3c785a0e17e605",
@@ -179,15 +188,6 @@
       "url": "https://git.waozi.xyz/waozi/apps.git"
     },
     {
-      "commit": "359065bf742bb6dcb93055f1bd515e854c6bc0ec",
-      "dependencies": {"curl": "p8da229d15597ab5c", "kryon": "p866483bf0248911e", "mesh_client": "p26a11bcd81564528", "monocypher": "p966a7198f42a3ddc", "oqs": "p7098ac9cd92f7e5f", "qrcode": "p45124827e484331e", "zlib": "p82dbc05081cd4d96"},
-      "dependency_refs": {"curl": "19b299005fbe2d895f4ad525cfdae62a2220c3ea", "kryon": "d0effa16a90b217a241145dd9f2f379627dfa8a7", "mesh_client": "d99d9e9802061f726773a0f89d15ec4ed3366957", "monocypher": "e65d27722a43e9ed88da1987f3ad5675503c8cad", "oqs": "22d2ddbdc236796953c905a05a2cebf5ab1b4ff3", "qrcode": "2944b2e668e735438d8ce24e47a39be3f5c36af5", "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"},
-      "id": "pcf460d26163df138",
-      "name": "Entity",
-      "ref": "359065bf742bb6dcb93055f1bd515e854c6bc0ec",
-      "url": "https://git.waozi.xyz/waozi/entity.git"
-    },
-    {
       "commit": "9cc6872f75447c3a24c16764f9829d0f58751cb0",
       "dependencies": {},
       "id": "pe1027b9d16704793",
@@ -215,8 +215,8 @@
     }
   ],
   "root": {
-    "dependencies": {"apps": "pc8a695e2b1ba7ebc", "crypto": "pc23fbf455e97614d", "entity": "pcf460d26163df138", "kryon": "p866483bf0248911e", "mingcute": "pe1027b9d16704793"},
-    "dependency_refs": {"apps": "f0236a5fca2571e7418dff955fd8ccd8419664de", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "359065bf742bb6dcb93055f1bd515e854c6bc0ec", "kryon": "d0effa16a90b217a241145dd9f2f379627dfa8a7", "mingcute": "master"},
+    "dependencies": {"apps": "pc8a695e2b1ba7ebc", "crypto": "pc23fbf455e97614d", "entity": "p358d345476663dea", "kryon": "p866483bf0248911e", "mingcute": "pe1027b9d16704793"},
+    "dependency_refs": {"apps": "f0236a5fca2571e7418dff955fd8ccd8419664de", "crypto": "944826f70779a6b6cd53f6b06a75b36f4d8a2558", "entity": "1a2cfd5137d7658f4a13c03886dc6114aec1f5c0", "kryon": "d0effa16a90b217a241145dd9f2f379627dfa8a7", "mingcute": "master"},
     "name": "Shovey"
   },
   "toolchain": {
