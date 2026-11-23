@@ -76,6 +76,9 @@ game: ShoveyGame;
 progress: ShoveyProgress;
 selector_open: bool;
 selector_from_cover: bool;
+// Whether the level in play was picked from the level list. Back returns to
+// the list when it was, and straight to the title when Play/Continue started it.
+play_from_levels: bool;
 levels_scroll: s32;
 levels_focus_pending: bool;
 levels_played_level: s32;
@@ -492,6 +495,7 @@ OpenLevels :: () {
 ChangeLevel :: (level: s32, resume_if_active: bool = false) {
     result_dismissed = 0
     if coin_pending.active { return }
+    if selector_open { play_from_levels = true }
     friend_guide.level = 0
     slide_count = 0
     slide_next = 0
@@ -839,6 +843,7 @@ entered_at: float64;
 
 ContinueGame :: () {
     if coin_pending.active { return }
+    if selector_open { play_from_levels = true }
     slide_count = 0
     slide_next = 0
     advanced := ShoveyContinue(*progress, *game)
@@ -1231,8 +1236,8 @@ LevelChangeShade :: () -> float32 {
     return cast(float32)LevelChangeShadeAt(since_win, since_enter) / cast(float32)LEVEL_SHADE_FULL
 }
 
-// Back from the level list or help returns to the level; false while
-// playing, so the host returns to the cover that opened the game.
+// Back closes the level list, help and cards; false while playing, so the
+// host routes Back through ShoveyBackFromPlay.
 ShoveyBack :: () -> bool {
     if ShopUI.Back() { return true }
     if Book.BookBack() { return true }
@@ -1250,14 +1255,19 @@ ShoveyBack :: () -> bool {
     return true
 }
 
-// Escape or Back while playing opens the world map as entering the game
-// does, so Back on the map then leaves for the title.
+// Back while a level is open and no panel covers it.
 ShoveyPlaying :: () -> bool { return !mini && loaded && !selector_open && !help_open }
 
-ShoveyBackToMap :: () -> bool {
+// Back from play returns to the level list the level was picked from, or
+// leaves for the title when Play/Continue started it directly.
+ShoveyBackFromPlay :: () -> bool {
     if !ShoveyPlaying() { return false }
-    OpenLevels()
-    selector_from_cover = true
+    if play_from_levels {
+        OpenLevels()
+        selector_from_cover = true
+    } else {
+        LeaveForGameSelection()
+    }
     return true
 }
 
@@ -1281,7 +1291,10 @@ ShoveyShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s6
 }
 
 shovey_entry: s32;
-ShoveyEnter :: (map: bool) { shovey_entry = ifx map then 2 else 1 }
+ShoveyEnter :: (map: bool) {
+    play_from_levels = false
+    shovey_entry = ifx map then 2 else 1
+}
 
 ShoveyFrame :: () {
     frame = ReadAppUiHost()
@@ -1411,11 +1424,10 @@ ShoveyFrame :: () {
     if selector_open {
         landscape := BoardLandscape(width, bottom - top)
         ResetLevelPreviews(landscape)
-        ShoveyHeaderBar(frame.session, cast(u64)20190, 0.0, top, width)
-        if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20022, .id = 20022,
-                .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = AppLocaleHost("shovey_back"),
-                .icon_shape = ICON_PREVIOUS, .fit_content = true,
-                .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        digits: [24]u8
+        if ShoveyHeaderBar(frame.session, cast(u64)20190, 0.0, top, width, SHOVEY_HEADER_HEIGHT,
+                20022, AppLocaleHost("shovey_back"), FormatInteger(cast(s64)HintWallet.ShopCoins(), digits[:]),
+                AppLocaleHost("shovey_shop_coins"), ShopUI.DewText(), AppLocaleHost("shovey_shop_dew")) {
             if !ShoveyBack() { LeaveForGameSelection() }
             return
         }
@@ -1458,6 +1470,7 @@ ShoveyFrame :: () {
                 status := AppLocaleHost(ifx !unlocked then "shovey_locked" else ifx completed then "shovey_completed" else "shovey_available")
                 if Button.Draw(frame.session, Button.Props.{.key = cast(u64)(33000 + number), .id = 33000 + number,
                         .bounds = bounds, .label = label,
+                        .icon_only = !unlocked,
                         .disabled = !unlocked,
                         .selected = completed, .fit_content = true,
                         .tone = ifx completed then ButtonTone.ButtonToneSuccess else ButtonTone.ButtonToneNeutral,
@@ -1506,12 +1519,11 @@ ShoveyFrame :: () {
     if key == 72 && !mini { HintOpen() }
     if hint_open { HintPanel(width, top, bottom, key); return }
     if help_open {
-        ShoveyHeaderBar(frame.session, cast(u64)20090, 0.0, top, width)
+        digits: [24]u8
         // Closing settings returns to the level, like Escape.
-        if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20017, .id = 20017,
-                .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = AppLocaleHost("shovey_back"),
-                .icon_shape = ICON_PREVIOUS, .fit_content = true,
-                .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        if ShoveyHeaderBar(frame.session, cast(u64)20090, 0.0, top, width, SHOVEY_HEADER_HEIGHT,
+                20017, AppLocaleHost("shovey_back"), FormatInteger(cast(s64)HintWallet.ShopCoins(), digits[:]),
+                AppLocaleHost("shovey_shop_coins"), ShopUI.DewText(), AppLocaleHost("shovey_shop_dew")) {
             help_open = false
             return
         }
@@ -1581,8 +1593,12 @@ ShoveyFrame :: () {
     if !cinematic {
         ids: [6]s32 = .[20022,20005,20820,20016,20017,20023]
         labels: [6]string = .[AppLocaleHost("shovey_back"),AppLocaleHost("shovey_levels"),AppLocaleHost("shovey_book"),AppLocaleHost("shovey_restart"),AppLocaleHost("shovey_hint"),AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute")]
-        action := GameToolbar(frame.session,width,top,ids[:],labels[:],mini)
-        if action==1 { unused ShoveyBackToMap(); return }
+        digits: [24]u8
+        coins_text := ifx mini then "" else FormatInteger(cast(s64)HintWallet.ShopCoins(), digits[:])
+        dew_text := ifx mini then "" else ShopUI.DewText()
+        action := GameToolbar(frame.session,width,top,ids[:],labels[:],mini,false,
+            coins_text,AppLocaleHost("shovey_shop_coins"),dew_text,AppLocaleHost("shovey_shop_dew"))
+        if action==1 { unused ShoveyBackFromPlay(); return }
         if action==3 { Book.BookOpen() }
         if action==4 { ChangeLevel(game.level) }
         if action==5 { HintOpen() }
@@ -1602,9 +1618,9 @@ ShoveyFrame :: () {
     choosing := !mini && !ControlsChosen()
     guiding := !mini && !cinematic && !game.won && !ShoveySecret(game.level) && GuideNext(*friend_guide) >= 0
     friend_key := key
-    // Hosts that see Escape directly (the web page) leave the level for the
-    // world map; Pip's guide keeps it to continue. Others route it as Back.
-    if key == 256 && !guiding && !choosing && ShoveyBackToMap() { key = 0 }
+    // Escape during play follows Back: to the level list when the level was
+    // picked there, otherwise to the title. Pip's guide keeps it to continue.
+    if key == 256 && !guiding && !choosing && ShoveyBackFromPlay() { key = 0 }
     if choosing || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
     if keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
     if key == 32 { changed = ShoveyAct(-1) }
@@ -1929,11 +1945,10 @@ HintPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
             hint_requested = false
         } else if level_hint.status == 0 { hint_requested = false }
     }
-    ShoveyHeaderBar(frame.session, cast(u64)20990, 0.0, top, width)
-    if Button.Draw(frame.session, Button.Props.{.key = cast(u64)20908, .id = 20908,
-            .bounds = Rectangle.{12.0, top + 6.0, 108.0, 44.0}, .label = AppLocaleHost("shovey_back"),
-            .icon_shape = ICON_PREVIOUS, .fit_content = true,
-            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+    digits: [24]u8
+    if ShoveyHeaderBar(frame.session, cast(u64)20990, 0.0, top, width, SHOVEY_HEADER_HEIGHT,
+            20908, AppLocaleHost("shovey_back"), FormatInteger(cast(s64)HintWallet.ShopCoins(), digits[:]),
+            AppLocaleHost("shovey_shop_coins"), ShopUI.DewText(), AppLocaleHost("shovey_shop_dew")) {
         hint_open = false
         return
     }

@@ -61,14 +61,15 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
 }
 
 // The same compact toolbar and keyboard mapping serve both campaigns.
-GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: []string,mini: bool=false, island_art: bool=false) -> s32 {
-    ShoveyHeaderBar(session, cast(u64)(ids[0] + 2), 0.0, top, width, 52.0)
+GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: []string,mini: bool=false, island_art: bool=false,
+    coins: string = "", coins_label: string = "", dew: string = "", dew_label: string = "") -> s32 {
+    if ShoveyHeaderBar(session, cast(u64)(ids[0] + 2), 0.0, top, width, 52.0,
+        ids[0], labels[0], coins, coins_label, dew, dew_label, 100.0) { return 1 }
     icons: [6]string = .[ICON_PREVIOUS,ICON_LEVELS,"",ICON_RESTART,ICON_HELP,ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON]
-    for slot: cast(s32)0..5 {
+    for slot: cast(s32)1..5 {
         if slot==1 { continue }
-        if mini && slot!=0 && slot!=3 { continue }
+        if mini && slot!=3 { continue }
         x := width-cast(float32)(6-slot)*52.0
-        if slot==0 { x=8.0 }
         if slot==2 { x=56.0 }
         if mini && slot==3 { x=width-52.0 }
         if GameHeaderControl(session,ids[slot],Rectangle.{x,top+4.0,44.0,44.0},labels[slot],icons[slot],island_art) { return slot+1 }

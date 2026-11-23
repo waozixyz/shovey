@@ -123,11 +123,8 @@ BookFrame :: (session: Session, bounds: Rectangle, fallback_owner: string) -> bo
     defer { unused WidgetPaletteRestore(session) }
     palette := ShoveyPalette()
     unused Box.Draw(session, Box.Props.{.key = cast(u64)64000, .bounds = bounds, .fill = ColorFromPacked(palette.background)})
-    ShoveyHeaderBar(session, cast(u64)64090, bounds.x, bounds.y, bounds.width)
-    if Button.Draw(session, Button.Props.{.key = cast(u64)64001, .id = 64001,
-            .bounds = Rectangle.{bounds.x + 12.0, bounds.y + 6.0, 108.0, 44.0}, .label = BookText("shovey_shop_back"),
-            .icon_shape = ICON_PREVIOUS, .fit_content = true,
-            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+    if ShoveyHeaderBar(session, cast(u64)64090, bounds.x, bounds.y, bounds.width, SHOVEY_HEADER_HEIGHT,
+        64001, BookText("shovey_shop_back")) {
         unused BookBack()
         return true
     }

@@ -40,14 +40,14 @@ ShoveyNodeFrame :: (message: AppMessage) -> bool {
     return true
 }
 
-// Back closes the level list or help, leaves a level for the world map,
-// then leaves the game from the map.
+// Back closes the level list or help, then leaves a level for the level list
+// or the title depending on where it started.
 ShoveyNodeBack :: (message: AppMessage) -> bool {
     unused message
     if shovey_title_open { return Title.Back() }
-    // Read before Back closes the map, so Back on the map never reopens it.
+    // Read before Back closes the level list, so Back there never reopens it.
     playing := ShoveyPlaying()
-    if ShoveyBack() || (playing && ShoveyBackToMap()) { return true }
+    if ShoveyBack() || (playing && ShoveyBackFromPlay()) { return true }
     shovey_title_open = true
     return true
 }

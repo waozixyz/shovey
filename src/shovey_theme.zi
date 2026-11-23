@@ -7,6 +7,10 @@ Box :: #import "kryon/box";
 Button :: #import "kryon/button";
 #import "kryon/control_props"
 
+Text :: #import "kryon/text";
+Image :: #import "kryon/image";
+#import "kryon/text_align"
+
 #import "kryon/widget_palette"
 
 // Warm parchment around the garden, with forest green for primary actions.
@@ -29,14 +33,49 @@ ShoveyDress :: (session: Session, width: float32, top: float32, bottom: float32)
 }
 
 SHOVEY_HEADER_HEIGHT :: 56.0;
+SHOVEY_BACK_ICON :: "S2rr:M15 5L8 12L15 19";
+SHOVEY_BALANCE_WIDTH :: 60.0;
 
-// Shared top title bar surface and subtle divider matching ShoveyPalette.
-ShoveyHeaderBar :: (session: Session, key: u64, x: float32, y: float32, width: float32, height: float32 = SHOVEY_HEADER_HEIGHT) {
+// One balance line: its picture and the amount, centred in the row.
+ShoveyHeaderBalance :: (session: Session, key: u64, bounds: Rectangle, path: string, label: string, value: string) {
+    unused Image.Draw(session, Image.Props.{.key = key,
+        .bounds = Rectangle.{bounds.x, bounds.y + 2.0, 18.0, 18.0},
+        .asset_path = path, .fit = Image.ImageFit.ImageFitContain, .smooth = true, .alt_text = label})
+    unused Text.Draw(session, Text.Props.{.key = key + 1,
+        .bounds = Rectangle.{bounds.x + 22.0, bounds.y, bounds.width - 22.0, bounds.height},
+        .text = value, .size = 14, .vertical_align = TextAlign.TextAlignCenter})
+}
+
+// Shared top title bar: surface and divider, the player's balances when the
+// caller supplies them, and the icon-only Back control. True when Back is
+// pressed. Keys key to key + 5.
+ShoveyHeaderBar :: (session: Session, key: u64, x: float32, y: float32, width: float32,
+    height: float32 = SHOVEY_HEADER_HEIGHT, back_key: s32 = 0, back_label: string = "",
+    coins: string = "", coins_label: string = "", dew: string = "", dew_label: string = "",
+    balance_x: float32 = 56.0) -> bool {
     palette := ShoveyPalette()
     unused Box.Draw(session, Box.Props.{.key = key, .bounds = Rectangle.{x, y, width, height},
             .fill = ColorFromPacked(palette.base)})
     unused Box.Draw(session, Box.Props.{.key = key + 1, .bounds = Rectangle.{x, y + height - 1.0, width, 1.0},
             .fill = ColorFromPacked(palette.border)})
+    row: float32 = 22.0
+    gap := (height - row * 2.0) / 3.0
+    if gap < 2.0 { gap = 2.0 }
+    if coins != "" {
+        ShoveyHeaderBalance(session, key + 2, Rectangle.{x + balance_x, y + gap, SHOVEY_BALANCE_WIDTH, row},
+            "assets/shovey/shop/coins.png", coins_label, coins)
+    }
+    if dew != "" {
+        ShoveyHeaderBalance(session, key + 4, Rectangle.{x + balance_x, y + gap * 2.0 + row, SHOVEY_BALANCE_WIDTH, row},
+            "assets/shovey/shop/dew.png", dew_label, dew)
+    }
+    if back_key != 0 && Button.Draw(session, Button.Props.{.key = cast(u64)back_key, .id = back_key,
+            .bounds = Rectangle.{x + 8.0, y + (height - 44.0) * 0.5, 44.0, 44.0},
+            .label = back_label, .icon_shape = SHOVEY_BACK_ICON, .icon_only = true,
+            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
+        return true
+    }
+    return false
 }
 
 // Pip's green light, pulsing round the cell he points at: rings that breathe

@@ -264,7 +264,7 @@ def main():
                 saved = campaign_progress(classic.read_bytes())
                 before_board, before_player = board_and_player()
                 driver.press(label='Back', role='button')
-                assert_fullscreen_map(driver)
+                driver.wait(key=49224, role='button')
             with application(profile, 'focused-resume'):
                 answer_cover_question(driver)
                 driver.press(label='Continue', role='button')
@@ -311,7 +311,10 @@ def main():
             driver.press(label='Unmute', role='button')
             driver.wait(label='Mute', role='button')
             assert (profile / 'games/arcade.shovey-player/records/sound').read_text() == 'on'
+            # Play opened the level directly, so Back returns to the title.
             driver.press(label='Back', role='button')
+            driver.wait(key=49224, role='button')
+            driver.press(key=49224, role='button')
             assert_fullscreen_map(driver)
             window = resize_owned_window(child, 390, 844)
             portrait_card = driver.wait(key=33001, role='button', visible=True)
@@ -403,9 +406,8 @@ def main():
             resume_board, resume_player = board_and_player()
             assert not account_progress.exists(), 'Movement wrote an account progress record'
             assert len(driver.find(label='Back', role='button', visible=True)) == 1, 'Shovey needs one clear Back action'
+            # Continue started the level directly, so Back returns to the title.
             driver.press(label='Back', role='button')
-            assert_fullscreen_map(driver)
-            driver.press(key=20022, role='button')
             driver.wait(key=49224, role='button')
             # Public releases hide Island, so Next moves straight from Classic to the Editor.
             driver.press(label='Next', role='button')
