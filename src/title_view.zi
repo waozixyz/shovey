@@ -115,7 +115,7 @@ Frame :: (today: s64) -> bool {
         map_width := ifx bounds.width - 64.0 < 260.0 then bounds.width - 64.0 else 260.0
         if Button.Draw(frame.session, Button.Props.{.key = cast(u64)49224,
             .bounds = Rectangle.{bounds.x + (bounds.width - map_width) * 0.5, action_y - 56.0, map_width, 44.0},
-            .label = AppLocaleHost("shovey_map"), .pill = true,
+            .label = AppLocaleHost("shovey_levels"), .pill = true,
             .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 {
             prepared = false
             map_requested = true

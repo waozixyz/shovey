@@ -43,9 +43,9 @@ def application(profile, name):
         try:
             driver.wait(key=49224, role='button', timeout=60)
             driver.press(key=49224, role='button')
-            # The map selects the saved level; its Play resumes that board.
+            # The level selector opens; Continue resumes the saved board.
             enter_classic_map(driver)
-            driver.press(key=20122, role='button')
+            driver.press(key=20104, role='button')
             driver.wait(label='Back', role='button')
             driver.wait_gone(key=49401)
             # Level 29's hidden room replaces the board; the game screen no longer names it.

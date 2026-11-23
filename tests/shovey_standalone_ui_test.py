@@ -264,7 +264,7 @@ def main():
                 saved = campaign_progress(classic.read_bytes())
                 before_board, before_player = board_and_player()
                 driver.press(label='Back', role='button')
-                driver.wait(label='Play', role='button')
+                assert_fullscreen_map(driver)
             with application(profile, 'focused-resume'):
                 answer_cover_question(driver)
                 driver.press(label='Continue', role='button')
@@ -314,60 +314,27 @@ def main():
             driver.press(label='Back', role='button')
             assert_fullscreen_map(driver)
             window = resize_owned_window(child, 390, 844)
-            portrait_marker = driver.wait(key=33001, role='button', visible=True)
-            assert portrait_marker['width'] >= 48 and portrait_marker['height'] >= 48
-            assert not driver.find(key=34001) and not driver.find(key=34002) and not driver.find(key=34003), \
-                'Undiscovered rooms leaked onto the journey'
-            driver.key('end')
-            locked = driver.wait(key=33004, role='button', visible=True)
-            assert not locked['enabled'], 'A future waypoint became playable'
-            # The whole map browses at any progress; later waypoints stay locked.
-            assert not any(33005 <= node.get('key', 0) <= 33175 and node.get('enabled') for node in driver.tree()), \
-                'Fresh progress made a later waypoint playable'
-            driver.key('enter')
-            # End focuses the last available level, while locked previews remain disabled.
-            wait_level_one(driver, classic_levels)
-            driver.press(label='Back', role='button')
-            assert_fullscreen_map(driver)
-            driver.key('home')
-            # Movement cannot enter the locked previews.
-            for _ in range(3):
-                driver.key('up')
-            middle = driver.wait(key=33004, role='button', visible=True)
-            assert not middle['enabled'] and driver.wait(key=33001, role='button')['selected'], middle
-            before_y = middle['y']
-            driver.drag((24, 240), (24, 540))
-            driver.wait_idle(frames=3)
-            moved = driver.find(key=33004, role='button', visible=True)
-            assert not moved or moved[0]['y'] >= before_y - 1, 'Touch dragging escaped the public camera bounds'
-            driver.key('home')
-            driver.wait(key=33001, role='button', visible=True)
-            assert_map_terrain_fills_height()
+            portrait_card = driver.wait(key=33001, role='button', visible=True)
+            assert portrait_card['enabled'] and portrait_card['width'] >= 48 and portrait_card['height'] >= 48
+            locked = driver.wait(key=33002, role='button', visible=True)
+            assert not locked['enabled'], 'A locked level became playable'
+            assert not any(33002 <= node.get('key', 0) <= 33175 and node.get('enabled') for node in driver.tree()), \
+                'Fresh progress made a later level playable'
             subprocess.run(['import', '-window', window, str(output / 'level-selector-portrait.png')], check=True)
             window = resize_owned_window(child, 960, 600)
-            # The same portrait journey stays centered in a wide viewport;
-            # waypoints remain touch-sized rather than becoming board cards.
-            landscape_marker = driver.wait(key=33001, role='button', visible=True)
-            assert landscape_marker['width'] >= 48 and landscape_marker['height'] >= 48
-            viewport = driver.find(key=20105, visible=True)[0]
-            marker_x = landscape_marker['x'] + landscape_marker['width'] / 2
-            assert abs(marker_x - (viewport['x'] + viewport['width'] / 2)) <= viewport['width'] * .15, \
-                'Focused waypoint was not revealed by the horizontal camera'
-            assert landscape_marker['selected'] and landscape_marker['enabled']
-            assert_map_terrain_fills_height()
+            landscape_card = driver.wait(key=33001, role='button', visible=True)
+            assert landscape_card['enabled'] and landscape_card['width'] >= 48 and landscape_card['height'] >= 48
             subprocess.run(['import', '-window', window, str(output / 'level-selector-landscape.png')], check=True)
-            # One press keeps the focused waypoint selected and Play opens it;
-            # two quick presses on it would open it directly.
             start_map_destination(driver, 1)
             wait_level_one(driver, classic_levels)
             driver.press(label='Back', role='button')
             assert_fullscreen_map(driver)
-            # Back from the map returns to the covers, not to gameplay again.
+            # Back from the level selector returns to the covers, not to gameplay again.
             driver.press(key=20022)
             driver.wait(key=49224, role='button')
             assert not driver.find(label='Restart', role='button', visible=True)
             if args.map_only:
-                print('Classic map local UI test passed: 390x844 and 960x600, keyboard 1/4, locked previews, touch scrolling, selection and Back')
+                print('Classic level selector local UI test passed: 390x844 and 960x600, locked cards, selection and Back')
                 return
             answer_cover_question(driver)
             driver.press(label='Continue', role='button')

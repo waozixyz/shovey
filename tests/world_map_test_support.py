@@ -33,19 +33,15 @@ def digest(path):
 
 
 def assert_fullscreen_map(driver):
-    """Map occupies the whole app viewport; Back is an accessible icon only."""
+    """Normal level selector shows its header (Back, Levels, Continue) and grid."""
     driver.wait(key=20105, visible=True)
     driver.wait(key=20022, role='button', visible=True)
+    driver.wait(key=20103, visible=True)
+    driver.wait(key=20104, role='button', visible=True)
     nodes = driver.tree()
-    screen = nodes[0]
     viewport = next(node for node in nodes if node.get('key') == 20105)
-    assert screen['kind'] == 'screen', screen
-    bounds = ('x', 'y', 'width', 'height')
-    assert all(abs(viewport[key] - screen[key]) < 1 for key in bounds), (viewport, screen)
-    assert not any(node.get('key') in (20103, 20104) for node in nodes), 'Map chrome returned'
-    assert not any(node.get('kind') == 'text' and node.get('label') in ('Levels', 'Continue', 'Back') for node in nodes)
     back = next(node for node in nodes if node.get('key') == 20022)
-    assert back['label'] == 'Back' and back['width'] == 48 and back['height'] == 48, back
+    assert back['label'] == 'Back', back
     return viewport
 
 
@@ -96,4 +92,3 @@ def wait_board_change(driver, before, timeout=20):
 def start_map_destination(driver, level=1):
     assert_fullscreen_map(driver)
     driver.press(key=33000 + level, role='button')
-    driver.press(key=20122, role='button')

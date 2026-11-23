@@ -2,7 +2,6 @@
 #import "text_buffer"
 #import, file "engine.zi";
 #import "levels"
-#import, file "world_map_progression.zi";
 
 // Levels a campaign can track; SHOVEY_LIVE_MAX keeps the closing board within.
 SHOVEY_PROGRESS_LEVELS :: 1000
@@ -24,10 +23,7 @@ ShoveyProgressNew :: () -> ShoveyProgress { return ShoveyProgress.{.unlocked = 1
 } else {
     ShoveyLevelUnlocked :: (progress: *ShoveyProgress, level: s32) -> bool {
         if level < 1 || level > ShoveyLevelCount() { return false }
-        if level <= WORLD_MAP_CLASSIC_LEVELS {
-            return WorldMapLevelAvailable(progress.unlocked, progress.completed[:], level)
-        }
-        return level <= progress.unlocked || (level > 1 && progress.completed[level - 2])
+        return level <= progress.unlocked || progress.completed[level - 1] || (level > 1 && progress.completed[level - 2])
     }
 }
 
@@ -42,8 +38,6 @@ ShoveyHighestUnlocked :: (progress: *ShoveyProgress) -> s32 {
 ShoveyRecordWin :: (progress: *ShoveyProgress, game: *ShoveyGame) {
     if !game.won || game.level < 1 || game.level >= ShoveyFinaleLevel() || !ShoveyLevelUnlocked(progress, game.level) { return }
     progress.completed[game.level - 1] = true
-    // The numeric prefix is legacy earned access. New wins expose their
-    // graph successors through completion marks, not a maximum level ID.
 }
 
 // Selecting a level always starts its first board. Continuing a game
@@ -54,20 +48,15 @@ ShoveySelectLevel :: (progress: *ShoveyProgress, game: *ShoveyGame, level: s32) 
 }
 
 // Keep an explicitly selected device board, including an untouched replay.
-// Without that memory, follow the graph to an available unfinished puzzle.
+// Without that memory, open the newest unlocked puzzle.
 ShoveyOpenLatest :: (progress: *ShoveyProgress, game: *ShoveyGame, selected_level: s32 = 0) -> bool {
     ShoveyRecordWin(progress, game)
     // A puzzle already in progress belongs to this device, even when
     // another device has since earned access to later levels.
     if !game.won && selected_level == game.level && ShoveyLevelUnlocked(progress, game.level) { return false }
     if game.moves > 0 && !game.won && !game.lost { return false }
-    latest := ifx progress.unlocked > ShoveyLevelCount() then ShoveyLevelCount() else progress.unlocked
-    // A historical campaign beyond this release's cap resumes at the cap.
-    if ShoveyLevelCount() == WORLD_MAP_CLASSIC_LEVELS && progress.unlocked <= ShoveyLevelCount() {
-        latest = WorldMapFocusLevel(progress.unlocked, progress.completed[:], game.level)
-    } else if ShoveyLevelCount() > WORLD_MAP_CLASSIC_LEVELS {
-        latest = ShoveyHighestUnlocked(progress)
-    }
+    latest := ShoveyHighestUnlocked(progress)
+    if latest > ShoveyLevelCount() { latest = ShoveyLevelCount() }
     if game.level == latest && !game.won && !game.lost { return false }
     return ShoveySelectLevel(progress, game, latest)
 }
@@ -75,10 +64,6 @@ ShoveyOpenLatest :: (progress: *ShoveyProgress, game: *ShoveyGame, selected_leve
 ShoveyContinue :: (progress: *ShoveyProgress, game: *ShoveyGame) -> bool {
     ShoveyRecordWin(progress, game)
     if !game.won || game.level >= ShoveyLevelCount() { return false }
-    if game.level < WORLD_MAP_CLASSIC_LEVELS {
-        next := WorldMapNextLevel(progress.unlocked, progress.completed[:], game.level)
-        return next != 0 && ShoveySelectLevel(progress, game, next)
-    }
     return ShoveySelectLevel(progress, game, game.level + 1)
 }
 
@@ -165,13 +150,11 @@ ShoveyCampaignRestore :: (progress: *ShoveyProgress, game: *ShoveyGame, text: st
     }
     position: ShoveyGame
     if !ShoveyRestore(*position, text[start:end]) { return false }
-    // A merge (or the second arm of a fork) can already be earned through an
-    // explicit predecessor while lying beyond the saved numeric prefix.
+    // A save from an earlier graph build can resume on a board whose numeric
+    // predecessor is unfinished. Keep every mark; resume where play continues.
     if position.level > restored.unlocked && !ShoveyLevelUnlocked(*restored, position.level) {
-        if position.level > WORLD_MAP_CLASSIC_LEVELS { return false }
-        // A save from an earlier journey graph can resume on a board whose new
-        // predecessor is unfinished. Keep every mark; resume where play continues.
-        if !ShoveyLoad(*position, WorldMapFocusLevel(restored.unlocked, restored.completed[:], position.level)) { return false }
+        if !graph { return false }
+        if !ShoveyLoad(*position, ShoveyHighestUnlocked(*restored)) { return false }
         progress.* = restored
         game.* = position
         return true
