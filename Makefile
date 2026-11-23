@@ -145,9 +145,11 @@ LIB_DIR ?= $(HOME)/.local/lib/shovey
 DATA_DIR ?= $(if $(XDG_DATA_HOME),$(XDG_DATA_HOME),$(HOME)/.local/share)
 .PHONY: install
 install: player-linux
-	mkdir -p '$(BIN_DIR)' '$(LIB_DIR)/startup/shovey' '$(DATA_DIR)/applications' '$(DATA_DIR)/icons/hicolor/256x256/apps'
+	mkdir -p '$(BIN_DIR)' '$(LIB_DIR)/startup/shovey' '$(LIB_DIR)/games' '$(DATA_DIR)/applications' '$(DATA_DIR)/icons/hicolor/256x256/apps'
 	install -m 0644 build/player/linux/startup/shovey/*.png '$(LIB_DIR)/startup/shovey/'
 	install -m 0644 build/player/linux/shovey.zx build/player/linux/shovey.json build/player/linux/entity.zx '$(LIB_DIR)/'
+	rm -f '$(LIB_DIR)/games/'*.zx
+	install -m 0644 build/player/linux/games/*.zx '$(LIB_DIR)/games/'
 	install -m 0755 build/player/linux/shovey '$(LIB_DIR)/shovey.new'
 	mv -f '$(LIB_DIR)/shovey.new' '$(LIB_DIR)/shovey'
 	ln -sfn '$(LIB_DIR)/shovey' '$(BIN_DIR)/shovey'
