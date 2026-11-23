@@ -2,10 +2,12 @@ name: Google Play
 run-name: Shovey Play ${{ inputs.revision || github.sha }}
 
 # Every published Shovey release completes internal and closed testing (alpha).
-# The Google Play edition sells Dew through Google Play. Downloads
-# calls this after publishing a release; a dispatch uploads one release
-# again (choose its tag as the ref).
+# The Google Play edition sells Dew through Google Play. A published GitHub
+# release starts this workflow; a dispatch uploads one release again (choose
+# its tag as the ref).
 on:
+  release:
+    types: [published]
   workflow_call:
     inputs:
       revision:
@@ -40,6 +42,9 @@ permissions:
 
 jobs:
   bundle:
+    # Editor releases share this repository; only Shovey's own vX.Y.Z tags
+    # carry the Google Play edition.
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:

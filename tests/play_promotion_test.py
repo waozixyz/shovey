@@ -151,12 +151,14 @@ class PromotionTest(unittest.TestCase):
     def test_release_workflows_target_internal_then_closed_and_only_gplay(self):
         bundle = (ROOT / '.github/workflows/play-bundle.yml').read_text()
         release_script = (ROOT / 'scripts/downloads-release.py').read_text()
-        downloads = (ROOT / '.gitea/workflows/downloads.yml').read_text()
+        canonical = (ROOT / '.gitea/workflows/downloads.yml').read_text()
         self.assertIn('uses: ./.github/workflows/play-promote.yml', bundle)
-        # Gitea's Downloads workflow uploads a release it published itself.
+        # A published GitHub release starts the Play upload; Gitea's Downloads
+        # workflow builds and publishes only Shovey's own edition.
+        self.assertIn('types: [published]', bundle)
         self.assertNotIn('play-bundle.yml', release_script)
-        self.assertIn("needs.release.outputs.published == 'true'", downloads)
-        self.assertIn('python3 scripts/play-release.py', downloads)
+        self.assertNotIn('play-release.py', canonical)
+        self.assertNotIn('outputs.published', canonical)
         self.assertIn('secrets: inherit', bundle)
         uploads = re.findall(r'(?ms)^      - .*?upload-google-play@.*?(?=^      - |^  [a-z]|\Z)', bundle)
         self.assertEqual(len(uploads), 1)

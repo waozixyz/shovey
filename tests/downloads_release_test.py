@@ -45,11 +45,11 @@ class ReleaseTests(unittest.TestCase):
                 if path.startswith('/tags/'):
                     return {'commit': {'sha': '2' * 40 if wrong_tag else revision}}
                 if path == '/releases/3':
-                    self.assertEqual(len(uploads), 5)
-                    self.assertEqual(len(readbacks), 5)
+                    self.assertEqual(len(uploads), 3)
+                    self.assertEqual(len(readbacks), 3)
                     return {}
                 if path == '/releases/9':
-                    self.assertEqual(len(github_uploads), 5)
+                    self.assertEqual(len(github_uploads), 3)
                     return {}
                 self.fail('Unexpected API operation: ' + path)
             uploads, github_uploads, readbacks = [], [], []
@@ -65,8 +65,7 @@ class ReleaseTests(unittest.TestCase):
             env = {'GITEA_ACTIONS': 'true', 'GITHUB_SERVER_URL': release.GITEA,
                    'RELEASE_REVISION': revision, 'SHOVEY_BUILD_TOKEN': 'build-test-token',
                    'SHOVEY_RELEASE_TOKEN': 'release-test-token',
-                   'SHOVEY_NATIVE_BUILD': str(folder / 'native'), 'SHOVEY_REHEARSE': str(rehearse).lower(),
-                   'GITHUB_OUTPUT': str(folder / 'output')}
+                   'SHOVEY_NATIVE_BUILD': str(folder / 'native'), 'SHOVEY_REHEARSE': str(rehearse).lower()}
             with patch.object(release, 'ROOT', folder), patch.dict(os.environ, env), \
                     patch.object(release.subprocess, 'check_output', return_value=revision), \
                     patch.object(release, 'request', side_effect=api), \
@@ -86,14 +85,12 @@ class ReleaseTests(unittest.TestCase):
                     verification.assert_called_once()
                     self.assertEqual(mutations, [])
                     self.assertEqual(uploads + github_uploads, [])
-                    self.assertFalse((folder / 'output').exists())
                 else:
                     release.main()
                     verification.assert_called_once()
                     self.assertIn((release.GITEA + '/api/v1/repos/' + release.REPO, '/releases/3', 'PATCH', {'draft': False}), mutations)
                     self.assertEqual(mutations[-1][0:3], (release.GITHUB, '/releases/9', 'PATCH'))
                     self.assertFalse(mutations[-1][3]['draft'])
-                    self.assertEqual((folder / 'output').read_text(), 'published=true\n')
 
     def test_another_commits_build_never_creates_release(self):
         self.run_gate(other_commit=True)
@@ -119,7 +116,7 @@ class ReleaseTests(unittest.TestCase):
     def test_bad_upload_never_publishes(self):
         self.run_gate(bad_readback=True)
 
-    def test_success_requires_five_verified_readbacks(self):
+    def test_success_requires_three_verified_readbacks(self):
         self.run_gate()
 
     def test_session_cannot_publish(self):

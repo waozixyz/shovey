@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Publish the downloads Gitea's native jobs built, signed and verified."""
+"""Publish the downloads Gitea's native jobs built, signed and verified.
+
+Only Shovey's own edition is built here: the normal APK and the Linux and
+Windows downloads. The F-Droid and Google Play editions are produced by the
+GitHub workflows and attached to the mirrored GitHub release.
+"""
 import hashlib
 import http.client
 import json
@@ -41,8 +46,8 @@ def digest(path):
 
 
 def names(version):
-    return {f'shovey-v{version}.apk', f'shovey-{version}-fdroid.apk',
-            f'shovey-v{version}-gplay.apk', f'shovey-v{version}-linux-x86_64.tar.gz',
+    return {f'shovey-v{version}.apk',
+            f'shovey-v{version}-linux-x86_64.tar.gz',
             f'shovey-v{version}-windows-x86_64.zip'}
 
 
@@ -68,23 +73,18 @@ def collect(build, revision, version):
     downloads = build / 'downloads'
     found = {p.name for p in downloads.iterdir()}
     if found != names(version) or any(p.is_symlink() or not p.is_file() for p in downloads.iterdir()):
-        raise ValueError('Release must contain exactly the five expected downloads')
+        raise ValueError('Release must contain exactly the three expected downloads')
     return downloads
 
 
 def verify(downloads, output, version, code):
-    for edition, filename in [('direct', f'shovey-v{version}.apk'),
-                              ('fdroid', f'shovey-{version}-fdroid.apk'),
-                              ('gplay', f'shovey-v{version}-gplay.apk')]:
-        apk = downloads / filename
-        signer = subprocess.check_output(['apksigner', 'verify', '--print-certs', str(apk)], text=True)
-        if SIGNER not in signer:
-            raise ValueError(f'Wrong signing key: {edition}')
-        badging = subprocess.check_output(['aapt', 'dump', 'badging', str(apk)], text=True)
-        if not re.search(r"^package: name='xyz\.waozi\.shovey' versionCode='" + str(code) + r"' versionName='" + re.escape(version) + "'", badging):
-            raise ValueError(f'Wrong APK version: {edition}')
-    if digest(downloads / f'shovey-v{version}.apk') != digest(downloads / f'shovey-{version}-fdroid.apk'):
-        raise ValueError('Normal and F-Droid editions differ')
+    apk = downloads / f'shovey-v{version}.apk'
+    signer = subprocess.check_output(['apksigner', 'verify', '--print-certs', str(apk)], text=True)
+    if SIGNER not in signer:
+        raise ValueError('Wrong signing key: direct')
+    badging = subprocess.check_output(['aapt', 'dump', 'badging', str(apk)], text=True)
+    if not re.search(r"^package: name='xyz\.waozi\.shovey' versionCode='" + str(code) + r"' versionName='" + re.escape(version) + "'", badging):
+        raise ValueError('Wrong APK version: direct')
 
 
 def upload(release, path, token):
@@ -207,17 +207,15 @@ def main():
     if request(api, '/tags/v' + version, gitea_token)['commit']['sha'] != revision:
         raise SystemExit('Published tag verification failed')
     print(f'Published {GITEA}/{REPO}/releases/tag/v{version}', flush=True)
-    # The mirror's release and the Play upload name this commit; wait for the
-    # source mirror rather than tagging another revision there.
+    # The GitHub release names this commit; wait for the source mirror rather
+    # than tagging another revision there. GitHub's own workflow adds the
+    # F-Droid and Google Play editions to it.
     deadline = time.monotonic() + 20 * 60
     while request(GITHUB, '/commits/master', github_token)['sha'] != revision:
         if time.monotonic() > deadline:
             raise SystemExit('Published on Gitea; the GitHub mirror has not received this commit yet')
         time.sleep(20)
     mirror_github_release(version, revision, notes, downloads, github_token)
-    # Only a release this run published goes on to Google Play.
-    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-        output.write('published=true\n')
 
 
 if __name__ == '__main__':

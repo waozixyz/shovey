@@ -1,12 +1,14 @@
 name: Downloads
 run-name: Shovey downloads ${{ github.sha }}
 
-# Shovey's own lane on the Build host builds, signs and plays every download
+# Shovey's own lane on the Build host builds, signs and plays our downloads
 # from the exact commit with the tools that machine has, and publishes only
 # after all of it passed. No container or VM: the jobs run one at a time as
 # the lane's account and hand their files on through its private state
-# (~/handoff), which no other repository's jobs can read. F-Droid's rebuild
-# is checked on GitHub when the source is mirrored there (fdroid.yml).
+# (~/handoff), which no other repository's jobs can read. The F-Droid and
+# Google Play editions belong to the GitHub workflows: GitHub's Downloads
+# attaches them to the mirrored release and play-bundle.yml uploads the
+# bundle to Google Play.
 on:
   workflow_dispatch:
     inputs:
@@ -29,7 +31,6 @@ env:
   JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
   ANDROID_HOME: /usr/local/lib/gitea-native/android-sdk
   ANDROID_SDK_ROOT: /usr/local/lib/gitea-native/android-sdk
-  BUNDLETOOL: /usr/local/lib/gitea-native/bundletool-1.18.3.jar
   YUE_DESKTOP_RECOVERY: '0'
   HARMONY_DESKTOP_RECOVERY: '0'
 jobs:
@@ -89,7 +90,7 @@ jobs:
           echo "$GITHUB_SHA" > "$HOME/handoff/$GITHUB_RUN_ID/revision"
 
   android:
-    name: Signed APK of the normal and F-Droid edition
+    name: Signed APK of the normal edition
     needs: due
     if: needs.due.outputs.build == 'true'
     runs-on: build-native-shovey
@@ -102,13 +103,12 @@ jobs:
           persist-credentials: false
       - name: Select the installed Android tools and the lane's package cache
         run: bash scripts/native-ci.sh android
-      # The build F-Droid's recipe runs; it has no self-update, so one APK
-      # serves both.
+      # The build is the normal edition; it has no self-update.
       - name: Build the release APK
         run: make android-fdroid
       # Only the Google Play edition may name a Google library, in its build
       # files as in its APK.
-      - name: Keep Google libraries out of the normal and F-Droid edition
+      - name: Keep Google libraries out of the normal edition
         run: python3 "$KRYON/scripts/check-google-free.py" --source . build/fdroid/shovey.apk
       - name: Sign and check the APK
         env:
@@ -124,51 +124,7 @@ jobs:
           python3 scripts/android-release.py sign build/fdroid/shovey.apk --version "$VERSION" \
             --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
             --output "$HANDOFF/downloads/shovey-v$VERSION.apk"
-          cp "$HANDOFF/downloads/shovey-v$VERSION.apk" "$HANDOFF/downloads/shovey-$VERSION-fdroid.apk"
           apksigner verify --print-certs "$HANDOFF/downloads/shovey-v$VERSION.apk" | grep 'SHA-256'
-
-  android-gplay:
-    name: Signed APK and bundle of the Google Play edition
-    needs: due
-    if: needs.due.outputs.build == 'true'
-    runs-on: build-native-shovey
-    timeout-minutes: 115
-    env:
-      VERSION: ${{ needs.due.outputs.version }}
-    steps:
-      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          persist-credentials: false
-      - name: Select the installed Android tools and the lane's package cache
-        run: bash scripts/native-ci.sh android
-      - name: Build the Google Play edition's APK
-        run: make android-gplay
-      # The Google check must still recognise Play Billing, or its passes on
-      # the other editions prove nothing.
-      - name: Find Play Billing in the Google Play APK
-        run: python3 "$KRYON/scripts/check-google-free.py" --expect-google build/fdroid/shovey-gplay.apk
-      - name: Build the Google Play edition's bundle
-        run: make player-bundle
-      - name: Sign and check the APK and the bundle
-        env:
-          KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
-          PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
-        run: |
-          set -euo pipefail
-          umask 077
-          test -n "$KEYSTORE" && test -n "$PASSWORD"
-          trap 'rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"' EXIT
-          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
-          printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
-          python3 scripts/android-release.py sign build/fdroid/shovey-gplay.apk --edition gplay --version "$VERSION" \
-            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
-            --output "$HANDOFF/downloads/shovey-v$VERSION-gplay.apk"
-          mkdir -p "$HANDOFF/play"
-          python3 scripts/android-release.py sign build/player/android/shovey-unsigned.aab --version "$VERSION" \
-            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
-            --bundletool "$BUNDLETOOL" --output "$HANDOFF/play/shovey-v$VERSION-gplay.aab"
-          apksigner verify --print-certs "$HANDOFF/downloads/shovey-v$VERSION-gplay.apk" | grep 'SHA-256'
-          keytool -printcert -jarfile "$HANDOFF/play/shovey-v$VERSION-gplay.aab" | grep 'SHA256:'
 
   linux:
     name: Linux download, played on a private display
@@ -289,12 +245,10 @@ jobs:
 
   release:
     name: Verify every download and publish the release
-    needs: [due, android, android-gplay, linux, windows]
+    needs: [due, android, linux, windows]
     if: needs.due.outputs.build == 'true'
     runs-on: build-native-shovey
     timeout-minutes: 60
-    outputs:
-      published: ${{ steps.publish.outputs.published }}
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -305,7 +259,6 @@ jobs:
             src/CHANGELOG.md
           sparse-checkout-cone-mode: false
       - name: Verify the signer and versions, then publish
-        id: publish
         env:
           RELEASE_REVISION: ${{ github.sha }}
           SHOVEY_REHEARSE: ${{ inputs.rehearse == true || inputs.rehearse == 'true' }}
@@ -316,43 +269,4 @@ jobs:
           export PATH="$ANDROID_HOME/build-tools/36.0.0:$JAVA_HOME/bin:$PATH"
           export SHOVEY_NATIVE_BUILD="$HOME/handoff/$GITHUB_RUN_ID"
           python3 scripts/downloads-release.py
-          sha256sum "$SHOVEY_NATIVE_BUILD"/downloads/* "$SHOVEY_NATIVE_BUILD"/play/*
-
-  play:
-    name: Google Play internal and closed testing
-    needs: [due, release]
-    # Only a release this run published is uploaded; a rehearsal lets Google
-    # Play check the bundle in an edit it deletes.
-    if: needs.release.outputs.published == 'true' || inputs.rehearse == true || inputs.rehearse == 'true'
-    runs-on: build-native-shovey
-    timeout-minutes: 60
-    concurrency:
-      group: shovey-google-play
-      cancel-in-progress: false
-    steps:
-      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          persist-credentials: false
-      - name: Fetch the locked packages
-        run: bash scripts/native-ci.sh desktop
-      - name: Test the upload and promotion boundaries
-        run: |
-          python3 tests/play_release_test.py
-          python3 tests/play_promotion_test.py
-      - name: Upload the signed bundle and complete closed testing
-        env:
-          ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          PUBLISHED: ${{ needs.release.outputs.published }}
-          VERSION: ${{ needs.due.outputs.version }}
-          CLOSED_TRACK: ${{ vars.GOOGLE_PLAY_CLOSED_TRACK || 'alpha' }}
-        run: |
-          set -euo pipefail
-          test -n "$ACCOUNT"
-          umask 077
-          trap 'rm -f "$RUNNER_TEMP/play-account.json"' EXIT
-          printf '%s' "$ACCOUNT" > "$RUNNER_TEMP/play-account.json"
-          mode=(--rehearse)
-          if [ "$PUBLISHED" = true ]; then mode=(); fi
-          python3 scripts/play-release.py "$RUNNER_TEMP/play-account.json" \
-            "$HANDOFF/play/shovey-v$VERSION-gplay.aab" \
-            --entity "$(scripts/ziran.sh pkg path entity --locked)" "${mode[@]}"
+          sha256sum "$SHOVEY_NATIVE_BUILD"/downloads/*

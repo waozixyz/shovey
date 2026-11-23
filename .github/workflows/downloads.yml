@@ -2,8 +2,10 @@ name: Downloads
 run-name: Shovey build ${{ inputs.revision || github.sha }}
 
 # Gitea requests an exact source commit. These jobs build/sign every edition,
-# reproduce the F-Droid APK and play the Linux/Windows downloads. Publication
-# belongs to .gitea/workflows/downloads.yml after this entire build succeeds.
+# reproduce the F-Droid APK and play the Linux/Windows downloads. Gitea's
+# Downloads workflow publishes our own edition; the F-Droid and Google Play
+# editions this workflow builds are attached to the mirrored GitHub release,
+# and play-bundle.yml sends the bundle to Google Play.
 on:
   workflow_dispatch:
     inputs:
@@ -16,6 +18,10 @@ on:
         required: false
         type: boolean
         default: false
+  release:
+    # A published Shovey release gets its editions attached; editor releases
+    # share this repository and are ignored below.
+    types: [published]
 
 permissions:
   contents: read
@@ -26,6 +32,7 @@ concurrency:
 
 jobs:
   due:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -52,8 +59,9 @@ jobs:
           echo "revision=$REQUESTED_REVISION" >> "$GITHUB_OUTPUT"
           version=$(python3 -c 'import re; print(re.search(r"^## \[([0-9.]+)\]", open("src/CHANGELOG.md").read(), re.M)[1])')
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          # The canonical Gitea Downloads workflow owns publication. GitHub
-          # provides the existing isolated build/signing jobs only.
+          # Gitea's Downloads workflow publishes and mirrors our own edition.
+          # These jobs build the F-Droid and Google Play editions and attach
+          # them to the mirrored GitHub release.
           echo "release_due=false" >> "$GITHUB_OUTPUT"
           echo "build_due=true" >> "$GITHUB_OUTPUT"
 
@@ -155,16 +163,58 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  editions:
+    name: Attach the F-Droid and Google Play editions
+    needs: [due, android, android-gplay]
+    if: needs.due.outputs.build_due == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shovey-android*
+          path: build/downloads
+          merge-multiple: true
+      - name: Attach them to the mirrored release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.due.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          # Gitea publishes the release and mirrors it here with our own
+          # edition; only the two editions this workflow builds are added.
+          state=$(gh release view "$tag" --json isDraft --jq .isDraft) || {
+            echo "::error::GitHub release $tag is not published yet; run this after Gitea publishes and mirrors it." >&2
+            exit 1
+          }
+          test "$state" = false || { echo "::error::GitHub release $tag is still a draft." >&2; exit 1; }
+          present=$(gh release view "$tag" --json assets --jq '.assets[].name')
+          for file in "build/downloads/shovey-$VERSION-fdroid.apk" "build/downloads/shovey-v$VERSION-gplay.apk"; do
+            name=$(basename "$file")
+            test -f "$file"
+            if grep -qxF "$name" <<<"$present"; then
+              echo "$name is already attached to $tag"
+            else
+              gh release upload "$tag" "$file"
+            fi
+          done
+
   fdroid:
     needs: due
-    if: needs.due.outputs.build_due == 'true'
+    # A published release only needs the Android editions; the F-Droid
+    # rebuild and the desktop play-tests belong to a manual run.
+    if: github.event_name == 'workflow_dispatch' && needs.due.outputs.build_due == 'true'
     uses: ./.github/workflows/fdroid.yml
     with:
       revision: ${{ needs.due.outputs.revision }}
 
   linux:
     needs: due
-    if: needs.due.outputs.build_due == 'true'
+    if: github.event_name == 'workflow_dispatch' && needs.due.outputs.build_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -265,7 +315,7 @@ jobs:
 
   windows:
     needs: due
-    if: needs.due.outputs.build_due == 'true'
+    if: github.event_name == 'workflow_dispatch' && needs.due.outputs.build_due == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     defaults:
