@@ -293,6 +293,8 @@ jobs:
     if: needs.due.outputs.build == 'true'
     runs-on: build-native-shovey
     timeout-minutes: 60
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -303,6 +305,7 @@ jobs:
             src/CHANGELOG.md
           sparse-checkout-cone-mode: false
       - name: Verify the signer and versions, then publish
+        id: publish
         env:
           RELEASE_REVISION: ${{ github.sha }}
           SHOVEY_REHEARSE: ${{ inputs.rehearse == true || inputs.rehearse == 'true' }}
@@ -314,3 +317,42 @@ jobs:
           export SHOVEY_NATIVE_BUILD="$HOME/handoff/$GITHUB_RUN_ID"
           python3 scripts/downloads-release.py
           sha256sum "$SHOVEY_NATIVE_BUILD"/downloads/* "$SHOVEY_NATIVE_BUILD"/play/*
+
+  play:
+    name: Google Play internal and closed testing
+    needs: [due, release]
+    # Only a release this run published is uploaded; a rehearsal lets Google
+    # Play check the bundle in an edit it deletes.
+    if: needs.release.outputs.published == 'true' || inputs.rehearse == true || inputs.rehearse == 'true'
+    runs-on: build-native-shovey
+    timeout-minutes: 60
+    concurrency:
+      group: shovey-google-play
+      cancel-in-progress: false
+    steps:
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Fetch the locked packages
+        run: bash scripts/native-ci.sh desktop
+      - name: Test the upload and promotion boundaries
+        run: |
+          python3 tests/play_release_test.py
+          python3 tests/play_promotion_test.py
+      - name: Upload the signed bundle and complete closed testing
+        env:
+          ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          PUBLISHED: ${{ needs.release.outputs.published }}
+          VERSION: ${{ needs.due.outputs.version }}
+          CLOSED_TRACK: ${{ vars.GOOGLE_PLAY_CLOSED_TRACK || 'alpha' }}
+        run: |
+          set -euo pipefail
+          test -n "$ACCOUNT"
+          umask 077
+          trap 'rm -f "$RUNNER_TEMP/play-account.json"' EXIT
+          printf '%s' "$ACCOUNT" > "$RUNNER_TEMP/play-account.json"
+          mode=(--rehearse)
+          if [ "$PUBLISHED" = true ]; then mode=(); fi
+          python3 scripts/play-release.py "$RUNNER_TEMP/play-account.json" \
+            "$HANDOFF/play/shovey-v$VERSION-gplay.aab" \
+            --entity "$(scripts/ziran.sh pkg path entity --locked)" "${mode[@]}"

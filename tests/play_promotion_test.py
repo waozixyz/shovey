@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""Exercise the exact Play API code embedded in the reusable workflow."""
+"""Exercise the exact Play API code the Play workflows run."""
 import contextlib
 import copy
 import io
 from pathlib import Path
 import re
-import textwrap
 import types
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW = ROOT / '.github/workflows/play-promote.yml'
-source = WORKFLOW.read_text().split("python3 - <<'PY'\n")[-1].rsplit('          PY', 1)[0]
+SCRIPT = ROOT / 'scripts/play-promote.py'
 promotion = types.ModuleType('promotion')
-exec(compile(textwrap.dedent(source), str(WORKFLOW), 'exec'), promotion.__dict__)
+exec(compile(SCRIPT.read_text(), str(SCRIPT), 'exec'), promotion.__dict__)
 VERSION, CODE = '1.2.3', '42'
 
 
@@ -153,8 +151,12 @@ class PromotionTest(unittest.TestCase):
     def test_release_workflows_target_internal_then_closed_and_only_gplay(self):
         bundle = (ROOT / '.github/workflows/play-bundle.yml').read_text()
         release_script = (ROOT / 'scripts/downloads-release.py').read_text()
+        downloads = (ROOT / '.gitea/workflows/downloads.yml').read_text()
         self.assertIn('uses: ./.github/workflows/play-promote.yml', bundle)
-        self.assertIn('/actions/workflows/play-bundle.yml/dispatches', release_script)
+        # Gitea's Downloads workflow uploads a release it published itself.
+        self.assertNotIn('play-bundle.yml', release_script)
+        self.assertIn("needs.release.outputs.published == 'true'", downloads)
+        self.assertIn('python3 scripts/play-release.py', downloads)
         self.assertIn('secrets: inherit', bundle)
         uploads = re.findall(r'(?ms)^      - .*?upload-google-play@.*?(?=^      - |^  [a-z]|\Z)', bundle)
         self.assertEqual(len(uploads), 1)

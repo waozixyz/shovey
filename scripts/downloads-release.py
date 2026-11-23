@@ -215,11 +215,9 @@ def main():
             raise SystemExit('Published on Gitea; the GitHub mirror has not received this commit yet')
         time.sleep(20)
     mirror_github_release(version, revision, notes, downloads, github_token)
-    # The Play workflow keeps its own signing and account credentials.
-    play = request(GITHUB, '/actions/workflows/play-bundle.yml/runs?event=workflow_dispatch&per_page=100', github_token)['workflow_runs']
-    if not any(r['head_sha'] == revision for r in play):
-        request(GITHUB, '/actions/workflows/play-bundle.yml/dispatches', github_token, 'POST',
-                {'ref': 'master', 'inputs': {'revision': revision, 'product_pack': '10'}})
+    # Only a release this run published goes on to Google Play.
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+        output.write('published=true\n')
 
 
 if __name__ == '__main__':
