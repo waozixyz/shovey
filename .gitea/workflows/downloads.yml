@@ -1,43 +1,316 @@
 name: Downloads
+run-name: Shovey downloads ${{ github.sha }}
+
+# Shovey's own lane on the Build host builds, signs and plays every download
+# from the exact commit with the tools that machine has, and publishes only
+# after all of it passed. No container or VM: the jobs run one at a time as
+# the lane's account and hand their files on through its private state
+# (~/handoff), which no other repository's jobs can read. F-Droid's rebuild
+# is checked on GitHub when the source is mirrored there (fdroid.yml).
 on:
   workflow_dispatch:
+    inputs:
+      rehearse:
+        description: Build, sign and play every download without publishing
+        type: boolean
+        default: true
   push:
     branches: [master]
     paths:
       - .gitea/workflows/downloads.yml
-      - .github/workflows/downloads.yml
       - scripts/downloads-release.py
-      - scripts/release-tools.sh
       - version.json
 permissions:
   contents: write
 concurrency:
   group: shovey-release
   cancel-in-progress: false
+env:
+  JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
+  ANDROID_HOME: /usr/local/lib/gitea-native/android-sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/gitea-native/android-sdk
+  BUNDLETOOL: /usr/local/lib/gitea-native/bundletool-1.18.3.jar
+  YUE_DESKTOP_RECOVERY: '0'
+  HARMONY_DESKTOP_RECOVERY: '0'
 jobs:
-  release:
-    runs-on: alpha-ubuntu24.04
-    timeout-minutes: 240
+  due:
+    name: Decide whether this version needs its downloads
+    runs-on: build-native-shovey
+    timeout-minutes: 10
+    outputs:
+      build: ${{ steps.due.outputs.build }}
+      version: ${{ steps.due.outputs.version }}
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
           sparse-checkout: |
             scripts/downloads-release.py
-            scripts/release-tools.sh
             tests/downloads_release_test.py
             version.json
+            ziran.lock
             src/CHANGELOG.md
           sparse-checkout-cone-mode: false
-      - name: Install release verification tools
-        run: bash scripts/release-tools.sh
       - name: Test publication gates
         run: |
           mkdir -p build
           python3 tests/downloads_release_test.py
-      - name: Build, verify and publish the exact current release
+      - name: Build only an unpublished version or a rehearsal
+        id: due
+        env:
+          REHEARSE: ${{ inputs.rehearse == true || inputs.rehearse == 'true' }}
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import json; print(json.load(open("version.json"))["version"])')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # A draft is invisible without a token, so only a public release answers.
+          state=$(curl --silent --show-error --max-time 30 --output /dev/null --write-out '%{http_code}' \
+            "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases/tags/v$version")
+          case "$state:$REHEARSE" in
+            200:false) echo "Shovey $version is already public; its downloads stay unchanged."
+                       echo 'build=false' >> "$GITHUB_OUTPUT"; exit 0 ;;
+            200:true | 404:*) echo 'build=true' >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::Gitea answered $state for release v$version"; exit 1 ;;
+          esac
+          # The package cache follows the lock; another lock's packages are never reused.
+          lock=$(sha256sum ziran.lock | cut -d' ' -f1)
+          mkdir -p "$XDG_CACHE_HOME"
+          if [ "$(cat "$XDG_CACHE_HOME/shovey-lock" 2>/dev/null || true)" != "$lock" ]; then
+            rm -rf "$XDG_CACHE_HOME/ziran" "$XDG_CACHE_HOME/ziran-native" "$XDG_CACHE_HOME/avif-tools"
+            echo "$lock" > "$XDG_CACHE_HOME/shovey-lock"
+          fi
+          # A first build after a lock change fetches every package next to Gitea's own data.
+          rm -rf "$HOME/handoff"
+          free=$(df -B1M --output=avail "$HOME" | tail -n1)
+          if [ "$free" -lt 6144 ]; then
+            echo "::error::Build has $free MiB free; Shovey's downloads need 6 GiB"; exit 1
+          fi
+          mkdir -p "$HOME/handoff/$GITHUB_RUN_ID/downloads"
+          echo "$GITHUB_SHA" > "$HOME/handoff/$GITHUB_RUN_ID/revision"
+
+  android:
+    name: Signed APK of the normal and F-Droid edition
+    needs: due
+    if: needs.due.outputs.build == 'true'
+    runs-on: build-native-shovey
+    timeout-minutes: 115
+    env:
+      VERSION: ${{ needs.due.outputs.version }}
+    steps:
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Select the installed Android tools and the lane's package cache
+        run: bash scripts/native-ci.sh android
+      # The build F-Droid's recipe runs; it has no self-update, so one APK
+      # serves both.
+      - name: Build the release APK
+        run: make android-fdroid
+      # Only the Google Play edition may name a Google library, in its build
+      # files as in its APK.
+      - name: Keep Google libraries out of the normal and F-Droid edition
+        run: python3 "$KRYON/scripts/check-google-free.py" --source . build/fdroid/shovey.apk
+      - name: Sign and check the APK
+        env:
+          KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
+          PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$KEYSTORE" && test -n "$PASSWORD"
+          trap 'rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"' EXIT
+          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
+          printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
+          python3 scripts/android-release.py sign build/fdroid/shovey.apk --version "$VERSION" \
+            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
+            --output "$HANDOFF/downloads/shovey-v$VERSION.apk"
+          cp "$HANDOFF/downloads/shovey-v$VERSION.apk" "$HANDOFF/downloads/shovey-$VERSION-fdroid.apk"
+          apksigner verify --print-certs "$HANDOFF/downloads/shovey-v$VERSION.apk" | grep 'SHA-256'
+
+  android-gplay:
+    name: Signed APK and bundle of the Google Play edition
+    needs: due
+    if: needs.due.outputs.build == 'true'
+    runs-on: build-native-shovey
+    timeout-minutes: 115
+    env:
+      VERSION: ${{ needs.due.outputs.version }}
+    steps:
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Select the installed Android tools and the lane's package cache
+        run: bash scripts/native-ci.sh android
+      - name: Build the Google Play edition's APK
+        run: make android-gplay
+      # The Google check must still recognise Play Billing, or its passes on
+      # the other editions prove nothing.
+      - name: Find Play Billing in the Google Play APK
+        run: python3 "$KRYON/scripts/check-google-free.py" --expect-google build/fdroid/shovey-gplay.apk
+      - name: Build the Google Play edition's bundle
+        run: make player-bundle
+      - name: Sign and check the APK and the bundle
+        env:
+          KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
+          PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$KEYSTORE" && test -n "$PASSWORD"
+          trap 'rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"' EXIT
+          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/shovey-release.p12"
+          printf '%s\n' "$PASSWORD" > "$RUNNER_TEMP/password"
+          python3 scripts/android-release.py sign build/fdroid/shovey-gplay.apk --edition gplay --version "$VERSION" \
+            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
+            --output "$HANDOFF/downloads/shovey-v$VERSION-gplay.apk"
+          mkdir -p "$HANDOFF/play"
+          python3 scripts/android-release.py sign build/player/android/shovey-unsigned.aab --version "$VERSION" \
+            --keystore "$RUNNER_TEMP/shovey-release.p12" --password-file "$RUNNER_TEMP/password" \
+            --bundletool "$BUNDLETOOL" --output "$HANDOFF/play/shovey-v$VERSION-gplay.aab"
+          apksigner verify --print-certs "$HANDOFF/downloads/shovey-v$VERSION-gplay.apk" | grep 'SHA-256'
+          keytool -printcert -jarfile "$HANDOFF/play/shovey-v$VERSION-gplay.aab" | grep 'SHA256:'
+
+  linux:
+    name: Linux download, played on a private display
+    needs: due
+    if: needs.due.outputs.build == 'true'
+    runs-on: build-native-shovey
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    steps:
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+          persist-credentials: false
+      # The UI tests drive the player through Inner Breeze's test driver client.
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: waozi/breeze
+          ref: fa9c8acab237278d81c9929fa97b3f2545842310
+          path: waozixyz/breeze
+          persist-credentials: false
+          sparse-checkout: tests/ui_driver.py
+          sparse-checkout-cone-mode: false
+      - name: Build the locked compiler and fetch the locked packages
+        run: bash scripts/native-ci.sh desktop
+      - name: Build and pack the Linux download
+        run: make player-linux
+      - name: Unpack the download
+        id: unpack
+        run: |
+          set -euo pipefail
+          rm -rf build/linux-check
+          mkdir -p build/linux-check
+          tar -xzf build/downloads/shovey-v*-linux-x86_64.tar.gz -C build/linux-check
+          cp build/downloads/shovey-v*-linux-x86_64.tar.gz "$HANDOFF/downloads/"
+          # The shipped tarball omits Kryon's test driver; rebuild only the host
+          # binary with KRYON_TEST_DRIVER=1 so UI tests drive the unpacked files.
+          KRYON_TEST_DRIVER=1 python3 -c "import sys; sys.path.insert(0, 'scripts'); import player; player.linux_host()"
+          install -m 0755 build/player/linux/shovey build/linux-check/shovey/shovey
+      # Each play-test runs even when an earlier one fails, so one run shows
+      # every failure.
+      - name: Play the unpacked download on a private display
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
+        run: |
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            SDL_AUDIODRIVER=dummy timeout 300s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
+            python3 tests/shovey_standalone_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --inbe-source "$GITHUB_WORKSPACE/waozixyz/breeze"
+      - name: Open local Classic and Profile with downloads off
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
+        run: |
+          env -u LISTEN_PID -u LISTEN_FDS -u LISTEN_FDNAMES -u NOTIFY_SOCKET -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1024x900x24' \
+            python3 tests/player_local_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze/tests"
+      - name: Press bundled Island's Unlock in English and German
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
+        run: |
+          env -u LISTEN_PID -u LISTEN_FDS -u LISTEN_FDNAMES -u NOTIFY_SOCKET -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1024x900x24' \
+            python3 tests/island_buy_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze"
+      - name: Reopen unclaimed and empty chests in the packaged game
+        if: ${{ !cancelled() && steps.unpack.outcome == 'success' }}
+        run: |
+          make chest-fixture
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            SDL_AUDIODRIVER=dummy timeout 180s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
+            python3 tests/chest_ui_test.py --binary "$PWD/build/linux-check/shovey/shovey" \
+            --fixture build/chest-test/fixture.txt --driver-source "$GITHUB_WORKSPACE/waozixyz/breeze" \
+            --output build/chest-ui-test
+
+  windows:
+    name: Windows download, played under Wine on a private display
+    needs: due
+    if: needs.due.outputs.build == 'true'
+    runs-on: build-native-shovey
+    timeout-minutes: 90
+    env:
+      CXX: x86_64-w64-mingw32-g++
+    defaults:
+      run:
+        working-directory: waozixyz/shovey
+    steps:
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: waozixyz/shovey
+          persist-credentials: false
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: waozi/breeze
+          ref: fa9c8acab237278d81c9929fa97b3f2545842310
+          path: waozixyz/breeze
+          persist-credentials: false
+          sparse-checkout: tests/ui_driver.py
+          sparse-checkout-cone-mode: false
+      - name: Build the locked compiler and fetch the locked packages
+        run: bash scripts/native-ci.sh desktop
+      - name: Cross-build and pack the Windows download
+        run: |
+          make player-windows
+          cp build/downloads/shovey-v*-windows-x86_64.zip "$HANDOFF/downloads/"
+      - name: Play the unpacked download under Wine on a private display
+        run: |
+          set -euo pipefail
+          rm -rf build/windows-check
+          mkdir -p build/windows-check
+          unzip -q build/downloads/shovey-v*-windows-x86_64.zip -d build/windows-check
+          # The shipped zip omits Kryon's test driver; rebuild only the host
+          # binary with KRYON_TEST_DRIVER=1 so Wine UI tests drive the unpacked files.
+          KRYON_TEST_DRIVER=1 python3 -c "import sys; sys.path.insert(0, 'scripts'); import player; player.windows_host('x86_64-w64-mingw32-')"
+          install -m 0755 build/player/windows/shovey.exe build/windows-check/Shovey/shovey.exe
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY \
+            WINEPREFIX="$RUNNER_TEMP/wine" timeout 900s xvfb-run -a -n 400 -s '-screen 0 1280x1000x24' \
+            python3 tests/shovey_windows_ui_test.py --program "$PWD/build/windows-check/Shovey/shovey.exe" \
+            --inbe-source "$GITHUB_WORKSPACE/waozixyz/breeze"
+
+  release:
+    name: Verify every download and publish the release
+    needs: [due, android, android-gplay, linux, windows]
+    if: needs.due.outputs.build == 'true'
+    runs-on: build-native-shovey
+    timeout-minutes: 60
+    steps:
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/downloads-release.py
+            version.json
+            src/CHANGELOG.md
+          sparse-checkout-cone-mode: false
+      - name: Verify the signer and versions, then publish
         env:
           RELEASE_REVISION: ${{ github.sha }}
+          SHOVEY_REHEARSE: ${{ inputs.rehearse == true || inputs.rehearse == 'true' }}
           SHOVEY_BUILD_TOKEN: ${{ secrets.SHOVEY_BUILD_TOKEN }}
           SHOVEY_RELEASE_TOKEN: ${{ secrets.SHOVEY_RELEASE_TOKEN }}
-        run: python3 scripts/downloads-release.py
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/build-tools/36.0.0:$JAVA_HOME/bin:$PATH"
+          export SHOVEY_NATIVE_BUILD="$HOME/handoff/$GITHUB_RUN_ID"
+          python3 scripts/downloads-release.py
+          sha256sum "$SHOVEY_NATIVE_BUILD"/downloads/* "$SHOVEY_NATIVE_BUILD"/play/*

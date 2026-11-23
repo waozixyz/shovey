@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish verified Downloads from Gitea; keep the existing isolated signing backend."""
+"""Publish the downloads Gitea's native jobs built, signed and verified."""
 import hashlib
 import http.client
 import json
@@ -11,7 +11,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 GITEA = 'https://git.waozi.xyz'
@@ -62,42 +61,13 @@ def download(url, destination, token=None):
             output.write(block)
 
 
-def extract(archive, destination, expected=None):
-    with zipfile.ZipFile(archive) as zipped:
-        for member in zipped.infolist():
-            if member.is_dir():
-                continue
-            path = Path(member.filename)
-            if path.is_absolute() or '..' in path.parts:
-                raise ValueError('Unsafe artifact path')
-            if expected is not None and path.name not in expected:
-                raise ValueError(f'Unexpected download: {path.name}')
-            target = destination / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if target.exists():
-                raise ValueError(f'Duplicate artifact: {path.name}')
-            with zipped.open(member) as source, target.open('wb') as output:
-                while block := source.read(1024 * 1024):
-                    output.write(block)
-
-
-def collect(run, token, output, version):
-    artifacts = request(GITHUB, f'/actions/runs/{run}/artifacts?per_page=100', token)['artifacts']
-    required = {'shovey-android', 'shovey-android-gplay', 'shovey-linux', 'shovey-windows', 'fdroid-unsigned'}
-    selected = {a['name']: a for a in artifacts if a['name'] in required and not a['expired']}
-    if selected.keys() != required:
-        raise ValueError('Missing verified release artifacts')
-    downloads = output / 'downloads'
-    downloads.mkdir(parents=True, exist_ok=True)
-    for name, artifact in selected.items():
-        archive = output / (name + '.zip')
-        download(artifact['archive_download_url'], archive, token)
-        expected_digest = artifact.get('digest')
-        if expected_digest and expected_digest != 'sha256:' + digest(archive):
-            raise ValueError(f'Artifact digest mismatch: {name}')
-        extract(archive, output / 'fdroid' if name == 'fdroid-unsigned' else downloads,
-                None if name == 'fdroid-unsigned' else names(version))
-    if {p.name for p in downloads.iterdir()} != names(version):
+def collect(build, revision, version):
+    """The downloads this run's native jobs built and signed from one commit."""
+    if (build / 'revision').read_text().strip() != revision:
+        raise ValueError('Native build belongs to another source commit')
+    downloads = build / 'downloads'
+    found = {p.name for p in downloads.iterdir()}
+    if found != names(version) or any(p.is_symlink() or not p.is_file() for p in downloads.iterdir()):
         raise ValueError('Release must contain exactly the five expected downloads')
     return downloads
 
@@ -115,10 +85,6 @@ def verify(downloads, output, version, code):
             raise ValueError(f'Wrong APK version: {edition}')
     if digest(downloads / f'shovey-v{version}.apk') != digest(downloads / f'shovey-{version}-fdroid.apk'):
         raise ValueError('Normal and F-Droid editions differ')
-    rebuilt = list((output / 'fdroid' / 'tmp').glob('*.apk'))
-    if len(rebuilt) != 1:
-        raise ValueError('Expected one F-Droid source rebuild')
-    subprocess.run(['apksigcopier', 'compare', '--unsigned', str(downloads / f'shovey-{version}-fdroid.apk'), str(rebuilt[0])], check=True)
 
 
 def upload(release, path, token):
@@ -206,50 +172,20 @@ def main():
     version, code = version_data['version'], version_data['version_code']
     notes = re.search(r'^## \[' + re.escape(version) + r'\] - [^\n]+\n(.*?)(?=^## |\Z)',
                       (ROOT / 'src/CHANGELOG.md').read_text(), re.M | re.S)[1].strip()
+    build = Path(os.environ['SHOVEY_NATIVE_BUILD']).resolve(strict=True)
+    downloads = collect(build, revision, version)
+    verify(downloads, build, version, code)
+    if os.environ.get('SHOVEY_REHEARSE') == 'true':
+        print(f'Shovey {version} downloads verified; a rehearsal publishes nothing', flush=True)
+        return
     github_token, gitea_token = os.environ['SHOVEY_BUILD_TOKEN'], os.environ['SHOVEY_RELEASE_TOKEN']
     api = GITEA + '/api/v1/repos/' + REPO
     release = request(api, f'/releases/tags/v{version}', gitea_token, missing=True)
     if release and not release['draft']:
         print(f'Shovey {version} is already public; its release stays unchanged', flush=True)
         return
-    # Source sync can lag the canonical push; never dispatch another revision.
-    deadline = time.monotonic() + 20 * 60
-    while True:
-        head = request(GITHUB, '/commits/master', github_token)['sha']
-        if head == revision:
-            break
-        if time.monotonic() > deadline:
-            raise SystemExit('Exact source is not mirrored to the build backend yet')
-        time.sleep(20)
-    title = 'Shovey build ' + revision
-    def runs():
-        return [r for r in request(GITHUB, '/actions/workflows/downloads.yml/runs?event=workflow_dispatch&per_page=100', github_token)['workflow_runs']
-                if r['head_sha'] == revision and r['display_title'] == title]
-    candidates = runs()
-    if not candidates:
-        request(GITHUB, '/actions/workflows/downloads.yml/dispatches', github_token, 'POST',
-                {'ref': 'master', 'inputs': {'revision': revision, 'rehearse': 'true'}})
-        for _ in range(12):
-            time.sleep(5)
-            candidates = runs()
-            if candidates:
-                break
-        if not candidates:
-            raise SystemExit('Build dispatch outcome unknown; do not dispatch again without readback')
-    run = candidates[0]
-    print('Exact build:', run['html_url'], flush=True)
-    deadline = time.monotonic() + 3 * 60 * 60
-    while run['status'] != 'completed':
-        if time.monotonic() > deadline:
-            raise SystemExit('Build still pending; release remains unpublished')
-        time.sleep(30)
-        run = request(GITHUB, f'/actions/runs/{run["id"]}', github_token)
-    if run['conclusion'] != 'success':
-        raise SystemExit('Downloads validation failed; release remains unpublished: ' + run['html_url'])
     output = ROOT / 'build' / 'release'
     output.mkdir(parents=True, exist_ok=True)
-    downloads = collect(run['id'], github_token, output, version)
-    verify(downloads, output, version, code)
     if not release:
         release = request(api, '/releases', gitea_token, 'POST', {'tag_name': 'v' + version,
                           'target_commitish': revision, 'name': 'Shovey ' + version, 'body': notes, 'draft': True})
@@ -271,6 +207,13 @@ def main():
     if request(api, '/tags/v' + version, gitea_token)['commit']['sha'] != revision:
         raise SystemExit('Published tag verification failed')
     print(f'Published {GITEA}/{REPO}/releases/tag/v{version}', flush=True)
+    # The mirror's release and the Play upload name this commit; wait for the
+    # source mirror rather than tagging another revision there.
+    deadline = time.monotonic() + 20 * 60
+    while request(GITHUB, '/commits/master', github_token)['sha'] != revision:
+        if time.monotonic() > deadline:
+            raise SystemExit('Published on Gitea; the GitHub mirror has not received this commit yet')
+        time.sleep(20)
     mirror_github_release(version, revision, notes, downloads, github_token)
     # The Play workflow keeps its own signing and account credentials.
     play = request(GITHUB, '/actions/workflows/play-bundle.yml/runs?event=workflow_dispatch&per_page=100', github_token)['workflow_runs']

@@ -9,8 +9,9 @@ edition=${1:-}
 case $edition in '' | gplay) ;; *) echo "usage: android-build.sh [gplay]" >&2; exit 2 ;; esac
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 mkdir -p "$root/build/fdroid"
-# Fetch every package into this build's own cache, never a shared one.
-export XDG_CACHE_HOME="$root/build/fdroid/cache"
+# Fetch every package into this build's own cache, never a shared one. Only
+# the Downloads workflow names a cache it keeps between its own runs.
+export XDG_CACHE_HOME="${SHOVEY_ANDROID_CACHE:-$root/build/fdroid/cache}"
 ziran="$root/scripts/ziran.sh"
 "$ziran" fetch --locked
 toolchain=$("$ziran" pkg path ziran --locked)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release gates: failed builds, unsafe artifacts and wrong tags cannot publish."""
+"""Release gates: another commit's build, wrong tags and bad uploads cannot publish."""
 import importlib.util
 import json
 import os
@@ -7,7 +7,6 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('release', ROOT / 'scripts/downloads-release.py')
@@ -16,30 +15,18 @@ spec.loader.exec_module(release)
 
 
 class ReleaseTests(unittest.TestCase):
-    def test_artifact_paths_and_duplicates(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
-            folder = Path(scratch)
-            archive = folder / 'artifact.zip'
-            for name in ['../escape.apk', '/escape.apk', 'unexpected.apk']:
-                with zipfile.ZipFile(archive, 'w') as zipped:
-                    zipped.writestr(name, b'apk')
-                with self.assertRaises(ValueError):
-                    release.extract(archive, folder / 'out', {'game.apk'})
-            with zipfile.ZipFile(archive, 'w') as zipped:
-                zipped.writestr('game.apk', b'apk')
-            release.extract(archive, folder / 'out', {'game.apk'})
-            with self.assertRaises(ValueError):
-                release.extract(archive, folder / 'out', {'game.apk'})
-
-    def run_gate(self, conclusion='success', wrong_tag=False, bad_readback=False):
+    def run_gate(self, other_commit=False, rehearse=False, wrong_tag=False, bad_readback=False):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
             folder = Path(scratch)
             revision = '1' * 40
             (folder / 'version.json').write_text(json.dumps({'version': '1.2.3', 'version_code': 9}))
             (folder / 'src').mkdir()
             (folder / 'src/CHANGELOG.md').write_text('## [1.2.3] - 2026-11-22\n\n- Release notes.\n')
-            run = {'id': 17, 'head_sha': revision, 'display_title': 'Shovey build ' + revision,
-                   'status': 'completed', 'conclusion': conclusion, 'html_url': 'https://github.com/build/17'}
+            downloads = folder / 'native/downloads'
+            downloads.mkdir(parents=True)
+            for name in release.names('1.2.3'):
+                (downloads / name).write_bytes(name.encode())
+            (folder / 'native/revision').write_text(('2' * 40 if other_commit else revision) + '\n')
             mutations = []
             def api(base, path, token, method='GET', data=None, missing=False):
                 if method != 'GET':
@@ -50,8 +37,6 @@ class ReleaseTests(unittest.TestCase):
                     return []
                 if path == '/commits/master':
                     return {'sha': revision}
-                if 'downloads.yml/runs?' in path:
-                    return {'workflow_runs': [run]}
                 if path == '/releases':
                     if base == release.GITHUB:
                         return {'id': 9, 'assets': [], 'draft': True,
@@ -70,12 +55,6 @@ class ReleaseTests(unittest.TestCase):
                     return {}
                 self.fail('Unexpected API operation: ' + path)
             uploads, github_uploads, readbacks = [], [], []
-            def collect(*args):
-                downloads = folder / 'downloads'
-                downloads.mkdir()
-                for name in release.names('1.2.3'):
-                    (downloads / name).write_bytes(name.encode())
-                return downloads
             def upload(identifier, path, token):
                 uploads.append(path.name)
                 return {'browser_download_url': path.name}
@@ -87,22 +66,27 @@ class ReleaseTests(unittest.TestCase):
                 destination.write_bytes(b'corrupt' if bad_readback else url.encode())
             env = {'GITEA_ACTIONS': 'true', 'GITHUB_SERVER_URL': release.GITEA,
                    'RELEASE_REVISION': revision, 'SHOVEY_BUILD_TOKEN': 'build-test-token',
-                   'SHOVEY_RELEASE_TOKEN': 'release-test-token'}
+                   'SHOVEY_RELEASE_TOKEN': 'release-test-token',
+                   'SHOVEY_NATIVE_BUILD': str(folder / 'native'), 'SHOVEY_REHEARSE': str(rehearse).lower()}
             with patch.object(release, 'ROOT', folder), patch.dict(os.environ, env), \
                     patch.object(release.subprocess, 'check_output', return_value=revision), \
                     patch.object(release, 'request', side_effect=api), \
-                    patch.object(release, 'collect', side_effect=collect), \
                     patch.object(release, 'verify') as verification, \
                     patch.object(release, 'upload', side_effect=upload), \
                     patch.object(release, 'upload_github', side_effect=upload_github), \
                     patch.object(release, 'download', side_effect=download):
-                if conclusion != 'success' or wrong_tag or bad_readback:
-                    with self.assertRaises(SystemExit):
+                if other_commit or wrong_tag or bad_readback:
+                    with self.assertRaises((SystemExit, ValueError)):
                         release.main()
                     self.assertFalse(any(method == 'PATCH' for _, _, method, _ in mutations))
-                    if conclusion != 'success':
+                    if other_commit:
                         self.assertEqual(mutations, [])
                         verification.assert_not_called()
+                elif rehearse:
+                    release.main()
+                    verification.assert_called_once()
+                    self.assertEqual(mutations, [])
+                    self.assertEqual(uploads + github_uploads, [])
                 else:
                     release.main()
                     verification.assert_called_once()
@@ -110,8 +94,23 @@ class ReleaseTests(unittest.TestCase):
                     self.assertEqual(mutations[-1][0:3], (release.GITHUB, '/releases/9', 'PATCH'))
                     self.assertFalse(mutations[-1][3]['draft'])
 
-    def test_failed_build_never_creates_release(self):
-        self.run_gate(conclusion='failure')
+    def test_another_commits_build_never_creates_release(self):
+        self.run_gate(other_commit=True)
+
+    def test_rehearsal_verifies_and_publishes_nothing(self):
+        self.run_gate(rehearse=True)
+
+    def test_unexpected_download_never_publishes(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'build') as scratch:
+            build = Path(scratch)
+            (build / 'downloads').mkdir()
+            (build / 'revision').write_text('1' * 40)
+            for name in [*release.names('1.2.3'), 'extra.apk']:
+                (build / 'downloads' / name).write_bytes(b'apk')
+            with self.assertRaises(ValueError):
+                release.collect(build, '1' * 40, '1.2.3')
+            (build / 'downloads/extra.apk').unlink()
+            self.assertEqual(release.collect(build, '1' * 40, '1.2.3'), build / 'downloads')
 
     def test_wrong_source_tag_never_publishes(self):
         self.run_gate(wrong_tag=True)
