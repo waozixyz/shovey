@@ -10,11 +10,11 @@ ref = "eb53af7daec7cfdec1c4b616f7bb94961d36d055"
 
 [dependencies.kryon]
 git = "https://git.waozi.xyz/kryonlabs/kryon.git"
-ref = "609be370592f0c6e617ad5fca8774069aef16dc5"
+ref = "d0effa16a90b217a241145dd9f2f379627dfa8a7"
 
 [dependencies.apps]
 git = "https://git.waozi.xyz/waozi/apps.git"
-ref = "2784fc7a67ef474501f1bc41d8163f78be1a9374"
+ref = "f0236a5fca2571e7418dff955fd8ccd8419664de"
 
 [dependencies.mingcute]
 git = "https://github.com/kryonlabs/mingcute.git"
@@ -26,7 +26,7 @@ rules = "src/rules.zi"
 
 [dependencies.entity]
 git = "https://git.waozi.xyz/waozi/entity.git"
-ref = "4dc8d1deb799d9580094243f0a73e8ad0840b2a0"
+ref = "359065bf742bb6dcb93055f1bd515e854c6bc0ec"
 
 [dependencies.crypto]
 git = "https://github.com/ziranlang/crypto.git"
