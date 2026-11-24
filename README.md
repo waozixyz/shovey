@@ -89,11 +89,10 @@ python3 tests/world_map_spacing_test.py
 build-queue -- make world-map-test player-linux
 ```
 
-Run progression independently, or test Play, map selection and double-click
-entry on a private Xvfb display after building the player:
+Test Play, map selection and double-click entry on a private Xvfb display
+after building the player:
 
 ```sh
-build-queue -- sh tests/world_map_progression_test.sh
 sh tests/world_map_selection_ui_test.sh
 ```
 

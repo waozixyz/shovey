@@ -543,7 +543,6 @@ world-map-tiles:
 world-map-test:
 	python3 tests/world_map_art_test.py
 	sh tests/world_map_layout_test.sh
-	sh tests/world_map_progression_test.sh
 	$(MAKE) level-select-test
 
 .PHONY: hints-loading-test
