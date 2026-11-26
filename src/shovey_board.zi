@@ -1306,16 +1306,16 @@ BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
     }
 }
 
-// A pale edge keeps wooden boxes separate from dark stone and tiled floors,
-// including while moving, before the idle guide starts glowing.
-BoardCrateEdges :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, key: u64, landscape: bool) {
+// Keep the floor's crate destination corners clear on dark tiles. Occupied
+// marks stay beneath their pieces; the wooden crate artwork is untouched.
+BoardCrateGoals :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, landscape: bool) {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.objects[at] != 9 { continue }
+        if game.ground[at] != 18 || game.objects[at] != 0 || game.player == at { continue }
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
-        inset := cell.width * 0.085
-        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 3000 + at),
-            .bounds = Rectangle.{cell.x + inset, cell.y + inset, cell.width - inset * 2.0, cell.height - inset * 2.0},
-            .fill = Color.{255, 244, 204, 50}, .border = Color.{255, 247, 213, 255}, .radius = cell.width * 0.04})
+        SvgIcon.Draw(session, SvgIcon.Props.{.bounds = cell,
+            .shape = "S4rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{40, 30, 20, 230}})
+        SvgIcon.Draw(session, SvgIcon.Props.{.bounds = cell,
+            .shape = "S2rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{255, 241, 193, 255}})
     }
 }
 
@@ -1396,7 +1396,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMap
     BoardBoats(session, game, grid, key, now, landscape)
     BoardBeams(session, game, grid, key, landscape)
     BoardShooters(session, game, grid, key, now, landscape)
-    BoardCrateEdges(session, game, grid, key, landscape)
+    BoardCrateGoals(session, game, grid, landscape)
     if board_chest >= 0 && board_chest_open && !board_chest_claimed {
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(board_chest, landscape))
         Theme.ShoveyRewardGlow(session, BoardOverlayKey(key, 3800), cell, now)

@@ -6,7 +6,7 @@
 - Show enemy charge and firing lanes; preserve their timing in saved attempts and hints.
 
 - Hide Dew and token balances during gameplay.
-- Give wooden boxes a pale rim so they remain visible on dark tiled floors.
+- Make crate destination markings clear on dark tiled floors; preserve the original wooden box appearance.
 - Show available reward chests open with a gentle golden glow.
 
 - Show the equipped Shovey skin as the title-bar profile picture, so a wardrobe choice appears at once instead of a separate static portrait.
