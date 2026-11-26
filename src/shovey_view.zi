@@ -1593,11 +1593,7 @@ ShoveyFrame :: () {
     if !cinematic {
         ids: [6]s32 = .[20022,20005,20820,20016,20017,20023]
         labels: [6]string = .[AppLocaleHost("shovey_back"),AppLocaleHost("shovey_levels"),AppLocaleHost("shovey_book"),AppLocaleHost("shovey_restart"),AppLocaleHost("shovey_hint"),AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute")]
-        digits: [24]u8
-        coins_text := ifx mini then "" else FormatInteger(cast(s64)HintWallet.ShopCoins(), digits[:])
-        dew_text := ifx mini then "" else ShopUI.DewText()
-        action := GameToolbar(frame.session,width,top,ids[:],labels[:],mini,false,
-            coins_text,AppLocaleHost("shovey_shop_coins"),dew_text,AppLocaleHost("shovey_shop_dew"))
+        action := GameToolbar(frame.session,width,top,ids[:],labels[:],mini,false)
         if action==1 { unused ShoveyBackFromPlay(); return }
         if action==3 { Book.BookOpen() }
         if action==4 { ChangeLevel(game.level) }

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Hide Dew and token balances during gameplay.
+- Give wooden boxes a pale rim so they remain visible on dark tiled floors.
+- Show available reward chests open with a gentle golden glow.
+
 - Show the equipped Shovey skin as the title-bar profile picture, so a wardrobe choice appears at once instead of a separate static portrait.
 
 ## [0.6.173] - 2026-11-21

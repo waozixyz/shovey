@@ -137,9 +137,20 @@ Request :: () {
 }
 #program_export
 Pump :: (now: float64, today: s64) {
+    chest_now = now
+    chest_today = today
     DailyChestPump(today)
     ShopPump(now)
     ShopSetEarnedCoins(DailyChestCoins())
+}
+chest_now: float64;
+chest_today: s64 = -1;
+
+ChestAction :: (session: Session, key: u64, bounds: Rectangle) -> bool {
+    ready := chest_today >= 0 && DailyChestReady(chest_today)
+    if ready { ShoveyRewardGlow(session, WidgetPartKey(key, 10), bounds, chest_now) }
+    return IconAction(session, key, bounds,
+        ifx ready then "assets/shovey/shop/chest-open.png" else "assets/shovey/shop/chest-closed.png", "chest")
 }
 Label :: (session: Session, key: u64, bounds: Rectangle, text: string, size: s32 = 16, centre: bool = false) {
     unused Text.Draw(session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = size,
@@ -166,12 +177,12 @@ TitleActions :: (session: Session, bounds: Rectangle) {
     size := bounds.height
     if size > 44.0 { size = 44.0 }
     if IconAction(session, 61000, Rectangle.{bounds.x, bounds.y, size, size}, "assets/shovey/shop/stall.png", "shop") { Open(1) }
-    if IconAction(session, 61002, Rectangle.{bounds.x + size + 4.0, bounds.y, size, size}, "assets/shovey/shop/chest-closed.png", "chest") { Open(2) }
+    if ChestAction(session, 61002, Rectangle.{bounds.x + size + 4.0, bounds.y, size, size}) { Open(2) }
 }
 #program_export
 CoverActions :: (session: Session, bounds: Rectangle) {
     if IconAction(session, 61000, Rectangle.{bounds.x, bounds.y, 44.0, 44.0}, "assets/shovey/shop/stall.png", "shop") { Open(1) }
-    if IconAction(session, 61002, Rectangle.{bounds.x, bounds.y + 60.0, 44.0, 44.0}, "assets/shovey/shop/chest-closed.png", "chest") { Open(2) }
+    if ChestAction(session, 61002, Rectangle.{bounds.x, bounds.y + 60.0, 44.0, 44.0}) { Open(2) }
     digits: [24]u8
     Amount(session, 61004, Rectangle.{bounds.x + 48.0, bounds.y, bounds.width - 48.0, 28.0}, false,
         FormatInteger(cast(s64)ShopCoins(), digits[:]))
@@ -262,11 +273,13 @@ CoinPacks :: (session: Session, area: Rectangle) {
         if Action(session, key + 6, Rectangle.{area.x + 12.0, y + 66.0, area.width - 24.0, 44.0}, "buy") { confirm = pack + 100; scroll = 0; notice = "" }
     }
 }
-Chest :: (session: Session, area: Rectangle, today: s64, columns: s32) {
+Chest :: (session: Session, area: Rectangle, today: s64, columns: s32, now: float64) {
     ready := DailyChestReady(today)
     claimed := DailyChestWeekClaimed(today)
     day := DailyChestDay(today)
-    Picture(session, 63000, Rectangle.{area.x + (area.width - 130.0) / 2.0, area.y, 130.0, 112.0},
+    picture := Rectangle.{area.x + (area.width - 130.0) / 2.0, area.y, 130.0, 112.0}
+    if ready { ShoveyRewardGlow(session, 63010, picture, now) }
+    Picture(session, 63000, picture,
         ifx ready then "assets/shovey/shop/chest-open.png" else "assets/shovey/shop/chest-closed.png", Copy("chest"))
     Label(session, 63001, Rectangle.{area.x, area.y + 118.0, area.width, 72.0}, Copy("chest_rule"), 14, true)
     if Action(session, 63002, Rectangle.{area.x, area.y + 202.0, area.width, 44.0}, ifx ready then "claim" else "chest_wait", !ready, ready) {
@@ -337,7 +350,7 @@ ShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> 
     if panel.opened {
         area := panel.content
         if confirm != 0 { Confirmation(session, area) }
-        else if page == 2 { Chest(session, area, today, columns) }
+        else if page == 2 { Chest(session, area, today, columns, now) }
         else if tab == 0 { Skins(session, area, columns) }
         else if tab == 1 { CoinPacks(session, area) }
         else if tab == 3 {

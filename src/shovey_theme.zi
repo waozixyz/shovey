@@ -78,6 +78,18 @@ ShoveyHeaderBar :: (session: Session, key: u64, x: float32, y: float32, width: f
     return false
 }
 
+// A slow, soft golden light behind an available reward. Keys key to key + 3.
+ShoveyRewardGlow :: (session: Session, key: u64, bounds: Rectangle, now: float64) {
+    pulse := cast(float32)(0.5 + 0.5 * Math.Sin(now * 1.8))
+    size := ifx bounds.width < bounds.height then bounds.width else bounds.height
+    for ring: cast(s32)0..3 {
+        grow := size * (0.05 + cast(float32)(3 - ring) * 0.045) * (0.85 + 0.15 * pulse)
+        unused Box.Draw(session, Box.Props.{.key = key + cast(u64)ring,
+            .bounds = Rectangle.{bounds.x - grow, bounds.y - grow, bounds.width + grow * 2.0, bounds.height + grow * 2.0},
+            .fill = Color.{255, 218, 126, cast(u8)(7.0 + 7.0 * pulse)}, .radius = size * 0.3 + grow})
+    }
+}
+
 // Pip's green light, pulsing round the cell he points at: rings that breathe
 // outward and a soft tint inside, so the cell stays readable. Keys key to
 // key + 5.
