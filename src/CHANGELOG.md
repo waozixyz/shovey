@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Group profile pictures under expandable app collections in Entity, with shared unlocks and visible locked choices.
 - Redesign Classic 89–93 with timed enemy fire, crate cover, switch gates, collapsing floors and decoy portals into sealed traps.
 - Show enemy charge and firing lanes; preserve their timing in saved attempts and hints.
 
