@@ -76,7 +76,8 @@ SPRITE_FOREST :: 303
 SPRITE_LAVA_EDGE :: 312
 SPRITE_BEES :: 376
 SPRITE_HIVE :: 377
-SPRITE_COUNT :: 378
+SPRITE_SHOOTER :: 378
+SPRITE_COUNT :: 382
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -370,6 +371,12 @@ SpritesPrepare :: () {
     }
     SpritePath(SPRITE_BEES, "tile-167")
     SpritePath(SPRITE_HIVE, "tile-168")
+    for kind: cast(s32)SHOVEY_SHOOTER_LEFT..SHOVEY_SHOOTER_DOWN {
+        bytes: Vec(u8)
+        BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
+        SpritePath(SPRITE_SHOOTER + kind - SHOVEY_SHOOTER_LEFT, TextView(VecSlice(bytes, 0, bytes.count)))
+        VecFree(bytes)
+    }
     SpritePath(SPRITE_CHERRY, "tile-56")
     SpritePath(SPRITE_BOAT, "tile-148")
     SpritePath(SPRITE_BOAT + 1, "tile-149")
@@ -599,6 +606,7 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
     if kind == SHOVEY_BEES { return SPRITE_BEES }
     if kind == SHOVEY_HIVE { return SPRITE_HIVE }
+    if ShoveyShooter(kind) { return SPRITE_SHOOTER + kind - SHOVEY_SHOOTER_LEFT }
     if kind == SHOVEY_TREE { return SPRITE_TREE }
     if ShoveyAnimal(kind) {
         facing := ifx position >= 0 && game.light_from[position] < 4 then game.light_from[position] else BoardEngineDirection(1, landscape)
@@ -839,6 +847,25 @@ board_seen_moves: s32;
 board_seen_powers: s32;
 board_seen_ground: [SHOVEY_CELLS]s32;
 board_seen_objects: [SHOVEY_CELLS]s32;
+board_seen_light: [SHOVEY_CELLS]s32;
+BOARD_ENEMY_SHOTS :: 16
+BOARD_ENEMY_SHOT_SECONDS :: 0.24
+BoardEnemyShot :: struct {
+    from: s32
+    direction: s32
+    cells: s32
+    start: float64
+}
+board_enemy_shots: [BOARD_ENEMY_SHOTS]BoardEnemyShot;
+
+BoardEnemyShotStart :: (from: s32, direction: s32, cells: s32, start: float64) {
+    slot: s32 = 0
+    for index: cast(s32)0..BOARD_ENEMY_SHOTS - 1 {
+        if board_enemy_shots[index].start <= 0.0 { slot = index; break }
+        if board_enemy_shots[index].start < board_enemy_shots[slot].start { slot = index }
+    }
+    board_enemy_shots[slot] = BoardEnemyShot.{.from = from, .direction = direction, .cells = cells, .start = start}
+}
 
 BoardEffectStart :: (kind: s32, at: s32, start: float64, piece: s32 = 0, stars: s32 = 0) {
     slot: s32 = 0
@@ -853,6 +880,7 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
     if !board_seen || board_seen_level != game.level || game.moves < board_seen_moves {
         // A new level, a restart or an undo: nothing from before plays on.
         for index: cast(s32)0..BOARD_EFFECTS - 1 { board_effects[index].kind = 0 }
+        for index: cast(s32)0..BOARD_ENEMY_SHOTS - 1 { board_enemy_shots[index].start = 0.0 }
         board_flight_from = -1
     } else if !game.lost && game.player >= 0 && game.moves > board_seen_moves &&
     (board_seen_powers & SHOVEY_CHARGED) == 0 && (game.powers & SHOVEY_CHARGED) != 0 {
@@ -904,6 +932,24 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
             }
         }
     }
+    if board_seen && board_seen_level == game.level && game.moves > board_seen_moves {
+        steps := game.moves - board_seen_moves
+        for source: cast(s32)0..SHOVEY_CELLS - 1 {
+            kind := game.ground[source]
+            if !ShoveyShooter(kind) { continue }
+            prev := ifx board_seen_light[source] >= 0 && board_seen_light[source] < SHOVEY_SHOOTER_INTERVAL then board_seen_light[source] else 0
+            if prev + steps < SHOVEY_SHOOTER_INTERVAL { continue }
+            direction := kind - SHOVEY_SHOOTER_LEFT
+            cells: s32 = 0
+            at := ShoveyNeighbor(source, direction)
+            while at >= 0 && !ShoveyEnemyShotStops(game, at) {
+                cells += 1
+                if game.lost && at == game.player { break }
+                at = ShoveyNeighbor(at, direction)
+            }
+            if cells > 0 { BoardEnemyShotStart(source, direction, cells, now) }
+        }
+    }
     board_seen = true
     board_seen_level = game.level
     board_seen_moves = game.moves
@@ -911,6 +957,7 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         board_seen_ground[at] = game.ground[at]
         board_seen_objects[at] = game.objects[at]
+        board_seen_light[at] = game.light_from[at]
     }
 }
 
@@ -1272,10 +1319,83 @@ BoardCrateEdges :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapRe
     }
 }
 
+// Interval-shooting enemies show their charge pips, warn along their firing
+// line on the move before they fire, and flash a bolt when they shoot.
+BoardShooters :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, key: u64, now: float64, landscape: bool) {
+    pulse := cast(float32)(0.5 + 0.5 * Math.Sin(now * 6.0))
+    shooter_count: s32 = 0
+    warning_dot: s32 = 0
+    for source: cast(s32)0..SHOVEY_CELLS - 1 {
+        kind := game.ground[source]
+        if !ShoveyShooter(kind) || shooter_count >= 32 { continue }
+        phase := ShoveyShooterPhase(game, source)
+        cell := TileMap.TileMapCell(grid, BoardDisplayIndex(source, landscape))
+        pip_size := cell.width * 0.14
+        pip_gap := cell.width * 0.22
+        pip_y := cell.y + cell.height * 0.82 - pip_size * 0.5
+        base_x := cell.x + cell.width * 0.5 - pip_gap
+        armed := phase == SHOVEY_SHOOTER_INTERVAL - 1
+        for pip: cast(s32)0..SHOVEY_SHOOTER_INTERVAL - 1 {
+            lit := pip <= phase
+            fill := ifx !lit then Color.{36, 28, 32, 175} else ifx armed then Color.{255, 110, 48, 245} else Color.{245, 184, 72, 225}
+            px := base_x + cast(float32)pip * pip_gap - pip_size * 0.5
+            unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4000 + shooter_count * 4 + pip),
+                    .bounds = Rectangle.{px, pip_y, pip_size, pip_size}, .fill = fill, .radius = pip_size * 0.5})
+        }
+        if armed && !game.won && !game.lost {
+            ring := cell.width * (0.96 + 0.08 * pulse)
+            unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4000 + shooter_count * 4 + 3),
+                    .bounds = Rectangle.{cell.x + (cell.width - ring) * 0.5, cell.y + (cell.height - ring) * 0.5, ring, ring},
+                    .border = Color.{255, 92, 48, cast(u8)(150.0 + 95.0 * pulse)}, .radius = ring * 0.48})
+            direction := kind - SHOVEY_SHOOTER_LEFT
+            at := ShoveyNeighbor(source, direction)
+            while at >= 0 && !ShoveyEnemyShotStops(game, at) && warning_dot < 160 {
+                spot := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
+                dot_size := spot.width * (0.16 + 0.05 * pulse)
+                unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4200 + warning_dot),
+                        .bounds = Rectangle.{spot.x + (spot.width - dot_size) * 0.5, spot.y + (spot.height - dot_size) * 0.5, dot_size, dot_size},
+                        .fill = Color.{255, 86, 42, cast(u8)(135.0 + 90.0 * pulse)}, .radius = dot_size * 0.5})
+                warning_dot += 1
+                at = ShoveyNeighbor(at, direction)
+            }
+        }
+        shooter_count += 1
+    }
+    for index: cast(s32)0..BOARD_ENEMY_SHOTS - 1 {
+        shot := *board_enemy_shots[index]
+        if shot.start <= 0.0 { continue }
+        progress := cast(float32)((now - shot.start) / BOARD_ENEMY_SHOT_SECONDS)
+        if progress >= 1.0 { shot.start = 0.0; continue }
+        if progress < 0.0 { continue }
+        from := TileMap.TileMapCell(grid, BoardDisplayIndex(shot.from, landscape))
+        to := BoardAlong(grid, shot.from, shot.direction, shot.cells, landscape)
+        ax := from.x + from.width * 0.5; ay := from.y + from.height * 0.5
+        bx := to.x + to.width * 0.5; by := to.y + to.height * 0.5
+        left := ifx ax < bx then ax else bx; top := ifx ay < by then ay else by
+        width := ifx ax < bx then bx - ax else ax - bx; height := ifx ay < by then by - ay else ay - by
+        fade := 1.0 - progress
+        beam := from.width * 0.16
+        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4500 + index * 3),
+                .bounds = Rectangle.{left - beam * 0.5, top - beam * 0.5, width + beam, height + beam},
+                .fill = Color.{255, 92, 42, cast(u8)(150.0 * fade)}, .radius = beam * 0.5})
+        orb := from.width * 0.34
+        ox := ax + (bx - ax) * progress
+        oy := ay + (by - ay) * progress
+        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4500 + index * 3 + 1),
+                .bounds = Rectangle.{ox - orb * 0.5, oy - orb * 0.5, orb, orb},
+                .fill = Color.{255, 118, 42, cast(u8)(235.0 * fade)}, .radius = orb * 0.5})
+        core := orb * 0.5
+        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4500 + index * 3 + 2),
+                .bounds = Rectangle.{ox - core * 0.5, oy - core * 0.5, core, core},
+                .fill = Color.{255, 244, 176, cast(u8)(255.0 * fade)}, .radius = core * 0.5})
+    }
+}
+
 ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, key: u64, now: float64, names: []string,
     landscape: bool) -> TileMap.TileMapResult {
     BoardBoats(session, game, grid, key, now, landscape)
     BoardBeams(session, game, grid, key, landscape)
+    BoardShooters(session, game, grid, key, now, landscape)
     BoardCrateEdges(session, game, grid, key, landscape)
     if board_chest >= 0 && board_chest_open && !board_chest_claimed {
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(board_chest, landscape))

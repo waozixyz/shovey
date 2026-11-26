@@ -41,7 +41,7 @@ for level in hidden:
     assert all(len(cells(level[key])) == CELLS for key in ('cells', 'tiles', 'decorations'))
     assert level['solution'] and set(level['solution']) <= set('0123ft')
     checks.append(('classic', 1003, ''.join(level['cells'] + level['tiles'] + level['decorations']), level['solution']))
-for level in classic:
+for level in classic + [levels_tool.engine_level(level) for level in classic if 'engine_variant' in level]:
     board = cells(level['cells'])
     tiles = cells(level['tiles']) if 'tiles' in level else [0] * CELLS
     decorations = cells(level['decorations']) if 'decorations' in level else [0] * CELLS
@@ -52,7 +52,7 @@ for level in classic:
         f'Classic {level["number"]}: fish must start in water'
     assert board.count(7) + board.count(148) >= 1, f'Classic {level["number"]}: a home or a boat'
     # 143-147 are colour goals, 148 the boat and 149 a floating crate.
-    assert all((kind <= 76 or kind in range(82, 135) or kind in range(143, 157)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
+    assert all((kind <= 76 or kind in range(82, 135) or kind in range(143, 157) or kind in range(167, 173)) and kind not in (22, 24, 32) for kind in board), f'Classic {level["number"]}: unknown kind'
     # Open garden borders are valid: the engine bounds movement at the board edge.
     assert (ROOT / f'assets/shovey/levels/{level["number"]}.png').is_file()
     assert (ROOT / f'assets/shovey/levels-landscape/{level["number"]}.png').is_file()

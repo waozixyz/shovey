@@ -5,7 +5,7 @@
 // Solver state vector, CLASSIC_STATE_SIZE bytes:
 //   0..239    ground
 //   240..479  objects
-//   480..719  every moving block's light_from direction
+//   480..719  light_from: moving directions and shooter phases
 //   720       player
 //   721       direction while ammunition is held, else 0: ShoveyMove sets it
 //             before anything reads it and only ShoveyFire reads it
@@ -25,6 +25,7 @@ classic_base: ShoveyGame;
 classic_game: ShoveyGame;
 // A mirror shadow moves with every step, so no step is plain while one exists.
 classic_shadow: bool;
+classic_shooters: bool;
 classic_water_may_bridge: bool;
 
 #program_export
@@ -42,6 +43,8 @@ ClassicApiLoad :: (hex: *u8, level: s32) -> s32 {
     if !ShoveyLoadData(*classic_initial, level, TextView(classic_hex[0:count])) { return 0 }
     classic_base = classic_initial
     classic_game = classic_initial
+    classic_shooters = false
+    for kind: classic_initial.ground { if ShoveyShooter(kind) { classic_shooters = true; break } }
     classic_water_may_bridge = SolveWaterMayBridge(*classic_initial)
     ClassicApiCrateCells()
     ClassicApiDoorCells()
@@ -69,7 +72,7 @@ classic_area: [SHOVEY_CELLS]s32;
 // the loaded board has a wooden crate. Exact moves still run in the engine.
 ClassicApiPermanentWall :: (ground: s32) -> bool {
     return ground == 12 || ground == 63 || (ground == 64 && !classic_water_may_bridge) || ShoveyDrop(ground) || ground == 76 ||
-        ShoveyBlockingDecoration(ground) || (ground >= 95 && ground <= 98) || ground == SHOVEY_CAVE_WALL || ShoveyLaserEmitter(ground) || ground == SHOVEY_LASER_RECEIVER
+        ShoveyBlockingDecoration(ground) || (ground >= 95 && ground <= 98) || ground == SHOVEY_CAVE_WALL || ShoveyLaserEmitter(ground) || ground == SHOVEY_LASER_RECEIVER || ShoveyShooter(ground)
 }
 
 ClassicApiCrateWall :: (ground: s32) -> bool {
@@ -438,7 +441,7 @@ ClassicApiSetWalker :: (walker: s32) {
 #program_export
 ClassicApiPlainStep :: (direction: s32) -> s32 {
     game := *classic_base
-    if classic_shadow || (game.powers & (SHOVEY_TRAIL | SHOVEY_REVERSE | SHOVEY_SLIDE)) != 0 { return -1 }
+    if classic_shadow || classic_shooters || (game.powers & (SHOVEY_TRAIL | SHOVEY_REVERSE | SHOVEY_SLIDE)) != 0 { return -1 }
     to := ShoveyNeighbor(game.player, direction)
     if to < 0 || game.ground[to] != 0 || game.objects[to] != 0 || game.ground[game.player] == SHOVEY_CRACKED_FLOOR { return -1 }
     return to * 4 + (ifx (game.powers & SHOVEY_AMMO) != 0 then direction else 0)

@@ -2766,6 +2766,26 @@
       "path": "world-map/continuous-36-landscape.webp",
       "depicts": "Continuous landscape world map tile 36, joined source v5",
       "sha256": "326a85de4517179e4e838a49e384cd8b4b8e819bb930e40293cecc32758184d3"
+    },
+    {
+      "path": "sprites/tile-169.png",
+      "depicts": "interval-shooting horned enemy turret facing left",
+      "sha256": "74281c2340ad5b52e322808706e0d82e50352be6c32d3bb4a848111f1811667e"
+    },
+    {
+      "path": "sprites/tile-170.png",
+      "depicts": "interval-shooting horned enemy turret facing up",
+      "sha256": "dffc20e34d7da01a92af889e40280669d39bf414ce3f5dc641e4a968de626794"
+    },
+    {
+      "path": "sprites/tile-171.png",
+      "depicts": "interval-shooting horned enemy turret facing right",
+      "sha256": "0fd20e52cd41680405c8882ec117da3ec3428ecc46bfbdb51e69d358086ab2d2"
+    },
+    {
+      "path": "sprites/tile-172.png",
+      "depicts": "interval-shooting horned enemy turret facing down",
+      "sha256": "d0cd0d7d63ee03ef0d86bd2f19c527927c5451775b1cd721c6401b6ffcd3d2e6"
     }
   ]
 }

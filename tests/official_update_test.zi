@@ -79,6 +79,11 @@ TestOfficial :: (number: s32, retired: string) {
 
 #program_export
 main :: () -> s32 {
+    TestOfficial(89, RETIRED_CLASSIC_89_BEFORE_SHOOTERS)
+    TestOfficial(90, RETIRED_CLASSIC_90_BEFORE_SHOOTERS)
+    TestOfficial(91, RETIRED_CLASSIC_91_BEFORE_SHOOTERS)
+    TestOfficial(92, RETIRED_CLASSIC_92_BEFORE_SHOOTERS)
+    TestOfficial(93, RETIRED_CLASSIC_93_BEFORE_SHOOTERS)
     TestOfficial(125, RETIRED_CLASSIC_125_BARRELS)
     TestOfficial(97, RETIRED_CLASSIC_97_GARDEN)
     TestOfficial(98, RETIRED_CLASSIC_98_FROZEN)
@@ -89,6 +94,6 @@ main :: () -> s32 {
     TestOfficial(97, RETIRED_CLASSIC_97)
     TestOfficial(98, RETIRED_CLASSIC_98)
     if TestFailures() > 0 { return 1 }
-    print("Official update: stale levels 93/97/98/99 replaced; custom boards, completion and unlock preserved\n")
+    print("Official update: stale levels 89–93/97–99/125 replaced; custom boards, completion and unlock preserved\n")
     return 0
 }

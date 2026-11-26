@@ -1,7 +1,7 @@
 // Device-only introductions to mechanics, based on the board being played.
 #import, file "engine.zi";
 
-GUIDE_TOPICS :: 32
+GUIDE_TOPICS :: 33
 GUIDE_HOME :: 0
 GUIDE_BALL :: 1
 GUIDE_CRATE :: 2
@@ -34,6 +34,7 @@ GUIDE_DOOR :: 28
 GUIDE_ABYSS :: 29
 GUIDE_LASER :: 30
 GUIDE_BEES :: 31
+GUIDE_SHOOTER :: 32
 
 ShoveyGuide :: struct {
     seen: u64
@@ -79,6 +80,7 @@ GuideNearest :: (board: *ShoveyGame, topic: s32) -> s32 {
 GuideKind :: (kind: s32) -> u64 {
     if ShoveyBallColor(kind) > 0 || ShoveyPitColor(kind) > 0 { return GuideBit(GUIDE_BALL) }
     if kind == SHOVEY_BEES || kind == SHOVEY_HIVE { return GuideBit(GUIDE_BEES) }
+    if ShoveyShooter(kind) { return GuideBit(GUIDE_SHOOTER) }
     if kind == 9 || kind == 18 { return GuideBit(GUIDE_CRATE) }
     if kind == 21 || kind == 56 { return GuideBit(GUIDE_FRUIT) }
     if kind == 19 { return GuideBit(GUIDE_STARS) }
@@ -187,9 +189,10 @@ GuideReplay :: (guide: *ShoveyGuide, board: *ShoveyGame) {
 }
 
 GuideRead :: (guide: *ShoveyGuide, text: string) -> bool {
-    if text.count != 10 || text[:2] != "G1" { return false }
+    wide := text.count == 18 && text[:2] == "G2"
+    if !wide && (text.count != 10 || text[:2] != "G1") { return false }
     seen: u64
-    for at: cast(s32)2..9 {
+    for at: cast(s32)2..cast(s32)text.count - 1 {
         digit := ShoveyDigit(text[at])
         if digit < 0 { return false }
         seen = (seen << 4) | cast(u64)digit
@@ -198,14 +201,21 @@ GuideRead :: (guide: *ShoveyGuide, text: string) -> bool {
     return true
 }
 
-GuideWrite :: (guide: *ShoveyGuide, output: []u8) -> bool {
-    if output.count < 10 { return false }
-    output[0] = #char "G"; output[1] = #char "1"
+GuideWriteFormat :: (guide: *ShoveyGuide, output: []u8) -> s32 {
+    wide := (guide.seen >> 32) != 0
+    needed: s32 = ifx wide then 18 else 10
+    if output.count < needed { return 0 }
+    output[0] = #char "G"; output[1] = ifx wide then #char "2" else #char "1"
     alphabet := "0123456789abcdef"
-    for at: cast(s32)0..7 {
-        output[2 + at] = alphabet[cast(s32)((guide.seen >> cast(u64)((7 - at) * 4)) & 15)]
+    digits: s32 = ifx wide then 16 else 8
+    for at: cast(s32)0..digits - 1 {
+        output[2 + at] = alphabet[cast(s32)((guide.seen >> cast(u64)((digits - 1 - at) * 4)) & 15)]
     }
-    return true
+    return needed
+}
+
+GuideWrite :: (guide: *ShoveyGuide, output: []u8) -> bool {
+    return GuideWriteFormat(guide, output) > 0
 }
 
 // Existing players already met the mechanics in their earlier unlocked levels.
@@ -224,6 +234,6 @@ GuideTextKey :: (topic: s32) -> string {
     "shovey_friend_keys", "shovey_friend_ice", "shovey_friend_color_blocks", "shovey_friend_shadow", "shovey_friend_animals",
     "shovey_friend_bridge", "shovey_friend_boat", "shovey_friend_cracks", "shovey_friend_bomb", "shovey_friend_arrows",
     "shovey_friend_slide", "shovey_friend_sensors", "shovey_tip_colors", "shovey_tip_restart", "shovey_friend_doors", "shovey_friend_abyss",
-    "shovey_tip_lasers", "shovey_tip_bees"]
+    "shovey_tip_lasers", "shovey_tip_bees", "shovey_tip_shooters"]
     return ifx topic >= 0 && topic < GUIDE_TOPICS then keys[topic] else ""
 }

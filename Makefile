@@ -385,6 +385,7 @@ public-test: hints-loading-test barrels-test solver laws game-maps-test level-se
 	python3 tests/editor_server_test.py
 	python3 tests/campaign_publication_test.py
 	$(call ziran_test,board_effects_test)
+	$(call ziran_test,shooter_puzzle_test)
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
@@ -421,6 +422,7 @@ test: hints-loading-test barrels-test solver laws game-maps-test shop-test fores
 	python3 tests/campaign_publication_test.py
 	python3 tests/build_artifacts_test.py
 	$(call ziran_test,board_effects_test)
+	$(call ziran_test,shooter_puzzle_test)
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'

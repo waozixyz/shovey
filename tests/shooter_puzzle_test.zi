@@ -1,0 +1,136 @@
+// Interval-shooting enemies fire every 3 moves along their facing direction,
+// hit Shovey unless blocked, and survive saves, undo, replays and guide storage.
+#import, file "../src/engine.zi";
+#import, file "../src/guide.zi";
+#import, file "test_support.zi";
+
+#program_export
+main :: () -> s32 {
+    // Shooters fire on every 3rd accepted move in each of the 4 cardinal directions.
+    for direction: cast(s32)0..3 {
+        shooter: s32 = 100
+        lane1 := ShoveyNeighbor(shooter, direction)
+        lane2 := ShoveyNeighbor(lane1, direction)
+        side := (direction + 1) % 4
+        alcove := ShoveyNeighbor(lane2, side)
+        game := ShoveyGame.{.level = 1, .player = alcove}
+        game.ground[shooter] = SHOVEY_SHOOTER_LEFT + direction
+        game.light_from[shooter] = 4
+
+        // Move 1: step into the lane — shooter charges to phase 1, does not fire.
+        unused Check(ShoveyMove(*game, (side + 2) % 4), "step into firing lane on move 1")
+        unused Check(!game.lost && ShoveyShooterPhase(*game, shooter) == 1, "move 1 charges shooter to phase 1")
+
+        // Move 2: step closer along the lane — shooter charges to phase 2 (armed).
+        unused Check(ShoveyMove(*game, (direction + 2) % 4), "step along firing lane on move 2")
+        unused Check(!game.lost && ShoveyShooterPhase(*game, shooter) == 2, "move 2 arms shooter at phase 2")
+
+        // Move 3: stay in the lane by stepping back to lane2 — shooter fires and hits Shovey!
+        before_fire := game
+        unused Check(ShoveyMove(*game, direction), "move 3 accepted in firing lane")
+        unused Check(game.lost && ShoveyShooterPhase(*game, shooter) == 0, "move 3 fires and hits Shovey in line of fire")
+        unused Check(ShoveyEvent(*before_fire, *game) == SHOVEY_EVENT_LOST, "fatal enemy shot reports lost event")
+
+        // From the same armed state, stepping into the side alcove dodges the shot!
+        dodged := before_fire
+        unused Check(ShoveyMove(*dodged, side), "step into alcove on firing turn")
+        unused Check(!dodged.lost && ShoveyShooterPhase(*dodged, shooter) == 0, "alcove dodges firing turn")
+        unused Check(ShoveyEvent(*before_fire, *dodged) == SHOVEY_EVENT_SHOT, "dodged enemy shot reports shot event")
+    }
+
+    // A pushed piece (crate) blocks enemy shots and shields Shovey behind it.
+    shield := ShoveyGame.{.level = 1, .player = 104}
+    shield.ground[100] = SHOVEY_SHOOTER_RIGHT
+    shield.light_from[100] = 2
+    shield.objects[102] = 9
+    unused Check(ShoveyMove(*shield, 0) && shield.player == 103 && !shield.lost, "crate shields Shovey from shooter")
+    unused Check(ShoveyShooterPhase(*shield, 100) == 0, "blocked shot still resets shooter phase")
+
+    // Walls and closed gates stop enemy shots; open gates and water let shots pass.
+    gate := ShoveyGame.{.level = 1, .player = 103}
+    gate.ground[100] = SHOVEY_SHOOTER_RIGHT
+    gate.ground[101] = SHOVEY_GATE
+    gate.light_from[100] = 2
+    unused Check(ShoveyMove(*gate, 2) && !gate.lost, "closed gate blocks enemy shot")
+
+    open_gate := ShoveyGame.{.level = 1, .player = 103}
+    open_gate.ground[100] = SHOVEY_SHOOTER_RIGHT
+    open_gate.ground[101] = SHOVEY_OPEN_GATE
+    open_gate.ground[102] = 64
+    open_gate.light_from[100] = 2
+    unused Check(ShoveyMove(*open_gate, 2) && open_gate.lost, "enemy shot crosses open gate and water")
+
+    // Levers and throwing advance shooter phase too.
+    lever_game := ShoveyGame.{.level = 1, .player = 102}
+    lever_game.ground[100] = SHOVEY_SHOOTER_RIGHT
+    lever_game.ground[103] = SHOVEY_LEVER
+    lever_game.light_from[100] = 2
+    unused Check(ShoveyMove(*lever_game, 2) && lever_game.lost, "lever toggle advances shooter and fires")
+
+    // Shooter blocks movement and pushes.
+    blocked := ShoveyGame.{.level = 1, .player = 99}
+    blocked.ground[100] = SHOVEY_SHOOTER_RIGHT
+    unused Check(!ShoveyMove(*blocked, 2) && blocked.player == 99, "cannot walk onto shooter")
+
+    // Save/restore preserves shooter phase and kind.
+    save_game := ShoveyGame.{.level = 1, .player = 104}
+    save_game.ground[100] = SHOVEY_SHOOTER_RIGHT
+    save_game.light_from[100] = 2
+    saved := ShoveySave(*save_game)
+    restored: ShoveyGame
+    unused Check(ShoveyRestore(*restored, saved), "shooter state restores from save")
+    unused Check(restored.ground[100] == SHOVEY_SHOOTER_RIGHT && ShoveyShooterPhase(*restored, 100) == 2, "save preserves shooter phase")
+
+    // ShoveyMoveFrames matches ShoveyMove on shooter firing turns.
+    framed := ShoveyGame.{.level = 1, .player = 103}
+    framed.ground[100] = SHOVEY_SHOOTER_RIGHT
+    framed.light_from[100] = 2
+    frames: [8]ShoveyGame
+    count := ShoveyMoveFrames(*framed, 0, frames[:])
+    unused Check(count == 1 && frames[0].lost && ShoveyShooterPhase(*frames[0], 100) == 0, "animated move matches shooter firing")
+
+    // Surrounded one-way trap portal: stepping into the decoy warps Shovey into a walled cell with no exit.
+    trap := ShoveyGame.{.level = 1, .player = 13}
+    trap.ground[14] = 73
+    trap.ground[50] = 73
+    for side: cast(s32)0..3 {
+        wall := ShoveyNeighbor(50, side)
+        trap.ground[wall] = 12
+    }
+    unused Check(ShoveyMove(*trap, 2) && trap.player == 50 && trap.teleports == 1, "decoy portal warps into surrounded trap")
+    for side: cast(s32)0..3 {
+        unused Check(!ShoveyMove(*trap, side), "completely surrounded trap portal has no way back")
+    }
+
+    // Each redesigned campaign board exposes a reachable decoy, with the
+    // destination visible but sealed away from its winning route.
+    trap_routes: [5]string = .["1222", "3332", "3333", "222222", "332"]
+    for index: cast(s32)0..4 {
+        campaign: ShoveyGame
+        unused Check(ShoveyLoad(*campaign, 89 + index), "redesigned campaign board loads")
+        for action: trap_routes[index] {
+            unused Check(ShoveyMove(*campaign, cast(s32)(action - #char "0")), "decoy portal is reachable")
+        }
+        unused Check(campaign.player == 13 && campaign.teleports == 1 && !campaign.lost, "decoy reaches sealed destination")
+        for side: cast(s32)0..3 {
+            unused Check(!ShoveyMove(*campaign, side), "campaign trap has no return")
+        }
+    }
+
+    // Guide recognizes all 4 shooters and serializes topic 32 using G2 format.
+    for kind: cast(s32)SHOVEY_SHOOTER_LEFT..SHOVEY_SHOOTER_DOWN {
+        unused Check(ShoveyCellKind(kind), "shooter kind accepted by board loader")
+        unused Check(GuideKind(kind) == GuideBit(GUIDE_SHOOTER), "shooter introduces shooter guide tip")
+    }
+    guide: ShoveyGuide
+    guide.seen = GuideBit(GUIDE_HOME) | GuideBit(GUIDE_SHOOTER)
+    guide_bytes: [18]u8
+    length := GuideWriteFormat(*guide, guide_bytes[:])
+    unused Check(length == 18 && guide_bytes[0] == #char "G" && guide_bytes[1] == #char "2", "wide guide bit uses G2 format")
+    loaded_guide: ShoveyGuide
+    unused Check(GuideRead(*loaded_guide, TextView(guide_bytes[:length])) && loaded_guide.seen == guide.seen, "G2 guide restores shooter topic")
+
+    if TestFailures() > 0 { return 1 }
+    print("Shooter puzzle: 4-way interval firing, dodging, shielding, saves, trap portal and G2 guide passed\n")
+    return 0
+}

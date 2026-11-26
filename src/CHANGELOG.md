@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Redesign Classic 89–93 with timed enemy fire, crate cover, switch gates, collapsing floors and decoy portals into sealed traps.
+- Show enemy charge and firing lanes; preserve their timing in saved attempts and hints.
+
 - Hide Dew and token balances during gameplay.
 - Give wooden boxes a pale rim so they remain visible on dark tiled floors.
 - Show available reward chests open with a gentle golden glow.

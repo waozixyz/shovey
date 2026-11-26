@@ -1186,3 +1186,18 @@ Tips papan (gratis)
 ---
 [shovey_map]
 Peta
+---
+[shovey_piece_shooter_left]
+Penembak kiri
+---
+[shovey_piece_shooter_up]
+Penembak atas
+---
+[shovey_piece_shooter_right]
+Penembak kanan
+---
+[shovey_piece_shooter_down]
+Penembak bawah
+---
+[shovey_tip_shooters]
+Penembak menembak setiap 3 langkah. Hindari garis tembaknya atau halangi tembakannya dengan benda.

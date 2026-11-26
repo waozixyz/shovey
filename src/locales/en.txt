@@ -1186,3 +1186,18 @@ Board tips (free)
 ---
 [shovey_map]
 Map
+---
+[shovey_piece_shooter_left]
+Left shooter
+---
+[shovey_piece_shooter_up]
+Up shooter
+---
+[shovey_piece_shooter_right]
+Right shooter
+---
+[shovey_piece_shooter_down]
+Down shooter
+---
+[shovey_tip_shooters]
+Shooters fire every 3 moves. Stay out of their line of fire or block their shots with a piece.

@@ -1186,3 +1186,18 @@ Shovey Island
 ---
 [shovey_map]
 Карта
+---
+[shovey_piece_shooter_left]
+Стрелок влево
+---
+[shovey_piece_shooter_up]
+Стрелок вверх
+---
+[shovey_piece_shooter_right]
+Стрелок вправо
+---
+[shovey_piece_shooter_down]
+Стрелок вниз
+---
+[shovey_tip_shooters]
+Стрелки стреляют каждые 3 хода. Уходите с линии огня или перекройте выстрел предметом.

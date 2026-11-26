@@ -19,7 +19,9 @@ COPIES = (
 
 
 LASER_LANDSCAPE = {'tile-150': 'tile-151', 'tile-151': 'tile-150', 'tile-152': 'tile-155',
-                   'tile-153': 'tile-152', 'tile-154': 'tile-153', 'tile-155': 'tile-154'}
+                   'tile-153': 'tile-152', 'tile-154': 'tile-153', 'tile-155': 'tile-154',
+                   'tile-169': 'tile-172', 'tile-170': 'tile-169', 'tile-171': 'tile-170',
+                   'tile-172': 'tile-171'}
 
 
 def turns_with_board(path):

@@ -1186,3 +1186,18 @@ Consejos del tablero (gratis)
 ---
 [shovey_map]
 Mapa
+---
+[shovey_piece_shooter_left]
+Tirador izquierdo
+---
+[shovey_piece_shooter_up]
+Tirador superior
+---
+[shovey_piece_shooter_right]
+Tirador derecho
+---
+[shovey_piece_shooter_down]
+Tirador inferior
+---
+[shovey_tip_shooters]
+Los tiradores disparan cada 3 movimientos. Sal de su línea de tiro o bloquea el disparo con una pieza.

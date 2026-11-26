@@ -1186,3 +1186,18 @@ Consigli sul tabellone (gratis)
 ---
 [shovey_map]
 Mappa
+---
+[shovey_piece_shooter_left]
+Tiratore a sinistra
+---
+[shovey_piece_shooter_up]
+Tiratore verso l’alto
+---
+[shovey_piece_shooter_right]
+Tiratore a destra
+---
+[shovey_piece_shooter_down]
+Tiratore verso il basso
+---
+[shovey_tip_shooters]
+I tiratori sparano ogni 3 mosse. Resta fuori dalla linea di tiro o blocca il colpo con un oggetto.

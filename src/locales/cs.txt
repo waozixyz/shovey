@@ -1186,3 +1186,18 @@ Tip k úrovni (zdarma)
 ---
 [shovey_map]
 Mapa
+---
+[shovey_piece_shooter_left]
+Střelec vlevo
+---
+[shovey_piece_shooter_up]
+Střelec nahoru
+---
+[shovey_piece_shooter_right]
+Střelec vpravo
+---
+[shovey_piece_shooter_down]
+Střelec dolů
+---
+[shovey_tip_shooters]
+Střelci vystřelí každé 3 tahy. Drž se mimo jejich dráhu střely, nebo ji zablokuj předmětem.

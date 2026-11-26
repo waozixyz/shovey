@@ -1186,3 +1186,18 @@ Conseils du plateau (gratuits)
 ---
 [shovey_map]
 Carte
+---
+[shovey_piece_shooter_left]
+Tireur à gauche
+---
+[shovey_piece_shooter_up]
+Tireur vers le haut
+---
+[shovey_piece_shooter_right]
+Tireur à droite
+---
+[shovey_piece_shooter_down]
+Tireur vers le bas
+---
+[shovey_tip_shooters]
+Les tireurs tirent tous les 3 déplacements. Restez hors de leur ligne de tir ou bloquez le tir avec une pièce.

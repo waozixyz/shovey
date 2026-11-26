@@ -162,8 +162,9 @@ Caption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16, center: b
 }
 
 FriendSave :: () {
-    bytes: [10]u8
-    if GuideWrite(*friend_guide, bytes[:]) && !PathSaveRecord("local.guide.seen", TextView(bytes[:])) { save_failed = true }
+    bytes: [18]u8
+    length := GuideWriteFormat(*friend_guide, bytes[:])
+    if length > 0 && !PathSaveRecord("local.guide.seen", TextView(bytes[:length])) { save_failed = true }
 }
 
 FriendPrepare :: () {
@@ -361,6 +362,11 @@ SpriteNames :: () {
     for material: cast(s32)0..3 { sprite_names[SPRITE_MOSS_FLOOR + material] = TileName(14) }
     for index: cast(s32)SPRITE_SENSOR..SPRITE_SHOT - 1 { sprite_names[index] = TileName(22) }
     sprite_names[SPRITE_SHOT] = AppLocaleHost("shovey_ammo")
+    sprite_names[SPRITE_BEES] = TileName(SHOVEY_BEES)
+    sprite_names[SPRITE_HIVE] = TileName(SHOVEY_HIVE)
+    for kind: cast(s32)SHOVEY_SHOOTER_LEFT..SHOVEY_SHOOTER_DOWN {
+        sprite_names[SPRITE_SHOOTER + kind - SHOVEY_SHOOTER_LEFT] = TileName(kind)
+    }
 }
 
 // One board kind for the help list, standing on floor when it is a piece.

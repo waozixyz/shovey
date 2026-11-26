@@ -744,6 +744,9 @@ PrivateSprite :: (kind: s32) -> s32 {
     if kind >= SHOVEY_BLUE_GOAL && kind <= SHOVEY_GREEN_GOAL { return SPRITE_BLOCK_GOAL + kind - SHOVEY_BLUE_GOAL }
     if kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE { return SPRITE_BOAT + kind - SHOVEY_BOAT }
     if ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER { return SPRITE_LASER + kind - SHOVEY_MIRROR_NE }
+    if kind == SHOVEY_BEES { return SPRITE_BEES }
+    if kind == SHOVEY_HIVE { return SPRITE_HIVE }
+    if ShoveyShooter(kind) { return SPRITE_SHOOTER + kind - SHOVEY_SHOOTER_LEFT }
     if kind == SHOVEY_BOULDER { return SPRITE_BOULDER }
     if kind >= SHOVEY_MUSHROOMS && kind <= SHOVEY_STUMP { return SPRITE_DECORATION + kind - SHOVEY_MUSHROOMS }
     if kind >= SHOVEY_PINE && kind <= SHOVEY_LAVA { return SPRITE_FOREST + kind - SHOVEY_PINE }

@@ -755,6 +755,74 @@ def laser_emitter(direction):
     return image
 
 
+def enemy_shooter(direction):
+    """A fixed horned stone-and-iron enemy turret that fires every 3 moves
+    along its facing direction (0 left, 1 up, 2 right, 3 down)."""
+    image = Image.new('RGBA', (SIZE, SIZE))
+    draw = ImageDraw.Draw(image)
+    outline = (26, 18, 24, 255)
+    body_dark = (68, 42, 56, 255)
+    body_mid = (112, 62, 74, 255)
+    body_hi = (152, 86, 94, 255)
+    horn = (218, 198, 162, 255)
+    horn_shade = (156, 136, 104, 255)
+    barrel_dark = (44, 48, 56, 255)
+    barrel_hi = (92, 98, 110, 255)
+    fire_outer = (242, 88, 36, 255)
+    fire_core = (255, 228, 112, 255)
+    # Upright ground shadow below.
+    draw.ellipse((6, 23, 26, 30), fill=(0, 0, 0, 82))
+    # Armored body + top horns/crest.
+    draw.polygon([(8, 11), (10, 5), (13, 10)], fill=horn, outline=outline)
+    draw.polygon([(23, 11), (21, 5), (18, 10)], fill=horn, outline=outline)
+    draw.point([(10, 7), (21, 7)], fill=horn_shade)
+    draw.rounded_rectangle((7, 8, 24, 24), radius=4, fill=body_dark, outline=outline)
+    draw.rounded_rectangle((9, 10, 22, 22), radius=3, fill=body_mid)
+    draw.rectangle((10, 10, 21, 13), fill=body_hi)
+    # Cannon barrel pointing in `direction` with fiery muzzle glow.
+    if direction == 0:
+        draw.rectangle((2, 13, 11, 20), fill=barrel_dark, outline=outline)
+        draw.rectangle((4, 14, 10, 16), fill=barrel_hi)
+        draw.rectangle((1, 14, 4, 19), fill=fire_outer)
+        draw.rectangle((1, 15, 3, 18), fill=fire_core)
+        # Fierce eyes looking left.
+        draw.rectangle((12, 12, 15, 14), fill=outline)
+        draw.rectangle((12, 13, 14, 14), fill=fire_core)
+        draw.rectangle((17, 12, 19, 14), fill=outline)
+        draw.rectangle((17, 13, 18, 14), fill=fire_core)
+    elif direction == 2:
+        draw.rectangle((20, 13, 29, 20), fill=barrel_dark, outline=outline)
+        draw.rectangle((21, 14, 27, 16), fill=barrel_hi)
+        draw.rectangle((27, 14, 30, 19), fill=fire_outer)
+        draw.rectangle((28, 15, 30, 18), fill=fire_core)
+        # Fierce eyes looking right.
+        draw.rectangle((16, 12, 19, 14), fill=outline)
+        draw.rectangle((17, 13, 19, 14), fill=fire_core)
+        draw.rectangle((12, 12, 14, 14), fill=outline)
+        draw.rectangle((13, 13, 14, 14), fill=fire_core)
+    elif direction == 1:
+        draw.rectangle((12, 2, 19, 12), fill=barrel_dark, outline=outline)
+        draw.rectangle((13, 4, 15, 11), fill=barrel_hi)
+        draw.rectangle((13, 1, 18, 4), fill=fire_outer)
+        draw.rectangle((14, 1, 17, 3), fill=fire_core)
+        # Fierce eyes along the brow.
+        draw.rectangle((10, 14, 13, 16), fill=outline)
+        draw.rectangle((11, 14, 12, 15), fill=fire_core)
+        draw.rectangle((18, 14, 21, 16), fill=outline)
+        draw.rectangle((19, 14, 20, 15), fill=fire_core)
+    else:
+        draw.rectangle((12, 19, 19, 29), fill=barrel_dark, outline=outline)
+        draw.rectangle((13, 20, 15, 27), fill=barrel_hi)
+        draw.rectangle((13, 26, 18, 30), fill=fire_outer)
+        draw.rectangle((14, 27, 17, 30), fill=fire_core)
+        # Fierce eyes looking down.
+        draw.rectangle((10, 12, 13, 15), fill=outline)
+        draw.rectangle((11, 13, 12, 15), fill=fire_core)
+        draw.rectangle((18, 12, 21, 15), fill=outline)
+        draw.rectangle((19, 13, 20, 15), fill=fire_core)
+    return image
+
+
 def laser_receiver(lit):
     """A receiver socket standing on whatever floor is under it."""
     image = Image.new('RGBA', (SIZE, SIZE))
@@ -1429,6 +1497,10 @@ def sprites():
         'tile-155': ('fixed laser emitter facing down, with its short red beam', laser_emitter(3)),
         'tile-156': ('unlit laser receiver: a dark socket with a red gem', laser_receiver(False)),
         'tile-157': ('lit laser receiver: a bright yellow gem with four light rays', laser_receiver(True)),
+        'tile-169': ('interval-shooting horned enemy turret facing left', enemy_shooter(0)),
+        'tile-170': ('interval-shooting horned enemy turret facing up', enemy_shooter(1)),
+        'tile-171': ('interval-shooting horned enemy turret facing right', enemy_shooter(2)),
+        'tile-172': ('interval-shooting horned enemy turret facing down', enemy_shooter(3)),
         'chest-closed': ('secret chest: a small wooden treasure chest with iron bands and a golden lock', native('chest-closed')),
         'chest-open': ('secret chest opened: gold coins and a blue Dew drop inside', native('chest-open')),
         'tile-40': ('mirror Shovey (pink)', mirror),

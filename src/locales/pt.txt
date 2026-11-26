@@ -1186,3 +1186,18 @@ Dicas do tabuleiro (grátis)
 ---
 [shovey_map]
 Mapa
+---
+[shovey_piece_shooter_left]
+Atirador à esquerda
+---
+[shovey_piece_shooter_up]
+Atirador para cima
+---
+[shovey_piece_shooter_right]
+Atirador à direita
+---
+[shovey_piece_shooter_down]
+Atirador para baixo
+---
+[shovey_tip_shooters]
+Os atiradores disparam a cada 3 movimentos. Saia da linha de tiro ou bloqueie o disparo com uma peça.

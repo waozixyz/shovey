@@ -88,7 +88,7 @@ ShoveyGoalDone :: (ground: s32, object: s32) -> bool {
 // A kind a board cell may start with.
 ShoveyCellKind :: (kind: s32) -> bool {
     return (kind >= 0 && kind <= SHOVEY_LAST_BUTTON) || ShoveyColorGoal(kind) || kind == SHOVEY_BOAT || kind == SHOVEY_BARREL ||
-    kind == SHOVEY_FLOATING_CRATE || ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER || kind == SHOVEY_BEES || kind == SHOVEY_HIVE
+    kind == SHOVEY_FLOATING_CRATE || ShoveyMirror(kind) || ShoveyLaserEmitter(kind) || kind == SHOVEY_LASER_RECEIVER || kind == SHOVEY_BEES || kind == SHOVEY_HIVE || ShoveyShooter(kind)
 }
 
 // Where a level ends: the house, or the boat.
@@ -145,10 +145,16 @@ SHOVEY_LASER_DOWN :: 155
 SHOVEY_LASER_RECEIVER :: 156
 SHOVEY_BEES :: 167
 SHOVEY_HIVE :: 168
-SHOVEY_LAST_KIND :: 168
+SHOVEY_SHOOTER_LEFT :: 169
+SHOVEY_SHOOTER_UP :: 170
+SHOVEY_SHOOTER_RIGHT :: 171
+SHOVEY_SHOOTER_DOWN :: 172
+SHOVEY_LAST_KIND :: 172
+SHOVEY_SHOOTER_INTERVAL :: 3
 
 ShoveyMirror :: (kind: s32) -> bool { return kind == SHOVEY_MIRROR_NE || kind == SHOVEY_MIRROR_NW }
 ShoveyLaserEmitter :: (kind: s32) -> bool { return kind >= SHOVEY_LASER_LEFT && kind <= SHOVEY_LASER_DOWN }
+ShoveyShooter :: (kind: s32) -> bool { return kind >= SHOVEY_SHOOTER_LEFT && kind <= SHOVEY_SHOOTER_DOWN }
 // Decorations on top of tiles: mushrooms, fallen leaves, bluebells and lily
 // pads are walked over; a bush, flower pot and stump block. Barrels push like crates.
 SHOVEY_MUSHROOMS :: 135
@@ -380,7 +386,7 @@ ShoveyBeamStops :: (game: *ShoveyGame, at: s32) -> bool {
     if ShoveyMossColor(ground) >= 0 { return !ShoveyDoorOpen(game, at) }
     if ShoveyGateColor(ground) >= 0 { return !ShoveyGateOpen(game, at) }
     return ground == 12 || ground == 62 || ground == 63 || ground == 76 || (ground >= 95 && ground <= 98) || ground == SHOVEY_CAVE_WALL ||
-    ShoveyBlockingDecoration(ground) || ShoveyClosedDoor(ground) || ShoveyLever(ground) || ShoveyLaserEmitter(ground) || ground == 34
+    ShoveyBlockingDecoration(ground) || ShoveyClosedDoor(ground) || ShoveyLever(ground) || ShoveyLaserEmitter(ground) || ShoveyShooter(ground) || ground == 34
 }
 
 // The next cell of a beam leaving `at`, and the way it then travels, or -1
@@ -419,6 +425,46 @@ ShoveyBeesCalm :: (game: *ShoveyGame, position: s32) -> bool {
         if neighbor >= 0 && game.objects[neighbor] == SHOVEY_HIVE { return true }
     }
     return false
+}
+
+// Each shooter counts moves in light_from[at] (4 on a fresh load counts as 0)
+// and fires along its facing direction on every SHOVEY_SHOOTER_INTERVAL-th move.
+ShoveyShooterPhase :: (game: *ShoveyGame, at: s32) -> s32 {
+    phase := game.light_from[at]
+    return ifx phase >= 0 && phase < SHOVEY_SHOOTER_INTERVAL then phase else 0
+}
+
+// Enemy shots cross floor, water, pits, ice and open gates or doors, and stop
+// at pushed pieces, walls, blocking scenery, closed gates or doors, levers,
+// emitters, receivers and other shooters.
+ShoveyEnemyShotStops :: (game: *ShoveyGame, at: s32) -> bool {
+    ground := game.ground[at]
+    if game.objects[at] != 0 { return true }
+    if ShoveyMossColor(ground) >= 0 { return !ShoveyDoorOpen(game, at) }
+    if ShoveyGateColor(ground) >= 0 { return !ShoveyGateOpen(game, at) }
+    return ground == 12 || ground == 62 || ground == 63 || ground == 76 || (ground >= 95 && ground <= 98) || ground == SHOVEY_CAVE_WALL ||
+    ShoveyBlockingDecoration(ground) || ShoveyClosedDoor(ground) || ShoveyLever(ground) || ShoveyLaserEmitter(ground) ||
+    ground == SHOVEY_LASER_RECEIVER || ShoveyShooter(ground) || ground == 34
+}
+
+ShoveyShootersStep :: (game: *ShoveyGame) {
+    if game.won || game.lost { return }
+    for source: cast(s32)0..SHOVEY_CELLS - 1 {
+        kind := game.ground[source]
+        if !ShoveyShooter(kind) { continue }
+        phase := ShoveyShooterPhase(game, source) + 1
+        if phase < SHOVEY_SHOOTER_INTERVAL {
+            game.light_from[source] = phase
+            continue
+        }
+        game.light_from[source] = 0
+        direction := kind - SHOVEY_SHOOTER_LEFT
+        at := ShoveyNeighbor(source, direction)
+        while at >= 0 && !ShoveyEnemyShotStops(game, at) {
+            if at == game.player { game.lost = true; break }
+            at = ShoveyNeighbor(at, direction)
+        }
+    }
 }
 
 ShoveyFloorAllows :: (game: *ShoveyGame, position: s32, object: s32) -> bool {
@@ -541,6 +587,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     if ShoveyLever(game.ground[to]) {
         ShoveyToggleLevers(game, ShoveyLeverColor(game.ground[to]))
         game.moves += 1
+        ShoveyShootersStep(game)
         return true
     }
     if game.ground[to] == 34 && game.keys > 0 {
@@ -601,6 +648,7 @@ ShoveyStep :: (game: *ShoveyGame, direction: s32) -> bool {
     if kind == 42 { game.ground[to] = 23 }
     if game.ground[to] == 0 && (game.powers & SHOVEY_TRAIL) != 0 { game.ground[to] = 11 }
     if ShoveyHome(kind) && ShoveyRemaining(game) == 0 { game.won = true }
+    ShoveyShootersStep(game)
     return true
 }
 
@@ -669,7 +717,7 @@ ShoveyShotStops :: (game: *ShoveyGame, at: s32) -> bool {
     if object == 28 { return false }
     return ShoveyBallColor(object) > 0 || ShoveyCrate(object) || object == 19 ||
     ShoveyColorBlock(object) || object == SHOVEY_BOMB || ground == 12 || ShoveySolidDecor(ground) || ShoveyMossColor(ground) >= 0 ||
-    ShoveyLaserEmitter(ground) || ground == SHOVEY_LASER_RECEIVER ||
+    ShoveyLaserEmitter(ground) || ground == SHOVEY_LASER_RECEIVER || ShoveyShooter(ground) ||
     ground == 26 || ground == 33 || ground == 34 || ShoveyGateColor(ground) >= 0 || ShoveyClosedDoor(ground) || ShoveyLever(ground)
 }
 
@@ -682,6 +730,7 @@ ShoveyFire :: (game: *ShoveyGame) -> bool {
         at = ShoveyNeighbor(at, game.direction)
     }
     game.moves += 1
+    ShoveyShootersStep(game)
     return true
 }
 
@@ -732,6 +781,10 @@ ShoveyEvent :: (before: *ShoveyGame, after: *ShoveyGame) -> s32 {
         if before.objects[at] != after.objects[at] && before.objects[at] != 40 && after.objects[at] != 40 { return SHOVEY_EVENT_PUSH }
     }
     if (before.powers & SHOVEY_AMMO) != 0 && (after.powers & SHOVEY_AMMO) == 0 { return SHOVEY_EVENT_SHOT }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if ShoveyShooter(before.ground[at]) && ShoveyShooterPhase(before, at) == SHOVEY_SHOOTER_INTERVAL - 1 &&
+        ShoveyShooterPhase(after, at) == 0 { return SHOVEY_EVENT_SHOT }
+    }
     return SHOVEY_EVENT_NONE
 }
 

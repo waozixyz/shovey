@@ -1186,3 +1186,18 @@ Tipp zum Spielfeld (kostenlos)
 ---
 [shovey_map]
 Karte
+---
+[shovey_piece_shooter_left]
+Schütze links
+---
+[shovey_piece_shooter_up]
+Schütze oben
+---
+[shovey_piece_shooter_right]
+Schütze rechts
+---
+[shovey_piece_shooter_down]
+Schütze unten
+---
+[shovey_tip_shooters]
+Schützen feuern alle 3 Züge. Bleib aus ihrer Schusslinie oder blockiere den Schuss mit einem Objekt.

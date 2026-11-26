@@ -19,6 +19,9 @@ laser_locale_keys = {
     'shovey_piece_laser_right', 'shovey_piece_laser_down',
     'shovey_piece_laser_receiver', 'shovey_level',
     'shovey_piece_bees', 'shovey_piece_hive', 'shovey_tip_bees',
+    'shovey_piece_shooter_left', 'shovey_piece_shooter_up',
+    'shovey_piece_shooter_right', 'shovey_piece_shooter_down',
+    'shovey_tip_shooters',
 }
 locale_paths = sorted((ROOT / 'src/locales').glob('*.txt'))
 assert {path.stem for path in locale_paths} == expected_locales
@@ -37,7 +40,7 @@ for path in locale_paths:
         entries[key.group(1)] = value
     assert laser_locale_keys <= entries.keys(), f'{path.name}: missing {sorted(laser_locale_keys - entries.keys())}'
 
-classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 143), *range(148, 167))]
+classic = [f'tile-{kind}' for kind in (*range(41), *range(44, 79), *range(82, 143), *range(148, 167), *range(169, 173))]
 classic += ['gate-open', 'gate-open-0', 'gate-open-1', 'gate-open-2'] + [f'abyss-edge-{mask}' for mask in range(16)]
 classic += [f'lava-edge-{mask}' for mask in range(16)] + [f'lava-edge-{mask}-{frame}' for mask in range(16) for frame in range(1, 4)]
 classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for facing in ('left', 'up', 'right', 'down')]
@@ -78,7 +81,7 @@ for folder in ('shovey', 'shovey-landscape'):
 # Objects and decorations must reveal whichever tile is beneath them.
 for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
              28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,
-             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 143), *range(150, 162), 165):
+             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 143), *range(150, 162), 165, *range(169, 173)):
     with Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png') as picture:
         assert picture.getpixel((0, 0))[3] == 0, f'{kind}: object has an attached background'
 
@@ -150,7 +153,8 @@ for folder, names in (
 
 # Turning the board turns a / mirror into a \\ one and each laser a quarter
 # turn on; landscape shows the upright picture of that piece, shadow below.
-for kind, shown in ((150, 151), (151, 150), (152, 155), (153, 152), (154, 153), (155, 154)):
+for kind, shown in ((150, 151), (151, 150), (152, 155), (153, 152), (154, 153), (155, 154),
+                    (169, 172), (170, 169), (171, 170), (172, 171)):
     portrait = ROOT / f'assets/shovey/sprites/tile-{shown}.png'
     landscape = ROOT / f'assets/shovey-landscape/sprites/tile-{kind}.png'
     assert portrait.read_bytes() == landscape.read_bytes(), f'tile-{kind}: landscape must show tile-{shown} upright'

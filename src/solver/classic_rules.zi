@@ -5,12 +5,12 @@
 //
 // A key lists the behavior-relevant fields that differ from a reference
 // game, three bytes each: the field's number (high, low byte) and its value.
-//   0..239    ground; a moving-block cell (29) is 128 + its light_from, the
-//             only light_from value ShoveyTick ever reads
+//   0..239    ground
 //   240..479  objects
-//   482       powers
-//   483       keys
-//   484       1 when won, 2 when lost
+//   480..719  light_from: moving directions and shooter phases
+//   722       powers
+//   723       keys
+//   724       1 when won, 2 when lost
 // Shovey's cell and, while ammunition is held, its facing make the walker,
 // which the searches keep beside the key. Level, move and teleport counters
 // are constant or cosmetic and stay out.
@@ -28,6 +28,7 @@ solve_classic_game: ShoveyGame;
 solve_classic_shadows: s32;
 solve_classic_root_shadows: s32;
 solve_classic_initial_shadows: s32;
+solve_classic_shooters: bool;
 solve_classic_water_may_bridge: bool;
 // Work done, in units of about a hundred engine statements.
 solve_classic_work: s64;
@@ -35,6 +36,8 @@ solve_classic_work: s64;
 // Loads a board of 480 hex digits. False when the engine rejects it.
 SolveClassicLoad :: (data: string) -> bool {
     if !ShoveyLoadData(*solve_classic_initial, 0, data) { return false }
+    solve_classic_shooters = false
+    for kind: solve_classic_initial.ground { if ShoveyShooter(kind) { solve_classic_shooters = true; break } }
     solve_classic_water_may_bridge = SolveWaterMayBridge(*solve_classic_initial)
     solve_classic_initial_shadows = SolveClassicShadows(*solve_classic_initial)
     SolveClassicSetRoot(*solve_classic_initial)
@@ -166,7 +169,7 @@ SolveClassicSetWalker :: (walker: s32) {
 // has to take the step.
 SolveClassicPlainStep :: (direction: s32) -> s32 {
     game := *solve_classic_base
-    if solve_classic_shadows > 0 || (game.powers & (SHOVEY_TRAIL | SHOVEY_REVERSE | SHOVEY_SLIDE)) != 0 { return -1 }
+    if solve_classic_shadows > 0 || solve_classic_shooters || (game.powers & (SHOVEY_TRAIL | SHOVEY_REVERSE | SHOVEY_SLIDE)) != 0 { return -1 }
     to := ShoveyNeighbor(game.player, direction)
     if to < 0 || game.ground[to] != 0 || game.objects[to] != 0 || game.ground[game.player] == SHOVEY_CRACKED_FLOOR { return -1 }
     return to * 4 + (ifx (game.powers & SHOVEY_AMMO) != 0 then direction else 0)
@@ -206,7 +209,7 @@ solve_classic_door_needed: bool;
 // Doors only while shut. Apples, paint, pickups and locks can go away.
 SolveClassicLasting :: (ground: s32, piece: s32, shut: bool) -> bool {
     if ground == 64 && solve_classic_water_may_bridge { return false }
-    if ground == 12 || ground == 23 || ShoveyDrop(ground) || ShoveySolidDecor(ground) { return true }
+    if ground == 12 || ground == 23 || ShoveyDrop(ground) || ShoveySolidDecor(ground) || ShoveyShooter(ground) { return true }
     if ground == 14 { return shut }
     if piece == 10 { return false }
     if ShoveyHome(ground) || ground == 8 || ground == 11 || ground == 27 { return true }
