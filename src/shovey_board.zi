@@ -1313,9 +1313,9 @@ BoardCrateGoals :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapRe
         if game.ground[at] != 18 || game.objects[at] != 0 || game.player == at { continue }
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
         SvgIcon.Draw(session, SvgIcon.Props.{.bounds = cell,
-            .shape = "S4rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{40, 30, 20, 230}})
+            .shape = "S2rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{40, 30, 20, 230}})
         SvgIcon.Draw(session, SvgIcon.Props.{.bounds = cell,
-            .shape = "S2rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{255, 241, 193, 255}})
+            .shape = "S1rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{255, 241, 193, 255}})
     }
 }
 
