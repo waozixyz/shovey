@@ -2,14 +2,14 @@
 
 ## [Unreleased]
 
-- Group profile pictures under expandable app collections in Entity, with shared unlocks and visible locked choices.
+## [0.6.174] - 2026-11-26
+
+- Group profile pictures by app in expandable collections, with shared unlocks and visible locked choices.
 - Redesign Classic 89–93 with timed enemy fire, crate cover, switch gates, collapsing floors and decoy portals into sealed traps.
 - Show enemy charge and firing lanes; preserve their timing in saved attempts and hints.
-
 - Hide Dew and token balances during gameplay.
-- Make crate destination markings clear on dark tiled floors; preserve the original wooden box appearance.
+- Make crate destination markings thin and clear on dark tiled floors; preserve the original wooden box appearance.
 - Show available reward chests open with a gentle golden glow.
-
 - Show the equipped Shovey skin as the title-bar profile picture, so a wardrobe choice appears at once instead of a separate static portrait.
 
 ## [0.6.173] - 2026-11-21
