@@ -5,12 +5,10 @@ cd "$root"
 set --
 if [ ! -f ziran.local.toml ]; then set -- --locked; fi
 toolchain=${DAILY_CHEST_TEST_TOOLCHAIN:-$(./scripts/ziran.sh pkg path ziran "$@")}
-entity=${DAILY_CHEST_TEST_ENTITY:-$(./scripts/ziran.sh pkg path entity "$@")}
 work="$root/work/daily-chest-test"
 git check-ignore -q "$work"
 mkdir -p "$work"
-env -u DISPLAY -u WAYLAND_DISPLAY "$toolchain/build/bin/ziran" bundle --root "$root" \
-    --module-path "$toolchain/std" --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
+env -u DISPLAY -u WAYLAND_DISPLAY "$toolchain/build/bin/ziran" bundle --project "$@" --root "$root" \
     --bind controls:AppServiceHost=daily_chest_behavior:FakeService \
     --bind controls:AppRecordHost=daily_chest_behavior:FakeRecord \
     --bind controls:SaveAppRecordHost=daily_chest_behavior:FakeSave \

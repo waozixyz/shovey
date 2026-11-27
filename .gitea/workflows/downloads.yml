@@ -104,6 +104,8 @@ jobs:
       - name: Select the installed Android tools and the lane's package cache
         run: bash scripts/native-ci.sh android
       # The build is the normal edition; it has no self-update.
+      - name: Verify every published level has a playable hint
+        run: make -j1 hints-loading-test
       - name: Build the release APK
         run: make android-fdroid
       # Only the Google Play edition may name a Google library, in its build

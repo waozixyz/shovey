@@ -116,7 +116,7 @@ jobs:
       - name: Check the game and build its ZX web edition
         run: |
           make public-test ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
-          make web-zx ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
+          KRYON_TEST_DRIVER=1 make web-zx ZIRAN="$GITHUB_WORKSPACE/ziranlang/ziran/build/bin/ziran"
       # The profile and the live campaign still need the ZX player.
       - name: Play the ZX edition in a private browser
         run: |
@@ -242,12 +242,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/build-site.py --tag "v${{ steps.due.outputs.version }}" --output build/web-site
+      - name: Build the private browser test host
+        if: steps.due.outputs.publish == 'true' && !inputs.released_site_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KRYON_TEST_DRIVER: '1'
+        run: python3 scripts/build-site.py --tag "v${{ steps.due.outputs.version }}" --output build/web-site-check
       - name: Download the existing released site
         if: steps.due.outputs.publish == 'true' && inputs.site_only && inputs.released_site_run
         uses: actions/download-artifact@v4
         with:
           name: shovey-site
           path: waozixyz/shovey/build/web-site
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.released_site_run }}
+      - name: Download its private browser test host
+        if: steps.due.outputs.publish == 'true' && inputs.site_only && inputs.released_site_run
+        uses: actions/download-artifact@v4
+        with:
+          name: shovey-site-check
+          path: waozixyz/shovey/build/web-site-check
           github-token: ${{ github.token }}
           run-id: ${{ inputs.released_site_run }}
       - name: Repackage the released site for Pages
@@ -279,7 +293,14 @@ jobs:
         if: steps.due.outputs.publish == 'true'
         run: |
           export CHROMIUM="$(command -v google-chrome || command -v chromium)"
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_release_test.mjs build/web-site
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_release_test.mjs build/web-site-check
+      - uses: actions/upload-artifact@v4
+        if: steps.due.outputs.publish == 'true'
+        with:
+          name: shovey-site-check
+          path: waozixyz/shovey/build/web-site-check
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: steps.due.outputs.publish == 'true'
         with:

@@ -1,8 +1,8 @@
 // shovey.waozi.xyz as published: the released Shovey in Arcade's browser
 // host, built by scripts/build-site.py. Opens level 1 by its controls through
 // Kryon's test driver, walks, and requires that the player, its Apps
-// controller, the Profile and the game all ran as the page's linked code,
-// never on the portable VM. No pixel captures.
+// controller, the Profile and the game ran as compiled WebAssembly.
+// No pixel captures.
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {mkdtemp, readFile, rm} from 'node:fs/promises';
@@ -150,11 +150,11 @@ try {
   assert(await frames > 30, 'The level stopped drawing while walking');
   const failed = lines.find(line => /frame failed|portable execution failed|cannot run natively/.test(line));
   assert(!failed, failed);
-  // Bundles without linked code say so when the VM takes them.
-  const vm = lines.filter(line => /which the wasm execution tier does not take/.test(line));
-  assert.deepEqual(vm, [], 'Ran on the portable VM instead of linked code');
+  // The current runtime compiles the exact released bundles at instantiation.
+  assert(await evaluate('globalThis.zxWasmTier?.modules.size >= 4'),
+    'The player did not compile the collection, Apps controller, Profile and game to WebAssembly');
   assert.deepEqual(failures, []);
-  console.log('shovey.waozi.xyz opened level 1 and walked on the release\'s linked code');
+  console.log('shovey.waozi.xyz opened level 1 and walked on the release\'s WebAssembly code');
 } finally {
   try { socket?.close(); } catch {}
   try { process.kill(-browser.pid, 'SIGTERM'); } catch {}
