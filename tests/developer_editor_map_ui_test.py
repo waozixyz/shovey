@@ -84,6 +84,17 @@ for width, height, orientation in ((1500, 1000, 'landscape'), (780, 1100, 'portr
     def find(predicate):
         return next(node for node in nodes() if predicate(node) and node.get('visible'))
 
+    def painted_map():
+        return {node['key']: (node['x'], node['y']) for node in nodes()
+                if node.get('kind') == 'image' and node.get('visible') and
+                60001 <= node.get('key', 0) <= 60037}
+
+    def movement(before, after):
+        shared = before.keys() & after.keys()
+        assert shared, 'No painted map section remained visible across the drag'
+        section = min(shared)
+        return tuple(after[section][axis] - before[section][axis] for axis in (0, 1))
+
     def pointer(x, y, click=False, button=1):
         subprocess.run(['xdotool', 'mousemove', '--window', window,
                         str(int(x)), str(int(y))], check=True)
@@ -145,62 +156,60 @@ for width, height, orientation in ((1500, 1000, 'landscape'), (780, 1100, 'portr
             map_node = wait(lambda: next((node for node in nodes()
                 if node.get('key') == 20105 and node.get('visible')), None),
                 'Map did not reopen')
-            before = find(lambda item: item.get('key') == 33002 and
-                          item.get('kind') == 'button')
+            before = painted_map()
             old_area_x = map_node['visible_x'] + map_node['visible_width'] * (
                 .82 if orientation == 'landscape' else .5)
             old_area_y = map_node['visible_y'] + map_node['visible_height'] * (
                 .5 if orientation == 'landscape' else .75)
             pointer(old_area_x, old_area_y)
-            subprocess.run(['xdotool', 'mousedown', '--window', window, '1'], check=True)
+            # XTest holds the button on this private display; --window only
+            # sends an event and does not establish a held physical button.
+            subprocess.run(['xdotool', 'mousedown', '1'], check=True)
             time.sleep(.05)
             subprocess.run(['xdotool', 'mousemove', '--window', window,
                             str(int(old_area_x - 180)), str(int(old_area_y - 40))], check=True)
             time.sleep(.08)
-            subprocess.run(['xdotool', 'mouseup', '--window', window, '1'], check=True)
+            subprocess.run(['xdotool', 'mouseup', '1'], check=True)
             time.sleep(.2)
-            dragged = find(lambda item: item.get('key') == 33002 and
-                           item.get('kind') == 'button')
-            # The v5 map has no free camera: drags follow the painted road.
-            # Landscape scrolls sideways; the portrait painting fills the
-            # width, so a sideways drag cannot pan there.
+            dragged = painted_map()
+            dx, dy = movement(before, dragged)
+            # The camera follows the pointer. The portrait painting fills
+            # the width, so its horizontal position stays clamped.
             if orientation == 'landscape':
-                assert dragged['visible_x'] < before['visible_x'] - 24, (before, dragged)
+                assert dx < -24, (before, dragged)
             else:
-                assert abs(dragged['visible_x'] - before['visible_x']) <= 1, (before, dragged)
-            # Portrait starts clamped at the map's foot, so the road must pass
-            # the camera's centre before the painting moves: drag farther there,
-            # clear of the dots on the left.
+                assert abs(dx) <= 1, (before, dragged)
+            # Drag on clear painting, away from the destination dots. Track
+            # image positions because the selected dot can leave the viewport.
             vertical_x = map_node['visible_x'] + map_node['visible_width'] * (
                 .5 if orientation == 'landscape' else .8)
             vertical_y = old_area_y if orientation == 'landscape' else (
                 map_node['visible_y'] + map_node['visible_height'] * .25)
             vertical_drag = 180 if orientation == 'landscape' else 440
             pointer(vertical_x, vertical_y)
-            subprocess.run(['xdotool', 'mousedown', '--window', window, '1'], check=True)
+            subprocess.run(['xdotool', 'mousedown', '1'], check=True)
             time.sleep(.05)
             subprocess.run(['xdotool', 'mousemove', '--window', window,
                             str(int(vertical_x)), str(int(vertical_y + vertical_drag))], check=True)
             time.sleep(.08)
-            subprocess.run(['xdotool', 'mouseup', '--window', window, '1'], check=True)
+            subprocess.run(['xdotool', 'mouseup', '1'], check=True)
             time.sleep(.2)
-            vertical = find(lambda item: item.get('key') == 33002 and
-                            item.get('kind') == 'button')
+            vertical = painted_map()
+            dx, dy = movement(dragged, vertical)
             # The landscape painting fills the height, so a vertical drag
             # cannot pan up or down there; portrait scrolls vertically.
             if orientation == 'landscape':
-                assert abs(vertical['visible_y'] - dragged['visible_y']) <= 1, (dragged, vertical)
+                assert abs(dy) <= 1, (dragged, vertical)
             else:
-                assert abs(vertical['visible_y'] - dragged['visible_y']) >= 24, (dragged, vertical)
+                assert dy >= 24, (dragged, vertical)
             assert (drafts / 'place').read_text().strip() == '2', 'Panning changed selection'
             pointer(old_area_x, old_area_y)
             subprocess.run(['xdotool', 'click', '4'], check=True)
             time.sleep(.2)
-            wheeled = find(lambda item: item.get('key') == 33002 and
-                           item.get('kind') == 'button')
+            wheeled = painted_map()
+            dx, dy = movement(vertical, wheeled)
             # The wheel also follows the road, sideways in landscape.
-            assert abs(wheeled['visible_x'] - vertical['visible_x']) + abs(
-                wheeled['visible_y'] - vertical['visible_y']) >= 16, (vertical, wheeled)
+            assert abs(dx) + abs(dy) >= 16, (vertical, wheeled)
             subprocess.run(['import', '-window', window,
                             str(OUTPUT / f'{orientation}.png')], check=True)
         finally:
@@ -213,4 +222,4 @@ for width, height, orientation in ((1500, 1000, 'landscape'), (780, 1100, 'portr
                 child.wait()
 
 print('Private editor selector: full map in portrait and landscape; no board preview; '
-      'dot focus, keyboard Edit, wheel and road-following drag all work')
+      'dot focus, keyboard Edit, wheel and pointer-following drag all work')

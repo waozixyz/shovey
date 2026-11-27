@@ -31,6 +31,25 @@ def wait(predicate, message):
     raise AssertionError(message)
 
 
+def capture_board(window, path):
+    # Smooth sprite copies finish asynchronously. Compare settled pictures,
+    # including an unchanged interval, rather than capturing during warm-up.
+    deadline = time.monotonic() + 10
+    previous = None
+    unchanged_since = time.monotonic()
+    while time.monotonic() < deadline:
+        subprocess.run(['import', '-window', window, str(path)], check=True)
+        with Image.open(path).convert('RGB') as picture:
+            current = picture.crop((8, 110, 1124, 992))
+        if previous is None or ImageChops.difference(previous, current).getbbox() is not None:
+            unchanged_since = time.monotonic()
+        elif time.monotonic() - unchanged_since >= .5:
+            return
+        previous = current
+        time.sleep(.1)
+    raise AssertionError('Editor board pixels did not settle')
+
+
 def normalized(level):
     values = [int(''.join(level[key])[at:at + 2], 16)
               for key in ('cells', 'tiles', 'decorations') for at in range(0, 480, 2)]
@@ -73,7 +92,7 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                 subprocess.run(['xdotool', 'windowsize', window, '1500', '1000', 'windowfocus', window], check=True)
                 time.sleep(.4)
                 before = OUTPUT / f'{number}.png'
-                subprocess.run(['import', '-window', window, str(before)], check=True)
+                capture_board(window, before)
                 cell = 44  # floor((1000 - 118) / 20)
                 x = 8 + (1500 - 384 - cell * 12) / 2 + cell / 2
                 y = 110 + (1000 - 118 - cell * 20) / 2 + cell / 2
@@ -96,7 +115,7 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                     wait(lambda: (drafts / 'place').read_text().strip() == str(target), 'Wrong navigation result')
                 time.sleep(.2)
                 after = OUTPUT / f'{number}-revisited.png'
-                subprocess.run(['import', '-window', window, str(after)], check=True)
+                capture_board(window, after)
                 with Image.open(before).convert('RGB') as first, Image.open(after).convert('RGB') as second:
                     bounds = (8, 110, 1124, 992)
                     assert ImageChops.difference(first.crop(bounds), second.crop(bounds)).getbbox() is None, \

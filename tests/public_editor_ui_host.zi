@@ -87,10 +87,14 @@ RunPublicEditor :: () -> s32 {
             .height = cast(s32)bounds.height, .scale = 1.0, .font = 16, .now = now}
         if BeginFrame(test_session, cast(u64)1, bounds) != FrameStatus.FrameOk { ok = false; break }
         EditorFrame("en")
-        unused WriteEntireFile("board.hex", EditBoardHex(*editor_level.board))
+        // The Python driver reads while this host draws. Publish complete
+        // snapshots so it never observes a file between truncation and write.
+        if !WriteEntireFile("board.next", EditBoardHex(*editor_level.board)) ||
+        !RenamePath("board.next", "board.hex") { ok = false; break }
         status: Vec(u8)
         BuilderPrint(*status, "% % %", editor_open_id, editor_classic.count, editor_check)
-        unused WriteEntireFile("state.txt", BuilderFinish(status))
+        if !WriteEntireFile("state.next", BuilderFinish(status)) ||
+        !RenamePath("state.next", "state.txt") { ok = false; break }
         finished := EndFrameRetained(test_session, DesktopFrameReusable())
         if finished.status != FrameStatus.FrameOk { ok = false; break }
         TestDriverFrame(test_session)

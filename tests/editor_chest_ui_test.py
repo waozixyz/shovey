@@ -1,5 +1,6 @@
 """The private selector edits the distinct 29a room and keeps level 29 unchanged."""
 import json
+import io
 import os
 import re
 from pathlib import Path
@@ -8,12 +9,20 @@ import subprocess
 import tempfile
 import time
 
+import numpy as np
+from PIL import Image
+
 ROOT = Path(__file__).resolve().parents[1]
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
 BINARY = Path(os.environ.get('SHOVEY_EDITOR', ROOT / 'build/private-editor/shovey-level-editor'))
 ADMIN = os.environ.get('SHOVEY_ADMIN_TEST') == '1'
 OUTPUT = ROOT / 'build/editor-chest-test'
 OUTPUT.mkdir(parents=True, exist_ok=True)
+atlas_manifest = json.loads((ROOT / 'assets/shovey/sprites/atlas.json').read_text())
+chest_x, chest_y, chest_width, chest_height = atlas_manifest['frames']['portrait/chest-closed']
+with Image.open(ROOT / 'assets/shovey/sprites/atlas.png') as atlas:
+    chest_image = atlas.crop((chest_x, chest_y, chest_x + chest_width, chest_y + chest_height))
+chest_samples = {}
 
 
 def wait(predicate, message):
@@ -83,7 +92,29 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
     def showing(label):
         return any(node.get('label') == label for node in nodes())
     def chest_shown():
-        return any(node.get('detail', '').endswith('/chest-closed.png') for node in nodes())
+        images = [node for node in nodes() if node.get('kind') == 'image' and
+                  node.get('visible') and node.get('detail', '').endswith('/sprites/atlas.png')]
+        if not images:
+            return False
+        # Every sprite now shares the atlas path. Check its actual painted
+        # opaque pixels, leaving transparent edges and their backdrop out.
+        capture = subprocess.check_output(['import', '-window', window, 'png:-'])
+        with Image.open(io.BytesIO(capture)) as image:
+            screenshot = image.convert('RGB')
+        for node in images:
+            width, height = round(node['width']), round(node['height'])
+            if min(width, height) < 16 or width != height:
+                continue
+            size = width, height
+            if size not in chest_samples:
+                expected = np.asarray(chest_image.resize(size, Image.Resampling.BILINEAR))
+                chest_samples[size] = expected[:, :, :3].astype(np.int16), expected[:, :, 3] >= 250
+            expected, opaque = chest_samples[size]
+            x, y = round(node['x']), round(node['y'])
+            actual = np.asarray(screenshot.crop((x, y, x + width, y + height)), dtype=np.int16)
+            if np.abs(actual - expected)[opaque].mean() < 12:
+                return True
+        return False
     def press(label):
         node = next(node for node in nodes() if node.get('label') == label and node.get('visible'))
         x = int(node['visible_x'] + node['visible_width'] / 2)
@@ -109,17 +140,20 @@ with tempfile.TemporaryDirectory(dir=OUTPUT, prefix='profile-') as temporary:
                                    for node in nodes()), 'Public editor exposed a secret level'
                     press('Level 28 of 175')
                     continue
-                wait(lambda: showing('29a'), f'29a absent from {mode} selector')
-                entries = {node['label']: node for node in nodes() if node.get('label') in ('29', '29a', '30')}
                 if mode == 'Levels':
+                    wait(lambda: showing('29a'), '29a absent from Levels selector')
+                    entries = {node['label']: node for node in nodes()
+                               if node.get('label') in ('29', '29a', '30')}
                     order = lambda name: (entries[name]['visible_y'], entries[name]['visible_x'])
                     assert order('29') < order('29a') < order('30'), '29a is not beside 29 in numeric order'
+                    press('29a')
                 else:
-                    # The secret is detached from the journey; focus reveals
-                    # its actual board, then Edit opens it explicitly.
+                    # The secret is detached from the journey. Focus brings
+                    # its map target into view; Edit opens its board explicitly.
                     subprocess.run(['xdotool', 'key', '--window', window, 'n', 'n'], check=True)
-                    wait(lambda: showing('Level 29a'), 'Secret map preview did not focus')
-                press('29a')
+                    wait(lambda: any(node.get('key') == 33178 and node.get('selected') and
+                                     node.get('visible') for node in nodes()),
+                         'Secret map target did not focus')
                 if mode == 'Map':
                     press('Edit')
                 wait(lambda: showing('Secret chest 29a'), '29a did not open the hidden room')
