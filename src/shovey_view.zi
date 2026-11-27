@@ -437,7 +437,7 @@ RememberLevelResult :: () {
 }
 
 result_dismissed: s32;
-LevelResultScreen :: (width: float32, top: float32, bottom: float32) -> bool {
+LevelResultScreen :: (width: float32, top: float32, bottom: float32, key: s32) -> bool {
     if !game.won { result_dismissed = 0; return false }
     // Secret wins keep their existing pause and exact return to the parent.
     if ShoveySecret(game.level) { SecretWinPause(); return false }
@@ -456,7 +456,8 @@ LevelResultScreen :: (width: float32, top: float32, bottom: float32) -> bool {
     }
     action := GameResult(frame.session,width,top,bottom,BuilderFinish(title),result.stars,result.score,game.moves,
         AppLocaleHost("shovey_levels"),AppLocaleHost("shovey_result_score"),AppLocaleHost("shovey_result_moves"),
-        AppLocaleHost("shovey_continue"),AppLocaleHost("shovey_save_failed"),save_failed,coin_pending.active)
+        AppLocaleHost("shovey_continue"),AppLocaleHost("shovey_save_failed"),save_failed,coin_pending.active,
+        false,AppLocaleHost("shovey_result_tap"),frame.now,key)
     if action == 1 { OpenLevels() }
     if action == 2 { result_dismissed = game.level; if game.level < ShoveyLevelCount() { ContinueGame() } }
     return true
@@ -1521,7 +1522,7 @@ ShoveyFrame :: () {
         RewardCard(width, bottom)
         return
     }
-    if LevelResultScreen(width, top, bottom) { return }
+    if LevelResultScreen(width, top, bottom, key) { return }
     EndingPump()
     if key == 72 && !mini { HintOpen() }
     if hint_open { HintPanel(width, top, bottom, key); return }

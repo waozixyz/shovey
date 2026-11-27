@@ -1100,6 +1100,10 @@ Il tuo forziere giornaliero ti aspetta. Apri Shovey per ritirare la ricompensa.
 Livello % completato
 ---
 
+[shovey_result_tap]
+Tocca un punto qualsiasi per continuare
+---
+
 [shovey_result_score]
 Punteggio
 ---

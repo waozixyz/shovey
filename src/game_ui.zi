@@ -5,6 +5,7 @@
 #import "kryon/geometry"
 
 Button :: #import "kryon/button";
+Press :: #import "kryon/press";
 
 Box :: #import "kryon/box";
 
@@ -38,9 +39,18 @@ GameResultCaption :: (session: Session, key: u64, bounds: Rectangle, text: strin
 }
 GameResult :: (session: Session, width: float32, top: float32, bottom: float32, title: string,
     stars_count: s32, score_value: s32, moves_count: s32, levels_label: string, score_label: string,
-    moves_label: string, continue_label: string, save_label: string, saving_failed: bool, continue_disabled: bool = false, island_art: bool = false) -> s32 {
+    moves_label: string, continue_label: string, save_label: string, saving_failed: bool, continue_disabled: bool = false,
+    island_art: bool = false, tap_hint: string = "", now: float64 = 0.0, key: s32 = 0) -> s32 {
     middle := (top + bottom) / 2.0
-    GameResultFill(session, 20900, Rectangle.{0.0, top, width, bottom - top}, ColorFromPacked(ShoveyPalette().background))
+    area := Rectangle.{0.0, top, width, bottom - top}
+    GameResultFill(session, 20900, area, ColorFromPacked(ShoveyPalette().background))
+    tapped := false
+    if tap_hint != "" {
+        // Register the full panel first so Levels retains its own hit target.
+        press := Press.Draw(session, Press.Props.{.key = 20905, .id = 20905,
+            .bounds = area, .label = continue_label, .now = now, .disabled = continue_disabled})
+        tapped = !continue_disabled && (press.clicked || key == 257 || key == 32)
+    }
     if GameHeaderControl(session,20907,Rectangle.{16.0,top+16.0,48.0,48.0},levels_label,ICON_LEVELS,island_art) { return 1 }
     GameResultCaption(session, 20901, Rectangle.{16.0, middle - 140.0, width - 32.0, 64.0}, title, 28, true)
     stars := ifx stars_count == 3 then "★ ★ ★" else ifx stars_count == 2 then "★ ★ ☆" else ifx stars_count == 1 then "★ ☆ ☆" else "☆ ☆ ☆"
@@ -51,7 +61,10 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
     moves: Vec(u8)
     BuilderPrint(*moves, "%: %", moves_label, moves_count)
     GameResultCaption(session, 20904, Rectangle.{16.0, middle + 44.0, width - 32.0, 32.0}, BuilderFinish(moves), 18, true)
-    if Button.Draw(session, Button.Props.{.key = 20905, .id = 20905,
+    if tap_hint != "" {
+        GameResultCaption(session, 20908, Rectangle.{16.0, middle + 100.0, width - 32.0, 48.0}, tap_hint, 16, true)
+        if tapped { return 2 }
+    } else if Button.Draw(session, Button.Props.{.key = 20905, .id = 20905,
         .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
         .label = continue_label, .disabled = continue_disabled}) != 0 {
         return 2

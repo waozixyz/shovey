@@ -375,22 +375,22 @@
     {
       "path": "sprites/charged-down.png",
       "depicts": "charged Shovey looking down",
-      "sha256": "3b47ceae34f4f23266413e58fc4f2e2f9357378d3fa0e1d625ac6d0278e755f4"
+      "sha256": "d30bff5d8c3f961246de7e70705038ee6b958d79db73cb0d5d71e8cc64564585"
     },
     {
       "path": "sprites/charged-left.png",
       "depicts": "charged Shovey looking left",
-      "sha256": "dad653a2773e8208408d5dad2cc69cf8b7aeb4a871189985900e4c7b15324d7d"
+      "sha256": "ba03a64fcc1480a51f24a845cf9fbc879d3146ddfb65809b077081d55ec6f57a"
     },
     {
       "path": "sprites/charged-right.png",
       "depicts": "charged Shovey looking right",
-      "sha256": "03c214c0ac1cdb2c16df37dfa9bd0337a59431df42fb59716b3dde98affb304a"
+      "sha256": "e0286910f30ea7e72324c844a1a780948d81d633ca6ac27dcb3fbdde8bce7fd4"
     },
     {
       "path": "sprites/charged-up.png",
       "depicts": "charged Shovey looking up",
-      "sha256": "f29a8ba5b60c74e3c818b813ea48acc427ea61ed602633dc110537c11343fd52"
+      "sha256": "c9e51c8733884241664546f2cf28e308e41344ba339520785b1f007cd48cb956"
     },
     {
       "path": "sprites/chest-closed.png",
@@ -1175,22 +1175,22 @@
     {
       "path": "sprites/player-down.png",
       "depicts": "Shovey looking down",
-      "sha256": "f07c731f9d1ce0340903f9d60749b3a805c5a0c85721b2e02a16dadaf9c23f93"
+      "sha256": "ab302190a03b021bc6cd27e62af8d1b418e3801c318fe91589983f1e73d3779c"
     },
     {
       "path": "sprites/player-left.png",
       "depicts": "Shovey looking left",
-      "sha256": "9166c3cab58849af38c9ac8e7add5cc2b5c75c0b6fd14d92598ef90f1f76dce3"
+      "sha256": "6d3fc43f288dc7c27aaf2c918554210d3eed484bb80c3f8f3a4189535b2b118b"
     },
     {
       "path": "sprites/player-right.png",
       "depicts": "Shovey looking right",
-      "sha256": "40c97f72c9089d79ec4178ea314fde08e581c9f8a4c58e8919960df107c01682"
+      "sha256": "40ca7792f340084308f63c5e266246a5accd6a0f37a120d34118e2b2a1f87a72"
     },
     {
       "path": "sprites/player-up.png",
       "depicts": "Shovey looking up",
-      "sha256": "5bcfe5c6ed8c5bf94403b25ad9e8a3236b309f3a627fce4ee74cc3e97fba00f1"
+      "sha256": "bca1c76eaeb773a824fd4dbb9f48d9ba8d9dd0e3dfcee908493dc6f0b775157b"
     },
     {
       "path": "sprites/projectile.png",
@@ -1245,282 +1245,282 @@
     {
       "path": "sprites/skin-1-charged-down.png",
       "depicts": "ember-skinned charged Shovey looking down",
-      "sha256": "730bec1bdf472b6af3450d2db3eb900f44c68e98c896601203407ba1452d4b32"
+      "sha256": "315ca67f905fad7fba93e5efc02ddea091ea680127e483feeca6bd7de1ad751e"
     },
     {
       "path": "sprites/skin-1-charged-left.png",
       "depicts": "ember-skinned charged Shovey looking left",
-      "sha256": "123384f8a188b98eed0e2c38a6ac9fdad0b82c7a02c8370548c52423a5953179"
+      "sha256": "c0610237c0a4ddd12d9affde5364238f75a8c43d89e3b5ffc9c73d58da771770"
     },
     {
       "path": "sprites/skin-1-charged-right.png",
       "depicts": "ember-skinned charged Shovey looking right",
-      "sha256": "96b00c4ee3320156d452f203fc2f745f556f6bd595a02122626c5571be736a10"
+      "sha256": "57e3097e6760c7c575f043fc3d6d52b53becb1a4337f45f4038509637cade725"
     },
     {
       "path": "sprites/skin-1-charged-up.png",
       "depicts": "ember-skinned charged Shovey looking up",
-      "sha256": "a9f556db65dd18f85f938c1a49f354155a952e20209c96ff26827ff76ace0461"
+      "sha256": "120b745e9fd2deb3bc5d19eb15ed27b33e4de3638e20ad42c84ef9e00922e1a5"
     },
     {
       "path": "sprites/skin-1-player-down.png",
       "depicts": "ember-skinned Shovey looking down",
-      "sha256": "ad82d782625c44859a3f3cb99886fe499c8343e7f5d12bf34e97f52c621088a3"
+      "sha256": "3c777703b82f0f4abd8147131af5302fc88801d0bc78841f9cbbd9cc57d9aa45"
     },
     {
       "path": "sprites/skin-1-player-left.png",
       "depicts": "ember-skinned Shovey looking left",
-      "sha256": "af4dfd7a46fa14e2468584617b1e427240f3a50a24a4ce88d45eeab131d7b471"
+      "sha256": "f3d49a0ca8fa02e002ee9b8c1d30fea79cfc6b4f9590759869af6f7e8de47d9d"
     },
     {
       "path": "sprites/skin-1-player-right.png",
       "depicts": "ember-skinned Shovey looking right",
-      "sha256": "b3de4c16ea98cfccea187296ff7d012243dc8cb2954fdfe1c85545f32d9a3f89"
+      "sha256": "b0edc24994914ecfbb6c323ac6ea0622c5d1f8ea6dd64436a71ddfe1b847e147"
     },
     {
       "path": "sprites/skin-1-player-up.png",
       "depicts": "ember-skinned Shovey looking up",
-      "sha256": "9fc1797ced711235eb91d2ee13d861b67c587ba3a80a05570a6bc087c0026ec4"
+      "sha256": "f10381fc194c68db86b89ef671fe6a3559f567447dfb7b1c393e5f31473262f5"
     },
     {
       "path": "sprites/skin-2-charged-down.png",
       "depicts": "frost-skinned charged Shovey looking down",
-      "sha256": "8df281a42b87622b544acce888c36a69e492cbfd527e45935d00f816df2dea8f"
+      "sha256": "b36e7379a2e53d8f38215ee9b20ce4d3e5d4987e9f110fe1ddf6cf731898557c"
     },
     {
       "path": "sprites/skin-2-charged-left.png",
       "depicts": "frost-skinned charged Shovey looking left",
-      "sha256": "dc643a70f8324ee585d5736f5521b1e99b9690bc321678aab426f50de3bc05ff"
+      "sha256": "d03b4996d7207b895159bcbf690176f3ce7b310776c5f145af23fd4a60189ca2"
     },
     {
       "path": "sprites/skin-2-charged-right.png",
       "depicts": "frost-skinned charged Shovey looking right",
-      "sha256": "046e44216cf8f17d1d38907cabc36adffb8890b03fa0ffa0514046c5168c63f0"
+      "sha256": "c7836401c1e42d114d5c14e64bbf8713e032ee42964401e65a859d212f584984"
     },
     {
       "path": "sprites/skin-2-charged-up.png",
       "depicts": "frost-skinned charged Shovey looking up",
-      "sha256": "4203574791badff2cf54d18d2ed4b8c28256af279aca393c4387525080556762"
+      "sha256": "31d99996623ec94b518eca84d0b2ef54681afd04f6237bad71666b37c58f38af"
     },
     {
       "path": "sprites/skin-2-player-down.png",
       "depicts": "frost-skinned Shovey looking down",
-      "sha256": "d5dd11a2b7e45cb45d8a3dca531ede36a94fa943b7929a99c7e6d26dba819117"
+      "sha256": "54d6b313efe0b8b492c500bdfb27a85995d3f07ba84075519efca44b5c565817"
     },
     {
       "path": "sprites/skin-2-player-left.png",
       "depicts": "frost-skinned Shovey looking left",
-      "sha256": "7fa4de37075a9d4cfb19c559841987c9cfa081523217854f4596a096a38c1257"
+      "sha256": "76ced938938feb801b8970479bd6d7f920343885719ee9a84a01a1a5cfb88975"
     },
     {
       "path": "sprites/skin-2-player-right.png",
       "depicts": "frost-skinned Shovey looking right",
-      "sha256": "f14ee33a0143f338c556e63812b926d58c6b1c5ee53e656c86ddb0d62b4b9b44"
+      "sha256": "39ed5e172cdc42bc54df9196822a75e58bdafa9ca1758877711111f8b70f530c"
     },
     {
       "path": "sprites/skin-2-player-up.png",
       "depicts": "frost-skinned Shovey looking up",
-      "sha256": "340b74fb4e687dade2ec0c745970dc033bb81866818216d093a43c701790934b"
+      "sha256": "c4e5cf783ba88b4ddde87481239cbf42c8717005fde5ec4764920245cec0673f"
     },
     {
       "path": "sprites/skin-3-charged-down.png",
       "depicts": "berry-skinned charged Shovey looking down",
-      "sha256": "1cf8313145f391c9c828c7c7c56a05fe0f8a370393b971494e2784aeec22459d"
+      "sha256": "eed121dd6eb17f0a73661430e74a641d44bf62e905b8393507243929b0b9165c"
     },
     {
       "path": "sprites/skin-3-charged-left.png",
       "depicts": "berry-skinned charged Shovey looking left",
-      "sha256": "c786af31e88a8e4f91be55aa59fe95f84bb97d7cb4463921cab3d4e2268bcff5"
+      "sha256": "29bc80d22742fc01799db05b571eb336a871e8aac3dcf6f67de20d192250e452"
     },
     {
       "path": "sprites/skin-3-charged-right.png",
       "depicts": "berry-skinned charged Shovey looking right",
-      "sha256": "8bb23579833a6b661bf0836975afd31cb5f29d9b67db0a7a6d7fb5b81728864c"
+      "sha256": "8d1b1b3876aa4c3321fb12ed301a1430055e8bce70029605348d1dd45b8b9031"
     },
     {
       "path": "sprites/skin-3-charged-up.png",
       "depicts": "berry-skinned charged Shovey looking up",
-      "sha256": "73fbf77372d036782fd4786e754af342afce68968e222fe9976e7807003911f9"
+      "sha256": "221ed274214fbc3387d57d93ae4e3645411a8b9dd0e77aeae1a8ba5a8b836ce1"
     },
     {
       "path": "sprites/skin-3-player-down.png",
       "depicts": "berry-skinned Shovey looking down",
-      "sha256": "374ffb3281fbba580dadc3d73e53c2ec15f7a6dc4309b9b9f9b8bd026007986a"
+      "sha256": "238c43664add8aba9fcaca8a6bde6759c844b220659e1b98c34d4e9e7996c746"
     },
     {
       "path": "sprites/skin-3-player-left.png",
       "depicts": "berry-skinned Shovey looking left",
-      "sha256": "76040d00a2661bb37a5831d0ba62e7a091d595a9da59ef94f977b9e6ea45e729"
+      "sha256": "a95674eb402e82e9ece94e75c70334cf57ca71629b6737667a5898d4b5f55b34"
     },
     {
       "path": "sprites/skin-3-player-right.png",
       "depicts": "berry-skinned Shovey looking right",
-      "sha256": "69c5f3e19b774849fd7b4ac101e3ebdaf7088b0722d50f273611dbc04bcf0128"
+      "sha256": "d66dd84a649df84a8a5c42eb60331743912d46edf746657156bbf3f0e42c83c5"
     },
     {
       "path": "sprites/skin-3-player-up.png",
       "depicts": "berry-skinned Shovey looking up",
-      "sha256": "07bc3b884220944dec8b20716a3469283443b51c83d2ae0d95566f43f4ca95e0"
+      "sha256": "15b08b98f202c3889ba9304cdc10aa91e317db1d32527d59edc5ff00005ee01a"
     },
     {
       "path": "sprites/skin-4-charged-down.png",
       "depicts": "night-skinned charged Shovey looking down",
-      "sha256": "0c61674cac974b56294ccbac397c6a73956a09cef3fd25f4f30865c65a27ebe8"
+      "sha256": "d98005a737714a3eb55737b7174b0e5c6461ed3a040e9be0a1ec36a4bc8988f7"
     },
     {
       "path": "sprites/skin-4-charged-left.png",
       "depicts": "night-skinned charged Shovey looking left",
-      "sha256": "18d7311132a2c4d681e0e48a5181cdbb475bd4efb4397f5c063e186ae3148551"
+      "sha256": "9760ed1d6a0a1799f6fbb8115edfc4fb2a3de440488c4ebd18adedab7edb115c"
     },
     {
       "path": "sprites/skin-4-charged-right.png",
       "depicts": "night-skinned charged Shovey looking right",
-      "sha256": "84c122ded83861592c5a15ff0fe78ac58b6cc29ece105720b0891dabf17592b4"
+      "sha256": "0a2926bfadbb1b0f8dea8ce6e78684302ae1a105def076118d796614f7de84fb"
     },
     {
       "path": "sprites/skin-4-charged-up.png",
       "depicts": "night-skinned charged Shovey looking up",
-      "sha256": "406556acc7425c262ba42182990379af724eb4c71b8cfda9c984e98011567787"
+      "sha256": "e3e876abf9f79fdea40092491a0d15d855035ca5ef830e986d69738422a5885d"
     },
     {
       "path": "sprites/skin-4-player-down.png",
       "depicts": "night-skinned Shovey looking down",
-      "sha256": "948a03b21a28a6cd134f2701e2647171fa466db1ce8c67b423a4c45b02d72e5a"
+      "sha256": "31d3f85a7dafe01ca027fc5b15b5ec1d763dd1857137842e08c47820a93339eb"
     },
     {
       "path": "sprites/skin-4-player-left.png",
       "depicts": "night-skinned Shovey looking left",
-      "sha256": "63283e9b05be4bb6f74287ea48d0020238ecbc67262cc9975e703271169f4f7b"
+      "sha256": "5ba270ca77faf44827d35d8fe356089628965bf6d720c1eb9fb494dd91c25e8d"
     },
     {
       "path": "sprites/skin-4-player-right.png",
       "depicts": "night-skinned Shovey looking right",
-      "sha256": "05796e0aee46047f7ac8696d6690724fa5046bb0dd9fbf476f51b0de1d1d3c27"
+      "sha256": "a6b54e1ac823520564f035abef0322167885bc249e4c33ec177fd1c799bc135f"
     },
     {
       "path": "sprites/skin-4-player-up.png",
       "depicts": "night-skinned Shovey looking up",
-      "sha256": "08a0f54902da9ac45e8a686f6ed1c0e4a3e181907d53eddd230a4291c97edbbf"
+      "sha256": "c4d8fb3219df05132ac2c6270769bc41e521e2bf52b221d1abc107d7d8bad328"
     },
     {
       "path": "sprites/skin-5-charged-down.png",
       "depicts": "crystal-skinned charged Shovey looking down",
-      "sha256": "0dc885350e44319e98ec7f3ff2100ac5bcd841cf450099b776456651da12e692"
+      "sha256": "42e8bed24f7620f270d7893093215d3b050dcf5c30a066425c783e325c1ecd6a"
     },
     {
       "path": "sprites/skin-5-charged-left.png",
       "depicts": "crystal-skinned charged Shovey looking left",
-      "sha256": "d38a6e3389d35188a4fda861c7edc99c4e6e895ec3b369a96448f2d69936175f"
+      "sha256": "5f1beeed87a26c4626f1fb715f3c36886b8d7b4454376a1ec83cef9638d07d70"
     },
     {
       "path": "sprites/skin-5-charged-right.png",
       "depicts": "crystal-skinned charged Shovey looking right",
-      "sha256": "3d0f0f5bf16a3659594da8e5136e37df7ad323a8e9691826a9cbd67da219a0d0"
+      "sha256": "19d9929d4b722bf3b374865f55825032601c721e79d70c5524919a49d8e4871b"
     },
     {
       "path": "sprites/skin-5-charged-up.png",
       "depicts": "crystal-skinned charged Shovey looking up",
-      "sha256": "b955b50bfc3aa7ac72fd052406591ec80752a51df5a598d0a9bfce4a2c5042ef"
+      "sha256": "df3faaf1cb26dc3896256275582b158192fe06b533e1a3d7090b010c23d9a58f"
     },
     {
       "path": "sprites/skin-5-player-down.png",
       "depicts": "crystal-skinned Shovey looking down",
-      "sha256": "6268a61e5267d331cfb72c006a4b93a2946b8db2de223efc55ffb7b85f3c473e"
+      "sha256": "c8f9fce4b725bf8077129b2cab13e79ec09dcd2444c20baceb474a996a969d52"
     },
     {
       "path": "sprites/skin-5-player-left.png",
       "depicts": "crystal-skinned Shovey looking left",
-      "sha256": "f7f21c1e4bda58ea4e73c89460155248d834b0f88e31b8d620b13aecfb1e1564"
+      "sha256": "ed182147804296997abf062e7ba614b4bf5d16aea76afb443780aed540fbf671"
     },
     {
       "path": "sprites/skin-5-player-right.png",
       "depicts": "crystal-skinned Shovey looking right",
-      "sha256": "c702344827acf22ae5deb95d5cca00dd6fe7d2eacf2c46f8a364044835cd7031"
+      "sha256": "9853a92cc883475dba53e8ff0244c46a8fdc448b5f9f07ea92af69af191bdbce"
     },
     {
       "path": "sprites/skin-5-player-up.png",
       "depicts": "crystal-skinned Shovey looking up",
-      "sha256": "015833e5438d806fc82d5bc4706275e4eafc90c5bd07ad52b20a0653e9637b10"
+      "sha256": "d14740104afab18b0a0728f8c5ed01b5ee0753f6b4c7d1136bce853a128ab7d7"
     },
     {
       "path": "sprites/skin-6-charged-down.png",
       "depicts": "stone-skinned charged Shovey looking down",
-      "sha256": "8b31c3ced7833152d3de231e3934109c201ae58db960f009bc1de938be65961d"
+      "sha256": "d50e8bc504de0bb3e5041275e9373c4c88bd8a022df1046bba498cb966bcf6c0"
     },
     {
       "path": "sprites/skin-6-charged-left.png",
       "depicts": "stone-skinned charged Shovey looking left",
-      "sha256": "5db0b1be5eede1bc0d584dabc9a9392b282cb5970da4267c7917023597702b75"
+      "sha256": "e217e790df7d63c641c17773cd1839ea1ab3de6cd18285636bec882fef99afe4"
     },
     {
       "path": "sprites/skin-6-charged-right.png",
       "depicts": "stone-skinned charged Shovey looking right",
-      "sha256": "27b195764bd3eafde9dd60f993178dba96f17f3ebc8c6dbbbf86f7ec8af8fc2c"
+      "sha256": "8fbbdc761bba02b9b37b80a4d2cb43ebfe74d3cd99c2f2433dfbcbe381144072"
     },
     {
       "path": "sprites/skin-6-charged-up.png",
       "depicts": "stone-skinned charged Shovey looking up",
-      "sha256": "77b1f8c60e64b2c3706a2e7c52efd8b3c89c14ab57b2b3c943a25ec9fd5c7fb3"
+      "sha256": "82ca097f863a7a3cf4e2a1ad60aac34644612798b7c6f9ee147c3d38e22dc2f3"
     },
     {
       "path": "sprites/skin-6-player-down.png",
       "depicts": "stone-skinned Shovey looking down",
-      "sha256": "6cc4194a25ff15a8212ef53e579369dcaf5c35ae4739ae33288a6b8a4c55f9ba"
+      "sha256": "1ff6058f6dcb1e57ffdcab821dcfd06da941e27a43834b55b4c60ced2a719a04"
     },
     {
       "path": "sprites/skin-6-player-left.png",
       "depicts": "stone-skinned Shovey looking left",
-      "sha256": "5ddb2973e0977bc99921e58c4e1814adb10f14851587e966224c4fa75f5ddca7"
+      "sha256": "2fa4babb9e473bc30029bf58517c5c108641b956414dd4b882b1cf768f326c30"
     },
     {
       "path": "sprites/skin-6-player-right.png",
       "depicts": "stone-skinned Shovey looking right",
-      "sha256": "b0ec546ba6751e2118287e06aaec30324cbaa27398d0f330ba79f282be6024c5"
+      "sha256": "591421c8d56d607045a2ce4591293d0793f13f89dda66120b03275a2ab41cebf"
     },
     {
       "path": "sprites/skin-6-player-up.png",
       "depicts": "stone-skinned Shovey looking up",
-      "sha256": "3679d0675a8266c004430c4ffeaee412f3dcbc372f145e16ea53b25b9baa936d"
+      "sha256": "e9275b8b6335787d8f8b69a40a519d775871cce1300f4536a43b4cd6220fbbcb"
     },
     {
       "path": "sprites/skin-7-charged-down.png",
       "depicts": "gold-skinned charged Shovey looking down",
-      "sha256": "43bb5870f26cbb35cc48da51168c3a7c5f5ae9c68ce84538ae08af61bf51b34c"
+      "sha256": "5129e191e6d9f08888e67a56fc25d01e7aafb135d02a8bc01ae6179f12f8afbf"
     },
     {
       "path": "sprites/skin-7-charged-left.png",
       "depicts": "gold-skinned charged Shovey looking left",
-      "sha256": "2bed14f1f8df5a8aff2b2622de1a07fe28cd6531d7c7df74e2efc120c9fd23ce"
+      "sha256": "60ec9761bb20b8ac9a7ae27c69f3344d4bc7e7e38afe9678c96e408026daff2d"
     },
     {
       "path": "sprites/skin-7-charged-right.png",
       "depicts": "gold-skinned charged Shovey looking right",
-      "sha256": "cf87abb355aa575157bddff7fdd9efa11c93c521a3fbfc8da9081d1e0337b12a"
+      "sha256": "3152acca25d621b604632ba1c30611f500d7b9e3fca4825d7a210b39a21e2f9b"
     },
     {
       "path": "sprites/skin-7-charged-up.png",
       "depicts": "gold-skinned charged Shovey looking up",
-      "sha256": "01009ab7ca11436581121fd7765f99d17e19f1d3d723d5df6895533148504108"
+      "sha256": "f674f96b03d3d7258acb46ed81c5b733fc328156fb6296bdc97dd7664ed8aa26"
     },
     {
       "path": "sprites/skin-7-player-down.png",
       "depicts": "gold-skinned Shovey looking down",
-      "sha256": "36a0eba3c38499b44a018100d7550014c92d0c43f38ebc5873bc3d16ba7004fa"
+      "sha256": "b71cc355c5c92c6708e9b04aad11a975a99016fcdbc74480b22d3f317d18e6d3"
     },
     {
       "path": "sprites/skin-7-player-left.png",
       "depicts": "gold-skinned Shovey looking left",
-      "sha256": "fdf4cd498fa8ebbe5e67d77e3900e011eb3499e55726edc700eaa7c8015ef396"
+      "sha256": "357a12ce139a84e1cc829bb43c6563a0189b6202b5fd04a291f72649902de65d"
     },
     {
       "path": "sprites/skin-7-player-right.png",
       "depicts": "gold-skinned Shovey looking right",
-      "sha256": "81b19108b8e83b321a0d104da894973aed184001d46ff9141a40d735922cb91e"
+      "sha256": "42d08bfca676922ba1f385f9b0fb3fb746c67e051104f7eef99ffa6bd0c80e58"
     },
     {
       "path": "sprites/skin-7-player-up.png",
       "depicts": "gold-skinned Shovey looking up",
-      "sha256": "2c55d03ddca94349fd11451183e8401f3db13e07b23bd62ea3462e2781efbdce"
+      "sha256": "d3298fcc160ac45bcea9aca157110b6adb50f425ac5026505b4650971ecc0dec"
     },
     {
       "path": "sprites/tile-0.png",
@@ -1645,7 +1645,7 @@
     {
       "path": "sprites/tile-12.png",
       "depicts": "wall: a raised grey stone block",
-      "sha256": "e8fc265dfceb60855bbf36da818f3ac7664336b65310d1e265d3e2b59c56dad2"
+      "sha256": "bc5970792926956ad40be85f3b0d442caa9d73d9e2240519ba7f4b116cb39bd5"
     },
     {
       "path": "sprites/tile-120.png",
@@ -1685,17 +1685,17 @@
     {
       "path": "sprites/tile-127.png",
       "depicts": "mossy slate wall: lowers onto its matching floor while its button is held",
-      "sha256": "3e9f3b52f487fd5a506c6a99e17e4695795fd6b6b03489a6cec66cd1728ab119"
+      "sha256": "070a79c7f5734524d90a3e9e0f63d8506b563753c22eb204e93395bb54f8301a"
     },
     {
       "path": "sprites/tile-128.png",
       "depicts": "mossy brick wall: lowers onto its matching floor while its button is held",
-      "sha256": "64cb5a94dadfe99da3697cd378d2cb601afbf30de668298657b9de0df60d8726"
+      "sha256": "9d104c2a68969288e42be33e41a8426d862d365cdfa1f8dd821928b63d4dcfac"
     },
     {
       "path": "sprites/tile-129.png",
       "depicts": "mossy sandstone wall: lowers onto its matching floor while its button is held",
-      "sha256": "18160c1949f9c7c88dad996eb1df3485dd88bbcd41fbc9aa36eba6ca55a38bd4"
+      "sha256": "400aadbe8549273e289ea33566cfd21c219fc64906c5179b538c284e5034d25c"
     },
     {
       "path": "sprites/tile-13.png",
@@ -1705,7 +1705,7 @@
     {
       "path": "sprites/tile-130.png",
       "depicts": "mossy timber wall: lowers onto its matching floor while its button is held",
-      "sha256": "0a8006bcb143ca682095e81aedd295ce78e741ac2b5b54502c3648092965e7d7"
+      "sha256": "190ea1df47141ff1de16f451a8ab758c5c5b26f531c2fef5d6144196280f97ec"
     },
     {
       "path": "sprites/tile-131.png",
@@ -1755,7 +1755,7 @@
     {
       "path": "sprites/tile-14.png",
       "depicts": "mossy stone wall: sinks when a pressure plate is held",
-      "sha256": "3e9f3b52f487fd5a506c6a99e17e4695795fd6b6b03489a6cec66cd1728ab119"
+      "sha256": "070a79c7f5734524d90a3e9e0f63d8506b563753c22eb204e93395bb54f8301a"
     },
     {
       "path": "sprites/tile-140.png",
@@ -1890,7 +1890,7 @@
     {
       "path": "sprites/tile-164.png",
       "depicts": "cave wall: a block of rough dark cave rock; blocks movement and laser beams",
-      "sha256": "fca427312e811e31542ba5f2d1c5806ee513f884c46196bd03e342196cc65c38"
+      "sha256": "b632eaa94e70e97d9569c6d7cec1862b8e8412c4c3aff8a08d8712e7af10527b"
     },
     {
       "path": "sprites/tile-165.png",
@@ -1950,7 +1950,7 @@
     {
       "path": "sprites/tile-23.png",
       "depicts": "closed sensor: a raised stone block with a red gem",
-      "sha256": "ed24875b11dbb489cf15a53d0af98c476a33ed59a00e57550dafca9bbd949ec8"
+      "sha256": "6d635c9c33b015ca0532f644d2f7b0f844115af8d1ab1af89f4858940ec6ba7c"
     },
     {
       "path": "sprites/tile-24.png",
@@ -2155,7 +2155,7 @@
     {
       "path": "sprites/tile-63.png",
       "depicts": "mossy wall (decoration, solid)",
-      "sha256": "46b671c025695000a9f449d8f5e5914ffc865612d7a079b5697a7df004e1c5e1"
+      "sha256": "bf6bedc933d98407f39766631518646e2b23368f4b8bc076ce0a398dd0710fee"
     },
     {
       "path": "sprites/tile-64.png",
@@ -2225,7 +2225,7 @@
     {
       "path": "sprites/tile-76.png",
       "depicts": "legacy wall, shown as a plain stone wall",
-      "sha256": "e8fc265dfceb60855bbf36da818f3ac7664336b65310d1e265d3e2b59c56dad2"
+      "sha256": "bc5970792926956ad40be85f3b0d442caa9d73d9e2240519ba7f4b116cb39bd5"
     },
     {
       "path": "sprites/tile-77.png",
@@ -2315,17 +2315,17 @@
     {
       "path": "sprites/tile-95.png",
       "depicts": "slate wall: dark blue-grey stone slabs",
-      "sha256": "c819ac6a00a886d9795ceb6e0fe8349cbca51ada98d7a683ae466b05f92fa487"
+      "sha256": "47d5c65eee2073b480f6e85ad6b4d65f1bbb15288464c2f6bd8834c15cde3b79"
     },
     {
       "path": "sprites/tile-96.png",
       "depicts": "brick wall: warm bricks with pale mortar",
-      "sha256": "701c37a9df279e36171dfd96443fcc0aad8d675e61f5622ada208c775f4933e9"
+      "sha256": "1e664897bd1508350a7b8aaafdebed877616f4be3f32907beee53d26421788c7"
     },
     {
       "path": "sprites/tile-97.png",
       "depicts": "sandstone wall: pale carved blocks",
-      "sha256": "f047d493dd0a22cffdbf0510f61b1c1c2cc6aa127e6cc0574ccd2bf0d0f199d5"
+      "sha256": "a6895a0e1d526dd40e9962269110cd06581ad7dfeca5f33d3e19148fb3bc7262"
     },
     {
       "path": "sprites/tile-98.png",
@@ -2790,7 +2790,7 @@
     {
       "path": "sprites/atlas.png",
       "depicts": "Modern packed portrait and landscape sprites, deduplicated with extruded borders",
-      "sha256": "50ececff469bc420157ef2541e58742ffe8da0a4b9bac6ed6a348677647de5c5"
+      "sha256": "98f6549d1c0e1a5eacc8633a2e5ea0fb7e9a31525f23696d84ed2cb3b1c354da"
     }
   ]
 }

@@ -1100,6 +1100,10 @@ Dew 不足。
 关卡 % 已完成
 ---
 
+[shovey_result_tap]
+轻触任意位置继续
+---
+
 [shovey_result_score]
 得分
 ---

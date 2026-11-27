@@ -1100,6 +1100,10 @@ Deine tägliche Truhe wartet. Öffne Shovey und hole deine Belohnung ab.
 Level % abgeschlossen
 ---
 
+[shovey_result_tap]
+Tippe irgendwo, um fortzufahren
+---
+
 [shovey_result_score]
 Punkte
 ---

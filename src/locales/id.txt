@@ -1100,6 +1100,10 @@ Peti harianmu menunggu. Buka Shovey untuk mengambil hadiahmu.
 Level % selesai
 ---
 
+[shovey_result_tap]
+Ketuk di mana saja untuk melanjutkan
+---
+
 [shovey_result_score]
 Skor
 ---

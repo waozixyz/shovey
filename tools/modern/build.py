@@ -8,9 +8,16 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 ROOT=Path(__file__).resolve().parents[2]
 HERE=Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / 'scripts'))
+from make_shop_art import SKIN_RAMPS
+
 SIZE=64
 FACINGS={'up':0,'right':-90,'down':180,'left':90}
 NAMES=json.loads((HERE/'source/original.json').read_text())
+CLASSIC_RAMP = ((15, 65, 26), (52, 185, 48), (157, 241, 111))
+WALL_TONES = {12: (0.49, 0.54, 0.63), 13: (0.55, 0.61, 0.70),
+              14: (0.68, 0.61, 0.62), 15: (0.65, 0.59, 0.56),
+              17: (1.14, 1.20, 1.32), 18: (0.56, 0.64, 0.59)}
 
 def blank(): return Image.new('RGBA',(SIZE,SIZE))
 def crop_sheet(file,cols,rows):
@@ -66,6 +73,18 @@ def hue(im,degrees):
     hsv[...,0][mask]=(hsv[...,0][mask]+degrees/360)%1
     a[...,:3]=np.round(col.hsv_to_rgb(hsv)*255).astype('uint8');return Image.fromarray(a)
 
+def blob_palette(im, ramp):
+    a = np.array(im)
+    rgb = a[..., :3]
+    blue_body = ((a[..., 3] > 0) & (rgb[..., 2] > rgb[..., 1]) &
+                 (rgb[..., 2].astype(int) - rgb[..., 0] > 24))
+    shade = rgb[..., 2][blue_body]
+    # The generated jelly's blue channel carries the shading. Leave the
+    # eyes and other neutral pixels alone, and build the charge glow after coloring.
+    for channel, tones in enumerate(zip(*ramp)):
+        rgb[..., channel][blue_body] = np.rint(np.interp(shade, (35, 233, 255), tones))
+    return Image.fromarray(a)
+
 def metal_color(im, color):
     a = np.array(im)
     light = np.asarray(ImageOps.grayscale(im)).astype(float)[...,None]/255
@@ -86,12 +105,14 @@ def terrain(cell):
     # Remove the generator's narrow cell margin; surfaces meet exactly.
     return cell.crop((round(cell.width*.035),round(cell.height*.035),round(cell.width*.965),round(cell.height*.965))).resize((64,64),Image.Resampling.LANCZOS).convert('RGBA')
 
-def seamless_wall(cell):
+def seamless_wall(cell, tone):
     # The master's bottom bevel is for an isolated block. Crop to its face
     # before joining walls, then match opposite edge bands in both axes.
     face = cell.crop((round(cell.width*.055), round(cell.height*.035),
                       round(cell.width*.945), round(cell.height*.82)))
     a = np.array(face.resize((64,64), Image.Resampling.LANCZOS)).astype(float)
+    # Separate masonry faces from their matching walkable material by value.
+    a[..., :3] = np.clip(a[..., :3] * tone, 0, 255)
     for axis in (0,1):
         a = np.swapaxes(a,0,axis)
         for k in range(6):
@@ -116,7 +137,7 @@ def build_sprites():
     objects=[fit(i) for i in crop_sheet('objects.png',8,8)]
     raw=crop_sheet('terrain.png',6,6)
     t=[terrain(i) if n<20 else fit(i) for n,i in enumerate(raw)]
-    for i in range(12,19): t[i] = seamless_wall(raw[i])
+    for i in range(12,19): t[i] = seamless_wall(raw[i], WALL_TONES.get(i, (1, 1, 1)))
     characters=[fit(i) for i in crop_sheet('characters.png',4,7)]
     views={'down':0,'left':1,'up':2,'right':3}
     o=lambda i:objects[i].copy()
@@ -160,11 +181,11 @@ def build_sprites():
     for n,deg in zip(range(66,70),(180,90,0,-90)):tile(n,o(24).rotate(deg))
     for n,deg in zip(range(152,156),(90,0,-90,180)):tile(n,hue(o(59),180).rotate(deg))
     for n,deg in zip(range(169,173),(90,0,-90,180)):tile(n,hue(o(25),150).rotate(deg))
-    for row,kind in enumerate(('player','dog','turtle','crab')):
+    for row,kind in enumerate(('dog','turtle','crab'), start=1):
         for facing,col in views.items():out[f'{kind}-{facing}']=characters[row*4+col].copy()
-    for skin in range(8):
+    for skin, ramp in {0: CLASSIC_RAMP, **SKIN_RAMPS}.items():
         for facing,col in views.items():
-            base=hue(characters[col],skin*43)
+            base=blob_palette(characters[col],ramp)
             prefix=f'skin-{skin}-' if skin else ''
             out[f'{prefix}player-{facing}']=base
             out[f'{prefix}charged-{facing}']=glow(base)

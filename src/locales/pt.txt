@@ -1100,6 +1100,10 @@ Seu baú diário está esperando. Abra Shovey para coletar sua recompensa.
 Nível % concluído
 ---
 
+[shovey_result_tap]
+Toque em qualquer lugar para continuar
+---
+
 [shovey_result_score]
 Pontuação
 ---

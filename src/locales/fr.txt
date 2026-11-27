@@ -1100,6 +1100,10 @@ Ton coffre quotidien t’attend. Ouvre Shovey pour récupérer ta récompense.
 Niveau % terminé
 ---
 
+[shovey_result_tap]
+Touchez n’importe où pour continuer
+---
+
 [shovey_result_score]
 Score
 ---

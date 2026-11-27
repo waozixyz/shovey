@@ -1100,6 +1100,10 @@ Tvá denní truhla čeká. Otevři Shovey a vyzvedni si odměnu.
 Úroveň % dokončena
 ---
 
+[shovey_result_tap]
+Pokračujte klepnutím kamkoli
+---
+
 [shovey_result_score]
 Skóre
 ---

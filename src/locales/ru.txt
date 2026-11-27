@@ -1100,6 +1100,10 @@ Shovey Island
 Уровень % пройден
 ---
 
+[shovey_result_tap]
+Коснитесь любого места, чтобы продолжить
+---
+
 [shovey_result_score]
 Счёт
 ---

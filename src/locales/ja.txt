@@ -1100,6 +1100,10 @@ Classicで特別なアイテムを探そう。
 レベル % クリア
 ---
 
+[shovey_result_tap]
+画面のどこかをタップして続ける
+---
+
 [shovey_result_score]
 スコア
 ---

@@ -1100,6 +1100,10 @@ Your daily chest is waiting. Open Shovey to collect your reward.
 Level % complete
 ---
 
+[shovey_result_tap]
+Tap anywhere to continue
+---
+
 [shovey_result_score]
 Score
 ---

@@ -1100,6 +1100,10 @@ Tu cofre diario te espera. Abre Shovey para recoger tu recompensa.
 Nivel % completado
 ---
 
+[shovey_result_tap]
+Toca en cualquier lugar para continuar
+---
+
 [shovey_result_score]
 Puntuación
 ---
