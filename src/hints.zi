@@ -29,7 +29,12 @@ HintSame :: (a: *ShoveyGame, b: *ShoveyGame, ambient: bool = false) -> bool {
             if ShoveyAnimal(right) { right = ifx ShoveyFish(right) then 64 else 0 }
         }
         if left != right || a.objects[at] != b.objects[at] { return false }
-        if (a.ground[at] == 29 || (!ambient && ShoveyAnimal(a.ground[at]))) && a.light_from[at] != b.light_from[at] { return false }
+        // A shooter's firing phase is state: shots land on different moves
+        // otherwise, and the fresh-load sentinel counts as phase 0.
+        if ShoveyShooter(a.ground[at]) {
+            if ShoveyShooterPhase(a, cast(s32)at) != ShoveyShooterPhase(b, cast(s32)at) { return false }
+        }
+        else if (a.ground[at] == 29 || (!ambient && ShoveyAnimal(a.ground[at]))) && a.light_from[at] != b.light_from[at] { return false }
     }
     return true
 }
