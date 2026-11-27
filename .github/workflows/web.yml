@@ -105,7 +105,10 @@ jobs:
           project: waozixyz/shovey
           path: ziranlang/ziran
           fetch: true
-          packages: build-essential cmake ripgrep pkg-config libcurl4-openssl-dev python3-pil python3-numpy
+          packages: >-
+            build-essential cmake meson ninja-build ripgrep pkg-config libcurl4-openssl-dev libssl-dev
+            libsdl2-dev libpango1.0-dev libcairo2-dev libfontconfig1-dev
+            libfreetype6-dev libglib2.0-dev libx11-dev python3-pil python3-numpy
       - uses: actions/setup-node@v4
         with:
           node-version: 22

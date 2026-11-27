@@ -220,8 +220,8 @@
     "name": "Shovey"
   },
   "toolchain": {
-    "commit": "bb0323cef6c7b144eeea5ad1670ccf7a3fbde253",
-    "ref": "bb0323cef6c7b144eeea5ad1670ccf7a3fbde253",
+    "commit": "97107c65fb5f110f85ad6fd4f9299b737adea75c",
+    "ref": "97107c65fb5f110f85ad6fd4f9299b737adea75c",
     "url": "https://git.waozi.xyz/ziranlang/ziran.git"
   }
 }
