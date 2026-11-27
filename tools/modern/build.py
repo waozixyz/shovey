@@ -15,9 +15,6 @@ SIZE=64
 FACINGS={'up':0,'right':-90,'down':180,'left':90}
 NAMES=json.loads((HERE/'source/original.json').read_text())
 CLASSIC_RAMP = ((15, 65, 26), (52, 185, 48), (157, 241, 111))
-WALL_TONES = {12: (0.49, 0.54, 0.63), 13: (0.55, 0.61, 0.70),
-              14: (0.68, 0.61, 0.62), 15: (0.65, 0.59, 0.56),
-              17: (1.14, 1.20, 1.32), 18: (0.56, 0.64, 0.59)}
 
 def blank(): return Image.new('RGBA',(SIZE,SIZE))
 def crop_sheet(file,cols,rows):
@@ -73,17 +70,30 @@ def hue(im,degrees):
     hsv[...,0][mask]=(hsv[...,0][mask]+degrees/360)%1
     a[...,:3]=np.round(col.hsv_to_rgb(hsv)*255).astype('uint8');return Image.fromarray(a)
 
-def blob_palette(im, ramp):
-    a = np.array(im)
-    rgb = a[..., :3]
-    blue_body = ((a[..., 3] > 0) & (rgb[..., 2] > rgb[..., 1]) &
-                 (rgb[..., 2].astype(int) - rgb[..., 0] > 24))
-    shade = rgb[..., 2][blue_body]
-    # The generated jelly's blue channel carries the shading. Leave the
-    # eyes and other neutral pixels alone, and build the charge glow after coloring.
-    for channel, tones in enumerate(zip(*ramp)):
-        rgb[..., channel][blue_body] = np.rint(np.interp(shade, (35, 233, 255), tones))
-    return Image.fromarray(a)
+def overhead_blob(ramp):
+    # Match the original's round body and the two eyes at its leading edge.
+    scale = 4
+    side = SIZE * scale
+    y, x = np.mgrid[:side, :side] / scale + .5 / scale
+    x, y = (x - 32) / 27, (y - 32) / 27
+    radius = np.hypot(x, y)
+    dome = np.sqrt(np.maximum(1 - radius**2, 0))
+    light = .32 + .27 * dome - .13 * x - .17 * y
+    gleam = .31 * np.exp(-((x + .34)**2 / .115 + (y + .49)**2 / .048))
+    rim = .10 * np.exp(-((radius - .88) / .04)**2) * np.maximum(y, 0)
+    colors = np.stack([np.interp(light + gleam + rim, (0, .57, 1), tones)
+                       for tones in zip(*ramp)], axis=-1)
+    colors[radius > .945] = np.array(ramp[0]) * .65
+    body = Image.fromarray(np.dstack((colors, 255 * (radius <= 1))).astype('uint8'))
+    eyes = Image.new('RGBA', body.size)
+    draw = ImageDraw.Draw(eyes)
+    for cx in (25, 39):
+        for box, color in (((cx - 4.8, 6.5, cx + 4.8, 15.6), '#181f25'),
+                           ((cx - 3.4, 7.7, cx + 3.4, 14.4), '#fff9f0'),
+                           ((cx - 1.9, 7.8, cx + 1.9, 11.8), '#1c2328')):
+            draw.ellipse(tuple(round(n * scale) for n in box), fill=color)
+    return {facing: over(body, eyes.rotate(degrees)).resize((SIZE, SIZE), Image.Resampling.LANCZOS)
+            for facing, degrees in FACINGS.items()}
 
 def metal_color(im, color):
     a = np.array(im)
@@ -105,14 +115,12 @@ def terrain(cell):
     # Remove the generator's narrow cell margin; surfaces meet exactly.
     return cell.crop((round(cell.width*.035),round(cell.height*.035),round(cell.width*.965),round(cell.height*.965))).resize((64,64),Image.Resampling.LANCZOS).convert('RGBA')
 
-def seamless_wall(cell, tone):
+def seamless_wall(cell):
     # The master's bottom bevel is for an isolated block. Crop to its face
     # before joining walls, then match opposite edge bands in both axes.
     face = cell.crop((round(cell.width*.055), round(cell.height*.035),
                       round(cell.width*.945), round(cell.height*.82)))
     a = np.array(face.resize((64,64), Image.Resampling.LANCZOS)).astype(float)
-    # Separate masonry faces from their matching walkable material by value.
-    a[..., :3] = np.clip(a[..., :3] * tone, 0, 255)
     for axis in (0,1):
         a = np.swapaxes(a,0,axis)
         for k in range(6):
@@ -124,6 +132,42 @@ def seamless_wall(cell, tone):
         a = np.swapaxes(a,0,axis)
     a[...,3] = 255
     return Image.fromarray(np.round(a).astype('uint8'))
+
+def raised_masonry(texture):
+    # A broad cap, its bevels and a short vertical course read as height at
+    # board scale. All four boundaries meet on the same narrow mortar joint.
+    scale = 3
+    side = SIZE * scale
+    relief = Image.new('L', (side, side), 74)
+    draw = ImageDraw.Draw(relief)
+    surfaces = (
+        (98, ((2, 9), (8, 2), (56, 2), (62, 9), (62, 55), (57, 62), (6, 62), (2, 56))),
+        (144, ((3, 9), (9, 3), (56, 3), (60, 8), (54, 12), (10, 12), (8, 39), (3, 45))),
+        (95, ((60, 8), (62, 11), (62, 55), (57, 60), (54, 57), (55, 37))),
+        (112, ((8, 40), (55, 39), (57, 56), (54, 60), (8, 60), (4, 55), (4, 46))),
+        (119, ((10, 10), (54, 9), (58, 13), (55, 36), (51, 41), (10, 42), (6, 37))),
+        (155, ((7, 35), (10, 39), (51, 38), (55, 34), (55, 37), (51, 42), (10, 43), (5, 39))),
+        (86, ((32, 44), (34, 44), (32, 57), (31, 59), (30, 59))),
+        (123, ((34, 44), (35, 44), (33, 57), (32, 59), (31, 59))),
+    )
+    for shade, points in surfaces:
+        draw.polygon([(x * scale, y * scale) for x, y in points], fill=shade)
+    shade = np.array(relief.resize(texture.size, Image.Resampling.LANCZOS), dtype=float)
+    shade[[0, -1], :] = 74
+    shade[:, [0, -1]] = 74
+    material = np.asarray(texture.convert('RGB'), dtype=float)
+    color = material.mean(axis=(0, 1))
+    # Keep the material's color and use local lighting for the depth. Reduce
+    # the old stone joints to grain so they don't compete with the silhouette.
+    rgb = color + (material - color) * .48
+    rgb *= (shade / shade.mean())[..., None]
+    rgb *= color / rgb.mean(axis=(0, 1))
+    rgb = np.minimum(rgb, 255)
+    # Bright materials can clip on the bevel. Share that light with the
+    # unsaturated pixels to keep the material's average color.
+    headroom = 255 - rgb
+    rgb += headroom * (color - rgb.mean(axis=(0, 1))) / headroom.mean(axis=(0, 1))
+    return Image.fromarray(np.rint(rgb).astype('uint8')).convert('RGBA')
 
 def clean_cutout(im):
     a = np.array(im)
@@ -137,7 +181,9 @@ def build_sprites():
     objects=[fit(i) for i in crop_sheet('objects.png',8,8)]
     raw=crop_sheet('terrain.png',6,6)
     t=[terrain(i) if n<20 else fit(i) for n,i in enumerate(raw)]
-    for i in range(12,19): t[i] = seamless_wall(raw[i], WALL_TONES.get(i, (1, 1, 1)))
+    for i in range(12, 19):
+        texture = seamless_wall(raw[i])
+        t[i] = texture if i == 16 else raised_masonry(texture)
     characters=[fit(i) for i in crop_sheet('characters.png',4,7)]
     views={'down':0,'left':1,'up':2,'right':3}
     o=lambda i:objects[i].copy()
@@ -184,8 +230,7 @@ def build_sprites():
     for row,kind in enumerate(('dog','turtle','crab'), start=1):
         for facing,col in views.items():out[f'{kind}-{facing}']=characters[row*4+col].copy()
     for skin, ramp in {0: CLASSIC_RAMP, **SKIN_RAMPS}.items():
-        for facing,col in views.items():
-            base=blob_palette(characters[col],ramp)
+        for facing, base in overhead_blob(ramp).items():
             prefix=f'skin-{skin}-' if skin else ''
             out[f'{prefix}player-{facing}']=base
             out[f'{prefix}charged-{facing}']=glow(base)

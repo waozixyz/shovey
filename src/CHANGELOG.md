@@ -5,8 +5,9 @@
 - Redesign Classic tiles, scenery and characters with modern shaded artwork.
 - Share a deduplicated sprite atlas across the player, editor, skins and board orientations.
 - Distinguish shooter warnings from live bolts and show a Restart button after the defeat animation.
-- Restore the green Classic blob and the shop’s original skin palettes.
-- Give masonry walls more contrast against floors and let players tap anywhere on the Classic level results to continue.
+- Restore Shovey’s round overhead silhouette across all Classic skins.
+- Give masonry walls raised caps and visible sides in their original material colors.
+- Let players tap anywhere on the Classic level results to continue.
 
 ## [0.6.174] - 2026-11-26
 
