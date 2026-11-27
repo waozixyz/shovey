@@ -13,9 +13,6 @@ const root = process.env.WEB_TEST_ROOT || new URL('../build/web/', import.meta.u
 const fixture = execFileSync(new URL('../build/guide-test/native', import.meta.url).pathname, ['74'], {encoding: 'utf8'});
 const campaign = JSON.parse(await readFile(new URL('../levels/approved.json', import.meta.url), 'utf8'));
 const levelOneSolution = campaign.levels[0].solution;
-const scenes = JSON.parse(await readFile(new URL('../assets/shovey/world-map/scenes.json', import.meta.url), 'utf8'));
-// The v5 portrait map: level 1's authored centre and each painting's authored bounds.
-const mapArt = {first: scenes.nodes.portrait[0], panels: scenes.scenes.map(scene => scene.portrait.world_bounds_before_zoom)};
 // Fish wander between frames and are persisted with the next player move.
 // Compare every other saved field, including objects and the water beneath
 // each fish, and require each fish species' population to remain unchanged.
@@ -105,7 +102,7 @@ try {
     assert(node, 'Missing button: ' + label);
     await clickNode(node);
   }
-  // Map waypoints only select; the map's Play (20122) starts the selected level.
+  // The level selector opens a level directly from its preview card.
   async function pressKey(id) {
     const node = (await tree()).find(node => node.key === id && (node.role === 'button' || node.kind === 'button'));
     assert(node, 'Missing button key: ' + id);
@@ -113,7 +110,7 @@ try {
   }
   async function playFromMap() {
     await wait(async () => (await tree()).some(n => n.key === 20105), 'Play did not open the map');
-    await pressKey(20122);
+    await pressKey(33001);
   }
   async function clickNode(node) {
     const x = node.x + node.width / 2, y = node.y + node.height / 2;
@@ -125,8 +122,8 @@ try {
   async function key(code, keyCode) {
     for (const type of ['keyDown', 'keyUp']) {
       await call('Input.dispatchKeyEvent', {type, key: code, code, windowsVirtualKeyCode: keyCode});
+      await delay(80);
     }
-    await delay(80);
   }
   async function playing(level) {
     const nodes = await tree();
@@ -135,10 +132,14 @@ try {
     const at = saved.indexOf('P');
     return at >= 0 && parseInt(saved.slice(at + 2, at + 4), 16) === level;
   }
+  async function cardInView(level) {
+    const nodes = await tree();
+    const viewport = nodes.find(node => node.key === 20105);
+    const card = nodes.find(node => node.key === 33000 + level && node.visible && node.enabled);
+    return viewport && card && card.x >= viewport.x && card.x + card.width <= viewport.x + viewport.width &&
+      card.y >= viewport.y && card.y + card.height <= viewport.y + viewport.height;
+  }
   async function wheelToFirst() {
-    const [firstX, firstY] = mapArt.first;
-    // One probe picks the wheel direction that heads back along the road.
-    let backward = 1, previous = Infinity, probed = false;
     for (let attempt = 0; attempt < 64; attempt++) {
       const nodes = await tree();
       const viewport = nodes.find(node => node.key === 20105);
@@ -146,22 +147,13 @@ try {
       const waypoint = nodes.find(node => node.key === 33001 && node.visible && node.enabled);
       if (waypoint && waypoint.x >= viewport.x && waypoint.x + waypoint.width <= viewport.x + viewport.width &&
           waypoint.y >= viewport.y && waypoint.y + waypoint.height <= viewport.y + viewport.height) return;
-      // Infer the camera's actual translation from a submitted v5 painting.
-      // The wheel follows the road; no focus, selection or camera state is injected.
-      const panel = nodes.find(node => node.kind === 'image' && node.key >= 60001 && node.key < 60001 + mapArt.panels.length);
-      assert(panel, 'No map painting available to measure manual scrolling');
-      const [authoredX, authoredY, authoredWidth] = mapArt.panels[panel.key - 60001];
-      const scale = panel.width / authoredWidth;
-      const distance = Math.hypot(panel.x + (firstX - authoredX) * scale - (viewport.x + viewport.width / 2),
-        panel.y + (firstY - authoredY) * scale - (viewport.y + viewport.height / 2));
-      if (!probed && previous !== Infinity) { probed = true; if (distance > previous + 1) backward = -1; }
-      previous = distance;
+      // Use the actual scroll viewport; no selection or scroll state is injected.
       const x = viewport.x + viewport.width / 2, y = viewport.y + viewport.height / 2;
       await call('Input.dispatchMouseEvent', {type: 'mouseMoved', x, y, buttons: 0});
-      await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x, y, deltaX: 0, deltaY: 240 * backward});
+      await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x, y, deltaX: 0, deltaY: -1000});
       await delay(350);
     }
-    throw Error('Manual wheel navigation along the road did not reveal level 1');
+    throw Error('Manual wheel navigation did not reveal level 1');
   }
   await call('Runtime.enable');
   await call('Page.enable');
@@ -176,10 +168,10 @@ try {
     const nodes = await tree();
     if (nodes.some(n => n.label === 'Not now')) await press('Not now');
     else if (nodes.some(n => n.label === 'Swipe and tap')) await press('Swipe and tap');
-    else if (nodes.some(n => n.label === 'Got it')) break;
+    else if (nodes.some(n => n.key === 20604)) break;
     else await delay(100);
   }
-  await wait(async () => (await tree()).some(n => n.label === 'Got it'), 'Pip introduction did not appear');
+  await wait(async () => (await tree()).some(n => n.key === 20604), 'Pip introduction did not appear');
   const introduction = await tree();
   assert(introduction.some(n => n.label === 'Pip' && n.kind === 'image'), 'Pip artwork is missing');
   const beforeSnapshot = stationaryCampaign(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`));
@@ -200,9 +192,9 @@ try {
   const afterTip = await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`);
   assert.deepEqual(stationaryCampaign(afterTip), {state: expectedTip, fish: beforeSnapshot.fish},
     'Keyboard play under Pip must save exactly one rightward step, preserving progress, fish populations and the stationary board');
-  assert((await tree()).some(n => n.label === 'Got it'), 'Movement dismissed Pip');
-  await press('Got it');
-  await wait(async () => !(await tree()).some(n => n.label === 'Got it'), 'Pip did not dismiss');
+  assert((await tree()).some(n => n.key === 20604), 'Movement dismissed Pip');
+  await pressKey(20604);
+  await wait(async () => !(await tree()).some(n => n.key === 20604), 'Pip did not dismiss');
   assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.campaign', {encoding:'utf8'})`), afterTip,
     'Dismissing Pip must not move Shovey');
   assert.equal(await evaluate(`Module.FS.readFile('/kryon-apps/shovey/local.guide.seen', {encoding:'utf8'})`), 'G100000001');
@@ -219,32 +211,28 @@ try {
   await wait(async () => (await tree()).some(n => n.label === 'Play' && (n.role === 'button' || n.kind === 'button')), 'Play cover did not appear');
   await press('Play');
   await wait(async () => (await tree()).some(n => n.key === 20105), 'Play did not open the map');
-  // Place 74 carries its route name (forks are named like 56-A1); the map focuses it.
-  const earnedName = (await tree()).find(n => n.key === 33074)?.label;
-  assert(earnedName, 'Earned place 74 is missing from the map');
-  await wait(async () => (await tree()).some(n => n.key === 20121 && n.label === 'Level ' + earnedName),
-    'The map did not focus earned place 74');
-  await pressKey(20122);
+  await wait(() => cardInView(74),
+    'The selector did not reveal earned level 74');
+  await pressKey(33074);
   await wait(() => playing(74), 'Earned level did not open');
   const arrows = [['ArrowLeft', 37], ['ArrowUp', 38], ['ArrowRight', 39], ['ArrowDown', 40]];
   for (const [index, [width, height]] of [[390, 844], [960, 600]].entries()) {
     await call('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: true});
     await delay(250);
     await press('Back');
-    const focusedCard = index === 0 ? 33074 : 33002;
-    await wait(async () => (await tree()).some(n => n.key === focusedCard && n.y >= 70 && n.y + n.height <= height),
+    const focusedLevel = index === 0 ? 74 : 2;
+    await wait(() => cardInView(focusedLevel),
       'Expected selector focus card is not visible');
     await wheelToFirst();
     await delay(500);
     assert((await tree()).some(n => n.key === 33001 && n.visible && n.enabled), 'Selector snapped back during manual scrolling');
     await press('1');
-    await pressKey(20122);
     await wait(() => playing(1), 'Older level did not open');
     await press('Back');
-    await wait(async () => (await tree()).some(n => n.key === 33001 && n.y >= 70 && n.y + n.height <= height),
+    await wait(() => cardInView(1),
       'Returning from level 1 moved its selector card out of view');
     if (index === 0) {
-      await pressKey(20122);
+      await pressKey(33001);
       for (const direction of levelOneSolution) await key(...arrows[Number(direction)]);
       // A regular level shows its stars and score; its Next level opens level 2.
       await wait(async () => (await tree()).some(n => n.label === 'Level 1 complete') &&
@@ -252,10 +240,10 @@ try {
       await pressKey(20905);
       await wait(() => playing(2), 'Winning level 1 did not advance to level 2');
       await press('Back');
-      await wait(async () => (await tree()).some(n => n.key === 33002 && n.y >= 70 && n.y + n.height <= height),
+      await wait(() => cardInView(2),
         'Finishing level 1 did not keep level 2 in view');
     }
-    await pressKey(20122);
+    await pressKey(index === 0 ? 33002 : 33001);
   }
   assert.equal(failures.length, 0, failures.join('|'));
   console.log('Pip artwork, keyboard play, touch dismissal without movement and saved acknowledgement; selector: earned level74 opens once, then replayed level1 and finished level2 stay visible in portrait/landscape');

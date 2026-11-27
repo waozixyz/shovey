@@ -188,7 +188,7 @@ try {
     await wait('!Module.profileVisible');
     await textClick('Play');
     assert((await tree()).some(node => node.key === 20105), 'Classic did not open its map');
-    await keyClick(20122);
+    await keyClick(33001);
     const localPath = '/kryon-apps/shovey/local.campaign';
     await wait(`Module.FS.analyzePath(${JSON.stringify(localPath)}).exists`);
     if ((await labels()).includes('Download new levels when they come out?')) await textClick('Not now');
@@ -199,10 +199,11 @@ try {
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Opening Classic wrote unearned account progress');
     await textClick('Back');
     assert((await tree()).some(node => node.key === 20105), 'Back did not return to the map');
-    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: -2200});
+    const lastVisibleBefore = Math.max(...(await tree()).filter(node => node.visible && node.key > 33000 && node.key < 34000).map(node => node.key));
+    await call('Input.dispatchMouseEvent', {type: 'mouseWheel', x: 195, y: 500, deltaX: 0, deltaY: 2200});
     await delay(500);
-    assert((await tree()).some(node => node.visible && node.key > 33001 && node.key <= 33175),
-      'Scrolling did not reveal later journey waypoints');
+    assert((await tree()).some(node => node.visible && node.key > lastVisibleBefore && node.key < 34000),
+      'Scrolling did not reveal later level cards');
     assert.equal(await evaluate(`Module.FS.readFile(${JSON.stringify(localPath)}, {encoding: 'utf8'})`), campaign, 'Scrolling changed the device campaign');
     assert.deepEqual(await evaluate(accountProgress), earnedBefore, 'Scrolling wrote account progress');
     // Editor offers only the creator's own levels, never campaign levels, even
