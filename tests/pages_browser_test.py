@@ -184,7 +184,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));let sequence=0;
     campaign = json.loads((ROOT / 'levels/approved.json').read_text())
     config = dict(fixture=fixture, levelOneSolution=campaign['levels'][0]['solution'],
                   mapArt=world_map_art(),
-                  driverSetup=setup, target=f'http://127.0.0.1:{server.server_port}/')
+                  driverSetup=setup, target=f'http://127.0.0.1:{server.server_port}/?play')
     prelude += ''.join('const '+k+'='+json.dumps(v)+';' for k,v in config.items()) + stationary
     # Execute the CI server's actual MIME expressions in Chromium: root
     # navigation must remain HTML while chunk files must remain binary.
@@ -205,7 +205,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));let sequence=0;
       assert.equal(digest, EXPECTED_HASH, 'Emscripten package bytes changed');
     }
     for (const mode of ['missing','html','truncated','corrupt','path']) {
-      await fetch(target + '__test?mode=' + mode);
+      await fetch(new URL('__test?mode=' + mode, target));
       await call('Page.reload');
       await wait(()=>evaluate(`document.querySelector('#loading').classList.contains('error')`), 'No failure screen: '+mode);
       assert(await evaluate(`!document.querySelector('script[src*=\"runtime.js\"]') && !Module.FS`), 'Runtime started with damaged data: '+mode);

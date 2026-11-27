@@ -19,7 +19,7 @@ const profile = await mkdtemp(join(tmpdir(), 'shovey-release-'));
 const gameplayControls = [20022, 20820, 20016, 20017, 20023];
 const isGameplay = nodes => gameplayControls.every(key => nodes.some(node => node.key === key)) &&
   nodes.some(node => node.label === 'Wall' && (node.role === 'image' || node.kind === 'image'));
-const types = {'.html': 'text/html', '.wasm': 'application/wasm', '.js': 'text/javascript', '.png': 'image/png', '.json': 'application/json'};
+const types = {'.html': 'text/html', '.wasm': 'application/wasm', '.js': 'text/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json'};
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');
@@ -172,11 +172,27 @@ try {
   await call('Page.enable');
   if (!publicHost) await call('Page.addScriptToEvaluateOnNewDocument', {source: driverSetup});
   await call('Emulation.setDeviceMetricsOverride', {width: 720, height: 1280, deviceScaleFactor: 1, mobile: true});
-  const target = liveUrl || `http://127.0.0.1:${server.address().port}/`;
-  const navigation = await call('Page.navigate', {url: target});
+  const target = new URL(liveUrl || `http://127.0.0.1:${server.address().port}/`);
+  const landing = publicHost && !target.search;
+  if (!landing && !target.search) target.search = '?play';
+  const navigation = await call('Page.navigate', {url: target.href});
   assert(!navigation.errorText, navigation.errorText);
+  if (landing) await wait(`document.readyState === 'complete' && location.href === ${JSON.stringify(target.href)}`);
+  const previousSite = landing && liveUrl && await evaluate('!!globalThis.Module && !document.querySelector("#landing")');
+  if (landing && !previousSite) {
+    const playLink = `Array.from(document.querySelectorAll('#landing a[href="?play"]')).find(link => link.getClientRects().length)`;
+    assert(await evaluate(`!!${playLink}`), 'The landing page is missing its Play link');
+    assert(await evaluate(`!!document.getElementById('landing-style')?.sheet.cssRules.length`), 'The landing stylesheet did not load');
+    assert(await evaluate(`!globalThis.Module && !performance.getEntriesByType('resource').some(entry => {
+      const path = new URL(entry.name).pathname;
+      return path.startsWith('/runtime.') || path === '/arcade.json';
+    })`), 'The landing page started downloading the game');
+    await evaluate(`${playLink}.focus()`);
+    await key('Enter', 13);
+    await wait(`location.search === '?play'`);
+  }
   await wait(`!!(globalThis.Module && Module.profileReady) || !!document.getElementById('loading')?.classList.contains('error')`);
-  assert.equal(await evaluate('location.origin'), new URL(target).origin, 'Shovey opened on a different origin');
+  assert.equal(await evaluate('location.origin'), target.origin, 'Shovey opened on a different origin');
   assert(!await evaluate(`document.getElementById('loading').classList.contains('error')`), 'The page could not start Shovey');
   const runtime = (await evaluate(`performance.getEntriesByType('resource').map(entry => entry.name)`)).map(name => new URL(name))
     .filter(url => /\/(runtime\.(js|wasm|data)(\.gz)?|arcade\.json|apps\.zx(\.gz)?)$/.test(url.pathname));

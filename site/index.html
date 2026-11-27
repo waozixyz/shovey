@@ -5,16 +5,605 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Shovey — Push. Solve. Come home.</title>
   <meta name="description" content="Push. Solve. Come home. Play Shovey's Classic puzzles in your browser with touch or arrow keys, saved progress and a level editor.">
-  <meta name="theme-color" content="#173226">
+  <meta name="theme-color" content="#10231d">
   <meta name="application-name" content="Shovey">
   <meta name="author" content="Waozi">
   <link rel="canonical" href="https://shovey.waozi.xyz/">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
-  <!-- The runtime downloads while the page fetches the game's files. -->
-  <link rel="preload" href="runtime.js?v=__ARCADE_ASSET_REVISION__" as="script">
-  <link rel="preload" href="runtime.wasm?v=__ARCADE_ASSET_REVISION__" as="fetch" type="application/wasm" crossorigin>
+  <script>
+    // Existing embeds and direct game URLs still open the full-window player.
+    if (window.self !== window.top || location.search || /\/index\.html$/.test(location.pathname) ||
+        matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) {
+      document.documentElement.classList.add('game-mode');
+      // Only preload the runtime when the game is requested.
+      [['runtime.js', 'script'], ['runtime.wasm', 'fetch']].forEach(function (asset) {
+        var preload = document.createElement('link');
+        preload.rel = 'preload';
+        preload.href = asset[0] + '?v=__ARCADE_ASSET_REVISION__';
+        preload.as = asset[1];
+        if (asset[1] === 'fetch') {
+          preload.type = 'application/wasm';
+          preload.crossOrigin = 'anonymous';
+        }
+        document.head.appendChild(preload);
+      });
+    }
+  </script>
+  <style id="landing-style">
+    #landing {
+      --spruce: #132a21;
+      --spruce-dark: #10231d;
+      --cream: #f7efdd;
+      --ink: #1d3629;
+      --gold: #f2c271;
+      --heading-font: Georgia, 'Times New Roman', serif;
+      --gutter: clamp(1.25rem, 5vw, 5rem);
+      background: var(--cream);
+      color: var(--ink);
+      font: 1rem/1.6 system-ui, sans-serif;
+    }
+
+    #landing *, #landing *::before, #landing *::after {
+      box-sizing: border-box;
+    }
+
+    #landing :is(h1, h2, p, dl, dd) {
+      margin: 0;
+    }
+
+    #landing a {
+      color: inherit;
+      text-underline-offset: .24em;
+    }
+
+    #landing :focus-visible {
+      outline: 3px solid currentColor;
+      outline-offset: 4px;
+    }
+
+    #landing .landing-skip {
+      position: absolute;
+      inset: .75rem auto auto var(--gutter);
+      z-index: 2;
+      padding: .6rem 1rem;
+      background: var(--cream);
+      color: var(--ink);
+      transform: translateY(-200%);
+    }
+
+    #landing .landing-skip:focus {
+      transform: none;
+    }
+
+    #landing .landing-wrap {
+      width: min(100%, 90rem);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+
+    #landing .landing-header {
+      position: relative;
+      z-index: 1;
+      border-bottom: 1px solid #f7efdd24;
+      background: var(--spruce-dark);
+      color: var(--cream);
+    }
+
+    #landing .landing-header-inner,
+    #landing .landing-download-inner,
+    #landing .landing-footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem 1.5rem;
+    }
+
+    #landing .landing-header-inner {
+      min-height: 4.5rem;
+      padding-block: .55rem;
+    }
+
+    #landing .landing-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      font: 700 1.55rem/1 var(--heading-font);
+      text-decoration: none;
+    }
+
+    #landing .landing-brand img {
+      display: block;
+      border-radius: .36rem;
+    }
+
+    #landing .landing-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 clamp(.8rem, 3.6vw, 2.8rem);
+      font-size: .92rem;
+      font-weight: 650;
+    }
+
+    #landing .landing-nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+      text-decoration: none;
+    }
+
+    #landing .landing-nav a:hover,
+    #landing .landing-nav a:focus-visible {
+      color: var(--gold);
+      text-decoration: underline;
+    }
+
+    #landing .landing-hero {
+      position: relative;
+      isolation: isolate;
+      background: var(--spruce);
+      color: var(--cream);
+    }
+
+    #landing .landing-hero::before {
+      position: absolute;
+      z-index: -1;
+      inset: 0 0 0 24%;
+      background:
+        linear-gradient(90deg, var(--spruce), #132a21f2 10%, #132a2199 28%, #132a2100 55%),
+        linear-gradient(0deg, #10231d65, transparent 34%),
+        url('title-landscape.jpg') center 55% / cover no-repeat;
+      content: '';
+    }
+
+    #landing .landing-hero-inner {
+      display: flex;
+      min-height: clamp(33rem, 44vw, 45rem);
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding-block: 4rem 4.75rem;
+    }
+
+    #landing .landing-kicker {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      margin-bottom: .9rem;
+      color: #365541;
+      font-size: .75rem;
+      font-weight: 750;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    #landing .landing-kicker::before {
+      width: .5rem;
+      height: .5rem;
+      flex: none;
+      background: currentColor;
+      content: '';
+      transform: rotate(45deg);
+    }
+
+    #landing .landing-hero .landing-kicker {
+      color: var(--gold);
+    }
+
+    #landing h1, #landing h2 {
+      font-family: var(--heading-font);
+      font-weight: 700;
+      letter-spacing: -.047em;
+      line-height: 1.02;
+      text-wrap: balance;
+    }
+
+    #landing h1 {
+      font-size: clamp(3.25rem, 6.45vw, 6.6rem);
+    }
+
+    #landing h1 em {
+      display: block;
+      color: var(--gold);
+      font-weight: 400;
+    }
+
+    #landing h2 {
+      font-size: clamp(2.4rem, 4.25vw, 4.35rem);
+    }
+
+    #landing .landing-hero-copy {
+      max-width: 33ch;
+      margin-top: 1.4rem;
+      color: #f1e9d8;
+      font-size: clamp(1rem, 1.46vw, 1.27rem);
+    }
+
+    #landing .landing-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .65rem 1.35rem;
+      margin-top: 1.85rem;
+    }
+
+    #landing .landing-button,
+    #landing .landing-text-link {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      gap: .55rem;
+      font-size: .95rem;
+      font-weight: 720;
+    }
+
+    #landing .landing-button {
+      min-height: 3.25rem;
+      padding: .65rem 1.15rem;
+      border: 1px solid #e6ab50;
+      border-radius: .35rem;
+      background: var(--gold);
+      box-shadow: 0 .24rem 0 #9d682e;
+      color: #262616;
+      text-decoration: none;
+    }
+
+    #landing .landing-button:is(:hover, :focus-visible) {
+      background: #ffd58d;
+    }
+
+    #landing .landing-button:focus-visible {
+      outline-color: var(--cream);
+    }
+
+    #landing .landing-play-icon {
+      width: .75rem;
+      height: .83rem;
+      background: currentColor;
+      clip-path: polygon(0 0, 100% 50%, 0 100%);
+    }
+
+    #landing .landing-text-link:hover {
+      color: var(--gold);
+    }
+
+    #landing .landing-classic,
+    #landing .landing-editor {
+      padding-block: clamp(3.3rem, 7vw, 7rem);
+    }
+
+    #landing .landing-section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(2.4rem, 7vw, 7rem);
+    }
+
+    #landing .landing-section-copy {
+      max-width: 47ch;
+      margin-top: 1.1rem;
+      color: #405247;
+      font-size: clamp(1rem, 1.4vw, 1.125rem);
+    }
+
+    #landing .landing-controls {
+      margin-top: 1.55rem;
+      font-size: .91rem;
+    }
+
+    #landing .landing-controls > div {
+      display: grid;
+      grid-template-columns: 4.55rem minmax(0, 1fr);
+      gap: .5rem;
+      padding-block: .7rem;
+      border-top: 1px solid #c7cbb3;
+    }
+
+    #landing .landing-controls dt {
+      font-weight: 750;
+    }
+
+    #landing .landing-controls dd {
+      color: #405247;
+    }
+
+    #landing .landing-controls kbd {
+      display: inline-block;
+      min-width: 1.35rem;
+      padding-inline: .24rem;
+      border: 1px solid #a8aa91;
+      border-radius: .22rem;
+      background: #fff9eb;
+      box-shadow: 0 1px 0 #a8aa91;
+      color: var(--ink);
+      font: 700 .77rem/1.45 ui-monospace, monospace;
+      text-align: center;
+    }
+
+    /* The Classic board uses the same grid for the ground and the puzzle pieces. */
+    #landing .landing-board {
+      display: grid;
+      width: min(100%, 35rem);
+      aspect-ratio: 7 / 5;
+      grid-template: repeat(5, 1fr) / repeat(7, 1fr);
+      margin-inline: auto;
+      border: clamp(.5rem, 1vw, .9rem) solid #a57341;
+      border-radius: 1rem;
+      background: #698354;
+      box-shadow: 0 .65rem 0 #6f492c, 0 1.2rem 1.8rem #3c32272b;
+    }
+
+    #landing .landing-board-path {
+      grid-area: 2 / 2 / span 3 / span 5;
+      border-radius: .25rem;
+      background:
+        linear-gradient(90deg, #5f4e3b35 1px, transparent 1px) 0 0 / 20% 100%,
+        linear-gradient(#5f4e3b35 1px, transparent 1px) 0 0 / 100% calc(100% / 3),
+        #dfc596;
+      box-shadow: 0 .2rem 0 #435b36;
+    }
+
+    #landing .landing-board-tree {
+      width: 84%;
+      aspect-ratio: 1;
+      place-self: center;
+      border-radius: 48% 52% 45% 55%;
+      background: radial-gradient(circle at 34% 27%, #8aab62, #416f48 58%, #285039 85%);
+      box-shadow: 0 .35rem 0 #2d5038, .12rem .5rem .5rem #223e2b70;
+    }
+
+    #landing .landing-tree-nw { grid-area: 1 / 1; }
+    #landing .landing-tree-se { grid-area: 5 / 7; }
+    #landing .landing-tree-sw { grid-area: 5 / 2; width: 64%; }
+
+    #landing .landing-board-home {
+      grid-area: 2 / 6;
+      width: 85%;
+      aspect-ratio: 1;
+      place-self: center;
+      background:
+        linear-gradient(#a65c30, #804920) center 100% / 23% 35% no-repeat,
+        linear-gradient(#315749 0 47%, #f7d99b 47%);
+      clip-path: polygon(50% 0, 100% 43%, 88% 43%, 88% 100%, 12% 100%, 12% 43%, 0 43%);
+    }
+
+    #landing .landing-board-shovey,
+    #landing .landing-board-ball {
+      width: 69%;
+      aspect-ratio: 1;
+      place-self: center;
+      border-radius: 50%;
+      box-shadow: 0 .25rem .4rem #52391b66;
+    }
+
+    #landing .landing-board-shovey {
+      grid-area: 3 / 2;
+      background:
+        radial-gradient(circle at 53% 37%, #1c3626 0 6%, transparent 7%),
+        radial-gradient(circle at 78% 37%, #1c3626 0 6%, transparent 7%),
+        radial-gradient(circle at 50% 37%, #fff5d8 0 13%, transparent 14%),
+        radial-gradient(circle at 75% 37%, #fff5d8 0 13%, transparent 14%),
+        radial-gradient(circle at 32% 25%, #c8e775, #6bac43 57%, #356c31);
+    }
+
+    #landing .landing-board-arrow {
+      grid-area: 3 / 3;
+      place-self: center;
+      color: #665336;
+      font-size: clamp(1.25rem, 3vw, 2.8rem);
+      line-height: 1;
+    }
+
+    #landing .landing-board-crate,
+    #landing .landing-editor-crate {
+      border: clamp(2px, .5vw, 7px) solid #a56937;
+      border-radius: .2rem;
+      background:
+        linear-gradient(45deg, transparent 43%, #e7af5f 43% 57%, transparent 57%),
+        linear-gradient(-45deg, transparent 43%, #d6994d 43% 57%, transparent 57%),
+        repeating-linear-gradient(#bb7e43 0 22%, #a47241 22% 26%);
+      box-shadow: inset 0 0 0 1px #663d27, 0 .2rem 0 #754829;
+    }
+
+    #landing .landing-board-crate {
+      grid-area: 3 / 4;
+      width: 72%;
+      aspect-ratio: 1;
+      place-self: center;
+    }
+
+    #landing .landing-board-target {
+      grid-area: 3 / 5;
+      width: 64%;
+      aspect-ratio: 1;
+      place-self: center;
+      border: 2px dashed #80643a;
+      border-radius: .2rem;
+    }
+
+    #landing .landing-board-ball {
+      grid-area: 4 / 3;
+      width: 57%;
+      background: radial-gradient(circle at 35% 30%, #f3b491, #b9543e 54%, #843728 90%);
+    }
+
+    #landing .landing-board-pit {
+      grid-area: 4 / 5;
+      width: 68%;
+      aspect-ratio: 2;
+      place-self: center;
+      border: clamp(2px, .45vw, 6px) solid #a04835;
+      border-radius: 50%;
+      background: #4b3327;
+      box-shadow: inset 0 .2rem .25rem #291a15;
+    }
+
+    #landing .landing-editor {
+      border-top: 1px solid #d7d4b8;
+      background: #ede5cc;
+    }
+
+    #landing .landing-editor-art {
+      display: grid;
+      width: min(93%, 29rem);
+      grid-area: 1 / 1;
+      gap: .8rem;
+      margin-inline: auto;
+      padding: clamp(.7rem, 2vw, 1.4rem);
+      border: 1px solid #b8ae88;
+      border-radius: .65rem;
+      background: #fbf4e2;
+      box-shadow: .45rem .55rem 0 #d5c49c;
+      transform: rotate(-3deg);
+    }
+
+    #landing .landing-editor-palette {
+      display: flex;
+      gap: .6rem;
+    }
+
+    #landing .landing-editor-palette span {
+      width: clamp(1.65rem, 3.6vw, 3rem);
+      aspect-ratio: 1;
+      border-radius: .25rem;
+    }
+
+    #landing .landing-editor-grass {
+      outline: 1px solid #577456;
+      outline-offset: 2px;
+      background: #789562;
+    }
+
+    #landing .landing-editor-stone {
+      border: 1px solid #b19f74;
+      background: #dac89f;
+    }
+
+    #landing .landing-editor-grid {
+      display: grid;
+      aspect-ratio: 2;
+      grid-template: repeat(4, 1fr) / repeat(8, 1fr);
+      border: 1px solid #b8ae88;
+      background: #ede5cc;
+    }
+
+    #landing .landing-editor-grid::after {
+      grid-area: 1 / 1 / -1 / -1;
+      background:
+        linear-gradient(90deg, #73684950 1px, transparent 1px) 0 0 / 12.5% 100%,
+        linear-gradient(#73684950 1px, transparent 1px) 0 0 / 100% 25%;
+      content: '';
+      pointer-events: none;
+    }
+
+    #landing .landing-editor-route {
+      grid-area: 2 / 2 / span 2 / span 6;
+      background: #8eaa72;
+      clip-path: polygon(0 0, 66.67% 0, 66.67% 50%, 100% 50%, 100% 100%, 33.33% 100%, 33.33% 50%, 0 50%);
+    }
+
+    #landing .landing-editor-cursor {
+      z-index: 1;
+      grid-area: 2 / 6;
+      border: 2px dashed #385444;
+      background: #8eaa7250;
+    }
+
+    #landing .landing-downloads,
+    #landing .landing-footer {
+      background: var(--spruce-dark);
+      color: var(--cream);
+    }
+
+    #landing .landing-download-inner {
+      padding-block: clamp(2.7rem, 5vw, 4.5rem);
+    }
+
+    #landing .landing-downloads h2 {
+      font-size: clamp(2.3rem, 3.5vw, 3.65rem);
+    }
+
+    #landing .landing-downloads .landing-section-copy {
+      margin-top: .65rem;
+      color: #e0dfce;
+    }
+
+    #landing .landing-footer {
+      border-top: 1px solid #f7efdd30;
+    }
+
+    #landing .landing-footer-inner {
+      padding-block: .65rem;
+      font-size: .87rem;
+    }
+
+    #landing .landing-footer a {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+    }
+
+    #landing .landing-footer a:hover {
+      color: var(--gold);
+    }
+
+    @media (max-width: 48rem) {
+      #landing .landing-header-inner {
+        min-height: 3.9rem;
+        gap: .15rem .8rem;
+      }
+
+      #landing .landing-brand {
+        font-size: 1.35rem;
+      }
+
+      #landing .landing-brand img {
+        width: 30px;
+        height: 30px;
+      }
+
+      #landing .landing-nav {
+        font-size: .85rem;
+      }
+
+      #landing .landing-hero::before {
+        inset: 0 0 auto;
+        height: clamp(20rem, 90vw, 27rem);
+        background:
+          linear-gradient(0deg, var(--spruce) 1%, #132a21e0 11%, #132a2110 43%, #132a2100 57%),
+          url('title-portrait.jpg') center 61% / cover no-repeat;
+      }
+
+      #landing .landing-hero-inner {
+        min-height: 0;
+        padding-block: clamp(16rem, 74vw, 23rem) 2.8rem;
+      }
+
+      #landing h1 {
+        font-size: clamp(2.7rem, 12.8vw, 5.5rem);
+      }
+
+      #landing .landing-section-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      #landing .landing-editor-art {
+        grid-area: auto;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      #landing .landing-button {
+        transition: background-color .15s ease, transform .15s ease;
+      }
+
+      #landing .landing-button:active {
+        transform: translateY(2px);
+      }
+    }
+  </style>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Shovey">
   <meta property="og:url" content="https://shovey.waozi.xyz/">
@@ -28,21 +617,129 @@
   <meta name="twitter:creator" content="@waozixyz">
   <meta name="twitter:image" content="https://shovey.waozi.xyz/og.png">
   <style>
-    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #10231d; color: #edf7f0; }
-    canvas { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
-    #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding-bottom: 12vh; background: #173226 center / cover no-repeat url(title-landscape.jpg); font: 600 16px/1.4 system-ui, sans-serif; transition: opacity .3s ease; }
-    @media (max-aspect-ratio: 1/1) { #loading { background-image: url(title-portrait.jpg); } }
-    #loading.done { opacity: 0; pointer-events: none; }
+    html, body { margin: 0; background: #10231d; color: #edf7f0; }
+    html.game-mode, .game-mode body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    .game-mode #landing, html:not(.game-mode) :is(#canvas, #loading) { display: none; }
+    #canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    #canvas:focus-visible { outline: 3px solid #f9ce75; outline-offset: -3px; }
+    #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding-bottom: max(12vh, env(safe-area-inset-bottom)); background: #173226 center / cover no-repeat url(title-landscape.jpg); font: 600 16px/1.4 system-ui, sans-serif; transition: opacity .3s ease, visibility .3s; }
+    @media (max-aspect-ratio: 1/1) { .game-mode #loading { background-image: url(title-portrait.jpg); } }
+    #loading.done { opacity: 0; visibility: hidden; pointer-events: none; }
     #loading img { width: min(70vw, 480px); height: auto; }
     #loading .track { width: min(280px, 70vw); height: 6px; border-radius: 3px; background: #ffffff40; overflow: hidden; }
     #loading .bar { width: 0; height: 100%; background: #58c467; transition: width .2s ease; }
-    #loading .failed { display: none; text-align: center; padding: 8px 24px; border-radius: 12px; background: #10231dd9; color: #ffb4a8; }
+    #loading .failed { display: none; max-width: calc(100% - 32px); box-sizing: border-box; margin: 0; text-align: center; padding: 8px 24px; border-radius: 12px; background: #10231d; color: #ffb4a8; }
     #loading.error .failed { display: block; }
     #loading.error .track { display: none; }
+    @media (prefers-reduced-motion: reduce) {
+      #loading, #loading .bar { transition: none; }
+    }
   </style>
 </head>
 <body>
-  <canvas id="canvas" tabindex="0"></canvas>
+  <div id="landing">
+    <a class="landing-skip" href="#landing-main">Skip to content</a>
+    <header class="landing-header">
+      <div class="landing-wrap landing-header-inner">
+        <a class="landing-brand" href="./">
+          <img src="icon-192.png" alt="" width="36" height="36">
+          <span>Shovey</span>
+        </a>
+        <nav class="landing-nav" aria-label="Main navigation">
+          <a href="#landing-classic">Classic</a>
+          <a href="#landing-editor">Editor</a>
+          <a href="#landing-downloads">Downloads</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="landing-main" tabindex="-1">
+      <section class="landing-hero" aria-labelledby="landing-title">
+        <div class="landing-wrap landing-hero-inner">
+          <p class="landing-kicker">A woodland puzzle adventure</p>
+          <h1 id="landing-title">Push. Solve. <em>Come home.</em></h1>
+          <p class="landing-hero-copy">Roll balls into matching pits, push crates onto their marks and help Shovey find the way home.</p>
+          <div class="landing-actions">
+            <a class="landing-button" href="?play"><span class="landing-play-icon" aria-hidden="true"></span>Play in browser</a>
+            <a class="landing-text-link" href="#landing-classic">How to play <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-classic" id="landing-classic" aria-labelledby="landing-classic-title">
+        <div class="landing-wrap landing-section-grid">
+          <div>
+            <p class="landing-kicker">Classic</p>
+            <h2 id="landing-classic-title">A trail of 175 puzzles</h2>
+            <p class="landing-section-copy">Explore gardens, sandy yards and winding rooms. Portals, levers and gates change the route. Your progress is saved so you can revisit unlocked puzzles anytime.</p>
+            <dl class="landing-controls">
+              <div>
+                <dt>Move</dt>
+                <dd>Use arrow keys or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>. On touchscreens, swipe or use the movement pad.</dd>
+              </div>
+              <div>
+                <dt>Restart</dt>
+                <dd>Press <kbd>R</kbd> or use Restart in the toolbar.</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="landing-board" aria-hidden="true">
+            <span class="landing-board-path"></span>
+            <span class="landing-board-tree landing-tree-nw"></span>
+            <span class="landing-board-tree landing-tree-se"></span>
+            <span class="landing-board-tree landing-tree-sw"></span>
+            <span class="landing-board-home"></span>
+            <span class="landing-board-shovey"></span>
+            <span class="landing-board-arrow">→</span>
+            <span class="landing-board-crate"></span>
+            <span class="landing-board-target"></span>
+            <span class="landing-board-ball"></span>
+            <span class="landing-board-pit"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-editor" id="landing-editor" aria-labelledby="landing-editor-title">
+        <div class="landing-wrap landing-section-grid">
+          <div>
+            <p class="landing-kicker">Level editor</p>
+            <h2 id="landing-editor-title">Build your own puzzle</h2>
+            <p class="landing-section-copy">Open Shovey Editor from the start screen. Start with a blank board or copy a Classic level, paint the ground and place objects. Press <strong>Play</strong> in the editor to test your route.</p>
+            <p class="landing-section-copy">Drafts save as you edit. Once you’ve solved your puzzle, you can export it.</p>
+          </div>
+          <div class="landing-editor-art" aria-hidden="true">
+            <div class="landing-editor-palette">
+              <span class="landing-editor-grass"></span>
+              <span class="landing-editor-stone"></span>
+              <span class="landing-editor-crate"></span>
+            </div>
+            <div class="landing-editor-grid">
+              <span class="landing-editor-route"></span>
+              <span class="landing-editor-cursor"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-downloads" id="landing-downloads" aria-labelledby="landing-downloads-title">
+        <div class="landing-wrap landing-download-inner">
+          <div>
+            <h2 id="landing-downloads-title">Take Shovey with you</h2>
+            <p class="landing-section-copy">Download Shovey for Android, Linux or Windows.</p>
+          </div>
+          <a class="landing-button" href="https://github.com/waozixyz/shovey/releases/latest">See downloads <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="landing-footer">
+      <div class="landing-wrap landing-footer-inner">
+        <span>Shovey by <a href="https://waozi.xyz/">Waozi</a></span>
+        <a href="privacy.html">Privacy policy</a>
+      </div>
+    </footer>
+  </div>
+  <canvas id="canvas" tabindex="0" aria-label="Shovey game">Shovey needs a browser with canvas support.</canvas>
   <div id="loading" role="status" aria-live="polite" aria-label="Loading Shovey">
     <img src="logo.png" alt="Shovey" width="720" height="246">
     <div class="track"><div class="bar"></div></div>
@@ -52,11 +749,13 @@
     // The released Shovey player, the same shovey.zx and shovey.json as the
     // downloads, runs in Arcade's browser host.
     (function () {
+      if (!document.documentElement.classList.contains('game-mode')) return;
       var loading = document.getElementById('loading');
       var bar = loading.querySelector('.bar');
-      function failed() { loading.classList.add('error'); }
+      function failed() { loading.classList.remove('done'); loading.classList.add('error'); }
       // The Profile reports ready once the game is about to draw.
       function watch() {
+        if (loading.classList.contains('error')) return;
         if (window.Module && Module.profileReady) { loading.classList.add('done'); return; }
         requestAnimationFrame(watch);
       }
