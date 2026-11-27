@@ -97,8 +97,14 @@ try {
     assert(reply.ok, JSON.stringify(reply));
     return reply.nodes;
   }
-  async function press(label) {
-    const node = (await tree()).find(node => node.label === label && (node.role === 'button' || node.kind === 'button'));
+  // An actionable button for a label in ONE committed snapshot: decide and
+  // click from the same frame, because a second read can land on a
+  // transition whose label has no button yet.
+  function actionable(nodes, label) {
+    return nodes.find(node => node.label === label && (node.role === 'button' || node.kind === 'button') && node.visible && node.enabled);
+  }
+  async function press(label, nodes) {
+    const node = actionable(nodes || await tree(), label);
     assert(node, 'Missing button: ' + label);
     await clickNode(node);
   }
@@ -166,8 +172,8 @@ try {
   await playFromMap();
   for (let step = 0; step < 10; step++) {
     const nodes = await tree();
-    if (nodes.some(n => n.label === 'Not now')) await press('Not now');
-    else if (nodes.some(n => n.label === 'Swipe and tap')) await press('Swipe and tap');
+    if (actionable(nodes, 'Not now')) await press('Not now', nodes);
+    else if (actionable(nodes, 'Swipe and tap')) await press('Swipe and tap', nodes);
     else if (nodes.some(n => n.key === 20604)) break;
     else await delay(100);
   }
