@@ -125,6 +125,12 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def zx_revision(bundle):
+    """The executable revision a ZX header names (the u32 after its magic)."""
+    with Path(bundle).open('rb') as stream:
+        return int.from_bytes(stream.read(8)[4:8], 'little')
+
+
 # The games.
 
 def island_package(record=False):
@@ -473,6 +479,17 @@ def standalone_bundle(app):
     with source.open('rb') as stream:
         if stream.read(4) != b'ZX\0\0':
             raise SystemExit('Standalone Island input is not compiled ZX')
+    # Revisions 26 and 27 held semantic IR; the runtime refuses them by name.
+    revision = zx_revision(source)
+    if revision in (26, 27):
+        raise SystemExit('Standalone Island input is legacy ZX: it holds semantic IR; rebuild it with zi2zx')
+    # The reviewed ledger pins the ZX revision its hosts run; the packaged
+    # binary must be that exact format, not merely one the runtime might take.
+    ledger = json.loads((ROOT / 'packaging/island-versions.json').read_text())
+    component = ledger.get('node_apps', {}).get('shovey-island', {})
+    pinned = component.get('zx_revision', ledger.get('zx_revision'))
+    if pinned is not None and revision != pinned:
+        raise SystemExit(f'Standalone Island input is ZX revision {revision}, but the reviewed ledger pins {pinned}; rebuild it with the pinned zi2zx')
     return source
 
 

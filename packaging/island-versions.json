@@ -5,8 +5,9 @@
     "shovey-island": {
       "id": "xyz.waozi.shovey-island",
       "title": "Shovey Island",
-      "version": "0.4.10",
-      "sequence": 3
+      "version": "0.4.11",
+      "sequence": 4
     }
-  }
+  },
+  "zx_revision": 29
 }
