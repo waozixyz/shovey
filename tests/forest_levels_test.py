@@ -2,9 +2,9 @@
 """Solve and replay the forest crossing and brick-building levels through the shipped rules.
 
 The optional engine variant keeps the live campaign playable by older engines:
-only a new build sees the bee board, and exact retired-board matching installs
-it without touching a custom board. The live document's base boards and routes
-remain independently playable by engines without the new piece kinds.
+only a new build sees the portal-trap board, and exact retired-board matching
+installs it without touching a custom board. The live document's base boards
+and routes remain independently playable by engines without the new kinds.
 """
 import json
 from pathlib import Path
@@ -81,12 +81,15 @@ def main():
             assert all(terrain[at] == 96 for at, kind in enumerate(decorations) if kind), 'Props occupy wall niches'
             assert board.count(9) == board.count(18)
         if number == 93:
-            assert set(terrain) <= {162, 64}
-            assert board.count(167) == board.count(168) == 1
-            assert sum(e['piece'] == 168 for e in stored['events']) >= 3
-            assert board.count(71) == 2 and stored['crate_pushes'] >= 2
-            no_hive = [0 if kind == 168 else kind for kind in board]
-            solve(dict(level, cells=rows(no_hive)), impossible=True)
+            # The approved portal-trap variant: grass and walls stage a
+            # crossing guarded by interval shooters, and the paired ground
+            # portals are required.
+            assert set(terrain) <= {12, 77}
+            assert board.count(10) == board.count(7) == 1
+            assert board.count(8) == 2 and board.count(73) == 2
+            assert board.count(169) == 2
+            no_portal = [0 if kind == 8 else kind for kind in board]
+            solve(dict(level, cells=rows(no_portal)), impossible=True)
         elif number == 94:
             enclosed(level, 98)
             assert not set(board) & {89, 90, 91}, 'The garden contains balls, not fish'
@@ -123,7 +126,7 @@ def main():
         proof = 'stored engine replay wins' if number == 94 else 'fresh solver and stored replay win'
         print(f'Classic {number}: {proof}; {stored["moves"]} moves, '
               f'{stored["pushes"]} pushes, stage materials preserved', flush=True)
-    print('Compatibility: original 93 remains live-readable; new builds ship its bee variant')
+    print('Compatibility: original 93 remains live-readable; new builds ship its portal variant')
 
 
 if __name__ == '__main__':

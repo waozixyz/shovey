@@ -351,8 +351,14 @@ web = (ROOT / 'src/web/game.zi').read_text()
 assert web.index('ShoveyShopSetToday(today)') < web.index('if !AppMini() && web_covers_open')
 assert 'today := cast(s64)AppNow() / 86400' in web
 assert 'ShopUI.IsOpen()' in web and 'else { WebCovers() }' in web
-for name in ('stall', 'chest-closed', 'trophy', 'coins', 'dew'):
+for name in ('stall', 'trophy', 'coins', 'dew'):
     assert f'assets/shovey/shop/{name}.png' in title
+# The title chest renders through the shared Shop component: closed until the
+# daily chest is ready, then open and glowing.
+assert 'Shop.ChestAction(' in title
+shop_view = (ROOT / 'src/shop_view.zi').read_text()
+for name in ('chest-closed', 'chest-open'):
+    assert f'assets/shovey/shop/{name}.png' in shop_view
 profile_paths = function(ROOT / 'src/shop_state.zi', 'ShopProfilePath')
 assert 'assets/shovey/shop/profile-96.png' in profile_paths
 assert 'assets/shovey/sprites/player-down.png' not in toolbar

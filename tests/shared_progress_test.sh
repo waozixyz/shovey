@@ -1,23 +1,23 @@
 #!/bin/sh
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-toolchain=${1:?usage: shared_progress_test.sh TOOLCHAIN [ENTITY]}
-entity=${2:-$(cd "$root" && "$toolchain/build/bin/ziran" pkg path entity)}
+cd "$root"
+set --
+if [ ! -f ziran.local.toml ]; then set -- --locked; fi
+toolchain=${SHARED_PROGRESS_TEST_TOOLCHAIN:-$(./scripts/ziran.sh pkg path ziran "$@")}
 work="$root/build/shared-progress-test"
 mkdir -p "$work"
-"$toolchain/build/bin/ziran" bundle --root "$root" --module-path "$toolchain/std" \
-    --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
+env -u DISPLAY -u WAYLAND_DISPLAY "$toolchain/build/bin/ziran" bundle --project "$@" --root "$root" \
     --bind controls:AppServiceHost=shared_progress_behavior:FakeService \
     --bind controls:AppRecordHost=shared_progress_behavior:FakeRecord \
     --bind controls:SaveAppRecordHost=shared_progress_behavior:FakeSave \
     --entry shared_progress_behavior:Check -o "$work/progress.zx" "$root/tests/shared_progress_behavior.zi"
-result=$("$toolchain/build/bin/ziran" run "$work/progress.zx")
+result=$(env -u DISPLAY -u WAYLAND_DISPLAY "$toolchain/build/bin/ziran" run "$work/progress.zx")
 test "$result" = 42 || { echo "Shared progress portable local test failed: $result" >&2; exit 1; }
 echo 'Shared game progress: completion-only account writes, zero account calls during moves and active play, active boards preserved, account changes and offline fallback'
 # Exercise the same state machine through generated native C without rebuilding
 # a compiler or the player's runtime archive.
-"$toolchain/build/bin/ziran" build --target=c --no-main --root "$root" \
-    --module-path "$toolchain/std" --module-path "std=$toolchain/std" --module-path "entity=$entity/src" \
+env -u DISPLAY -u WAYLAND_DISPLAY "$toolchain/build/bin/ziran" build --project "$@" --target=c --no-main --root "$root" \
     --bind controls:AppServiceHost=shared_progress_behavior:FakeService \
     --bind controls:AppRecordHost=shared_progress_behavior:FakeRecord \
     --bind controls:SaveAppRecordHost=shared_progress_behavior:FakeSave \

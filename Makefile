@@ -389,8 +389,8 @@ public-test: hints-loading-test barrels-test solver laws game-maps-test level-se
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
-	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
-	sh tests/shared_progress_test.sh '$(TOOLCHAIN)'
+	sh tests/rewards_test.sh
+	sh tests/shared_progress_test.sh
 	sh tests/completion_path_test.sh '$(TOOLCHAIN)'
 	sh tests/level_replay_test.sh '$(TOOLCHAIN)'
 	python3 tools/levels/levels.py generate --check
@@ -426,7 +426,7 @@ test: hints-loading-test barrels-test solver laws game-maps-test shop-test fores
 	sh tests/guide_test.sh '$(TOOLCHAIN)'
 	python3 tests/hidden_levels_test.py
 	sh tests/secret_travel_test.sh '$(TOOLCHAIN)'
-	sh tests/rewards_test.sh '$(TOOLCHAIN)' '$(ENTITY)'
+	sh tests/rewards_test.sh
 	python3 tools/levels/levels.py generate --check
 	python3 tests/levels_test.py
 	python3 tests/classic_difficulty_test.py
