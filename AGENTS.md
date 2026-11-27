@@ -66,3 +66,12 @@ developer editor, close and relaunch that editor after backing up its drafts and
 preserving the current level. Do not request repeat confirmation. This is the
 owner's explicit exception to the parent rule to leave running applications
 open. Keep every other application open.
+
+## Pixel development installs
+
+Owner instruction, 2026-11-27: after every Shovey update, install the latest
+verified current-tree build on the Pixel 4a over wireless ADB through Delta.
+Discover its current wireless endpoint and verify physical serial
+`09231JEC206210` before installing. Preserve app data and the account, check
+the installed version and signing certificate, and open the updated app.
+Development installation proceeds independently of release publication.
