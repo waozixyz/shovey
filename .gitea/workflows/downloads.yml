@@ -44,6 +44,8 @@ jobs:
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          # This runner and Gitea share Build; keep source traffic on loopback.
+          github-server-url: http://127.0.0.1:3000
           persist-credentials: false
           sparse-checkout: |
             scripts/downloads-release.py
@@ -100,6 +102,8 @@ jobs:
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          # This runner and Gitea share Build; keep source traffic on loopback.
+          github-server-url: http://127.0.0.1:3000
           persist-credentials: false
       - name: Select the installed Android tools and the lane's package cache
         run: bash scripts/native-ci.sh android
@@ -140,11 +144,15 @@ jobs:
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          # This runner and Gitea share Build; keep source traffic on loopback.
+          github-server-url: http://127.0.0.1:3000
           path: waozixyz/shovey
           persist-credentials: false
       # The UI tests drive the player through Inner Breeze's test driver client.
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          # This runner and Gitea share Build; keep source traffic on loopback.
+          github-server-url: http://127.0.0.1:3000
           repository: waozi/breeze
           ref: fa9c8acab237278d81c9929fa97b3f2545842310
           path: waozixyz/breeze
@@ -154,7 +162,9 @@ jobs:
       - name: Build the locked compiler and fetch the locked packages
         run: bash scripts/native-ci.sh desktop
       - name: Build and pack the Linux download
-        run: make player-linux
+        run: |
+          make -j1 player-linux
+          python3 scripts/native-payloads.py save
       - name: Unpack the download
         id: unpack
         run: |
@@ -202,8 +212,8 @@ jobs:
 
   windows:
     name: Windows download, played under Wine on a private display
-    needs: due
-    if: needs.due.outputs.build == 'true'
+    needs: [due, linux]
+    if: ${{ !cancelled() && needs.due.outputs.build == 'true' }}
     runs-on: build-native-shovey
     timeout-minutes: 90
     env:
@@ -214,10 +224,14 @@ jobs:
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          # This runner and Gitea share Build; keep source traffic on loopback.
+          github-server-url: http://127.0.0.1:3000
           path: waozixyz/shovey
           persist-credentials: false
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          # This runner and Gitea share Build; keep source traffic on loopback.
+          github-server-url: http://127.0.0.1:3000
           repository: waozi/breeze
           ref: fa9c8acab237278d81c9929fa97b3f2545842310
           path: waozixyz/breeze
@@ -228,7 +242,16 @@ jobs:
         run: bash scripts/native-ci.sh desktop
       - name: Cross-build and pack the Windows download
         run: |
-          make player-windows
+          set -euo pipefail
+          make -j1 levels landscape
+          if python3 scripts/native-payloads.py restore; then
+            python3 scripts/player.py windows
+          else
+            status=$?
+            # A failed Linux build may leave no handoff. Corruption is an error.
+            test "$status" = 3
+            make -j1 player-windows
+          fi
           cp build/downloads/shovey-v*-windows-x86_64.zip "$HANDOFF/downloads/"
       - name: Play the unpacked download under Wine on a private display
         run: |
@@ -254,6 +277,8 @@ jobs:
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          # This runner and Gitea share Build; keep source traffic on loopback.
+          github-server-url: http://127.0.0.1:3000
           persist-credentials: false
           sparse-checkout: |
             scripts/downloads-release.py

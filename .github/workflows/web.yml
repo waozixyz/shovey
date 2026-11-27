@@ -45,7 +45,19 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
+          filter: blob:none
           ref: ${{ inputs.revision || github.sha }}
+          sparse-checkout: |
+            .github/workflows/web.yml
+            .github/workflows/play-bundle.yml
+            scripts/prepare-pages.py
+            tests/pages_packaging_test.py
+            tests/play_release_notes_test.py
+            site/index.html
+            fastlane/metadata/android
+            src/CHANGELOG.md
+            version.json
+          sparse-checkout-cone-mode: false
       - name: Test the site packaging and release notes
         run: |
           python3 tests/pages_packaging_test.py
@@ -57,9 +69,9 @@ jobs:
         run: |
           if [ "$SITE_ONLY" = true ]; then
             echo 'game=false' >> "$GITHUB_OUTPUT"
-          # Only explicitly marked packaging commits may skip campaign work.
-          elif [ "$GITHUB_EVENT_NAME" = push ] && git cat-file -e "$BEFORE^{commit}" &&
-               git log -1 --format=%B | grep -qx 'Shovey-Site-Only: true'; then
+          # Reference art and downstream metadata never change the game.
+          # Runtime packaging still requires its explicit site-only marker.
+          elif [ "$GITHUB_EVENT_NAME" = push ] && git cat-file -e "$BEFORE^{commit}"; then
             python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
           import subprocess
           import os
@@ -67,7 +79,10 @@ jobs:
           packaging = {'.github/workflows/web.yml', 'AGENTS.md', 'README.md', 'scripts/prepare-pages.py', 'scripts/player.py',
                        'site/index.html', 'tests/pages_packaging_test.py', 'tests/pages_browser_test.py', 'tests/web_release_test.mjs',
                        'Makefile', '.github/workflows/play-bundle.yml', 'tests/play_release_notes_test.py'}
-          print('game=' + str(not changed or not set(changed) <= packaging).lower())
+          message = subprocess.check_output(['git', 'log', '-1', '--format=%B'], text=True)
+          reference_only = bool(changed) and all(path.startswith(('.gitea/', 'packaging/fdroid/metadata/', 'art/', 'tools/art/')) for path in changed)
+          packaging_only = 'Shovey-Site-Only: true' in message.splitlines() and bool(changed) and set(changed) <= packaging
+          print('game=' + str(not (reference_only or packaging_only)).lower())
           PYCODE
           else
             echo 'game=true' >> "$GITHUB_OUTPUT"
@@ -88,6 +103,7 @@ jobs:
           path: waozixyz/shovey
           ref: ${{ inputs.revision || github.sha }}
           fetch-depth: 0
+          filter: blob:none
       - name: Validate the requested source
         id: source
         env:

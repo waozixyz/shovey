@@ -17,6 +17,9 @@ spec = importlib.util.spec_from_file_location('build_bundles', ROOT / 'scripts/b
 builder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(builder)
 import player
+spec = importlib.util.spec_from_file_location('native_payloads', ROOT / 'scripts/native-payloads.py')
+native_payloads = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(native_payloads)
 
 
 class PlayerPayloadTest(unittest.TestCase):
@@ -52,6 +55,18 @@ class PlayerPayloadTest(unittest.TestCase):
                 self.assertEqual((preload / 'games/shovey.zx').read_bytes(), payload.read_bytes())
                 self.assertEqual((preload / 'shovey.zx').read_bytes(), (root / 'shovey.zx').read_bytes())
                 self.assertEqual(linked, [target / 'games/shovey.zx'])
+                cache = root / 'handoff/portable'
+                native_payloads.save(cache, 'a' * 40)
+                (root / 'entity.zx').unlink()
+                self.assertTrue(native_payloads.restore(cache, 'a' * 40))
+                self.assertEqual((root / 'entity.zx').read_bytes(), b'ZX' + bytes(2) + b'profile')
+                self.assertFalse(native_payloads.restore(root / 'missing', 'a' * 40))
+                with self.assertRaisesRegex(ValueError, 'another source revision'):
+                    native_payloads.restore(cache, 'b' * 40)
+                (cache / 'entity.zx').write_bytes(b'corrupt Profile')
+                with self.assertRaisesRegex(ValueError, 'Portable payload changed'):
+                    native_payloads.restore(cache, 'a' * 40)
+                self.assertEqual((root / 'entity.zx').read_bytes(), b'ZX' + bytes(2) + b'profile')
                 payload.write_bytes(b'corrupt payload')
                 with self.assertRaisesRegex(SystemExit, 'A local game changed'):
                     player.checked_collection()

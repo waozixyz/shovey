@@ -114,10 +114,12 @@ class PagesPackaging(unittest.TestCase):
     def test_actual_workflow_changed_path_gate(self):
         code = self.workflow_python('- id: scope')
         for paths, expected in (('scripts/prepare-pages.py\nsite/index.html', 'game=false'),
-                                ('src/player.zi', 'game=true'), ('', 'game=true')):
+                                ('src/player.zi', 'game=true'), ('', 'game=true'),
+                                ('packaging/fdroid/metadata/xyz.waozi.shovey.yml\nart/modern/preview.png', 'game=false'),
+                                ('tools/art/master.png\nsrc/player.zi', 'game=true')):
             output = io.StringIO()
             with mock.patch.dict(os.environ, BEFORE='before'), \
-                 mock.patch('subprocess.check_output', return_value=paths), contextlib.redirect_stdout(output):
+                 mock.patch('subprocess.check_output', side_effect=[paths, 'Shovey-Site-Only: true']), contextlib.redirect_stdout(output):
                 exec(code, {})
             self.assertEqual(output.getvalue().strip(), expected)
 
@@ -133,7 +135,10 @@ class PagesPackaging(unittest.TestCase):
             cases = [('push','false','Shovey-Site-Only: true','scripts/prepare-pages.py','game=false'),
                      ('push','false','Ordinary game change','scripts/prepare-pages.py','game=true'),
                      ('push','false','Shovey-Site-Only: true','src/player.zi','game=true'),
-                     ('workflow_dispatch','true','Ordinary game change','src/player.zi','game=false')]
+                     ('workflow_dispatch','true','Ordinary game change','src/player.zi','game=false'),
+                     ('push','false','Update F-Droid','packaging/fdroid/metadata/xyz.waozi.shovey.yml','game=false'),
+                     ('push','false','Preview only','art/modern/preview.png','game=false'),
+                     ('push','false','Preview and game','art/modern/preview.png\nsrc/player.zi','game=true')]
             for event, site_only, message, changed, expected in cases:
                 result = folder/'output'; result.write_text('')
                 env = dict(os.environ, PATH=str(folder)+os.pathsep+os.defpath,

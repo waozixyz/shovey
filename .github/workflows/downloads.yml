@@ -45,6 +45,11 @@ jobs:
         with:
           ref: ${{ inputs.revision || github.sha }}
           fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            src/CHANGELOG.md
+            version.json
+          sparse-checkout-cone-mode: false
       - name: Release only a new version or a requested run
         id: due
         env:
