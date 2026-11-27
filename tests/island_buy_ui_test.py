@@ -1,5 +1,5 @@
-"""One press on the localized Unlock-and-price cover action unlocks in the production player, with no
-panel in between: a guest is taken to sign in, and nothing is bought or written."""
+"""Check public covers hide Island, or exercise the debug Island unlock action:
+one press takes a guest straight to sign in without buying or writing anything."""
 import argparse
 import os
 from pathlib import Path
@@ -11,6 +11,8 @@ from world_map_test_support import private_environment
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--binary', type=Path, required=True)
 parser.add_argument('--driver-source', type=Path, required=True)
+parser.add_argument('--public', action='store_true',
+                    help='Verify the public player hides the debug-only Island cover')
 args = parser.parse_args()
 assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
 assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
@@ -20,8 +22,8 @@ subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=root, check=True)
 work.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(args.driver_source.resolve() / 'tests'))
 from ui_driver import UiDriver
-for language, play, next_label, unlock in [('en_US.UTF-8', 'Play', 'Next', 'Unlock'),
-        ('de_DE.UTF-8', 'Spielen', 'Weiter', 'Freischalten')]:
+for language, play, next_label, previous_label, unlock in [('en_US.UTF-8', 'Play', 'Next', 'Previous', 'Unlock'),
+        ('de_DE.UTF-8', 'Spielen', 'Weiter', 'Zurück', 'Freischalten')]:
     # A guest has no quote yet, so the launch price is what both actions show.
     buy = unlock + ' · 51 Dew'
     with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
@@ -39,6 +41,14 @@ for language, play, next_label, unlock in [('en_US.UTF-8', 'Play', 'Next', 'Unlo
             try:
                 driver.wait(label=play, role='button', timeout=60)
                 driver.press(label=next_label, role='button')
+                if args.public:
+                    driver.wait(label='Editor', role='image', visible=True)
+                    assert not driver.find(contains='Dew', role='button', visible=True), \
+                        'The public player offers the debug-only Island unlock'
+                    driver.press(label=previous_label, role='button')
+                    driver.wait(label=play, role='button')
+                    assert not list(records.glob('island*'))
+                    continue
                 driver.wait(label=buy, role='button')
                 windows = subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--pid', str(child.pid)], text=True).split()
                 assert len(windows) == 1
@@ -71,4 +81,7 @@ for language, play, next_label, unlock in [('en_US.UTF-8', 'Play', 'Next', 'Unlo
                 if child.poll() is None:
                     child.terminate()
                 child.wait(timeout=10)
-print('Island Unlock local UI tests: English/German one-press action, guest sign-in, no panel and no entitlement passed')
+if args.public:
+    print('Public cover local UI tests: English/German Classic/Editor carousel hides Island and writes no entitlement')
+else:
+    print('Island Unlock local UI tests: English/German one-press action, guest sign-in, no panel and no entitlement passed')

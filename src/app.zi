@@ -8,10 +8,24 @@
 #import "kryon/app_asset"
 #import "kryon/ScrollDevice"
 #if #defined(ANDROID_BUILD) {
+    AndroidApp :: #import "kryon/app";
+    AndroidJni :: #import "kryon/android_jni";
     AndroidDevice :: #import "kryon/android_device";
     Backdrop :: #import "kryon/box";
     Theme :: #import "shovey_theme";
     #import "kryon/drawing_props"
+}
+
+#if #defined(ANDROID_BUILD) {
+    PlayerAndroidFrame :: (frame: AndroidApp.Frame) {
+        session := Session.{.slot = frame.slot, .epoch = frame.epoch}
+        if Frame(session, frame.viewport) != 0 { AndroidJni.AndroidJniFinishActivity() }
+    }
+
+    // NativeActivity enters the application's main through Kryon's host.
+    main :: () -> s32 {
+        return AndroidApp.Run(AndroidApp.Window.{.title = "Shovey"}, PlayerAndroidFrame)
+    }
 }
 #import "std/timer_linux"
 #import "std/date_time_linux"

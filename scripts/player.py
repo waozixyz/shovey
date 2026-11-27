@@ -842,7 +842,7 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
     env = environment()
     # This is the same identity `ziran tool kryon` supplies. The standalone
     # player invokes Gradle directly, so pass it through Gradle and CMake to
-    # Kryon's source generator for the package-qualified ProjectFrame binding.
+    # Kryon's source generator for the locked Android host modules.
     identity = package_identity('kryon')
     env.update(ANDROID_HOME=str(sdk), ANDROID_SDK_ROOT=str(sdk), ZIRAN_PACKAGE_ID=identity)
     task = {'debug': 'assembleDebug', 'release': 'assembleRelease', 'gplay': 'assembleRelease',

@@ -171,7 +171,7 @@ def main():
         assert move_until_saved(classic) != fresh
         assert not account_progress.exists(), 'Movement wrote an account progress record'
         driver.key('escape')
-        driver.wait(label='Play', role='button')
+        driver.wait(label='Continue', role='button')
     with application('restart'):
         answer_cover_question(driver, profile)
         driver.press(label='Continue', role='button')
