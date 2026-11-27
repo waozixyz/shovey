@@ -145,12 +145,16 @@ def main():
         try:
             # apksigner re-aligns entries with its own padding unless told to
             # keep them; kept, F-Droid's rebuild takes this signature as is.
-            subprocess.run([str(tools / 'apksigner'), 'sign', '--alignment-preserved', '--ks', str(args.keystore.resolve(strict=True)),
+            # Downloads carry the APK's embedded signatures, not an incremental
+            # install's separate v4 .idsig file.
+            subprocess.run([str(tools / 'apksigner'), 'sign', '--alignment-preserved', '--v4-signing-enabled', 'false',
+                            '--ks', str(args.keystore.resolve(strict=True)),
                             '--ks-key-alias', args.alias, '--ks-pass', 'file:' + str(args.password_file.resolve(strict=True)),
                             '--out', str(temporary), str(aligned)], check=True)
         finally:
             # Only the signed APK belongs beside the output.
             aligned.unlink(missing_ok=True)
+            temporary.with_suffix('.apk.idsig').unlink(missing_ok=True)
         result = verify(temporary, args.version, tools, args.edition, args.device_abi)
         temporary.replace(output)
         result['apk'] = str(output)
