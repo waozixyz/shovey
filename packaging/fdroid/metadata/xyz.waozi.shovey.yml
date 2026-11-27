@@ -17,7 +17,7 @@ Binaries: https://github.com/waozixyz/shovey/releases/download/v%v/shovey-%v-fdr
 Builds:
   - versionName: 0.6.175
     versionCode: 183
-    commit: 8c1e541ca0de667e48fa9daa8119f67d11848c0c
+    commit: 1d52df095dd3aa212c72eedcfe40a098a6080900
     sudo:
       - apt-get update
       - apt-get install -y build-essential cmake meson ninja-build pkg-config python3-pil
