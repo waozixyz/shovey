@@ -6,7 +6,7 @@ bridge_modules = ["app"]
 
 [toolchain]
 git = "https://git.waozi.xyz/ziranlang/ziran.git"
-ref = "97107c65fb5f110f85ad6fd4f9299b737adea75c"
+ref = "86afccadbc9918dbed4f005edf48ad7ea41f8ec2"
 
 [dependencies.kryon]
 git = "https://git.waozi.xyz/kryonlabs/kryon.git"
