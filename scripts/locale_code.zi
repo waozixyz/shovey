@@ -105,24 +105,23 @@ LocaleCode :: (locales: string, prefix: string) -> LocaleTranslations {
     VecPush(starts, all_keys.count)
     code: Vec(u8)
     BuilderAppend(code, "#import \"std/vec\"\nGameLocaleText :: (language: string, key: string) -> string {\n")
+    // Each language has its own control-flow graph, rather than one huge
+    // procedure that makes browser Wasm compilation grow quadratically.
+    english: s64 = -1
+    for language: 0..language_names.count - 1 {
+        if language_names[language] == "en" { english = language; continue }
+        BuilderAppend(code, "    if language == ")
+        Quote(*code, language_names[language], true)
+        BuilderPrint(*code, " { return GameLocaleTextLanguage%(key) }\n", language)
+    }
+    if english >= 0 { BuilderPrint(*code, "    return GameLocaleTextLanguage%(key)\n}\n", english) }
+    else { BuilderAppend(code, "    return \"\"\n}\n") }
     longs: Vec(string)
-    // Every other language in name order, then English as the fallback.
-    order: Vec(s64)
-    for index: 0..language_names.count - 1 { if language_names[index] != "en" { VecPush(order, index) } }
-    for index: 0..language_names.count - 1 { if language_names[index] == "en" { VecPush(order, index) } }
-    for position: 0..order.count - 1 {
-        language := order[position]
-        english := language_names[language] == "en"
-        indent := ifx english then "    " else "        "
-        if !english {
-            BuilderAppend(code, "    if language == ")
-            Quote(*code, language_names[language], true)
-            BuilderAppend(code, " {\n")
-        }
+    for language: 0..language_names.count - 1 {
+        BuilderPrint(*code, "GameLocaleTextLanguage% :: (key: string) -> string {\n", language)
         for index: starts[language]..starts[language + 1] - 1 {
             value := all_values[index]
-            BuilderAppend(code, indent)
-            BuilderAppend(code, "if key == ")
+            BuilderAppend(code, "    if key == ")
             Quote(*code, all_keys[index], true)
             BuilderAppend(code, " { return ")
             if value.count <= LOCALE_PIECE {
@@ -133,9 +132,10 @@ LocaleCode :: (locales: string, prefix: string) -> LocaleTranslations {
             }
             BuilderAppend(code, " }\n")
         }
-        if !english { BuilderAppend(code, "    }\n") }
+        if language != english && english >= 0 {
+            BuilderPrint(*code, "    return GameLocaleTextLanguage%(key)\n}\n", english)
+        } else { BuilderAppend(code, "    return \"\"\n}\n") }
     }
-    BuilderAppend(code, "    return \"\"\n}\n")
     for index: 0..longs.count - 1 {
         value := longs[index]
         BuilderPrint(*code, "GameLocaleTextLong%Text: string;\n", index)

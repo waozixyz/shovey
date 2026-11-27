@@ -32,6 +32,7 @@ import time
 import zipfile
 
 import build_artifacts
+from locale_code import translation_code
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/player'
@@ -319,16 +320,7 @@ def build_games(apps):
             required = shared | {'sha256': {identifier: digest(games / (by_id[identifier]['descriptor']['name'] + '.zx'))
                                             for identifier in shared['dependencies']}}
             (resources / 'requirements.json').write_text(json.dumps(required, sort_keys=True) + '\n')
-        code = 'GameLocaleText :: (language: string, key: string) -> string {\n'
-        for language, values in sorted(translations.items(), key=lambda item: item[0] == 'en'):
-            if language != 'en':
-                code += '    if language == ' + json.dumps(language) + ' {\n'
-            for key, value in values.items():
-                code += ('        ' if language != 'en' else '    ') + 'if key == ' + json.dumps(key) + \
-                    ' { return ' + json.dumps(value, ensure_ascii=False) + ' }\n'
-            if language != 'en':
-                code += '    }\n'
-        code += '    return ""\n}\n'
+        code = translation_code(translations)
         prepared_levels = generated / 'levels.zi'
         if prepared_levels.exists() and prepared_levels.read_bytes() != (ROOT / 'src/levels.zi').read_bytes():
             raise ValueError(f'{prepared_levels}: generated campaign differs from src/levels.zi')
