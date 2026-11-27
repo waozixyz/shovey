@@ -7,10 +7,13 @@ import json
 from pathlib import Path
 import re
 import wave
+import sys
 
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from wall_tiles import WALL_KINDS, WALL_MASKS
 
 expected_locales = {'cs', 'de', 'en', 'es', 'fr', 'id', 'it', 'ja', 'ko', 'pt', 'ru', 'zh'}
 laser_locale_keys = {
@@ -55,6 +58,7 @@ classic += skin_sprites
 classic += ['shadow', 'door-open', 'projectile'] + [f'sensor-{frame}' for frame in range(1, 9)]
 classic += ['chest-closed', 'chest-open', 'chest-empty']
 classic += [f'moss-lowered-{style}' for style in range(4)]
+classic += [f'wall-{kind}-{mask}' for kind in WALL_KINDS for mask in WALL_MASKS]
 expected = [f'assets/shovey/sprites/{name}.png' for name in classic]
 expected += [f'assets/shovey-landscape/sprites/{name}.png' for name in classic]
 for path in expected:
@@ -79,9 +83,9 @@ for folder in ('shovey', 'shovey-landscape'):
         with Image.open(ROOT / f'assets/{folder}/sprites/{lowered}.png') as slab, Image.open(ROOT / f'assets/{folder}/sprites/{floor}.png') as plain:
             assert slab.tobytes() != plain.tobytes(), f'{lowered}: lowered wall looks like ordinary floor'
 # Objects and decorations must reveal whichever tile is beneath them.
-for kind in (1, 2, 3, 7, 8, 9, 11, 13, 14, 15, 16, 17, 19, 21, 25, 26, 27,
+for kind in (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 16, 17, 19, 21, 25, 26, 27,
              28, 29, 33, 34, 35, 36, 37, 38, 40, 44, 45, 46, 50, 51, 52, 53, 54, 55,
-             56, 57, 58, 59, 62, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 143), *range(150, 162), 165, *range(169, 173)):
+             47, 48, 49, 56, 57, 58, 59, 71, 66, 67, 68, 69, 72, 73, 74, 75, 82, 83, 84, *range(85, 95), *range(104, 127), *range(131, 143), *range(150, 162), 165, *range(169, 173)):
     with Image.open(ROOT / f'assets/shovey/sprites/tile-{kind}.png') as picture:
         assert picture.getpixel((0, 0))[3] == 0, f'{kind}: object has an attached background'
 
@@ -109,9 +113,11 @@ with Image.open(ROOT / 'assets/shovey/sprites/atlas.png') as atlas:
         unique[pixels] = rect
     assert len(unique) == atlas_spec['unique_frames']
     assert atlas_spec['occupied_cells'] > .95
-    assert len(atlas_spec['frames']) == 2 * 449
-    for kind in (12, 95, 96, 97, 98, 164, 63):
-        x, y, w, h = atlas_spec['frames'][f'portrait/tile-{kind}']
+    assert len(atlas_spec['frames']) == 2 * (449 + len(WALL_KINDS)*47)
+    for kind in WALL_KINDS:
+        rects = [atlas_spec['frames'][f'portrait/wall-{kind}-{mask}'] for mask in WALL_MASKS]
+        assert len({tuple(rect) for rect in rects}) == 47, (kind, 'missing wall connection shape')
+        x, y, w, h = atlas_spec['frames'][f'portrait/wall-{kind}-15']
         wall = atlas.crop((x,y,x+w,y+h))
         assert wall.crop((0,0,1,h)).tobytes() == wall.crop((w-1,0,w,h)).tobytes(), (kind,'horizontal seam')
         assert wall.crop((0,0,w,1)).tobytes() == wall.crop((0,h-1,w,h)).tobytes(), (kind,'vertical seam')

@@ -209,8 +209,8 @@ solution_bytes: [96]u8;
 label_bytes: [128]u8;
 cell_bytes: [ALL_PLACES * 16]u8;
 draft_bytes: [64]u8;
-layers_original: [SHOVEY_CELLS * 3]s32;
-layers_edit: [SHOVEY_CELLS * 3]s32;
+layers_original: [SHOVEY_CELLS * 4]s32;
+layers_edit: [SHOVEY_CELLS * 4]s32;
 names: [1]string;
 
 // Palette: board kinds in the order a level is usually built.
@@ -773,8 +773,21 @@ PrivateSprite :: (kind: s32) -> s32 {
 hex_abyss_open: [SHOVEY_CELLS]bool;
 hex_lava_open: [SHOVEY_CELLS]bool;
 
+HexSprite :: (game: *ShoveyGame, kind: s32, at: s32, landscape: bool) -> s32 {
+    if BoardWallMaterial(kind) >= 0 { return KindSprite(game, kind, at, 0.0, landscape) }
+    return PrivateSprite(kind)
+}
+
 HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string, chest: bool = false) -> TileMap.TileMapResult {
+    game := ShoveyGame.{.player = -1}
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        tile := KindAt(board, SHOVEY_CELLS + at)
+        kind := KindAt(board, at)
+        game.tiles[at] = tile
+        if !ShoveyCosmeticTile(tile) { game.ground[at] = tile }
+        if kind == 10 { game.player = at }
+        else if ShoveyMovable(kind) { game.objects[at] = kind }
+        else if kind != 0 { game.ground[at] = kind }
         hex_abyss_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT
         hex_lava_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_LAVA
     }
@@ -783,7 +796,12 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         display := BoardDisplayIndex(at, landscape)
         tile := KindAt(board, SHOVEY_CELLS + at)
         if ShoveyOpenDoor(kind) && ShoveyWallFloor(tile) >= 0 { tile = ShoveyWallFloor(tile) }
-        layers[display] = PrivateSprite(tile)
+        layers[display] = HexSprite(*game, tile, at, landscape)
+        layers[SHOVEY_CELLS + display] = -1
+        if ShoveyPitColor(tile) > 0 {
+            layers[display] = PrivateSprite(BoardPitFloor(*game, at))
+            layers[SHOVEY_CELLS + display] = PrivateSprite(tile)
+        }
         // The same edges as the game draws: an abyss's go by screen
         // direction, so its far cliff shows at the top, and grass runs up to
         // an abyss's own lip.
@@ -814,17 +832,17 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
             layers[display] = SPRITE_GRASS_EDGE + mask
         }
         decoration := KindAt(board, SHOVEY_CELLS * 2 + at)
-        layers[SHOVEY_CELLS + display] = ifx decoration == 0 then -1 else PrivateSprite(decoration)
+        layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else HexSprite(*game, decoration, at, landscape)
         if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT && decoration == 0 {
             corners := BoardAbyssCorners(at, landscape, hex_abyss_open)
-            if corners != 0 { layers[SHOVEY_CELLS + display] = SPRITE_ABYSS_CORNER + corners }
+            if corners != 0 { layers[SHOVEY_CELLS * 2 + display] = SPRITE_ABYSS_CORNER + corners }
         }
         if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_LAVA && decoration == 0 {
             corners := BoardAbyssCorners(at, landscape, hex_lava_open)
-            if corners != 0 { layers[SHOVEY_CELLS + display] = SPRITE_ABYSS_CORNER + corners }
+            if corners != 0 { layers[SHOVEY_CELLS * 2 + display] = SPRITE_ABYSS_CORNER + corners }
         }
-        layers[SHOVEY_CELLS * 2 + display] = ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, landscape) else ifx kind > 0 && ShoveyCellKind(kind) then PrivateSprite(kind) else -1
-        if chest && at == CHEST_CELL && kind == 0 && tile == 78 { layers[SHOVEY_CELLS * 2 + display] = SPRITE_CHEST }
+        layers[SHOVEY_CELLS * 3 + display] = ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, landscape) else ifx kind > 0 && ShoveyCellKind(kind) then HexSprite(*game, kind, at, landscape) else -1
+        if chest && at == CHEST_CELL && kind == 0 && tile == 78 { layers[SHOVEY_CELLS * 3 + display] = SPRITE_CHEST }
     }
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
@@ -834,7 +852,7 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
         cell * cast(float32)columns, cell * cast(float32)rows}
     return ModernTiles(session, TileMap.Props.{.key = key, .bounds = fitted.board, .columns = columns, .rows = rows,
-            .tiles = tiles, .names = names[0:0], .layers = layers, .layer_count = 3, .label = label})
+            .tiles = tiles, .names = names[0:0], .layers = layers, .layer_count = 4, .label = label})
 }
 
 // ---------------------------------------------------------------- editing

@@ -330,6 +330,9 @@ EditorNames :: () {
     for kind: cast(s32)SPRITE_WALL..SPRITE_WALL + 3 {
         editor_classic_names[kind] = EditorText("editor_wall")
     }
+    for kind: cast(s32)SPRITE_WALL_JOINED..SPRITE_COUNT - 1 {
+        editor_classic_names[kind] = EditorText("editor_wall")
+    }
     floor_names: [5]string = .["editor_slate_floor", "editor_brick_floor", "editor_sandstone_floor", "editor_timber_floor", "editor_mossy_floor"]
     for floor: cast(s32)0..4 { editor_classic_names[SPRITE_MATERIAL_FLOOR + floor] = EditorText(floor_names[floor]) }
     editor_classic_names[SPRITE_DOOR] = EditorText("editor_door")

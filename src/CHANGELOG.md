@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Join every wall material using 47 neighbor-aware edge and corner sprites; use plain timber without metal bands.
+- Draw ball pits over their floor and mirror lasers as steady connected beams.
+- Simplify the daily chest by removing the numbered weekly grid.
 - Redesign Classic tiles, scenery and characters with modern shaded artwork.
 - Share a deduplicated sprite atlas across the player, editor, skins and board orientations.
 - Distinguish shooter warnings from live bolts and show a Restart button after the defeat animation.

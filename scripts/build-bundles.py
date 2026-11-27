@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
-from release_assets import prepare_release_assets
+from release_assets import prepare_release_assets, pack_sprite_atlases
 from locale_code import translation_code
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -98,6 +98,7 @@ def build(toolchain, kryon, apps, mingcute):
             {key: value for key, value in descriptor.items() if key not in ('build_defines', 'prepare_assets')}, indent=2) + '\n')
         if 'SHOVEY_RELEASE' in descriptor.get('build_defines', []):
             prepare_release_assets(ROOT, resources)
+        pack_sprite_atlases(resources)
         blocks, code = translations(descriptor)
         (resources / 'locales').mkdir()
         for file_name, text in blocks.items():

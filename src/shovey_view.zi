@@ -365,6 +365,9 @@ SpriteNames :: () {
     sprite_names[SPRITE_SHOT] = AppLocaleHost("shovey_ammo")
     sprite_names[SPRITE_BEES] = TileName(SHOVEY_BEES)
     sprite_names[SPRITE_HIVE] = TileName(SHOVEY_HIVE)
+    for index: cast(s32)SPRITE_WALL_JOINED..SPRITE_COUNT - 1 {
+        sprite_names[index] = TileName(BoardWallSpriteKind(index))
+    }
     for kind: cast(s32)SHOVEY_SHOOTER_LEFT..SHOVEY_SHOOTER_DOWN {
         sprite_names[SPRITE_SHOOTER + kind - SHOVEY_SHOOTER_LEFT] = TileName(kind)
     }

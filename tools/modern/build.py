@@ -10,6 +10,7 @@ ROOT=Path(__file__).resolve().parents[2]
 HERE=Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'scripts'))
 from make_shop_art import SKIN_RAMPS
+from wall_tiles import WALL_KINDS, WALL_MASKS, wall_name, pit_floor
 
 SIZE=64
 FACINGS={'up':0,'right':-90,'down':180,'left':90}
@@ -133,41 +134,23 @@ def seamless_wall(cell):
     a[...,3] = 255
     return Image.fromarray(np.round(a).astype('uint8'))
 
-def raised_masonry(texture):
-    # A broad cap, its bevels and a short vertical course read as height at
-    # board scale. All four boundaries meet on the same narrow mortar joint.
-    scale = 3
-    side = SIZE * scale
-    relief = Image.new('L', (side, side), 74)
-    draw = ImageDraw.Draw(relief)
-    surfaces = (
-        (98, ((2, 9), (8, 2), (56, 2), (62, 9), (62, 55), (57, 62), (6, 62), (2, 56))),
-        (144, ((3, 9), (9, 3), (56, 3), (60, 8), (54, 12), (10, 12), (8, 39), (3, 45))),
-        (95, ((60, 8), (62, 11), (62, 55), (57, 60), (54, 57), (55, 37))),
-        (112, ((8, 40), (55, 39), (57, 56), (54, 60), (8, 60), (4, 55), (4, 46))),
-        (119, ((10, 10), (54, 9), (58, 13), (55, 36), (51, 41), (10, 42), (6, 37))),
-        (155, ((7, 35), (10, 39), (51, 38), (55, 34), (55, 37), (51, 42), (10, 43), (5, 39))),
-        (86, ((32, 44), (34, 44), (32, 57), (31, 59), (30, 59))),
-        (123, ((34, 44), (35, 44), (33, 57), (32, 59), (31, 59))),
-    )
-    for shade, points in surfaces:
-        draw.polygon([(x * scale, y * scale) for x, y in points], fill=shade)
-    shade = np.array(relief.resize(texture.size, Image.Resampling.LANCZOS), dtype=float)
-    shade[[0, -1], :] = 74
-    shade[:, [0, -1]] = 74
-    material = np.asarray(texture.convert('RGB'), dtype=float)
-    color = material.mean(axis=(0, 1))
-    # Keep the material's color and use local lighting for the depth. Reduce
-    # the old stone joints to grain so they don't compete with the silhouette.
-    rgb = color + (material - color) * .48
-    rgb *= (shade / shade.mean())[..., None]
-    rgb *= color / rgb.mean(axis=(0, 1))
-    rgb = np.minimum(rgb, 255)
-    # Bright materials can clip on the bevel. Share that light with the
-    # unsaturated pixels to keep the material's average color.
-    headroom = 255 - rgb
-    rgb += headroom * (color - rgb.mean(axis=(0, 1))) / headroom.mean(axis=(0, 1))
-    return Image.fromarray(np.rint(rgb).astype('uint8')).convert('RGBA')
+def connected_wall(texture, mask):
+    # Only exposed edges have a bevel/front face. A joined edge is the
+    # unmodified material, so long walls and filled blocks share one cap.
+    y, x = np.mgrid[:SIZE, :SIZE]
+    shade = np.ones((SIZE, SIZE), dtype=float)
+    for bit, distance, light, width in ((1, x, .24, 5), (2, y, .30, 5),
+                                         (4, 63-x, -.28, 5), (8, 63-y, -.42, 10)):
+        if not mask & bit:
+            shade += light * np.maximum(0, 1-distance/width)
+    for bit, cx, cy, light in ((16, 0, 0, .24), (32, 63, 0, .12),
+                                (64, 63, 63, -.32), (128, 0, 63, -.22)):
+        if mask & bit:
+            shade += light * np.maximum(0, 1-np.hypot(x-cx, y-cy)/9)
+    a = np.array(texture)
+    a[..., :3] = np.clip(a[..., :3].astype(float)*shade[..., None], 0, 255).astype('uint8')
+    a[..., 3] = 255
+    return Image.fromarray(a)
 
 def clean_cutout(im):
     a = np.array(im)
@@ -182,8 +165,8 @@ def build_sprites():
     raw=crop_sheet('terrain.png',6,6)
     t=[terrain(i) if n<20 else fit(i) for n,i in enumerate(raw)]
     for i in range(12, 19):
-        texture = seamless_wall(raw[i])
-        t[i] = texture if i == 16 else raised_masonry(texture)
+        # Timber uses the plain generated wood grain, without iron straps.
+        t[i] = seamless_wall(raw[4] if i == 16 else raw[i])
     characters=[fit(i) for i in crop_sheet('characters.png',4,7)]
     views={'down':0,'left':1,'up':2,'right':3}
     o=lambda i:objects[i].copy()
@@ -279,6 +262,16 @@ def build_sprites():
         for i in range(count):
             im=inset(t[35],max(0,18-i*3));a=im.getchannel('A').point(lambda a:round(a*(1-i/(count+1))));im.putalpha(a);out[f'{kind}-{i}']=im
     assert set(out)==set(NAMES),(set(NAMES)-set(out),set(out)-set(NAMES))
+    wall_textures = {kind: out[f'tile-{kind}'] for kind in WALL_KINDS}
+    wall_textures[14] = t[18]
+    wall_textures[62] = over(t[12], inset(t[29], 3))
+    for kind in range(127, 131):
+        wall_textures[kind] = hue(t[18], (kind-127)*15)
+    for kind, texture in wall_textures.items():
+        for mask in WALL_MASKS:
+            out[f'wall-{kind}-{mask}'] = connected_wall(texture, mask)
+        # Existing individual paths remain useful for palette consumers.
+        out[f'tile-{kind}'] = out[f'wall-{kind}-0']
     return out
 
 def hashname(name):
@@ -317,19 +310,28 @@ def pack(sprites):
     return spec
 
 def generate_code(frames):
-    names=sorted(NAMES);slots=[0]*1024
+    def numbers(values):
+        values=list(map(str,values))
+        return ',\n'.join(','.join(values[at:at+64]) for at in range(0,len(values),64))
+    names=sorted(name.removeprefix('portrait/') for name in frames if name.startswith('portrait/'))
+    capacity=1 << (len(names)*2-1).bit_length()
+    slots=[0]*capacity
     for i,name in enumerate(names):
-        at=hashname(name)%1024
-        while slots[at]:at=(at+1)%1024
+        at=hashname(name)%capacity
+        while slots[at]:at=(at+1)%capacity
         slots[at]=i+1
     text='// Generated by tools/modern/build.py. Do not edit.\n'
     text+='atlas_names: [%d]string = .[%s];\n'%(len(names),',\n'.join(json.dumps(n+'.png') for n in names))
-    text+='atlas_slots: [1024]s32 = .['+','.join(map(str,slots))+'];\n'
+    text+=f'atlas_slots: [{capacity}]s32 = .['+numbers(slots)+'];\n'
+    text+=f'atlas_hash_capacity :: {capacity}\n'
+    text+='atlas_wall_kinds: [14]s32 = .['+','.join(map(str,WALL_KINDS))+'];\n'
+    text+='atlas_wall_masks: [47]s32 = .['+','.join(map(str,WALL_MASKS))+'];\n'
+    text+='atlas_wall_indices: [256]s32 = .['+','.join(str(WALL_MASKS.index(mask) if mask in WALL_MASKS else -1) for mask in range(256))+'];\n'
     columns = max(rect[0] for rect in frames.values()) // 66 + 1
     text += f'atlas_columns :: {columns}\n'
     for orientation in ('portrait','landscape'):
         indices = [(frames[orientation+'/'+n][1]-1)//66*columns + (frames[orientation+'/'+n][0]-1)//66 for n in names]
-        text += f'atlas_{orientation}: [{len(names)}]s32 = .[' + ','.join(map(str, indices)) + '];\n'
+        text += f'atlas_{orientation}: [{len(names)}]s32 = .[' + numbers(indices) + '];\n'
     (ROOT/'src/sprite_atlas_data.zi').write_text(text)
 
 
@@ -346,15 +348,30 @@ def previews(sprites):
             x=ox+i%columns*76;y=65+i//columns*92
             out.paste(group['tile-0'].convert('RGB'),(x,y));out.paste(group[n],(x,y),group[n]);d.text((x,y+65),n.removeprefix('tile-'),fill='#aebdb4')
     out.save(ROOT/'art/modern/before-after-sprites.png')
-    # Repeated samples make wall continuity reviewable in both axes.
+    # Exercise runs, ends, corners, T/cross junctions and concave corners.
     walls=[(12,'Stone'),(95,'Slate'),(96,'Brick'),(97,'Sandstone'),(98,'Timber'),(164,'Cave'),(63,'Moss')]
-    tiled=Image.new('RGB',(840,476),'#17262b');d=ImageDraw.Draw(tiled)
+    shape=('111000111', '111000101', '111000111', '000010000', '011111110', '000010000')
+    tiled=Image.new('RGB',(9*40*2+36,6*40*4+160),'#17262b');d=ImageDraw.Draw(tiled)
     for i,(n,label) in enumerate(walls):
-        x=i%4*210+8;y=i//4*238+32
-        for yy in range(3):
-            for xx in range(3):tiled.paste(sprites[f'tile-{n}'],(x+xx*64,y+yy*64))
+        x=i%2*(9*40+16)+8;y=i//2*(6*40+38)+32
+        walls=[0]*240
+        for yy,row in enumerate(shape):
+            for xx,occupied in enumerate(row):
+                if occupied=='1':walls[yy*12+xx]=n
+        for yy,row in enumerate(shape):
+            for xx,occupied in enumerate(row):
+                name=wall_name(n,yy*12+xx,walls) if occupied=='1' else 'tile-99'
+                tiled.paste(sprites[name].resize((40,40),Image.Resampling.LANCZOS),(x+xx*40,y+yy*40))
         d.text((x,y-22),label,fill='white')
     tiled.save(ROOT/'art/modern/wall-tiling.png')
+    sheets=Image.new('RGB',(808,7*166),'#17262b');d=ImageDraw.Draw(sheets)
+    for material,kind in enumerate(WALL_KINDS):
+        x=material%2*404+8;y=material//2*166+24
+        d.text((x,y-18),f'Wall {kind} / 47 connection shapes',fill='white')
+        for shape,mask in enumerate(WALL_MASKS):
+            sheets.paste(sprites[f'wall-{kind}-{mask}'].resize((32,32),Image.Resampling.LANCZOS),
+                         (x+shape%12*32,y+shape//12*32))
+    sheets.save(ROOT/'art/modern/wall-spritesheets.png')
 
     cutouts=Image.new('RGB',(1024,512))
     for row,name in enumerate(('tile-21','tile-165')):
@@ -369,15 +386,23 @@ def previews(sprites):
     level=next((l for l in data['levels'] if any('a6' in row for row in l.get('tiles',[]))),data['levels'][0])
     def board(group):
         im=Image.new('RGBA',(12*48,20*48),'#17262b')
+        walls=[int(''.join(level.get('tiles',level['cells']))[at*2:at*2+2],16) for at in range(240)]
+        for at in range(240):
+            cell=int(''.join(level['cells'])[at*2:at*2+2],16)
+            if cell in WALL_KINDS:walls[at]=cell
         for y,row in enumerate(level['cells']):
             for x in range(12):
                 idx=y*12+x;kind=int(row[x*2:x*2+2],16)
+                im.alpha_composite(group['tile-0'].resize((48,48),Image.Resampling.LANCZOS),(x*48,y*48))
                 for layer in ('tiles','cells','decorations'):
                     lines=level.get(layer,[])
                     k=int(lines[y][x*2:x*2+2],16) if len(lines)>y else 0
                     n='player-up' if k==10 else f'tile-{k}'
                     if layer=='tiles' and k==0:n='tile-0'
                     elif k==0:continue
+                    if group is sprites and k in WALL_KINDS:n=wall_name(k,idx,walls)
+                    if group is sprites and k in {4,5,6,47,48,49}:
+                        im.alpha_composite(group[f'tile-{pit_floor(idx,walls)}'].resize((48,48),Image.Resampling.LANCZOS),(x*48,y*48))
                     im.alpha_composite(group.get(n,group['tile-0']).resize((48,48),Image.Resampling.LANCZOS),(x*48,y*48))
         return im
     a,b=board(before),board(sprites);out=Image.new('RGB',(a.width*2+60,a.height+96),'#17262b');d=ImageDraw.Draw(out)
@@ -390,6 +415,10 @@ def main():
     for n,im in sprites.items():im.resize((128,128),Image.Resampling.LANCZOS).save(folder/(n+'.png'),optimize=True)
     spec=pack(sprites)
     artpath=ROOT/'assets/shovey/art.json';art=json.loads(artpath.read_text())
+    listed={item['path'] for item in art['files']}
+    for name in sprites:
+        if f'sprites/{name}.png' not in listed:
+            art['files'].append({'path':f'sprites/{name}.png','depicts':f'Connected wall variant {name}'})
     for item in art['files']:
         p=artpath.parent/item['path']
         if p.exists():item['sha256']=hashlib.sha256(p.read_bytes()).hexdigest()

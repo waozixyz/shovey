@@ -32,8 +32,8 @@ ModernImage :: (session: Session, image: Image.Props) {
         hash: u32 = 2166136261
         // The generated table hashes the basename without its PNG suffix.
         for at: cast(s64)0..name.count - 5 { hash = (hash ^ cast(u32)name[at]) * cast(u32)16777619 }
-        slot := cast(s32)(hash % 1024)
-        for probe: cast(s32)0..1023 {
+        slot := cast(s32)(hash % atlas_hash_capacity)
+        for probe: cast(s32)0..atlas_hash_capacity - 1 {
             index := atlas_slots[slot] - 1
             if index < 0 { break }
             if name == atlas_names[index] {
@@ -49,7 +49,7 @@ ModernImage :: (session: Session, image: Image.Props) {
                 image.source = rect
                 break
             }
-            slot = (slot + 1) % 1024
+            slot = (slot + 1) % atlas_hash_capacity
         }
     }
     Image.Draw(session, image)

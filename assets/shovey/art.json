@@ -1560,7 +1560,7 @@
     {
       "path": "sprites/tile-104.png",
       "depicts": "wooden door: opens when Shovey walks through it",
-      "sha256": "41c5928d754563653dcc0423a802eed2ce09f426cd6782d021ac0d5d4b197f84"
+      "sha256": "f45cf6457b1cde4521da87b8984a77edf09d95fca8e9b09e3edabd7becc107c4"
     },
     {
       "path": "sprites/tile-105.png",
@@ -1625,7 +1625,7 @@
     {
       "path": "sprites/tile-116.png",
       "depicts": "red wooden door: opens when walked through",
-      "sha256": "d83d89370707d897139f11c34ebd809c5caf067f88309c9d632f2e3eb94a3c54"
+      "sha256": "493f2b6f52f5d231a40c9f9bd6f017de01c756f110683960050c6982f4663630"
     },
     {
       "path": "sprites/tile-117.png",
@@ -1635,7 +1635,7 @@
     {
       "path": "sprites/tile-118.png",
       "depicts": "blue wooden door: opens when walked through",
-      "sha256": "d407ae677b69b920fb0377ab11a35bbe0c9bd7098e1d708506881cb6c234db39"
+      "sha256": "eeed99a1b7682cef38b9a582c53b23f4c02e1fd7a6e1df49565f41f59f5862d1"
     },
     {
       "path": "sprites/tile-119.png",
@@ -1645,12 +1645,12 @@
     {
       "path": "sprites/tile-12.png",
       "depicts": "wall: a raised grey stone block",
-      "sha256": "0b344b5815149796a95f9004ebf5cd310df821726712ff563a2b76feeabdae51"
+      "sha256": "51c1a34fe3065bbbca318c8bd0b724a1ee91cb2b2d23facdee67d396ea6bf83b"
     },
     {
       "path": "sprites/tile-120.png",
       "depicts": "green wooden door: opens when walked through",
-      "sha256": "b23626612483a603de5edc695eeaada190311b6105ab8f4649d80866b10fc2a6"
+      "sha256": "f8bf9d041561750337692eadb4cb99a7f83db4eab606193760bed9c0709a4b1b"
     },
     {
       "path": "sprites/tile-121.png",
@@ -1685,17 +1685,17 @@
     {
       "path": "sprites/tile-127.png",
       "depicts": "mossy slate wall: lowers onto its matching floor while its button is held",
-      "sha256": "4c8af998f15456f5ce60adef95e9f517064ead39556fa527f3ddbca425da2801"
+      "sha256": "208b9d91d7e663ca334c5927b1274355ff936b2eba3b1dc53e00a9f1dec81a71"
     },
     {
       "path": "sprites/tile-128.png",
       "depicts": "mossy brick wall: lowers onto its matching floor while its button is held",
-      "sha256": "d03f3489f8d0113822943f579f686c0d5c0ba714d12a85af0b830a0913813f92"
+      "sha256": "782b0f207c49ce5a686b08b1c2b55e184fd6431811eaefa220f5a1702c849550"
     },
     {
       "path": "sprites/tile-129.png",
       "depicts": "mossy sandstone wall: lowers onto its matching floor while its button is held",
-      "sha256": "40b8643cb7f508a14bba81fe17eb9cb70d9290202b2a3a3f2376b0152eacb7df"
+      "sha256": "b487dc73f9660e6482255bc7ac5dff80adbc79634d9074b928176be86b891a44"
     },
     {
       "path": "sprites/tile-13.png",
@@ -1705,7 +1705,7 @@
     {
       "path": "sprites/tile-130.png",
       "depicts": "mossy timber wall: lowers onto its matching floor while its button is held",
-      "sha256": "510472f6b0fb091a9386da1d7bef7515f62acb15898e5217da22f5cc8c08638e"
+      "sha256": "fb729f7cedde2a1da07a0f614a921b25e28b854f5773ccb43aa1aaf54a86f69d"
     },
     {
       "path": "sprites/tile-131.png",
@@ -1755,7 +1755,7 @@
     {
       "path": "sprites/tile-14.png",
       "depicts": "mossy stone wall: sinks when a pressure plate is held",
-      "sha256": "4c8af998f15456f5ce60adef95e9f517064ead39556fa527f3ddbca425da2801"
+      "sha256": "208b9d91d7e663ca334c5927b1274355ff936b2eba3b1dc53e00a9f1dec81a71"
     },
     {
       "path": "sprites/tile-140.png",
@@ -1890,7 +1890,7 @@
     {
       "path": "sprites/tile-164.png",
       "depicts": "cave wall: a block of rough dark cave rock; blocks movement and laser beams",
-      "sha256": "80c16c1a0bc759464bebe0602612f2cc577d8f939f1784e4e9944e43dc0fda14"
+      "sha256": "ed0251ea66fc5c5c45aeed466b8fc817dd7248231622a8a003d0add37c5b04a0"
     },
     {
       "path": "sprites/tile-165.png",
@@ -1950,7 +1950,7 @@
     {
       "path": "sprites/tile-23.png",
       "depicts": "closed sensor: a raised stone block with a red gem",
-      "sha256": "fab1e4697eb8a3c766d73dbbd2a58d1aa1c1ca6dbdd362b056d7f1f4dfbc0f0f"
+      "sha256": "ed24875b11dbb489cf15a53d0af98c476a33ed59a00e57550dafca9bbd949ec8"
     },
     {
       "path": "sprites/tile-24.png",
@@ -2150,12 +2150,12 @@
     {
       "path": "sprites/tile-62.png",
       "depicts": "legacy transparent crack on a wall",
-      "sha256": "64d2284d47048c7058604b054ac37df67bbc66e9b7f7aeacd5475ec2315888c3"
+      "sha256": "1619d4e3e9713adaa411df62a6744237ae10ddaab69a6291a2a2fc7726cb85ac"
     },
     {
       "path": "sprites/tile-63.png",
       "depicts": "mossy wall (decoration, solid)",
-      "sha256": "d7fc6cad1aac016266fd5bc04195ddb59863ff8b1aad9aadca2e278d335361f1"
+      "sha256": "208b9d91d7e663ca334c5927b1274355ff936b2eba3b1dc53e00a9f1dec81a71"
     },
     {
       "path": "sprites/tile-64.png",
@@ -2225,7 +2225,7 @@
     {
       "path": "sprites/tile-76.png",
       "depicts": "legacy wall, shown as a plain stone wall",
-      "sha256": "0b344b5815149796a95f9004ebf5cd310df821726712ff563a2b76feeabdae51"
+      "sha256": "51c1a34fe3065bbbca318c8bd0b724a1ee91cb2b2d23facdee67d396ea6bf83b"
     },
     {
       "path": "sprites/tile-77.png",
@@ -2315,22 +2315,22 @@
     {
       "path": "sprites/tile-95.png",
       "depicts": "slate wall: dark blue-grey stone slabs",
-      "sha256": "51136f51297feb3ba24ccd2b43eed83f5ecab5df5b38e373319a0896571471a1"
+      "sha256": "f43b3f811f79bbe934cc5eaf73628d63bce9593c8f2242cbd931376af151dd88"
     },
     {
       "path": "sprites/tile-96.png",
       "depicts": "brick wall: warm bricks with pale mortar",
-      "sha256": "b0170412f2e8f0585e3489a6525e75539339ab5599e2c3d36c69d372e57dc03a"
+      "sha256": "4a5fa728a964030328bc6e14b36e1bda69356168d6a53bf0ba7bd9d2713ba955"
     },
     {
       "path": "sprites/tile-97.png",
       "depicts": "sandstone wall: pale carved blocks",
-      "sha256": "7a29bd7be2f6eaa2aa63d0f59bc1f8df028ec2a02e91ce9389bae9bb7f28d535"
+      "sha256": "fb374d5b9103f93e26aaeec89a22f7d3927509099fa52702557f79d4408cda05"
     },
     {
       "path": "sprites/tile-98.png",
       "depicts": "timber wall: upright planks with iron straps",
-      "sha256": "af712e6c3cbae7aa13c68a4eecae0dcbbac13b2a4c0c0d309bf92e6886e91454"
+      "sha256": "79131f04a9aaae50fffe3ab4c2f869af4b66b813e689044b8428377284782bdf"
     },
     {
       "path": "sprites/tile-99.png",
@@ -2788,9 +2788,3299 @@
       "sha256": "7883b9b8e3ae692a8488c5a997f963b24c6cb180a3e419ca39e2564f1859b527"
     },
     {
+      "path": "sprites/wall-12-0.png",
+      "depicts": "Connected wall variant wall-12-0",
+      "sha256": "51c1a34fe3065bbbca318c8bd0b724a1ee91cb2b2d23facdee67d396ea6bf83b"
+    },
+    {
+      "path": "sprites/wall-12-1.png",
+      "depicts": "Connected wall variant wall-12-1",
+      "sha256": "db7e701e4683ba0d46cdafcc1337c3d7b158b6d923b4e552e959075ce6fbd2ef"
+    },
+    {
+      "path": "sprites/wall-12-2.png",
+      "depicts": "Connected wall variant wall-12-2",
+      "sha256": "4ee8e6e74cd470ea8f59eb23dad996841dc8050dd95428dacf962bf4340507b6"
+    },
+    {
+      "path": "sprites/wall-12-3.png",
+      "depicts": "Connected wall variant wall-12-3",
+      "sha256": "7b9280445406af232c6a5709fcedd990c1e355821c979de448d613089a3b3376"
+    },
+    {
+      "path": "sprites/wall-12-4.png",
+      "depicts": "Connected wall variant wall-12-4",
+      "sha256": "15d98bd21ad4dde57b351d225a6d4d5abc1b4c2f693940f89f892db271259e22"
+    },
+    {
+      "path": "sprites/wall-12-5.png",
+      "depicts": "Connected wall variant wall-12-5",
+      "sha256": "f26093bd8f99a061e6a4d7e64858275dd2adb71eff234969d7d1096de6f6e23d"
+    },
+    {
+      "path": "sprites/wall-12-6.png",
+      "depicts": "Connected wall variant wall-12-6",
+      "sha256": "669f66e576459ba178f4df84d70f820f1d42b51c646fe60dca7b21663e0afe0d"
+    },
+    {
+      "path": "sprites/wall-12-7.png",
+      "depicts": "Connected wall variant wall-12-7",
+      "sha256": "69b6de753e2caff6db9e65c12ddfc4f675189f715ba18019c3f7589a44737e6e"
+    },
+    {
+      "path": "sprites/wall-12-8.png",
+      "depicts": "Connected wall variant wall-12-8",
+      "sha256": "e5a1e36ee4e2b6357d414f7a00296d22abb7cfb85b33d05dfb0b206488d80f2e"
+    },
+    {
+      "path": "sprites/wall-12-9.png",
+      "depicts": "Connected wall variant wall-12-9",
+      "sha256": "f08393f3fea30ce3e8ea3571f7294aeb5e5420b994a318e6048f43170d49fec5"
+    },
+    {
+      "path": "sprites/wall-12-10.png",
+      "depicts": "Connected wall variant wall-12-10",
+      "sha256": "bc0e7fc55b7f3c8aa3ab19cad6522356cca9d9936ae277510b5167fec5b9c2d2"
+    },
+    {
+      "path": "sprites/wall-12-11.png",
+      "depicts": "Connected wall variant wall-12-11",
+      "sha256": "e15c82cc9906c93736d36c0130ba4a690946ae7245f522f7916d5f07aeaec579"
+    },
+    {
+      "path": "sprites/wall-12-12.png",
+      "depicts": "Connected wall variant wall-12-12",
+      "sha256": "9f09ca3fce2220c84fd70269678d3f15621f8f40d982041a8511066d2f293883"
+    },
+    {
+      "path": "sprites/wall-12-13.png",
+      "depicts": "Connected wall variant wall-12-13",
+      "sha256": "2ecdb7415bc357398d67dce83f9030293015019685d71cede621124b0c8b9ac1"
+    },
+    {
+      "path": "sprites/wall-12-14.png",
+      "depicts": "Connected wall variant wall-12-14",
+      "sha256": "4fcc6638539cbc323fb7bb28541ecbc84299fc923e5cff0bbc4fa49c2d8a0d67"
+    },
+    {
+      "path": "sprites/wall-12-15.png",
+      "depicts": "Connected wall variant wall-12-15",
+      "sha256": "e8fc265dfceb60855bbf36da818f3ac7664336b65310d1e265d3e2b59c56dad2"
+    },
+    {
+      "path": "sprites/wall-12-19.png",
+      "depicts": "Connected wall variant wall-12-19",
+      "sha256": "fb0186ba0a2fd5817735a439845cf0a546fab1b6bc24175794d0497875713717"
+    },
+    {
+      "path": "sprites/wall-12-23.png",
+      "depicts": "Connected wall variant wall-12-23",
+      "sha256": "f79e741e8c43596c81f1efd52521e1f4a358520721f8f0b2819d6878fa382070"
+    },
+    {
+      "path": "sprites/wall-12-27.png",
+      "depicts": "Connected wall variant wall-12-27",
+      "sha256": "c05ae69a92c2bc0f317cc6267490562873acfc0953e2b2e9100d1c09ebbb192b"
+    },
+    {
+      "path": "sprites/wall-12-31.png",
+      "depicts": "Connected wall variant wall-12-31",
+      "sha256": "0e402fa7f8de609e7b1806bf6fc2bd70b2ead98850b9855e8d801cbc60df8df8"
+    },
+    {
+      "path": "sprites/wall-12-38.png",
+      "depicts": "Connected wall variant wall-12-38",
+      "sha256": "dfb591e04b627ca74d46e66b1a756f41f76be2e448462d2029d4c75879a9fa32"
+    },
+    {
+      "path": "sprites/wall-12-39.png",
+      "depicts": "Connected wall variant wall-12-39",
+      "sha256": "76bb3b4b0f028c1eeabeec44716806f2734414c37dc9d7a84a42f333335db38d"
+    },
+    {
+      "path": "sprites/wall-12-46.png",
+      "depicts": "Connected wall variant wall-12-46",
+      "sha256": "c3f00f62e3eeda86e008865299ed64934a2d62364aad8230b23a8c41757c433f"
+    },
+    {
+      "path": "sprites/wall-12-47.png",
+      "depicts": "Connected wall variant wall-12-47",
+      "sha256": "13800bd6acea03f3bf5d85b5e6c67c58316e53805faa00fc4c6dd3b54fd3e5f7"
+    },
+    {
+      "path": "sprites/wall-12-55.png",
+      "depicts": "Connected wall variant wall-12-55",
+      "sha256": "1b5d18046d87c1d9d2ec257c50cf808205008cb1193e605cced4245272aa5a8a"
+    },
+    {
+      "path": "sprites/wall-12-63.png",
+      "depicts": "Connected wall variant wall-12-63",
+      "sha256": "8af706323edcaf36af785abd2d0250594af1449cb9c2cdb4490858595734244f"
+    },
+    {
+      "path": "sprites/wall-12-76.png",
+      "depicts": "Connected wall variant wall-12-76",
+      "sha256": "7835d2652fe6f293f78dc5b56ee4d89d3202db81f983c244df79edc36055d946"
+    },
+    {
+      "path": "sprites/wall-12-77.png",
+      "depicts": "Connected wall variant wall-12-77",
+      "sha256": "c186b0c07cc30f6ba433c037c06e47075382ad0648837f717a17ed1b70686806"
+    },
+    {
+      "path": "sprites/wall-12-78.png",
+      "depicts": "Connected wall variant wall-12-78",
+      "sha256": "5386d62bce959241aea88a10e3645b949b48dfb9b865430dcc6c11448439f5d3"
+    },
+    {
+      "path": "sprites/wall-12-79.png",
+      "depicts": "Connected wall variant wall-12-79",
+      "sha256": "33dcd0ebab71b95eb1ac59b213edc6fd8db7a3080afb63f2833fe8983f5a0b57"
+    },
+    {
+      "path": "sprites/wall-12-95.png",
+      "depicts": "Connected wall variant wall-12-95",
+      "sha256": "9aba3901ec3c423d3f3ea418a2261deffb635b6d931eae4560dda27e686adadb"
+    },
+    {
+      "path": "sprites/wall-12-110.png",
+      "depicts": "Connected wall variant wall-12-110",
+      "sha256": "661749c8f679ad39e0ff46182ae6ff61f7f291720682a98608ab6cc995eefb01"
+    },
+    {
+      "path": "sprites/wall-12-111.png",
+      "depicts": "Connected wall variant wall-12-111",
+      "sha256": "06bb1c1707a735ea4fc7c9cd6bf7bec26d400de909cdd49f4c85bf5edbf80eb9"
+    },
+    {
+      "path": "sprites/wall-12-127.png",
+      "depicts": "Connected wall variant wall-12-127",
+      "sha256": "e69e92d177f436c05901e395a23f03ef89b69d66d04d25b61431965dc81cba49"
+    },
+    {
+      "path": "sprites/wall-12-137.png",
+      "depicts": "Connected wall variant wall-12-137",
+      "sha256": "7fe518d3b288805d87979bdb0664749dc149d15b669ad18bed1c032d9768c30d"
+    },
+    {
+      "path": "sprites/wall-12-139.png",
+      "depicts": "Connected wall variant wall-12-139",
+      "sha256": "a7487d9a8bee89c59ac59fa503db63fa482500d955d94cb863b8a34855004817"
+    },
+    {
+      "path": "sprites/wall-12-141.png",
+      "depicts": "Connected wall variant wall-12-141",
+      "sha256": "f6317b617f4c694645ac7e7b97420820e752e0841b4ba611c9e6ae7d5b20260b"
+    },
+    {
+      "path": "sprites/wall-12-143.png",
+      "depicts": "Connected wall variant wall-12-143",
+      "sha256": "4b3348d115c29edcc0fbe9009a1b2524ee20c824fcc387794520b302877f74d5"
+    },
+    {
+      "path": "sprites/wall-12-155.png",
+      "depicts": "Connected wall variant wall-12-155",
+      "sha256": "898ba0f5a6ef61086f55d1b034b0fc8d33e028fe4b1eab197e3bc4cf088f2bd2"
+    },
+    {
+      "path": "sprites/wall-12-159.png",
+      "depicts": "Connected wall variant wall-12-159",
+      "sha256": "c5518f5fefd150e9406061f31d5014a1599c96ec25f88b1a375498c637821bbc"
+    },
+    {
+      "path": "sprites/wall-12-175.png",
+      "depicts": "Connected wall variant wall-12-175",
+      "sha256": "d8bada3173e849a4be24464ba62d44b0f4eb985646ec1dc7351a03a7d868924b"
+    },
+    {
+      "path": "sprites/wall-12-191.png",
+      "depicts": "Connected wall variant wall-12-191",
+      "sha256": "4dfade587969423c8cf4253ddf910d0536fe30eb56db89a1e82b807329bc4e67"
+    },
+    {
+      "path": "sprites/wall-12-205.png",
+      "depicts": "Connected wall variant wall-12-205",
+      "sha256": "68589d4d5a516efad7a606f4be42cc996d64e7a076f118a013ca036abf18147c"
+    },
+    {
+      "path": "sprites/wall-12-207.png",
+      "depicts": "Connected wall variant wall-12-207",
+      "sha256": "8b3bfd28c262e259e84a65699c242eb99c1c75e53c6b12acc17d9e1616418d01"
+    },
+    {
+      "path": "sprites/wall-12-223.png",
+      "depicts": "Connected wall variant wall-12-223",
+      "sha256": "e7ca0027dc571b854b599a7e42de1b8c316f134e781edddcaa41a89c71336c14"
+    },
+    {
+      "path": "sprites/wall-12-239.png",
+      "depicts": "Connected wall variant wall-12-239",
+      "sha256": "18d461acb19151bb1874db59b7357e5690f21b3c56070d732fc3a6380ca76f7a"
+    },
+    {
+      "path": "sprites/wall-12-255.png",
+      "depicts": "Connected wall variant wall-12-255",
+      "sha256": "9d01666074e810d710a672bdd9384201e0438eaf44466d9768816f8f9d559375"
+    },
+    {
+      "path": "sprites/wall-14-0.png",
+      "depicts": "Connected wall variant wall-14-0",
+      "sha256": "208b9d91d7e663ca334c5927b1274355ff936b2eba3b1dc53e00a9f1dec81a71"
+    },
+    {
+      "path": "sprites/wall-14-1.png",
+      "depicts": "Connected wall variant wall-14-1",
+      "sha256": "bdffd6ec3dc2e85b9f934f8b5f879a1c5a9204e78b02dd152aa9ed1bbfc0ab7a"
+    },
+    {
+      "path": "sprites/wall-14-2.png",
+      "depicts": "Connected wall variant wall-14-2",
+      "sha256": "f894500d0de8f078da0f07450f650e04a2e11a172be61927961987c669a3bff5"
+    },
+    {
+      "path": "sprites/wall-14-3.png",
+      "depicts": "Connected wall variant wall-14-3",
+      "sha256": "21c406d6403b5abe38abaacd7495627897809f8446e797ecc59a45263c13f5cb"
+    },
+    {
+      "path": "sprites/wall-14-4.png",
+      "depicts": "Connected wall variant wall-14-4",
+      "sha256": "70c2b0fc0a14fb984b5dcb38d97830c544bad237bfc9d668bfea94fd9d9edd8c"
+    },
+    {
+      "path": "sprites/wall-14-5.png",
+      "depicts": "Connected wall variant wall-14-5",
+      "sha256": "91fec05d46f9c944db1ef3ccef443ecd63293ac6db9c916a516b79c6e500384d"
+    },
+    {
+      "path": "sprites/wall-14-6.png",
+      "depicts": "Connected wall variant wall-14-6",
+      "sha256": "63ccb1e2f0cb0593c73eab30e521a11a40a6064f3d6517882163316423bd747c"
+    },
+    {
+      "path": "sprites/wall-14-7.png",
+      "depicts": "Connected wall variant wall-14-7",
+      "sha256": "2589f726241ec4eeaf8aa15355bee7e96068d29cb011c23e2a578399a6917706"
+    },
+    {
+      "path": "sprites/wall-14-8.png",
+      "depicts": "Connected wall variant wall-14-8",
+      "sha256": "3025c5a7d09ed156f0e1bfa5f486ce8d3a75f3198d4040b0ceadfbaa1af9c589"
+    },
+    {
+      "path": "sprites/wall-14-9.png",
+      "depicts": "Connected wall variant wall-14-9",
+      "sha256": "365a289fb7903c7fe39b070d0de0571565855cd860c2317c1228d607dc6f6dcf"
+    },
+    {
+      "path": "sprites/wall-14-10.png",
+      "depicts": "Connected wall variant wall-14-10",
+      "sha256": "2e303e6cff03cb979102de154120c4da60a5cfc1edfbfb768743c3767d63bcfa"
+    },
+    {
+      "path": "sprites/wall-14-11.png",
+      "depicts": "Connected wall variant wall-14-11",
+      "sha256": "cf246cd5aacb2d2c8d18c08476550c09119ab5c9e87f47335ce316c44e1f420b"
+    },
+    {
+      "path": "sprites/wall-14-12.png",
+      "depicts": "Connected wall variant wall-14-12",
+      "sha256": "bb444b47ffeeb60e8ee92a86f82de97debce5645d3c8c208f23d88e1125f5407"
+    },
+    {
+      "path": "sprites/wall-14-13.png",
+      "depicts": "Connected wall variant wall-14-13",
+      "sha256": "9fb21209006973295b68934cdef1399837ed892b469619de8701d0481e960a19"
+    },
+    {
+      "path": "sprites/wall-14-14.png",
+      "depicts": "Connected wall variant wall-14-14",
+      "sha256": "87205f0c1e310a061d13687ee597df947800e5633859a89a402024461faeb0f1"
+    },
+    {
+      "path": "sprites/wall-14-15.png",
+      "depicts": "Connected wall variant wall-14-15",
+      "sha256": "46b671c025695000a9f449d8f5e5914ffc865612d7a079b5697a7df004e1c5e1"
+    },
+    {
+      "path": "sprites/wall-14-19.png",
+      "depicts": "Connected wall variant wall-14-19",
+      "sha256": "adbfc23e0896f41d6a59b2993104c1984c9676e7cebc77b294a51620f07e1a2e"
+    },
+    {
+      "path": "sprites/wall-14-23.png",
+      "depicts": "Connected wall variant wall-14-23",
+      "sha256": "def20cc66c579fe3dad07b40fdcc3196e57b96922fe698648ea70c91df7ec023"
+    },
+    {
+      "path": "sprites/wall-14-27.png",
+      "depicts": "Connected wall variant wall-14-27",
+      "sha256": "ec66d90a32184233fd6ffd158a075c3a1d6f6340312b40b7754be463db937c54"
+    },
+    {
+      "path": "sprites/wall-14-31.png",
+      "depicts": "Connected wall variant wall-14-31",
+      "sha256": "f3c7eacbd2ede76b93bbe11f770d35b003d1ffd0b0866980b857ee70622f70ed"
+    },
+    {
+      "path": "sprites/wall-14-38.png",
+      "depicts": "Connected wall variant wall-14-38",
+      "sha256": "00d136bce28b0da81d5651e53137956ec0d00b6ac9d2a2609804e23275c5bdc9"
+    },
+    {
+      "path": "sprites/wall-14-39.png",
+      "depicts": "Connected wall variant wall-14-39",
+      "sha256": "0cc1ccd51395c9c32ccc5f4542cd11c14940130ce6ba35d86b358eb1c9729b25"
+    },
+    {
+      "path": "sprites/wall-14-46.png",
+      "depicts": "Connected wall variant wall-14-46",
+      "sha256": "fc0a92bf225a3ce1279fa1755cddfaa0139fe777d726eb4bfb6a3ba5c75727cc"
+    },
+    {
+      "path": "sprites/wall-14-47.png",
+      "depicts": "Connected wall variant wall-14-47",
+      "sha256": "93375d2cad6e1113e2739c5c28cffd77345020bd6eed3e9cbe3037117cd893b4"
+    },
+    {
+      "path": "sprites/wall-14-55.png",
+      "depicts": "Connected wall variant wall-14-55",
+      "sha256": "fd6ee355ffcd3c00fce27573690229e26b95b4bc813f22c1ce32565d74f0569c"
+    },
+    {
+      "path": "sprites/wall-14-63.png",
+      "depicts": "Connected wall variant wall-14-63",
+      "sha256": "f757a04190618a2264c935e865e16960c532eaeabfd71835e4cc47a39bec8b3a"
+    },
+    {
+      "path": "sprites/wall-14-76.png",
+      "depicts": "Connected wall variant wall-14-76",
+      "sha256": "031021ea77494bfae68da8013ba4f64fc1e072d337301268a4b91e3dbcc584df"
+    },
+    {
+      "path": "sprites/wall-14-77.png",
+      "depicts": "Connected wall variant wall-14-77",
+      "sha256": "6f1e70222532b3c63d7b784988757508716dabf59742372aa572ff55769524b9"
+    },
+    {
+      "path": "sprites/wall-14-78.png",
+      "depicts": "Connected wall variant wall-14-78",
+      "sha256": "7e8439958b6b8625472a6c6ac5bd00646f658515eac8c43946f58d28870eafb6"
+    },
+    {
+      "path": "sprites/wall-14-79.png",
+      "depicts": "Connected wall variant wall-14-79",
+      "sha256": "f8097277fe7e5053a86791e699fa17cb2134d4f696c75d4aba368f41c9cd3f13"
+    },
+    {
+      "path": "sprites/wall-14-95.png",
+      "depicts": "Connected wall variant wall-14-95",
+      "sha256": "63934ae4db3d147ee4614acfb35e239c295642e55ee77400720871a50bb7c198"
+    },
+    {
+      "path": "sprites/wall-14-110.png",
+      "depicts": "Connected wall variant wall-14-110",
+      "sha256": "24c33289706d2de8737a45e50774c98823c00a5a2756b6e7612ea03cba6f7167"
+    },
+    {
+      "path": "sprites/wall-14-111.png",
+      "depicts": "Connected wall variant wall-14-111",
+      "sha256": "6b8ac6cc6c41e95064a280a32aebc6f3f36b53bb2e499e4d8bd7aec02596035b"
+    },
+    {
+      "path": "sprites/wall-14-127.png",
+      "depicts": "Connected wall variant wall-14-127",
+      "sha256": "ff379fd7afdfcd920a26234754fb5ac7c95dabd1f628fd1d58e43519bca4d40b"
+    },
+    {
+      "path": "sprites/wall-14-137.png",
+      "depicts": "Connected wall variant wall-14-137",
+      "sha256": "8abed66595ff150c20fea8113ffa5cf69b220887b9d8aaac9cc2a972c3a21461"
+    },
+    {
+      "path": "sprites/wall-14-139.png",
+      "depicts": "Connected wall variant wall-14-139",
+      "sha256": "af2e59d9107c89721bac99898280fe8788abc26fc9e763d3bcbce4939dcb902b"
+    },
+    {
+      "path": "sprites/wall-14-141.png",
+      "depicts": "Connected wall variant wall-14-141",
+      "sha256": "57ec8027973b7555bb15b6e268b248cbc1da7ed28b4799d6fce671f788c49fc8"
+    },
+    {
+      "path": "sprites/wall-14-143.png",
+      "depicts": "Connected wall variant wall-14-143",
+      "sha256": "b3e8a97541c0b8b6c0bf5b4419312d95ca87fec2416a7ce0d0e85f7568cb3826"
+    },
+    {
+      "path": "sprites/wall-14-155.png",
+      "depicts": "Connected wall variant wall-14-155",
+      "sha256": "edc3bb57bacbf7080c1efe14bb77796c89c8e50618a12c03f713b655ff7eedd3"
+    },
+    {
+      "path": "sprites/wall-14-159.png",
+      "depicts": "Connected wall variant wall-14-159",
+      "sha256": "36cb443130e20198195a8471ac6ab1c566eeff6575c7e2a78a69ebb0a14ffd26"
+    },
+    {
+      "path": "sprites/wall-14-175.png",
+      "depicts": "Connected wall variant wall-14-175",
+      "sha256": "9620d329e46a8a32d336e292a07a1dce5cd27971be0496f84ffbae65085544a7"
+    },
+    {
+      "path": "sprites/wall-14-191.png",
+      "depicts": "Connected wall variant wall-14-191",
+      "sha256": "788bb47e561724b78224c5d91d9eac05808a35fd647bb3145bb74cb148e18d27"
+    },
+    {
+      "path": "sprites/wall-14-205.png",
+      "depicts": "Connected wall variant wall-14-205",
+      "sha256": "23fa27a6f05f47e81be248574edb3bb7b91027d7ae73d482c6d95fda3d8b8328"
+    },
+    {
+      "path": "sprites/wall-14-207.png",
+      "depicts": "Connected wall variant wall-14-207",
+      "sha256": "d621367369d44d1efc21c1372d0a5024d2ba8ca9bd770bc8480f1080a5bced3f"
+    },
+    {
+      "path": "sprites/wall-14-223.png",
+      "depicts": "Connected wall variant wall-14-223",
+      "sha256": "454e5ad09c65671b6aee26413b935b24f95a9aab0b954f110b3b2a77852ab5db"
+    },
+    {
+      "path": "sprites/wall-14-239.png",
+      "depicts": "Connected wall variant wall-14-239",
+      "sha256": "7764b732ffc0bccd8ad454a92d7a6937393189f4dc76a640d051266b0743ce0e"
+    },
+    {
+      "path": "sprites/wall-14-255.png",
+      "depicts": "Connected wall variant wall-14-255",
+      "sha256": "158368a59b7ba1fc41fa73e26717563217e4ca31cafe9b190729350e266f7fc9"
+    },
+    {
+      "path": "sprites/wall-62-0.png",
+      "depicts": "Connected wall variant wall-62-0",
+      "sha256": "1619d4e3e9713adaa411df62a6744237ae10ddaab69a6291a2a2fc7726cb85ac"
+    },
+    {
+      "path": "sprites/wall-62-1.png",
+      "depicts": "Connected wall variant wall-62-1",
+      "sha256": "455cc7dcb7365146f65e99b7a5524642f37da674a5abcca11cec54cb1a6a4ac8"
+    },
+    {
+      "path": "sprites/wall-62-2.png",
+      "depicts": "Connected wall variant wall-62-2",
+      "sha256": "f8993717465bcf58bdae23771b0d9b0675d292704a9d1e93d15488381238a95c"
+    },
+    {
+      "path": "sprites/wall-62-3.png",
+      "depicts": "Connected wall variant wall-62-3",
+      "sha256": "e701f25d08d59613f0bc2d02414c05a747311dc2360f27acbc898a92c336d9a0"
+    },
+    {
+      "path": "sprites/wall-62-4.png",
+      "depicts": "Connected wall variant wall-62-4",
+      "sha256": "ed7efa9727b3cd81880183074d3e8ad9a420a221f2d0f9a9f576ded1e2484f2b"
+    },
+    {
+      "path": "sprites/wall-62-5.png",
+      "depicts": "Connected wall variant wall-62-5",
+      "sha256": "45e6baa8e82b11fc97d3e62188bb4a872ec03b40a3fef2b04d856969080115df"
+    },
+    {
+      "path": "sprites/wall-62-6.png",
+      "depicts": "Connected wall variant wall-62-6",
+      "sha256": "2486c83c373bd5a0ecb45bab8d5ff41f53e5548c1b94ac1e1c029a8b438143a4"
+    },
+    {
+      "path": "sprites/wall-62-7.png",
+      "depicts": "Connected wall variant wall-62-7",
+      "sha256": "7b0605c01db3e9441f0a4c6e045f58ed9effef92f85b1a829268d6056159ab94"
+    },
+    {
+      "path": "sprites/wall-62-8.png",
+      "depicts": "Connected wall variant wall-62-8",
+      "sha256": "e6eea69a6e144226267f4635c9c704bd0b3d631ef5cb43c2431fcf53363bb8a4"
+    },
+    {
+      "path": "sprites/wall-62-9.png",
+      "depicts": "Connected wall variant wall-62-9",
+      "sha256": "18e4b3a2e103ad74cb9cf9ecb8ac4c9a3d59cc30d1ff0543657734131946e512"
+    },
+    {
+      "path": "sprites/wall-62-10.png",
+      "depicts": "Connected wall variant wall-62-10",
+      "sha256": "672e49c3c7955fb5187120c0d4d3501d83b8e6108df4d2273652b4728f7348d9"
+    },
+    {
+      "path": "sprites/wall-62-11.png",
+      "depicts": "Connected wall variant wall-62-11",
+      "sha256": "1e7cea3e614c68faadc4ff49d77fe9167365335c75a0b3fddaf59be98638a2a4"
+    },
+    {
+      "path": "sprites/wall-62-12.png",
+      "depicts": "Connected wall variant wall-62-12",
+      "sha256": "7315002d57e493c39b51748bffa2e5a86efea21d9f8c107cdc9b8bd9cd78e20f"
+    },
+    {
+      "path": "sprites/wall-62-13.png",
+      "depicts": "Connected wall variant wall-62-13",
+      "sha256": "f3cf83a25901ee6b6b8918a3f8892b0784d893f3ac99037d17805dd59cbcd687"
+    },
+    {
+      "path": "sprites/wall-62-14.png",
+      "depicts": "Connected wall variant wall-62-14",
+      "sha256": "21fd39dcc95e842609e636890e2757698dcef319b5f0a9ae225e1068ba6f369f"
+    },
+    {
+      "path": "sprites/wall-62-15.png",
+      "depicts": "Connected wall variant wall-62-15",
+      "sha256": "348e8ea6450595c5e8eeeb9366009ee85367fc12ee8262bdc9d841303ba9b342"
+    },
+    {
+      "path": "sprites/wall-62-19.png",
+      "depicts": "Connected wall variant wall-62-19",
+      "sha256": "ea9071ef3937549280857b5abc1c3430ae2385abd470c214244d70867f19be70"
+    },
+    {
+      "path": "sprites/wall-62-23.png",
+      "depicts": "Connected wall variant wall-62-23",
+      "sha256": "161e994ef7d84f472849693bfca6d5992be034a3b55145200d6bcaa3ffaf8924"
+    },
+    {
+      "path": "sprites/wall-62-27.png",
+      "depicts": "Connected wall variant wall-62-27",
+      "sha256": "c3f11c922a9c6cd32a7f4c76806e7d4a486540251e029c5a3f95f92038c9bb72"
+    },
+    {
+      "path": "sprites/wall-62-31.png",
+      "depicts": "Connected wall variant wall-62-31",
+      "sha256": "c6bd3e14fb8a2ba845bcdcb92958b29359bea19b1b2a53e17b87c034b2e9eaa5"
+    },
+    {
+      "path": "sprites/wall-62-38.png",
+      "depicts": "Connected wall variant wall-62-38",
+      "sha256": "fd71e044a0575b7dc97f93ec2394d0646899dfc54d0b2dfd5026d12cd2f9dc5b"
+    },
+    {
+      "path": "sprites/wall-62-39.png",
+      "depicts": "Connected wall variant wall-62-39",
+      "sha256": "affb34cd71a3ce4fdd1f61151a38073a872e0badea9842a5f078b26c7e796ea4"
+    },
+    {
+      "path": "sprites/wall-62-46.png",
+      "depicts": "Connected wall variant wall-62-46",
+      "sha256": "11ec4f3da59d233dd810758374688e04000115f7803a6fc4f795f034dc87feb7"
+    },
+    {
+      "path": "sprites/wall-62-47.png",
+      "depicts": "Connected wall variant wall-62-47",
+      "sha256": "8035efd454903438ccc534fc9396c813b4b4bfda7343b2477e1aea04738d26ed"
+    },
+    {
+      "path": "sprites/wall-62-55.png",
+      "depicts": "Connected wall variant wall-62-55",
+      "sha256": "78b024a68fd7e98ed85380c06fa9c40025ca912618c8c00ba152f6855a9048b8"
+    },
+    {
+      "path": "sprites/wall-62-63.png",
+      "depicts": "Connected wall variant wall-62-63",
+      "sha256": "047722057dbf063535edb1f500cae501050a243115100cba2769cfb81822828a"
+    },
+    {
+      "path": "sprites/wall-62-76.png",
+      "depicts": "Connected wall variant wall-62-76",
+      "sha256": "b968785ddd1065d8fc3d43fa0544e062dbf2d4dfd0d0449d657e61970ec5a84c"
+    },
+    {
+      "path": "sprites/wall-62-77.png",
+      "depicts": "Connected wall variant wall-62-77",
+      "sha256": "2bf617a54cd7e579b92ccd8a20d08092249a33f588a02916628667a349dadfba"
+    },
+    {
+      "path": "sprites/wall-62-78.png",
+      "depicts": "Connected wall variant wall-62-78",
+      "sha256": "dd9889772e2ebdc0cf10246250cc4ba7b934c50ddf23a997fe3f8d438532f37b"
+    },
+    {
+      "path": "sprites/wall-62-79.png",
+      "depicts": "Connected wall variant wall-62-79",
+      "sha256": "b68e1171e7ce9b1db055b6f16dfc9742ee936cd5b09a2be8567e97ee17c8d262"
+    },
+    {
+      "path": "sprites/wall-62-95.png",
+      "depicts": "Connected wall variant wall-62-95",
+      "sha256": "deb4d6ff498364652e1567d89789728a6e4e9047c94e0ff343e26829225cbdff"
+    },
+    {
+      "path": "sprites/wall-62-110.png",
+      "depicts": "Connected wall variant wall-62-110",
+      "sha256": "917129b7880e5875ea7729621dbcca505ccb8b4a078a8a53527cb7e957610274"
+    },
+    {
+      "path": "sprites/wall-62-111.png",
+      "depicts": "Connected wall variant wall-62-111",
+      "sha256": "09ab545ebcf07c2f2caedf19e0ce365f445ed3b8cd33c6b87c75e34d47727998"
+    },
+    {
+      "path": "sprites/wall-62-127.png",
+      "depicts": "Connected wall variant wall-62-127",
+      "sha256": "295e27b9fa7335600467f35edfe9199cb28ea8c869cbc3e2119de7ef4aa49061"
+    },
+    {
+      "path": "sprites/wall-62-137.png",
+      "depicts": "Connected wall variant wall-62-137",
+      "sha256": "1155a0922991e6d73d0c85899fdee33824402c9d77b5a1d2bb68c1dae8837abd"
+    },
+    {
+      "path": "sprites/wall-62-139.png",
+      "depicts": "Connected wall variant wall-62-139",
+      "sha256": "9b4f9b6b79bd26cac4aa747acbb063d540c48d7626b9ac7c047f3aa1e2651332"
+    },
+    {
+      "path": "sprites/wall-62-141.png",
+      "depicts": "Connected wall variant wall-62-141",
+      "sha256": "0449649a3f35122cd40ecf8a086d911a9b45a9339f86022313bf8d167d14bcdd"
+    },
+    {
+      "path": "sprites/wall-62-143.png",
+      "depicts": "Connected wall variant wall-62-143",
+      "sha256": "5d4967ea91d5bd34ea54e9b39acc7c033eed4a80afbbae1092cf1f0cb1607ac3"
+    },
+    {
+      "path": "sprites/wall-62-155.png",
+      "depicts": "Connected wall variant wall-62-155",
+      "sha256": "222b2200d5780debe29be37e2838efedd1cba485e041265d283f75faffba39d8"
+    },
+    {
+      "path": "sprites/wall-62-159.png",
+      "depicts": "Connected wall variant wall-62-159",
+      "sha256": "f8b9da158537ff1781a7086183aeb8a0fd1db29b46e7614d876d396fca7d23a8"
+    },
+    {
+      "path": "sprites/wall-62-175.png",
+      "depicts": "Connected wall variant wall-62-175",
+      "sha256": "fb84e5c20b53c859c2983e42c0f4a8bfdacfa8bfc1d9999f8631a36f1da537d6"
+    },
+    {
+      "path": "sprites/wall-62-191.png",
+      "depicts": "Connected wall variant wall-62-191",
+      "sha256": "e8025f7cf086ca0d5b672f5cf0ab3240e9f78502f64db7500293293f971b96cc"
+    },
+    {
+      "path": "sprites/wall-62-205.png",
+      "depicts": "Connected wall variant wall-62-205",
+      "sha256": "be83f518b0a8ec525b6b6fe02ff412d8489d8f0f1db8ce50e22a447686b6b6b9"
+    },
+    {
+      "path": "sprites/wall-62-207.png",
+      "depicts": "Connected wall variant wall-62-207",
+      "sha256": "d2340a6bae2779b94b493038ef7543278a3666e77356f138a95147dbe967f80b"
+    },
+    {
+      "path": "sprites/wall-62-223.png",
+      "depicts": "Connected wall variant wall-62-223",
+      "sha256": "b695f203d27babbfd18481a2812bb38ec131201a5d90f8f9d0da1aeed6a337eb"
+    },
+    {
+      "path": "sprites/wall-62-239.png",
+      "depicts": "Connected wall variant wall-62-239",
+      "sha256": "a835f25c8bbb9718aa3e17c8eba9b26149b5205ef6146daded6c208899c3a52b"
+    },
+    {
+      "path": "sprites/wall-62-255.png",
+      "depicts": "Connected wall variant wall-62-255",
+      "sha256": "ad7c2b4a0781da500360fc2740374cbe3a2a51c92ff0ed79d1e5a174c4861281"
+    },
+    {
+      "path": "sprites/wall-63-0.png",
+      "depicts": "Connected wall variant wall-63-0",
+      "sha256": "208b9d91d7e663ca334c5927b1274355ff936b2eba3b1dc53e00a9f1dec81a71"
+    },
+    {
+      "path": "sprites/wall-63-1.png",
+      "depicts": "Connected wall variant wall-63-1",
+      "sha256": "bdffd6ec3dc2e85b9f934f8b5f879a1c5a9204e78b02dd152aa9ed1bbfc0ab7a"
+    },
+    {
+      "path": "sprites/wall-63-2.png",
+      "depicts": "Connected wall variant wall-63-2",
+      "sha256": "f894500d0de8f078da0f07450f650e04a2e11a172be61927961987c669a3bff5"
+    },
+    {
+      "path": "sprites/wall-63-3.png",
+      "depicts": "Connected wall variant wall-63-3",
+      "sha256": "21c406d6403b5abe38abaacd7495627897809f8446e797ecc59a45263c13f5cb"
+    },
+    {
+      "path": "sprites/wall-63-4.png",
+      "depicts": "Connected wall variant wall-63-4",
+      "sha256": "70c2b0fc0a14fb984b5dcb38d97830c544bad237bfc9d668bfea94fd9d9edd8c"
+    },
+    {
+      "path": "sprites/wall-63-5.png",
+      "depicts": "Connected wall variant wall-63-5",
+      "sha256": "91fec05d46f9c944db1ef3ccef443ecd63293ac6db9c916a516b79c6e500384d"
+    },
+    {
+      "path": "sprites/wall-63-6.png",
+      "depicts": "Connected wall variant wall-63-6",
+      "sha256": "63ccb1e2f0cb0593c73eab30e521a11a40a6064f3d6517882163316423bd747c"
+    },
+    {
+      "path": "sprites/wall-63-7.png",
+      "depicts": "Connected wall variant wall-63-7",
+      "sha256": "2589f726241ec4eeaf8aa15355bee7e96068d29cb011c23e2a578399a6917706"
+    },
+    {
+      "path": "sprites/wall-63-8.png",
+      "depicts": "Connected wall variant wall-63-8",
+      "sha256": "3025c5a7d09ed156f0e1bfa5f486ce8d3a75f3198d4040b0ceadfbaa1af9c589"
+    },
+    {
+      "path": "sprites/wall-63-9.png",
+      "depicts": "Connected wall variant wall-63-9",
+      "sha256": "365a289fb7903c7fe39b070d0de0571565855cd860c2317c1228d607dc6f6dcf"
+    },
+    {
+      "path": "sprites/wall-63-10.png",
+      "depicts": "Connected wall variant wall-63-10",
+      "sha256": "2e303e6cff03cb979102de154120c4da60a5cfc1edfbfb768743c3767d63bcfa"
+    },
+    {
+      "path": "sprites/wall-63-11.png",
+      "depicts": "Connected wall variant wall-63-11",
+      "sha256": "cf246cd5aacb2d2c8d18c08476550c09119ab5c9e87f47335ce316c44e1f420b"
+    },
+    {
+      "path": "sprites/wall-63-12.png",
+      "depicts": "Connected wall variant wall-63-12",
+      "sha256": "bb444b47ffeeb60e8ee92a86f82de97debce5645d3c8c208f23d88e1125f5407"
+    },
+    {
+      "path": "sprites/wall-63-13.png",
+      "depicts": "Connected wall variant wall-63-13",
+      "sha256": "9fb21209006973295b68934cdef1399837ed892b469619de8701d0481e960a19"
+    },
+    {
+      "path": "sprites/wall-63-14.png",
+      "depicts": "Connected wall variant wall-63-14",
+      "sha256": "87205f0c1e310a061d13687ee597df947800e5633859a89a402024461faeb0f1"
+    },
+    {
+      "path": "sprites/wall-63-15.png",
+      "depicts": "Connected wall variant wall-63-15",
+      "sha256": "46b671c025695000a9f449d8f5e5914ffc865612d7a079b5697a7df004e1c5e1"
+    },
+    {
+      "path": "sprites/wall-63-19.png",
+      "depicts": "Connected wall variant wall-63-19",
+      "sha256": "adbfc23e0896f41d6a59b2993104c1984c9676e7cebc77b294a51620f07e1a2e"
+    },
+    {
+      "path": "sprites/wall-63-23.png",
+      "depicts": "Connected wall variant wall-63-23",
+      "sha256": "def20cc66c579fe3dad07b40fdcc3196e57b96922fe698648ea70c91df7ec023"
+    },
+    {
+      "path": "sprites/wall-63-27.png",
+      "depicts": "Connected wall variant wall-63-27",
+      "sha256": "ec66d90a32184233fd6ffd158a075c3a1d6f6340312b40b7754be463db937c54"
+    },
+    {
+      "path": "sprites/wall-63-31.png",
+      "depicts": "Connected wall variant wall-63-31",
+      "sha256": "f3c7eacbd2ede76b93bbe11f770d35b003d1ffd0b0866980b857ee70622f70ed"
+    },
+    {
+      "path": "sprites/wall-63-38.png",
+      "depicts": "Connected wall variant wall-63-38",
+      "sha256": "00d136bce28b0da81d5651e53137956ec0d00b6ac9d2a2609804e23275c5bdc9"
+    },
+    {
+      "path": "sprites/wall-63-39.png",
+      "depicts": "Connected wall variant wall-63-39",
+      "sha256": "0cc1ccd51395c9c32ccc5f4542cd11c14940130ce6ba35d86b358eb1c9729b25"
+    },
+    {
+      "path": "sprites/wall-63-46.png",
+      "depicts": "Connected wall variant wall-63-46",
+      "sha256": "fc0a92bf225a3ce1279fa1755cddfaa0139fe777d726eb4bfb6a3ba5c75727cc"
+    },
+    {
+      "path": "sprites/wall-63-47.png",
+      "depicts": "Connected wall variant wall-63-47",
+      "sha256": "93375d2cad6e1113e2739c5c28cffd77345020bd6eed3e9cbe3037117cd893b4"
+    },
+    {
+      "path": "sprites/wall-63-55.png",
+      "depicts": "Connected wall variant wall-63-55",
+      "sha256": "fd6ee355ffcd3c00fce27573690229e26b95b4bc813f22c1ce32565d74f0569c"
+    },
+    {
+      "path": "sprites/wall-63-63.png",
+      "depicts": "Connected wall variant wall-63-63",
+      "sha256": "f757a04190618a2264c935e865e16960c532eaeabfd71835e4cc47a39bec8b3a"
+    },
+    {
+      "path": "sprites/wall-63-76.png",
+      "depicts": "Connected wall variant wall-63-76",
+      "sha256": "031021ea77494bfae68da8013ba4f64fc1e072d337301268a4b91e3dbcc584df"
+    },
+    {
+      "path": "sprites/wall-63-77.png",
+      "depicts": "Connected wall variant wall-63-77",
+      "sha256": "6f1e70222532b3c63d7b784988757508716dabf59742372aa572ff55769524b9"
+    },
+    {
+      "path": "sprites/wall-63-78.png",
+      "depicts": "Connected wall variant wall-63-78",
+      "sha256": "7e8439958b6b8625472a6c6ac5bd00646f658515eac8c43946f58d28870eafb6"
+    },
+    {
+      "path": "sprites/wall-63-79.png",
+      "depicts": "Connected wall variant wall-63-79",
+      "sha256": "f8097277fe7e5053a86791e699fa17cb2134d4f696c75d4aba368f41c9cd3f13"
+    },
+    {
+      "path": "sprites/wall-63-95.png",
+      "depicts": "Connected wall variant wall-63-95",
+      "sha256": "63934ae4db3d147ee4614acfb35e239c295642e55ee77400720871a50bb7c198"
+    },
+    {
+      "path": "sprites/wall-63-110.png",
+      "depicts": "Connected wall variant wall-63-110",
+      "sha256": "24c33289706d2de8737a45e50774c98823c00a5a2756b6e7612ea03cba6f7167"
+    },
+    {
+      "path": "sprites/wall-63-111.png",
+      "depicts": "Connected wall variant wall-63-111",
+      "sha256": "6b8ac6cc6c41e95064a280a32aebc6f3f36b53bb2e499e4d8bd7aec02596035b"
+    },
+    {
+      "path": "sprites/wall-63-127.png",
+      "depicts": "Connected wall variant wall-63-127",
+      "sha256": "ff379fd7afdfcd920a26234754fb5ac7c95dabd1f628fd1d58e43519bca4d40b"
+    },
+    {
+      "path": "sprites/wall-63-137.png",
+      "depicts": "Connected wall variant wall-63-137",
+      "sha256": "8abed66595ff150c20fea8113ffa5cf69b220887b9d8aaac9cc2a972c3a21461"
+    },
+    {
+      "path": "sprites/wall-63-139.png",
+      "depicts": "Connected wall variant wall-63-139",
+      "sha256": "af2e59d9107c89721bac99898280fe8788abc26fc9e763d3bcbce4939dcb902b"
+    },
+    {
+      "path": "sprites/wall-63-141.png",
+      "depicts": "Connected wall variant wall-63-141",
+      "sha256": "57ec8027973b7555bb15b6e268b248cbc1da7ed28b4799d6fce671f788c49fc8"
+    },
+    {
+      "path": "sprites/wall-63-143.png",
+      "depicts": "Connected wall variant wall-63-143",
+      "sha256": "b3e8a97541c0b8b6c0bf5b4419312d95ca87fec2416a7ce0d0e85f7568cb3826"
+    },
+    {
+      "path": "sprites/wall-63-155.png",
+      "depicts": "Connected wall variant wall-63-155",
+      "sha256": "edc3bb57bacbf7080c1efe14bb77796c89c8e50618a12c03f713b655ff7eedd3"
+    },
+    {
+      "path": "sprites/wall-63-159.png",
+      "depicts": "Connected wall variant wall-63-159",
+      "sha256": "36cb443130e20198195a8471ac6ab1c566eeff6575c7e2a78a69ebb0a14ffd26"
+    },
+    {
+      "path": "sprites/wall-63-175.png",
+      "depicts": "Connected wall variant wall-63-175",
+      "sha256": "9620d329e46a8a32d336e292a07a1dce5cd27971be0496f84ffbae65085544a7"
+    },
+    {
+      "path": "sprites/wall-63-191.png",
+      "depicts": "Connected wall variant wall-63-191",
+      "sha256": "788bb47e561724b78224c5d91d9eac05808a35fd647bb3145bb74cb148e18d27"
+    },
+    {
+      "path": "sprites/wall-63-205.png",
+      "depicts": "Connected wall variant wall-63-205",
+      "sha256": "23fa27a6f05f47e81be248574edb3bb7b91027d7ae73d482c6d95fda3d8b8328"
+    },
+    {
+      "path": "sprites/wall-63-207.png",
+      "depicts": "Connected wall variant wall-63-207",
+      "sha256": "d621367369d44d1efc21c1372d0a5024d2ba8ca9bd770bc8480f1080a5bced3f"
+    },
+    {
+      "path": "sprites/wall-63-223.png",
+      "depicts": "Connected wall variant wall-63-223",
+      "sha256": "454e5ad09c65671b6aee26413b935b24f95a9aab0b954f110b3b2a77852ab5db"
+    },
+    {
+      "path": "sprites/wall-63-239.png",
+      "depicts": "Connected wall variant wall-63-239",
+      "sha256": "7764b732ffc0bccd8ad454a92d7a6937393189f4dc76a640d051266b0743ce0e"
+    },
+    {
+      "path": "sprites/wall-63-255.png",
+      "depicts": "Connected wall variant wall-63-255",
+      "sha256": "158368a59b7ba1fc41fa73e26717563217e4ca31cafe9b190729350e266f7fc9"
+    },
+    {
+      "path": "sprites/wall-76-0.png",
+      "depicts": "Connected wall variant wall-76-0",
+      "sha256": "51c1a34fe3065bbbca318c8bd0b724a1ee91cb2b2d23facdee67d396ea6bf83b"
+    },
+    {
+      "path": "sprites/wall-76-1.png",
+      "depicts": "Connected wall variant wall-76-1",
+      "sha256": "db7e701e4683ba0d46cdafcc1337c3d7b158b6d923b4e552e959075ce6fbd2ef"
+    },
+    {
+      "path": "sprites/wall-76-2.png",
+      "depicts": "Connected wall variant wall-76-2",
+      "sha256": "4ee8e6e74cd470ea8f59eb23dad996841dc8050dd95428dacf962bf4340507b6"
+    },
+    {
+      "path": "sprites/wall-76-3.png",
+      "depicts": "Connected wall variant wall-76-3",
+      "sha256": "7b9280445406af232c6a5709fcedd990c1e355821c979de448d613089a3b3376"
+    },
+    {
+      "path": "sprites/wall-76-4.png",
+      "depicts": "Connected wall variant wall-76-4",
+      "sha256": "15d98bd21ad4dde57b351d225a6d4d5abc1b4c2f693940f89f892db271259e22"
+    },
+    {
+      "path": "sprites/wall-76-5.png",
+      "depicts": "Connected wall variant wall-76-5",
+      "sha256": "f26093bd8f99a061e6a4d7e64858275dd2adb71eff234969d7d1096de6f6e23d"
+    },
+    {
+      "path": "sprites/wall-76-6.png",
+      "depicts": "Connected wall variant wall-76-6",
+      "sha256": "669f66e576459ba178f4df84d70f820f1d42b51c646fe60dca7b21663e0afe0d"
+    },
+    {
+      "path": "sprites/wall-76-7.png",
+      "depicts": "Connected wall variant wall-76-7",
+      "sha256": "69b6de753e2caff6db9e65c12ddfc4f675189f715ba18019c3f7589a44737e6e"
+    },
+    {
+      "path": "sprites/wall-76-8.png",
+      "depicts": "Connected wall variant wall-76-8",
+      "sha256": "e5a1e36ee4e2b6357d414f7a00296d22abb7cfb85b33d05dfb0b206488d80f2e"
+    },
+    {
+      "path": "sprites/wall-76-9.png",
+      "depicts": "Connected wall variant wall-76-9",
+      "sha256": "f08393f3fea30ce3e8ea3571f7294aeb5e5420b994a318e6048f43170d49fec5"
+    },
+    {
+      "path": "sprites/wall-76-10.png",
+      "depicts": "Connected wall variant wall-76-10",
+      "sha256": "bc0e7fc55b7f3c8aa3ab19cad6522356cca9d9936ae277510b5167fec5b9c2d2"
+    },
+    {
+      "path": "sprites/wall-76-11.png",
+      "depicts": "Connected wall variant wall-76-11",
+      "sha256": "e15c82cc9906c93736d36c0130ba4a690946ae7245f522f7916d5f07aeaec579"
+    },
+    {
+      "path": "sprites/wall-76-12.png",
+      "depicts": "Connected wall variant wall-76-12",
+      "sha256": "9f09ca3fce2220c84fd70269678d3f15621f8f40d982041a8511066d2f293883"
+    },
+    {
+      "path": "sprites/wall-76-13.png",
+      "depicts": "Connected wall variant wall-76-13",
+      "sha256": "2ecdb7415bc357398d67dce83f9030293015019685d71cede621124b0c8b9ac1"
+    },
+    {
+      "path": "sprites/wall-76-14.png",
+      "depicts": "Connected wall variant wall-76-14",
+      "sha256": "4fcc6638539cbc323fb7bb28541ecbc84299fc923e5cff0bbc4fa49c2d8a0d67"
+    },
+    {
+      "path": "sprites/wall-76-15.png",
+      "depicts": "Connected wall variant wall-76-15",
+      "sha256": "e8fc265dfceb60855bbf36da818f3ac7664336b65310d1e265d3e2b59c56dad2"
+    },
+    {
+      "path": "sprites/wall-76-19.png",
+      "depicts": "Connected wall variant wall-76-19",
+      "sha256": "fb0186ba0a2fd5817735a439845cf0a546fab1b6bc24175794d0497875713717"
+    },
+    {
+      "path": "sprites/wall-76-23.png",
+      "depicts": "Connected wall variant wall-76-23",
+      "sha256": "f79e741e8c43596c81f1efd52521e1f4a358520721f8f0b2819d6878fa382070"
+    },
+    {
+      "path": "sprites/wall-76-27.png",
+      "depicts": "Connected wall variant wall-76-27",
+      "sha256": "c05ae69a92c2bc0f317cc6267490562873acfc0953e2b2e9100d1c09ebbb192b"
+    },
+    {
+      "path": "sprites/wall-76-31.png",
+      "depicts": "Connected wall variant wall-76-31",
+      "sha256": "0e402fa7f8de609e7b1806bf6fc2bd70b2ead98850b9855e8d801cbc60df8df8"
+    },
+    {
+      "path": "sprites/wall-76-38.png",
+      "depicts": "Connected wall variant wall-76-38",
+      "sha256": "dfb591e04b627ca74d46e66b1a756f41f76be2e448462d2029d4c75879a9fa32"
+    },
+    {
+      "path": "sprites/wall-76-39.png",
+      "depicts": "Connected wall variant wall-76-39",
+      "sha256": "76bb3b4b0f028c1eeabeec44716806f2734414c37dc9d7a84a42f333335db38d"
+    },
+    {
+      "path": "sprites/wall-76-46.png",
+      "depicts": "Connected wall variant wall-76-46",
+      "sha256": "c3f00f62e3eeda86e008865299ed64934a2d62364aad8230b23a8c41757c433f"
+    },
+    {
+      "path": "sprites/wall-76-47.png",
+      "depicts": "Connected wall variant wall-76-47",
+      "sha256": "13800bd6acea03f3bf5d85b5e6c67c58316e53805faa00fc4c6dd3b54fd3e5f7"
+    },
+    {
+      "path": "sprites/wall-76-55.png",
+      "depicts": "Connected wall variant wall-76-55",
+      "sha256": "1b5d18046d87c1d9d2ec257c50cf808205008cb1193e605cced4245272aa5a8a"
+    },
+    {
+      "path": "sprites/wall-76-63.png",
+      "depicts": "Connected wall variant wall-76-63",
+      "sha256": "8af706323edcaf36af785abd2d0250594af1449cb9c2cdb4490858595734244f"
+    },
+    {
+      "path": "sprites/wall-76-76.png",
+      "depicts": "Connected wall variant wall-76-76",
+      "sha256": "7835d2652fe6f293f78dc5b56ee4d89d3202db81f983c244df79edc36055d946"
+    },
+    {
+      "path": "sprites/wall-76-77.png",
+      "depicts": "Connected wall variant wall-76-77",
+      "sha256": "c186b0c07cc30f6ba433c037c06e47075382ad0648837f717a17ed1b70686806"
+    },
+    {
+      "path": "sprites/wall-76-78.png",
+      "depicts": "Connected wall variant wall-76-78",
+      "sha256": "5386d62bce959241aea88a10e3645b949b48dfb9b865430dcc6c11448439f5d3"
+    },
+    {
+      "path": "sprites/wall-76-79.png",
+      "depicts": "Connected wall variant wall-76-79",
+      "sha256": "33dcd0ebab71b95eb1ac59b213edc6fd8db7a3080afb63f2833fe8983f5a0b57"
+    },
+    {
+      "path": "sprites/wall-76-95.png",
+      "depicts": "Connected wall variant wall-76-95",
+      "sha256": "9aba3901ec3c423d3f3ea418a2261deffb635b6d931eae4560dda27e686adadb"
+    },
+    {
+      "path": "sprites/wall-76-110.png",
+      "depicts": "Connected wall variant wall-76-110",
+      "sha256": "661749c8f679ad39e0ff46182ae6ff61f7f291720682a98608ab6cc995eefb01"
+    },
+    {
+      "path": "sprites/wall-76-111.png",
+      "depicts": "Connected wall variant wall-76-111",
+      "sha256": "06bb1c1707a735ea4fc7c9cd6bf7bec26d400de909cdd49f4c85bf5edbf80eb9"
+    },
+    {
+      "path": "sprites/wall-76-127.png",
+      "depicts": "Connected wall variant wall-76-127",
+      "sha256": "e69e92d177f436c05901e395a23f03ef89b69d66d04d25b61431965dc81cba49"
+    },
+    {
+      "path": "sprites/wall-76-137.png",
+      "depicts": "Connected wall variant wall-76-137",
+      "sha256": "7fe518d3b288805d87979bdb0664749dc149d15b669ad18bed1c032d9768c30d"
+    },
+    {
+      "path": "sprites/wall-76-139.png",
+      "depicts": "Connected wall variant wall-76-139",
+      "sha256": "a7487d9a8bee89c59ac59fa503db63fa482500d955d94cb863b8a34855004817"
+    },
+    {
+      "path": "sprites/wall-76-141.png",
+      "depicts": "Connected wall variant wall-76-141",
+      "sha256": "f6317b617f4c694645ac7e7b97420820e752e0841b4ba611c9e6ae7d5b20260b"
+    },
+    {
+      "path": "sprites/wall-76-143.png",
+      "depicts": "Connected wall variant wall-76-143",
+      "sha256": "4b3348d115c29edcc0fbe9009a1b2524ee20c824fcc387794520b302877f74d5"
+    },
+    {
+      "path": "sprites/wall-76-155.png",
+      "depicts": "Connected wall variant wall-76-155",
+      "sha256": "898ba0f5a6ef61086f55d1b034b0fc8d33e028fe4b1eab197e3bc4cf088f2bd2"
+    },
+    {
+      "path": "sprites/wall-76-159.png",
+      "depicts": "Connected wall variant wall-76-159",
+      "sha256": "c5518f5fefd150e9406061f31d5014a1599c96ec25f88b1a375498c637821bbc"
+    },
+    {
+      "path": "sprites/wall-76-175.png",
+      "depicts": "Connected wall variant wall-76-175",
+      "sha256": "d8bada3173e849a4be24464ba62d44b0f4eb985646ec1dc7351a03a7d868924b"
+    },
+    {
+      "path": "sprites/wall-76-191.png",
+      "depicts": "Connected wall variant wall-76-191",
+      "sha256": "4dfade587969423c8cf4253ddf910d0536fe30eb56db89a1e82b807329bc4e67"
+    },
+    {
+      "path": "sprites/wall-76-205.png",
+      "depicts": "Connected wall variant wall-76-205",
+      "sha256": "68589d4d5a516efad7a606f4be42cc996d64e7a076f118a013ca036abf18147c"
+    },
+    {
+      "path": "sprites/wall-76-207.png",
+      "depicts": "Connected wall variant wall-76-207",
+      "sha256": "8b3bfd28c262e259e84a65699c242eb99c1c75e53c6b12acc17d9e1616418d01"
+    },
+    {
+      "path": "sprites/wall-76-223.png",
+      "depicts": "Connected wall variant wall-76-223",
+      "sha256": "e7ca0027dc571b854b599a7e42de1b8c316f134e781edddcaa41a89c71336c14"
+    },
+    {
+      "path": "sprites/wall-76-239.png",
+      "depicts": "Connected wall variant wall-76-239",
+      "sha256": "18d461acb19151bb1874db59b7357e5690f21b3c56070d732fc3a6380ca76f7a"
+    },
+    {
+      "path": "sprites/wall-76-255.png",
+      "depicts": "Connected wall variant wall-76-255",
+      "sha256": "9d01666074e810d710a672bdd9384201e0438eaf44466d9768816f8f9d559375"
+    },
+    {
+      "path": "sprites/wall-95-0.png",
+      "depicts": "Connected wall variant wall-95-0",
+      "sha256": "f43b3f811f79bbe934cc5eaf73628d63bce9593c8f2242cbd931376af151dd88"
+    },
+    {
+      "path": "sprites/wall-95-1.png",
+      "depicts": "Connected wall variant wall-95-1",
+      "sha256": "223b4092c8bd263e557a74be5e54372705b09cde4f9148fa4149144a4110791c"
+    },
+    {
+      "path": "sprites/wall-95-2.png",
+      "depicts": "Connected wall variant wall-95-2",
+      "sha256": "cc3ba598d6f6d4841cfd9414001e22ec1e70ff063bfbc3a3276edcc470cfd896"
+    },
+    {
+      "path": "sprites/wall-95-3.png",
+      "depicts": "Connected wall variant wall-95-3",
+      "sha256": "9cca75f3a16b4938ea286e76a76d134fb8c2633c8ee24b2d562fc6966571d19c"
+    },
+    {
+      "path": "sprites/wall-95-4.png",
+      "depicts": "Connected wall variant wall-95-4",
+      "sha256": "065f9cd908fdbf4931637e5e2d965921553c3637e105d233a6a8dbceae7c9352"
+    },
+    {
+      "path": "sprites/wall-95-5.png",
+      "depicts": "Connected wall variant wall-95-5",
+      "sha256": "d2d8376f4929f191840e1e4590f93499c503e3b9db5dabbcf060301a4a916a11"
+    },
+    {
+      "path": "sprites/wall-95-6.png",
+      "depicts": "Connected wall variant wall-95-6",
+      "sha256": "300e870a33d5140b14112105bc2640749586cf742a90518a0aa7ce115211a3fd"
+    },
+    {
+      "path": "sprites/wall-95-7.png",
+      "depicts": "Connected wall variant wall-95-7",
+      "sha256": "a2ee597dec162f3a6b50a63b80fe4be765da272e90633b77a56906172e53d715"
+    },
+    {
+      "path": "sprites/wall-95-8.png",
+      "depicts": "Connected wall variant wall-95-8",
+      "sha256": "d13df3eee236fc2b294a039db9ccbc692c8c27271c83fd4372781a54a441ff99"
+    },
+    {
+      "path": "sprites/wall-95-9.png",
+      "depicts": "Connected wall variant wall-95-9",
+      "sha256": "6bccaaece7ca91d5dcdd57bec6c6701c3aee135633e19bbe161169a0079cdaa7"
+    },
+    {
+      "path": "sprites/wall-95-10.png",
+      "depicts": "Connected wall variant wall-95-10",
+      "sha256": "be5de67a6917028509463ce7a58ab0fc02fa9c5b332702346965cddb43e3b319"
+    },
+    {
+      "path": "sprites/wall-95-11.png",
+      "depicts": "Connected wall variant wall-95-11",
+      "sha256": "42326558ae53cc31411435f5c416641abc1c67af09805be526e931213be23929"
+    },
+    {
+      "path": "sprites/wall-95-12.png",
+      "depicts": "Connected wall variant wall-95-12",
+      "sha256": "bda3c44dde046205f264e961b97d8672abc412c806be9e8a86b2e2deccd325be"
+    },
+    {
+      "path": "sprites/wall-95-13.png",
+      "depicts": "Connected wall variant wall-95-13",
+      "sha256": "55a58a94fbed986de4f6dffbc301ebb2b93c1128a7e4968953495d626b6a3d23"
+    },
+    {
+      "path": "sprites/wall-95-14.png",
+      "depicts": "Connected wall variant wall-95-14",
+      "sha256": "2ef217776f30c3d3d81a90bed885bb0ca776a85e44a2ea855355e775213255cd"
+    },
+    {
+      "path": "sprites/wall-95-15.png",
+      "depicts": "Connected wall variant wall-95-15",
+      "sha256": "c819ac6a00a886d9795ceb6e0fe8349cbca51ada98d7a683ae466b05f92fa487"
+    },
+    {
+      "path": "sprites/wall-95-19.png",
+      "depicts": "Connected wall variant wall-95-19",
+      "sha256": "6c7a35e628f74830779986260fc2561f374ac557eff01ffebf91e8296bdf232c"
+    },
+    {
+      "path": "sprites/wall-95-23.png",
+      "depicts": "Connected wall variant wall-95-23",
+      "sha256": "cbd8d4a815ac70c0e088d71cec2ca33be591b99d15fa1d51bd7b01322894f312"
+    },
+    {
+      "path": "sprites/wall-95-27.png",
+      "depicts": "Connected wall variant wall-95-27",
+      "sha256": "9ec19eb18b60fbad05570ee1b443262cf7b99ca2f528106bdd09115a0655411d"
+    },
+    {
+      "path": "sprites/wall-95-31.png",
+      "depicts": "Connected wall variant wall-95-31",
+      "sha256": "080ba2d0bfcf23e40921d2561451f1c11e1add21741000193a053589e6e9ad5b"
+    },
+    {
+      "path": "sprites/wall-95-38.png",
+      "depicts": "Connected wall variant wall-95-38",
+      "sha256": "afef31bed38b58cf9cfadb5589c5482221bf5d98892110e30e2c9a184f8362c8"
+    },
+    {
+      "path": "sprites/wall-95-39.png",
+      "depicts": "Connected wall variant wall-95-39",
+      "sha256": "ed2dfe8bf36fad15825af1d53aa3806c8606097137312e156b3a60d3371d449e"
+    },
+    {
+      "path": "sprites/wall-95-46.png",
+      "depicts": "Connected wall variant wall-95-46",
+      "sha256": "52b8dc3df4ddee758ecaebb77b5d25ab0c17acdc58055a62e88e182afd5f6dad"
+    },
+    {
+      "path": "sprites/wall-95-47.png",
+      "depicts": "Connected wall variant wall-95-47",
+      "sha256": "b5e5b23ebd8c37cb8983a926341217cafeef3a197917b460bd53819bcf74db3b"
+    },
+    {
+      "path": "sprites/wall-95-55.png",
+      "depicts": "Connected wall variant wall-95-55",
+      "sha256": "a5d7dee1e37e3df2ef3dfb63402b321cd27cc7bd6caf8c85606f8e0d557a5cb5"
+    },
+    {
+      "path": "sprites/wall-95-63.png",
+      "depicts": "Connected wall variant wall-95-63",
+      "sha256": "3ebfc6a8bc19cd1e04f1e5cbdd9e93d81d16c2cdbaf492fe1ebd168cf3b744a4"
+    },
+    {
+      "path": "sprites/wall-95-76.png",
+      "depicts": "Connected wall variant wall-95-76",
+      "sha256": "bbf8aa800fc196a36032c89bbd72e466e2bfc864b18f389ac45c1c1808833899"
+    },
+    {
+      "path": "sprites/wall-95-77.png",
+      "depicts": "Connected wall variant wall-95-77",
+      "sha256": "4356b613caf5edc422a7df97219f71e9e010d42354fc1815ecbc48d089f71845"
+    },
+    {
+      "path": "sprites/wall-95-78.png",
+      "depicts": "Connected wall variant wall-95-78",
+      "sha256": "2b519a98ec43670881b2b4639c95bd8fadbf28a42949001a0680c5e5371301fd"
+    },
+    {
+      "path": "sprites/wall-95-79.png",
+      "depicts": "Connected wall variant wall-95-79",
+      "sha256": "e8133d57f6eb0f296c10ca6521cb98dc656424e119961113d164e76fc0edd94c"
+    },
+    {
+      "path": "sprites/wall-95-95.png",
+      "depicts": "Connected wall variant wall-95-95",
+      "sha256": "baffced25d45778b551d2e680ce3d352f9cc6e43ecbdf85e462847cd159c08db"
+    },
+    {
+      "path": "sprites/wall-95-110.png",
+      "depicts": "Connected wall variant wall-95-110",
+      "sha256": "2d391a19e7a8e072aee81298edd80e3000d1789d1bd6a42d8e30c6cbdfa658d7"
+    },
+    {
+      "path": "sprites/wall-95-111.png",
+      "depicts": "Connected wall variant wall-95-111",
+      "sha256": "841331e19c8855ff2eb9fdc3def4d97c8b9ab43308bfc6991ca1796512f39a63"
+    },
+    {
+      "path": "sprites/wall-95-127.png",
+      "depicts": "Connected wall variant wall-95-127",
+      "sha256": "e760a51fccc16d205e84e99d3557d664d4777fac43c9643d7d9e359934099e13"
+    },
+    {
+      "path": "sprites/wall-95-137.png",
+      "depicts": "Connected wall variant wall-95-137",
+      "sha256": "65d3c882c58ad5472a799301632187792ac8d0672d4dc4376262e1f5d9e6dece"
+    },
+    {
+      "path": "sprites/wall-95-139.png",
+      "depicts": "Connected wall variant wall-95-139",
+      "sha256": "094704eece1b29e2d72806bc48af3cdd9ec7cb564e99cba6480eaa5bb56c04e4"
+    },
+    {
+      "path": "sprites/wall-95-141.png",
+      "depicts": "Connected wall variant wall-95-141",
+      "sha256": "ea5a88fd7f5feb37dee6e7e71578597b6ce68502bdea5e0262f8ebefcee91d82"
+    },
+    {
+      "path": "sprites/wall-95-143.png",
+      "depicts": "Connected wall variant wall-95-143",
+      "sha256": "3108538abfd411314cfe74e0e99da4fc219a6e69d0be00d86f992b9c3454b29a"
+    },
+    {
+      "path": "sprites/wall-95-155.png",
+      "depicts": "Connected wall variant wall-95-155",
+      "sha256": "fc4ada7c1c3b8991abe1e3723325316fcc18f7f3bfb61bdc2a6a84c1bb86969e"
+    },
+    {
+      "path": "sprites/wall-95-159.png",
+      "depicts": "Connected wall variant wall-95-159",
+      "sha256": "e8a2efeec1e8db5454580f134598d9a53dae7ec90e5ae2500c3c01dc4f2b2523"
+    },
+    {
+      "path": "sprites/wall-95-175.png",
+      "depicts": "Connected wall variant wall-95-175",
+      "sha256": "9f370f93c19c441f85d018bb74c79492c0b5192bd72b4cc72e4496d5addc9952"
+    },
+    {
+      "path": "sprites/wall-95-191.png",
+      "depicts": "Connected wall variant wall-95-191",
+      "sha256": "0ccb1b974b95a5726c2e989315846d4736c97b3b28f25cccef9db6c9782e1960"
+    },
+    {
+      "path": "sprites/wall-95-205.png",
+      "depicts": "Connected wall variant wall-95-205",
+      "sha256": "7f7739342d3d9884f167a9652af5b5e35c31381727c77a41de2fa01c0c8554e9"
+    },
+    {
+      "path": "sprites/wall-95-207.png",
+      "depicts": "Connected wall variant wall-95-207",
+      "sha256": "028097c4b89124bf01f72d92515fb87a15dcb6eaf502efebe90413d5e3d720d5"
+    },
+    {
+      "path": "sprites/wall-95-223.png",
+      "depicts": "Connected wall variant wall-95-223",
+      "sha256": "0987f538b3d28f5a124d4e6673ddca0da783c2406f5384241148338dd00d26c2"
+    },
+    {
+      "path": "sprites/wall-95-239.png",
+      "depicts": "Connected wall variant wall-95-239",
+      "sha256": "205088b88b82ac535ae6749a319bd40037885efea75c2ccc3fc9bfe587370534"
+    },
+    {
+      "path": "sprites/wall-95-255.png",
+      "depicts": "Connected wall variant wall-95-255",
+      "sha256": "c2dfd65760a77ccfa617d58e899a6913e3ef6190f915002b7c3fb6fb88eb8ec8"
+    },
+    {
+      "path": "sprites/wall-96-0.png",
+      "depicts": "Connected wall variant wall-96-0",
+      "sha256": "4a5fa728a964030328bc6e14b36e1bda69356168d6a53bf0ba7bd9d2713ba955"
+    },
+    {
+      "path": "sprites/wall-96-1.png",
+      "depicts": "Connected wall variant wall-96-1",
+      "sha256": "ad063aebc67b8fa1c3e97d71bef0a5f8622b51d2d0dae9ebcafb496b9277d0df"
+    },
+    {
+      "path": "sprites/wall-96-2.png",
+      "depicts": "Connected wall variant wall-96-2",
+      "sha256": "e9a256c5efbb85b0b8acc0e6bbc677ea77141fe302ea54bcfdfd28210d0aa570"
+    },
+    {
+      "path": "sprites/wall-96-3.png",
+      "depicts": "Connected wall variant wall-96-3",
+      "sha256": "74b8f9eb71b74e68e16d45c0ffdffa5bc167a53de88c63178e1ba448599b4759"
+    },
+    {
+      "path": "sprites/wall-96-4.png",
+      "depicts": "Connected wall variant wall-96-4",
+      "sha256": "d2c625cdaac2b730e14c6d4ac5d8d338085cc929deaa5603722e665b9f7efc08"
+    },
+    {
+      "path": "sprites/wall-96-5.png",
+      "depicts": "Connected wall variant wall-96-5",
+      "sha256": "2cf1bb73befb27ed51705aba2bb7b91ffe3f9132aea79693366d03e28c3aa70e"
+    },
+    {
+      "path": "sprites/wall-96-6.png",
+      "depicts": "Connected wall variant wall-96-6",
+      "sha256": "f7c981e4a98d7c3ac898f7eb7c0098df6aa3d1dd0d59af66472e7c4df96c3dea"
+    },
+    {
+      "path": "sprites/wall-96-7.png",
+      "depicts": "Connected wall variant wall-96-7",
+      "sha256": "dc7670c002b0a9beb116920e2ad3ecd9c2cdf9e15057a0d7e76963c22cb4a2b5"
+    },
+    {
+      "path": "sprites/wall-96-8.png",
+      "depicts": "Connected wall variant wall-96-8",
+      "sha256": "fe9ce99e2cb75f0662b6d8aac5e60f41e15cf698cac8bd2c9259cdc23a2ea037"
+    },
+    {
+      "path": "sprites/wall-96-9.png",
+      "depicts": "Connected wall variant wall-96-9",
+      "sha256": "23962a249c132e72fd0b11724ec625fc617410e49dc3899cd09d40b8b6607844"
+    },
+    {
+      "path": "sprites/wall-96-10.png",
+      "depicts": "Connected wall variant wall-96-10",
+      "sha256": "48368c8d1629afad4486d47c73f24e208af123188251b41006576fe14d832310"
+    },
+    {
+      "path": "sprites/wall-96-11.png",
+      "depicts": "Connected wall variant wall-96-11",
+      "sha256": "57a14be4fa0dcbdaa51dac431f9fb5085f1276569e69f3d40ea8f8e7d851dc89"
+    },
+    {
+      "path": "sprites/wall-96-12.png",
+      "depicts": "Connected wall variant wall-96-12",
+      "sha256": "fb0416a307613d0fdda01000970144fa60ee4caf4808b4c56aa579c33a544dc2"
+    },
+    {
+      "path": "sprites/wall-96-13.png",
+      "depicts": "Connected wall variant wall-96-13",
+      "sha256": "42c60da3c009f0bff6060285b5c69ebf7e13b5bdad2f87b39c6ed192fb8393bd"
+    },
+    {
+      "path": "sprites/wall-96-14.png",
+      "depicts": "Connected wall variant wall-96-14",
+      "sha256": "c107c949fa77ae32f58fa19af619a337a335a69a8e80a7959b167086ddafcd93"
+    },
+    {
+      "path": "sprites/wall-96-15.png",
+      "depicts": "Connected wall variant wall-96-15",
+      "sha256": "701c37a9df279e36171dfd96443fcc0aad8d675e61f5622ada208c775f4933e9"
+    },
+    {
+      "path": "sprites/wall-96-19.png",
+      "depicts": "Connected wall variant wall-96-19",
+      "sha256": "430c82fe75506589a575a5aee6c7711b032be39c37cb8441ae68507767143826"
+    },
+    {
+      "path": "sprites/wall-96-23.png",
+      "depicts": "Connected wall variant wall-96-23",
+      "sha256": "7fe837a8d3130440452ce9a3d69dad212f135056ebfe56a29cfb1f9776a90281"
+    },
+    {
+      "path": "sprites/wall-96-27.png",
+      "depicts": "Connected wall variant wall-96-27",
+      "sha256": "f879430501d7c34e6aed662fafd0fb0c3921f1b003f0bdc1c006326bfc0497da"
+    },
+    {
+      "path": "sprites/wall-96-31.png",
+      "depicts": "Connected wall variant wall-96-31",
+      "sha256": "3e11122963c9a121a269b28926a172025062d86ce3ce5a37f77dd73dc20ea083"
+    },
+    {
+      "path": "sprites/wall-96-38.png",
+      "depicts": "Connected wall variant wall-96-38",
+      "sha256": "a7e5e0b76b192d9e0b04cb5fbbd8cbea3d26b98361976c69f656b76604f16ef4"
+    },
+    {
+      "path": "sprites/wall-96-39.png",
+      "depicts": "Connected wall variant wall-96-39",
+      "sha256": "1d2e3e03555b896870a56eaec1eee7468bca9e9241f70f24d2feceaea4ab85da"
+    },
+    {
+      "path": "sprites/wall-96-46.png",
+      "depicts": "Connected wall variant wall-96-46",
+      "sha256": "d8fa314d12cb13402ffdf662144cebf653a14da3740ac0e64061d0ef40bcfa16"
+    },
+    {
+      "path": "sprites/wall-96-47.png",
+      "depicts": "Connected wall variant wall-96-47",
+      "sha256": "33668c7553c35e7b4dc269a55229d60efa8d0f610bf157ddfdc1a6de6dc831f6"
+    },
+    {
+      "path": "sprites/wall-96-55.png",
+      "depicts": "Connected wall variant wall-96-55",
+      "sha256": "72e3c0bc2b66fa289df06505fd96e0d91cd310e2c317024140c3ee19b3cb16dd"
+    },
+    {
+      "path": "sprites/wall-96-63.png",
+      "depicts": "Connected wall variant wall-96-63",
+      "sha256": "c5ee5d2fe52dbe538a7adf7bccca3f9df170110da8f09be99a55079caec1dca4"
+    },
+    {
+      "path": "sprites/wall-96-76.png",
+      "depicts": "Connected wall variant wall-96-76",
+      "sha256": "78ba7d97e259871b9743407017b12a9acf3f749fedb9cc6c96008d10606a320e"
+    },
+    {
+      "path": "sprites/wall-96-77.png",
+      "depicts": "Connected wall variant wall-96-77",
+      "sha256": "3885b14105aa80420a18a3449c876dc3bd207290f331d95179d08b5fbae6aea9"
+    },
+    {
+      "path": "sprites/wall-96-78.png",
+      "depicts": "Connected wall variant wall-96-78",
+      "sha256": "b0aed239023c125e50e60cc2c5dcc634ab483924c722e37db2f3f17ab46683b1"
+    },
+    {
+      "path": "sprites/wall-96-79.png",
+      "depicts": "Connected wall variant wall-96-79",
+      "sha256": "a613c965da7cb21390463858e8bc793e8a9e61c8388314821135ccacb5e0b18a"
+    },
+    {
+      "path": "sprites/wall-96-95.png",
+      "depicts": "Connected wall variant wall-96-95",
+      "sha256": "c1fe2e94d6b97e4b4054f13fa963228d041ba542acaeef45a6096a1b48599a31"
+    },
+    {
+      "path": "sprites/wall-96-110.png",
+      "depicts": "Connected wall variant wall-96-110",
+      "sha256": "8a1e832e14643683918025f9a777576cbf812da99ff41a824012e3c246a94ea8"
+    },
+    {
+      "path": "sprites/wall-96-111.png",
+      "depicts": "Connected wall variant wall-96-111",
+      "sha256": "b4297fc76dede7327876eb31edccca1e3091f36a99e553ada092928eed55a0d9"
+    },
+    {
+      "path": "sprites/wall-96-127.png",
+      "depicts": "Connected wall variant wall-96-127",
+      "sha256": "cd7bec802c448bb9e393f773971c20804aabf43cc924df8a711e3640f65a23fa"
+    },
+    {
+      "path": "sprites/wall-96-137.png",
+      "depicts": "Connected wall variant wall-96-137",
+      "sha256": "5826b23a15c18260e3cf93ac7d4835c0090e37b003eccc8626d8aaa5dfbc1511"
+    },
+    {
+      "path": "sprites/wall-96-139.png",
+      "depicts": "Connected wall variant wall-96-139",
+      "sha256": "3e66d4d35c9f7444b9e8ee6459eda29c493c97670f80880ec5e7a4ddeef0ae50"
+    },
+    {
+      "path": "sprites/wall-96-141.png",
+      "depicts": "Connected wall variant wall-96-141",
+      "sha256": "93ee42e82819c3e7e7955d803bb1e7eb4b8b505f289afae4c13e5607a862e967"
+    },
+    {
+      "path": "sprites/wall-96-143.png",
+      "depicts": "Connected wall variant wall-96-143",
+      "sha256": "5889c5556529eace71681c51615fd57c0790f7d1497ea2ed6f36da48431723fa"
+    },
+    {
+      "path": "sprites/wall-96-155.png",
+      "depicts": "Connected wall variant wall-96-155",
+      "sha256": "2ea1d892df2852915faf0e9181c6d13cc3a82469a8fb374f00b454796b333514"
+    },
+    {
+      "path": "sprites/wall-96-159.png",
+      "depicts": "Connected wall variant wall-96-159",
+      "sha256": "ac1ecbe9ac783195cda0a2925b0610474849aefe24b50819294c649c6aa100e7"
+    },
+    {
+      "path": "sprites/wall-96-175.png",
+      "depicts": "Connected wall variant wall-96-175",
+      "sha256": "dceeaa5f0d6a0919e4a9f5a287ab3b3d68b50b62cf1c84f4a50ee21258ef0ef9"
+    },
+    {
+      "path": "sprites/wall-96-191.png",
+      "depicts": "Connected wall variant wall-96-191",
+      "sha256": "e8f155642e6f545e669b3cd962fe4a9650560b9931efbd3b8bdf1eb3f0757ae8"
+    },
+    {
+      "path": "sprites/wall-96-205.png",
+      "depicts": "Connected wall variant wall-96-205",
+      "sha256": "3d3063a610e8a40e28c0c86e996cef5206ee0d1440bfab685d3aa0edf3b70496"
+    },
+    {
+      "path": "sprites/wall-96-207.png",
+      "depicts": "Connected wall variant wall-96-207",
+      "sha256": "e90b81c820bb94d7b518284c7812c4b15da3e01b50dd515d14210d25f400a1c5"
+    },
+    {
+      "path": "sprites/wall-96-223.png",
+      "depicts": "Connected wall variant wall-96-223",
+      "sha256": "fc1036449d86837e738453eaa264861eb5044eb69ccf11c2b9d649c5a2764399"
+    },
+    {
+      "path": "sprites/wall-96-239.png",
+      "depicts": "Connected wall variant wall-96-239",
+      "sha256": "9f552f62fc60dcf8b147c995eee48fb07c866a57f260cab65465385d144e0e11"
+    },
+    {
+      "path": "sprites/wall-96-255.png",
+      "depicts": "Connected wall variant wall-96-255",
+      "sha256": "040b1b5223ea70263a77bdd1e79403946916b5e220127d794d293a2fe3f4aa66"
+    },
+    {
+      "path": "sprites/wall-97-0.png",
+      "depicts": "Connected wall variant wall-97-0",
+      "sha256": "fb374d5b9103f93e26aaeec89a22f7d3927509099fa52702557f79d4408cda05"
+    },
+    {
+      "path": "sprites/wall-97-1.png",
+      "depicts": "Connected wall variant wall-97-1",
+      "sha256": "428ee6e615ebefb5169beaa8142d10687594520e61e5c8c1a6fbfcbd980f63a8"
+    },
+    {
+      "path": "sprites/wall-97-2.png",
+      "depicts": "Connected wall variant wall-97-2",
+      "sha256": "a56eace93db43779b3a39c371df99ff631f33096017b28d5fdb66dd71eb89d58"
+    },
+    {
+      "path": "sprites/wall-97-3.png",
+      "depicts": "Connected wall variant wall-97-3",
+      "sha256": "2d5373328f1d4c0bfc62def2b86f04b01485ea007fcfd23c3e28f762938f4eff"
+    },
+    {
+      "path": "sprites/wall-97-4.png",
+      "depicts": "Connected wall variant wall-97-4",
+      "sha256": "e69d5ae1847e6a3ff3abab69e5b5b38d11458a961aee27e6b1943d45e7b5c742"
+    },
+    {
+      "path": "sprites/wall-97-5.png",
+      "depicts": "Connected wall variant wall-97-5",
+      "sha256": "7cc544bf18f6958d66756e5d2d23073cc71110ff58e32fe8ab307b681014a373"
+    },
+    {
+      "path": "sprites/wall-97-6.png",
+      "depicts": "Connected wall variant wall-97-6",
+      "sha256": "f5cdc8b8bd7c29bf9420f49ddf0acf7f4b3ad5f54182bc1563c7843a585aae67"
+    },
+    {
+      "path": "sprites/wall-97-7.png",
+      "depicts": "Connected wall variant wall-97-7",
+      "sha256": "809342c5e7d11bc62938f8f50ff93de8b28d1b2aedf28c4a800fd10a5416569f"
+    },
+    {
+      "path": "sprites/wall-97-8.png",
+      "depicts": "Connected wall variant wall-97-8",
+      "sha256": "f284e7e6e6c176d379d1f88fe0caaf6259fab2642fe17074030440f2494d0666"
+    },
+    {
+      "path": "sprites/wall-97-9.png",
+      "depicts": "Connected wall variant wall-97-9",
+      "sha256": "f9469db4fedb11b76548fa8f2513500121f32f9ae32296bdfa183ee4dd2c9d39"
+    },
+    {
+      "path": "sprites/wall-97-10.png",
+      "depicts": "Connected wall variant wall-97-10",
+      "sha256": "9a2af0df5dad740092275292bd416d3ec0c99761516c2e90580e0f5adc885899"
+    },
+    {
+      "path": "sprites/wall-97-11.png",
+      "depicts": "Connected wall variant wall-97-11",
+      "sha256": "7b64a7b5c801731d7361413b32a92a7ef03a473213841793a28cf1755a45c6c5"
+    },
+    {
+      "path": "sprites/wall-97-12.png",
+      "depicts": "Connected wall variant wall-97-12",
+      "sha256": "c02f054935a691cdce1de4d7d374814861c7f3411c5b60236bec51d469909456"
+    },
+    {
+      "path": "sprites/wall-97-13.png",
+      "depicts": "Connected wall variant wall-97-13",
+      "sha256": "983f2f5d47c58d3ebd6c66776362cb889b3fc3b2e51bb72d857f467951a2d50a"
+    },
+    {
+      "path": "sprites/wall-97-14.png",
+      "depicts": "Connected wall variant wall-97-14",
+      "sha256": "e278cc3e519183cfdd8293b57a9873b699e1d02dab25ea149e344358f9b1a4c0"
+    },
+    {
+      "path": "sprites/wall-97-15.png",
+      "depicts": "Connected wall variant wall-97-15",
+      "sha256": "f047d493dd0a22cffdbf0510f61b1c1c2cc6aa127e6cc0574ccd2bf0d0f199d5"
+    },
+    {
+      "path": "sprites/wall-97-19.png",
+      "depicts": "Connected wall variant wall-97-19",
+      "sha256": "ab85ec3836b8b3734ba8f9848f724037024b1b6e7092dda339d132f29c16df84"
+    },
+    {
+      "path": "sprites/wall-97-23.png",
+      "depicts": "Connected wall variant wall-97-23",
+      "sha256": "4d86ceda380eadf625a5ccc212c33c1390935ebaeaac8ab2be45d4f188e44825"
+    },
+    {
+      "path": "sprites/wall-97-27.png",
+      "depicts": "Connected wall variant wall-97-27",
+      "sha256": "886a88616e9abbd879ac460f3db97fab716a6ad74f5b087994eb3afe36792f1a"
+    },
+    {
+      "path": "sprites/wall-97-31.png",
+      "depicts": "Connected wall variant wall-97-31",
+      "sha256": "961e6b4c3e2a604be74c1c92a9ac53ce7d6c75bef0197bd5060a108089167658"
+    },
+    {
+      "path": "sprites/wall-97-38.png",
+      "depicts": "Connected wall variant wall-97-38",
+      "sha256": "58a8a63bac8730bb76cc178dce8fdc19fb8ada31c56ade99dfe91806b1b62a12"
+    },
+    {
+      "path": "sprites/wall-97-39.png",
+      "depicts": "Connected wall variant wall-97-39",
+      "sha256": "dfa27b4515af888b62781ba250046d9812664245e0b716ccf1106cc920cf7003"
+    },
+    {
+      "path": "sprites/wall-97-46.png",
+      "depicts": "Connected wall variant wall-97-46",
+      "sha256": "72bfaa9a20f3098b5332aa17bc72586f113e7421299bc1b667073096aa296869"
+    },
+    {
+      "path": "sprites/wall-97-47.png",
+      "depicts": "Connected wall variant wall-97-47",
+      "sha256": "93a36ad320976525c2c605da74bee99c29dc71ec5d4390490f46be06624a440e"
+    },
+    {
+      "path": "sprites/wall-97-55.png",
+      "depicts": "Connected wall variant wall-97-55",
+      "sha256": "e96c76a9023d8c539adcaaf5e976a3ba278e51d1d5ed5e3969d400e7b14ca30c"
+    },
+    {
+      "path": "sprites/wall-97-63.png",
+      "depicts": "Connected wall variant wall-97-63",
+      "sha256": "ec56c7d32cf41d38923ddb4a192b7b7db39a22d27b23e16130b1643ea9337fbe"
+    },
+    {
+      "path": "sprites/wall-97-76.png",
+      "depicts": "Connected wall variant wall-97-76",
+      "sha256": "c737b5696ee28f6e0f2d982d673a44faabe44c2c0acc32d5b41f11fac4d6fd2c"
+    },
+    {
+      "path": "sprites/wall-97-77.png",
+      "depicts": "Connected wall variant wall-97-77",
+      "sha256": "733f5f35fd270a978894c1b40fcb7ff249774a17618e6b31da8cad011b096d15"
+    },
+    {
+      "path": "sprites/wall-97-78.png",
+      "depicts": "Connected wall variant wall-97-78",
+      "sha256": "4afc4a3012f999cd5803c34c11cad1a5f81a603ace1629fa4634bd59c37d5d51"
+    },
+    {
+      "path": "sprites/wall-97-79.png",
+      "depicts": "Connected wall variant wall-97-79",
+      "sha256": "c7e136b7473cbf298857dfc6aabe1d1c499c280d5804e30fff34dd5a39e0b690"
+    },
+    {
+      "path": "sprites/wall-97-95.png",
+      "depicts": "Connected wall variant wall-97-95",
+      "sha256": "5e660ff5b07b0e9032a737866cab5f915b31f3a236633271d85a31948fc9036f"
+    },
+    {
+      "path": "sprites/wall-97-110.png",
+      "depicts": "Connected wall variant wall-97-110",
+      "sha256": "1e95f611de555df303f72f292ce4863dcef5b2a8bf7b8e28d54d04d6d8e60a64"
+    },
+    {
+      "path": "sprites/wall-97-111.png",
+      "depicts": "Connected wall variant wall-97-111",
+      "sha256": "1fd95760207058246387a19f51a9bacedb3fe9d77525e2f9ca7411d6a1afc661"
+    },
+    {
+      "path": "sprites/wall-97-127.png",
+      "depicts": "Connected wall variant wall-97-127",
+      "sha256": "91ecc965c44f71fbe5a22d294dee54c2a67ae77ceb3cc4764f580deeb1a1ba38"
+    },
+    {
+      "path": "sprites/wall-97-137.png",
+      "depicts": "Connected wall variant wall-97-137",
+      "sha256": "299562e25378de258d4d5e72ceb0c1812402f81242e132570070f91c7a16ae21"
+    },
+    {
+      "path": "sprites/wall-97-139.png",
+      "depicts": "Connected wall variant wall-97-139",
+      "sha256": "ec3abbeb2f9e0babd020da3798d18f49ab296cabb97bb691fb4d8cca5e96996d"
+    },
+    {
+      "path": "sprites/wall-97-141.png",
+      "depicts": "Connected wall variant wall-97-141",
+      "sha256": "9bbd9bd1a270c69aabfb6dc643b3aad9c847d915b42cceaa00eebd454691a09b"
+    },
+    {
+      "path": "sprites/wall-97-143.png",
+      "depicts": "Connected wall variant wall-97-143",
+      "sha256": "2441e3b5f7f593a5ac0143e2f7a0b46f6467ec6f6631464d107b3edde98e264b"
+    },
+    {
+      "path": "sprites/wall-97-155.png",
+      "depicts": "Connected wall variant wall-97-155",
+      "sha256": "03c24454d690c968b6f4f3d7514fcfe94eea0344862e5953b7778792607fb7c2"
+    },
+    {
+      "path": "sprites/wall-97-159.png",
+      "depicts": "Connected wall variant wall-97-159",
+      "sha256": "2ee30a849dddff217138d77de90dee0aa3b7e268540ed3163ab37c249411f58a"
+    },
+    {
+      "path": "sprites/wall-97-175.png",
+      "depicts": "Connected wall variant wall-97-175",
+      "sha256": "df983ef819ea6751c0e80db2a6f182915f2a4c11e46e76f22abbfd683d3a9b2c"
+    },
+    {
+      "path": "sprites/wall-97-191.png",
+      "depicts": "Connected wall variant wall-97-191",
+      "sha256": "d222c580d038110f2815268369ab97d6e4eabf673e5c520a391cc7e20db16338"
+    },
+    {
+      "path": "sprites/wall-97-205.png",
+      "depicts": "Connected wall variant wall-97-205",
+      "sha256": "66a28b4b7805321bcbbb94eaf764ea2e596040574e9298fcecaeb1cebdc21c29"
+    },
+    {
+      "path": "sprites/wall-97-207.png",
+      "depicts": "Connected wall variant wall-97-207",
+      "sha256": "0fc7f390cc4507877ee8ec8b27822f3475a31158cfb4f4ba7f70b4b61d71c6d8"
+    },
+    {
+      "path": "sprites/wall-97-223.png",
+      "depicts": "Connected wall variant wall-97-223",
+      "sha256": "4b595627f9b6632601a879e5c23ef60344dd91784ed782a5b6ca41a3249971bb"
+    },
+    {
+      "path": "sprites/wall-97-239.png",
+      "depicts": "Connected wall variant wall-97-239",
+      "sha256": "3966afe87075335e8c10960559f46ab08ba0a40a65ef39f2ac1f75c4105e39ac"
+    },
+    {
+      "path": "sprites/wall-97-255.png",
+      "depicts": "Connected wall variant wall-97-255",
+      "sha256": "3dfb0975b776b7947ef1e8e3cb80919d57b2f09d52e0f390b49cf81ed77f0355"
+    },
+    {
+      "path": "sprites/wall-98-0.png",
+      "depicts": "Connected wall variant wall-98-0",
+      "sha256": "79131f04a9aaae50fffe3ab4c2f869af4b66b813e689044b8428377284782bdf"
+    },
+    {
+      "path": "sprites/wall-98-1.png",
+      "depicts": "Connected wall variant wall-98-1",
+      "sha256": "3c73ffc32edb69499a10fdd0c66974e64d22c8fa3b5b4fd0321ad2a524968130"
+    },
+    {
+      "path": "sprites/wall-98-2.png",
+      "depicts": "Connected wall variant wall-98-2",
+      "sha256": "c379d9dd5246c0bdff197bab30341453d5516c8e8b3626b2d51eab78220c0222"
+    },
+    {
+      "path": "sprites/wall-98-3.png",
+      "depicts": "Connected wall variant wall-98-3",
+      "sha256": "e41349d4dce14b7181a8fa88b1bb87fe9df112ac7220886de22b335786c755d5"
+    },
+    {
+      "path": "sprites/wall-98-4.png",
+      "depicts": "Connected wall variant wall-98-4",
+      "sha256": "676bf256c738aea9f7cb96c8a8910cee11ff8158edbdea6638f61053dbbba858"
+    },
+    {
+      "path": "sprites/wall-98-5.png",
+      "depicts": "Connected wall variant wall-98-5",
+      "sha256": "b12ac2834099598d2ef52498328b7238978b37a7364f079fcad48224fbe8f8d0"
+    },
+    {
+      "path": "sprites/wall-98-6.png",
+      "depicts": "Connected wall variant wall-98-6",
+      "sha256": "f1083845f29a43297986829b76fbe05f32fc61353e712b9f48666988f2bd840d"
+    },
+    {
+      "path": "sprites/wall-98-7.png",
+      "depicts": "Connected wall variant wall-98-7",
+      "sha256": "6da13b862929914a7cc6463747523c37759ae18f904d5cf668498e163d3f1735"
+    },
+    {
+      "path": "sprites/wall-98-8.png",
+      "depicts": "Connected wall variant wall-98-8",
+      "sha256": "ade3063ae1dcc6342aa711275a4a6abe208b4fccaf36cba5a8a2100fe9e3f89a"
+    },
+    {
+      "path": "sprites/wall-98-9.png",
+      "depicts": "Connected wall variant wall-98-9",
+      "sha256": "6d8c7448661b43931698b2d7e512200c62ebb467e81485817c6e964b8fe07220"
+    },
+    {
+      "path": "sprites/wall-98-10.png",
+      "depicts": "Connected wall variant wall-98-10",
+      "sha256": "3e46a54bb47373468e11f39bd74b10fc2994a7236f33412db079565ce32a610e"
+    },
+    {
+      "path": "sprites/wall-98-11.png",
+      "depicts": "Connected wall variant wall-98-11",
+      "sha256": "b018127c13721efd2bfaf4b981369a455063d6032ab94c0eb7cbb05b305623a6"
+    },
+    {
+      "path": "sprites/wall-98-12.png",
+      "depicts": "Connected wall variant wall-98-12",
+      "sha256": "bf5ebc136c7d7159f6470b210d9888fbc8034bc1fc6102aed98832b0b2e4e4fc"
+    },
+    {
+      "path": "sprites/wall-98-13.png",
+      "depicts": "Connected wall variant wall-98-13",
+      "sha256": "a1c05ce449f132f1062ca6de01325a96da36407216013f6b9dba844924d04775"
+    },
+    {
+      "path": "sprites/wall-98-14.png",
+      "depicts": "Connected wall variant wall-98-14",
+      "sha256": "3a9ed8a615b17f7acac98e339fa5ea44dfa550515222df0a2270fb39c7269491"
+    },
+    {
+      "path": "sprites/wall-98-15.png",
+      "depicts": "Connected wall variant wall-98-15",
+      "sha256": "fc52e624898edd591c9b43244da675c487f387281ea0a35b4878c099f26f1a10"
+    },
+    {
+      "path": "sprites/wall-98-19.png",
+      "depicts": "Connected wall variant wall-98-19",
+      "sha256": "df2c995bf927eddccb895efcb54754f3cfcba5822f1bffd776fcca9e40cf1398"
+    },
+    {
+      "path": "sprites/wall-98-23.png",
+      "depicts": "Connected wall variant wall-98-23",
+      "sha256": "2ea7c9ed8d689018afbe2ee874340b4eb1bb8a89f90bcc3570e140d9e264e109"
+    },
+    {
+      "path": "sprites/wall-98-27.png",
+      "depicts": "Connected wall variant wall-98-27",
+      "sha256": "8747d9e9999109cd176e7085974a3e1bb3e6bdcba7799356cbbdc4cc64dfcd2e"
+    },
+    {
+      "path": "sprites/wall-98-31.png",
+      "depicts": "Connected wall variant wall-98-31",
+      "sha256": "ce5175c55daa08952e63beb240b9ff8cae92c2bc830590d14998f3924ec910da"
+    },
+    {
+      "path": "sprites/wall-98-38.png",
+      "depicts": "Connected wall variant wall-98-38",
+      "sha256": "f02ca9bf3bd775f5284bb3f496cf06900c47363bf41db9ca4ecf93d416ba1a6c"
+    },
+    {
+      "path": "sprites/wall-98-39.png",
+      "depicts": "Connected wall variant wall-98-39",
+      "sha256": "db9c0c2072437af4cf670261b7c6d88442ea67ea128fd00f2f6cfb3a019fa3b9"
+    },
+    {
+      "path": "sprites/wall-98-46.png",
+      "depicts": "Connected wall variant wall-98-46",
+      "sha256": "ee386a541a4ae02a47e1606370af3b00a3907af74bb9e3143d75c7503bb5962a"
+    },
+    {
+      "path": "sprites/wall-98-47.png",
+      "depicts": "Connected wall variant wall-98-47",
+      "sha256": "81a3d360a606a0d19b6502183009e712c7040aa2a36856f5b219849c5abf7e71"
+    },
+    {
+      "path": "sprites/wall-98-55.png",
+      "depicts": "Connected wall variant wall-98-55",
+      "sha256": "cc4c9fc3cfbd67077ecf5ddf047a756124ee6583aba446ac77d9377bb8191932"
+    },
+    {
+      "path": "sprites/wall-98-63.png",
+      "depicts": "Connected wall variant wall-98-63",
+      "sha256": "412582642f3b147cbc425ce3ed16d594d2dc3a7855dc4e4aba0eab333ff3ba40"
+    },
+    {
+      "path": "sprites/wall-98-76.png",
+      "depicts": "Connected wall variant wall-98-76",
+      "sha256": "de2c003677eff02ff68de52356d9514fd5d91118acc846f014593dede67d0890"
+    },
+    {
+      "path": "sprites/wall-98-77.png",
+      "depicts": "Connected wall variant wall-98-77",
+      "sha256": "541cecd9a6fa9c7b6aa78223c78c00a89c981b7e4862f95a32a7ea6d7bd98e08"
+    },
+    {
+      "path": "sprites/wall-98-78.png",
+      "depicts": "Connected wall variant wall-98-78",
+      "sha256": "6d3947e906199b1297839de27dc2dc9d5b906ef867cec1362489eb2f1450daa8"
+    },
+    {
+      "path": "sprites/wall-98-79.png",
+      "depicts": "Connected wall variant wall-98-79",
+      "sha256": "1b4bfba9dc5e6743735e72e3f434833e37dcf768e648d4e22587bdfd7800bac9"
+    },
+    {
+      "path": "sprites/wall-98-95.png",
+      "depicts": "Connected wall variant wall-98-95",
+      "sha256": "f6ef519419d5181554f03a0854e18f4dbd86e89ed44194d0977a3bccfb0acaa6"
+    },
+    {
+      "path": "sprites/wall-98-110.png",
+      "depicts": "Connected wall variant wall-98-110",
+      "sha256": "a1c1251002fb236932f0b3662b722877b34a6b48f8df1fca7cc20b050038732b"
+    },
+    {
+      "path": "sprites/wall-98-111.png",
+      "depicts": "Connected wall variant wall-98-111",
+      "sha256": "8aa2498774640d01a31a392bb8c448b091484e927f91697d8abb361bf120de7d"
+    },
+    {
+      "path": "sprites/wall-98-127.png",
+      "depicts": "Connected wall variant wall-98-127",
+      "sha256": "25e46238486241fa0990e3626e478259cdd384216de60df42acd8697940d5135"
+    },
+    {
+      "path": "sprites/wall-98-137.png",
+      "depicts": "Connected wall variant wall-98-137",
+      "sha256": "5146f1428ee0ec85a7f01b5e5fe76cf79314198838bbdb4809b47a4d2da4dcf3"
+    },
+    {
+      "path": "sprites/wall-98-139.png",
+      "depicts": "Connected wall variant wall-98-139",
+      "sha256": "1a3e6955c4d3d7233918dffbbf68a6de6f2d74ad332e978b82713d65149f17a4"
+    },
+    {
+      "path": "sprites/wall-98-141.png",
+      "depicts": "Connected wall variant wall-98-141",
+      "sha256": "b6e0b8adf7df518bc53ee607aa906ebcf195b7bf85eb10c92488e0e77da1c855"
+    },
+    {
+      "path": "sprites/wall-98-143.png",
+      "depicts": "Connected wall variant wall-98-143",
+      "sha256": "417fc93874edadb73b1caa907a80d88175229afb3e0c2bcabccfbf11931e21e7"
+    },
+    {
+      "path": "sprites/wall-98-155.png",
+      "depicts": "Connected wall variant wall-98-155",
+      "sha256": "1e9282c74637ada0029ed05ee01a7a50fe92cc6ca600d1d2225394fe830cf3d2"
+    },
+    {
+      "path": "sprites/wall-98-159.png",
+      "depicts": "Connected wall variant wall-98-159",
+      "sha256": "4baf2e7fed043bd89a52295dfef08387948c3b5ef93f93011278ddb0eb23b1b2"
+    },
+    {
+      "path": "sprites/wall-98-175.png",
+      "depicts": "Connected wall variant wall-98-175",
+      "sha256": "74058b2d340a422c283098e6da4cf58f4caccf120e66274032f93c28da7f4666"
+    },
+    {
+      "path": "sprites/wall-98-191.png",
+      "depicts": "Connected wall variant wall-98-191",
+      "sha256": "5dd11bd8db8d608812b71b2e726172913235fb3353ffa56a1b9c38df2d0a814e"
+    },
+    {
+      "path": "sprites/wall-98-205.png",
+      "depicts": "Connected wall variant wall-98-205",
+      "sha256": "6d2b33d22d9a7357fb99bbf6f497cb09d6531132761a30d82432f6d9094a816c"
+    },
+    {
+      "path": "sprites/wall-98-207.png",
+      "depicts": "Connected wall variant wall-98-207",
+      "sha256": "e9bc1af8b6740561c3a956c76ae62af53aa99727db9b8725cec553e214d60a90"
+    },
+    {
+      "path": "sprites/wall-98-223.png",
+      "depicts": "Connected wall variant wall-98-223",
+      "sha256": "4cb97327d0bda172c6cd8fe7517897f4a4a1e846690d32b0d5e633f0b17f5065"
+    },
+    {
+      "path": "sprites/wall-98-239.png",
+      "depicts": "Connected wall variant wall-98-239",
+      "sha256": "b2ff9a208406369a8d824b64edf6b34c2911a3ce75be803915b54cb028676b35"
+    },
+    {
+      "path": "sprites/wall-98-255.png",
+      "depicts": "Connected wall variant wall-98-255",
+      "sha256": "4f5f5d4bd1a26b7ae4d30ff627bfd08031bdb80a0a23f7bab2d040d8b9c24f1b"
+    },
+    {
+      "path": "sprites/wall-127-0.png",
+      "depicts": "Connected wall variant wall-127-0",
+      "sha256": "208b9d91d7e663ca334c5927b1274355ff936b2eba3b1dc53e00a9f1dec81a71"
+    },
+    {
+      "path": "sprites/wall-127-1.png",
+      "depicts": "Connected wall variant wall-127-1",
+      "sha256": "bdffd6ec3dc2e85b9f934f8b5f879a1c5a9204e78b02dd152aa9ed1bbfc0ab7a"
+    },
+    {
+      "path": "sprites/wall-127-2.png",
+      "depicts": "Connected wall variant wall-127-2",
+      "sha256": "f894500d0de8f078da0f07450f650e04a2e11a172be61927961987c669a3bff5"
+    },
+    {
+      "path": "sprites/wall-127-3.png",
+      "depicts": "Connected wall variant wall-127-3",
+      "sha256": "21c406d6403b5abe38abaacd7495627897809f8446e797ecc59a45263c13f5cb"
+    },
+    {
+      "path": "sprites/wall-127-4.png",
+      "depicts": "Connected wall variant wall-127-4",
+      "sha256": "70c2b0fc0a14fb984b5dcb38d97830c544bad237bfc9d668bfea94fd9d9edd8c"
+    },
+    {
+      "path": "sprites/wall-127-5.png",
+      "depicts": "Connected wall variant wall-127-5",
+      "sha256": "91fec05d46f9c944db1ef3ccef443ecd63293ac6db9c916a516b79c6e500384d"
+    },
+    {
+      "path": "sprites/wall-127-6.png",
+      "depicts": "Connected wall variant wall-127-6",
+      "sha256": "63ccb1e2f0cb0593c73eab30e521a11a40a6064f3d6517882163316423bd747c"
+    },
+    {
+      "path": "sprites/wall-127-7.png",
+      "depicts": "Connected wall variant wall-127-7",
+      "sha256": "2589f726241ec4eeaf8aa15355bee7e96068d29cb011c23e2a578399a6917706"
+    },
+    {
+      "path": "sprites/wall-127-8.png",
+      "depicts": "Connected wall variant wall-127-8",
+      "sha256": "3025c5a7d09ed156f0e1bfa5f486ce8d3a75f3198d4040b0ceadfbaa1af9c589"
+    },
+    {
+      "path": "sprites/wall-127-9.png",
+      "depicts": "Connected wall variant wall-127-9",
+      "sha256": "365a289fb7903c7fe39b070d0de0571565855cd860c2317c1228d607dc6f6dcf"
+    },
+    {
+      "path": "sprites/wall-127-10.png",
+      "depicts": "Connected wall variant wall-127-10",
+      "sha256": "2e303e6cff03cb979102de154120c4da60a5cfc1edfbfb768743c3767d63bcfa"
+    },
+    {
+      "path": "sprites/wall-127-11.png",
+      "depicts": "Connected wall variant wall-127-11",
+      "sha256": "cf246cd5aacb2d2c8d18c08476550c09119ab5c9e87f47335ce316c44e1f420b"
+    },
+    {
+      "path": "sprites/wall-127-12.png",
+      "depicts": "Connected wall variant wall-127-12",
+      "sha256": "bb444b47ffeeb60e8ee92a86f82de97debce5645d3c8c208f23d88e1125f5407"
+    },
+    {
+      "path": "sprites/wall-127-13.png",
+      "depicts": "Connected wall variant wall-127-13",
+      "sha256": "9fb21209006973295b68934cdef1399837ed892b469619de8701d0481e960a19"
+    },
+    {
+      "path": "sprites/wall-127-14.png",
+      "depicts": "Connected wall variant wall-127-14",
+      "sha256": "87205f0c1e310a061d13687ee597df947800e5633859a89a402024461faeb0f1"
+    },
+    {
+      "path": "sprites/wall-127-15.png",
+      "depicts": "Connected wall variant wall-127-15",
+      "sha256": "46b671c025695000a9f449d8f5e5914ffc865612d7a079b5697a7df004e1c5e1"
+    },
+    {
+      "path": "sprites/wall-127-19.png",
+      "depicts": "Connected wall variant wall-127-19",
+      "sha256": "adbfc23e0896f41d6a59b2993104c1984c9676e7cebc77b294a51620f07e1a2e"
+    },
+    {
+      "path": "sprites/wall-127-23.png",
+      "depicts": "Connected wall variant wall-127-23",
+      "sha256": "def20cc66c579fe3dad07b40fdcc3196e57b96922fe698648ea70c91df7ec023"
+    },
+    {
+      "path": "sprites/wall-127-27.png",
+      "depicts": "Connected wall variant wall-127-27",
+      "sha256": "ec66d90a32184233fd6ffd158a075c3a1d6f6340312b40b7754be463db937c54"
+    },
+    {
+      "path": "sprites/wall-127-31.png",
+      "depicts": "Connected wall variant wall-127-31",
+      "sha256": "f3c7eacbd2ede76b93bbe11f770d35b003d1ffd0b0866980b857ee70622f70ed"
+    },
+    {
+      "path": "sprites/wall-127-38.png",
+      "depicts": "Connected wall variant wall-127-38",
+      "sha256": "00d136bce28b0da81d5651e53137956ec0d00b6ac9d2a2609804e23275c5bdc9"
+    },
+    {
+      "path": "sprites/wall-127-39.png",
+      "depicts": "Connected wall variant wall-127-39",
+      "sha256": "0cc1ccd51395c9c32ccc5f4542cd11c14940130ce6ba35d86b358eb1c9729b25"
+    },
+    {
+      "path": "sprites/wall-127-46.png",
+      "depicts": "Connected wall variant wall-127-46",
+      "sha256": "fc0a92bf225a3ce1279fa1755cddfaa0139fe777d726eb4bfb6a3ba5c75727cc"
+    },
+    {
+      "path": "sprites/wall-127-47.png",
+      "depicts": "Connected wall variant wall-127-47",
+      "sha256": "93375d2cad6e1113e2739c5c28cffd77345020bd6eed3e9cbe3037117cd893b4"
+    },
+    {
+      "path": "sprites/wall-127-55.png",
+      "depicts": "Connected wall variant wall-127-55",
+      "sha256": "fd6ee355ffcd3c00fce27573690229e26b95b4bc813f22c1ce32565d74f0569c"
+    },
+    {
+      "path": "sprites/wall-127-63.png",
+      "depicts": "Connected wall variant wall-127-63",
+      "sha256": "f757a04190618a2264c935e865e16960c532eaeabfd71835e4cc47a39bec8b3a"
+    },
+    {
+      "path": "sprites/wall-127-76.png",
+      "depicts": "Connected wall variant wall-127-76",
+      "sha256": "031021ea77494bfae68da8013ba4f64fc1e072d337301268a4b91e3dbcc584df"
+    },
+    {
+      "path": "sprites/wall-127-77.png",
+      "depicts": "Connected wall variant wall-127-77",
+      "sha256": "6f1e70222532b3c63d7b784988757508716dabf59742372aa572ff55769524b9"
+    },
+    {
+      "path": "sprites/wall-127-78.png",
+      "depicts": "Connected wall variant wall-127-78",
+      "sha256": "7e8439958b6b8625472a6c6ac5bd00646f658515eac8c43946f58d28870eafb6"
+    },
+    {
+      "path": "sprites/wall-127-79.png",
+      "depicts": "Connected wall variant wall-127-79",
+      "sha256": "f8097277fe7e5053a86791e699fa17cb2134d4f696c75d4aba368f41c9cd3f13"
+    },
+    {
+      "path": "sprites/wall-127-95.png",
+      "depicts": "Connected wall variant wall-127-95",
+      "sha256": "63934ae4db3d147ee4614acfb35e239c295642e55ee77400720871a50bb7c198"
+    },
+    {
+      "path": "sprites/wall-127-110.png",
+      "depicts": "Connected wall variant wall-127-110",
+      "sha256": "24c33289706d2de8737a45e50774c98823c00a5a2756b6e7612ea03cba6f7167"
+    },
+    {
+      "path": "sprites/wall-127-111.png",
+      "depicts": "Connected wall variant wall-127-111",
+      "sha256": "6b8ac6cc6c41e95064a280a32aebc6f3f36b53bb2e499e4d8bd7aec02596035b"
+    },
+    {
+      "path": "sprites/wall-127-127.png",
+      "depicts": "Connected wall variant wall-127-127",
+      "sha256": "ff379fd7afdfcd920a26234754fb5ac7c95dabd1f628fd1d58e43519bca4d40b"
+    },
+    {
+      "path": "sprites/wall-127-137.png",
+      "depicts": "Connected wall variant wall-127-137",
+      "sha256": "8abed66595ff150c20fea8113ffa5cf69b220887b9d8aaac9cc2a972c3a21461"
+    },
+    {
+      "path": "sprites/wall-127-139.png",
+      "depicts": "Connected wall variant wall-127-139",
+      "sha256": "af2e59d9107c89721bac99898280fe8788abc26fc9e763d3bcbce4939dcb902b"
+    },
+    {
+      "path": "sprites/wall-127-141.png",
+      "depicts": "Connected wall variant wall-127-141",
+      "sha256": "57ec8027973b7555bb15b6e268b248cbc1da7ed28b4799d6fce671f788c49fc8"
+    },
+    {
+      "path": "sprites/wall-127-143.png",
+      "depicts": "Connected wall variant wall-127-143",
+      "sha256": "b3e8a97541c0b8b6c0bf5b4419312d95ca87fec2416a7ce0d0e85f7568cb3826"
+    },
+    {
+      "path": "sprites/wall-127-155.png",
+      "depicts": "Connected wall variant wall-127-155",
+      "sha256": "edc3bb57bacbf7080c1efe14bb77796c89c8e50618a12c03f713b655ff7eedd3"
+    },
+    {
+      "path": "sprites/wall-127-159.png",
+      "depicts": "Connected wall variant wall-127-159",
+      "sha256": "36cb443130e20198195a8471ac6ab1c566eeff6575c7e2a78a69ebb0a14ffd26"
+    },
+    {
+      "path": "sprites/wall-127-175.png",
+      "depicts": "Connected wall variant wall-127-175",
+      "sha256": "9620d329e46a8a32d336e292a07a1dce5cd27971be0496f84ffbae65085544a7"
+    },
+    {
+      "path": "sprites/wall-127-191.png",
+      "depicts": "Connected wall variant wall-127-191",
+      "sha256": "788bb47e561724b78224c5d91d9eac05808a35fd647bb3145bb74cb148e18d27"
+    },
+    {
+      "path": "sprites/wall-127-205.png",
+      "depicts": "Connected wall variant wall-127-205",
+      "sha256": "23fa27a6f05f47e81be248574edb3bb7b91027d7ae73d482c6d95fda3d8b8328"
+    },
+    {
+      "path": "sprites/wall-127-207.png",
+      "depicts": "Connected wall variant wall-127-207",
+      "sha256": "d621367369d44d1efc21c1372d0a5024d2ba8ca9bd770bc8480f1080a5bced3f"
+    },
+    {
+      "path": "sprites/wall-127-223.png",
+      "depicts": "Connected wall variant wall-127-223",
+      "sha256": "454e5ad09c65671b6aee26413b935b24f95a9aab0b954f110b3b2a77852ab5db"
+    },
+    {
+      "path": "sprites/wall-127-239.png",
+      "depicts": "Connected wall variant wall-127-239",
+      "sha256": "7764b732ffc0bccd8ad454a92d7a6937393189f4dc76a640d051266b0743ce0e"
+    },
+    {
+      "path": "sprites/wall-127-255.png",
+      "depicts": "Connected wall variant wall-127-255",
+      "sha256": "158368a59b7ba1fc41fa73e26717563217e4ca31cafe9b190729350e266f7fc9"
+    },
+    {
+      "path": "sprites/wall-128-0.png",
+      "depicts": "Connected wall variant wall-128-0",
+      "sha256": "782b0f207c49ce5a686b08b1c2b55e184fd6431811eaefa220f5a1702c849550"
+    },
+    {
+      "path": "sprites/wall-128-1.png",
+      "depicts": "Connected wall variant wall-128-1",
+      "sha256": "62574edc8fd006db28bf558ac9699a3bd7afea69c365ace5489ee5533ba53189"
+    },
+    {
+      "path": "sprites/wall-128-2.png",
+      "depicts": "Connected wall variant wall-128-2",
+      "sha256": "6cd40f9054211b12aa56973919f17f8e212b232702ed14492b36a2868df0a92b"
+    },
+    {
+      "path": "sprites/wall-128-3.png",
+      "depicts": "Connected wall variant wall-128-3",
+      "sha256": "a0501ad2fc18dbda4893e3deaa4911950e4dfab66aa73d7af7695d7657667a94"
+    },
+    {
+      "path": "sprites/wall-128-4.png",
+      "depicts": "Connected wall variant wall-128-4",
+      "sha256": "f63f3fb1d2ef1aff9cf2ab296670b70dc4257a3c43f54842899d0305fde29d70"
+    },
+    {
+      "path": "sprites/wall-128-5.png",
+      "depicts": "Connected wall variant wall-128-5",
+      "sha256": "0a3ed973d183d8f1ca14dd12208af70b166664af87e8891443d7b3d965dd8ab0"
+    },
+    {
+      "path": "sprites/wall-128-6.png",
+      "depicts": "Connected wall variant wall-128-6",
+      "sha256": "b675a8ecf8ce2f8c2a3126fa35c80b2200cdfc871e90954b08a0e9f62d8c101e"
+    },
+    {
+      "path": "sprites/wall-128-7.png",
+      "depicts": "Connected wall variant wall-128-7",
+      "sha256": "16c3a62f37d860d8aef6e429273c80ddf723e962840760fba1fff9fd07b45567"
+    },
+    {
+      "path": "sprites/wall-128-8.png",
+      "depicts": "Connected wall variant wall-128-8",
+      "sha256": "8a47e6384741c32fcf28dd0112cc1cf92026430d32c2706475ab78f6ccb16aa5"
+    },
+    {
+      "path": "sprites/wall-128-9.png",
+      "depicts": "Connected wall variant wall-128-9",
+      "sha256": "45e5a48632f299f861a90611014d029c6f41f5853a0fdf0619f063fa1caa28be"
+    },
+    {
+      "path": "sprites/wall-128-10.png",
+      "depicts": "Connected wall variant wall-128-10",
+      "sha256": "2935e8c837888179fac2762b91c84f8ab990c0a587a5e67a2bbb22502b61eac7"
+    },
+    {
+      "path": "sprites/wall-128-11.png",
+      "depicts": "Connected wall variant wall-128-11",
+      "sha256": "f1143192645f37be40dfe7bb1a2259ebfb3d4e918dd211e0736b88ad9c69b52e"
+    },
+    {
+      "path": "sprites/wall-128-12.png",
+      "depicts": "Connected wall variant wall-128-12",
+      "sha256": "cf2cfc5d8d06a483460fdc9d916fd4d16e5d2e3429e6367d694bd20057f22ad8"
+    },
+    {
+      "path": "sprites/wall-128-13.png",
+      "depicts": "Connected wall variant wall-128-13",
+      "sha256": "956a3d1cb259b5d6899302dd8f44262c27002f25988711b4cfac85b219255088"
+    },
+    {
+      "path": "sprites/wall-128-14.png",
+      "depicts": "Connected wall variant wall-128-14",
+      "sha256": "5a7153d8ff3af61389e67811ffeb7b0cbdd5068b2dcf6cd1d1ed008fc6f0ee29"
+    },
+    {
+      "path": "sprites/wall-128-15.png",
+      "depicts": "Connected wall variant wall-128-15",
+      "sha256": "24257b442bb13c52d50ad6b76a90182812ef31be25ef11fb9a8d71e8fd737390"
+    },
+    {
+      "path": "sprites/wall-128-19.png",
+      "depicts": "Connected wall variant wall-128-19",
+      "sha256": "4785de4f3b0d7551233f8250cb8f1c49c5b3b8d21555213e16bd01cc13ad2608"
+    },
+    {
+      "path": "sprites/wall-128-23.png",
+      "depicts": "Connected wall variant wall-128-23",
+      "sha256": "adb6eccd61dbdb00052d795f69270dde89c29b38f83fddd17c6b276f0a4a2bc5"
+    },
+    {
+      "path": "sprites/wall-128-27.png",
+      "depicts": "Connected wall variant wall-128-27",
+      "sha256": "0ba7527359ba5ec2159e1941bae45a6d2b25f9d1b42d3b0c11d603c8d2459472"
+    },
+    {
+      "path": "sprites/wall-128-31.png",
+      "depicts": "Connected wall variant wall-128-31",
+      "sha256": "e586420c1e9a9506c752ab6a94f5d1bc021165ba0c7d303e5167e970606c6b50"
+    },
+    {
+      "path": "sprites/wall-128-38.png",
+      "depicts": "Connected wall variant wall-128-38",
+      "sha256": "bc77794453b6ccfe69cd5e81d9890df00ccd4b8c5e12e4c42024f5ecb6fac3f7"
+    },
+    {
+      "path": "sprites/wall-128-39.png",
+      "depicts": "Connected wall variant wall-128-39",
+      "sha256": "2fe4c50c4a66db070b7fc2d259ad9324cf7ee1115d0d344c7e72bee152477610"
+    },
+    {
+      "path": "sprites/wall-128-46.png",
+      "depicts": "Connected wall variant wall-128-46",
+      "sha256": "5fc3f04802a10c29f9e5aa96425237ef984e22b77e58cb9e0a74836365fd29b7"
+    },
+    {
+      "path": "sprites/wall-128-47.png",
+      "depicts": "Connected wall variant wall-128-47",
+      "sha256": "389fca3768c197826ee424486aa504930b7a97ef81c7ebc76d715167a14f2efa"
+    },
+    {
+      "path": "sprites/wall-128-55.png",
+      "depicts": "Connected wall variant wall-128-55",
+      "sha256": "121d609c2c754b7721b46516c6879ad7975d98bf9bfd5e38ee46748b9fb1d3bf"
+    },
+    {
+      "path": "sprites/wall-128-63.png",
+      "depicts": "Connected wall variant wall-128-63",
+      "sha256": "c43aa55d86929983fa70986a71cbf0764b5a503bc904f85f9e49df1c370b615f"
+    },
+    {
+      "path": "sprites/wall-128-76.png",
+      "depicts": "Connected wall variant wall-128-76",
+      "sha256": "472e8ed08b6597d9153032fbe401d3efadcefb53b54a9a6e94c1abc166e9ea1b"
+    },
+    {
+      "path": "sprites/wall-128-77.png",
+      "depicts": "Connected wall variant wall-128-77",
+      "sha256": "8f64c485b297b175029dac65bf0b4f5a901d9e2ab623b096904b152583cca744"
+    },
+    {
+      "path": "sprites/wall-128-78.png",
+      "depicts": "Connected wall variant wall-128-78",
+      "sha256": "cb8bee49405c144b4bf377f900e0bb5e09fbada08a53fe3582257871d9194714"
+    },
+    {
+      "path": "sprites/wall-128-79.png",
+      "depicts": "Connected wall variant wall-128-79",
+      "sha256": "7600cb74ad36c3b2013f198ceed34b53040cffaededfec1971a096bd43bfe8e5"
+    },
+    {
+      "path": "sprites/wall-128-95.png",
+      "depicts": "Connected wall variant wall-128-95",
+      "sha256": "ba4ac3bd5866e04844031c828995a8f61a332dbe30181f59c0d3709100c673ee"
+    },
+    {
+      "path": "sprites/wall-128-110.png",
+      "depicts": "Connected wall variant wall-128-110",
+      "sha256": "03eb77a791333b508efdb1fd56e71c5ce64462c98cd9c09196c97838617459e9"
+    },
+    {
+      "path": "sprites/wall-128-111.png",
+      "depicts": "Connected wall variant wall-128-111",
+      "sha256": "4f15e606804295b3f1427f7edaa7a10b12c65c3cb1d0ed5e30178ff35c2da77e"
+    },
+    {
+      "path": "sprites/wall-128-127.png",
+      "depicts": "Connected wall variant wall-128-127",
+      "sha256": "2e3d046b6ddfb7d76daeb8fa3ccc495527a68f2b8abfe9027c170dfabcf3bef6"
+    },
+    {
+      "path": "sprites/wall-128-137.png",
+      "depicts": "Connected wall variant wall-128-137",
+      "sha256": "c5a8a5b90c32165d9ed8c53500cc6716de13d925a572365b3d188ff443dfd4f7"
+    },
+    {
+      "path": "sprites/wall-128-139.png",
+      "depicts": "Connected wall variant wall-128-139",
+      "sha256": "680bd90e364b58a6d0ac505482b538f2c3bb01045785ce2dbf7f1c81535b6e3c"
+    },
+    {
+      "path": "sprites/wall-128-141.png",
+      "depicts": "Connected wall variant wall-128-141",
+      "sha256": "69d979643ea69236334d51120a78329e99d420a282f97452fcd7764287d52015"
+    },
+    {
+      "path": "sprites/wall-128-143.png",
+      "depicts": "Connected wall variant wall-128-143",
+      "sha256": "789431adffbe5b3a52dddcd57a41bfe7b3c311de4d31fbe1f6c1de5905be09fa"
+    },
+    {
+      "path": "sprites/wall-128-155.png",
+      "depicts": "Connected wall variant wall-128-155",
+      "sha256": "ce6bb9b3e8d4a6bd69a4b084055eff2871dd3ae59eef8c7d16e1d95001f8d26d"
+    },
+    {
+      "path": "sprites/wall-128-159.png",
+      "depicts": "Connected wall variant wall-128-159",
+      "sha256": "ddce9b7ad56f80298c8f3c6046f3ecce9ceca3026fc295638d1f12ae80387809"
+    },
+    {
+      "path": "sprites/wall-128-175.png",
+      "depicts": "Connected wall variant wall-128-175",
+      "sha256": "9a9265ba99065ae2b0fe1704cc7cb696bb4b031925584510b8a5869bcdf6655f"
+    },
+    {
+      "path": "sprites/wall-128-191.png",
+      "depicts": "Connected wall variant wall-128-191",
+      "sha256": "68fcaf16a80ab48e00e4b775c0fecf304347545e20cd3b0726f64f3c77a185f4"
+    },
+    {
+      "path": "sprites/wall-128-205.png",
+      "depicts": "Connected wall variant wall-128-205",
+      "sha256": "e02406f749d35f9a0dbbdee86752833ecc6decf66db735d713c3f1d5b9f59a64"
+    },
+    {
+      "path": "sprites/wall-128-207.png",
+      "depicts": "Connected wall variant wall-128-207",
+      "sha256": "da95738ca3ac50f781d4cf048e17b5786e677a2ab7e44e32ee86698638aa7470"
+    },
+    {
+      "path": "sprites/wall-128-223.png",
+      "depicts": "Connected wall variant wall-128-223",
+      "sha256": "c949e645e9d19509a3f99d210fa52bf6ec515b57b4a6b5245bee5ee66576035c"
+    },
+    {
+      "path": "sprites/wall-128-239.png",
+      "depicts": "Connected wall variant wall-128-239",
+      "sha256": "6703782231009130491f3b437b3d79ea36a2e60e783b89ec12efd7ec115c96e0"
+    },
+    {
+      "path": "sprites/wall-128-255.png",
+      "depicts": "Connected wall variant wall-128-255",
+      "sha256": "93c96ce3ef612d43e2b2ea2c4196c8dfdf732d9e823105b84a914a54c186b9e0"
+    },
+    {
+      "path": "sprites/wall-129-0.png",
+      "depicts": "Connected wall variant wall-129-0",
+      "sha256": "b487dc73f9660e6482255bc7ac5dff80adbc79634d9074b928176be86b891a44"
+    },
+    {
+      "path": "sprites/wall-129-1.png",
+      "depicts": "Connected wall variant wall-129-1",
+      "sha256": "21d941aba11107eb4069fd6dc50d80174d83f2205e48bdf149c2d27033dfb086"
+    },
+    {
+      "path": "sprites/wall-129-2.png",
+      "depicts": "Connected wall variant wall-129-2",
+      "sha256": "c8ced52d4e5a1fcd9d0434925c30363160e45167519338553bcb80d2c4dd1a14"
+    },
+    {
+      "path": "sprites/wall-129-3.png",
+      "depicts": "Connected wall variant wall-129-3",
+      "sha256": "d717a06f9f1bf9d8d51a2fb6ba3fd4ca72074930dfdc3a1b931fd94374e1b5d4"
+    },
+    {
+      "path": "sprites/wall-129-4.png",
+      "depicts": "Connected wall variant wall-129-4",
+      "sha256": "e20c7418ddea3b0eb2adec5d6c07f10a64632170de11437f44f167bb23b91b68"
+    },
+    {
+      "path": "sprites/wall-129-5.png",
+      "depicts": "Connected wall variant wall-129-5",
+      "sha256": "2174cd21384e1d5c395bc0f581181aa2974a364f659afffcfe0b21eedace8e03"
+    },
+    {
+      "path": "sprites/wall-129-6.png",
+      "depicts": "Connected wall variant wall-129-6",
+      "sha256": "d5ffec72f6e107b1614974ad0b33bd3a97528fc21985c10dc2d70fa0a6f2d6f6"
+    },
+    {
+      "path": "sprites/wall-129-7.png",
+      "depicts": "Connected wall variant wall-129-7",
+      "sha256": "d5bff0e8700d35e21c64262f1fb996b22930a95de00da624a2ea253092e0d0ae"
+    },
+    {
+      "path": "sprites/wall-129-8.png",
+      "depicts": "Connected wall variant wall-129-8",
+      "sha256": "41f19bc4a9a6b8a435f8567b3d63334a6100c9190176e2b9963b986de37d7589"
+    },
+    {
+      "path": "sprites/wall-129-9.png",
+      "depicts": "Connected wall variant wall-129-9",
+      "sha256": "e893f3d462c00e2671ed7b56cf8e6d332eb97f0e9db17f07a6521f6a31cf2b5f"
+    },
+    {
+      "path": "sprites/wall-129-10.png",
+      "depicts": "Connected wall variant wall-129-10",
+      "sha256": "5a73b613bf5ec1cce46b14498cba7d99b688732bfccecf63bc07bf3c85f95552"
+    },
+    {
+      "path": "sprites/wall-129-11.png",
+      "depicts": "Connected wall variant wall-129-11",
+      "sha256": "fbd9065337988b8e798799c9a9b151aaadab9f4ce440b8abbb5b77b3c7be5765"
+    },
+    {
+      "path": "sprites/wall-129-12.png",
+      "depicts": "Connected wall variant wall-129-12",
+      "sha256": "00b683d1e8365d6a9303d0726a8647dedc6b39dc5c6f02a7fc9479064eb1e71b"
+    },
+    {
+      "path": "sprites/wall-129-13.png",
+      "depicts": "Connected wall variant wall-129-13",
+      "sha256": "f460b4f12a63e1e17b706e10b43eefe9088e6e98e148e25a629727f74169a4ac"
+    },
+    {
+      "path": "sprites/wall-129-14.png",
+      "depicts": "Connected wall variant wall-129-14",
+      "sha256": "2d340f5d06298e8866883c5fb441fe3b459f12e0ccfd2e97c520d4eb2294f768"
+    },
+    {
+      "path": "sprites/wall-129-15.png",
+      "depicts": "Connected wall variant wall-129-15",
+      "sha256": "2ff0cb89e7dff10e0f93cb6ca1b1cdd9ad59bd23ebf6d2f5cb509cba2034be94"
+    },
+    {
+      "path": "sprites/wall-129-19.png",
+      "depicts": "Connected wall variant wall-129-19",
+      "sha256": "e265300e67124296b8b5028a0e23ea7a5509082c9d399f8e2a73b8aa2e9671c9"
+    },
+    {
+      "path": "sprites/wall-129-23.png",
+      "depicts": "Connected wall variant wall-129-23",
+      "sha256": "a2de623451c9fb79aa4f24177901b5e3ae706873b024520d57960cca23f790a2"
+    },
+    {
+      "path": "sprites/wall-129-27.png",
+      "depicts": "Connected wall variant wall-129-27",
+      "sha256": "0172ab80855549dd02c56aefe6ddafad8ac96629b1b4f91f4bf1c9de7ae678e6"
+    },
+    {
+      "path": "sprites/wall-129-31.png",
+      "depicts": "Connected wall variant wall-129-31",
+      "sha256": "48306fefbc3b80bf9902491269d7ed2dd476ce30996e7b389582eadbb0adab07"
+    },
+    {
+      "path": "sprites/wall-129-38.png",
+      "depicts": "Connected wall variant wall-129-38",
+      "sha256": "b89961ce97a5a569a672f5cdf84b29ebad1f2ed455a566eef4b792a38eef946f"
+    },
+    {
+      "path": "sprites/wall-129-39.png",
+      "depicts": "Connected wall variant wall-129-39",
+      "sha256": "a0bcc226bbcf59fb55e7a6710dc972797a1ea1f6801f0201c2614be650a9749f"
+    },
+    {
+      "path": "sprites/wall-129-46.png",
+      "depicts": "Connected wall variant wall-129-46",
+      "sha256": "4a9ea5bc86700a1a3e63d7f134821449df3d918ae11cb294edd43e3f82f7ae39"
+    },
+    {
+      "path": "sprites/wall-129-47.png",
+      "depicts": "Connected wall variant wall-129-47",
+      "sha256": "9782e880172c1faf303a4ec697b01950a1c27855bc64ca9011d57ea701f90bf4"
+    },
+    {
+      "path": "sprites/wall-129-55.png",
+      "depicts": "Connected wall variant wall-129-55",
+      "sha256": "bb0aff48624eaa2537ffee7de8a5c41341d467895b5a929213c3a2397b3090ba"
+    },
+    {
+      "path": "sprites/wall-129-63.png",
+      "depicts": "Connected wall variant wall-129-63",
+      "sha256": "ef9a416045d90195b8089c648b5e5c7daf709007924bb6339e3bf3eba0cf76ec"
+    },
+    {
+      "path": "sprites/wall-129-76.png",
+      "depicts": "Connected wall variant wall-129-76",
+      "sha256": "00f2dd89f3589b12b2e6fdbdf393e36b26a03ee40072943348b57436f57a28bc"
+    },
+    {
+      "path": "sprites/wall-129-77.png",
+      "depicts": "Connected wall variant wall-129-77",
+      "sha256": "8004d672ec26d433f775538fd95324280ed4ad0ba32cfd4224e6e69729c24090"
+    },
+    {
+      "path": "sprites/wall-129-78.png",
+      "depicts": "Connected wall variant wall-129-78",
+      "sha256": "47b24f198f4699518a25ccca4d2fae3b7a0cc850bed7a8aa1e3b7ea99b05172f"
+    },
+    {
+      "path": "sprites/wall-129-79.png",
+      "depicts": "Connected wall variant wall-129-79",
+      "sha256": "9bfa46b6732ee35ff5aab442b0c27cad721de0b97ae6418b33ba87ce834ce391"
+    },
+    {
+      "path": "sprites/wall-129-95.png",
+      "depicts": "Connected wall variant wall-129-95",
+      "sha256": "c70ed0746c4b5a615a324d2d928b912bbe5f716a6b75588bbb73caf1e0fdfdad"
+    },
+    {
+      "path": "sprites/wall-129-110.png",
+      "depicts": "Connected wall variant wall-129-110",
+      "sha256": "95f2c9232b89f1ee1e6ca7579fc95b7c774665ef48bc2228d188e7a409ea434d"
+    },
+    {
+      "path": "sprites/wall-129-111.png",
+      "depicts": "Connected wall variant wall-129-111",
+      "sha256": "c51b4ae48e26c84c24c1ba76d480d88869e7487c2d507dd3a5a2d60865a83b12"
+    },
+    {
+      "path": "sprites/wall-129-127.png",
+      "depicts": "Connected wall variant wall-129-127",
+      "sha256": "96c62015b70b65376ed7e8ab5e180a00cdf2da42d4a9abdab8fb5a3034f72bea"
+    },
+    {
+      "path": "sprites/wall-129-137.png",
+      "depicts": "Connected wall variant wall-129-137",
+      "sha256": "633d49bb80e48d56e3b022c32ad8f4ed7add002a53437aad3734099306094773"
+    },
+    {
+      "path": "sprites/wall-129-139.png",
+      "depicts": "Connected wall variant wall-129-139",
+      "sha256": "601565ca83e0d8250916d8ae9edee41ca46b68adf3cab1e2e29cb835eaa56378"
+    },
+    {
+      "path": "sprites/wall-129-141.png",
+      "depicts": "Connected wall variant wall-129-141",
+      "sha256": "6fe6a5e4f8ebf9e469959405a683a83e571e1fa9f0039aa16f1daf530d2c4669"
+    },
+    {
+      "path": "sprites/wall-129-143.png",
+      "depicts": "Connected wall variant wall-129-143",
+      "sha256": "0575335dc2a551e006e456870cd45c20eac248119f0887c52bd23f92d3d29191"
+    },
+    {
+      "path": "sprites/wall-129-155.png",
+      "depicts": "Connected wall variant wall-129-155",
+      "sha256": "0bf0d69da7c21f76829f4ea82c4b228abfe57f9511877f7efcdd8776de658626"
+    },
+    {
+      "path": "sprites/wall-129-159.png",
+      "depicts": "Connected wall variant wall-129-159",
+      "sha256": "f462800bb6e94c011072b72ad4b66dfdf94a21aa83e8b551a07223e0a9f58d26"
+    },
+    {
+      "path": "sprites/wall-129-175.png",
+      "depicts": "Connected wall variant wall-129-175",
+      "sha256": "3ce1c5a546428d5e97ec17fcdf49dea4cdb1d0d18bfca7fa95b1b832812b2e7c"
+    },
+    {
+      "path": "sprites/wall-129-191.png",
+      "depicts": "Connected wall variant wall-129-191",
+      "sha256": "bbaf24a6ed2719680361fd00eadd436c4d52c1dc953fb5c80b4d2d9a4f1d0b55"
+    },
+    {
+      "path": "sprites/wall-129-205.png",
+      "depicts": "Connected wall variant wall-129-205",
+      "sha256": "d1f6aba9f41182fc01f83b7f18e18b68a52f7fb914168dab150d07104e820cdc"
+    },
+    {
+      "path": "sprites/wall-129-207.png",
+      "depicts": "Connected wall variant wall-129-207",
+      "sha256": "c3b3cfed1be0219ef32a7ebfbdf4f6fdf476cd823f1e95387a48cec77cf14c80"
+    },
+    {
+      "path": "sprites/wall-129-223.png",
+      "depicts": "Connected wall variant wall-129-223",
+      "sha256": "e3a796f519553a527150355fe5cb0e68dfb3de3235ceaf995a55e3c100db87b1"
+    },
+    {
+      "path": "sprites/wall-129-239.png",
+      "depicts": "Connected wall variant wall-129-239",
+      "sha256": "a5d59ece10601e01c2dfdbf1610ca5d314946611c2e2735d9bf25caaefb4ec4a"
+    },
+    {
+      "path": "sprites/wall-129-255.png",
+      "depicts": "Connected wall variant wall-129-255",
+      "sha256": "d9356aad404f0247459dc6632eea8c8b96515dc064e68799d36896263e71084e"
+    },
+    {
+      "path": "sprites/wall-130-0.png",
+      "depicts": "Connected wall variant wall-130-0",
+      "sha256": "fb729f7cedde2a1da07a0f614a921b25e28b854f5773ccb43aa1aaf54a86f69d"
+    },
+    {
+      "path": "sprites/wall-130-1.png",
+      "depicts": "Connected wall variant wall-130-1",
+      "sha256": "b81f3e0a995f644619593485db6a59ff2918d217308b20fc4a45144e5c41d14b"
+    },
+    {
+      "path": "sprites/wall-130-2.png",
+      "depicts": "Connected wall variant wall-130-2",
+      "sha256": "80e965e4c9784b476693c263f13850c9c09a4abf53756abb292941060337b325"
+    },
+    {
+      "path": "sprites/wall-130-3.png",
+      "depicts": "Connected wall variant wall-130-3",
+      "sha256": "df238bd44d7f5791546e6d8104d0a32a1c6a3d3f8ae7e82b3c41381809d04337"
+    },
+    {
+      "path": "sprites/wall-130-4.png",
+      "depicts": "Connected wall variant wall-130-4",
+      "sha256": "5b7e74c91fb4ceac0f3f597240391b64f314f7769d8e3be39a8740fcf6946b51"
+    },
+    {
+      "path": "sprites/wall-130-5.png",
+      "depicts": "Connected wall variant wall-130-5",
+      "sha256": "2ef42065aedca15f35fa02810dde197cbfd4820b8d30bd808ec95a6a946ba703"
+    },
+    {
+      "path": "sprites/wall-130-6.png",
+      "depicts": "Connected wall variant wall-130-6",
+      "sha256": "57ffde8c8ef272461687754a9efd8a496548eeae7af24ca7edd87688e83297ef"
+    },
+    {
+      "path": "sprites/wall-130-7.png",
+      "depicts": "Connected wall variant wall-130-7",
+      "sha256": "198e5023262c1e0a4d8e12ffeaa0472afc5e80be5d41caf80065b6b56ea66652"
+    },
+    {
+      "path": "sprites/wall-130-8.png",
+      "depicts": "Connected wall variant wall-130-8",
+      "sha256": "1fec0e8c7a03c135e794e3c773b73ca24c13a0272ac67e9ee1e7b79c3d03c818"
+    },
+    {
+      "path": "sprites/wall-130-9.png",
+      "depicts": "Connected wall variant wall-130-9",
+      "sha256": "ebcc34ee4f19b5ce39f67e3c0a311c4ed755eae213d91d1676bd954900caa58d"
+    },
+    {
+      "path": "sprites/wall-130-10.png",
+      "depicts": "Connected wall variant wall-130-10",
+      "sha256": "1dbe66733150672efd1bae13d03cc1100c867cceb4b40891d32640b5517c31e9"
+    },
+    {
+      "path": "sprites/wall-130-11.png",
+      "depicts": "Connected wall variant wall-130-11",
+      "sha256": "3cf13fad337688e5e5a3fc1ab54ce046f4cb102e10e7bf69eaf866199529f0a7"
+    },
+    {
+      "path": "sprites/wall-130-12.png",
+      "depicts": "Connected wall variant wall-130-12",
+      "sha256": "ce34a075a88c2b1f86b65dcf3af62ba7e9b2336e560eda2ab2b4791836e463ca"
+    },
+    {
+      "path": "sprites/wall-130-13.png",
+      "depicts": "Connected wall variant wall-130-13",
+      "sha256": "677d0b2c3db4089d05df538993f1faee149b2739bc8a8d43089b5b767508d758"
+    },
+    {
+      "path": "sprites/wall-130-14.png",
+      "depicts": "Connected wall variant wall-130-14",
+      "sha256": "a978a800f850af4526158e742abaf3350f07b20cd8de5f9f4305a9d1df3517eb"
+    },
+    {
+      "path": "sprites/wall-130-15.png",
+      "depicts": "Connected wall variant wall-130-15",
+      "sha256": "957ddcd2feb58958858db70ab78c64be35d24b3a5d1b01cc30c6b73450226f7f"
+    },
+    {
+      "path": "sprites/wall-130-19.png",
+      "depicts": "Connected wall variant wall-130-19",
+      "sha256": "857f11004438372b3cdd83391e44a447c901504c22871b97469dbb6d1718c0e8"
+    },
+    {
+      "path": "sprites/wall-130-23.png",
+      "depicts": "Connected wall variant wall-130-23",
+      "sha256": "cfbd3c4d124055cf2f8dfc748fe9d00a3e031a347f082b366535cf8c1ccec079"
+    },
+    {
+      "path": "sprites/wall-130-27.png",
+      "depicts": "Connected wall variant wall-130-27",
+      "sha256": "1ea1de63bdd4337366d144547e9c3cd33d0c34018354c76ca10b6cc3eae8358d"
+    },
+    {
+      "path": "sprites/wall-130-31.png",
+      "depicts": "Connected wall variant wall-130-31",
+      "sha256": "d6ffbbc4f89a741dd964cd237d8b8e7a3b477e039d51de11e441995ee1c17188"
+    },
+    {
+      "path": "sprites/wall-130-38.png",
+      "depicts": "Connected wall variant wall-130-38",
+      "sha256": "233ed921a279852224861cd3e4e1cc8b4bfd71212ca77fbdc38fc7000eda3a71"
+    },
+    {
+      "path": "sprites/wall-130-39.png",
+      "depicts": "Connected wall variant wall-130-39",
+      "sha256": "0c794f87911b63a76a980fab4fe3812f9db71d2c3cde7fbd65e57cfecbce98ec"
+    },
+    {
+      "path": "sprites/wall-130-46.png",
+      "depicts": "Connected wall variant wall-130-46",
+      "sha256": "1bafe0a23e2dee45cfebaf41b4e805bd47c7717264acdc1a45cbc3c9074575d9"
+    },
+    {
+      "path": "sprites/wall-130-47.png",
+      "depicts": "Connected wall variant wall-130-47",
+      "sha256": "4e6b66d6b7a5662df260007c771441ccea577f36f86a637bb1b4c2f6e7bb3e87"
+    },
+    {
+      "path": "sprites/wall-130-55.png",
+      "depicts": "Connected wall variant wall-130-55",
+      "sha256": "73fa8d607a1fb931273d8ea3622e8d9bc214b83e19831f84edc2e0b5e40a3ca2"
+    },
+    {
+      "path": "sprites/wall-130-63.png",
+      "depicts": "Connected wall variant wall-130-63",
+      "sha256": "93fd0a24c0d15ca34b6a02dc7bb157b17c589ea093e5a78d768c0694664b44f5"
+    },
+    {
+      "path": "sprites/wall-130-76.png",
+      "depicts": "Connected wall variant wall-130-76",
+      "sha256": "312c1a408bb7393f685f7982872f11b38319ed55fb9c0849bfdca0be21745ed4"
+    },
+    {
+      "path": "sprites/wall-130-77.png",
+      "depicts": "Connected wall variant wall-130-77",
+      "sha256": "f2ba828d4959e9192be7410545cba08ba9fd54d90007987b0ed2136a5a7b3dfc"
+    },
+    {
+      "path": "sprites/wall-130-78.png",
+      "depicts": "Connected wall variant wall-130-78",
+      "sha256": "7ae63a1d85c4a1d5f7ab8e3d5c9e84a3add780608ca3df3179f8bb5a5779f7ab"
+    },
+    {
+      "path": "sprites/wall-130-79.png",
+      "depicts": "Connected wall variant wall-130-79",
+      "sha256": "82c6b6f4b0ff48cfe903a11993a5660c6ae92fd01b6e50844e5fa2b53a680ac6"
+    },
+    {
+      "path": "sprites/wall-130-95.png",
+      "depicts": "Connected wall variant wall-130-95",
+      "sha256": "479831a956d830036c93211fd680ae2d2e35a9c16324df1b5108fb14a68909b4"
+    },
+    {
+      "path": "sprites/wall-130-110.png",
+      "depicts": "Connected wall variant wall-130-110",
+      "sha256": "7e45f14abc2cec56173032b87ccc8a95ead58053924fd3bab3e2127af36c3a96"
+    },
+    {
+      "path": "sprites/wall-130-111.png",
+      "depicts": "Connected wall variant wall-130-111",
+      "sha256": "5d442eeb0210920c343b5c199fba0877a02e343cdfe5489cda9c6b750edcb5b1"
+    },
+    {
+      "path": "sprites/wall-130-127.png",
+      "depicts": "Connected wall variant wall-130-127",
+      "sha256": "d99ac5136c02e33b60ebcd69aeca6f35e08a77b89221c43db2247ae0daa787a3"
+    },
+    {
+      "path": "sprites/wall-130-137.png",
+      "depicts": "Connected wall variant wall-130-137",
+      "sha256": "236cb4f0237d88005d4d0359c1da77d0d4081bac9a1456a3c25d0922496891d9"
+    },
+    {
+      "path": "sprites/wall-130-139.png",
+      "depicts": "Connected wall variant wall-130-139",
+      "sha256": "34e049082e89eaa229242bdec1a2eb2c4e941c28e4ec48541d435b4a3172beaa"
+    },
+    {
+      "path": "sprites/wall-130-141.png",
+      "depicts": "Connected wall variant wall-130-141",
+      "sha256": "fcd7810fb655fc1b7693f7f48725b2e1018edaadb8151260d5653bbf15536bb2"
+    },
+    {
+      "path": "sprites/wall-130-143.png",
+      "depicts": "Connected wall variant wall-130-143",
+      "sha256": "6fa544ecdca218d3cf327a3868c9cb32a2c7d5bd0fc305b9bef9b9fcbab9f5f8"
+    },
+    {
+      "path": "sprites/wall-130-155.png",
+      "depicts": "Connected wall variant wall-130-155",
+      "sha256": "84d8dbc1322d52077ec403c87d990c51c2f277fe9f1f7dea8c532a419042590d"
+    },
+    {
+      "path": "sprites/wall-130-159.png",
+      "depicts": "Connected wall variant wall-130-159",
+      "sha256": "9420cbd75dce4cabffab5adc5aaa88b937ca308aefd08f4efdfec170b5271d3c"
+    },
+    {
+      "path": "sprites/wall-130-175.png",
+      "depicts": "Connected wall variant wall-130-175",
+      "sha256": "050fa97076b4cdd07ab880b5763ffbde3401c5ef818efc221596936def080f37"
+    },
+    {
+      "path": "sprites/wall-130-191.png",
+      "depicts": "Connected wall variant wall-130-191",
+      "sha256": "6be87918dac894f0fbb883aa56faa4388fd5dbb9ef9e728137eb64c62f287457"
+    },
+    {
+      "path": "sprites/wall-130-205.png",
+      "depicts": "Connected wall variant wall-130-205",
+      "sha256": "ba6683ce28b6e514084a22b299564560391f4010bd083a7452b1a37110e0fa37"
+    },
+    {
+      "path": "sprites/wall-130-207.png",
+      "depicts": "Connected wall variant wall-130-207",
+      "sha256": "66d575cd0dc94ed0082d2836c6231f960103533bf3290cdc6ce250a71c6c668c"
+    },
+    {
+      "path": "sprites/wall-130-223.png",
+      "depicts": "Connected wall variant wall-130-223",
+      "sha256": "d11e0e6c2e8b608d59af18753cd9f0770230e9dbd35ce85473b972db528c7405"
+    },
+    {
+      "path": "sprites/wall-130-239.png",
+      "depicts": "Connected wall variant wall-130-239",
+      "sha256": "f0cbf1eb7c2d2c5cec2a47aae280d0fc56a1ba524e281b264197ca309f3f568f"
+    },
+    {
+      "path": "sprites/wall-130-255.png",
+      "depicts": "Connected wall variant wall-130-255",
+      "sha256": "346249af5d8ad8aa194758809c502ce1173d23bc607cbb699fa8c01f65f22fd9"
+    },
+    {
+      "path": "sprites/wall-164-0.png",
+      "depicts": "Connected wall variant wall-164-0",
+      "sha256": "ed0251ea66fc5c5c45aeed466b8fc817dd7248231622a8a003d0add37c5b04a0"
+    },
+    {
+      "path": "sprites/wall-164-1.png",
+      "depicts": "Connected wall variant wall-164-1",
+      "sha256": "a7bc2c0c60fb4960654768661e3e06c20a773aec150c75aaf88a37d0a5dbf0e1"
+    },
+    {
+      "path": "sprites/wall-164-2.png",
+      "depicts": "Connected wall variant wall-164-2",
+      "sha256": "bad15180077afe2a43f2ab4cecce037acc73df70ab909f8aedd67cb616f3db65"
+    },
+    {
+      "path": "sprites/wall-164-3.png",
+      "depicts": "Connected wall variant wall-164-3",
+      "sha256": "52fcacf7eb15f8eabf2f0c790cd2f94f5df170df192e0cf3884af5e3ed7ecb39"
+    },
+    {
+      "path": "sprites/wall-164-4.png",
+      "depicts": "Connected wall variant wall-164-4",
+      "sha256": "144a09401a5a26660c02259c73c569b556de3ed6be05acfae37d0f49cec68ece"
+    },
+    {
+      "path": "sprites/wall-164-5.png",
+      "depicts": "Connected wall variant wall-164-5",
+      "sha256": "3d4afefaefb0f0282e5a780353ffce1b39e996769874ce3ace150a3f0845f0e8"
+    },
+    {
+      "path": "sprites/wall-164-6.png",
+      "depicts": "Connected wall variant wall-164-6",
+      "sha256": "2333e76155af82558c144fcf08bf4bcb10bcd9fb43af5ec323e952bc70b03250"
+    },
+    {
+      "path": "sprites/wall-164-7.png",
+      "depicts": "Connected wall variant wall-164-7",
+      "sha256": "9a71dfdeff09647f01dfb366a06d28986ae9d9b3057ec822f3a5ce955819e70c"
+    },
+    {
+      "path": "sprites/wall-164-8.png",
+      "depicts": "Connected wall variant wall-164-8",
+      "sha256": "d87f28ac882df4a1b5bef9119c825fa027d4158fbe9e13737dea906b5da07a34"
+    },
+    {
+      "path": "sprites/wall-164-9.png",
+      "depicts": "Connected wall variant wall-164-9",
+      "sha256": "56b0955fd2387ad9dd252c45c081e3dba7ea223362712bad4171879d98cda630"
+    },
+    {
+      "path": "sprites/wall-164-10.png",
+      "depicts": "Connected wall variant wall-164-10",
+      "sha256": "52ab97ca501aa8e91eb78944f87f6716e921ca87a26921d42b840f4c2952b58a"
+    },
+    {
+      "path": "sprites/wall-164-11.png",
+      "depicts": "Connected wall variant wall-164-11",
+      "sha256": "7143ee788cc65c08923469b0828bf5bfbbfd4a8d2e8f797b2b0e9ade053bb7a3"
+    },
+    {
+      "path": "sprites/wall-164-12.png",
+      "depicts": "Connected wall variant wall-164-12",
+      "sha256": "8f90491f8f1b03fcf97a51a0b131af0dea842c7174b35064b8b9eb6841087d14"
+    },
+    {
+      "path": "sprites/wall-164-13.png",
+      "depicts": "Connected wall variant wall-164-13",
+      "sha256": "fa7aad8cd98b67bdc5e24784816de3ae90cc79aa205508d3679e23ae63578d75"
+    },
+    {
+      "path": "sprites/wall-164-14.png",
+      "depicts": "Connected wall variant wall-164-14",
+      "sha256": "63e47854da7e398fb1e674d956f8cd525718af0eff93afd463a8ba932b3edfae"
+    },
+    {
+      "path": "sprites/wall-164-15.png",
+      "depicts": "Connected wall variant wall-164-15",
+      "sha256": "fca427312e811e31542ba5f2d1c5806ee513f884c46196bd03e342196cc65c38"
+    },
+    {
+      "path": "sprites/wall-164-19.png",
+      "depicts": "Connected wall variant wall-164-19",
+      "sha256": "73b334b4a3589551026950e8a67e63823511547e94f2fa41c95b16ab2dfced83"
+    },
+    {
+      "path": "sprites/wall-164-23.png",
+      "depicts": "Connected wall variant wall-164-23",
+      "sha256": "f99786ae8179062c6e698017ab651702834f871cd12f2fc7c1aca1fd2f79fdc1"
+    },
+    {
+      "path": "sprites/wall-164-27.png",
+      "depicts": "Connected wall variant wall-164-27",
+      "sha256": "90b9dd23e85e5d6aaa1ed382ce1ae9b1840a41aed54079b9f4b547f5e3d00766"
+    },
+    {
+      "path": "sprites/wall-164-31.png",
+      "depicts": "Connected wall variant wall-164-31",
+      "sha256": "f6a77ea9b385fd63e561b1f726fdf0d290403d0d841b494a7c56e089041c5f44"
+    },
+    {
+      "path": "sprites/wall-164-38.png",
+      "depicts": "Connected wall variant wall-164-38",
+      "sha256": "03f3ae0387ae54077e315ce1c0b2f9c4b2c2052f870600b81e6e8dd17a75308b"
+    },
+    {
+      "path": "sprites/wall-164-39.png",
+      "depicts": "Connected wall variant wall-164-39",
+      "sha256": "89ec45e3f01cbfd7e4d6b2a7b8a2607159d8852edeec2067929ab0ffd9b2e516"
+    },
+    {
+      "path": "sprites/wall-164-46.png",
+      "depicts": "Connected wall variant wall-164-46",
+      "sha256": "251a284d8e2019ae8c7f5f4aa6be0d1786d9a480886fcfd95c57e05afd709979"
+    },
+    {
+      "path": "sprites/wall-164-47.png",
+      "depicts": "Connected wall variant wall-164-47",
+      "sha256": "8e6c895d59e098c8266d5477d8583a06a3f90824a58ef736193dd7a65905093a"
+    },
+    {
+      "path": "sprites/wall-164-55.png",
+      "depicts": "Connected wall variant wall-164-55",
+      "sha256": "511f76b62368ac6cd495eb8130f999d0b0ae88b52f12b22ec2fddb174264bc82"
+    },
+    {
+      "path": "sprites/wall-164-63.png",
+      "depicts": "Connected wall variant wall-164-63",
+      "sha256": "30a8676c1b294ddfb0779b64172b47d0ab9d06cd0b3b974dc182a2d1ca77285f"
+    },
+    {
+      "path": "sprites/wall-164-76.png",
+      "depicts": "Connected wall variant wall-164-76",
+      "sha256": "fe3b1b497e51d13c6b79d3be349b17c2e32632d8e84c6611664b78bf7483a22c"
+    },
+    {
+      "path": "sprites/wall-164-77.png",
+      "depicts": "Connected wall variant wall-164-77",
+      "sha256": "662ef3baa8eac472066d7eb84ea80095f84e3231f4b22566203bdc6da13875a0"
+    },
+    {
+      "path": "sprites/wall-164-78.png",
+      "depicts": "Connected wall variant wall-164-78",
+      "sha256": "1320ac3312b04e7cc8abaa2d657e31a3d6fae673964a47a33d37fe4c4a543276"
+    },
+    {
+      "path": "sprites/wall-164-79.png",
+      "depicts": "Connected wall variant wall-164-79",
+      "sha256": "664e90bcfac2e6ca2b27b851de6a574a276ea96c0745eb7c4ffd3aa7c1e58192"
+    },
+    {
+      "path": "sprites/wall-164-95.png",
+      "depicts": "Connected wall variant wall-164-95",
+      "sha256": "fc5e7ccfd6ca6bacadebc9f8c7fc96385cf627afb3895544dc25a845f3e8ae0b"
+    },
+    {
+      "path": "sprites/wall-164-110.png",
+      "depicts": "Connected wall variant wall-164-110",
+      "sha256": "c84d2042a8fddd4dbced27caed0bbbe3ebb74d4c61dc16d698ebf6473e225af4"
+    },
+    {
+      "path": "sprites/wall-164-111.png",
+      "depicts": "Connected wall variant wall-164-111",
+      "sha256": "29fcd1ee28b48f81b545c3273eee7eac7cb3fdfce8712848a19759ea326b792c"
+    },
+    {
+      "path": "sprites/wall-164-127.png",
+      "depicts": "Connected wall variant wall-164-127",
+      "sha256": "409eea12009e306b5097869b82747fe175b9801ff3899c7a86855561f6056768"
+    },
+    {
+      "path": "sprites/wall-164-137.png",
+      "depicts": "Connected wall variant wall-164-137",
+      "sha256": "16c423f00e92289bec207f70bc290d3477e55ea950659a95bca94cf8bacf6d95"
+    },
+    {
+      "path": "sprites/wall-164-139.png",
+      "depicts": "Connected wall variant wall-164-139",
+      "sha256": "b91ea4f0a2cff992a4f966e6d564ffb4deb5bd69526f3e0b8ccc9b31bb4f31b9"
+    },
+    {
+      "path": "sprites/wall-164-141.png",
+      "depicts": "Connected wall variant wall-164-141",
+      "sha256": "494ebb5b2cfabacbab968d6c35dac446a087db23a38008143e2e7a1d1216d2c0"
+    },
+    {
+      "path": "sprites/wall-164-143.png",
+      "depicts": "Connected wall variant wall-164-143",
+      "sha256": "4e28bc47fd22ea219398a5b4c2bfb8342db794357921a478a8be7ae06939013b"
+    },
+    {
+      "path": "sprites/wall-164-155.png",
+      "depicts": "Connected wall variant wall-164-155",
+      "sha256": "a8e5fe43dac11fa05ae076154be89a133ccde6b21712ca5558b5be02936d7792"
+    },
+    {
+      "path": "sprites/wall-164-159.png",
+      "depicts": "Connected wall variant wall-164-159",
+      "sha256": "c2a28b28afb81b26a027a82bba18cd2432744ee95557b817a96cae6314cffd4e"
+    },
+    {
+      "path": "sprites/wall-164-175.png",
+      "depicts": "Connected wall variant wall-164-175",
+      "sha256": "a7ef4981a9f73de64f661621398b595f340a564f9ea35c5f258f8d9e8bc39557"
+    },
+    {
+      "path": "sprites/wall-164-191.png",
+      "depicts": "Connected wall variant wall-164-191",
+      "sha256": "164e86341c68ad5db9f1a8dcdfe4ac409b311cd838b94750547b70f1fc25870a"
+    },
+    {
+      "path": "sprites/wall-164-205.png",
+      "depicts": "Connected wall variant wall-164-205",
+      "sha256": "bfd7c4c24574b89f0ba12ee08ea106f91b9f121583a5b187ae3688a4915ce8bf"
+    },
+    {
+      "path": "sprites/wall-164-207.png",
+      "depicts": "Connected wall variant wall-164-207",
+      "sha256": "3980a3e0d400f5db0006a7aac75fa861aa2d4e574b2afde42fa958f6aa3404b9"
+    },
+    {
+      "path": "sprites/wall-164-223.png",
+      "depicts": "Connected wall variant wall-164-223",
+      "sha256": "2537e4645ca767d8a9dfc86b2bbb67231ec8690e251929656da9bcb35ef99049"
+    },
+    {
+      "path": "sprites/wall-164-239.png",
+      "depicts": "Connected wall variant wall-164-239",
+      "sha256": "425920553c37e5b9a6d7dbd11098ebe058c03430b9787707f1879fe80654a4dc"
+    },
+    {
+      "path": "sprites/wall-164-255.png",
+      "depicts": "Connected wall variant wall-164-255",
+      "sha256": "bcc95d3568790822a2eb24c22666df36432f98e44786d4f32cf91f11c6ee0c93"
+    },
+    {
       "path": "sprites/atlas.png",
       "depicts": "Modern packed portrait and landscape sprites, deduplicated with extruded borders",
-      "sha256": "05781fb009efc0b2bfc5ee6ffd4a3a9479af6b59402cfbb18b02d24b9156b4c5"
+      "sha256": "39abb9512211a30d0f4f04ddfbcc63583c03e5df3aba96ed19446a9b4b3e7400"
     }
   ]
 }

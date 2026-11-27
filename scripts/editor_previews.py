@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools/levels'))
 import levels  # noqa: E402
+from wall_tiles import WALL_KINDS, wall_name, pit_floor
 
 FOLDER = ROOT / 'backup/editor-drafts/previews'
 CELL = 8
@@ -35,6 +36,10 @@ def picture(board, sprites):
     from PIL import Image
     kinds = [int(board[at:at + 2], 16) for at in range(0, len(board), 2)]
     pieces, floors, decorations = kinds[:levels.CELLS], kinds[levels.CELLS:2 * levels.CELLS], kinds[2 * levels.CELLS:]
+    walls = [kind if kind in WALL_KINDS else floors[at] for at, kind in enumerate(pieces)]
+    for at, kind in enumerate(pieces):
+        if kind in {105, 117, 119, 121}:
+            walls[at] = 0
     image = Image.new('RGBA', (levels.HEIGHT * CELL, levels.WIDTH * CELL))
 
     def put(name, at):
@@ -49,13 +54,15 @@ def picture(board, sprites):
         tile = floors[at]
         if kind in {105, 117, 119, 121} and tile in levels.CLASSIC_WALL_FLOORS:
             tile = levels.CLASSIC_WALL_FLOORS[tile]
-        put(f'tile-{tile}', at)
+        if tile in {4, 5, 6, 47, 48, 49}:
+            put(f'tile-{pit_floor(at, floors)}', at)
+        put(wall_name(tile, at, walls, True), at)
         if decorations[at]:
             put(f'tile-{decorations[at]}', at)
         if kind == levels.CLASSIC_PLAYER:
             put('player-up', at)
         elif kind != 0:
-            put(f'tile-{kind}', at)
+            put(wall_name(kind, at, walls, True), at)
     return image
 
 
@@ -81,7 +88,8 @@ def main():
             for old in FOLDER.glob(f'{number:03}-*.png'):
                 if old.name != name:
                     old.unlink(missing_ok=True)
-            if not (FOLDER / name).exists():
+            artwork_time = (ROOT / 'assets/shovey/sprites/atlas.png').stat().st_mtime
+            if not (FOLDER / name).exists() or (FOLDER / name).stat().st_mtime < artwork_time:
                 levels.save(picture(board, sprites), FOLDER / name)
                 drawn += 1
         width, height = levels.HEIGHT * CELL, levels.WIDTH * CELL

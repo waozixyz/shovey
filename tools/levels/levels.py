@@ -17,6 +17,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from level_rules import validate_star_spacing
+from wall_tiles import WALL_KINDS, wall_name, pit_floor
 
 WIDTH, HEIGHT = 12, 20
 CELLS = WIDTH * HEIGHT
@@ -199,6 +200,10 @@ def previews(cell, output=None):
         board = cells(level['cells'])
         floor_tiles = cells(level['tiles']) if 'tiles' in level else [77 if kind == 7 else 0 for kind in board]
         decorations = cells(level['decorations']) if 'decorations' in level else [0] * CELLS
+        walls = [kind if kind in WALL_KINDS else floor_tiles[at] for at, kind in enumerate(board)]
+        for at, kind in enumerate(board):
+            if kind in {105, 117, 119, 121}:
+                walls[at] = 0
         image = Image.new('RGBA', size)
         turned = Image.new('RGBA', turned_size)
         for at, kind in enumerate(board):
@@ -208,8 +213,12 @@ def previews(cell, output=None):
             tile = floor_tiles[at]
             if kind in {105, 117, 119, 121} and tile in CLASSIC_WALL_FLOORS:
                 tile = CLASSIC_WALL_FLOORS[tile]
-            image.alpha_composite(sprites.get(f'tile-{tile}'), (x, y))
-            turned.alpha_composite(turned_sprites.get(f'tile-{tile}'), (turned_x, turned_y))
+            if tile in {4, 5, 6, 47, 48, 49}:
+                backing = f'tile-{pit_floor(at, floor_tiles)}'
+                image.alpha_composite(sprites.get(backing), (x, y))
+                turned.alpha_composite(turned_sprites.get(backing), (turned_x, turned_y))
+            image.alpha_composite(sprites.get(wall_name(tile, at, walls)), (x, y))
+            turned.alpha_composite(turned_sprites.get(wall_name(tile, at, walls, True)), (turned_x, turned_y))
             if decorations[at]:
                 image.alpha_composite(sprites.get(f'tile-{decorations[at]}'), (x, y))
                 turned.alpha_composite(turned_sprites.get(f'tile-{decorations[at]}'), (turned_x, turned_y))
@@ -217,8 +226,8 @@ def previews(cell, output=None):
                 image.alpha_composite(sprites.get('player-up'), (x, y))
                 turned.alpha_composite(turned_sprites.get('player-up'), (turned_x, turned_y))
             elif kind != 0:
-                image.alpha_composite(sprites.get(f'tile-{kind}'), (x, y))
-                turned.alpha_composite(turned_sprites.get(f'tile-{kind}'), (turned_x, turned_y))
+                image.alpha_composite(sprites.get(wall_name(kind, at, walls)), (x, y))
+                turned.alpha_composite(turned_sprites.get(wall_name(kind, at, walls, True)), (turned_x, turned_y))
         save(image, output / f'levels/{level["number"]}.png')
         save(turned, output / f'levels-landscape/{level["number"]}.png')
     print(f"drew {len(load('classic'))} level pictures")

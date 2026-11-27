@@ -274,10 +274,8 @@ CoinPacks :: (session: Session, area: Rectangle) {
         if Action(session, key + 6, Rectangle.{area.x + 12.0, y + 66.0, area.width - 24.0, 44.0}, "buy") { confirm = pack + 100; scroll = 0; notice = "" }
     }
 }
-Chest :: (session: Session, area: Rectangle, today: s64, columns: s32, now: float64) {
+Chest :: (session: Session, area: Rectangle, today: s64, now: float64) {
     ready := DailyChestReady(today)
-    claimed := DailyChestWeekClaimed(today)
-    day := DailyChestDay(today)
     picture := Rectangle.{area.x + (area.width - 130.0) / 2.0, area.y, 130.0, 112.0}
     if ready { ShoveyRewardGlow(session, 63010, picture, now) }
     Picture(session, 63000, picture,
@@ -286,19 +284,6 @@ Chest :: (session: Session, area: Rectangle, today: s64, columns: s32, now: floa
     if Action(session, 63002, Rectangle.{area.x, area.y + 202.0, area.width, 44.0}, ifx ready then "claim" else "chest_wait", !ready, ready) {
         if DailyChestClaim(today) { ShopSetEarnedCoins(DailyChestCoins()); notice = "claimed" }
         else { notice = "purchase_failed" }
-    }
-    width := (area.width - cast(float32)(columns - 1) * 8.0) / cast(float32)columns
-    for slot: cast(s32)1..7 {
-        key := cast(u64)(63100 + slot * 10)
-        x := area.x + cast(float32)((slot - 1) % columns) * (width + 8.0)
-        y := area.y + 262.0 + cast(float32)((slot - 1) / columns) * 126.0
-        Card(session, key, Rectangle.{x, y, width, 116.0}, day == slot)
-        digits: [24]u8
-        Label(session, key + 1, Rectangle.{x + 4.0, y + 4.0, width - 8.0, 24.0}, FormatInteger(cast(s64)slot, digits[:]), 16, true)
-        Amount(session, key + 2, Rectangle.{x + 8.0, y + 36.0, width - 16.0, 28.0}, false,
-            FormatInteger(cast(s64)DailyChestPlanCoins(slot), digits[:]))
-        Label(session, key + 4, Rectangle.{x + 4.0, y + 76.0, width - 8.0, 28.0},
-            Copy(ifx slot <= claimed then "claimed" else ifx slot == day then "today" else "locked"), 12, true)
     }
 }
 #program_export
@@ -339,8 +324,7 @@ ShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> 
     height := ((SHOP_SKIN_COUNT + columns - 1) / columns) * 216
     if confirm != 0 { height = 320 }
     else if page == 2 {
-        columns = ifx grid_width >= 700.0 then 7 else ifx grid_width >= 420.0 then 4 else 2
-        height = 262 + ((7 + columns - 1) / columns) * 126
+        height = 262
     } else if tab == 1 { height = 414 }
     else if tab == 2 { height = 270 }
     viewport_height := bounds.y + bounds.height - top - 8.0
@@ -351,7 +335,7 @@ ShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> 
     if panel.opened {
         area := panel.content
         if confirm != 0 { Confirmation(session, area) }
-        else if page == 2 { Chest(session, area, today, columns, now) }
+        else if page == 2 { Chest(session, area, today, now) }
         else if tab == 0 { Skins(session, area, columns) }
         else if tab == 1 { CoinPacks(session, area) }
         else if tab == 3 {

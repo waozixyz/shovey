@@ -265,7 +265,7 @@ def build_games(apps):
     games.mkdir(parents=True, exist_ok=True)
     by_id = {app['descriptor']['id']: app for app in apps}
     sys.path.insert(0, str(ROOT / 'scripts'))
-    from release_assets import prepare_release_assets
+    from release_assets import prepare_release_assets, pack_sprite_atlases
     for app in apps:
         manifest, descriptor = app['manifest'], app['descriptor']
         if app.get('external'):
@@ -298,6 +298,10 @@ def build_games(apps):
                 (resources / 'levels').mkdir(exist_ok=True)
             prepare_release_assets(ROOT, resources)
         leave_out(manifest.with_name('bundle.json'), resources, 'SHOVEY_RELEASE' in defines)
+        # ModernImage resolves the preserved public sprite names to atlas
+        # rectangles. Loose authoring PNGs must not duplicate those pixels in
+        # the download (or the Classic/editor shared-resource aliases).
+        pack_sprite_atlases(resources)
         if name == 'shovey-island' and app.get('private'):
             from island_campaign import stage_assets
             stage_assets(resources)

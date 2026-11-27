@@ -2,6 +2,7 @@
 // joining in each direction and in groups, and the first electric pickup.
 #import, file "../src/engine.zi";
 #import, file "../src/shovey_board.zi";
+#import, file "../src/sprite_atlas_data.zi";
 #import, file "test_support.zi";
 #import, file "no_raster_images.zi";
 
@@ -144,8 +145,62 @@ FirstCharge :: () {
     board_seen = false
 }
 
+WallPictures :: () {
+    center: s32 = 100
+    for material: cast(s32)0..13 {
+        kind := atlas_wall_kinds[material]
+        for shape: cast(s32)0..46 {
+            mask := atlas_wall_masks[shape]
+            game := ShoveyGame.{.player = 200}
+            game.ground[center] = kind; game.tiles[center] = kind
+            for side: cast(s32)0..3 {
+                neighbor := ShoveyNeighbor(center, side)
+                if (mask & (1 << side)) != 0 { game.ground[neighbor] = 12; game.tiles[neighbor] = 12 }
+                other := (side + 1) % 4
+                diagonal := ShoveyNeighbor(neighbor, other)
+                if (mask & (1 << side)) != 0 && (mask & (1 << other)) != 0 && (mask & (16 << side)) == 0 {
+                    game.ground[diagonal] = 12; game.tiles[diagonal] = 12
+                }
+            }
+            unused Check(BoardWallMask(*game, center, false) == mask, "wall joins all side and inner-corner arrangements")
+            sides := mask & 15; corners := mask >> 4
+            turned := ((sides >> 1) | ((sides & 1) << 3)) | (((corners >> 1) | ((corners & 1) << 3)) << 4)
+            unused Check(BoardWallMask(*game, center, true) == turned, "landscape selects screen-oriented wall edges")
+            unused Check(KindSprite(*game, kind, center, 0.0) == SPRITE_WALL_JOINED + material * 47 + shape,
+                "every wall material selects its connected atlas frame")
+        }
+    }
+    game := ShoveyGame.{.player = 200}
+    game.ground[center] = 12; game.tiles[center] = 12
+    neighbor := ShoveyNeighbor(center, 2)
+    game.ground[neighbor] = 14; game.tiles[neighbor] = 14
+    unused Check((BoardWallMask(*game, center, false) & 4) != 0, "closed button wall joins")
+    game.ground[150] = 13; game.objects[150] = 9
+    unused Check((BoardWallMask(*game, center, false) & 4) == 0, "lowered button wall leaves an exposed edge")
+    game.ground[neighbor] = 105
+    unused Check((BoardWallMask(*game, center, false) & 4) == 0, "open door leaves an exposed edge")
+    pits: [6]s32 = .[4, 5, 6, 47, 48, 49]
+    floors: [12]s32 = .[0, 60, 61, 77, 78, 99, 100, 101, 102, 103, 162, 163]
+    layers: [SHOVEY_CELLS * 4]s32
+    for kind: pits {
+        for floor: floors {
+            game = ShoveyGame.{.player = 200}
+            for at: cast(s32)0..SHOVEY_CELLS - 1 { game.tiles[at] = floor }
+            game.ground[center] = kind; game.tiles[center] = kind
+            for wide: cast(s32)0..1 {
+                BoardLayersFill(*game, layers[:], 0.0, wide == 1, false)
+                display := ifx wide == 1 then (11 - center % 12) * 20 + center / 12 else center
+                unused Check(layers[display] == KindSprite(*game, floor, center, 0.0, wide == 1) &&
+                    layers[SHOVEY_CELLS + display] == KindSprite(*game, kind, center, 0.0, wide == 1),
+                    "legacy ball pits match the surrounding floor in both orientations")
+            }
+        }
+    }
+}
+
 #program_export
 main :: () -> s32 {
+    WallPictures()
     StarStarts()
     StarMerges()
     FirstCharge()

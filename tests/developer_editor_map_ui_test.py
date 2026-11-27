@@ -105,8 +105,15 @@ for width, height, orientation in ((1500, 1000, 'landscape'), (780, 1100, 'portr
 
     def press(label):
         node = find(lambda item: item.get('label') == label and item.get('kind') == 'button')
-        pointer(node['visible_x'] + node['visible_width'] / 2,
-                node['visible_y'] + node['visible_height'] / 2, click=True)
+        # This title toggles the map. Repeated clicks can open and close it
+        # depending on frame timing; hold one press across several frames.
+        x = node['visible_x'] + node['visible_width'] / 2
+        y = node['visible_y'] + node['visible_height'] / 2
+        subprocess.run(['xdotool', 'mousemove', '--window', window,
+                        str(int(x)), str(int(y)), 'mousedown', '1'], check=True)
+        time.sleep(.12)
+        subprocess.run(['xdotool', 'mouseup', '1'], check=True)
+        time.sleep(.15)
 
     def key(name):
         subprocess.run(['xdotool', 'key', '--window', window, name], check=True)

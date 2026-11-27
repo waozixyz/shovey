@@ -216,6 +216,9 @@ with (output / 'app.log').open('w') as log:
         time.sleep(2.3)
         click(460, 66)
         subprocess.run(['xdotool', 'mousemove', '--window', window, '4', '4'], check=True)
+        # Diff resizes both boards; let their smooth image copies finish before
+        # comparing pixels with the later server-update screenshot.
+        time.sleep(1)
         subprocess.run(['import', '-window', window, str(output / 'diff-before.png')], check=True)
         server['boards'][0] = base_board
         (drafts / 'server-campaign.json').write_text(json.dumps(server))

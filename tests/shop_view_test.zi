@@ -130,7 +130,7 @@ Check :: () -> s32 {
     route = "chest"; ShopUI.Request()
     if !Draw(session, 320.0, 568.0, -1) || Daily.DailyChestReady(-1) { return 26 }
     if !Draw(session, 320.0, 568.0) || !Bounds(session, 320.0) || !Daily.DailyChestReady(20000) { return 17 }
-    for day: cast(s32)1..7 { if Find(session, cast(u64)(63100 + day * 10)) < 0 { return 18 } }
+    for day: cast(s32)1..7 { if Find(session, cast(u64)(63100 + day * 10)) >= 0 { return 18 } }
     if !Activate(session, 63002, 320.0, 568.0) || Daily.DailyChestReady(20000) || Wardrobe.ShopCoins() != 420 { return 19 }
     if !Draw(session, 900.0, 500.0) || !Bounds(session, 900.0) || Daily.DailyChestClaim(20000) { return 20 }
     if !Draw(session, 320.0, 568.0, 20002) || Daily.DailyChestDay(20002) != 1 { return 21 }

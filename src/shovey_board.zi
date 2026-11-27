@@ -1,4 +1,5 @@
 #import, file "sprite_atlas.zi";
+#import, file "sprite_atlas_data.zi";
 // Classic's board as a Kryon TileMap: floor under pieces, the ground, the
 // pieces and Shovey are four layers of the sprites in assets/shovey/sprites.
 // The game view and the level tools draw the board with it.
@@ -78,7 +79,8 @@ SPRITE_LAVA_EDGE :: 312
 SPRITE_BEES :: 376
 SPRITE_HIVE :: 377
 SPRITE_SHOOTER :: 378
-SPRITE_COUNT :: 382
+SPRITE_WALL_JOINED :: 382
+SPRITE_COUNT :: SPRITE_WALL_JOINED + 14 * 47
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -360,6 +362,13 @@ BoardSkinPrepare :: () {
 SpritesPrepare :: () {
     for index: cast(s32)0..15 { abyss_sprite_indices[index] = SPRITE_ABYSS + index }
     digits: [24]u8
+    for material: cast(s32)0..13 {
+        for shape: cast(s32)0..46 {
+            name: Vec(u8)
+            BuilderPrint(*name, "wall-%-%", atlas_wall_kinds[material], atlas_wall_masks[shape])
+            SpritePath(SPRITE_WALL_JOINED + material * 47 + shape, BuilderFinish(name))
+        }
+    }
     for kind: cast(s32)0..40 {
         bytes: Vec(u8)
         BuilderPrint(*bytes, "tile-%", FormatInteger(cast(s64)kind, digits[:]))
@@ -562,8 +571,49 @@ OnFloor :: (kind: s32) -> bool {
 // The floor drawn under a piece: the moving block's path, plain floor, or
 // none (-1) for whole tiles.
 FloorSprite :: (kind: s32) -> s32 {
+    if ShoveyPitColor(kind) > 0 { return 0 }
     if !OnFloor(kind) { return -1 }
     return ifx kind == 29 || kind == 32 then 31 else 0
+}
+
+BoardWallMaterial :: (kind: s32) -> s32 {
+    for material: cast(s32)0..13 { if atlas_wall_kinds[material] == kind { return material } }
+    return -1
+}
+
+BoardWallSpriteKind :: (sprite: s32) -> s32 {
+    return atlas_wall_kinds[(sprite - SPRITE_WALL_JOINED) / 47]
+}
+
+// Open button walls and doors stop joining immediately. This is a visual
+// query only; the engine's collision and stored board data are unchanged.
+BoardWallAt :: (game: *ShoveyGame, at: s32) -> bool {
+    if at < 0 { return false }
+    ground := game.ground[at]
+    if ShoveyOpenDoor(ground) { return false }
+    if ShoveyMossColor(ground) >= 0 && ShoveyDoorOpen(game, at) { return false }
+    return BoardWallMaterial(ground) >= 0 || BoardWallMaterial(game.tiles[at]) >= 0
+}
+
+BoardWallMask :: (game: *ShoveyGame, at: s32, landscape: bool) -> s32 {
+    mask: s32 = 0
+    for side: cast(s32)0..3 {
+        neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
+        if BoardWallAt(game, neighbor) { mask |= 1 << side }
+    }
+    for side: cast(s32)0..3 {
+        other := (side + 1) % 4
+        if (mask & (1 << side)) == 0 || (mask & (1 << other)) == 0 { continue }
+        neighbor := ShoveyNeighbor(at, BoardEngineDirection(side, landscape))
+        diagonal := ShoveyNeighbor(neighbor, BoardEngineDirection(other, landscape))
+        if !BoardWallAt(game, diagonal) { mask |= 16 << side }
+    }
+    return mask
+}
+
+BoardWallSprite :: (game: *ShoveyGame, kind: s32, at: s32, landscape: bool) -> s32 {
+    mask := BoardWallMask(game, at, landscape)
+    return SPRITE_WALL_JOINED + BoardWallMaterial(kind) * 47 + atlas_wall_indices[mask]
 }
 
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
@@ -576,8 +626,10 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     moss := ShoveyMossColor(kind)
     if moss >= 0 {
         if position >= 0 && ShoveyDoorOpen(game, position) { return ifx moss == 0 then SPRITE_DOOR_OPEN else SPRITE_MOSS_FLOOR + moss - 1 }
+        if position >= 0 { return BoardWallSprite(game, kind, position, landscape) }
         return ifx moss == 0 then 14 else SPRITE_MOSS_WALL + moss - 1
     }
+    if position >= 0 && BoardWallMaterial(kind) >= 0 { return BoardWallSprite(game, kind, position, landscape) }
     if kind >= SHOVEY_MOSS_BUTTON && kind <= SHOVEY_LAST_BUTTON { return SPRITE_MOSS_BUTTON + kind - SHOVEY_MOSS_BUTTON }
     if kind >= SHOVEY_BLUE_GOAL && kind <= SHOVEY_GREEN_GOAL { return SPRITE_BLOCK_GOAL + kind - SHOVEY_BLUE_GOAL }
     if kind == SHOVEY_BOAT || kind == SHOVEY_FLOATING_CRATE { return SPRITE_BOAT + kind - SHOVEY_BOAT }
@@ -1147,6 +1199,18 @@ BoardArrowFloor :: (game: *ShoveyGame, at: s32) -> s32 {
     return 0
 }
 
+// Legacy sockets occupy the terrain slot, so infer their missing backing
+// from a neighboring floor rather than attaching a contrasting square.
+BoardPitFloor :: (game: *ShoveyGame, at: s32) -> s32 {
+    for side: cast(s32)0..3 {
+        neighbor := ShoveyNeighbor(at, side)
+        if neighbor < 0 { continue }
+        tile := game.tiles[neighbor]
+        if ShoveyCosmeticTile(tile) && !(tile >= 57 && tile <= 59) { return tile }
+    }
+    return 0
+}
+
 // The board's four picture layers: floor, ground, decorations and pieces.
 // Animals gliding to a cell are drawn by the board itself while `glides`.
 // A lava cell's picture: its edges by screen direction, in the molten frame
@@ -1196,6 +1260,12 @@ BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: b
         }
         if !BoardAbyss(game, at) && base != SHOVEY_LAVA {
             layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_BOAT || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)
+        }
+        // Legacy boards store the ball socket as the terrain itself. Its
+        // transparent corners still need a floor underneath the circular rim.
+        if ShoveyPitColor(base) > 0 {
+            layers[display] = KindSprite(game, BoardPitFloor(game, at), at, now, landscape)
+            layers[SHOVEY_CELLS + display] = KindSprite(game, base, at, now, landscape)
         }
         // An arrow is painted on the floor around it, not on the black
         // behind the board.
@@ -1322,26 +1392,28 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
 // Shovey, gliding animals, effects and guides over the board's tiles.
 BOARD_BEAM_SEGMENTS :: 240
 
-// The receiver signal travels along a chain of cyan dots.
-BoardBeamSegment :: (session: Session, key: u64, part: s32, from: Rectangle, to: Rectangle, phase: float32) {
+// A steady connected beam, including the bend at a mirror. There are no
+// traveling dots or gaps between cells; shooters retain their separate bolts.
+BoardBeamSegment :: (session: Session, key: u64, part: s32, from: Rectangle, to: Rectangle) {
     ax := from.x + from.width / 2.0; ay := from.y + from.height / 2.0
     bx := to.x + to.width / 2.0; by := to.y + to.height / 2.0
-    dot := from.width * 0.09
+    left := ifx ax < bx then ax else bx; top := ifx ay < by then ay else by
+    width := ifx ax < bx then bx - ax else ax - bx
+    height := ifx ay < by then by - ay else ay - by
+    halo := from.width * 0.16
     unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 2000 + part * 2),
-            .bounds = Rectangle.{(ax + bx - dot) * 0.5, (ay + by - dot) * 0.5, dot, dot},
-            .fill = Color.{46, 197, 220, 105}, .radius = dot * 0.5})
-    if phase >= 1.0 { return }
-    pulse := from.width * 0.19
-    x := ax + (bx - ax) * phase
-    y := ay + (by - ay) * phase
+            .bounds = Rectangle.{left - halo * 0.5, top - halo * 0.5, width + halo, height + halo},
+            .fill = Color.{46, 197, 220, 100}, .radius = halo * 0.5})
+    core := from.width * 0.045
     unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 2001 + part * 2),
-            .bounds = Rectangle.{x - pulse * 0.5, y - pulse * 0.5, pulse, pulse},
-            .fill = Color.{117, 242, 255, 225}, .radius = pulse * 0.5})
+            .bounds = Rectangle.{left - core * 0.5, top - core * 0.5, width + core, height + core},
+            .fill = Color.{178, 252, 255, 255}, .radius = core * 0.5})
 }
 
 // Each emitter's beam as the engine traces it: it turns at mirrors, lights
 // a receiver and ends against whatever stops it.
 BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, key: u64, now: float64, landscape: bool) {
+    unused now
     part: s32 = 0
     for source: cast(s32)0..SHOVEY_CELLS - 1 {
         if !ShoveyLaserEmitter(game.ground[source]) { continue }
@@ -1350,9 +1422,6 @@ BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
         for step: cast(s32)0..SHOVEY_CELLS * 4 {
             if part >= BOARD_BEAM_SEGMENTS || game.ground[at] == SHOVEY_LASER_RECEIVER { break }
             here := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
-            cycle := now * 2.7 - cast(float64)step * 0.18
-            fraction := cycle - cast(float64)cast(s64)cycle
-            phase := cast(float32)(ifx fraction < 0.0 then fraction + 1.0 else fraction) / 0.18
             heading := direction
             next := ShoveyBeamStep(game, at, *direction)
             if next < 0 {
@@ -1361,12 +1430,12 @@ BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
                 if beyond >= 0 {
                     there := TileMap.TileMapCell(grid, BoardDisplayIndex(beyond, landscape))
                     edge := Rectangle.{(here.x + there.x) / 2.0, (here.y + there.y) / 2.0, here.width, here.height}
-                    BoardBeamSegment(session, key, part, here, edge, phase)
+                    BoardBeamSegment(session, key, part, here, edge)
                     part += 1
                 }
                 break
             }
-            BoardBeamSegment(session, key, part, here, TileMap.TileMapCell(grid, BoardDisplayIndex(next, landscape)), phase)
+            BoardBeamSegment(session, key, part, here, TileMap.TileMapCell(grid, BoardDisplayIndex(next, landscape)))
             part += 1
             at = next
         }
