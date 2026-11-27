@@ -297,6 +297,7 @@ jobs:
         if: steps.due.outputs.publish == 'true'
         run: |
           export CHROMIUM="$(command -v google-chrome || command -v chromium)"
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SHOVEY_PUBLIC_HOST=1 node tests/web_release_test.mjs build/web-site
           env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 node tests/web_release_test.mjs build/web-site-check
       - uses: actions/upload-artifact@v4
         if: steps.due.outputs.publish == 'true'
@@ -369,6 +370,12 @@ jobs:
       name: cloudflare-pages
       url: https://shovey.waozi.xyz
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && 'master' || inputs.revision || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: actions/download-artifact@v4
         with:
           name: shovey-site
@@ -380,16 +387,19 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy build/web-site --project-name=shovey --branch=master --commit-hash=${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - name: Check that shovey.waozi.xyz serves the release
-        env:
-          VERSION: ${{ needs.site.outputs.version }}
         run: |
+          expected=$(cat build/web-site/build.json)
           for attempt in $(seq 30); do
-            live=$(curl -fsS -H 'Cache-Control: no-cache' "https://shovey.waozi.xyz/build.json?$attempt" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' || true)
-            test "$live" = "$VERSION" && curl -fsS -o /dev/null https://shovey.waozi.xyz/runtime.wasm && exit 0
+            live=$(curl -fsS --max-time 10 -H 'Cache-Control: no-cache' "https://shovey.waozi.xyz/build.json?$attempt" || true)
+            if [ "$live" = "$expected" ]; then exit 0; fi
             sleep 10
           done
-          echo "::error::shovey.waozi.xyz serves '$live', not Shovey $VERSION"
+          echo '::error::shovey.waozi.xyz did not serve the deployed build.json'
           exit 1
+      - name: Play the deployed release at shovey.waozi.xyz
+        run: |
+          export CHROMIUM="$(command -v google-chrome || command -v chromium)"
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SHOVEY_TEST_URL=https://shovey.waozi.xyz/ node tests/web_release_test.mjs
 
   itch:
     name: Publish itch.io
