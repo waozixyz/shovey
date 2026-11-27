@@ -178,7 +178,7 @@ def main():
     if os.environ.get('SHOVEY_REHEARSE') == 'true':
         print(f'Shovey {version} downloads verified; a rehearsal publishes nothing', flush=True)
         return
-    github_token, gitea_token = os.environ['SHOVEY_BUILD_TOKEN'], os.environ['SHOVEY_RELEASE_TOKEN']
+    gitea_token = os.environ['SHOVEY_RELEASE_TOKEN']
     api = GITEA + '/api/v1/repos/' + REPO
     release = request(api, f'/releases/tags/v{version}', gitea_token, missing=True)
     if release and not release['draft']:
@@ -207,9 +207,11 @@ def main():
     if request(api, '/tags/v' + version, gitea_token)['commit']['sha'] != revision:
         raise SystemExit('Published tag verification failed')
     print(f'Published {GITEA}/{REPO}/releases/tag/v{version}', flush=True)
-    # The GitHub release names this commit; wait for the source mirror rather
-    # than tagging another revision there. GitHub's own workflow adds the
-    # F-Droid and Google Play editions to it.
+    github_token = os.environ.get('SHOVEY_BUILD_TOKEN')
+    if not github_token:
+        print('Build will reconcile the published tag and downloads to GitHub', flush=True)
+        return
+    # Older workflow revisions can still publish with their direct token.
     deadline = time.monotonic() + 20 * 60
     while request(GITHUB, '/commits/master', github_token)['sha'] != revision:
         if time.monotonic() > deadline:
