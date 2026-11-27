@@ -116,11 +116,11 @@ def terrain(cell):
     # Remove the generator's narrow cell margin; surfaces meet exactly.
     return cell.crop((round(cell.width*.035),round(cell.height*.035),round(cell.width*.965),round(cell.height*.965))).resize((64,64),Image.Resampling.LANCZOS).convert('RGBA')
 
-def seamless_wall(cell):
+def seamless_wall(cell, crop_bevel=True):
     # The master's bottom bevel is for an isolated block. Crop to its face
     # before joining walls, then match opposite edge bands in both axes.
     face = cell.crop((round(cell.width*.055), round(cell.height*.035),
-                      round(cell.width*.945), round(cell.height*.82)))
+                      round(cell.width*.945), round(cell.height*.82))) if crop_bevel else cell
     a = np.array(face.resize((64,64), Image.Resampling.LANCZOS)).astype(float)
     for axis in (0,1):
         a = np.swapaxes(a,0,axis)
@@ -160,13 +160,31 @@ def clean_cutout(im):
     a[a[...,3]==0] = 0
     return Image.fromarray(a)
 
+def refined_sprite(name, fill):
+    return fit(Image.open(HERE/'source'/name).convert('RGBA'), fill)
+
+def sensor_marker(ring, frame=0, active=False):
+    # The original has an open center and a small bead travelling around
+    # the ring. Draw the bead in each phase without filling in the floor.
+    scale=4
+    out=ring.resize((SIZE*scale,SIZE*scale),Image.Resampling.LANCZOS)
+    angle=frame*math.pi/4
+    x,y=32+19*math.sin(angle),32-19*math.cos(angle)
+    d=ImageDraw.Draw(out)
+    box=tuple(round(v*scale) for v in (x-3,y-3,x+3,y+3))
+    d.ellipse(box,fill='#ff7950' if active else '#e73525',outline='#70251e',width=scale)
+    d.ellipse(tuple(round(v*scale) for v in (x-1.5,y-1.8,x,y-.3)),fill='#ffd1a0')
+    return out.resize((SIZE,SIZE),Image.Resampling.LANCZOS)
+
 def build_sprites():
     objects=[fit(i) for i in crop_sheet('objects.png',8,8)]
     raw=crop_sheet('terrain.png',6,6)
     t=[terrain(i) if n<20 else fit(i) for n,i in enumerate(raw)]
     for i in range(12, 19):
-        # Timber uses the plain generated wood grain, without iron straps.
-        t[i] = seamless_wall(raw[4] if i == 16 else raw[i])
+        t[i] = seamless_wall(raw[i])
+    # Raised wooden braces distinguish the wall from the unchanged plank
+    # floor. Matching edge bands still support every connected wall mask.
+    t[16]=seamless_wall(Image.open(HERE/'source/timber-refined.png').convert('RGBA'),False)
     characters=[fit(i) for i in crop_sheet('characters.png',4,7)]
     views={'down':0,'left':1,'up':2,'right':3}
     o=lambda i:objects[i].copy()
@@ -177,8 +195,10 @@ def build_sprites():
     for n,i in mapping.items():tile(n,o(i))
     for n,i in {11:25,19:23,28:24,30:26,31:26,35:27,36:21,37:21,38:21,39:22,53:21,54:21,55:21,56:34,62:29,71:29,72:33,57:30,58:31,59:32}.items():tile(n,t[i])
     for n,deg in {44:-45,50:-60,51:90,52:180,37:220,38:50,53:170,54:270,55:120,31:0}.items():tile(n,hue(out[f'tile-{n}'],deg))
-    # All paint colors share exactly the same silhouette.
-    for n,deg in {15:-120,16:120,17:0,50:60,51:160,52:-65}.items():tile(n,hue(o(14),deg))
+    # All six original-style paint splats share exactly the same silhouette.
+    paint=refined_sprite('paint-refined.png',.76)
+    for n,deg in {15:-120,16:120,17:0,50:60,51:160,52:-65}.items():tile(n,hue(paint,deg))
+    tile(18,refined_sprite('goal-refined.png',.66))
     for n,deg in {4:0,5:220,6:120,47:175,48:275,49:50}.items():tile(n,hue(t[20],deg))
     for n,deg in {73:0,74:100,75:220,85:180,86:-60,87:205}.items():tile(n,hue(o(8),deg))
     for n,deg in {143:220,144:50,145:175,146:275,147:120}.items():tile(n,hue(t[22],deg))
@@ -197,16 +217,18 @@ def build_sprites():
     for n,i in ((92,10),(93,62),(94,63),(123,11)):tile(n,metal_color(o(i),(244,156,58)))
     tile(104,wood_door)
     out['gate-open']=o(11)
-    for n in (20,22,24):tile(n,hue(o(60 if n==20 else 61),180))
+    sensor=refined_sprite('sensor-refined.png',.64)
+    active_sensor=hue(sensor,12)
+    tile(20,sensor_marker(sensor))
+    for n in (22,24):tile(n,sensor_marker(active_sensor,active=True))
     tile(19,over(t[23],inset(o(15),10)))
-    tile(23,over(inset(t[12]),inset(o(60),10)))
+    tile(23,over(inset(connected_wall(t[12],0),3),fit(out['tile-1'],.4)))
     tile(32,hue(o(21),180))
     path_grey = ImageOps.grayscale(t[26]).convert('RGBA'); path_grey.putalpha(t[26].getchannel('A')); tile(31,path_grey)
     tile(161,t[31])
     tile(140,over(o(44),inset(o(41),8)))
     for i in range(1,9):
-        im=hue(o(61),180);d=ImageDraw.Draw(im);a=(i-1)*math.pi/4
-        x,y=32+22*math.sin(a),32-22*math.cos(a);d.ellipse((x-3,y-3,x+3,y+3),fill='#ffe7a0');out[f'sensor-{i}']=im
+        out[f'sensor-{i}']=sensor_marker(active_sensor,i-1,True)
     for n,deg in zip(range(66,70),(180,90,0,-90)):tile(n,o(24).rotate(deg))
     for n,deg in zip(range(152,156),(90,0,-90,180)):tile(n,hue(o(59),180).rotate(deg))
     for n,deg in zip(range(169,173),(90,0,-90,180)):tile(n,hue(o(25),150).rotate(deg))
@@ -408,6 +430,37 @@ def previews(sprites):
     a,b=board(before),board(sprites);out=Image.new('RGB',(a.width*2+60,a.height+96),'#17262b');d=ImageDraw.Draw(out)
     d.text((20,20),'BEFORE',font=font,fill='white');d.text((a.width+40,20),'AFTER',font=font,fill='white')
     out.paste(a,(20,70),a);out.paste(b,(a.width+40,70),b);out.save(ROOT/'art/modern/before-after-board.png')
+    refinement_previews(before,sprites)
+
+def refinement_previews(original,sprites):
+    kinds=(98,102,20,22,23,15,18)
+    labels=('Timber wall','Wood floor (unchanged)','Sensor ring','Active ring','Closed sensor','Paint splat','Box target')
+    previous=Image.open(HERE/'source/refinement-before.png').convert('RGBA')
+    font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',18)
+    out=Image.new('RGB',(810,70+len(kinds)*126),'#17262b');d=ImageDraw.Draw(out)
+    for column,title in enumerate(('ORIGINAL','PREVIOUS','REFINED')):
+        d.text((232+column*190,20),title,font=font,fill='white')
+    for row,(kind,label) in enumerate(zip(kinds,labels)):
+        y=64+row*126
+        d.text((12,y+44),label,font=font,fill='#eff3e9')
+        old=previous.crop((row*128,0,(row+1)*128,128))
+        for column,image in enumerate((original[f'tile-{kind}'],old,sprites[f'tile-{kind}'])):
+            floor=sprites['tile-99'].resize((108,108),Image.Resampling.LANCZOS)
+            floor.alpha_composite(image.resize((108,108),Image.Resampling.NEAREST if column==0 else Image.Resampling.LANCZOS))
+            out.paste(floor,(242+column*190,y))
+    out.save(ROOT/'art/modern/refinements-before-after.png')
+    # The goal keeps clear margins and a dark/light outline on every
+    # authored floor material, plus ice, water, abyss and lava.
+    floors=(0,60,61,77,78,99,100,101,102,103,162,163,70,64,65,166)
+    names=('Stone','Checker','Striped','Grass','Sand','Slate','Brick','Sandstone','Timber','Moss','Forest','Cave','Ice','Water','Abyss','Lava')
+    out=Image.new('RGB',(8*112+16,2*140+56),'#17262b');d=ImageDraw.Draw(out)
+    d.text((12,12),'INSET BOX TARGET / FLOOR CONTRAST',font=font,fill='white')
+    for i,(kind,label) in enumerate(zip(floors,names)):
+        image=sprites[f'tile-{kind}'].resize((96,96),Image.Resampling.LANCZOS)
+        image.alpha_composite(sprites['tile-18'].resize((96,96),Image.Resampling.LANCZOS))
+        x=12+i%8*112;y=48+i//8*140
+        out.paste(image,(x,y));d.text((x,y+100),label,font=font,fill='#eff3e9')
+    out.save(ROOT/'art/modern/target-floor-contrast.png')
 
 def main():
     sprites=build_sprites()
@@ -420,6 +473,14 @@ def main():
         if f'sprites/{name}.png' not in listed:
             art['files'].append({'path':f'sprites/{name}.png','depicts':f'Connected wall variant {name}'})
     for item in art['files']:
+        descriptions={18:'crate goal: inset gold corner brackets, dark outline and transparent center',
+                      20:'sensor: open red ring with a small red bead and transparent center',
+                      22:'active sensor: open warm red ring and orbiting bead',
+                      24:'active sensor: open warm red ring and orbiting bead',
+                      23:'closed sensor: raised stone block with a red center',
+                      98:'timber wall: raised wooden framing and inset planks, without metal bands'}
+        for kind,description in descriptions.items():
+            if item['path']==f'sprites/tile-{kind}.png':item['depicts']=description
         p=artpath.parent/item['path']
         if p.exists():item['sha256']=hashlib.sha256(p.read_bytes()).hexdigest()
     art['files']=[i for i in art['files'] if i['path']!='sprites/atlas.png']+[{'path':'sprites/atlas.png','depicts':'Modern packed portrait and landscape sprites, deduplicated with extruded borders','sha256':hashlib.sha256((folder/'atlas.png').read_bytes()).hexdigest()}]

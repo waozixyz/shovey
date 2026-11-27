@@ -1200,42 +1200,42 @@
     {
       "path": "sprites/sensor-1.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 1 of 8",
-      "sha256": "586dcc8d5971bbae5589b8a8fdfab0a7c0b5b8af120f5328647186b71fd21366"
+      "sha256": "ca28cdd1157f6ec69e3ec084fc43e09e262803741caf854089a94cc9f3682dc0"
     },
     {
       "path": "sprites/sensor-2.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 2 of 8",
-      "sha256": "13f37d3ab8c38fbd485562c9d2ecc9a043c12c7f0158603d4614ed2d74490e3f"
+      "sha256": "9eb69f41d6b71d3359acfeff7e0962dc534291c53c064b6ac75952b000dc7173"
     },
     {
       "path": "sprites/sensor-3.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 3 of 8",
-      "sha256": "6c85043830df84aed7a23103b003b5ceb3b69b58ccf1fa093f6f2036d0178b3f"
+      "sha256": "38b1cf4ffbbda49b55e615a6e1e21c60ccd1bbe7f0c845f7e8430b32f4af95c3"
     },
     {
       "path": "sprites/sensor-4.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 4 of 8",
-      "sha256": "beba14a014e2b0b48925d2f57e0274fa0b7a98bf610f51a96b9950d958b83b77"
+      "sha256": "482de5ef66e84dd750945908508fbe82a8413b28a8475956f29f3b2dd73095ed"
     },
     {
       "path": "sprites/sensor-5.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 5 of 8",
-      "sha256": "2a74ddbe560e7d5daf753e0e250465f35fc1c5561df7a8c5b32e37a2c519306e"
+      "sha256": "ccfffe973dedcd522c110d8362b605fe9e918a485f1ed0f3fb2fbcf38b762c2b"
     },
     {
       "path": "sprites/sensor-6.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 6 of 8",
-      "sha256": "7bb9cf97bb6bb3fdb9a6e3769ef97394172c30696941f4f5847be988ff05742c"
+      "sha256": "cc6d4120d521c151e034d3e03a36d192bd20fa8b51a26fe3dbeb4292409a216b"
     },
     {
       "path": "sprites/sensor-7.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 7 of 8",
-      "sha256": "767c160650130dbd2233cb21531cf3582ec5256a003ab0eba292af3d977a228d"
+      "sha256": "93ee32f0d91f431f8132778557fdb52d120e0ddadd202053e5ea420fe0910e9d"
     },
     {
       "path": "sprites/sensor-8.png",
       "depicts": "active sensor, its bead circling the glowing ring, frame 8 of 8",
-      "sha256": "4df18a66d9d5fcf40c6ae1f2521eee7c659be77950568b596af119b4afbd3b5c"
+      "sha256": "f3748825ad9d572f35680209a65864c2316a0e05e90ad9673a3b9b300ae7b15a"
     },
     {
       "path": "sprites/shadow.png",
@@ -1560,7 +1560,7 @@
     {
       "path": "sprites/tile-104.png",
       "depicts": "wooden door: opens when Shovey walks through it",
-      "sha256": "f45cf6457b1cde4521da87b8984a77edf09d95fca8e9b09e3edabd7becc107c4"
+      "sha256": "d9a7177c45d15a456550f331c8e8de4e1787ff8dfa4c180b609267d9133a10b0"
     },
     {
       "path": "sprites/tile-105.png",
@@ -1625,7 +1625,7 @@
     {
       "path": "sprites/tile-116.png",
       "depicts": "red wooden door: opens when walked through",
-      "sha256": "493f2b6f52f5d231a40c9f9bd6f017de01c756f110683960050c6982f4663630"
+      "sha256": "944d7f9c4eafc67438a8176cd4381debdc5884eb288138b19962b01d55789498"
     },
     {
       "path": "sprites/tile-117.png",
@@ -1635,7 +1635,7 @@
     {
       "path": "sprites/tile-118.png",
       "depicts": "blue wooden door: opens when walked through",
-      "sha256": "eeed99a1b7682cef38b9a582c53b23f4c02e1fd7a6e1df49565f41f59f5862d1"
+      "sha256": "b424500a3a9e3152a4cfcc02bf336d07898e38d4ecd4202e14327aac569bbc0c"
     },
     {
       "path": "sprites/tile-119.png",
@@ -1650,7 +1650,7 @@
     {
       "path": "sprites/tile-120.png",
       "depicts": "green wooden door: opens when walked through",
-      "sha256": "f8bf9d041561750337692eadb4cb99a7f83db4eab606193760bed9c0709a4b1b"
+      "sha256": "e912612821da6faa97358c5c5d93e249e2d480c54f5e70902d8e59c6f408d109"
     },
     {
       "path": "sprites/tile-121.png",
@@ -1810,7 +1810,7 @@
     {
       "path": "sprites/tile-15.png",
       "depicts": "red paint puddle, matching the other paint silhouettes",
-      "sha256": "950f27943600162f3e802bcf038d731a68f13d4b8b3d286a6d3fcf1b92d2db39"
+      "sha256": "89fa54f841d23ebb8e599d7dc3d8b28f46499881c38517d750e22c74bd3eab9e"
     },
     {
       "path": "sprites/tile-150.png",
@@ -1865,7 +1865,7 @@
     {
       "path": "sprites/tile-16.png",
       "depicts": "blue paint puddle, matching the other paint silhouettes",
-      "sha256": "569a736c9adcf891bb072f2cdc2ff66cacf342b6af74920ce7a3e0c693b2808e"
+      "sha256": "708de35688c506f0ca870a816b7d90a310488a8604a97f743110782c5a547156"
     },
     {
       "path": "sprites/tile-160.png",
@@ -1915,12 +1915,12 @@
     {
       "path": "sprites/tile-17.png",
       "depicts": "green paint puddle",
-      "sha256": "de5c5b07238e34940b9cf554abf6967312a90d5722e3b7d85d524604dca0c5ee"
+      "sha256": "34c839c633ca9a184d3385ad3059ea0006a59e2e05e2d7eec611482250d19bb1"
     },
     {
       "path": "sprites/tile-18.png",
-      "depicts": "crate goal: four corner brackets",
-      "sha256": "564bad51ffc8c61b05930c1788ab05e304b5ae4b2acbc97721327d4c9caf10cc"
+      "depicts": "crate goal: inset gold corner brackets, dark outline and transparent center",
+      "sha256": "e2cda6d10dd6ac2bd5a47771f8fdf812b1ecfce4455298769750043c1ebda5ed"
     },
     {
       "path": "sprites/tile-19.png",
@@ -1934,8 +1934,8 @@
     },
     {
       "path": "sprites/tile-20.png",
-      "depicts": "sensor not yet visited: a stone plate with a red ring and a red bead at its top",
-      "sha256": "ea52f2e3d2a2d9c3b8355d742dce5ba1bf70a128ff909c34b1110b0de47a4627"
+      "depicts": "sensor: open red ring with a small red bead and transparent center",
+      "sha256": "32349259005f024b4d9420e49a08581e0aac4be59110d5e8d47d4541189a2c3d"
     },
     {
       "path": "sprites/tile-21.png",
@@ -1944,18 +1944,18 @@
     },
     {
       "path": "sprites/tile-22.png",
-      "depicts": "active sensor: its red ring glows",
-      "sha256": "21b7c8e0221624ee52cc4601465880371ac9e848558db924af669cdaa04e3a92"
+      "depicts": "active sensor: open warm red ring and orbiting bead",
+      "sha256": "ca28cdd1157f6ec69e3ec084fc43e09e262803741caf854089a94cc9f3682dc0"
     },
     {
       "path": "sprites/tile-23.png",
-      "depicts": "closed sensor: a raised stone block with a red gem",
-      "sha256": "ed24875b11dbb489cf15a53d0af98c476a33ed59a00e57550dafca9bbd949ec8"
+      "depicts": "closed sensor: raised stone block with a red center",
+      "sha256": "e767e9e3055f7de32d25b3055a79ea5d0088a03e0ed1883e3449dcdb4f59a74c"
     },
     {
       "path": "sprites/tile-24.png",
-      "depicts": "active sensor: its red ring glows",
-      "sha256": "21b7c8e0221624ee52cc4601465880371ac9e848558db924af669cdaa04e3a92"
+      "depicts": "active sensor: open warm red ring and orbiting bead",
+      "sha256": "ca28cdd1157f6ec69e3ec084fc43e09e262803741caf854089a94cc9f3682dc0"
     },
     {
       "path": "sprites/tile-25.png",
@@ -2085,17 +2085,17 @@
     {
       "path": "sprites/tile-50.png",
       "depicts": "cyan paint puddle",
-      "sha256": "2a6c406ce66d01ab0e3497a3b2cea9bee4540fe4ed3b2e70ef46daceb92fd71c"
+      "sha256": "d03cc0af6fd7444f063cbbea86e9d052081b91363ff24b3c5b4bc55a96dfb22f"
     },
     {
       "path": "sprites/tile-51.png",
       "depicts": "purple paint puddle",
-      "sha256": "d05143b1da1ad9acab566732b775843b625df5133fc50d2d18d3c8c597bbb876"
+      "sha256": "d6807e03768bdbbffbc01ef2277d16362706e6e2109ca5a441b36984b7c7ec70"
     },
     {
       "path": "sprites/tile-52.png",
       "depicts": "yellow paint puddle",
-      "sha256": "1aeaddf62fa0b5bf1a1745179a6269f2d4d78cce4724d359c32e91ba1d630c7e"
+      "sha256": "dd8c31b62f4f20ec86660fbafe16ab25255d2c86e8b49a20af55dc0ced87b8fd"
     },
     {
       "path": "sprites/tile-53.png",
@@ -2329,8 +2329,8 @@
     },
     {
       "path": "sprites/tile-98.png",
-      "depicts": "timber wall: upright planks with iron straps",
-      "sha256": "79131f04a9aaae50fffe3ab4c2f869af4b66b813e689044b8428377284782bdf"
+      "depicts": "timber wall: raised wooden framing and inset planks, without metal bands",
+      "sha256": "e3aefa4e6d14ba599018bddc57d352aadcd993448d4f594cec4fcdf2e0423f47"
     },
     {
       "path": "sprites/tile-99.png",
@@ -4670,237 +4670,237 @@
     {
       "path": "sprites/wall-98-0.png",
       "depicts": "Connected wall variant wall-98-0",
-      "sha256": "79131f04a9aaae50fffe3ab4c2f869af4b66b813e689044b8428377284782bdf"
+      "sha256": "e3aefa4e6d14ba599018bddc57d352aadcd993448d4f594cec4fcdf2e0423f47"
     },
     {
       "path": "sprites/wall-98-1.png",
       "depicts": "Connected wall variant wall-98-1",
-      "sha256": "3c73ffc32edb69499a10fdd0c66974e64d22c8fa3b5b4fd0321ad2a524968130"
+      "sha256": "d7eb2e51d2c46bac2c3e7fe00d61fe00d21c73d9344dd4e5df5f62ac54227fef"
     },
     {
       "path": "sprites/wall-98-2.png",
       "depicts": "Connected wall variant wall-98-2",
-      "sha256": "c379d9dd5246c0bdff197bab30341453d5516c8e8b3626b2d51eab78220c0222"
+      "sha256": "fa88210060b061e9396ab34511ba6dfb8abef352eb869643ed5128ac07dff44f"
     },
     {
       "path": "sprites/wall-98-3.png",
       "depicts": "Connected wall variant wall-98-3",
-      "sha256": "e41349d4dce14b7181a8fa88b1bb87fe9df112ac7220886de22b335786c755d5"
+      "sha256": "faa300546b4a70d6c983a14be501ff197040f5687076d586cdce4872aa569909"
     },
     {
       "path": "sprites/wall-98-4.png",
       "depicts": "Connected wall variant wall-98-4",
-      "sha256": "676bf256c738aea9f7cb96c8a8910cee11ff8158edbdea6638f61053dbbba858"
+      "sha256": "c0f034e10bcae112170d41b34a40aa887b98592c7879abcd76ad3980907cc07f"
     },
     {
       "path": "sprites/wall-98-5.png",
       "depicts": "Connected wall variant wall-98-5",
-      "sha256": "b12ac2834099598d2ef52498328b7238978b37a7364f079fcad48224fbe8f8d0"
+      "sha256": "aa4566287d1492822525400bd16d6283f2fe1a36985ced9fd9ac422ad3c30808"
     },
     {
       "path": "sprites/wall-98-6.png",
       "depicts": "Connected wall variant wall-98-6",
-      "sha256": "f1083845f29a43297986829b76fbe05f32fc61353e712b9f48666988f2bd840d"
+      "sha256": "5ef1fd1edd2df5f963c6b093021f36772b31cc6f79d1c6894bdceb9e78a2ae57"
     },
     {
       "path": "sprites/wall-98-7.png",
       "depicts": "Connected wall variant wall-98-7",
-      "sha256": "6da13b862929914a7cc6463747523c37759ae18f904d5cf668498e163d3f1735"
+      "sha256": "14e97cdc317d904d7eed1c1e0c210ef441400dc311efcf6687dddeca8a9c29b4"
     },
     {
       "path": "sprites/wall-98-8.png",
       "depicts": "Connected wall variant wall-98-8",
-      "sha256": "ade3063ae1dcc6342aa711275a4a6abe208b4fccaf36cba5a8a2100fe9e3f89a"
+      "sha256": "27e6c310ca5fde9842a995546f5479ae76b737c4a1c0e46f8c13b17071188202"
     },
     {
       "path": "sprites/wall-98-9.png",
       "depicts": "Connected wall variant wall-98-9",
-      "sha256": "6d8c7448661b43931698b2d7e512200c62ebb467e81485817c6e964b8fe07220"
+      "sha256": "b3eccd2dbf0b13e402cabc801caa172b2e8954171487f5c9776d6c58f09cb42d"
     },
     {
       "path": "sprites/wall-98-10.png",
       "depicts": "Connected wall variant wall-98-10",
-      "sha256": "3e46a54bb47373468e11f39bd74b10fc2994a7236f33412db079565ce32a610e"
+      "sha256": "d26599d18374c743439135847d964a727b8f9c7398071377d60d48d4a579aa54"
     },
     {
       "path": "sprites/wall-98-11.png",
       "depicts": "Connected wall variant wall-98-11",
-      "sha256": "b018127c13721efd2bfaf4b981369a455063d6032ab94c0eb7cbb05b305623a6"
+      "sha256": "ec76832cee8d2756c9b230ce09a07667a5b1ec606b1f7aafba52ce5766d43f8b"
     },
     {
       "path": "sprites/wall-98-12.png",
       "depicts": "Connected wall variant wall-98-12",
-      "sha256": "bf5ebc136c7d7159f6470b210d9888fbc8034bc1fc6102aed98832b0b2e4e4fc"
+      "sha256": "5850f15749c86b729c39c863fdc511199a2a8b604af5c5dd50b476fe562c82fd"
     },
     {
       "path": "sprites/wall-98-13.png",
       "depicts": "Connected wall variant wall-98-13",
-      "sha256": "a1c05ce449f132f1062ca6de01325a96da36407216013f6b9dba844924d04775"
+      "sha256": "d85892c933c40205b45b71de4c50ff7c7d8a2a688735d320b8856d89ff01f759"
     },
     {
       "path": "sprites/wall-98-14.png",
       "depicts": "Connected wall variant wall-98-14",
-      "sha256": "3a9ed8a615b17f7acac98e339fa5ea44dfa550515222df0a2270fb39c7269491"
+      "sha256": "8ce7750ddef48e92878829da0fdfd4b51084a17b16597a526b6667fcc06d45f5"
     },
     {
       "path": "sprites/wall-98-15.png",
       "depicts": "Connected wall variant wall-98-15",
-      "sha256": "fc52e624898edd591c9b43244da675c487f387281ea0a35b4878c099f26f1a10"
+      "sha256": "74506e9e091332e0a1b5d2572127f0318683a496c2019b794a4df9320626cc2c"
     },
     {
       "path": "sprites/wall-98-19.png",
       "depicts": "Connected wall variant wall-98-19",
-      "sha256": "df2c995bf927eddccb895efcb54754f3cfcba5822f1bffd776fcca9e40cf1398"
+      "sha256": "81535002b353d5a466dd7ef2f4188710873b2448401874c9893a12f2a0145101"
     },
     {
       "path": "sprites/wall-98-23.png",
       "depicts": "Connected wall variant wall-98-23",
-      "sha256": "2ea7c9ed8d689018afbe2ee874340b4eb1bb8a89f90bcc3570e140d9e264e109"
+      "sha256": "add62031b514cf448511961bd6dafa0ce4f1211c7d197c772809415f8d005944"
     },
     {
       "path": "sprites/wall-98-27.png",
       "depicts": "Connected wall variant wall-98-27",
-      "sha256": "8747d9e9999109cd176e7085974a3e1bb3e6bdcba7799356cbbdc4cc64dfcd2e"
+      "sha256": "25521703ae8e1ef41158810f789625f2bc8a15fa264c3689b7bafe47d66a5a57"
     },
     {
       "path": "sprites/wall-98-31.png",
       "depicts": "Connected wall variant wall-98-31",
-      "sha256": "ce5175c55daa08952e63beb240b9ff8cae92c2bc830590d14998f3924ec910da"
+      "sha256": "0d5606374ee270e35428486b898ef3842dc0979c282eb4c69f6155f8ddfb16d5"
     },
     {
       "path": "sprites/wall-98-38.png",
       "depicts": "Connected wall variant wall-98-38",
-      "sha256": "f02ca9bf3bd775f5284bb3f496cf06900c47363bf41db9ca4ecf93d416ba1a6c"
+      "sha256": "e2c3628fc7ad63fe4115e18f561863ab8017b620793cb6260836ff3bddb05e9c"
     },
     {
       "path": "sprites/wall-98-39.png",
       "depicts": "Connected wall variant wall-98-39",
-      "sha256": "db9c0c2072437af4cf670261b7c6d88442ea67ea128fd00f2f6cfb3a019fa3b9"
+      "sha256": "d4d4dcd0cf686bc131d0ab6cd6ed666bf2f40375fb6701d04576befe27fc1242"
     },
     {
       "path": "sprites/wall-98-46.png",
       "depicts": "Connected wall variant wall-98-46",
-      "sha256": "ee386a541a4ae02a47e1606370af3b00a3907af74bb9e3143d75c7503bb5962a"
+      "sha256": "7c37a69e805fcf02f0786991236d043ee976d92368845589d12cbf2d4242d136"
     },
     {
       "path": "sprites/wall-98-47.png",
       "depicts": "Connected wall variant wall-98-47",
-      "sha256": "81a3d360a606a0d19b6502183009e712c7040aa2a36856f5b219849c5abf7e71"
+      "sha256": "42f8e0df576a7bc46ecf69c2bd088bc3d84e192daac209d7160e3adfb9a134b8"
     },
     {
       "path": "sprites/wall-98-55.png",
       "depicts": "Connected wall variant wall-98-55",
-      "sha256": "cc4c9fc3cfbd67077ecf5ddf047a756124ee6583aba446ac77d9377bb8191932"
+      "sha256": "77035225b946b8fba176e811db53b6f931cfd2906ca6838167ee9b97840e53ee"
     },
     {
       "path": "sprites/wall-98-63.png",
       "depicts": "Connected wall variant wall-98-63",
-      "sha256": "412582642f3b147cbc425ce3ed16d594d2dc3a7855dc4e4aba0eab333ff3ba40"
+      "sha256": "2d7098dab8d23552ac2bab8b3706b42b6594cade6795d4e0ee48675e69b0f051"
     },
     {
       "path": "sprites/wall-98-76.png",
       "depicts": "Connected wall variant wall-98-76",
-      "sha256": "de2c003677eff02ff68de52356d9514fd5d91118acc846f014593dede67d0890"
+      "sha256": "50c0b0d1ae900675e145e338d6d13508ed347ba12ae6f78d8185325c603429b4"
     },
     {
       "path": "sprites/wall-98-77.png",
       "depicts": "Connected wall variant wall-98-77",
-      "sha256": "541cecd9a6fa9c7b6aa78223c78c00a89c981b7e4862f95a32a7ea6d7bd98e08"
+      "sha256": "8b227373d33945782b2f7c1acd195e99fe02b1e7b829669d09f04e156ea85001"
     },
     {
       "path": "sprites/wall-98-78.png",
       "depicts": "Connected wall variant wall-98-78",
-      "sha256": "6d3947e906199b1297839de27dc2dc9d5b906ef867cec1362489eb2f1450daa8"
+      "sha256": "3428b1aa223d859c69f6402a4c7d9036f954900f6c3799f407028bbfeda2fa7b"
     },
     {
       "path": "sprites/wall-98-79.png",
       "depicts": "Connected wall variant wall-98-79",
-      "sha256": "1b4bfba9dc5e6743735e72e3f434833e37dcf768e648d4e22587bdfd7800bac9"
+      "sha256": "eaee676d92130b8013af51c5ccb3977596be8986c7b231b7fa98e19f47c91b3e"
     },
     {
       "path": "sprites/wall-98-95.png",
       "depicts": "Connected wall variant wall-98-95",
-      "sha256": "f6ef519419d5181554f03a0854e18f4dbd86e89ed44194d0977a3bccfb0acaa6"
+      "sha256": "6d75659b71e99bf51d3538be7850ec17798d6286ab0aa5a562f194f7d2b69239"
     },
     {
       "path": "sprites/wall-98-110.png",
       "depicts": "Connected wall variant wall-98-110",
-      "sha256": "a1c1251002fb236932f0b3662b722877b34a6b48f8df1fca7cc20b050038732b"
+      "sha256": "a4660b6dc456c5f597cff1fa12f7a038da32a3b48b0b6e054253f006645cfe0d"
     },
     {
       "path": "sprites/wall-98-111.png",
       "depicts": "Connected wall variant wall-98-111",
-      "sha256": "8aa2498774640d01a31a392bb8c448b091484e927f91697d8abb361bf120de7d"
+      "sha256": "8d7f7797577b06901c1a3112a444a3f943a8e12b126ed8426adde0c2633fabc4"
     },
     {
       "path": "sprites/wall-98-127.png",
       "depicts": "Connected wall variant wall-98-127",
-      "sha256": "25e46238486241fa0990e3626e478259cdd384216de60df42acd8697940d5135"
+      "sha256": "4d5320ebf475ba54f589d7069c03847768c7d4e1d0995e105294958e764ea231"
     },
     {
       "path": "sprites/wall-98-137.png",
       "depicts": "Connected wall variant wall-98-137",
-      "sha256": "5146f1428ee0ec85a7f01b5e5fe76cf79314198838bbdb4809b47a4d2da4dcf3"
+      "sha256": "640f80af3dfecbb802ab9d08f970537ca0b142f5e14c54d28efee40519ee85fb"
     },
     {
       "path": "sprites/wall-98-139.png",
       "depicts": "Connected wall variant wall-98-139",
-      "sha256": "1a3e6955c4d3d7233918dffbbf68a6de6f2d74ad332e978b82713d65149f17a4"
+      "sha256": "ebfcff67a0216ca75fe9708162373c3eba8b789a27214b2d9ae5ce5323815c3f"
     },
     {
       "path": "sprites/wall-98-141.png",
       "depicts": "Connected wall variant wall-98-141",
-      "sha256": "b6e0b8adf7df518bc53ee607aa906ebcf195b7bf85eb10c92488e0e77da1c855"
+      "sha256": "d144e952a45cfd8596c6f22d2d074be58fb478b0f1f8bb3caa2f8cb057845bc6"
     },
     {
       "path": "sprites/wall-98-143.png",
       "depicts": "Connected wall variant wall-98-143",
-      "sha256": "417fc93874edadb73b1caa907a80d88175229afb3e0c2bcabccfbf11931e21e7"
+      "sha256": "0a24be4d58296593605e7834276fcb6b477d99fce9da2738977d0e961ec7ca11"
     },
     {
       "path": "sprites/wall-98-155.png",
       "depicts": "Connected wall variant wall-98-155",
-      "sha256": "1e9282c74637ada0029ed05ee01a7a50fe92cc6ca600d1d2225394fe830cf3d2"
+      "sha256": "14fff995c44acb01e1e3f92f3e06a901c74d794152a6ed0fc30893046545d558"
     },
     {
       "path": "sprites/wall-98-159.png",
       "depicts": "Connected wall variant wall-98-159",
-      "sha256": "4baf2e7fed043bd89a52295dfef08387948c3b5ef93f93011278ddb0eb23b1b2"
+      "sha256": "676429f6f2c0659f4e572a0544ef09d086cda4c148cce4846bf9db41bab3f058"
     },
     {
       "path": "sprites/wall-98-175.png",
       "depicts": "Connected wall variant wall-98-175",
-      "sha256": "74058b2d340a422c283098e6da4cf58f4caccf120e66274032f93c28da7f4666"
+      "sha256": "96278238b86d06f163e40acf335ddb6c5cbc6d64c930713bd5c464a4536ba0cf"
     },
     {
       "path": "sprites/wall-98-191.png",
       "depicts": "Connected wall variant wall-98-191",
-      "sha256": "5dd11bd8db8d608812b71b2e726172913235fb3353ffa56a1b9c38df2d0a814e"
+      "sha256": "9295ee46e107d6de7142f1e3b2c4eacef3723a81b8cc9a44977386986f32144f"
     },
     {
       "path": "sprites/wall-98-205.png",
       "depicts": "Connected wall variant wall-98-205",
-      "sha256": "6d2b33d22d9a7357fb99bbf6f497cb09d6531132761a30d82432f6d9094a816c"
+      "sha256": "32e1b74ec7ae51a0d58e84a60e2c256677b3c9ff146ce41296c14762cd209568"
     },
     {
       "path": "sprites/wall-98-207.png",
       "depicts": "Connected wall variant wall-98-207",
-      "sha256": "e9bc1af8b6740561c3a956c76ae62af53aa99727db9b8725cec553e214d60a90"
+      "sha256": "d9ce5f27248f9066ee44ab0aba53d69548ca14f1b1a89e628d74ae3372861b88"
     },
     {
       "path": "sprites/wall-98-223.png",
       "depicts": "Connected wall variant wall-98-223",
-      "sha256": "4cb97327d0bda172c6cd8fe7517897f4a4a1e846690d32b0d5e633f0b17f5065"
+      "sha256": "e790d78ef6b6dc347ed43a97bd63275c66c10192ce1bb2a19665734cd1caa710"
     },
     {
       "path": "sprites/wall-98-239.png",
       "depicts": "Connected wall variant wall-98-239",
-      "sha256": "b2ff9a208406369a8d824b64edf6b34c2911a3ce75be803915b54cb028676b35"
+      "sha256": "2cd5d172ad92ca6e2d5ed5ddd237743d1c94e157606ca0002b5aff4892b4120e"
     },
     {
       "path": "sprites/wall-98-255.png",
       "depicts": "Connected wall variant wall-98-255",
-      "sha256": "4f5f5d4bd1a26b7ae4d30ff627bfd08031bdb80a0a23f7bab2d040d8b9c24f1b"
+      "sha256": "fee6287202537018ddf08641829513190a401fd68e2003d2432ef966352251f2"
     },
     {
       "path": "sprites/wall-127-0.png",
@@ -6080,7 +6080,7 @@
     {
       "path": "sprites/atlas.png",
       "depicts": "Modern packed portrait and landscape sprites, deduplicated with extruded borders",
-      "sha256": "39abb9512211a30d0f4f04ddfbcc63583c03e5df3aba96ed19446a9b4b3e7400"
+      "sha256": "53254e52b7a1ee7fafed4b89e34dad5211c012cd1b6be684e9e23cd23a01f758"
     }
   ]
 }

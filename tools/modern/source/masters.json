@@ -30,5 +30,29 @@
     ],
     "sha256": "ecb8c5a1d367b2aa3dac98da137393ba6200951395806ef677878559929613ab",
     "role": "Original unchanged generated blob and animal master; down/left/up/right views by row."
+  },
+  "timber-refined.png": {
+    "sha256": "773797ee6ad92029352bbbc7072e01658a79a1dfaebdac389eac37ae216a6825",
+    "role": "Raised wooden wall face, no metal; seam-matched and beveled into 47 connection shapes.",
+    "provider": "Harmony generate_image, configured provider",
+    "prompt_source": "refinement-prompts.json"
+  },
+  "sensor-refined.png": {
+    "sha256": "dfaff15ce79385279177cf9e5a224e6d8b21d6c3b44df9f325833cb201f2202f",
+    "role": "Open red sensor ring; separate bead phases retain the original sensor identity.",
+    "provider": "Harmony generate_image, configured provider",
+    "prompt_source": "refinement-prompts.json"
+  },
+  "paint-refined.png": {
+    "sha256": "a9a9b69ba52cef301e88e313e651c8b944a7c987bc588b74133acaceff66bbae",
+    "role": "Flat green paint splat; a single alpha silhouette hue-shifted into six paint colors.",
+    "provider": "Harmony generate_image, configured provider",
+    "prompt_source": "refinement-prompts.json"
+  },
+  "goal-refined.png": {
+    "sha256": "702ee1636597acbae3343e46b8c0cfa481984fb61f3f11ef04d4476a111c5745",
+    "role": "Gold corner target with dark outline; normalized to 66 percent of a cell.",
+    "provider": "Harmony generate_image, configured provider",
+    "prompt_source": "refinement-prompts.json"
   }
 }

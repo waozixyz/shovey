@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Restore the original-style open sensor rings and paint splats, and give timber walls raised wooden braces.
+- Inset crate-goal markings and add outlined amber corners for contrast across floor materials.
 - Join every wall material using 47 neighbor-aware edge and corner sprites; use plain timber without metal bands.
 - Draw ball pits over their floor and mirror lasers as steady connected beams.
 - Simplify the daily chest by removing the numbered weekly grid.
