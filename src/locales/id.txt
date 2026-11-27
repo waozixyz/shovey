@@ -26,13 +26,13 @@ Penerima laser
 Level
 ---
 [shovey_ready]
-Semua siap. Pulanglah!
+Pulang!
 ---
 [shovey_won]
 Teka-teki selesai!
 ---
 [shovey_finale]
-Kamu menyelesaikan semua teka-teki. Terima kasih sudah bermain!
+Semua teka-teki selesai!
 ---
 [shovey_the_end]
 TAMAT
@@ -50,10 +50,10 @@ Bantuan
 Tutup bantuan
 ---
 [shovey_previous]
-Level sebelumnya
+Sebelumnya
 ---
 [shovey_next]
-Level berikutnya
+Berikutnya
 ---
 [shovey_fire]
 Lempar
@@ -696,7 +696,7 @@ Ketuk di mana saja untuk lanjut
 Kiat Pip
 ---
 [shovey_friend_welcome]
-Hai, aku Pip! Selesaikan tugasnya, lalu bantu Shovey pulang.
+Selesaikan tugas, lalu pulang.
 ---
 [shovey_friend_crates]
 Dorong peti ke tandanya. Kamu bisa mendorong, tetapi tidak bisa menarik.
@@ -862,7 +862,7 @@ Hari ini
 Terkunci
 ---
 [shovey_shop_chest_wait]
-Kembali besok
+Besok
 ---
 [shovey_shop_purchase_pending]
 Pembelian dikirim. Saldo diperbarui setelah dikonfirmasi.
@@ -899,7 +899,7 @@ Emas
 ---
 
 [shovey_completion_coins]
-+15 koin · Hebat!
++15
 ---
 [shovey_island_title]
 Shovey Island

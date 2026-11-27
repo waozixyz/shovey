@@ -1,5 +1,6 @@
 """Exercise the production cover header and shop routes on a private display."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,14 @@ def main():
     assert int(os.environ['DISPLAY'].split(':')[-1].split('.')[0]) >= 400
     assert os.environ['YUE_DESKTOP_RECOVERY'] == '0'
     root = Path(__file__).resolve().parents[1]
+    local = root / 'build/player'
+    if args.binary.resolve() == local / 'linux/shovey':
+        for name in ('shovey.zx', 'shovey.json'):
+            current, staged = local / name, args.binary.resolve().parent / name
+            assert (current.is_file() and staged.is_file() and
+                    hashlib.sha256(current.read_bytes()).digest() == hashlib.sha256(staged.read_bytes()).digest()), (
+                'The UI test package is stale. Stage the current collection with '
+                'KRYON_TEST_DRIVER=1 python3 scripts/player.py linux before testing.')
     output = root / 'work/header-layout-ui-test'
     subprocess.run(['git', 'check-ignore', '-q', str(output)], cwd=root, check=True)
     output.mkdir(parents=True, exist_ok=True)
@@ -113,6 +122,9 @@ def main():
                     without_game_shortcuts()
                     driver.press(label='Swipe and tap', role='button')
                     driver.wait_gone(label='How do you want to move?', role='text')
+                    driver.wait(key=20602, role='text', label='Clear the tasks, then go home.')
+                    assert not driver.find(key=20601, role='text'), 'Repeated Pip heading returned'
+                    assert not driver.find(key=20616, role='text'), 'Repeated tap instruction returned'
                     subprocess.run(['import', '-window', window, str(output / f'gameplay-tutorial-{width}.png')], check=True, timeout=20)
                     if driver.find(label='Got it', role='button'):
                         driver.press(label='Got it', role='button')
@@ -149,6 +161,7 @@ def main():
                         driver.wait_idle(frames=8, timeout=5)
                         driver.press(key=20907, role='button')
                         driver.wait(label='Touch controls', role='text')
+                        assert 'Keep your streak for seven rewards' in driver.wait(key=20006, role='text')['label']
                         driver.press(key=20017, role='button')
                         driver.wait(key=20016, role='button')
                         subprocess.run(['xdotool', 'windowsize', '--sync', window, str(width), str(height)], check=True, timeout=20)
@@ -187,7 +200,11 @@ def main():
                             driver.release_pointer()
                             driver.wait_idle(frames=3, timeout=2)
                         driver.wait(label='Level 1 complete', role='text')
-                        driver.press(key=20905, label='Continue', role='button')
+                        driver.wait(key=20909, role='button', label='Next')
+                        driver.wait_idle(frames=2, timeout=2)
+                        assert not driver.find(key=20908, role='text'), 'Repeated results instruction returned'
+                        subprocess.run(['import', '-window', window, str(output / f'results-{width}.png')], check=True, timeout=20)
+                        driver.press(key=20909, role='button')
                         driver.wait_gone(label='Level 1 complete', role='text')
                         driver.wait(key=20022, role='button')
                         next_level = 2
@@ -216,7 +233,13 @@ def main():
                         driver.press(key=key, role='button')
                         driver.wait(key=61101, role='button', timeout=60)
                         if key == 49202:
+                            driver.wait(key=63021, role='text', label='25')
+                            assert not driver.find(key=63001, role='text'), 'Chest paragraph returned'
+                            subprocess.run(['import', '-window', window, str(output / f'chest-{width}.png')], check=True, timeout=20)
                             driver.press(key=63002, role='button')
+                            wait = driver.wait(key=63002, role='button', label='Tomorrow')
+                            assert not wait['enabled'], 'Claim must be disabled after success'
+                            driver.wait_gone(key=63021, role='text')
                         driver.press(key=61101, role='button')
                         driver.wait(key=49200, role='button')
                         driver.wait(key=49211, role='text', label='45' if key == 49202 else '20')
@@ -228,7 +251,7 @@ def main():
                     if child.poll() is None:
                         child.terminate()
                     child.wait(timeout=10)
-    print('Header local UI test passed: 320/480/960px layouts, 44px gameplay controls, sound/hints/restart/book, compact clear titles, stored guest coins, Dew readout, title-only Market/Chest, Back routing and Profile navigation')
+    print('Header and compact-copy local UI test passed: 320/480/960px layouts, 44px gameplay controls, sound/hints/restart/book, compact clear titles, stored guest coins, Dew readout, title-only Market/Chest, Back routing and Profile navigation')
 
 
 if __name__ == '__main__':

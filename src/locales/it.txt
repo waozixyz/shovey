@@ -26,13 +26,13 @@ Ricevitore laser
 Livello
 ---
 [shovey_ready]
-Tutto pronto. Torna a casa!
+Torna a casa!
 ---
 [shovey_won]
 Rompicapo completato!
 ---
 [shovey_finale]
-Hai completato tutti i rompicapi. Grazie per aver giocato!
+Tutti i rompicapi completati!
 ---
 [shovey_the_end]
 FINE
@@ -50,10 +50,10 @@ Aiuto
 Chiudi l’aiuto
 ---
 [shovey_previous]
-Livello precedente
+Precedente
 ---
 [shovey_next]
-Livello successivo
+Avanti
 ---
 [shovey_fire]
 Lancia
@@ -696,7 +696,7 @@ Tocca ovunque per continuare
 I consigli di Pip
 ---
 [shovey_friend_welcome]
-Ciao, sono Pip! Completa i compiti e aiuta Shovey a tornare a casa.
+Completa gli obiettivi, poi torna a casa.
 ---
 [shovey_friend_crates]
 Spingi le casse sui segni. Puoi spingere, ma mai tirare.
@@ -862,7 +862,7 @@ Oggi
 Bloccato
 ---
 [shovey_shop_chest_wait]
-Torna domani
+Domani
 ---
 [shovey_shop_purchase_pending]
 Acquisto inviato. Il saldo si aggiornerà dopo la conferma.
@@ -899,7 +899,7 @@ Oro
 ---
 
 [shovey_completion_coins]
-+15 monete · Ben fatto!
++15
 ---
 [shovey_island_title]
 Shovey Island

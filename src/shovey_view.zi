@@ -203,13 +203,8 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     text_width: float32 = card_width - 122.0
     text_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = text,
             .bounds = Rectangle.{0.0, 0.0, text_width, 0.0}, .size = 15, .wrap = Text.Wrap.TextWrapAuto})
-    height: float32 = text_height + 98.0
-    // The hint sits beside Continue, or above it on a narrow card.
-    hint := AppLocaleHost("shovey_friend_tap")
-    hint_width := card_width - 228.0
-    hint_row := hint_width < 150.0
-    if hint_row { hint_width = text_width; height += 24.0 }
-    if height < 154.0 { height = 154.0 }
+    height: float32 = text_height + 78.0
+    if height < 124.0 { height = 124.0 }
     x: float32 = width - card_width - 12.0
     // Point out the new mechanic without revealing a route through the puzzle.
     focus_cell: Rectangle
@@ -238,17 +233,12 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     unused Box.Draw(frame.session, Box.Props.{.key = cast(u64)20600,
             .bounds = Rectangle.{x + 68.0, y, card_width - 68.0, height}, .radius = 18.0,
             .fill = ColorFromPacked(palette.base), .border = ColorFromPacked(palette.selected)})
-    Caption(20601, Rectangle.{x + 108.0, y + 12.0, text_width, 24.0}, AppLocaleHost("shovey_friend_name"), 18)
-    Caption(20602, Rectangle.{x + 108.0, y + 42.0, text_width, text_height + 4.0}, text, 15)
+    Caption(20602, Rectangle.{x + 108.0, y + 16.0, text_width, text_height + 4.0}, text, 15)
     bob := cast(float32)Math.Sin(frame.now * 2.0) * 2.5
     ModernImage(frame.session, Image.Props.{.key = cast(u64)20603,
             .bounds = Rectangle.{x - 4.0, y + height - 112.0 + bob, 110.0, 116.0},
             .asset_path = "assets/shovey/pip.png", .alt_text = AppLocaleHost("shovey_friend_name"),
             .fit = Image.ImageFit.ImageFitContain, .smooth = true})
-    hint_y := ifx hint_row then y + height - 70.0 else y + height - 46.0
-    Text.Draw(frame.session, Text.Props.{.key = cast(u64)20616, .text = hint, .size = 13, .wrap = Text.Wrap.TextWrapAuto,
-            .bounds = Rectangle.{x + 108.0, hint_y, hint_width, ifx hint_row then 22.0 else 36.0},
-            .align = TextAlign.TextAlignStart, .vertical_align = TextAlign.TextAlignCenter})
     if PipContinue(frame.session, 20604, Rectangle.{x + card_width - 112.0, y + height - 48.0, 96.0, 38.0},
         AppLocaleHost("shovey_friend_continue"), frame.now) || key == 257 || key == 256 {
         if GuideAcknowledge(*friend_guide) { FriendSave() }
@@ -290,7 +280,7 @@ ControlsChoice :: (width: float32, top: float32, bottom: float32) {
     tile_width := (card_width - 48.0 - 14.0) / 2.0
     tile_height := tile_width * 1.25 + 70.0
     if tile_height > bottom - top - 150.0 { tile_height = bottom - top - 150.0 }
-    card_height := tile_height + 130.0
+    card_height := tile_height + 104.0
     x := (width - card_width) / 2.0
     y := top + (bottom - top - card_height) / 2.0
     if y < top + 8.0 { y = top + 8.0 }
@@ -298,8 +288,7 @@ ControlsChoice :: (width: float32, top: float32, bottom: float32) {
     Box.Draw(frame.session, Box.Props.{.key = cast(u64)20052, .bounds = Rectangle.{x, y, card_width, card_height},
             .fill = ColorFromPacked(palette.background), .border = ColorFromPacked(palette.border), .radius = 18.0})
     Caption(20053, Rectangle.{x + 16.0, y + 16.0, card_width - 32.0, 34.0}, AppLocaleHost("shovey_controls_choose"), 22, true)
-    Caption(20054, Rectangle.{x + 16.0, y + 50.0, card_width - 32.0, 24.0}, AppLocaleHost("shovey_controls_later"), 14, true)
-    tiles_y := y + 90.0
+    tiles_y := y + 64.0
     if ChoiceTile(20055, Rectangle.{x + 24.0, tiles_y, tile_width, tile_height}, false) { ControlsSetPad(false) }
     // Each tile uses its id to id + 13, so the two stay apart.
     if ChoiceTile(20080, Rectangle.{x + 24.0 + tile_width + 14.0, tiles_y, tile_width, tile_height}, true) { ControlsSetPad(true) }
@@ -459,7 +448,7 @@ LevelResultScreen :: (width: float32, top: float32, bottom: float32, key: s32) -
     }
     action := GameResult(frame.session,width,top,bottom,BuilderFinish(title),result.stars,result.score,game.moves,
         AppLocaleHost("shovey_levels"),AppLocaleHost("shovey_result_score"),AppLocaleHost("shovey_result_moves"),
-        AppLocaleHost("shovey_continue"),AppLocaleHost("shovey_save_failed"),save_failed,coin_pending.active,
+        AppLocaleHost("shovey_next"),AppLocaleHost("shovey_save_failed"),save_failed,coin_pending.active,
         false,AppLocaleHost("shovey_result_tap"),frame.now,key)
     if action == 1 { OpenLevels() }
     if action == 2 { result_dismissed = game.level; if game.level < ShoveyLevelCount() { ContinueGame() } }
@@ -1539,7 +1528,10 @@ ShoveyFrame :: () {
             return
         }
         Caption(20001, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, AppLocaleHost("shovey_settings"), 20, true)
-        instructions := AppLocaleHost("shovey_instructions")
+        help_text: Vec(u8)
+        BuilderPrint(*help_text, "%\n\n%\n\n%: %", AppLocaleHost("shovey_controls"), AppLocaleHost("shovey_instructions"),
+            AppLocaleHost("shovey_shop_chest"), AppLocaleHost("shovey_shop_chest_rule"))
+        instructions := BuilderFinish(help_text)
         intro_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = instructions,
                 .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .size = 16, .wrap = Text.Wrap.TextWrapAuto}) + 16.0
         // The touch controls choice comes first, above the guide, then

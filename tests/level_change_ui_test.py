@@ -120,7 +120,7 @@ def main():
             for letter in levels[0]['solution']:
                 tap(*STEPS[letter])
             driver.wait(label='Level 1 complete', role='text')
-            driver.press(key=20905, label='Continue', role='button')
+            driver.press(key=20905, role='button')
             driver.wait_gone(label='Level 1 complete', role='text')
             driver.wait(key=20022, role='button')
             driver.press(key=20022, role='button')

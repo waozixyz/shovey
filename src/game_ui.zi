@@ -62,8 +62,11 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
     BuilderPrint(*moves, "%: %", moves_label, moves_count)
     GameResultCaption(session, 20904, Rectangle.{16.0, middle + 44.0, width - 32.0, 32.0}, BuilderFinish(moves), 18, true)
     if tap_hint != "" {
-        GameResultCaption(session, 20908, Rectangle.{16.0, middle + 100.0, width - 32.0, 48.0}, tap_hint, 16, true)
-        if tapped { return 2 }
+        next_pressed := Button.Draw(session, Button.Props.{.key = 20909, .id = 20909,
+            .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
+            .label = continue_label, .disabled = continue_disabled,
+            .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0
+        if tapped || next_pressed { return 2 }
     } else if Button.Draw(session, Button.Props.{.key = 20905, .id = 20905,
         .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
         .label = continue_label, .disabled = continue_disabled}) != 0 {

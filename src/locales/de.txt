@@ -26,13 +26,13 @@ Laser-Empfänger
 Level
 ---
 [shovey_ready]
-Alles erledigt. Geh nach Hause!
+Nach Hause!
 ---
 [shovey_won]
 Rätsel geschafft!
 ---
 [shovey_finale]
-Du hast alle Rätsel gelöst. Danke fürs Spielen!
+Alle Rätsel gelöst!
 ---
 [shovey_the_end]
 ENDE
@@ -50,10 +50,10 @@ Hilfe
 Hilfe schließen
 ---
 [shovey_previous]
-Voriges Level
+Zurück
 ---
 [shovey_next]
-Nächstes Level
+Weiter
 ---
 [shovey_fire]
 Werfen
@@ -696,7 +696,7 @@ Tippe irgendwo, um weiterzumachen
 Pips Tipps
 ---
 [shovey_friend_welcome]
-Hallo, ich bin Pip! Erledige die Aufgaben und bring Shovey nach Hause.
+Erledige die Aufgaben und geh nach Hause.
 ---
 [shovey_friend_crates]
 Schiebe Kisten auf ihre Markierungen. Du kannst schieben, aber nie ziehen.
@@ -862,7 +862,7 @@ Heute
 Gesperrt
 ---
 [shovey_shop_chest_wait]
-Komm morgen wieder
+Morgen
 ---
 [shovey_shop_purchase_pending]
 Kauf gesendet. Dein Guthaben wird nach Bestätigung aktualisiert.
@@ -899,7 +899,7 @@ Gold
 ---
 
 [shovey_completion_coins]
-+15 Münzen · Gut gemacht!
++15
 ---
 [shovey_island_title]
 Shovey Island

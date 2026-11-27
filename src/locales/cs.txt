@@ -26,13 +26,13 @@ Přijímač laseru
 Úroveň
 ---
 [shovey_ready]
-Vše je hotovo. Jdi domů!
+Domů!
 ---
 [shovey_won]
 Hlavolam dokončen!
 ---
 [shovey_finale]
-Dokončil jsi všechny hádanky. Díky za hraní!
+Všechny hádanky vyřešeny!
 ---
 [shovey_the_end]
 KONEC
@@ -50,10 +50,10 @@ Nápověda
 Zavřít nápovědu
 ---
 [shovey_previous]
-Předchozí úroveň
+Zpět
 ---
 [shovey_next]
-Další úroveň
+Další
 ---
 [shovey_fire]
 Hodit
@@ -696,7 +696,7 @@ Pokračuj klepnutím kamkoli
 Pipovy tipy
 ---
 [shovey_friend_welcome]
-Ahoj, já jsem Pip! Splň úkoly a doveď Shoveyho domů.
+Splň úkoly a vrať se domů.
 ---
 [shovey_friend_crates]
 Posuň bedny na značky. Předměty lze tlačit, ale ne tahat.
@@ -862,7 +862,7 @@ Dnes
 Zamčeno
 ---
 [shovey_shop_chest_wait]
-Vrať se zítra
+Zítra
 ---
 [shovey_shop_purchase_pending]
 Nákup odeslán. Zůstatek se obnoví po potvrzení.
@@ -899,7 +899,7 @@ Zlato
 ---
 
 [shovey_completion_coins]
-+15 mincí · Výborně!
++15
 ---
 [shovey_island_title]
 Shovey Island

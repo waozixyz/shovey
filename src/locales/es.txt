@@ -26,13 +26,13 @@ Receptor láser
 Nivel
 ---
 [shovey_ready]
-Todo listo. ¡Ve a casa!
+¡Vuelve a casa!
 ---
 [shovey_won]
 ¡Puzle completado!
 ---
 [shovey_finale]
-Terminaste todos los puzles. ¡Gracias por jugar!
+¡Todos los puzles completados!
 ---
 [shovey_the_end]
 FIN
@@ -50,10 +50,10 @@ Ayuda
 Cerrar ayuda
 ---
 [shovey_previous]
-Nivel anterior
+Anterior
 ---
 [shovey_next]
-Nivel siguiente
+Siguiente
 ---
 [shovey_fire]
 Lanzar
@@ -696,7 +696,7 @@ Toca en cualquier lugar para seguir
 Consejos de Pip
 ---
 [shovey_friend_welcome]
-¡Hola, soy Pip! Completa las tareas y ayuda a Shovey a volver a casa.
+Completa las tareas y vuelve a casa.
 ---
 [shovey_friend_crates]
 Empuja las cajas hasta sus marcas. Puedes empujar, pero nunca tirar.
@@ -862,7 +862,7 @@ Hoy
 Bloqueado
 ---
 [shovey_shop_chest_wait]
-Vuelve mañana
+Mañana
 ---
 [shovey_shop_purchase_pending]
 Compra enviada. El saldo se actualizará tras la confirmación.
@@ -899,7 +899,7 @@ Oro
 ---
 
 [shovey_completion_coins]
-+15 monedas · ¡Muy bien!
++15
 ---
 [shovey_island_title]
 Shovey Island

@@ -26,13 +26,13 @@
 关卡
 ---
 [shovey_ready]
-准备好了，回家吧！
+回家吧！
 ---
 [shovey_won]
 关卡完成！
 ---
 [shovey_finale]
-你完成了所有谜题。感谢游玩！
+全部谜题已完成！
 ---
 [shovey_the_end]
 剧终
@@ -696,7 +696,7 @@ Shovey
 皮普的提示
 ---
 [shovey_friend_welcome]
-嗨，我是皮普！完成任务，再帮肖维回家吧。
+完成目标，然后回家。
 ---
 [shovey_friend_crates]
 把箱子推到标记上。物体只能推，不能拉。
@@ -862,7 +862,7 @@ Dew
 未解锁
 ---
 [shovey_shop_chest_wait]
-明天再来
+明天
 ---
 [shovey_shop_purchase_pending]
 购买请求已发送，确认后余额将更新。
@@ -899,7 +899,7 @@ Dew
 ---
 
 [shovey_completion_coins]
-+15 金币 · 真棒！
++15
 ---
 [shovey_island_title]
 Shovey Island

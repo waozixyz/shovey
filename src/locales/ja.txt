@@ -26,13 +26,13 @@
 レベル
 ---
 [shovey_ready]
-準備完了。家に帰ろう！
+家に帰ろう！
 ---
 [shovey_won]
 パズルクリア！
 ---
 [shovey_finale]
-すべてのパズルをクリアしました。遊んでくれてありがとう！
+すべてのパズルをクリア！
 ---
 [shovey_the_end]
 おわり
@@ -50,10 +50,10 @@ Shoveyが倒れた！
 ヘルプを閉じる
 ---
 [shovey_previous]
-前のレベル
+前へ
 ---
 [shovey_next]
-次のレベル
+次へ
 ---
 [shovey_fire]
 投げる
@@ -696,7 +696,7 @@ Shovey
 ピップのヒント
 ---
 [shovey_friend_welcome]
-やあ、ぼくはピップ！ やることを済ませて、ショヴィを家へ連れていこう。
+目標を達成して、家に帰ろう。
 ---
 [shovey_friend_crates]
 箱を印の上へ押そう。押すことはできるけど、引くことはできないよ。
@@ -862,7 +862,7 @@ Dewを購入
 ロック中
 ---
 [shovey_shop_chest_wait]
-また明日
+明日
 ---
 [shovey_shop_purchase_pending]
 購入を送信しました。確認後に残高が更新されます。
@@ -899,7 +899,7 @@ Dewを購入
 ---
 
 [shovey_completion_coins]
-+15 コイン · お見事！
++15
 ---
 [shovey_island_title]
 Shovey Island

@@ -94,7 +94,7 @@ def main():
                 driver.wait(label='★ ★ ★', role='text')
                 driver.wait(label=f'Score: {expected_score} / 1000', role='text')
                 driver.wait(label=f'Moves: {len(route)}', role='text')
-                driver.wait(key=20905, label='Continue', role='button')
+                driver.wait(key=20905, role='button')
                 # The result stays readable until the player explicitly continues.
                 time.sleep(2)
                 driver.wait(label='Level 1 complete', role='text')

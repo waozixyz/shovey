@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.6.176] - 2026-11-27
+
+- Simplify daily chests to artwork, the coin reward and a Claim action; keep streak details in Help.
+- Reduce tutorial cards to the mechanic tip and Got it, with shorter labels across all twelve languages.
+- Replace the results instruction with a clear Next button while keeping tap-anywhere continuation.
+
 ## [0.6.175] - 2026-11-27
 
 - Keep the game visible behind Profile dialogs, hide leaderboard actions when signed out, and let Escape close web dialogs without stopping the game.

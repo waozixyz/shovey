@@ -26,13 +26,13 @@ Récepteur laser
 Niveau
 ---
 [shovey_ready]
-Tout est prêt. Rentre à la maison !
+Rentre chez toi !
 ---
 [shovey_won]
 Énigme terminée !
 ---
 [shovey_finale]
-Tu as terminé toutes les énigmes. Merci d'avoir joué !
+Toutes les énigmes terminées !
 ---
 [shovey_the_end]
 FIN
@@ -50,10 +50,10 @@ Aide
 Fermer l’aide
 ---
 [shovey_previous]
-Niveau précédent
+Précédent
 ---
 [shovey_next]
-Niveau suivant
+Suivant
 ---
 [shovey_fire]
 Lancer
@@ -696,7 +696,7 @@ Touche n’importe où pour continuer
 Les conseils de Pip
 ---
 [shovey_friend_welcome]
-Salut, moi c’est Pip ! Termine les tâches et aide Shovey à rentrer chez lui.
+Termine les tâches, puis rentre chez toi.
 ---
 [shovey_friend_crates]
 Pousse les caisses sur leurs marques. Tu peux pousser, mais jamais tirer.
@@ -862,7 +862,7 @@ Aujourd’hui
 Verrouillé
 ---
 [shovey_shop_chest_wait]
-Reviens demain
+Demain
 ---
 [shovey_shop_purchase_pending]
 Achat envoyé. Le solde sera actualisé après confirmation.
@@ -899,7 +899,7 @@ Or
 ---
 
 [shovey_completion_coins]
-+15 pièces · Bravo !
++15
 ---
 [shovey_island_title]
 Shovey Island

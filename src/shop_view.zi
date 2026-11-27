@@ -285,8 +285,12 @@ Chest :: (session: Session, area: Rectangle, today: s64, now: float64) {
     if ready { ShoveyRewardGlow(session, 63010, picture, now) }
     Picture(session, 63000, picture,
         ifx ready then "assets/shovey/shop/chest-open.png" else "assets/shovey/shop/chest-closed.png", Copy("chest"))
-    Label(session, 63001, Rectangle.{area.x, area.y + 118.0, area.width, 72.0}, Copy("chest_rule"), 14, true)
-    if Action(session, 63002, Rectangle.{area.x, area.y + 202.0, area.width, 44.0}, ifx ready then "claim" else "chest_wait", !ready, ready) {
+    if ready {
+        digits: [24]u8
+        Amount(session, 63020, Rectangle.{area.x + (area.width - 88.0) / 2.0, area.y + 128.0, 88.0, 32.0}, false,
+            FormatInteger(cast(s64)DailyChestPlanCoins(DailyChestDay(today)), digits[:]))
+    }
+    if Action(session, 63002, Rectangle.{area.x, area.y + 180.0, area.width, 44.0}, ifx ready then "claim" else "chest_wait", !ready, ready) {
         if DailyChestClaim(today) { ShopSetEarnedCoins(DailyChestCoins()); notice = "claimed" }
         else { notice = "purchase_failed" }
     }
@@ -329,7 +333,7 @@ ShopFrame :: (session: Session, bounds: Rectangle, now: float64, today: s64) -> 
     height := ((SHOP_SKIN_COUNT + columns - 1) / columns) * 216
     if confirm != 0 { height = 320 }
     else if page == 2 {
-        height = 262
+        height = 232
     } else if tab == 1 { height = 414 }
     else if tab == 2 { height = 270 }
     viewport_height := bounds.y + bounds.height - top - 8.0

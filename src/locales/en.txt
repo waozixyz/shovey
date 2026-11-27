@@ -26,13 +26,13 @@ Laser receiver
 Level
 ---
 [shovey_ready]
-Everything is ready. Go home!
+Go home!
 ---
 [shovey_won]
 Puzzle complete!
 ---
 [shovey_finale]
-You finished every puzzle. Thank you for playing!
+All puzzles complete!
 ---
 [shovey_the_end]
 THE END
@@ -50,10 +50,10 @@ Help
 Close help
 ---
 [shovey_previous]
-Previous level
+Previous
 ---
 [shovey_next]
-Next level
+Next
 ---
 [shovey_fire]
 Throw
@@ -696,7 +696,7 @@ Tap anywhere to continue
 Pip’s tips
 ---
 [shovey_friend_welcome]
-Hi, I’m Pip! Clear the tasks, then help Shovey get home.
+Clear the tasks, then go home.
 ---
 [shovey_friend_crates]
 Push crates onto their marks. You can push, but never pull.
@@ -862,7 +862,7 @@ Today
 Locked
 ---
 [shovey_shop_chest_wait]
-Come back tomorrow
+Tomorrow
 ---
 [shovey_shop_purchase_pending]
 Purchase sent. Your wallet will refresh after confirmation.
@@ -899,7 +899,7 @@ Gold
 ---
 
 [shovey_completion_coins]
-+15 coins · Well done!
++15
 ---
 [shovey_island_title]
 Shovey Island

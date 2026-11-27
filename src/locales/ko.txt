@@ -26,13 +26,13 @@
 단계
 ---
 [shovey_ready]
-준비 끝. 집으로 가세요!
+집으로 가세요!
 ---
 [shovey_won]
 퍼즐 완료!
 ---
 [shovey_finale]
-모든 퍼즐을 풀었습니다. 플레이해 주셔서 감사합니다!
+모든 퍼즐 완료!
 ---
 [shovey_the_end]
 끝
@@ -50,10 +50,10 @@ Shovey가 쓰러졌어요!
 도움말 닫기
 ---
 [shovey_previous]
-이전 단계
+이전
 ---
 [shovey_next]
-다음 단계
+다음
 ---
 [shovey_fire]
 던지기
@@ -696,7 +696,7 @@ Shovey
 핍의 도움말
 ---
 [shovey_friend_welcome]
-안녕, 나는 핍이야! 할 일을 마치고 쇼비가 집에 가도록 도와주자.
+목표를 달성한 뒤 집으로 가세요.
 ---
 [shovey_friend_crates]
 상자를 표시 위로 밀어 봐. 밀 수는 있지만 당길 수는 없어.
@@ -862,7 +862,7 @@ Dew 구매
 잠김
 ---
 [shovey_shop_chest_wait]
-내일 다시 오세요
+내일
 ---
 [shovey_shop_purchase_pending]
 구매를 요청했어요. 확인 후 잔액이 갱신돼요.
@@ -899,7 +899,7 @@ Dew 구매
 ---
 
 [shovey_completion_coins]
-+15 코인 · 잘했어요!
++15
 ---
 [shovey_island_title]
 Shovey Island
