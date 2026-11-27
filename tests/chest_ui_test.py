@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from PIL import Image
+from PIL import Image, ImageChops, ImageStat
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--binary', type=Path, required=True)
@@ -95,10 +95,22 @@ def check_chest_art(child, name, unclaimed):
     left, top = int(chest['x']), int(chest['y'])
     with Image.open(output / (name + '.png')) as picture:
         cell = picture.convert('RGB').crop((left, top, left + int(chest['width']), top + int(chest['height'])))
-        pixels = cell.load()
-        blue = sum(pixels[x, y][2] > 140 and pixels[x, y][1] > 70 and pixels[x, y][2] > pixels[x, y][0] * 1.6
-                   for y in range(cell.height) for x in range(cell.width))
-    assert (blue > 0) == unclaimed, f'{name}: blue Dew diamond pixels={blue}'
+    # Compare the rendered chest with the current artwork. The modern Dew
+    # reward is golden, so the old blue-pixel check rejected a correct chest.
+    # Ignore transparent edges where the board shows through, and allow for
+    # the renderer's scaling. Include the closed sprite to catch a missed open.
+    errors = {}
+    sprites = Path(__file__).resolve().parents[1] / 'assets/shovey/sprites'
+    for state in ('open', 'empty', 'closed'):
+        with Image.open(sprites / f'chest-{state}.png') as source:
+            reference = source.convert('RGBA').resize(cell.size, Image.Resampling.BILINEAR)
+        opaque = reference.getchannel('A').point(lambda alpha: 255 if alpha >= 250 else 0)
+        difference = ImageChops.difference(cell, reference.convert('RGB'))
+        errors[state] = sum(ImageStat.Stat(difference, opaque).mean) / 3
+    expected = 'open' if unclaimed else 'empty'
+    assert errors[expected] < 30 and all(errors[expected] + 5 < error
+                                       for state, error in errors.items() if state != expected), (
+        f'{name}: expected {expected} chest artwork, pixel errors={errors}')
     driver.key('right')
     driver.wait(key=20120)
 
@@ -133,4 +145,4 @@ with tempfile.TemporaryDirectory(prefix='chest-', dir=output) as temporary:
                 driver.wait(label=expected)
                 capture(child, state + '-' + str(attempt))
                 assert (records / 'rewards').read_text() == 'r1:' + state
-print('Chest UI local test: diamond only for unclaimed Dew, claimed chest empty; both stay open after restart and dialogs reopen')
+print('Chest UI local test: current reward artwork for unclaimed Dew, claimed chest empty; both stay open after restart and dialogs reopen')
