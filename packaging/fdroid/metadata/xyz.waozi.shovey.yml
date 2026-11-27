@@ -3,7 +3,7 @@ Categories:
 License: BSD-3-Clause
 AuthorName: Waozi
 AuthorEmail: waozi@proton.me
-WebSite: https://shovey.waozi.xyz
+WebSite: https://shovey.xyz
 SourceCode: https://github.com/waozixyz/shovey
 IssueTracker: https://github.com/waozixyz/shovey/issues
 Changelog: https://github.com/waozixyz/shovey/blob/HEAD/src/CHANGELOG.md
@@ -15,9 +15,9 @@ Repo: https://github.com/waozixyz/shovey.git
 Binaries: https://github.com/waozixyz/shovey/releases/download/v%v/shovey-%v-fdroid.apk
 
 Builds:
-  - versionName: 0.6.174
-    versionCode: 182
-    commit: df980ada266029ec33f64d63e7d772d2be8f69ae
+  - versionName: 0.6.175
+    versionCode: 183
+    commit: 8c1e541ca0de667e48fa9daa8119f67d11848c0c
     sudo:
       - apt-get update
       - apt-get install -y build-essential cmake meson ninja-build pkg-config python3-pil
@@ -33,5 +33,5 @@ AllowedAPKSigningKeys: 3f687dd9aa7edd8c81b9d3ade255f0b620be7b9fd62783e5f8d7e7f7d
 AutoUpdateMode: Version
 UpdateCheckMode: Tags v[0-9.]+
 UpdateCheckData: 'version.json|"version_code": ([0-9]+)|version.json|"version": "([0-9.]+)"'
-CurrentVersion: 0.6.174
-CurrentVersionCode: 182
+CurrentVersion: 0.6.175
+CurrentVersionCode: 183
