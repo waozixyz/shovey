@@ -38,7 +38,7 @@ Dokončil jsi všechny hádanky. Díky za hraní!
 KONEC
 ---
 [shovey_lost]
-Příliš mnoho náboje! Začni úroveň znovu.
+Shovey je mimo hru!
 ---
 [shovey_restart]
 Znovu

@@ -38,7 +38,7 @@ Tu as terminé toutes les énigmes. Merci d'avoir joué !
 FIN
 ---
 [shovey_lost]
-Trop de charge ! Recommence ce niveau.
+Shovey est K.-O. !
 ---
 [shovey_restart]
 Recommencer

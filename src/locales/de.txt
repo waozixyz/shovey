@@ -38,7 +38,7 @@ Du hast alle Rätsel gelöst. Danke fürs Spielen!
 ENDE
 ---
 [shovey_lost]
-Zu viel Ladung! Starte das Level neu.
+Shovey ist ausgeschaltet!
 ---
 [shovey_restart]
 Neu starten

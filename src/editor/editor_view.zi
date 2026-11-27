@@ -1,3 +1,4 @@
+#import, file "../sprite_atlas.zi";
 // The Shovey Editor's screens: a blank board first, then load one of your
 // own levels, paint boards, play them with the real engines and
 // let the Ziran solver check them, export them for the developer, and
@@ -249,7 +250,7 @@ EditorControl :: (id: s32, bounds: Rectangle, label: string, disabled: bool = fa
 }
 
 EditorImage :: (key: u64, path: string, bounds: Rectangle, label: string) {
-    Image.Draw(editor_frame.session, Image.Props.{.key = key, .asset_path = path, .bounds = bounds,
+    ModernImage(editor_frame.session, Image.Props.{.key = key, .asset_path = path, .bounds = bounds,
             .alt_text = label, .fit = Image.ImageFit.ImageFitContain, .smooth = true})
 }
 
@@ -792,7 +793,7 @@ EditorStartCard :: (key: s32, bounds: Rectangle, name: string, wide: string, tal
     session := editor_frame.session
     pressed := Button.Draw(session, Button.Props.{.key = cast(u64)key, .id = key, .bounds = bounds,
             .label = name, .detail = locked, .invisible = true}) != 0
-    Image.Draw(session, Image.Props.{.key = cast(u64)(key + 1), .bounds = bounds,
+    ModernImage(session, Image.Props.{.key = cast(u64)(key + 1), .bounds = bounds,
             .asset_path = ifx bounds.height > bounds.width then tall else wide, .alt_text = name,
             .fit = Image.ImageFit.ImageFitCover, .radius = 18.0, .smooth = true})
     Box.Draw(session, Box.Props.{.key = cast(u64)(key + 4), .bounds = bounds,
@@ -802,7 +803,7 @@ EditorStartCard :: (key: s32, bounds: Rectangle, name: string, wide: string, tal
     if logo_width > 320.0 { logo_width = 320.0 }
     logo_height := bounds.height * 0.36
     if logo_height > logo_width * 0.64 { logo_height = logo_width * 0.64 }
-    Image.Draw(session, Image.Props.{.key = cast(u64)(key + 2), .asset_path = logo, .alt_text = name,
+    ModernImage(session, Image.Props.{.key = cast(u64)(key + 2), .asset_path = logo, .alt_text = name,
             .bounds = Rectangle.{bounds.x + (bounds.width - logo_width) / 2.0, bounds.y + bounds.height * 0.06, logo_width, logo_height},
             .fit = Image.ImageFit.ImageFitContain, .smooth = true})
     if locked != "" {

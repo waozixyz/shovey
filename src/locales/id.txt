@@ -38,7 +38,7 @@ Kamu menyelesaikan semua teka-teki. Terima kasih sudah bermain!
 TAMAT
 ---
 [shovey_lost]
-Terlalu banyak muatan! Ulangi level ini.
+Shovey tumbang!
 ---
 [shovey_restart]
 Ulangi

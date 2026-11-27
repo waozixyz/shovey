@@ -38,7 +38,7 @@
 剧终
 ---
 [shovey_lost]
-电量过多！请重新开始这一关。
+Shovey 倒下了！
 ---
 [shovey_restart]
 重新开始

@@ -10,7 +10,7 @@ MESH_CLIENT = $(shell $(ZIRAN) pkg path mesh_client $(LOCK_FLAGS))
 CRYPTO = $(shell $(ZIRAN) pkg path crypto $(LOCK_FLAGS))
 COMPLETION_MODULES = --module-path 'mesh_client=$(MESH_CLIENT)' --module-path 'crypto=$(CRYPTO)/src'
 EDITOR_OUT ?= build/private-editor
-EDITOR_DEFINES ?=
+EDITOR_DEFINES ?= $(if $(KRYON_TEST_DRIVER),--define KRYON_TEST_DRIVER)
 
 # Ziran test programs: $(call ziran_test,NAME,ARGUMENTS) builds tests/NAME.zi
 # into build/tests/NAME and runs it from the repository root, without the
@@ -57,6 +57,8 @@ editor-map-test: editor
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SDL_AUDIODRIVER=dummy \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1200x24' python3 tests/developer_editor_map_ui_test.py
 
+editor-ui-test star-merge-test editor-map-test: export KRYON_TEST_DRIVER=1
+
 editor-ui-test: public-editor-test star-merge-test editor-server-test editor-map-test
 	env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS YUE_DESKTOP_RECOVERY=0 \
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/developer_editor_ui_test.py
@@ -74,11 +76,7 @@ editor-ui-test: public-editor-test star-merge-test editor-server-test editor-map
 		xvfb-run -a -n 400 -s '-screen 0 1600x1100x24' python3 tests/editor_memory_test.py --binary $(EDITOR_OUT)/shovey-level-editor
 
 editor: levels build/ziran/libziran.a
-	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
-		--module-path '$(KRYON)/src/ui' --module-path '$(KRYON)/src/backend' \
-		--module-path 'mingcute=$(MINGCUTE)/src' \
-		--module-path 'kryon=$(KRYON)/src/ui' --module-path 'kryon=$(KRYON)/src/backend' \
-		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
+	'$(TOOLCHAIN)/build/bin/ziran' build --project $(LOCK_FLAGS) --target=c --root . \
 		$(EDITOR_DEFINES) --entry editor:main -o $(EDITOR_OUT)/c tools/editor/editor.zi
 	$${CC:-cc} -std=c11 -O2 -ffunction-sections -fdata-sections -I'$(TOOLCHAIN)/include' \
 		$$(find $(EDITOR_OUT)/c -type d -printf ' -iquote %p') $$(find $(EDITOR_OUT)/c -name '*.c') \

@@ -23,13 +23,7 @@ def package(name):
 
 def build():
     toolchain = package('ziran')
-    modules = ['--module-path', str(ROOT / 'src'), '--module-path', str(WORK / 'generated'),
-               '--module-path', str(toolchain / 'std'), '--module-path', 'std=' + str(toolchain / 'std')]
-    for name, folders in [('kryon', ['src/ui', 'src/backend']), ('apps', ['src']), ('entity', ['src']), ('mingcute', ['src'])]:
-        for folder in folders:
-            modules += ['--module-path', name + '=' + str(package(name) / folder)]
-            if name == 'kryon':
-                modules += ['--module-path', str(package(name) / folder)]
+    modules = ['--module-path', str(WORK / 'generated')]
     sys.path.insert(0, str(ROOT / 'scripts'))
     spec = importlib.util.spec_from_file_location('bundler', ROOT / 'scripts/build-bundles.py')
     bundler = importlib.util.module_from_spec(spec)
@@ -53,11 +47,10 @@ def build():
                        ('AppSoundHost', 'Sound'), ('SmoothFramesHost', 'Smooth'),
                        ('AppSupportsHost', 'Supports'), ('AppServiceHost', 'Service')]:
         binds += ['--bind', f'editor_view:{name}=public_editor_ui_host:Fake{fake}']
-    binds += ['--bind', 'text_input_platform:SetPlatformTextKeyboardVisible=public_editor_ui_host:FakeKeyboard']
     output = WORK / 'c'
     shutil.rmtree(output, ignore_errors=True)
-    subprocess.run([toolchain / 'build/bin/ziran', 'build', '--target=c', '--no-main', '--root', ROOT,
-                    *modules, *binds, '--bind-host', 'cairo_raster', '--entry', 'public_editor_ui_host:RunPublicEditor',
+    subprocess.run([toolchain / 'build/bin/ziran', 'build', '--project', '--locked', '--define', 'KRYON_TEST_DRIVER', '--target=c', '--no-main', '--root', ROOT,
+                    *modules, *binds, '--entry', 'public_editor_ui_host:RunPublicEditor',
                     '-o', output, ROOT / 'tests/public_editor_ui_host.zi'], cwd=ROOT, check=True)
     (output / 'main.c').write_text('#include \"public_editor_ui_host.h\"\nint main(void) { return RunPublicEditor(); }\n')
     command = [os.environ.get('CC', 'cc'), '-std=c11', '-O1', '-ffunction-sections', '-fdata-sections',
@@ -80,7 +73,7 @@ if __name__ == '__main__':
             raise SystemExit(error.returncode)
         environment = {k: v for k, v in os.environ.items() if k not in
                        ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER', 'GDK_DISPLAY')}
-        environment |= {'YUE_DESKTOP_RECOVERY': '0', 'SDL_AUDIODRIVER': 'dummy'}
+        environment |= {'HARMONY_DESKTOP_RECOVERY': '0', 'YUE_DESKTOP_RECOVERY': '0', 'SDL_AUDIODRIVER': 'dummy'}
         subprocess.run(['xvfb-run', '-a', '-n', '400', '-s', '-screen 0 1600x1200x24',
                         sys.executable, __file__, '--ui'], cwd=ROOT, env=environment, check=True)
         # The public editor suite also exercises its existing Unicode fields

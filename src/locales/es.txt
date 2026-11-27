@@ -38,7 +38,7 @@ Terminaste todos los puzles. ¡Gracias por jugar!
 FIN
 ---
 [shovey_lost]
-¡Demasiada carga! Reinicia este nivel.
+¡Shovey ha caído!
 ---
 [shovey_restart]
 Reiniciar

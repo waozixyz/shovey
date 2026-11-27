@@ -24,23 +24,25 @@ LASER_LANDSCAPE = {'tile-150': 'tile-151', 'tile-151': 'tile-150', 'tile-152': '
                    'tile-172': 'tile-171'}
 
 
+def landscape_source_stem(stem):
+    if stem in LASER_LANDSCAPE:
+        return LASER_LANDSCAPE[stem]
+    prefix, _, facing = stem.rpartition('-')
+    facings = ('left', 'up', 'right', 'down')
+    if facing in facings and (prefix in ('player', 'charged', 'dog', 'turtle', 'crab') or
+                              prefix.startswith(('fish-', 'skin-'))):
+        return prefix + '-' + facings[(facings.index(facing) + 3) % 4]
+    return stem
+
+
 def turns_with_board(path):
-    # Abyss edges are chosen by screen direction, so they stay upright.
-    return (path.stem.startswith(('player-', 'charged-', 'dog-', 'turtle-', 'crab-', 'fish-', 'grass-edge-')) or
-            path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69'))
+    return path.stem.startswith('grass-edge-') or path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69')
 
 
 def landscape_bytes(path):
-    if path.parent.name == 'sprites' and path.stem.startswith('dog-'):
-        facings = ('left', 'up', 'right', 'down')
-        facing = path.stem.removeprefix('dog-')
-        # Map board-relative direction onto a separately drawn upright view.
-        return path.with_name('dog-' + facings[(facings.index(facing) + 3) % 4] + '.png').read_bytes()
-    if path.parent.name == 'sprites' and path.stem in LASER_LANDSCAPE:
-        # Turning the board turns a / mirror into a \ one and points each
-        # emitter a quarter turn on; the upright pictures keep their shadows
-        # below them.
-        return path.with_name(LASER_LANDSCAPE[path.stem] + '.png').read_bytes()
+    source_stem = landscape_source_stem(path.stem)
+    if source_stem != path.stem:
+        return path.with_name(source_stem + '.png').read_bytes()
     if not turns_with_board(path):
         return path.read_bytes()
     source = path.read_bytes()
@@ -73,7 +75,7 @@ def run(check):
         manifest_path = target_root / 'art.json'
         manifest = manifests.setdefault(manifest_path, {
             'generator': 'tools/levels/landscape.py',
-            'method': 'Objects stay upright; player facings, directional markers and shore edges turn counterclockwise with the board. No outside image is used.',
+            'method': 'Objects stay upright; directional characters select the matching upright view; directional markers and shore edges turn counterclockwise with the board. No outside image is used.',
             'files': [],
         })
         expected = {}

@@ -1,0 +1,82 @@
+// Shovey's artwork shares one texture across portrait, landscape and skins.
+// Keep the public source PNG names for editing and offline previews.
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/tree"
+#import "std/text_buffer"
+Image :: #import "kryon/image";
+Box :: #import "kryon/box";
+TileMap :: #import "kryon/tile_map";
+#import, file "sprite_atlas_data.zi";
+
+ModernImage :: (session: Session, image: Image.Props) {
+    path := image.asset_path
+    prefix: string
+    wide := false
+    if path.count > 47 && path[0:47] == "assets/shovey-editor/classic/sprites-landscape/" {
+        prefix = "assets/shovey-editor/classic/sprites-landscape/"
+        wide = true
+    } else if path.count > 37 && path[0:37] == "assets/shovey-editor/classic/sprites/" {
+        prefix = "assets/shovey-editor/classic/sprites/"
+    } else if path.count > 32 && path[0:32] == "assets/shovey/landscape/sprites/" {
+        prefix = "assets/shovey/landscape/sprites/"
+        wide = true
+    } else if path.count > 32 && path[0:32] == "assets/shovey-landscape/sprites/" {
+        prefix = "assets/shovey-landscape/sprites/"
+        wide = true
+    } else if path.count > 22 && path[0:22] == "assets/shovey/sprites/" {
+        prefix = "assets/shovey/sprites/"
+    }
+    if prefix.count > 0 && path.count > prefix.count {
+        name := path[prefix.count:]
+        hash: u32 = 2166136261
+        // The generated table hashes the basename without its PNG suffix.
+        for at: cast(s64)0..name.count - 5 { hash = (hash ^ cast(u32)name[at]) * cast(u32)16777619 }
+        slot := cast(s32)(hash % 1024)
+        for probe: cast(s32)0..1023 {
+            index := atlas_slots[slot] - 1
+            if index < 0 { break }
+            if name == atlas_names[index] {
+                frame := ifx wide then atlas_landscape[index] else atlas_portrait[index]
+                rect := Rectangle.{cast(float32)(frame % atlas_columns * 66 + 1), cast(float32)(frame / atlas_columns * 66 + 1), 64.0, 64.0}
+                image.asset_path = ifx prefix.count > 35 then "assets/shovey-editor/classic/sprites/atlas.png" else "assets/shovey/sprites/atlas.png"
+                if image.source.width > 0.0 && image.source.height > 0.0 {
+                    rect.x += image.source.x * 0.5
+                    rect.y += image.source.y * 0.5
+                    rect.width = image.source.width * 0.5
+                    rect.height = image.source.height * 0.5
+                }
+                image.source = rect
+                break
+            }
+            slot = (slot + 1) % 1024
+        }
+    }
+    Image.Draw(session, image)
+}
+
+// Compose the existing TileMap layout using source rectangles in one atlas.
+// Grid geometry, layers, names and input indices retain their original meaning.
+ModernTiles :: (session: Session, props: TileMap.Props, location := #caller_location) -> TileMap.TileMapResult {
+    site := TreeCallSite(session, location)
+    defer { TreeCallSiteEnd(session, site) }
+    props.bounds = TreePlaceAhead(session, props.bounds)
+    grid := TileMap.TileMapFit(props.bounds, props.columns, props.rows, props.pixel_snap)
+    if grid.cell <= 0.0 { return grid }
+    if props.fill.a != 0 { unused Box.Draw(session, Box.Props.{.key = props.key, .bounds = grid.board, .fill = props.fill}) }
+    cells := props.columns * props.rows
+    for layer: cast(s32)0..props.layer_count - 1 {
+        for at: cast(s32)0..cells - 1 {
+            index := layer * cells + at
+            if cast(s64)index >= props.layers.count { return grid }
+            tile := props.layers[index]
+            if tile < 0 || cast(s64)tile >= props.tiles.count { continue }
+            nearest := props.nearest
+            for sharp: props.nearest_tiles { if tile == sharp { nearest = true; break } }
+            ModernImage(session, Image.Props.{.key = WidgetPartKey(props.key, index), .asset_path = props.tiles[tile],
+                .alt_text = ifx cast(s64)tile < props.names.count then props.names[tile] else props.label,
+                .bounds = TileMap.TileMapCell(grid, at), .fit = Image.ImageFit.ImageFitContain, .smooth = !nearest})
+        }
+    }
+    return grid
+}

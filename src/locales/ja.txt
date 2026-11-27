@@ -38,7 +38,7 @@
 おわり
 ---
 [shovey_lost]
-充電しすぎです！ このレベルをやり直そう。
+Shoveyが倒れた！
 ---
 [shovey_restart]
 やり直す

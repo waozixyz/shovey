@@ -17,43 +17,37 @@
 // N / P change place, U goes to the next waiting place, C checks now,
 // Ctrl+S saves, Tab plays. Play: arrows or WASD, Space throws, Z undoes,
 // R restarts, Tab goes back to editing.
-#import "c_string"
-#import "byte_text_linux"
-#import "file"
-#import "number_text"
-#import "text_buffer"
-#import "timer_linux"
+#import "std/c_string"
+#import "std/byte_text_linux"
+#import "std/file"
+#import "std/number_text"
+#import "std/text_buffer"
+#import "std/timer_linux"
 #import "std/json_scan"
-#import "cairo_raster"
-#import "desktop_runtime"
-#import "session"
-#import "geometry"
-#import "drawing_props"
-#import "text_props"
-#import "text_align"
-#import "text_widget"
-#import "button_props"
-#import "button_widget"
-#import "control_props"
-#import "image_props"
-#import "image_widget"
-#import "box_props"
-#import "box_widget"
-#import "tree"
+#import "kryon/desktop_runtime"
+#import "kryon/session"
+#import "kryon/geometry"
+#import "kryon/drawing_props"
+#import "kryon/text_align"
+Text :: #import "kryon/text";
+Button :: #import "kryon/button";
+#import "kryon/control_props"
+Image :: #import "kryon/image";
+Box :: #import "kryon/box";
+#import "kryon/tree"
 #import "kryon/test_driver"
-#import "tree_draw"
-#import "tree_input"
-#import "tile_map"
-#import "kryon/scroll_widget"
-#import "kryon/scroll_props"
+#import "kryon/tree_draw"
+#import "kryon/tree_input"
+TileMap :: #import "kryon/tile_map";
+Scroll :: #import "kryon/scroll";
 #import "kryon/scroll_device"
-#import "kryon/dropdown_props"
-#import "kryon/dropdown_widget"
+Dropdown :: #import "kryon/dropdown";
 #import "kryon/style_sheet"
 #import "kryon/widget_palette"
 #import, file "../../src/shovey_theme.zi";
 #import, file "../../src/engine.zi";
 #import, file "../../src/shovey_board.zi";
+#import, file "../../src/sprite_atlas.zi";
 #import, file "../../src/orientation.zi";
 #import, file "../../src/levels.zi";
 #import, file "../../src/reward_locations.zi";
@@ -779,7 +773,7 @@ PrivateSprite :: (kind: s32) -> s32 {
 hex_abyss_open: [SHOVEY_CELLS]bool;
 hex_lava_open: [SHOVEY_CELLS]bool;
 
-HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string, chest: bool = false) -> TileMapResult {
+HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rectangle, landscape: bool, label: string, chest: bool = false) -> TileMap.TileMapResult {
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         hex_abyss_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT
         hex_lava_open[at] = KindAt(board, SHOVEY_CELLS + at) == SHOVEY_LAVA
@@ -834,12 +828,12 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
     }
     columns := cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH)
     rows := cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT)
-    fitted := TileMapFit(bounds, columns, rows)
+    fitted := TileMap.TileMapFit(bounds, columns, rows)
     cell := cast(float32)cast(s32)fitted.cell
     fitted.board = Rectangle.{cast(float32)cast(s32)(bounds.x + (bounds.width - cell * cast(float32)columns) / 2.0),
         cast(float32)cast(s32)(bounds.y + (bounds.height - cell * cast(float32)rows) / 2.0),
         cell * cast(float32)columns, cell * cast(float32)rows}
-    return TileMap(session, TileMapProps.{.key = key, .bounds = fitted.board, .columns = columns, .rows = rows,
+    return ModernTiles(session, TileMap.Props.{.key = key, .bounds = fitted.board, .columns = columns, .rows = rows,
             .tiles = tiles, .names = names[0:0], .layers = layers, .layer_count = 3, .label = label})
 }
 
@@ -985,13 +979,13 @@ DifferenceCount :: (place: s32) -> s32 {
     return count
 }
 
-HighlightDifferences :: (grid: TileMapResult, key: u64) {
+HighlightDifferences :: (grid: TileMap.TileMapResult, key: u64) {
     if grid.cell < 3.0 { return }
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         if !DifferenceAt(current, at) { continue }
-        cell := TileMapCell(grid, BoardDisplayIndex(at, boards_landscape))
+        cell := TileMap.TileMapCell(grid, BoardDisplayIndex(at, boards_landscape))
         bounds := Rectangle.{cell.x + 1.0, cell.y + 1.0, cell.width - 2.0, cell.height - 2.0}
-        unused Box(session, BoxProps.{.key = key + cast(u64)at, .bounds = bounds,
+        unused Box.Draw(session, Box.Props.{.key = key + cast(u64)at, .bounds = bounds,
                 .fill = Color.{238, 102, 158, 35}, .border = Color.{248, 118, 174, 255}})
     }
 }
@@ -2408,13 +2402,13 @@ StartWatch :: () {
 // ---------------------------------------------------------------- screen
 
 Caption :: (key: u64, bounds: Rectangle, text: string, font: s32 = 16) {
-    Text(session, TextProps.{.key = key, .bounds = bounds, .text = text, .font = font,
-            .wrap = TextWrap.TextWrapAuto, .align = TextAlign.TextAlignStart,
+    Text.Draw(session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = font,
+            .wrap = Text.Wrap.TextWrapAuto, .align = TextAlign.TextAlignStart,
             .vertical_align = TextAlign.TextAlignCenter})
 }
 
 Control :: (id: s32, bounds: Rectangle, label: string, selected: bool = false, icon: string = "", picture: string = "") -> bool {
-    return Button(session, ButtonProps.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label, .selected = selected, .icon_shape = icon, .image = ImageProps.{.asset_path = picture, .fit = ImageFit.ImageFitContain}, .fit_content = true,
+    return Button.Draw(session, Button.Props.{.key = cast(u64)id, .id = id, .bounds = bounds, .label = label, .selected = selected, .icon_shape = icon, .image = Image.Props.{.asset_path = picture, .fit = Image.ImageFit.ImageFitContain}, .fit_content = true,
             .tone = ifx selected then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0
 }
 
@@ -2523,9 +2517,9 @@ SelectorScreen :: (area: Rectangle) {
         length: s32 = 0
         AppendPlace(cell_bytes[index * 16:index * 16 + 16], *length, place)
         border := ifx place == current then Color.{30, 30, 30, 255} else Color.{0, 0, 0, 40}
-        unused Box(session, BoxProps.{.key = cast(u64)(74000 + place), .bounds = bounds,
+        unused Box.Draw(session, Box.Props.{.key = cast(u64)(74000 + place), .bounds = bounds,
                 .fill = LevelCardColor(place), .border = border, .radius = 5.0})
-        if Button(session, ButtonProps.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
+        if Button.Draw(session, Button.Props.{.key = cast(u64)(3000 + place), .id = 3000 + place, .bounds = bounds,
                 .label = TextView(cell_bytes[index * 16:index * 16 + length]), .tone = ButtonTone.ButtonToneNeutral,
                 .emphasis = ButtonEmphasis.ButtonEmphasisGhost}) != 0 {
             selector_pick = place
@@ -2671,7 +2665,7 @@ Palette :: (area: Rectangle) {
         if palette_tab == 0 && kind == 12 { visible_count = ((visible_count + 2) / 3) * 3 }
         visible_count += 1
     }
-    scrolled := Scroll(session, ScrollProps.{.key = cast(u64)69500, .bounds = Rectangle.{area.x, area.y + 44.0, area.width, area.height - 44.0},
+    scrolled := Scroll.Draw(session, Scroll.Props.{.key = cast(u64)69500, .bounds = Rectangle.{area.x, area.y + 44.0, area.width, area.height - 44.0},
             .content_height = ((visible_count + 2) / 3) * 96, .keep_scrollbar = true, .scroll_offset = palette_scroll[palette_tab]})
     palette_scroll[palette_tab] = scrolled.scroll_offset
     if !scrolled.opened { return }
@@ -2689,10 +2683,10 @@ Palette :: (area: Rectangle) {
         if bounds.y + bounds.height < scrolled.viewport.y || bounds.y > scrolled.viewport.y + scrolled.viewport.height { continue }
         sprite := ifx kind == 10 then SPRITE_PLAYER + BoardEngineDirection(1, boards_landscape) else PrivateSprite(kind)
         picture := ifx kind == 0 && palette_tab != 0 then "" else OurTiles()[sprite]
-        if Button(session, ButtonProps.{.key = cast(u64)(70000 + index), .id = 70000 + index, .class_name = 9001,
+        if Button.Draw(session, Button.Props.{.key = cast(u64)(70000 + index), .id = 70000 + index, .class_name = 9001,
                 .bounds = bounds, .label = name, .selected = selected == brush, .fit_content = true,
                 .icon_shape = ifx kind == 0 && palette_tab != 0 then eraser else "",
-                .image = ImageProps.{.asset_path = picture, .fit = ImageFit.ImageFitContain},
+                .image = Image.Props.{.asset_path = picture, .fit = Image.ImageFit.ImageFitContain},
                 .icon_placement = IconPlacement.IconPlacementAbove,
                 .tone = ifx selected == brush then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
                 .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 { selected = brush }
@@ -2701,11 +2695,11 @@ Palette :: (area: Rectangle) {
 }
 
 GLMMenu :: () {
-    options: [3]DropdownOption
+    options: [3]Dropdown.Option
     options[0].label = "Modify"
     options[1].label = "Redesign"
     options[2].label = "Prettify"
-    choice := Dropdown(session, DropdownProps.{.key = 18, .id = 18,
+    choice := Dropdown.Draw(session, Dropdown.Props.{.key = 18, .id = 18,
             .bounds = Rectangle.{180.0, 51.0, 122.0, 30.0}, .placeholder = "GLM", .selected_index = -1,
             .disabled = playing || glm_busy || current == CHEST_PLACE}, options[:])
     glm_menu_open = choice.open
@@ -2719,7 +2713,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         selector_open = false
         selector_pick = 0
     }
-    unused Box(session, BoxProps.{.key = cast(u64)19990, .bounds = viewport, .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
+    unused Box.Draw(session, Box.Props.{.key = cast(u64)19990, .bounds = viewport, .fill = ColorFromPacked(cast(u32)SHOVEY_SLATE)})
     now := MonotonicMilliseconds()
     PollActions(now)
     FollowLevelFile(now)
@@ -2817,7 +2811,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         if Control(16, Rectangle.{8.0, 51.0, 80.0, 30.0}, "Redo (Y)") && !playing { RedoEdit() }
         if Control(17, Rectangle.{94.0, 51.0, 80.0, 30.0}, "Reset") && !playing { ResetEdit() }
         update := NeedsUpdate(current)
-        if Button(session, ButtonProps.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
+        if Button.Draw(session, Button.Props.{.key = 19, .id = 19, .bounds = Rectangle.{308.0, 51.0, 100.0, 30.0},
                 .label = ifx update then "Update" else "Approve",
                 .selected = Approved(current), .disabled = ifx update then !UpdateAvailable() else !ApprovalAvailable()}) != 0 {
             if update { UpdateEdit() } else { ApproveEdit() }
@@ -2825,24 +2819,24 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         differences: s32 = 0
         AppendText(diff_label[:], *differences, "Diff ")
         AppendNumber(diff_label[:], *differences, DifferenceCount(current))
-        if Button(session, ButtonProps.{.key = 20, .id = 20, .bounds = Rectangle.{414.0, 51.0, 96.0, 30.0},
+        if Button.Draw(session, Button.Props.{.key = 20, .id = 20, .bounds = Rectangle.{414.0, 51.0, 96.0, 30.0},
                 .label = TextView(diff_label[:differences]), .selected = diff_open,
                 .disabled = playing || !server_verified || !published_places[current - 1]}) != 0 { diff_open = !diff_open }
-        if NeedsRepair() && Button(session, ButtonProps.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
+        if NeedsRepair() && Button.Draw(session, Button.Props.{.key = 21, .id = 21, .bounds = Rectangle.{516.0, 51.0, 92.0, 30.0},
                 .label = ifx glm_busy && glm_repair then "Fixing…" else "Fix it",
                 .disabled = playing || glm_busy}) != 0 { ModifyGLM(true) }
     }
-    if Button(session, ButtonProps.{.key = 22, .id = 22,
+    if Button.Draw(session, Button.Props.{.key = 22, .id = 22,
             .bounds = ifx selector_open then Rectangle.{350.0, 8.0, 120.0, 40.0} else Rectangle.{614.0, 51.0, 116.0, 30.0},
             .label = "Update all",
             .disabled = !server_configured || playing || glm_busy}) != 0 { UpdateAll() }
     if !selector_open {
-        if CancelAvailable() && Button(session, ButtonProps.{.key = 25, .id = 25, .bounds = Rectangle.{742.0, 51.0, 136.0, 30.0},
+        if CancelAvailable() && Button.Draw(session, Button.Props.{.key = 25, .id = 25, .bounds = Rectangle.{742.0, 51.0, 136.0, 30.0},
                 .label = "Cancel approval"}) != 0 {
             RunAction("cancel")
             ActionMessage("Approval cancelled")
         }
-        unused Box(session, BoxProps.{.key = 23, .bounds = Rectangle.{886.0, 51.0, 220.0, 30.0},
+        unused Box.Draw(session, Box.Props.{.key = 23, .bounds = Rectangle.{886.0, 51.0, 220.0, 30.0},
                 .fill = SolutionColor(), .radius = 4.0})
         Caption(24, Rectangle.{894.0, 52.0, 204.0, 28.0}, SolutionText(), 14)
     }
@@ -2909,7 +2903,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         // piece under the pointer to paint with.
         picking := (modifiers & 5) != 0
         if !glm_menu_open && picking && pointer.pressed && grid.cell > 0.0 {
-            at := BoardLogicalIndex(TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
+            at := BoardLogicalIndex(TileMap.TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
             if at >= 0 {
                 piece := KindAt(Board(current), at)
                 decoration := KindAt(Board(current), SHOVEY_CELLS * 2 + at)
@@ -2918,7 +2912,7 @@ Screen :: (viewport: Rectangle, key: s32, modifiers: s32) {
         }
         // A stroke paints every cell the pointer crosses; it is undone at once.
         if !glm_menu_open && !picking && (pointer.down || secondary.down || secondary.pressed) && grid.cell > 0.0 {
-            at := BoardLogicalIndex(TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
+            at := BoardLogicalIndex(TileMap.TileMapCellAt(grid, pointer.x, pointer.y), boards_landscape)
             if at >= 0 {
                 if !stroke { Remember(); stroke = true }
                 Paint(at, ifx secondary.down || secondary.pressed then 0 else selected)
@@ -2960,8 +2954,7 @@ FrameFailed :: (status: FrameStatus) -> bool {
 
 Draw :: () -> bool {
     BeginDesktopFrame()
-    key := DesktopPressedKey()
-    modifiers := DesktopModifiers()
+    key, modifiers := DesktopInputTake(session)
     viewport := DesktopViewport()
     pointer = TestDriverPointer(session, PollPointer())
     secondary = PollSecondaryPointer()

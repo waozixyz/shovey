@@ -38,7 +38,7 @@ You finished every puzzle. Thank you for playing!
 THE END
 ---
 [shovey_lost]
-Too much charge! Restart this puzzle.
+Shovey is down!
 ---
 [shovey_restart]
 Restart

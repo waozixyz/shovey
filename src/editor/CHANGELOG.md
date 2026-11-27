@@ -1,5 +1,9 @@
 # Shovey Editor changelog
 
+## [Unreleased]
+
+- Use the modern Classic tiles and characters in board previews and editing.
+
 ## [0.2.150] - 2026-11-14
 
 - New level shows Classic and Shovey Island as their title banners instead of board pictures.

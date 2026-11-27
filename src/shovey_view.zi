@@ -1,3 +1,4 @@
+#import, file "sprite_atlas.zi";
 #import, file "game_ui.zi";
 #import "session"
 FingerSwipe :: #import "mingcute/mingcute_filled_finger_swipe";
@@ -240,7 +241,7 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     Caption(20601, Rectangle.{x + 108.0, y + 12.0, text_width, 24.0}, AppLocaleHost("shovey_friend_name"), 18)
     Caption(20602, Rectangle.{x + 108.0, y + 42.0, text_width, text_height + 4.0}, text, 15)
     bob := cast(float32)Math.Sin(frame.now * 2.0) * 2.5
-    Image.Draw(frame.session, Image.Props.{.key = cast(u64)20603,
+    ModernImage(frame.session, Image.Props.{.key = cast(u64)20603,
             .bounds = Rectangle.{x - 4.0, y + height - 112.0 + bob, 110.0, 116.0},
             .asset_path = "assets/shovey/pip.png", .alt_text = AppLocaleHost("shovey_friend_name"),
             .fit = Image.ImageFit.ImageFitContain, .smooth = true})
@@ -378,7 +379,7 @@ Tile :: (key: u64, kind: s32, bounds: Rectangle) {
 }
 
 Sprite :: (key: u64, index: s32, bounds: Rectangle, label: string) {
-    Image.Draw(frame.session, Image.Props.{.key = key, .asset_path = SpriteFile(index),
+    ModernImage(frame.session, Image.Props.{.key = key, .asset_path = SpriteFile(index),
             .alt_text = label, .bounds = bounds, .fit = Image.ImageFit.ImageFitContain, .smooth = true})
 }
 
@@ -595,7 +596,7 @@ ThrowButton :: (width: float32, top: float32, bottom: float32) -> bool {
             .fill = Color.{40, 46, 45, 200}, .border = Color.{255, 226, 150, 255}})
     // The drawn shot sits right of and below its frame's centre.
     shot := size * 1.25
-    Image.Draw(frame.session, Image.Props.{.key = cast(u64)20062, .asset_path = sprite_files[SPRITE_SHOT],
+    ModernImage(frame.session, Image.Props.{.key = cast(u64)20062, .asset_path = sprite_files[SPRITE_SHOT],
             .alt_text = AppLocaleHost("shovey_ammo"), .fit = Image.ImageFit.ImageFitContain, .smooth = true,
             .bounds = Rectangle.{bounds.x + (size - shot) / 2.0 - shot * 0.047, bounds.y + (size - shot) / 2.0 - shot * 0.078, shot, shot}})
     press := Press.Draw(frame.session, Press.Props.{.key = cast(u64)20063, .id = 20063, .bounds = bounds,
@@ -662,7 +663,7 @@ LevelPicture :: (number: s32, picture: Rectangle, image_key: u64, board_key: u64
         AppendText(level_preview_paths[at][:], *length, ".png")
         level_preview_paths[at][length] = 0
     }
-    if level_preview_current[at] { Image.Draw(frame.session, Image.Props.{.key = image_key,
+    if level_preview_current[at] { ModernImage(frame.session, Image.Props.{.key = image_key,
                 .asset_path = TextUntilNul(level_preview_paths[at][:]),
                 .alt_text = label, .bounds = picture,
                 .fit = Image.ImageFit.ImageFitContain, .smooth = true}) }
@@ -1038,7 +1039,7 @@ OceanBackdrop :: (area: Rectangle, origin: Vector2, cell: float32, landscape: bo
     if columns < 1 || rows < 1 || cast(s64)(columns * rows) > ocean_layers.count { return }
     water := KindSprite(*game, 64, -1, frame.now, landscape)
     for at: cast(s32)0..columns * rows - 1 { ocean_layers[at] = water }
-    unused TileMap.Draw(frame.session, TileMap.Props.{.key = cast(u64)20099,
+    unused ModernTiles(frame.session, TileMap.Props.{.key = cast(u64)20099,
             .bounds = Rectangle.{first.x, first.y, cast(float32)columns * cell, cast(float32)rows * cell},
             .columns = columns, .rows = rows, .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:],
             .names = sprite_names[:], .layers = ocean_layers[:columns * rows], .layer_count = 1, .label = "", .pixel_snap = board_pixel_snap})
@@ -1618,14 +1619,14 @@ ShoveyFrame :: () {
     keyed := GameKeyDirection(key)
     // Until the controls question is answered it takes every key.
     choosing := !mini && !ControlsChosen()
-    guiding := !mini && !cinematic && !game.won && !ShoveySecret(game.level) && GuideNext(*friend_guide) >= 0
+    guiding := !mini && !cinematic && !game.won && !game.lost && !ShoveySecret(game.level) && GuideNext(*friend_guide) >= 0
     friend_key := key
     // Escape during play follows Back: to the level list when the level was
     // picked there, otherwise to the title. Pip's guide keeps it to continue.
     if key == 256 && !guiding && !choosing && ShoveyBackFromPlay() { key = 0 }
     if choosing || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
-    if keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
-    if key == 32 { changed = ShoveyAct(-1) }
+    if !game.lost && keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
+    if !game.lost && key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
     if slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
         game = slide_boards[slide_next]
@@ -1708,16 +1709,28 @@ ShoveyFrame :: () {
         backdrop.a = cast(u8)(shade * 255.0)
         Fill(cast(u64)20097, ifx cinematic then screen else area, backdrop)
     }
+    if game.lost {
+        if changed || before_direction != game.direction { Remember() }
+        if !BoardLossAnimating(frame.now) {
+            card_width := ifx area.width < 332.0 then area.width - 24.0 else 308.0
+            card := Rectangle.{area.x + (area.width - card_width) * 0.5, area.y + (area.height - 120.0) * 0.5, card_width, 120.0}
+            palette := ShoveyPalette()
+            Fill(20091, area, Color.{12, 24, 25, 132})
+            unused Box.Draw(frame.session, Box.Props.{.key = 20092, .bounds = card, .radius = 15.0,
+                    .fill = ColorFromPacked(palette.background), .border = ColorFromPacked(palette.border)})
+            Caption(20093, Rectangle.{card.x + 12.0, card.y + 9.0, card.width - 24.0, 49.0}, AppLocaleHost("shovey_lost"), 20, true)
+            if Control(20094, Rectangle.{card.x + 16.0, card.y + 62.0, card.width - 32.0, 43.0}, AppLocaleHost("shovey_restart")) {
+                ChangeLevel(game.level)
+            }
+        }
+        return
+    }
     // No move or piece counters: the line speaks only when there is news.
     status := ""
     status_icon := ""
     if BoardRemaining() == 0 {
         status = AppLocaleHost("shovey_ready")
         status_icon = "S2rr:M6 10H18V21H6ZM8 10V6L10 4H14L16 6V10"
-    }
-    if game.lost {
-        status = AppLocaleHost("shovey_lost")
-        status_icon = "S2rr:M6 6L18 18M18 6L6 18"
     }
     if game.won {
         status = AppLocaleHost("shovey_won")
@@ -1738,7 +1751,7 @@ ShoveyFrame :: () {
         rise := cast(float32)coin_age * 18.0
         toast_width := ifx width < 432.0 then width - 32.0 else 400.0
         toast_x := (width - toast_width) / 2.0
-        Image.Draw(frame.session, Image.Props.{.key = 20801, .asset_path = "assets/shovey/shop/coins.png",
+        ModernImage(frame.session, Image.Props.{.key = 20801, .asset_path = "assets/shovey/shop/coins.png",
             .alt_text = AppLocaleHost("shovey_shop_coins"), .bounds = Rectangle.{toast_x, top + 76.0 - rise, 40.0, 40.0}, .fit = Image.ImageFit.ImageFitContain})
         Caption(20802, Rectangle.{toast_x + 44.0, top + 64.0 - rise, toast_width - 44.0, 64.0}, AppLocaleHost("shovey_completion_coins"), 20, true)
     }
@@ -1834,6 +1847,7 @@ ShoveyFrame :: () {
         if game.won && game.level < ShoveyLevelCount() { WinPause() }
         else { Remember() }
     }
+    if game.lost { return }
     // Stepping onto the secret chest opens it.
     if ChestHere() && game.player == CHEST_CELL {
         chest := TileMap.TileMapCell(grid, BoardDisplayIndex(CHEST_CELL, landscape))
@@ -1885,7 +1899,7 @@ CollectibleOverlay :: (grid: TileMap.TileMapResult, landscape: bool) {
     at := TileMap.TileMapCell(grid, BoardDisplayIndex(cell, landscape))
     bob := cast(float32)Math.Sin(frame.now * 3.0) * at.height * 0.05
     inset := at.width * 0.12
-    Image.Draw(frame.session, Image.Props.{.key = cast(u64)20810, .asset_path = Collectibles.CollectibleIcon(index),
+    ModernImage(frame.session, Image.Props.{.key = cast(u64)20810, .asset_path = Collectibles.CollectibleIcon(index),
             .alt_text = AppLocaleHost("shovey_book_unknown"),
             .bounds = Rectangle.{at.x + inset, at.y + inset + bob, at.width - inset * 2.0, at.height - inset * 2.0},
             .fit = Image.ImageFit.ImageFitContain, .smooth = true})

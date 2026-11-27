@@ -1,0 +1,34 @@
+{
+  "objects.png": {
+    "grid": [
+      8,
+      8
+    ],
+    "sha256": "7d9c4d59aeb97976b4c2649421a47f9b8d8b5536b44cec7cd1e29ac50ab89dd4",
+    "role": "Original unchanged generated object master; row-major mapping in build.py."
+  },
+  "terrain.png": {
+    "grid": [
+      6,
+      6
+    ],
+    "sha256": "fb49c13b7d7c10931c8499721516604e12260cb84cd96f02ae736b270b48dc57",
+    "role": "Original unchanged generated terrain/symbol master; row-major mapping in build.py."
+  },
+  "original.png": {
+    "grid": [
+      16,
+      29
+    ],
+    "sha256": "69e35a49a0d1cbc7910ed13d216ffec9cca2514d37af795e3852b94aa2a3da31",
+    "role": "Original pre-redesign sprites; exact rectangles in original.json."
+  },
+  "characters.png": {
+    "grid": [
+      4,
+      7
+    ],
+    "sha256": "ecb8c5a1d367b2aa3dac98da137393ba6200951395806ef677878559929613ab",
+    "role": "Original unchanged generated blob and animal master; down/left/up/right views by row."
+  }
+}

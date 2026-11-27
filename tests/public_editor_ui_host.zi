@@ -10,7 +10,6 @@ Collections :: #import "entity/level_collections";
 #import, file "../src/editor/edit.zi";
 #import, file "../src/solver/solver.zi";
 #import "kryon/desktop_runtime"
-#import "kryon/cairo_raster"
 #import "kryon/tree_draw"
 #import "kryon/tree_input"
 #import "kryon/scroll_device"
@@ -76,7 +75,8 @@ RunPublicEditor :: () -> s32 {
     while ok && PollDesktop() {
         BeginDesktopFrame()
         bounds := DesktopViewport()
-        test_key = DesktopPressedKey()
+        key, modifiers := DesktopInputTake(test_session)
+        test_key = key
         pointer := TestDriverPointer(test_session, PollPointer())
         TreePointerUpdate(test_session, pointer)
         wheel := TestDriverWheel(DesktopWheelMove())

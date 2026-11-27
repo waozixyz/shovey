@@ -38,7 +38,7 @@
 끝
 ---
 [shovey_lost]
-전하가 너무 많아요! 이 단계를 다시 시작하세요.
+Shovey가 쓰러졌어요!
 ---
 [shovey_restart]
 다시 시작

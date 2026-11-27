@@ -38,7 +38,7 @@ Você terminou todos os quebra-cabeças. Obrigado por jogar!
 FIM
 ---
 [shovey_lost]
-Carga demais! Reinicie este nível.
+Shovey caiu!
 ---
 [shovey_restart]
 Reiniciar

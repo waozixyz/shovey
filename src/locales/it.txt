@@ -38,7 +38,7 @@ Hai completato tutti i rompicapi. Grazie per aver giocato!
 FINE
 ---
 [shovey_lost]
-Troppa carica! Ricomincia questo livello.
+Shovey è fuori combattimento!
 ---
 [shovey_restart]
 Ricomincia

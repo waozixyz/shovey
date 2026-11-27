@@ -1,3 +1,4 @@
+#import, file "sprite_atlas.zi";
 // Classic's board as a Kryon TileMap: floor under pieces, the ground, the
 // pieces and Shovey are four layers of the sprites in assets/shovey/sprites.
 // The game view and the level tools draw the board with it.
@@ -146,6 +147,8 @@ PortalTravelMesh :: (cell: Rectangle, progress: float32) -> Image.ImageMesh {
 }
 
 // The loss stays in the engine immediately; only the picture falls away.
+ABYSS_FALL_SECONDS :: 0.8
+
 AbyssFallProgress :: (game: *ShoveyGame, now: float64) -> float32 {
     if !game.lost || game.player < 0 || !ShoveyDrop(game.ground[game.player]) {
         fall_active = false
@@ -158,7 +161,7 @@ AbyssFallProgress :: (game: *ShoveyGame, now: float64) -> float32 {
         fall_position = game.player
         fall_active = true
     }
-    progress := cast(float32)((now - fall_started) / 0.8)
+    progress := cast(float32)((now - fall_started) / ABYSS_FALL_SECONDS)
     return ifx progress >= 1.0 then 1.0 else ifx progress < 0.0 then 0.0 else progress
 }
 
@@ -184,8 +187,8 @@ SHOCK_SECONDS :: 1.3
 // Too much charge: the loss stays in the engine at once; the picture shows
 // a bolt striking Shovey, Shovey shaking among sparks, then charred and
 // smoking where he stood.
-ShockProgress :: (game: *ShoveyGame, now: float64) -> float32 {
-    if !game.lost || game.player < 0 || game.ground[game.player] != 27 {
+ShockProgress :: (game: *ShoveyGame, now: float64, shot_hit: bool = false) -> float32 {
+    if !game.lost || shot_hit || game.player < 0 || game.ground[game.player] != 27 {
         shock_active = false
         return -1.0
     }
@@ -858,6 +861,56 @@ BoardEnemyShot :: struct {
 }
 board_enemy_shots: [BOARD_ENEMY_SHOTS]BoardEnemyShot;
 
+shot_impact_active: bool;
+shot_impact_started: float64;
+shot_impact_level: s32;
+shot_impact_moves: s32;
+BOARD_SHOT_IMPACT_SECONDS :: 0.46
+
+BoardShotImpactProgress :: (game: *ShoveyGame, now: float64) -> float32 {
+    if !game.lost || game.player < 0 || ShoveyDrop(game.ground[game.player]) {
+        shot_impact_active = false
+        return -1.0
+    }
+    if !shot_impact_active || shot_impact_level != game.level || shot_impact_moves != game.moves {
+        shot_impact_active = false
+        if game.ground[game.player] == 27 { return -1.0 }
+        shot_impact_started = now + BOARD_ENEMY_SHOT_SECONDS
+        shot_impact_level = game.level
+        shot_impact_moves = game.moves
+        shot_impact_active = true
+    }
+    progress := cast(float32)((now - shot_impact_started) / BOARD_SHOT_IMPACT_SECONDS)
+    return ifx progress > 1.0 then 1.0 else ifx progress < 0.0 then -1.0 else progress
+}
+
+BoardLossAnimating :: (now: float64) -> bool {
+    return (fall_active && now - fall_started < ABYSS_FALL_SECONDS) ||
+        (shock_active && now - shock_started < SHOCK_SECONDS) ||
+        (shot_impact_active && now - shot_impact_started < BOARD_SHOT_IMPACT_SECONDS)
+}
+
+BoardShotImpact :: (session: Session, key: u64, cell: Rectangle, progress: float32) {
+    cx := cell.x + cell.width * 0.5
+    cy := cell.y + cell.height * 0.5
+    size := cell.width * (0.5 + 1.2 * progress)
+    fade := 1.0 - progress
+    unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4600),
+            .bounds = Rectangle.{cx - size * 0.5, cy - size * 0.5, size, size},
+            .fill = Color.{255, 118, 55, cast(u8)(165.0 * fade * fade)},
+            .border = Color.{255, 224, 145, cast(u8)(240.0 * fade)}, .radius = size * 0.5})
+    for spark: cast(s32)0..5 {
+        angle := cast(float64)spark * 1.047197551
+        reach := cell.width * (0.22 + 0.52 * progress)
+        dot := cell.width * 0.16 * fade
+        x := cx + cast(float32)Math.Cos(angle) * reach
+        y := cy + cast(float32)Math.Sin(angle) * reach
+        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4601 + spark),
+                .bounds = Rectangle.{x - dot * 0.5, y - dot * 0.5, dot, dot},
+                .fill = Color.{255, 204, 108, cast(u8)(255.0 * fade)}, .radius = dot * 0.5})
+    }
+}
+
 BoardEnemyShotStart :: (from: s32, direction: s32, cells: s32, start: float64) {
     slot: s32 = 0
     for index: cast(s32)0..BOARD_ENEMY_SHOTS - 1 {
@@ -882,6 +935,7 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
         for index: cast(s32)0..BOARD_EFFECTS - 1 { board_effects[index].kind = 0 }
         for index: cast(s32)0..BOARD_ENEMY_SHOTS - 1 { board_enemy_shots[index].start = 0.0 }
         board_flight_from = -1
+        shot_impact_active = false
     } else if !game.lost && game.player >= 0 && game.moves > board_seen_moves &&
     (board_seen_powers & SHOVEY_CHARGED) == 0 && (game.powers & SHOVEY_CHARGED) != 0 {
         // A fast move or an animal tick may skip an intermediate frame.
@@ -938,16 +992,22 @@ BoardEffectsNotice :: (game: *ShoveyGame, now: float64) {
             kind := game.ground[source]
             if !ShoveyShooter(kind) { continue }
             prev := ifx board_seen_light[source] >= 0 && board_seen_light[source] < SHOVEY_SHOOTER_INTERVAL then board_seen_light[source] else 0
-            if prev + steps < SHOVEY_SHOOTER_INTERVAL { continue }
+            if prev + steps < SHOVEY_SHOOTER_INTERVAL || (steps == 1 && ShoveyShooterPhase(game, source) != 0) { continue }
             direction := kind - SHOVEY_SHOOTER_LEFT
             cells: s32 = 0
             at := ShoveyNeighbor(source, direction)
             while at >= 0 && !ShoveyEnemyShotStops(game, at) {
                 cells += 1
-                if game.lost && at == game.player { break }
+                if game.lost && at == game.player {
+                    shot_impact_started = now + BOARD_ENEMY_SHOT_SECONDS
+                    shot_impact_level = game.level
+                    shot_impact_moves = game.moves
+                    shot_impact_active = true
+                    break
+                }
                 at = ShoveyNeighbor(at, direction)
             }
-            if cells > 0 { BoardEnemyShotStart(source, direction, cells, now) }
+            BoardEnemyShotStart(source, direction, cells, now)
         }
     }
     board_seen = true
@@ -1002,7 +1062,7 @@ StarMergeEffects :: (session: Session, key: u64, grid: TileMap.TileMapResult, ef
             cell := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
             x := cell.x + cell.width * 0.5
             y := cell.y + cell.height * 0.5
-            Image.Draw(session, Image.Props.{.key = WidgetPartKey(key, 2 + part), .asset_path = files[19], .alt_text = "",
+            ModernImage(session, Image.Props.{.key = WidgetPartKey(key, 2 + part), .asset_path = files[19], .alt_text = "",
                     .bounds = Rectangle.{x + (cx - x) * eased - size * 0.5, y + (cy - y) * eased - size * 0.5, size, size},
                     .fit = Image.ImageFit.ImageFitContain, .smooth = true, .tint = 0xffffff00 | alpha})
         }
@@ -1069,7 +1129,7 @@ ShoveyBoard :: (session: Session, game: *ShoveyGame, bounds: Rectangle, key: u64
     // Mobile density can put tile edges between physical pixels even with
     // integer logical cells. Match the abyss interior behind the tiles so
     // those edges cannot reveal a pale grid through a joined opening.
-    grid := TileMap.Draw(session, TileMap.Props.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
+    grid := ModernTiles(session, TileMap.Props.{.key = key, .bounds = bounds, .columns = columns, .rows = rows,
             .tiles = ifx landscape then landscape_sprite_files[:] else sprite_files[:], .names = names, .layers = board_layers[:], .layer_count = 4,
             .fill = ifx board_pixel_snap then Color.{2, 4, 5, 255} else Color.{}, .label = "Shovey", .pixel_snap = board_pixel_snap,
             .nearest_tiles = abyss_sprite_indices[:]})
@@ -1170,7 +1230,7 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
     if !ShoveyLoad(*board_preview_game, level) { return }
     BoardLayersFill(*board_preview_game, board_preview_layers[:], 0.0, landscape, false)
     files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
-    grid := TileMap.Draw(session, TileMap.Props.{.key = key, .bounds = bounds,
+    grid := ModernTiles(session, TileMap.Props.{.key = key, .bounds = bounds,
             .columns = cast(s32)(ifx landscape then SHOVEY_HEIGHT else SHOVEY_WIDTH),
             .rows = cast(s32)(ifx landscape then SHOVEY_WIDTH else SHOVEY_HEIGHT),
             .tiles = files, .names = names, .layers = board_preview_layers[:], .layer_count = 4,
@@ -1179,7 +1239,7 @@ ShoveyBoardPreview :: (session: Session, level: s32, bounds: Rectangle, key: u64
     BoardBoats(session, *board_preview_game, grid, WidgetPartKey(key, SHOVEY_CELLS * 4 + 1), 0.0, landscape)
     player := board_preview_game.player
     if !scenery && player >= 0 && player < SHOVEY_CELLS {
-        Image.Draw(session, Image.Props.{.key = WidgetPartKey(key, SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(*board_preview_game, landscape)],
+        ModernImage(session, Image.Props.{.key = WidgetPartKey(key, SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(*board_preview_game, landscape)],
                 .alt_text = "Shovey", .bounds = TileMap.TileMapCell(grid, BoardDisplayIndex(player, landscape)),
                 .fit = Image.ImageFit.ImageFitContain, .smooth = true})
     }
@@ -1225,7 +1285,7 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
             boat.x += BoardSailTravel(board_sail) * cell.width
             boat.y += cast(float32)Math.Sin(now * 2.6) * cell.height * 0.06
         }
-        Image.Draw(session, Image.Props.{.key = BoardOverlayKey(key, 1000 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT],
+        ModernImage(session, Image.Props.{.key = BoardOverlayKey(key, 1000 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT],
                 .alt_text = "", .bounds = boat, .fit = Image.ImageFit.ImageFitContain, .smooth = true, .tint = tint})
         if aboard {
             // Shovey jumps in from the cell he came from, in an arc, and
@@ -1241,18 +1301,18 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
                 rider = Rectangle.{start.x + (rider.x - start.x) * eased, start.y + (rider.y - start.y) * eased - lift,
                     start.width + (rider.width - start.width) * eased, start.height + (rider.height - start.height) * eased}
             }
-            Image.Draw(session, Image.Props.{.key = BoardOverlayKey(key, 1001 + drawn * 3), .asset_path = files[PlayerSprite(game, landscape)],
+            ModernImage(session, Image.Props.{.key = BoardOverlayKey(key, 1001 + drawn * 3), .asset_path = files[PlayerSprite(game, landscape)],
                     .alt_text = "Shovey", .bounds = rider, .fit = Image.ImageFit.ImageFitContain, .smooth = true, .tint = tint})
             // He clears the near gunwale at the top of his jump and drops in
             // behind it.
             if hop >= 0.5 {
-                Image.Draw(session, Image.Props.{.key = BoardOverlayKey(key, 1002 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT + 1],
+                ModernImage(session, Image.Props.{.key = BoardOverlayKey(key, 1002 + drawn * 3), .asset_path = files[SPRITE_BIG_BOAT + 1],
                         .alt_text = "", .bounds = boat, .fit = Image.ImageFit.ImageFitContain, .smooth = true, .tint = tint})
             }
         }
         // Water breaks on the bow, faster once the boat makes way.
         wake := cast(s32)(cast(s64)(now / ifx aboard && board_sail > BOAT_HOP then 0.09 else 0.28) % 4)
-        Image.Draw(session, Image.Props.{.key = BoardOverlayKey(key, 1030 + drawn), .asset_path = files[SPRITE_BOAT_WAKE + wake],
+        ModernImage(session, Image.Props.{.key = BoardOverlayKey(key, 1030 + drawn), .asset_path = files[SPRITE_BOAT_WAKE + wake],
                 .alt_text = "", .bounds = Rectangle.{boat.x, boat.y, boat.width * BOAT_WAKE_WIDE, boat.height},
                 .fit = Image.ImageFit.ImageFitContain, .smooth = true, .tint = tint})
         drawn += 1
@@ -1262,22 +1322,26 @@ BoardBoats :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
 // Shovey, gliding animals, effects and guides over the board's tiles.
 BOARD_BEAM_SEGMENTS :: 240
 
-// One straight piece of a beam, between two cell centres.
-BoardBeamSegment :: (session: Session, key: u64, part: s32, from: Rectangle, to: Rectangle) {
+// The receiver signal travels along a chain of cyan dots.
+BoardBeamSegment :: (session: Session, key: u64, part: s32, from: Rectangle, to: Rectangle, phase: float32) {
     ax := from.x + from.width / 2.0; ay := from.y + from.height / 2.0
     bx := to.x + to.width / 2.0; by := to.y + to.height / 2.0
-    left := ifx ax < bx then ax else bx; top := ifx ay < by then ay else by
-    width := (ifx ax < bx then bx - ax else ax - bx); height := (ifx ay < by then by - ay else ay - by)
-    glow := from.width * 0.2; core := from.width * 0.07
-    unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 2000 + part * 2), .bounds = Rectangle.{left - glow / 2.0, top - glow / 2.0,
-                width + glow, height + glow}, .fill = Color.{255, 64, 48, 90}, .radius = glow / 2.0})
-    unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 2001 + part * 2), .bounds = Rectangle.{left - core / 2.0, top - core / 2.0,
-                width + core, height + core}, .fill = Color.{255, 214, 196, 235}, .radius = core / 2.0})
+    dot := from.width * 0.09
+    unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 2000 + part * 2),
+            .bounds = Rectangle.{(ax + bx - dot) * 0.5, (ay + by - dot) * 0.5, dot, dot},
+            .fill = Color.{46, 197, 220, 105}, .radius = dot * 0.5})
+    if phase >= 1.0 { return }
+    pulse := from.width * 0.19
+    x := ax + (bx - ax) * phase
+    y := ay + (by - ay) * phase
+    unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 2001 + part * 2),
+            .bounds = Rectangle.{x - pulse * 0.5, y - pulse * 0.5, pulse, pulse},
+            .fill = Color.{117, 242, 255, 225}, .radius = pulse * 0.5})
 }
 
 // Each emitter's beam as the engine traces it: it turns at mirrors, lights
 // a receiver and ends against whatever stops it.
-BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, key: u64, landscape: bool) {
+BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, key: u64, now: float64, landscape: bool) {
     part: s32 = 0
     for source: cast(s32)0..SHOVEY_CELLS - 1 {
         if !ShoveyLaserEmitter(game.ground[source]) { continue }
@@ -1286,6 +1350,9 @@ BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
         for step: cast(s32)0..SHOVEY_CELLS * 4 {
             if part >= BOARD_BEAM_SEGMENTS || game.ground[at] == SHOVEY_LASER_RECEIVER { break }
             here := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
+            cycle := now * 2.7 - cast(float64)step * 0.18
+            fraction := cycle - cast(float64)cast(s64)cycle
+            phase := cast(float32)(ifx fraction < 0.0 then fraction + 1.0 else fraction) / 0.18
             heading := direction
             next := ShoveyBeamStep(game, at, *direction)
             if next < 0 {
@@ -1294,28 +1361,15 @@ BoardBeams :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult,
                 if beyond >= 0 {
                     there := TileMap.TileMapCell(grid, BoardDisplayIndex(beyond, landscape))
                     edge := Rectangle.{(here.x + there.x) / 2.0, (here.y + there.y) / 2.0, here.width, here.height}
-                    BoardBeamSegment(session, key, part, here, edge)
+                    BoardBeamSegment(session, key, part, here, edge, phase)
                     part += 1
                 }
                 break
             }
-            BoardBeamSegment(session, key, part, here, TileMap.TileMapCell(grid, BoardDisplayIndex(next, landscape)))
+            BoardBeamSegment(session, key, part, here, TileMap.TileMapCell(grid, BoardDisplayIndex(next, landscape)), phase)
             part += 1
             at = next
         }
-    }
-}
-
-// Keep the floor's crate destination corners clear on dark tiles. Occupied
-// marks stay beneath their pieces; the wooden crate artwork is untouched.
-BoardCrateGoals :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, landscape: bool) {
-    for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if game.ground[at] != 18 || game.objects[at] != 0 || game.player == at { continue }
-        cell := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
-        SvgIcon.Draw(session, SvgIcon.Props.{.bounds = cell,
-            .shape = "S2rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{40, 30, 20, 230}})
-        SvgIcon.Draw(session, SvgIcon.Props.{.bounds = cell,
-            .shape = "S1rr:M8 4H4V8M16 4H20V8M4 16V20H8M16 20H20V16", .color = Color.{255, 241, 193, 255}})
     }
 }
 
@@ -1351,10 +1405,10 @@ BoardShooters :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResu
             at := ShoveyNeighbor(source, direction)
             while at >= 0 && !ShoveyEnemyShotStops(game, at) && warning_dot < 160 {
                 spot := TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
-                dot_size := spot.width * (0.16 + 0.05 * pulse)
+                dot_size := spot.width * (0.12 + 0.04 * pulse)
                 unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4200 + warning_dot),
                         .bounds = Rectangle.{spot.x + (spot.width - dot_size) * 0.5, spot.y + (spot.height - dot_size) * 0.5, dot_size, dot_size},
-                        .fill = Color.{255, 86, 42, cast(u8)(135.0 + 90.0 * pulse)}, .radius = dot_size * 0.5})
+                        .fill = Color.{255, 170, 62, cast(u8)(110.0 + 75.0 * pulse)}, .radius = dot_size * 0.5})
                 warning_dot += 1
                 at = ShoveyNeighbor(at, direction)
             }
@@ -1368,24 +1422,35 @@ BoardShooters :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResu
         if progress >= 1.0 { shot.start = 0.0; continue }
         if progress < 0.0 { continue }
         from := TileMap.TileMapCell(grid, BoardDisplayIndex(shot.from, landscape))
-        to := BoardAlong(grid, shot.from, shot.direction, shot.cells, landscape)
         ax := from.x + from.width * 0.5; ay := from.y + from.height * 0.5
+        effect := 4500 + index * 4
+        if progress < 0.42 {
+            flash := from.width * 0.72
+            unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, effect),
+                    .bounds = Rectangle.{ax - flash * 0.5, ay - flash * 0.5, flash, flash},
+                    .fill = Color.{255, 192, 93, cast(u8)(235.0 * (1.0 - progress / 0.42))}, .radius = flash * 0.5})
+        }
+        if shot.cells <= 0 { continue }
+        to := BoardAlong(grid, shot.from, shot.direction, shot.cells, landscape)
         bx := to.x + to.width * 0.5; by := to.y + to.height * 0.5
-        left := ifx ax < bx then ax else bx; top := ifx ay < by then ay else by
-        width := ifx ax < bx then bx - ax else ax - bx; height := ifx ay < by then by - ay else ay - by
         fade := 1.0 - progress
-        beam := from.width * 0.16
-        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4500 + index * 3),
-                .bounds = Rectangle.{left - beam * 0.5, top - beam * 0.5, width + beam, height + beam},
-                .fill = Color.{255, 92, 42, cast(u8)(150.0 * fade)}, .radius = beam * 0.5})
         orb := from.width * 0.34
         ox := ax + (bx - ax) * progress
         oy := ay + (by - ay) * progress
-        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4500 + index * 3 + 1),
+        tail := progress - 0.65 / cast(float32)shot.cells
+        if tail < 0.0 { tail = 0.0 }
+        tx := ax + (bx - ax) * tail; ty := ay + (by - ay) * tail
+        left := ifx tx < ox then tx else ox; top := ifx ty < oy then ty else oy
+        width := ifx tx < ox then ox - tx else tx - ox; height := ifx ty < oy then oy - ty else ty - oy
+        beam := from.width * 0.13
+        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, effect + 1),
+                .bounds = Rectangle.{left - beam * 0.5, top - beam * 0.5, width + beam, height + beam},
+                .fill = Color.{255, 92, 42, cast(u8)(170.0 * fade)}, .radius = beam * 0.5})
+        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, effect + 2),
                 .bounds = Rectangle.{ox - orb * 0.5, oy - orb * 0.5, orb, orb},
                 .fill = Color.{255, 118, 42, cast(u8)(235.0 * fade)}, .radius = orb * 0.5})
         core := orb * 0.5
-        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, 4500 + index * 3 + 2),
+        unused Box.Draw(session, Box.Props.{.key = BoardOverlayKey(key, effect + 3),
                 .bounds = Rectangle.{ox - core * 0.5, oy - core * 0.5, core, core},
                 .fill = Color.{255, 244, 176, cast(u8)(255.0 * fade)}, .radius = core * 0.5})
     }
@@ -1394,9 +1459,8 @@ BoardShooters :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResu
 ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMapResult, key: u64, now: float64, names: []string,
     landscape: bool) -> TileMap.TileMapResult {
     BoardBoats(session, game, grid, key, now, landscape)
-    BoardBeams(session, game, grid, key, landscape)
+    BoardBeams(session, game, grid, key, now, landscape)
     BoardShooters(session, game, grid, key, now, landscape)
-    BoardCrateGoals(session, game, grid, landscape)
     if board_chest >= 0 && board_chest_open && !board_chest_claimed {
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(board_chest, landscape))
         Theme.ShoveyRewardGlow(session, BoardOverlayKey(key, 3800), cell, now)
@@ -1416,30 +1480,38 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMap
             to_cell.width, to_cell.height}
         sprite := KindSprite(game, game.ground[at], at, now, landscape)
         if sprite >= 0 {
-            Image.Draw(session, Image.Props.{.key = key + cast(u64)(3 + SHOVEY_CELLS * 4 + index), .asset_path = glide_files[sprite],
+            ModernImage(session, Image.Props.{.key = key + cast(u64)(3 + SHOVEY_CELLS * 4 + index), .asset_path = glide_files[sprite],
                     .alt_text = ifx cast(s64)sprite < names.count then names[sprite] else "", .bounds = cell,
                     .fit = Image.ImageFit.ImageFitContain, .smooth = true})
         }
     }
+    impact := BoardShotImpactProgress(game, now)
     if game.player >= 0 && game.player < SHOVEY_CELLS && !BoardSailing(game) {
         files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
         portal := PortalTravelProgress(game, now)
         position := ifx portal >= 0.0 && portal < 0.5 then portal_entry else game.player
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(position, landscape))
         fall := AbyssFallProgress(game, now)
-        shock := ShockProgress(game, now)
+        shock := ShockProgress(game, now, shot_impact_active)
         image := Image.Props.{.key = key + cast(u64)(1 + SHOVEY_CELLS * 4), .asset_path = files[PlayerSprite(game, landscape)],
             .alt_text = "Shovey", .bounds = cell, .fit = Image.ImageFit.ImageFitContain, .smooth = true}
         // Fully collapsed quads have no area. Omit them instead of handing
         // the rasterizer a singular image transform at the end/midpoint.
-        visible := fall < 0.97 && (portal < 0.49 || portal > 0.51)
+        visible := fall < 0.97 && impact < 0.82 && (portal < 0.49 || portal > 0.51)
         if visible {
             if fall >= 0.0 { image.mesh = AbyssFallMesh(cell, fall) }
             else if portal >= 0.0 { image.mesh = PortalTravelMesh(cell, portal) }
             if shock >= 0.0 { ShockShovey(*image, cell, shock, now) }
-            Image.Draw(session, image)
+            if impact >= 0.0 {
+                height := cell.height * (1.0 - impact)
+                image.bounds.y += cell.height - height
+                image.bounds.height = height
+                if impact < 0.2 { image.tint = 0xffcc80ff }
+            }
+            ModernImage(session, image)
         }
         if shock >= 0.0 { ShockEffects(session, key, cell, shock, now) }
+        if impact >= 0.0 && impact < 1.0 { BoardShotImpact(session, key, cell, impact) }
     }
     BoardGuides(session, game, grid, key, now, landscape)
     files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
@@ -1478,7 +1550,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMap
         cy -= held * (forward_y * 0.047 + forward_x * 0.078)
         frame := Rectangle.{cx - held / 2.0, cy - held / 2.0, held, held}
         center := Vector2.{cx, cy}
-        Image.Draw(session, Image.Props.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = files[SPRITE_SHOT],
+        ModernImage(session, Image.Props.{.key = key + cast(u64)(2 + SHOVEY_CELLS * 4), .asset_path = files[SPRITE_SHOT],
                 .alt_text = shot_label, .bounds = frame, .fit = Image.ImageFit.ImageFitContain, .smooth = true,
                 .mesh = ImageMeshQuad(frame, Camera.{.target = center, .offset = center, .zoom = 1.0,
                     .rotation = cast(float32)(((visible + 2) % 4) * 90)}, held_points[:])})
@@ -1493,7 +1565,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMap
             size := from.width * 0.45
             x := from.x + (to.x - from.x) * progress + (from.width - size) / 2.0
             y := from.y + (to.y - from.y) * progress + (from.height - size) / 2.0
-            Image.Draw(session, Image.Props.{.key = BoardOverlayKey(key, 299), .asset_path = files[SPRITE_SHOT], .alt_text = shot_label,
+            ModernImage(session, Image.Props.{.key = BoardOverlayKey(key, 299), .asset_path = files[SPRITE_SHOT], .alt_text = shot_label,
                     .bounds = Rectangle.{x, y, size, size}, .fit = Image.ImageFit.ImageFitContain, .smooth = true})
         }
     }
@@ -1531,7 +1603,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMap
             size := cell.width * 0.85 * (1.0 - progress)
             sprite := KindSprite(game, effect.piece, -1, now, landscape)
             if sprite >= 0 && size > 1.0 {
-                Image.Draw(session, Image.Props.{.key = BoardOverlayKey(key, 400 + index), .asset_path = files[sprite], .alt_text = "",
+                ModernImage(session, Image.Props.{.key = BoardOverlayKey(key, 400 + index), .asset_path = files[sprite], .alt_text = "",
                         .bounds = Rectangle.{cell.x + (cell.width - size) / 2.0, cell.y + (cell.height - size) / 2.0 + progress * cell.height * 0.08, size, size},
                         .fit = Image.ImageFit.ImageFitContain, .smooth = true})
             }
@@ -1544,7 +1616,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMap
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(effect.at, landscape))
         scale: float32 = ifx effect.kind == 1 then 1.4 else 2.4
         size := cell.width * scale
-        Image.Draw(session, Image.Props.{.key = BoardOverlayKey(key, 400 + index), .asset_path = files[(ifx effect.kind == 1 then SPRITE_BURST else SPRITE_EXPLOSION) + frame],
+        ModernImage(session, Image.Props.{.key = BoardOverlayKey(key, 400 + index), .asset_path = files[(ifx effect.kind == 1 then SPRITE_BURST else SPRITE_EXPLOSION) + frame],
                 .alt_text = "", .bounds = Rectangle.{cell.x + (cell.width - size) / 2.0, cell.y + (cell.height - size) / 2.0, size, size},
                 .fit = Image.ImageFit.ImageFitContain, .smooth = false})
     }

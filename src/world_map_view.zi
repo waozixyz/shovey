@@ -1,3 +1,4 @@
+#import, file "sprite_atlas.zi";
 #import "kryon/session"
 #import "kryon/pointer_input"
 #import "kryon/input_protocol"
@@ -140,7 +141,7 @@ WorldMapViewAvatar :: (session: Session, center: Vector2) {
         .radius = 19.5, .fill = Color.{40, 60, 30, 60}})
     unused Shape.Circle(session, Shape.CircleProps.{.key = cast(u64)66004, .center = Vector2.{center.x, center.y + 4.5},
         .radius = 17.0, .fill = Color.{40, 60, 30, 84}})
-    unused Image.Draw(session, Image.Props.{.key = cast(u64)64999, .bounds = WorldMapViewAvatarBounds(center),
+    unused ModernImage(session, Image.Props.{.key = cast(u64)64999, .bounds = WorldMapViewAvatarBounds(center),
         .asset_path = "assets/shovey/world-map/shovey-avatar.png", .alt_text = "Shovey", .fit = Image.ImageFit.ImageFitContain, .smooth = true})
 }
 WorldMapViewStars :: (props: WorldMapViewProps, place: s32) -> s32 {
@@ -861,7 +862,7 @@ WorldMapViewSection :: (session: Session, viewport: Rectangle, origin: Vector2, 
     scene := Layout.WorldMapSceneBounds(section,width,landscape)
     bounds := Rectangle.{origin.x+scene.x,origin.y+scene.y,scene.width,scene.height}
     if WorldMapViewIntersects(bounds,viewport,0.0) {
-        unused Image.Draw(session,Image.Props.{.key=cast(u64)(60001+section),.bounds=bounds,
+        unused ModernImage(session,Image.Props.{.key=cast(u64)(60001+section),.bounds=bounds,
             .asset_path=path,.fit=Image.ImageFit.ImageFitStretch,.smooth=true})
     }
 }
