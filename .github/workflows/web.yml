@@ -1,6 +1,6 @@
 name: Play online
 
-# shovey.waozi.xyz is the released game: the newest published release's own
+# shovey.xyz is the released game: the newest published release's own
 # shovey.zx, shovey.json and entity.zx, in Shovey's player compiled for the
 # browser, with their programs compiled into the page (scripts/build-site.py).
 # Pushes rebuild it, and so does each finished Downloads run that published a
@@ -64,7 +64,7 @@ jobs:
           import subprocess
           import os
           changed = subprocess.check_output(['git', 'diff', '--name-only', os.environ['BEFORE'], 'HEAD'], text=True).splitlines()
-          packaging = {'.github/workflows/web.yml', 'scripts/prepare-pages.py', 'scripts/player.py',
+          packaging = {'.github/workflows/web.yml', 'AGENTS.md', 'README.md', 'scripts/prepare-pages.py', 'scripts/player.py',
                        'site/index.html', 'tests/pages_packaging_test.py', 'tests/pages_browser_test.py', 'tests/web_release_test.mjs',
                        'Makefile', '.github/workflows/play-bundle.yml', 'tests/play_release_notes_test.py'}
           print('game=' + str(not changed or not set(changed) <= packaging).lower())
@@ -214,10 +214,10 @@ jobs:
               exit 0
             fi
           fi
-          live=$(curl -fsS https://shovey.waozi.xyz/build.json | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' || true)
+          live=$(curl -fsS https://shovey.xyz/build.json | python3 -c 'import json,sys; print(json.load(sys.stdin).get("version", ""))' || true)
           # The site changes with each release; a manual run rebuilds it anyway.
           if [ "$GITHUB_EVENT_NAME" != workflow_dispatch ] && [ "$live" = "${tag#v}" ]; then
-            echo "::notice title=Site::shovey.waozi.xyz already runs Shovey $live"
+            echo "::notice title=Site::shovey.xyz already runs Shovey $live"
             echo 'publish=false' >> "$GITHUB_OUTPUT"
           else
             echo 'publish=true' >> "$GITHUB_OUTPUT"
@@ -368,7 +368,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: cloudflare-pages
-      url: https://shovey.waozi.xyz
+      url: https://shovey.xyz
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -386,20 +386,20 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy build/web-site --project-name=shovey --branch=master --commit-hash=${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-      - name: Check that shovey.waozi.xyz serves the release
+      - name: Check that shovey.xyz serves the release
         run: |
           expected=$(cat build/web-site/build.json)
           for attempt in $(seq 30); do
-            live=$(curl -fsS --max-time 10 -H 'Cache-Control: no-cache' "https://shovey.waozi.xyz/build.json?$attempt" || true)
+            live=$(curl -fsS --max-time 10 -H 'Cache-Control: no-cache' "https://shovey.xyz/build.json?$attempt" || true)
             if [ "$live" = "$expected" ]; then exit 0; fi
             sleep 10
           done
-          echo '::error::shovey.waozi.xyz did not serve the deployed build.json'
+          echo '::error::shovey.xyz did not serve the deployed build.json'
           exit 1
-      - name: Play the deployed release at shovey.waozi.xyz
+      - name: Play the deployed release at shovey.xyz
         run: |
           export CHROMIUM="$(command -v google-chrome || command -v chromium)"
-          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SHOVEY_TEST_URL=https://shovey.waozi.xyz/ node tests/web_release_test.mjs
+          env -u DISPLAY -u WAYLAND_DISPLAY -u XAUTHORITY -u DBUS_SESSION_BUS_ADDRESS -u SESSION_MANAGER -u GDK_DISPLAY YUE_DESKTOP_RECOVERY=0 SHOVEY_TEST_URL=https://shovey.xyz/ node tests/web_release_test.mjs
 
   itch:
     name: Publish itch.io

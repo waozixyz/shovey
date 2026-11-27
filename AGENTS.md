@@ -35,15 +35,17 @@ instead.
 
 ## Web deployment
 
-Owner instruction, 2026-10-22: the playable web game lives at
-https://shovey.waozi.xyz on Cloudflare Pages, linked from https://waozi.xyz.
+Owner instruction, 2026-11-27: the playable web game lives at
+https://shovey.xyz on Cloudflare Pages, linked from https://waozi.xyz.
+Keep https://shovey.waozi.xyz as a permanent redirect to the same path and query
+on the new domain; keep the old subdomain configured.
 Do not deploy it to GitHub Pages or use a github.io play link.
 
 Use the existing Cloudflare Pages deployment pattern in
 `waozixyz/waozi/.github/workflows/pages.yml`. Shovey's GitHub Actions workflow
 builds and tests the approved campaign, then deploys the `shovey` Pages
 project from `master`. Keep the website's link in its source
-`site/data/waozi.toml` pointing to the subdomain.
+`site/data/waozi.toml` pointing to https://shovey.xyz/.
 
 Verify the deployed revision and playable game at the actual custom domain.
 Browser checks use a private headless browser or private display, never the

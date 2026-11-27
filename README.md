@@ -9,7 +9,7 @@
 A colorful puzzle adventure about finding a path home. Push balls into matching
 pits, move crates onto their marks and untangle the board one move at a time.
 
-[Play online](https://shovey.waozi.xyz/)
+[Play online](https://shovey.xyz/)
 · [Play on itch.io](https://waozi.itch.io/shovey)
 · [Download for Android, Linux and Windows](https://github.com/waozixyz/shovey/releases/latest)
 · [What's new](src/CHANGELOG.md)

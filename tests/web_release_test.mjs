@@ -1,4 +1,4 @@
-// shovey.waozi.xyz as published: the released Shovey in Arcade's browser
+// shovey.xyz as published: the released Shovey in Arcade's browser
 // host, built by scripts/build-site.py. Plays level 1 in the packaged public
 // host or on the deployed site. The private test build also checks its UI tree.
 // No pixel captures.
