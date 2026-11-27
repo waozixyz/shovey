@@ -155,17 +155,17 @@ class PagesPackaging(unittest.TestCase):
             gh.write_text("""#!/usr/bin/python3
 import json,os,sys
 if sys.argv[1:3]==['release','list']: print('v0.6.164')
-elif '/jobs?' in sys.argv[2]: print(json.dumps(dict(jobs=[dict(name='release',status='completed',conclusion=os.environ['TEST_RELEASE_JOB'])])))
+elif '/jobs?' in sys.argv[2]: print(json.dumps(dict(jobs=[dict(name='Attach the F-Droid and Google Play editions',status='completed',conclusion=os.environ['TEST_RELEASE_JOB'])])))
 elif '/commits/' in sys.argv[2]: print(json.dumps(dict(sha='released-source')))
-else: print(json.dumps(dict(repository=dict(full_name='waozixyz/shovey'),path='.github/workflows/downloads.yml',status='completed',conclusion='failure',head_sha=os.environ['RELEASE_SOURCE'])))
+else: print(json.dumps(dict(repository=dict(full_name='waozixyz/shovey'),path='.github/workflows/downloads.yml',status='completed',conclusion=os.environ['TEST_RUN_CONCLUSION'],head_sha=os.environ['RELEASE_SOURCE'])))
 """)
             curl = folder/'curl'
             curl.write_text('#!/usr/bin/python3\nprint(\'{"version":"0.6.163"}\')\n')
             for path in (gh,curl): path.chmod(0o700)
-            for source, release_job, expected in (('packaging-source','success','false'), ('released-source','skipped','false'), ('released-source','success','true')):
+            for source, release_job, conclusion, expected in (('packaging-source','success','success','false'), ('released-source','skipped','success','false'), ('released-source','success','failure','false'), ('released-source','success','success','true')):
                 result = folder/'output'; result.write_text('')
                 env = dict(os.environ, PATH=str(folder)+os.pathsep+os.defpath,
-                           GITHUB_EVENT_NAME='workflow_run', RELEASE_SOURCE=source, RELEASE_RUN='123', TEST_RELEASE_JOB=release_job, GITHUB_OUTPUT=str(result))
+                           GITHUB_EVENT_NAME='workflow_run', RELEASE_SOURCE=source, RELEASE_RUN='123', TEST_RELEASE_JOB=release_job, TEST_RUN_CONCLUSION=conclusion, GITHUB_OUTPUT=str(result))
                 subprocess.run(['bash','--noprofile','--norc','-eo','pipefail','-c',script],env=env,check=True,stdout=subprocess.DEVNULL)
                 self.assertEqual(result.read_text().splitlines(),['version=0.6.164','publish='+expected])
 

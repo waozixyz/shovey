@@ -199,7 +199,8 @@ jobs:
           assert run['head_sha'] == os.environ['RELEASE_SOURCE'] and run['status'] == 'completed'
           jobs = api('actions/runs/' + run_id + '/jobs?per_page=100')['jobs']
           released = api('commits/' + os.environ['RELEASE_TAG'])['sha']
-          published = released == run['head_sha'] and any(j['name'] == 'release' and
+          published = released == run['head_sha'] and run['conclusion'] == 'success' and any(
+              j['name'] == 'Attach the F-Droid and Google Play editions' and
               j['status'] == 'completed' and j['conclusion'] == 'success' for j in jobs)
           print('true' if published else 'false')
           PYCODE
