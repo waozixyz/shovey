@@ -33,6 +33,7 @@ Button :: #import "kryon/button";
 #import "kryon/app_protocol"
 #import "kryon/app_context_host"
 #import "kryon/key_input"
+#import "kryon/tree_input"
 #import "kryon/system_clipboard"
 #import "apps/host"
 #import "apps/tree"
@@ -904,6 +905,16 @@ CollectionIslandEditorStep :: () {
 }
 
 CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
+    if !entity_visible { return CollectionGameFrame(session, viewport, key, modifiers) }
+    // Profile is an overlay. Keep the current game visible without lending
+    // its controls the modal's pointer, keyboard or text input.
+    input := TreeInputSuspend(session)
+    drawn := CollectionGameFrame(session, viewport, 0, 0)
+    unused TreeInputResume(session, input)
+    return drawn && EntityFrame(session, viewport, key, modifiers)
+}
+
+CollectionGameFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
     CollectionShopNavigate()
     CollectionIslandPump()
     CollectionIslandEditorStep()
@@ -919,8 +930,6 @@ CollectionFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: 
         // before opening the sibling Island app, as the Editor route does.
         if AppHostHome(*collection_host) { unused CollectionOpenGame(ISLAND_UNLOCK_APP) }
     }
-    if entity_visible { return EntityFrame(session, viewport, key, modifiers) }
-
     runtime := AppHostActiveRuntime(*collection_host)
     if runtime == null { Report("Shovey: no app is running\n"); return false }
     if runtime.node.collection && collection_host.platform.presentation.download_id[0] == 0 {

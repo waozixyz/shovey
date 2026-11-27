@@ -122,6 +122,13 @@ entity_heading: string;
 entity_save: bool = true;
 entity_route: bool = true;
 entity_back: bool;
+entity_signed_in: bool;
+EntityHostIdentity :: struct { owner: [65]u8 }
+EntityHostPublicIdentity :: () -> EntityHostIdentity {
+    identity: EntityHostIdentity
+    if entity_signed_in { unused CopyCString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", identity.owner[:]) }
+    return identity
+}
 profile_calls: s32;
 referral_calls: s32;
 referral_code: [129]u8;
@@ -297,6 +304,8 @@ Check :: () -> s32 {
     if EntityShowPage("open") { return 23 }
     entity_ready = true
     if EntityShowPage("buy") || profile_calls != 0 { return 24 }
+    if EntityShowPage("leaderboard") || entity_visible || profile_calls != 0 { return 51 }
+    entity_signed_in = true
     if !EntityShowPage("leaderboard") || entity_heading != "shovey_shop_leaderboard" || !entity_visible { return 25 }
     entity_save = false
     if EntityShowPage("dew") || profile_calls != 1 { return 26 }

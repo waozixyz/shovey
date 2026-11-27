@@ -4,6 +4,9 @@
 
 ## [0.6.175] - 2026-11-27
 
+- Keep the game visible behind Profile dialogs, hide leaderboard actions when signed out, and let Escape close web dialogs without stopping the game.
+- Replace blurry Classic, Editor and Island title scenes with clearer artwork at higher resolution, including the startup screens.
+
 - Restore the original-style open sensor rings and paint splats, and give timber walls raised wooden braces.
 - Inset crate-goal markings and add outlined amber corners for contrast across floor materials.
 - Join every wall material using 47 neighbor-aware edge and corner sprites; use plain timber without metal bands.

@@ -91,6 +91,10 @@ EntityShow :: () -> bool { return EntityShowPage("open") }
 
 EntityShowPage :: (page: string) -> bool {
     if !entity_ready { return false }
+    if page == "leaderboard" {
+        identity := EntityHostPublicIdentity()
+        if identity.owner[0] == 0 { return false }
+    }
     referral := page == "referrals" || (page.count > 10 && page[:10] == "referrals:")
     if page != "open" && page != "leaderboard" && page != "dew" && !referral { return false }
     if entity_visible && !EntityHostSave() { return false }
@@ -112,10 +116,12 @@ EntityBack :: () -> bool {
 }
 
 EntityFrame :: (session: Session, viewport: Rectangle, key: s32, modifiers: s32) -> bool {
+    identity := EntityHostPublicIdentity()
+    sections: s32 = PROFILE_DEW | PROFILE_FRIENDS | PROFILE_ACHIEVEMENTS | PROFILE_APPEARANCE
+    if identity.owner[0] != 0 { sections |= PROFILE_LEADERBOARD }
+    EntityHostProfileSections(sections)
     unused WidgetPaletteUse(session, ShoveyPalette())
     defer { unused WidgetPaletteRestore(session) }
-    Box.Draw(session, Box.Props.{.key = cast(u64)49010, .bounds = viewport,
-            .fill = StyleTokenColorOr("canvas", Color.{239, 246, 244, 255})})
     width := viewport.width - 32.0
     height := viewport.height - 32.0
     if width > 560.0 { width = 560.0 }

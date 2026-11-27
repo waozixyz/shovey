@@ -37,6 +37,7 @@ with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
         driver.attach(child, log_path)
         try:
             driver.wait(key=49224, role='button', timeout=60)
+            assert not driver.find(key=49206), 'Guest leaderboard must be hidden'
             if not args.profile_only:
                 driver.press(key=49224, role='button')
                 enter_classic_map(driver)
@@ -54,7 +55,11 @@ with tempfile.TemporaryDirectory(dir=work, prefix='guest-') as directory:
                 driver.wait(key=49224, role='button')
             driver.press(key=49204, role='button')
             driver.wait(label='Sign in', timeout=30)
+            assert not driver.find(key=550), 'Guest Profile leaderboard must be hidden'
             driver.wait_idle(frames=8)
+            assert any('title/shovey-' in node.get('detail', '')
+                       for node in driver.tree() if node['kind'] == 'image'), \
+                'Profile discarded the title background'
             assert child.poll() is None, 'Profile terminated the player'
             driver.key('escape')
             driver.wait(key=49224, role='button')

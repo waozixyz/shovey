@@ -350,9 +350,9 @@ def build_games(apps):
         print(f'built {bundle.relative_to(ROOT)} ({bundle.stat().st_size // 1024} KiB)')
 
 
-# The small cover and preview copies the collection packs.
+# Full-resolution title covers and small library previews.
 
-PREVIEW_LONGEST, COVER_LONGEST, LOGO_LONGEST, COVER_QUALITY = 480, 640, 512, 85
+PREVIEW_LONGEST, COVER_LONGEST, LOGO_LONGEST, COVER_QUALITY = 480, 3072, 1200, 94
 
 
 def cover_art(apps):
@@ -373,7 +373,10 @@ def small_copy(data, key):
     image.load()
     longest = PREVIEW_LONGEST if key == 'preview' else LOGO_LONGEST if key == 'logo' else COVER_LONGEST
     scale = min(1.0, longest / max(image.size))
-    alpha = 'A' in image.getbands() or 'transparency' in image.info
+    # Enhanced PNGs may carry an entirely opaque alpha channel. They are
+    # still photographs: avoid packing several full-size lossless copies.
+    alpha = ('A' in image.getbands() or 'transparency' in image.info) and \
+        image.convert('RGBA').getchannel('A').getextrema()[0] < 255
     photo = key in ('portrait', 'landscape') and not alpha
     if scale == 1.0 and key != 'preview' and not photo:
         return data, '.png'
@@ -388,7 +391,7 @@ def small_copy(data, key):
             image = image.quantize(256, dither=Image.Dither.FLOYDSTEINBERG)
     output = io.BytesIO()
     if photo:
-        image.save(output, 'JPEG', quality=COVER_QUALITY, optimize=True, progressive=True)
+        image.save(output, 'JPEG', quality=COVER_QUALITY, subsampling=0, optimize=True, progressive=True)
         return output.getvalue(), '.jpg'
     image.save(output, 'PNG', optimize=True)
     return output.getvalue(), '.png'
@@ -640,11 +643,12 @@ def web_preload(release_folder, work, receipt):
 # Native hosts.
 
 def startup_art(output):
-    """Small full-colour pictures the desktop player draws before the collection opens."""
+    """Sharp title art while the desktop player's collection opens."""
     from PIL import Image
     startup = output / 'startup/shovey'
     startup.mkdir(parents=True, exist_ok=True)
-    for name, edge in [('title-portrait.png', 640), ('title-landscape.png', 640), ('logo.png', 512)]:
+    for name, edge in [('title-portrait.png', COVER_LONGEST),
+                       ('title-landscape.png', COVER_LONGEST), ('logo.png', LOGO_LONGEST)]:
         with Image.open(ROOT / 'assets/shovey' / name) as original:
             image = original.convert('RGBA' if 'A' in original.getbands() else 'RGB')
             image.thumbnail((edge, edge), Image.Resampling.LANCZOS)
@@ -893,7 +897,7 @@ def android(mode, application_id=None, abis='arm64-v8a,armeabi-v7a', build_dir=N
 # The website.
 
 def site(release_folder, output):
-    """shovey.waozi.xyz: a released download's own shovey.zx, shovey.json and
+    """shovey.xyz: a released download's own shovey.zx, shovey.json and
     entity.zx, unchanged, in the player compiled for the browser. Their
     programs are compiled into the page; the page still opens those bytes."""
     release_folder = release_folder.resolve()
@@ -937,16 +941,16 @@ def site(release_folder, output):
     (output / 'build.json').write_text(json.dumps({'source_revision': source, 'version': receipt['version'],
                                                    'assets_sha256': revision.hexdigest()}) + '\n')
     run([sys.executable, ROOT / 'scripts/prepare-pages.py', output], cwd=ROOT)
-    print(f'shovey.waozi.xyz runs the released Shovey {receipt["version"]} in {output}')
+    print(f'shovey.xyz runs the released Shovey {receipt["version"]} in {output}')
 
 
-# The loading screen's small pictures: (published name, source, longest edge).
+# The loading screen's artwork: (published name, source, longest edge).
 PAGE_PICTURES = [
     ('icon.png', 'assets/branding/shovey-icon.png', 512),
     ('icon-192.png', 'assets/branding/shovey-icon.png', 192),
-    ('logo.png', 'assets/shovey/logo.png', 720),
-    ('title-landscape.jpg', 'assets/shovey/title-landscape.png', 1280),
-    ('title-portrait.jpg', 'assets/shovey/title-portrait.png', 1280),
+    ('logo.png', 'assets/shovey/logo.png', LOGO_LONGEST),
+    ('title-landscape.jpg', 'assets/shovey/title-landscape.png', COVER_LONGEST),
+    ('title-portrait.jpg', 'assets/shovey/title-portrait.png', COVER_LONGEST),
 ]
 
 
@@ -964,7 +968,8 @@ def page_pictures(output):
                 image = image.resize((round(image.width * scale), round(image.height * scale)),
                                      Image.Resampling.LANCZOS)
             if target.suffix == '.jpg':
-                image.save(target, 'JPEG', quality=82, optimize=True, progressive=True)
+                image = image.convert('RGB')
+                image.save(target, 'JPEG', quality=COVER_QUALITY, subsampling=0, optimize=True, progressive=True)
             else:
                 image.save(target, 'PNG', optimize=True)
 

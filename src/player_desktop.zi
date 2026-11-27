@@ -21,8 +21,8 @@ sdl :: #system_library "SDL2";
 SetTitle :: (window: *void, title: *u8) #foreign sdl "SDL_SetWindowTitle";
 
 // The desktop player: Shovey's collection in a window, with the Profile.
-// First show small RGB/RGBA previews. The collection replaces them with its
-// original artwork when ready, using the same layout and coloured logo.
+// Show sharp startup art. The collection replaces it when ready, using the
+// same layout, image resolution and coloured logo.
 DrawStartup :: (session: Session, directory: string) -> bool {
     if !PollDesktop() || WindowTakeCloseRequestHost() { return false }
     BeginDesktopFrame()

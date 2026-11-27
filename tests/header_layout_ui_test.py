@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from world_map_test_support import start_map_destination
+from world_map_test_support import assert_fullscreen_map, enter_classic_map, start_map_destination
 
 
 def main():
@@ -31,7 +31,9 @@ def main():
         assert sum(entry['cover']['action'] == ("internal" if action == "Open" else action.lower()) for entry in catalog) == 1
         for index in range(len(catalog)):
             if driver.find(label=action, role='button'):
-                return
+                return action
+            if action == 'Play' and driver.find(label='Continue', role='button'):
+                return 'Continue'
             if index + 1 < len(catalog):
                 driver.press(label=direction, role='button')
                 driver.wait_idle(frames=3, timeout=5)
@@ -93,7 +95,8 @@ def main():
                     dew = driver.wait(key=49213, role='text')
                     assert coins['x'] > market['x'] + market['width'] and dew['x'] == coins['x']
                     assert dew['y'] > coins['y']
-                    for button in (book, profile, driver.wait(key=49206)):
+                    assert not driver.find(key=49206), 'Guest leaderboard must be hidden'
+                    for button in (book, profile):
                         assert separated(coins, button) and separated(dew, button)
                     logos = [node for node in driver.tree() if node['kind'] == 'image' and
                              119 <= node['y'] <= 121 and node['width'] <= 361]
@@ -102,7 +105,8 @@ def main():
                         assert separated(logo, market) and separated(logo, chest)
                         assert logo['width'] <= (width * .58 + 1 if width < 600 else 361)
                     subprocess.run(['import', '-window', window, str(output / f'{width}.png')], check=True, timeout=20)
-                    driver.press(label='Play', role='button')
+                    driver.press(key=49224, role='button')
+                    enter_classic_map(driver)
                     start_map_destination(driver, 1)
                     driver.wait_gone(key=49401, role='button', timeout=20)
                     driver.wait(label='How do you want to move?', role='text')
@@ -191,10 +195,12 @@ def main():
                     assert not driver.find(key=20002, visible=True), 'Redundant gameplay Levels control returned'
                     without_game_shortcuts()
                     driver.press(key=20022, role='button')
-                    assert driver.wait(key=33000 + next_level, role='button')['selected'], 'Back did not retain the played level'
-                    driver.wait(key=20122, role="button")
+                    assert_fullscreen_map(driver)
+                    # Grid selection marks completion. The played card stays visible and available.
+                    card = driver.wait(key=33000 + next_level, role='button')
+                    assert card['enabled'], 'The played level is not available after Back'
                     without_game_shortcuts()
-                    driver.press(label='Back', role='button')
+                    driver.press(key=20022, role='button')
                     driver.wait(key=49200, role='button')
                     select_cover('Open', 'Next')
                     driver.wait(label='Open', role='button')
@@ -204,8 +210,8 @@ def main():
                     assert editor_logos and any('Editor' in node['label'] for node in editor_logos)
                     assert not driver.find(label='Editor', role='text'), 'Redundant caption returned'
                     subprocess.run(['import', '-window', window, str(output / f'{width}-editor.png')], check=True, timeout=20)
-                    select_cover('Play', 'Previous')
-                    driver.wait(label='Play', role='button')
+                    classic_action = select_cover('Play', 'Previous')
+                    driver.wait(label=classic_action, role='button')
                     for key in (49200, 49202):
                         driver.press(key=key, role='button')
                         driver.wait(key=61101, role='button', timeout=60)

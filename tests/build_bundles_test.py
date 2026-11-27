@@ -121,7 +121,7 @@ class BundleCatalogTest(unittest.TestCase):
         self.assertFalse((self.root / 'build/game-assets/private').exists())
         self.assertFalse((self.root / 'build/game-generated/private').exists())
 
-    def test_portable_title_art_is_kept_and_editor_covers_stay_out(self):
+    def test_packed_title_covers_are_kept_without_duplicate_authoring_art(self):
         rules = json.loads((ROOT / 'src/bundle.json').read_text())
         self.write('src/bundle.json', json.dumps(rules))
         staged = self.root / 'staged'
@@ -131,8 +131,7 @@ class BundleCatalogTest(unittest.TestCase):
             self.write('staged/assets/shovey/' + name, 'fixture picture')
         self.write('staged/assets/shovey/title/shovey-editor-portrait.jpg', 'shared title cover')
         packed = builder.bundle_assets('src/catalog.json', 'shovey', staged, True) / 'shovey'
-        self.assertEqual({p.name for p in packed.iterdir()},
-                         {'title-portrait.png', 'title-landscape.png', 'logo.png', 'title'})
+        self.assertEqual({p.name for p in packed.iterdir()}, {'title'})
         self.assertEqual((packed / 'title/shovey-editor-portrait.jpg').read_text(), 'shared title cover')
 
     def test_locale_entries_after_blank_lines_are_kept(self):

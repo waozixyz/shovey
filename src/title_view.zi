@@ -168,7 +168,7 @@ Frame :: (today: s64) -> bool {
         .icon_shape = "S2rr:M20 21V19C20 16.79 18.21 15 16 15H8C5.79 15 4 16.79 4 19V21M16 7A4 4 0 1 1 8 7A4 4 0 1 1 16 7"}) != 0 {
         unused AppServiceHost("entity.profile", "open")
     }
-    if Action(frame.session, 49206, Rectangle.{bounds.width - 56.0, y, 44.0, 44.0}, "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused AppServiceHost("entity.profile", "leaderboard") }
+    if Shop.SignedIn() && Action(frame.session, 49206, Rectangle.{bounds.width - 56.0, y, 44.0, 44.0}, "assets/shovey/shop/trophy.png", "shovey_shop_leaderboard") { unused AppServiceHost("entity.profile", "leaderboard") }
     if selected == 0 { prepared = false; map_requested = false; return true }
     if selected == count - 1 { unused OpenClassicEditor() }
     else if island_enabled && selected == 1 {

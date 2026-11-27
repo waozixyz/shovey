@@ -89,13 +89,13 @@
     },
     {
       "path": "editor-landscape.png",
-      "depicts": "editor title art: 3D Shovey guides floating crates, balls and tiles onto a puzzle board on a garden workshop table",
-      "sha256": "7b1eae4209ede14807806a4cbce1e2bf7a14d342e75c89042958a524cf60d67e"
+      "depicts": "Sharp hand-painted Editor workbench and physical puzzle model, green two-eyed Shovey, wood crate and colored balls; 3072px long edge, ImageGen original and Real-ESRGAN enhancement recorded in tools/art/title-refined/masters.json",
+      "sha256": "c888111943c622ba5615ea94d1dbb5b8af658af9ad80473d7eb4d441ca933df3"
     },
     {
       "path": "editor-portrait.png",
-      "depicts": "editor title art for phones: 3D Shovey building a puzzle board with floating pieces",
-      "sha256": "bf0bbeb15249f3d73c1b410e9737f7fd207310dcb5f28b7c3ce45401b77c8f9e"
+      "depicts": "Sharp hand-painted Editor workbench and physical puzzle model, green two-eyed Shovey, wood crate and colored balls; 3072px long edge, ImageGen original and Real-ESRGAN enhancement recorded in tools/art/title-refined/masters.json",
+      "sha256": "31bfa6d9f24b38dc18c257854cca54108bb12782698525d0a00da09474458761"
     },
     {
       "path": "logo.png",
@@ -2379,13 +2379,13 @@
     },
     {
       "path": "title-landscape.png",
-      "depicts": "title screen art: a glossy 3D Shovey pushes a wooden crate across a sunny garden courtyard, home behind",
-      "sha256": "40c01eb8300e4c5db52b2d75373e17cdaf7f68140c33c0a225613fc174660747"
+      "depicts": "Sharp hand-painted Classic garden puzzle courtyard, green two-eyed Shovey, wood crate and colored balls; 3072px long edge, ImageGen original and Real-ESRGAN enhancement recorded in tools/art/title-refined/masters.json",
+      "sha256": "4cf897ba7cc21aa012f0c43fef1b497606c82549af2bdf4d4b44357c6578da86"
     },
     {
       "path": "title-portrait.png",
-      "depicts": "title screen art for phones: 3D Shovey pushing a crate in a garden courtyard with its cottage home",
-      "sha256": "ddcbf989eab5971157d8cdc73494ed03660bb4c7a7679543248f45be260777e3"
+      "depicts": "Sharp hand-painted Classic garden puzzle courtyard, green two-eyed Shovey, wood crate and colored balls; 3072px long edge, ImageGen original and Real-ESRGAN enhancement recorded in tools/art/title-refined/masters.json",
+      "sha256": "177708ab90a776dc1a7b239a9610adcbebd4f97fb7f2b123b6fa3f353af80c82"
     },
     {
       "path": "world-map/back-arrow.png",

@@ -1,0 +1,32 @@
+[
+  {
+    "project": "waozixyz/games/shovey",
+    "image": "/mnt/storage/Projects/waozixyz/games/shovey/assets/shovey/title-landscape.png",
+    "prompt": "Shovey title improvement batch 1/6, style-transfer edit. Keep supplied Classic scene: round green two-eyed Shovey, wooden crate, red/blue balls beside matching pits, low stone puzzle walls and green-roof cottage in sunny coastal garden. Make mascot spherical, no limbs or mouth, consistent perspective and natural sizes. Premium crisp hand-painted game illustration with restrained highlights, sharp detailed wood/stone/foliage throughout. Remove ALL depth-of-field blur, bokeh, hazy scenery, smeared textures and giant cropped foreground objects. All distances in focus. Native 3072x2048 landscape at highest available detail, not interpolated enlargement. Complete mascot/crate in middle third, quiet upper center for separate logo, calm lower center for controls. No baked text, logos, UI, borders or watermark. Preserve original provider PNG. Reuse ONE image worker for this entire six-image Classic/Editor/Island landscape/portrait batch."
+  },
+  {
+    "project": "waozixyz/games/shovey",
+    "image": "/mnt/storage/Projects/waozixyz/games/shovey/assets/shovey/title-portrait.png",
+    "prompt": "Shovey title improvement batch 2/6, style-transfer edit, same shared worker/style. Keep Classic sunny coastal garden scene, spherical round green two-eyed Shovey, wooden crate, red/blue balls and matching pits, stone puzzle walls and green-roof cottage. Premium crisp hand-painted game illustration, natural scale/perspective, no mascot limbs or mouth. Sharp clean wood grain, stone and foliage at EVERY distance: no depth-of-field blur, bokeh, haze, smeared texture or oversized blurry foreground flowers. Native 2048x3072 portrait, highest available detail, no fake interpolation. Whole mascot and crate comfortably centered in middle region with quiet upper-center sky for separate logo and calm lower center for controls. No text, logos, UI, borders or watermark. Original provider PNG unchanged."
+  },
+  {
+    "project": "waozixyz/games/shovey",
+    "image": "/mnt/storage/Projects/waozixyz/games/shovey/assets/shovey/editor-landscape.png",
+    "prompt": "Shovey title improvement batch 3/6, style-transfer edit, same shared worker and crisp hand-painted style. Editor scene: spherical green two-eyed Shovey beside wooden workbench with small stone-grid puzzle model, wooden crate, red/blue balls, miniature green-roof cottage/tree pieces, rolled plan and pencil; sunny coastal garden. All miniature pieces rest naturally on board, NO floating holograms, sparkles or impossible geometry. No mascot limbs or mouth. Natural sizes/perspective, refined restrained highlights. Native 3072x2048 landscape with sharp wood, masonry, foliage from foreground to distant coast. NO depth-of-field blur, bokeh, haze, smeared textures or interpolated enlargement. Middle-third focal scene, whole mascot/model in frame, quiet upper center for separate logo and lower center for controls. No text/logos/UI/borders/watermark. Original provider PNG unchanged."
+  },
+  {
+    "project": "waozixyz/games/shovey",
+    "image": "/mnt/storage/Projects/waozixyz/games/shovey/assets/shovey/editor-portrait.png",
+    "prompt": "Shovey title improvement batch 4/6, style-transfer edit, same shared worker and crisp premium hand-painted style. Portrait Editor: spherical green two-eyed Shovey beside a wood workbench and small stone-grid puzzle model with crate, red/blue balls, miniature green-roof cottage/tree, rolled plan and pencil, sunny coastal garden. All pieces rest physically on board, NO floating holograms/sparkles or strange geometry; mascot has no limbs or mouth. Consistent scale/perspective, clear wood/stone/foliage detail throughout. Native 2048x3072 portrait highest available detail, all distances in focus, no depth-of-field blur, bokeh, haze, smeared texture or fake interpolation. Whole mascot/model in central middle region, quiet upper-center sky for separate logo and lower center for controls. No text/logos/UI/borders/watermark. Original provider PNG unchanged."
+  },
+  {
+    "project": "waozixyz/games/shovey",
+    "image": "/mnt/storage/Projects/waozixyz/games/shovey/assets/island-marketing/landscape.png",
+    "prompt": "Shovey title improvement batch 5/6, style-transfer edit, same shared worker and crisp premium hand-painted style. Keep Island scene: spherical round green two-eyed Shovey, friendly orange crab, coconut, tropical sandy beach with palms, thatched bungalow, turquoise water and island coastline. No mascot limbs/mouth. Consistent natural object sizes/perspective, restrained glossy highlights and clear appealing silhouettes. Native 3072x2048 landscape highest detail, sharp sand/shells/palms/hut/coast at every distance; NO depth-of-field blur, bokeh, haze, smearing, giant cropped foreground leaves or fake interpolation. Whole characters in middle third, quiet upper center for separate logo and calm lower center for controls. No text/logo/UI/borders/watermark. Original provider PNG unchanged."
+  },
+  {
+    "project": "waozixyz/games/shovey",
+    "image": "/mnt/storage/Projects/waozixyz/games/shovey/assets/island-marketing/portrait.png",
+    "prompt": "Shovey title improvement batch 6/6, style-transfer edit, same shared worker and crisp premium hand-painted style. Portrait Island title: spherical round green two-eyed Shovey and friendly orange crab, coconut, tropical sandy beach, palms, thatched bungalow, turquoise sea/coast. No mascot limbs or mouth. Natural sizes/perspective, restrained highlights, all silhouettes clean. Native 2048x3072 portrait highest detail; all sand/shells/foliage/hut/coast in focus. NO depth-of-field blur, bokeh, haze, smear, giant cropped plants or interpolated enlargement. Full characters in central middle region with quiet upper-center sky for separate logo and calm lower center for controls. No text/logos/UI/borders/watermark. Original provider PNG unchanged. Finish this six-image batch using the same shared worker."
+  }
+]

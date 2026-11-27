@@ -24,7 +24,8 @@ def assert_real_title(driver):
     driver.wait(key=49204, role='button', visible=True)
     driver.wait(label='Play', role='button', visible=True)
     nodes = driver.tree()
-    for key in (49200, 49202, 49204, 49206, 49208, 49210, 49212):
+    assert not driver.find(key=49206, visible=True), 'Guest leaderboard must be hidden'
+    for key in (49200, 49202, 49204, 49208, 49210, 49212):
         control = next((n for n in nodes if n['key'] == key and n['visible']), None)
         assert control, ('Title control missing', key)
         screen = nodes[0]

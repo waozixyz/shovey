@@ -64,6 +64,8 @@ PlayerFrame :: (session: Session) -> bool {
 #program_export
 main :: () -> s32 {
     if !OpenCanvas() { return 1 }
+    // Escape belongs to CollectionBack, including its Profile dialogs.
+    CanvasSetExitKey(0)
     defer CloseCanvas()
     if !BundleStorageOpen() { return 1 }
     while !BundleStorageReady() && !BundleStorageFailed() { WebSleep(10) }

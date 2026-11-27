@@ -1,0 +1,235 @@
+{
+  "method": "Original ImageGen PNG masters preserved byte-for-byte. Runtime PNGs enhanced to 3072px long edge by installed Real-ESRGAN x4plus with scale 2. Runtime JPEG covers retain full resolution, quality 94, no chroma subsampling.",
+  "original_art_revision": "a76ec3f9328d70a3b1f79a555a87fb3e8efcfb82",
+  "files": [
+    {
+      "name": "classic-landscape",
+      "prompt_index": 0,
+      "request_id": "a17247a1648da1b32f181297e66d2ed4aa08",
+      "source": "tools/art/title-refined/classic-landscape.png",
+      "source_sha256": "a00b4fbf458b725d07b2ae1a4c388012e927e2344e3dad4a36229cec8691e050",
+      "source_size": [
+        1536,
+        1024
+      ],
+      "reference": "tools/art/title-refined/classic-landscape-reference.png",
+      "reference_sha256": "40c01eb8300e4c5db52b2d75373e17cdaf7f68140c33c0a225613fc174660747",
+      "runtime": "assets/shovey/title-landscape.png",
+      "runtime_sha256": "4cf897ba7cc21aa012f0c43fef1b497606c82549af2bdf4d4b44357c6578da86",
+      "runtime_size": [
+        3072,
+        2048
+      ],
+      "previous_runtime_sha256": "40c01eb8300e4c5db52b2d75373e17cdaf7f68140c33c0a225613fc174660747",
+      "enhancement": {
+        "model": "realesrgan",
+        "model_sha256": "2d379a791277077221016d5079a3c740863db41af31ea6e393fcf09fdb2b6eeb",
+        "revision": "20220424/v0.2.5.0",
+        "runtime_revision": "2-native",
+        "runtime_sha256": "a4f972ca392beff18bd4abb645cde1f3185169d6f53191a36abe12b5dffacf15",
+        "settings": {
+          "format": "png",
+          "lossless": false,
+          "model": "realesrgan-x4plus",
+          "native_scale": 4,
+          "preset": "title",
+          "quality": 50,
+          "scale": 2,
+          "warning": null
+        }
+      }
+    },
+    {
+      "name": "classic-portrait",
+      "prompt_index": 1,
+      "request_id": "08ed2278283f03c1abe411d2850b453d754e",
+      "source": "tools/art/title-refined/classic-portrait.png",
+      "source_sha256": "5bdd3014fd565676744e61180c5fad72f476cadc046e98e4be75e8d4923000c1",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "reference": "tools/art/title-refined/classic-portrait-reference.png",
+      "reference_sha256": "ddcbf989eab5971157d8cdc73494ed03660bb4c7a7679543248f45be260777e3",
+      "runtime": "assets/shovey/title-portrait.png",
+      "runtime_sha256": "177708ab90a776dc1a7b239a9610adcbebd4f97fb7f2b123b6fa3f353af80c82",
+      "runtime_size": [
+        2048,
+        3072
+      ],
+      "previous_runtime_sha256": "ddcbf989eab5971157d8cdc73494ed03660bb4c7a7679543248f45be260777e3",
+      "enhancement": {
+        "model": "realesrgan",
+        "model_sha256": "2d379a791277077221016d5079a3c740863db41af31ea6e393fcf09fdb2b6eeb",
+        "revision": "20220424/v0.2.5.0",
+        "runtime_revision": "2-native",
+        "runtime_sha256": "a4f972ca392beff18bd4abb645cde1f3185169d6f53191a36abe12b5dffacf15",
+        "settings": {
+          "format": "png",
+          "lossless": false,
+          "model": "realesrgan-x4plus",
+          "native_scale": 4,
+          "preset": "title",
+          "quality": 50,
+          "scale": 2,
+          "warning": null
+        }
+      }
+    },
+    {
+      "name": "editor-landscape",
+      "prompt_index": 2,
+      "request_id": "2600bef15c68d2f034f2cfd2043e766f126b",
+      "source": "tools/art/title-refined/editor-landscape.png",
+      "source_sha256": "d82f66df8c0b5a13882babe8c410fd7e695ecc0c35b2e4de6c1ca47351311289",
+      "source_size": [
+        1536,
+        1024
+      ],
+      "reference": "tools/art/title-refined/editor-landscape-reference.png",
+      "reference_sha256": "7b1eae4209ede14807806a4cbce1e2bf7a14d342e75c89042958a524cf60d67e",
+      "runtime": "assets/shovey/editor-landscape.png",
+      "runtime_sha256": "c888111943c622ba5615ea94d1dbb5b8af658af9ad80473d7eb4d441ca933df3",
+      "runtime_size": [
+        3072,
+        2048
+      ],
+      "previous_runtime_sha256": "7b1eae4209ede14807806a4cbce1e2bf7a14d342e75c89042958a524cf60d67e",
+      "enhancement": {
+        "model": "realesrgan",
+        "model_sha256": "2d379a791277077221016d5079a3c740863db41af31ea6e393fcf09fdb2b6eeb",
+        "revision": "20220424/v0.2.5.0",
+        "runtime_revision": "2-native",
+        "runtime_sha256": "a4f972ca392beff18bd4abb645cde1f3185169d6f53191a36abe12b5dffacf15",
+        "settings": {
+          "format": "png",
+          "lossless": false,
+          "model": "realesrgan-x4plus",
+          "native_scale": 4,
+          "preset": "title",
+          "quality": 50,
+          "scale": 2,
+          "warning": null
+        }
+      }
+    },
+    {
+      "name": "editor-portrait",
+      "prompt_index": 3,
+      "request_id": "8465a51c09b648203651889e285493d8a3f6",
+      "source": "tools/art/title-refined/editor-portrait.png",
+      "source_sha256": "9a3123224d6de9aabca3977c57afba910807b9b9433adec141690b05ced5383f",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "reference": "tools/art/title-refined/editor-portrait-reference.png",
+      "reference_sha256": "bf0bbeb15249f3d73c1b410e9737f7fd207310dcb5f28b7c3ce45401b77c8f9e",
+      "runtime": "assets/shovey/editor-portrait.png",
+      "runtime_sha256": "31bfa6d9f24b38dc18c257854cca54108bb12782698525d0a00da09474458761",
+      "runtime_size": [
+        2048,
+        3072
+      ],
+      "previous_runtime_sha256": "bf0bbeb15249f3d73c1b410e9737f7fd207310dcb5f28b7c3ce45401b77c8f9e",
+      "enhancement": {
+        "model": "realesrgan",
+        "model_sha256": "2d379a791277077221016d5079a3c740863db41af31ea6e393fcf09fdb2b6eeb",
+        "revision": "20220424/v0.2.5.0",
+        "runtime_revision": "2-native",
+        "runtime_sha256": "a4f972ca392beff18bd4abb645cde1f3185169d6f53191a36abe12b5dffacf15",
+        "settings": {
+          "format": "png",
+          "lossless": false,
+          "model": "realesrgan-x4plus",
+          "native_scale": 4,
+          "preset": "title",
+          "quality": 50,
+          "scale": 2,
+          "warning": null
+        }
+      }
+    },
+    {
+      "name": "island-landscape",
+      "prompt_index": 4,
+      "request_id": "4aa65232ac886ee851c7cc76ea79f5b69f4a",
+      "source": "tools/art/title-refined/island-landscape.png",
+      "source_sha256": "68af27f8625642cb4b0100e04d30d8baeb28ad759bf886ceb8b8e542c001751b",
+      "source_size": [
+        1536,
+        1024
+      ],
+      "reference": "tools/art/title-refined/island-landscape-reference.png",
+      "reference_sha256": "96c8b9b47d11a8ad8928fc5aa4c4ffe96fcffcdf99714b7977c9e6a480aeaf6a",
+      "runtime": "assets/island-marketing/landscape.png",
+      "runtime_sha256": "0fdf298c82a4aedb74554697bd7080591496f9939a7462c1bdf99013bfae7d74",
+      "runtime_size": [
+        3072,
+        2048
+      ],
+      "previous_runtime_sha256": "96c8b9b47d11a8ad8928fc5aa4c4ffe96fcffcdf99714b7977c9e6a480aeaf6a",
+      "enhancement": {
+        "model": "realesrgan",
+        "model_sha256": "2d379a791277077221016d5079a3c740863db41af31ea6e393fcf09fdb2b6eeb",
+        "revision": "20220424/v0.2.5.0",
+        "runtime_revision": "2-native",
+        "runtime_sha256": "a4f972ca392beff18bd4abb645cde1f3185169d6f53191a36abe12b5dffacf15",
+        "settings": {
+          "format": "png",
+          "lossless": false,
+          "model": "realesrgan-x4plus",
+          "native_scale": 4,
+          "preset": "title",
+          "quality": 50,
+          "scale": 2,
+          "warning": null
+        }
+      }
+    },
+    {
+      "name": "island-portrait",
+      "prompt_index": 5,
+      "request_id": "0a5e6f0f173899bc50cb7574bbe3e902e895",
+      "source": "tools/art/title-refined/island-portrait.png",
+      "source_sha256": "b72bbdd479d422e397917e682d14964200cf23f95dc6164e1a4ff6c961129a3f",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "reference": "tools/art/title-refined/island-portrait-reference.png",
+      "reference_sha256": "c019dcbb7265bdc207afd8ab968a487fbb0558fc1df489e4f6fa33cdf5ced86a",
+      "runtime": "assets/island-marketing/portrait.png",
+      "runtime_sha256": "79f5ed3b1dc16d92a8f2a40bc74b7a78546e27100bf75c917726d2571d955de3",
+      "runtime_size": [
+        2048,
+        3072
+      ],
+      "previous_runtime_sha256": "c019dcbb7265bdc207afd8ab968a487fbb0558fc1df489e4f6fa33cdf5ced86a",
+      "enhancement": {
+        "model": "realesrgan",
+        "model_sha256": "2d379a791277077221016d5079a3c740863db41af31ea6e393fcf09fdb2b6eeb",
+        "revision": "20220424/v0.2.5.0",
+        "runtime_revision": "2-native",
+        "runtime_sha256": "a4f972ca392beff18bd4abb645cde1f3185169d6f53191a36abe12b5dffacf15",
+        "settings": {
+          "format": "png",
+          "lossless": false,
+          "model": "realesrgan-x4plus",
+          "native_scale": 4,
+          "preset": "title",
+          "quality": 50,
+          "scale": 2,
+          "warning": null
+        }
+      }
+    }
+  ],
+  "packaging": {
+    "cover_longest": 3072,
+    "logo_longest": 1200,
+    "jpeg_quality": 94,
+    "jpeg_subsampling": 0,
+    "opaque_alpha_channels": "discarded only in packed JPEG derivatives; PNG sources unchanged"
+  }
+}

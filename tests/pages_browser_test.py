@@ -30,6 +30,7 @@ environment = {key: os.environ[key] for key in ('PATH', 'LANG', 'TZ') if key in 
 for key in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'SESSION_MANAGER', 'GDK_DISPLAY'):
     environment.pop(key, None)
 environment['YUE_DESKTOP_RECOVERY'] = '0'
+environment['HARMONY_DESKTOP_RECOVERY'] = '0'
 for key in ('LISTEN_PID','LISTEN_FDS','LISTEN_FDNAMES','NOTIFY_SOCKET','XDG_SESSION_ID','XDG_SEAT','XDG_VTNR'):
     environment.pop(key,None)
 for key,name in {'HOME':'home','XDG_CONFIG_HOME':'config','XDG_CACHE_HOME':'cache','XDG_DATA_HOME':'data','XDG_STATE_HOME':'state','XDG_RUNTIME_DIR':'runtime','TMPDIR':'tmp'}.items():
@@ -166,7 +167,46 @@ try:
     body = body.replace(').unref();', ');')
     a = body.index("  await press('Play');")
     b = body.index("  await call('Runtime.evaluate', {awaitPromise: true", a)
-    body = body[:a] + body[b:]  # Packaging regression starts from earned progress.
+    guest_ui = """
+  globalThis.shoveyTestEvaluate = evaluate;
+  globalThis.shoveyBrowserConsole = [];
+  socket.addEventListener('message', event => {
+    const message = JSON.parse(event.data);
+    if (message.method === 'Runtime.consoleAPICalled')
+      { globalThis.shoveyBrowserConsole.push(message.params.args.map(a => a.value ?? a.description).join(' ')); globalThis.shoveyBrowserConsole.splice(0, Math.max(0, globalThis.shoveyBrowserConsole.length - 40)); }
+  });
+  await wait(async () => (await tree()).some(n => n.key === 49305 && n.visible), 'Initial update choice did not open');
+  await pressKey(49305);
+  await wait(async () => !(await tree()).some(n => n.key === 49300 && n.visible), 'Initial update choice did not close');
+  assert(!(await tree()).some(n => n.key === 49206 && n.visible), 'Guest title trophy is visible');
+  await pressKey(49204);
+  await wait(async () => (await tree()).some(n => n.label === 'Sign in'), 'Guest Profile did not open');
+  const profileNodes = await tree();
+  assert(profileNodes.some(n => n.kind === 'image' && n.detail?.includes('title/shovey-')), 'Profile discarded the title background');
+  assert(!profileNodes.some(n => n.key === 550 && n.visible), 'Guest Profile leaderboard is visible');
+  await key('ArrowRight', 39);
+  await key('Escape', 27);
+  await wait(async () => actionable(await tree(), 'Play'), 'Modal input changed the cover behind Profile');
+  await pressKey(49200);
+  await wait(async () => (await tree()).some(n => n.key === 61101), 'Shop did not open');
+  assert(!(await tree()).some(n => n.key === 61106 && n.visible), 'Guest shop trophy is visible');
+  await pressKey(61104);
+  await wait(async () => (await tree()).some(n => n.label === 'Sign in'), 'Shop Profile did not open');
+  assert((await tree()).some(n => n.key === 61101 && n.visible), 'Profile discarded the shop background');
+  await key('Escape', 27);
+  await pressKey(61101);
+  await wait(async () => actionable(await tree(), 'Play'), 'Shop did not return to the title');
+"""
+    body = body[:a] + guest_ui + body[b:]  # Packaging regression starts from earned progress.
+    body = body.replace('return reply.nodes;', 'globalThis.shoveyLastTree = reply.nodes; return reply.nodes;')
+    # The release host has a separate Levels action and resumes saved games with Continue.
+    body = body.replace("n.label === 'Play' &&", "(n.label === 'Play' || n.label === 'Continue') &&")
+    body = body.replace("  await press('Play');", """  await pressKey(49224);
+  await wait(async () => {
+    const nodes = await tree();
+    if (nodes.some(n => n.key === 20510 && n.visible)) await pressKey(20510);
+    return nodes.some(n => n.key === 20105 && n.visible);
+  }, 'Levels did not open the selector');""")
     body = body.replace("document.querySelector('#loading-screen').classList.contains('is-hidden')", "Module.profileReady && document.querySelector('#loading').classList.contains('done')")
     body = body.replace("  await call('Runtime.enable');", "  await call('Page.bringToFront'); await call('Network.enable'); await call('Network.setBlockedURLs', {urls:['https://*']}); await call('Runtime.enable');")
     body = body.replace('/kryon-apps/shovey', '/kryon-apps/arcade/games/arcade.shovey/records')
@@ -198,11 +238,18 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));let sequence=0;
                            ('/runtime.wasm', 'application/wasm')):
         prelude += 'assert.equal(mime('+json.dumps(path)+'),'+json.dumps(expected)+');'
     prelude += 'const socket=new WebSocket('+json.dumps(game['webSocketDebuggerUrl'])+');await new Promise(resolve=>socket.addEventListener("open",resolve,{once:true}));'
+    receipt = json.loads((WEB / 'arcade.json').read_text())
+    local = receipt.get('local_bundles', {})
+    files = [('Module.getPreloadedPackage()', json.loads((WEB / 'runtime.data.json').read_text())['sha256']),
+             ("Module.FS.readFile('/app.zx/shovey.zx')" if local else "Module.FS.readFile('/app.zx')", receipt['sha256'])]
+    for child in receipt['children']:
+        if child['id'] in local:
+            files.append(('Module.FS.readFile(' + json.dumps('/app.zx/' + local[child['id']]) + ')', child['sha256']))
     extra = """
-    for (const file of ['Module.getPreloadedPackage()', \"Module.FS.readFile('/app.zx')\"]) {
+    for (const [file, expected] of EXPECTED_FILES) {
       const digestResult = await call('Runtime.evaluate', {awaitPromise:true, returnByValue:true, expression:`crypto.subtle.digest('SHA-256', ${file}).then(b=>Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join(''))`});
-      const digest = digestResult.result.value;
-      assert.equal(digest, EXPECTED_HASH, 'Emscripten package bytes changed');
+      assert(!digestResult.exceptionDetails, 'Could not read packaged bytes: ' + file);
+      assert.equal(digestResult.result.value, expected, 'Emscripten package bytes changed: ' + file);
     }
     for (const mode of ['missing','html','truncated','corrupt','path']) {
       await fetch(new URL('__test?mode=' + mode, target));
@@ -210,10 +257,16 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));let sequence=0;
       await wait(()=>evaluate(`document.querySelector('#loading').classList.contains('error')`), 'No failure screen: '+mode);
       assert(await evaluate(`!document.querySelector('script[src*=\"runtime.js\"]') && !Module.FS`), 'Runtime started with damaged data: '+mode);
     }
-    socket.close();return 'PASS: exact released data; external network blocked; replay/map; missing/HTML/truncated/corrupt/path failures';
-""".replace('EXPECTED_HASH', json.dumps(json.loads((WEB/'runtime.data.json').read_text())['sha256']))
+    socket.close();return 'PASS: exact released collection and game data; guest modals; external network blocked; replay/map; missing/HTML/truncated/corrupt/path failures';
+""".replace('EXPECTED_FILES', json.dumps(files))
     expression = '(async()=>{'+prelude+body+extra+'})()'
     result = call('Runtime.evaluate', dict(expression=expression, awaitPromise=True, returnByValue=True, timeout=240000))
+    if 'exceptionDetails' in result:
+        diagnostic = call('Runtime.evaluate', dict(awaitPromise=True, returnByValue=True,
+            expression="({nodes:globalThis.shoveyLastTree?.filter(n => n.visible).slice(-40).map(n => ({key:n.key,role:n.role,label:n.label})),console:globalThis.shoveyBrowserConsole})"))
+        print('Browser diagnostic:', diagnostic.get('result', {}).get('value'), flush=True)
+        state = call('Runtime.evaluate', dict(awaitPromise=True, returnByValue=True, expression="globalThis.shoveyTestEvaluate?.('({failed:Module.arcadeFailed,ready:Module.profileReady,exit:Module.EXITSTATUS})')"))
+        print('Browser runtime:', state.get('result', {}).get('value'), flush=True)
     assert 'exceptionDetails' not in result, result
     print(result['result']['value'], flush=True)
 finally:

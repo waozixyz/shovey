@@ -1,6 +1,9 @@
 {
-  "about": "The portable game retains its normal title artwork. Editor and Island covers belong to their host collection.",
+  "about": "The portable title uses the packed high-resolution covers in title/. Authoring PNGs stay in the source assets.",
   "leave_out": [
+    "title-portrait.png",
+    "title-landscape.png",
+    "logo.png",
     "editor-portrait.png",
     "editor-landscape.png",
     "island-portrait.png",
