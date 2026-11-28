@@ -49,6 +49,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             scripts/downloads-release.py
+            scripts/android-release.py
             tests/downloads_release_test.py
             version.json
             ziran.lock
