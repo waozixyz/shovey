@@ -15,9 +15,9 @@ Repo: https://github.com/waozixyz/shovey.git
 Binaries: https://github.com/waozixyz/shovey/releases/download/v%v/shovey-%v-fdroid.apk
 
 Builds:
-  - versionName: 0.6.175
-    versionCode: 183
-    commit: 1d52df095dd3aa212c72eedcfe40a098a6080900
+  - versionName: 0.6.176
+    versionCode: 184
+    commit: d07063a8a334dc0d69e82d1fe241b742c4fe1b3b
     sudo:
       - apt-get update
       - apt-get install -y build-essential cmake meson ninja-build pkg-config python3-pil
@@ -33,5 +33,5 @@ AllowedAPKSigningKeys: 3f687dd9aa7edd8c81b9d3ade255f0b620be7b9fd62783e5f8d7e7f7d
 AutoUpdateMode: Version
 UpdateCheckMode: Tags v[0-9.]+
 UpdateCheckData: 'version.json|"version_code": ([0-9]+)|version.json|"version": "([0-9.]+)"'
-CurrentVersion: 0.6.175
-CurrentVersionCode: 183
+CurrentVersion: 0.6.176
+CurrentVersionCode: 184
