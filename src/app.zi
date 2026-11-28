@@ -41,8 +41,8 @@
     chest_reminder_permission_checked: bool;
 }
 
-// Android's Back key in Kryon's shared key codes.
-PLAYER_BACK_KEY :: 4
+// Kryon normalizes Android Back to Escape before delivering it.
+PLAYER_BACK_KEY :: 256
 
 // 0 until the first frame opens the collection, then 1, or 2 when it failed.
 player_state: s32;
@@ -100,11 +100,13 @@ Frame :: (session: Session, viewport: Rectangle) -> s32 {
         BeginScrollFrame(session, Vector2.{pointer.x, pointer.y}, pointer.pressed, pointer.down,
             pointer.released, 0.0, cast(float64)MonotonicMilliseconds() / 1000.0)
     }
-    // Back leaves a game for its library. At the library it stays unused,
-    // so the host closes the app as Android users expect.
+    // Let the collection handle Back before composing native controls.
     key := KeyboardTake(session)
     if key == PLAYER_BACK_KEY && CollectionBack() { key = 0 }
     unused KeyboardSend(session, key)
+    // Native controls may consume this key during composition. Discard any
+    // unhandled key afterward so it cannot be replayed on subsequent frames.
+    defer { unused KeyboardTake(session) }
     // Both native hosts decode the collection's pictures as they draw.
     if !CollectionFrame(session, viewport, key, 0) { return 1 }
     CollectionCollect()

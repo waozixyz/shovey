@@ -118,6 +118,11 @@ def main():
         driver.release_pointer()
         adb('shell', 'input', 'tap', str(round(x * scale)), str(round(y * scale)))
 
+    def android_back():
+        # Use Android's real key normalization, not a raw test-driver key code.
+        adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
+        time.sleep(.5)
+
     def modern_board():
         nodes = driver.find(role='image', visible=True)
         sprites = [n for n in nodes if '/sprites/' in n.get('detail', '')]
@@ -232,10 +237,10 @@ def main():
             capture(f'artwork-level-{target}')
             observed.update(kinds[target])
             print(f'Moto rendered level {target}: modern atlas, single-tap launch', flush=True)
-            driver.key(4)
+            android_back()
             assert_fullscreen_map(driver)
         assert observed == required
-        driver.key(4)
+        android_back()
         title()
         print(f'PASS Moto artwork tour: {len(selected)} boards cover all {len(required)} approved tile kinds', flush=True)
 
@@ -255,7 +260,7 @@ def main():
         print('Native title and test driver ready', flush=True)
         driver.press(key=49204, role='button')
         driver.wait(label='Sign in', timeout=60)
-        driver.key(4)
+        android_back()
         title()
         print('Profile and Android Back passed', flush=True)
         if args.profile_only:
@@ -263,7 +268,7 @@ def main():
             return
         if args.artwork_only:
             level()
-            driver.key(4)
+            android_back()
             title()
             artwork_tour()
             editor()
@@ -321,17 +326,25 @@ def main():
         assert saved_game() != before, 'movement pad did not save'
         moved = saved_game()
         capture('movement-pad')
-        driver.key(4)  # Android Back, through the host's key input path.
+        for _ in range(3):
+            android_back()
+            title()
+            level('Continue')
+            # A stale Back used to bounce the resumed board to the title.
+            time.sleep(.6)
+            wait_gameplay(driver)
+            assert saved_game() == moved, 'Back/Continue changed the saved attempt'
+        android_back()
         title()
         touch(key=49224, role='button')
         assert_fullscreen_map(driver)
         capture('classic-map')
-        driver.key(4)
+        android_back()
         title()
         driver.wait(label='Continue', role='button')
         level('Continue')
         assert saved_game() == moved, 'Continue reset the saved attempt'
-        driver.key(4)
+        android_back()
         title()
         adb('shell', 'am', 'force-stop', PACKAGE)
         driver.reset()
@@ -356,7 +369,7 @@ def main():
         capture('level-two')
         if driver.find(label='Got it', role='button'):
             driver.press(label='Got it', role='button')
-        driver.key(4)
+        android_back()
         title()
         if args.artwork_tour:
             artwork_tour()

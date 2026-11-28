@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Handle Android Back once so Continue and Levels remain usable after returning to the title.
+
 - Align the guest profile at the top right and keep the title controls together when the leaderboard is hidden.
 
 - Keep bundled levels playable before choosing whether to download updates; downloads remain opt-in through Help.
