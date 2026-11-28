@@ -288,10 +288,11 @@ def main():
             return
         with application(profile, 'play') as child:
             assert not driver.find(label='Arcade', role='text')
-            # The covers ask once whether games download new levels.
-            driver.wait(label=LEVEL_UPDATES, role='text')
+            # Older controllers ask on the covers; current controllers keep
+            # bundled play offline until a connection is requested.
             answer_cover_question(driver)
-            assert (profile / 'games/arcade.shovey-player/records/level-updates').read_text() == 'off'
+            updates = profile / 'games/arcade.shovey-player/records/level-updates'
+            assert not updates.exists() or updates.read_text() == 'off'
             driver.press(label='Play', role='button')
             wait_level_one(driver, classic_levels)
             # Desktop play uses its default controls; a chooser may appear on touch hosts.

@@ -33,7 +33,7 @@ class PlayerPayloadTest(unittest.TestCase):
             payload.write_bytes(b'ZX\0\0verified game')
             (root / 'shovey.zx').write_bytes(b'ZX\0\0small collection')
             (root / 'entity.zx').write_bytes(b'ZX\0\0profile')
-            receipt = dict(version='test', island_bundled=True,
+            receipt = dict(version='test', island_bundled=False,
                 sha256=player.digest(root / 'shovey.zx'),
                 local_bundles={'arcade.shovey': 'games/shovey.zx'},
                 children=[dict(id='arcade.shovey', expected_id='shovey',
@@ -57,6 +57,10 @@ class PlayerPayloadTest(unittest.TestCase):
                 self.assertEqual(linked, [target / 'games/shovey.zx'])
                 cache = root / 'handoff/portable'
                 native_payloads.save(cache, 'a' * 40)
+                with patch.object(player, 'declared_apps', return_value=({}, [
+                        {'descriptor': {'id': 'arcade.shovey-island'}}])):
+                    with self.assertRaisesRegex(ValueError, 'not this desktop release'):
+                        native_payloads.restore(cache, 'a' * 40)
                 (root / 'entity.zx').unlink()
                 self.assertTrue(native_payloads.restore(cache, 'a' * 40))
                 self.assertEqual((root / 'entity.zx').read_bytes(), b'ZX' + bytes(2) + b'profile')

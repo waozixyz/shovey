@@ -37,7 +37,9 @@ def restore(cache, revision):
     # Read only the fixed receipt path before validating all payload paths.
     receipt = json.loads((cache / 'shovey.json').read_text())
     player.verify_local_bundles(cache, receipt)
-    if not receipt.get('island_bundled') or receipt['version'] != player.release()['version']:
+    island_enabled = any(app['descriptor']['id'] == 'arcade.shovey-island'
+                         for app in player.declared_apps()[1])
+    if (island_enabled and not receipt.get('island_bundled')) or receipt['version'] != player.release()['version']:
         raise ValueError('Portable payloads are not this desktop release')
     expected = names(receipt)
     if set(manifest['files']) != set(expected):
