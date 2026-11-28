@@ -98,7 +98,7 @@ def main():
                     play = driver.wait(key=49222,role='button')
                     levels = driver.wait(key=49224,role='button')
                     assert play['y'] == levels['y'] and play['height'] == levels['height'] == 64
-                    assert play['x']+play['width']+8 == levels['x']
+                    assert levels['x']+levels['width']+8 == play['x']
                     market = driver.wait(key=49200, role='button')
                     chest = driver.wait(key=49202, role='button')
                     book = driver.wait(key=49208, role='button')

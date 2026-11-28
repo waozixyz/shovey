@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Place the level selector to the left of the current-level play button.
+
 - Explain and highlight the next hint target, verify advice from current puzzle positions, and search for recovery after detours.
 - Put Settings at the top right and replace the long guide with compact illustrated mechanic cards.
 

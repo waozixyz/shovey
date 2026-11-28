@@ -102,10 +102,12 @@ TitleCarousel :: (session: Session, bounds: Rectangle, now: float64, key: s32, i
     action_width := ifx state.selected == 0 then row_width-72.0 else ifx bounds.width-64.0 < 280.0 then bounds.width-64.0 else 280.0
     item := items[state.selected]
     activated: s32 = -1
-    action := Rectangle.{bounds.x+(bounds.width-(ifx state.selected == 0 then row_width else action_width))/2.0,action_y,action_width,64.0}
+    action_x := bounds.x+(bounds.width-(ifx state.selected == 0 then row_width else action_width))/2.0
+    if state.selected == 0 { action_x += 72.0 }
+    action := Rectangle.{action_x,action_y,action_width,64.0}
     if ShoveyAction(session,49222,action,item.action,true,item.disabled) { activated=state.selected }
     if state.selected == 0 && Button.Draw(session, Button.Props.{.key = 49224,
-        .bounds = Rectangle.{action.x+action.width+8.0,action.y,64.0,64.0},
+        .bounds = Rectangle.{action.x-72.0,action.y,64.0,64.0},
         .label = AppLocaleHost("shovey_levels"), .icon_only = true,
         .icon_shape = "S2rr:M3 3H9V9H3ZM15 3H21V9H15ZM3 15H9V21H3ZM15 15H21V21H15Z",
         .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 { map_requested = true }
