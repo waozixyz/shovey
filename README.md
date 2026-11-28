@@ -95,6 +95,10 @@ C units in `$XDG_CACHE_HOME/shovey-ccache` (or `~/.cache/shovey-ccache`), with a
 libraries are linked on every build. Without `ccache`, builds use the normal
 compiler. The chest fixture reuses the locked compiler's runtime when present.
 
+On a published release, GitHub verifies and reuses Gitea's signed normal APK
+as the identical F-Droid reference. Manual rehearsals still build it from
+source; the independent F-Droid reproducibility workflow remains in place.
+
 Test Play, map selection and double-click entry on a private Xvfb display
 after building the player:
 

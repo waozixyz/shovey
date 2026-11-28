@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Release gates: another commit's build, wrong tags and bad uploads cannot publish."""
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,52 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('release', ROOT / 'scripts/downloads-release.py')
 release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
+spec = importlib.util.spec_from_file_location('android_release', ROOT / 'scripts/android-release.py')
+android = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(android)
+
+
+class ReuseTests(unittest.TestCase):
+    def test_only_matching_verified_release_replaces_the_reference(self):
+        for failure in (None, 'draft', 'commit', 'digest_missing', 'corrupt', 'signer', 'code', 'tag_changed'):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as scratch:
+                root = Path(scratch)
+                (root / 'version.json').write_text(json.dumps({'version': '1.2.3', 'version_code': 9}))
+                output = root / 'reference.apk'
+                output.write_bytes(b'preserved reference')
+                payload = b'new release APK'
+                revision = '1' * 40
+                commits = 0
+                def api(path):
+                    nonlocal commits
+                    if path == 'releases/tags/v1.2.3':
+                        return {'draft': failure == 'draft', 'tag_name': 'v1.2.3', 'assets': [{
+                            'name': 'shovey-v1.2.3.apk', 'digest': None if failure == 'digest_missing'
+                            else 'sha256:' + hashlib.sha256(payload).hexdigest()}]}
+                    self.assertEqual(path, 'commits/v1.2.3')
+                    commits += 1
+                    return {'sha': '2' * 40 if failure == 'commit' or
+                            (failure == 'tag_changed' and commits > 1) else revision}
+                def download(command, **options):
+                    self.assertEqual(command[:4], ['gh', 'release', 'download', 'v1.2.3'])
+                    folder = Path(command[command.index('--dir') + 1])
+                    (folder / 'shovey-v1.2.3.apk').write_bytes(b'corrupt' if failure == 'corrupt' else payload)
+                def verify(*args):
+                    self.assertEqual(args[0].read_bytes(), payload)
+                    if failure == 'signer':
+                        raise AssertionError('Wrong signer')
+                    return {'version_code': 10 if failure == 'code' else 9}
+                with patch.object(android, 'ROOT', root), patch.object(android, 'github', side_effect=api), \
+                        patch.object(android.subprocess, 'run', side_effect=download), \
+                        patch.object(android, 'verify', side_effect=verify) as checked:
+                    if failure:
+                        with self.assertRaises((ValueError, AssertionError)):
+                            android.reuse_release(output, '1.2.3', revision, root)
+                        self.assertEqual(output.read_bytes(), b'preserved reference')
+                    else:
+                        android.reuse_release(output, '1.2.3', revision, root)
+                        checked.assert_called_once()
+                        self.assertEqual(output.read_bytes(), payload)
 
 
 class ReleaseTests(unittest.TestCase):

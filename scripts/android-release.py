@@ -98,11 +98,51 @@ def verify_bundle(bundle, version, bundletool):
                 sha256=hashlib.sha256(bundle.read_bytes()).hexdigest())
 
 
+def github(path):
+    return json.loads(subprocess.check_output(['gh', 'api', 'repos/waozixyz/shovey/' + path], text=True))
+
+
+def reuse_release(apk, version, revision, tools):
+    """Reuse the published normal APK as F-Droid's identical signed reference."""
+    if not re.fullmatch(r'\d+\.\d+\.\d+', version) or not re.fullmatch(r'[0-9a-f]{40}', revision):
+        raise ValueError('Reuse requires a numeric release version and full source commit')
+    tag = 'v' + version
+    release = github('releases/tags/' + tag)
+    if release['draft'] or release['tag_name'] != tag:
+        raise ValueError('Reuse requires the published release')
+    if github('commits/' + tag)['sha'] != revision:
+        raise ValueError('Published release belongs to another source commit')
+    name = f'shovey-v{version}.apk'
+    assets = [asset for asset in release['assets'] if asset['name'] == name]
+    if len(assets) != 1 or not re.fullmatch(r'sha256:[0-9a-f]{64}', assets[0].get('digest') or ''):
+        raise ValueError('Published normal APK needs one recorded SHA-256 digest')
+    expected = json.loads((ROOT / 'version.json').read_text())
+    if expected['version'] != version:
+        raise ValueError('Requested APK differs from the checked-out release version')
+    apk.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=apk.parent) as directory:
+        subprocess.run(['gh', 'release', 'download', tag, '--repo', 'waozixyz/shovey',
+                        '--pattern', name, '--dir', directory], check=True)
+        source = Path(directory) / name
+        with source.open('rb') as stream:
+            actual = 'sha256:' + hashlib.file_digest(stream, 'sha256').hexdigest()
+        if actual != assets[0]['digest']:
+            raise ValueError('Downloaded APK differs from the published digest')
+        result = verify(source, version, tools)
+        if result['version_code'] != expected['version_code']:
+            raise ValueError('Published APK version code differs from this release')
+        if github('commits/' + tag)['sha'] != revision:
+            raise ValueError('Release tag changed while downloading the APK')
+        source.replace(apk)
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('sign', 'verify'))
+    parser.add_argument('action', choices=('sign', 'verify', 'reuse'))
     parser.add_argument('apk', type=Path)
     parser.add_argument('--version', required=True)
+    parser.add_argument('--revision', help='Full published source commit, required for reuse')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/android/shovey.apk')
     parser.add_argument('--keystore', type=Path, default=ROOT / 'backup/android-signing/shovey-release.p12')
     parser.add_argument('--password-file', type=Path, default=ROOT / 'backup/android-signing/password')
@@ -114,6 +154,12 @@ def main():
                         help='direct: the normal and F-Droid APK; gplay: the Google Play APK')
     args = parser.parse_args()
     tools = build_tools()
+    if args.action == 'reuse':
+        if not args.revision or args.edition != 'direct' or args.device_abi:
+            parser.error('reuse requires --revision and the normal dual-ABI release APK')
+        result = reuse_release(args.apk.resolve(), args.version, args.revision, tools)
+        print(f'Shovey {args.version}: reused verified signed APK {result["sha256"]}')
+        return
     apk = args.apk.resolve(strict=True)
     if apk.suffix == '.aab':
         assert not args.device_abi, 'Device repairs use APKs'

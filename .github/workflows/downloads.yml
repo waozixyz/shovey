@@ -1,11 +1,11 @@
 name: Downloads
 run-name: Shovey build ${{ inputs.revision || github.sha }}
 
-# Gitea requests an exact source commit. These jobs build/sign every edition,
-# reproduce the F-Droid APK and play the Linux/Windows downloads. Gitea's
-# Downloads workflow publishes our own edition; the F-Droid and Google Play
-# editions this workflow builds are attached to the mirrored GitHub release,
-# and play-bundle.yml sends the bundle to Google Play.
+# Gitea requests an exact source commit. Published releases reuse its signed
+# normal APK as the identical F-Droid reference, build the Google Play APK,
+# and attach the editions. Manual runs still build/sign the normal APK,
+# reproduce it with F-Droid and play the Linux/Windows downloads.
+# play-bundle.yml sends the bundle to Google Play.
 on:
   workflow_dispatch:
     inputs:
@@ -80,27 +80,49 @@ jobs:
         with:
           ref: ${{ needs.due.outputs.revision }}
       - uses: ./.github/actions/android
+        if: github.event_name != 'release'
+      - uses: actions/setup-java@v4
+        if: github.event_name == 'release'
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install only the APK verification tools
+        if: github.event_name == 'release'
+        run: |
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" 'build-tools;36.0.0'
       # Only the Google Play edition may name a Google library, in its build
       # files as in its APK.
       - name: Keep Google libraries out of the normal and F-Droid build files
         uses: kryonlabs/kryon/.github/actions/google-free@7217475dfa7f462939e47e3f0bc918aef248b179
-      # The build F-Droid's recipe runs; it has no self-update, so one APK
-      # serves both.
-      # The build's own Ziran cache (compiler, package checkouts and native
-      # libraries) is addressed by what it is built from; reuse it between
-      # runs with the same lock instead of rebuilding the compiler each time.
+      # A manual rehearsal builds F-Droid's recipe. A published release
+      # already has this exact signed APK from Gitea: verify and reuse it,
+      # without installing the NDK or building/signing it a second time.
       - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        if: github.event_name != 'release'
         with:
           path: build/fdroid/cache/ziran
           key: shovey-android-ubuntu-24.04-${{ hashFiles('ziran.lock') }}
       - name: Build the release APK
-        run: make android-fdroid
+        if: github.event_name != 'release'
+        run: make -j1 android-fdroid
+      - name: Reuse the published APK from the exact release source
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.due.outputs.version }}
+          REVISION: ${{ needs.due.outputs.revision }}
+        run: |
+          python3 scripts/android-release.py reuse build/fdroid/shovey.apk \
+            --version "$VERSION" --revision "$REVISION"
       - name: Keep Google libraries out of the normal and F-Droid APK
         uses: kryonlabs/kryon/.github/actions/google-free@7217475dfa7f462939e47e3f0bc918aef248b179
         with:
           packages: build/fdroid/shovey.apk
           source: ''
       - name: Sign and check the APK
+        if: github.event_name != 'release'
         env:
           KEYSTORE: ${{ secrets.SHOVEY_ANDROID_KEYSTORE }}
           PASSWORD: ${{ secrets.SHOVEY_ANDROID_KEYSTORE_PASSWORD }}
@@ -114,6 +136,13 @@ jobs:
             --output "build/downloads/shovey-v$VERSION.apk"
           rm -f "$RUNNER_TEMP/shovey-release.p12" "$RUNNER_TEMP/password"
           cp "build/downloads/shovey-v$VERSION.apk" "build/downloads/shovey-$VERSION-fdroid.apk"
+      - name: Keep the verified APK bytes as the F-Droid reference
+        if: github.event_name == 'release'
+        env:
+          VERSION: ${{ needs.due.outputs.version }}
+        run: |
+          mkdir -p build/downloads
+          cp build/fdroid/shovey.apk "build/downloads/shovey-$VERSION-fdroid.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: shovey-android
