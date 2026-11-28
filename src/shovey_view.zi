@@ -311,7 +311,7 @@ ChoiceTile :: (id: s32, bounds: Rectangle, pad: bool) -> bool {
         cell := side / 3.0
         for row: cast(s32)0..2 {
             for column: cast(s32)0..2 {
-                Sprite(cast(u64)(id + 2 + row * 3 + column), SPRITE_GRASS_EDGE, Rectangle.{square.x + cast(float32)column * cell,
+                Sprite(cast(u64)(id + 2 + row * 3 + column), BoardFloorSprite(77, row * SHOVEY_WIDTH + column), Rectangle.{square.x + cast(float32)column * cell,
                         square.y + cast(float32)row * cell, cell, cell}, "")
             }
         }
@@ -354,8 +354,13 @@ SpriteNames :: () {
     sprite_names[SPRITE_SHOT] = AppLocaleHost("shovey_ammo")
     sprite_names[SPRITE_BEES] = TileName(SHOVEY_BEES)
     sprite_names[SPRITE_HIVE] = TileName(SHOVEY_HIVE)
-    for index: cast(s32)SPRITE_WALL_JOINED..SPRITE_COUNT - 1 {
+    for index: cast(s32)SPRITE_WALL_JOINED..SPRITE_WATER_FLOOR - 1 {
         sprite_names[index] = TileName(BoardWallSpriteKind(index))
+    }
+    for index: cast(s32)0..15 {
+        sprite_names[SPRITE_GRASS_FLOOR + index] = TileName(77)
+        sprite_names[SPRITE_WATER_FLOOR + index] = TileName(64)
+        sprite_names[SPRITE_WOOD_FLOOR + index] = TileName(102)
     }
     for kind: cast(s32)SHOVEY_SHOOTER_LEFT..SHOVEY_SHOOTER_DOWN {
         sprite_names[SPRITE_SHOOTER + kind - SHOVEY_SHOOTER_LEFT] = TileName(kind)

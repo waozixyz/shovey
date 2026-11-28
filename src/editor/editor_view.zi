@@ -321,16 +321,15 @@ EditorNames :: () {
     for kind: cast(s32)SPRITE_PLAYER..SPRITE_DOOR_OPEN - 1 {
         editor_classic_names[kind] = EditorText("editor_shovey")
     }
-    for kind: cast(s32)SPRITE_GRASS_EDGE..SPRITE_GRASS_EDGE + 15 {
-        editor_classic_names[kind] = EditorText("editor_meadow")
-    }
-    for kind: cast(s32)SPRITE_WATER..SPRITE_WATER + 3 {
-        editor_classic_names[kind] = EditorText("editor_water")
+    for index: cast(s32)0..15 {
+        editor_classic_names[SPRITE_GRASS_FLOOR + index] = EditorText("editor_meadow")
+        editor_classic_names[SPRITE_WATER_FLOOR + index] = EditorText("editor_water")
+        editor_classic_names[SPRITE_WOOD_FLOOR + index] = EditorText("editor_timber_floor")
     }
     for kind: cast(s32)SPRITE_WALL..SPRITE_WALL + 3 {
         editor_classic_names[kind] = EditorText("editor_wall")
     }
-    for kind: cast(s32)SPRITE_WALL_JOINED..SPRITE_COUNT - 1 {
+    for kind: cast(s32)SPRITE_WALL_JOINED..SPRITE_WATER_FLOOR - 1 {
         editor_classic_names[kind] = EditorText("editor_wall")
     }
     floor_names: [5]string = .["editor_slate_floor", "editor_brick_floor", "editor_sandstone_floor", "editor_timber_floor", "editor_mossy_floor"]

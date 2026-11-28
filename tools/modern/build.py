@@ -116,6 +116,29 @@ def terrain(cell):
     # Remove the generator's narrow cell margin; surfaces meet exactly.
     return cell.crop((round(cell.width*.035),round(cell.height*.035),round(cell.width*.965),round(cell.height*.965))).resize((64,64),Image.Resampling.LANCZOS).convert('RGBA')
 
+def continuous_floor(file, saturation=1, brightness=1):
+    # One continuous, periodic 4x4 field. Coordinates select its cuts, so
+    # interior joins retain the master's detail rather than repeating a
+    # bordered square or choosing incompatible random variants.
+    master = Image.open(HERE/'source'/file).convert('RGB')
+    a = np.asarray(master.resize((SIZE*4, SIZE*4), Image.Resampling.LANCZOS)).astype(float)
+    luminance = a.mean(axis=2, keepdims=True)
+    a = (a*saturation + luminance*(1-saturation)) * brightness
+    for axis in (0, 1):
+        a = np.swapaxes(a, 0, axis)
+        for k in range(16):
+            average = (a[k].copy() + a[-1-k].copy()) / 2
+            blend = (1-k/16)**2
+            a[k] = a[k]*(1-blend) + average*blend
+            a[-1-k] = a[-1-k]*(1-blend) + average*blend
+        a = np.swapaxes(a, 0, axis)
+    field = Image.fromarray(np.clip(np.rint(a), 0, 255).astype('uint8')).convert('RGBA')
+    return [field.crop((x*SIZE,y*SIZE,(x+1)*SIZE,(y+1)*SIZE))
+            for y in range(4) for x in range(4)]
+
+def grass_floor():
+    return continuous_floor('grass-refined.png', .7, .82)
+
 def seamless_wall(cell, crop_bevel=True):
     # The master's bottom bevel is for an isolated block. Crop to its face
     # before joining walls, then match opposite edge bands in both axes.
@@ -185,6 +208,12 @@ def build_sprites():
     # Raised wooden braces distinguish the wall from the unchanged plank
     # floor. Matching edge bands still support every connected wall mask.
     t[16]=seamless_wall(Image.open(HERE/'source/timber-refined.png').convert('RGBA'),False)
+    grass = grass_floor()
+    water = continuous_floor('water-refined.png')
+    wood = continuous_floor('wood-floor-refined.png', .85)
+    t[6] = grass[0]
+    t[10] = water[0]
+    t[4] = wood[0]
     characters=[fit(i) for i in crop_sheet('characters.png',4,7)]
     views={'down':0,'left':1,'up':2,'right':3}
     o=lambda i:objects[i].copy()
@@ -251,8 +280,8 @@ def build_sprites():
                 out[f'fish-{fish}-{frame}-{facing}']=Image.fromarray(a).rotate(deg)
     for n,row in ((82,1),(83,2),(88,3),(89,4),(90,5),(91,6)):tile(n,characters[row*4])
     for i in range(4):
-        # Separate highlight phases keep the wave shape anchored.
-        a=np.array(t[10]);rgb=a[...,:3].astype(float);a[...,:3]=np.clip(rgb*(1+.025*math.sin(i*math.pi/2)),0,255).astype('uint8');out[f'water-{i}']=Image.fromarray(a)
+        # Preserve public paths without the old whole-surface colour pulse.
+        out[f'water-{i}']=water[0]
     def pit(mask,lava=False,phase=0,corner=False):
         im=t[11].copy() if lava else Image.new('RGBA',(64,64),'#102028')
         if lava and phase:
@@ -284,6 +313,9 @@ def build_sprites():
         for i in range(count):
             im=inset(t[35],max(0,18-i*3));a=im.getchannel('A').point(lambda a:round(a*(1-i/(count+1))));im.putalpha(a);out[f'{kind}-{i}']=im
     assert set(out)==set(NAMES),(set(NAMES)-set(out),set(out)-set(NAMES))
+    out.update({f'grass-floor-{i}':im for i,im in enumerate(grass)})
+    out.update({f'water-floor-{i}':im for i,im in enumerate(water)})
+    out.update({f'wood-floor-{i}':im for i,im in enumerate(wood)})
     wall_textures = {kind: out[f'tile-{kind}'] for kind in WALL_KINDS}
     wall_textures[14] = t[18]
     wall_textures[62] = over(t[12], inset(t[29], 3))
@@ -422,6 +454,9 @@ def previews(sprites):
                     n='player-up' if k==10 else f'tile-{k}'
                     if layer=='tiles' and k==0:n='tile-0'
                     elif k==0:continue
+                    if group is sprites and k==77:n=f'grass-floor-{(y%4)*4+x%4}'
+                    if group is sprites and k==64:n=f'water-floor-{(y%4)*4+x%4}'
+                    if group is sprites and k==102:n=f'wood-floor-{(y%4)*4+x%4}'
                     if group is sprites and k in WALL_KINDS:n=wall_name(k,idx,walls)
                     if group is sprites and k in {4,5,6,47,48,49}:
                         im.alpha_composite(group[f'tile-{pit_floor(idx,walls)}'].resize((48,48),Image.Resampling.LANCZOS),(x*48,y*48))
@@ -462,6 +497,42 @@ def refinement_previews(original,sprites):
         out.paste(image,(x,y));d.text((x,y+100),label,font=font,fill='#eff3e9')
     out.save(ROOT/'art/modern/target-floor-contrast.png')
 
+def floor_previews(sprites):
+    field=Image.new('RGBA',(SIZE*4,SIZE*4))
+    for i in range(16):
+        field.alpha_composite(sprites[f'grass-floor-{i}'],(i%4*SIZE,i//4*SIZE))
+    field.save(ROOT/'art/modern/grass-floor-spritesheet.png')
+    field.alpha_composite(sprites['player-up'],(96,96))
+    field.save(ROOT/'art/modern/grass-readability-after.png')
+    before=Image.open(ROOT/'art/modern/grass-readability-before.png').convert('RGBA')
+    font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',18)
+    out=Image.new('RGB',(552,302),'#17262b');d=ImageDraw.Draw(out)
+    d.text((12,10),'BEFORE',font=font,fill='white')
+    d.text((284,10),'AFTER',font=font,fill='white')
+    out.paste(before,(12,36),before);out.paste(field,(284,36),field)
+    out.save(ROOT/'art/modern/grass-readability-before-after.png')
+    floors=(0,60,61,77,78,99,100,101,102,103,162,163,70,64,65,166)
+    names=('Stone','Checker','Striped','Grass','Sand','Slate','Brick','Sandstone','Timber','Moss','Forest','Cave','Ice','Water','Abyss','Lava')
+    out=Image.new('RGB',(912,336),'#17262b');d=ImageDraw.Draw(out)
+    d.text((12,10),'SHOVEY / FLOOR CONTRAST',font=font,fill='white')
+    for i,(kind,label) in enumerate(zip(floors,names)):
+        cell=sprites[f'tile-{kind}'].resize((96,96),Image.Resampling.LANCZOS)
+        cell.alpha_composite(sprites['player-up'].resize((96,96),Image.Resampling.LANCZOS))
+        x=12+i%8*112;y=48+i//8*140
+        out.paste(cell,(x,y),cell);d.text((x,y+100),label,font=font,fill='#eff3e9')
+    out.save(ROOT/'art/modern/player-floor-contrast.png')
+    out=Image.new('RGB',(552,922),'#17262b');d=ImageDraw.Draw(out)
+    for row,(prefix,kind,label) in enumerate((('grass',77,'GRASS'),('water',64,'WATER'),('wood',102,'WOODEN FLOOR'))):
+        y=row*306
+        d.text((12,y+8),f'{label} / BEFORE',font=font,fill='white')
+        d.text((284,y+8),'AFTER',font=font,fill='white')
+        before=Image.open(ROOT/f'art/modern/floor-{kind}-before.png').convert('RGBA')
+        field=Image.new('RGBA',(256,256))
+        for i in range(16):field.alpha_composite(sprites[f'{prefix}-floor-{i}'],(i%4*64,i//4*64))
+        field.save(ROOT/f'art/modern/{prefix}-floor-spritesheet.png')
+        out.paste(before,(12,y+36),before);out.paste(field,(284,y+36),field)
+    out.save(ROOT/'art/modern/floors-tiling-before-after.png')
+
 def main():
     sprites=build_sprites()
     folder=ROOT/'assets/shovey/sprites'
@@ -471,7 +542,9 @@ def main():
     listed={item['path'] for item in art['files']}
     for name in sprites:
         if f'sprites/{name}.png' not in listed:
-            art['files'].append({'path':f'sprites/{name}.png','depicts':f'Connected wall variant {name}'})
+            description = (f'Continuous {name.split("-")[0]} field cut {int(name.rsplit("-",1)[1])}: coordinate-selected 4x4 floor atlas'
+                           if name.startswith(('grass-floor-','water-floor-','wood-floor-')) else f'Connected wall variant {name}')
+            art['files'].append({'path':f'sprites/{name}.png','depicts':description})
     for item in art['files']:
         descriptions={18:'crate goal: inset gold corner brackets, dark outline and transparent center',
                       20:'sensor: open red ring with a small red bead and transparent center',
@@ -487,5 +560,6 @@ def main():
     art['generator']='tools/modern/build.py';art['method']='AI-generated modern bitmap masters; deterministic crops, color variants, connected edges and deduplicated 64px atlas. Original artwork preserved in tools/modern/source/original.png.'
     artpath.write_text(json.dumps(art,indent=2)+'\n')
     previews(sprites)
+    floor_previews(sprites)
     print(f"Modern art: {len(sprites)} sprites, {spec['unique_frames']} unique atlas frames, {spec['size']}, {spec['occupied_cells']:.1%} cells occupied")
 if __name__=='__main__':main()

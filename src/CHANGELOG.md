@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Join grass, water and wooden floors using sixteen packed variants each, with quieter grass and consistent water colour.
+
+- Accelerate Android drawing with GLES and retain software rendering as a fallback.
+
 - Handle Android Back once so Continue and Levels remain usable after returning to the title.
 
 - Align the guest profile at the top right and keep the title controls together when the leaderboard is hidden.

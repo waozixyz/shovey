@@ -165,7 +165,7 @@
     {
       "path": "sprites/atlas.png",
       "depicts": "landscape presentation of Modern packed portrait and landscape sprites, deduplicated with extruded borders",
-      "sha256": "53254e52b7a1ee7fafed4b89e34dad5211c012cd1b6be684e9e23cd23a01f758"
+      "sha256": "4749b8e2d07dd545371cf5c773b0a068e26d049bade6e829e210a5da36bdb06c"
     },
     {
       "path": "sprites/boat-big-hull.png",
@@ -610,82 +610,162 @@
     {
       "path": "sprites/grass-edge-0.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "08684d1253748f8e85b34f9be36591afc06034486f1cc77a5035c223ff60a18e"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-1.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "c1d1fddf3a06acc4c1e39b4bf699495050981b34f9025ea1c3dadec4e35b7e9c"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-10.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "2457b32d2c84b03cef470436fd8d227dd555a2a23d162939d742521c3b378e59"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-11.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "46b5a9b17bba09a834c6ef03d30b02f285bd7c186ae5fd499cb8b044b231ddb3"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-12.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "39bd07cebb731523f14e77793883c2e479c6684ce6238866fb9ceb31376585fe"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-13.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "4939a7761774fcaf36eb62948d9639639cfab36d43cd949cc62e05e0c191e19f"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-14.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "88bbd060276e8078f23f2fb301fa3dd1864911ea584d9153b06371ff3001665c"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-15.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "e93a849ab3dbf09c16e4116fbb86208e1fae4303064933bf582a9d8ae43e8dcb"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-2.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "3de12401093b33e18501604312719a089b2b574c7f1c204b1b222ac61b771163"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-3.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "a9894d35d7b0efb71d7abf663d4292b3695d91ef4775347489f0529b3031c19c"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-4.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "77cb4c930e134cb573fddd646160f39abb6a9cf839a9f683ef696f356c927472"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-5.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "4b7875d97d6a7c118214ff5cc3a5f299e5f8b219577f495c0d9c04e5203bb22b"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-6.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "7ea7386d3a70064707486c316453195690bdc6d8a738694a47e4c29230c74d3d"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-7.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "c218a2b1dcca1c4c0f791df95d914ee3ce4f149159ab7eebffecf0c08e7612a4"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-8.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "a6237d2708e378d9747e0560200fcf2a0e834451556c676da0b9e222871b7b6c"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
     },
     {
       "path": "sprites/grass-edge-9.png",
       "depicts": "landscape presentation of grass blending into adjacent paving with connected corners",
-      "sha256": "5181bd4872280968444aa341f32fc59eddac88118c3cf4998a235e8585978d10"
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
+    },
+    {
+      "path": "sprites/grass-floor-0.png",
+      "depicts": "landscape presentation of Continuous grass field cut 0: coordinate-selected 4x4 floor atlas",
+      "sha256": "6c1ba48970373844e2ba2cc890f84adf62384767e9100d01a7185bac72b32cd4"
+    },
+    {
+      "path": "sprites/grass-floor-1.png",
+      "depicts": "landscape presentation of Continuous grass field cut 1: coordinate-selected 4x4 floor atlas",
+      "sha256": "9c81c26f0ef242647ed6f4d9fa9a6167d7ce169db4434ce04769ab49a7d07e4a"
+    },
+    {
+      "path": "sprites/grass-floor-10.png",
+      "depicts": "landscape presentation of Continuous grass field cut 10: coordinate-selected 4x4 floor atlas",
+      "sha256": "453caab311d5bd6058d935660f58480b41ef292ac2cd8041be91761e43413931"
+    },
+    {
+      "path": "sprites/grass-floor-11.png",
+      "depicts": "landscape presentation of Continuous grass field cut 11: coordinate-selected 4x4 floor atlas",
+      "sha256": "719d08399c9b08de914333563647e2922c6755fdfc1128fdd47679e735ffc8ea"
+    },
+    {
+      "path": "sprites/grass-floor-12.png",
+      "depicts": "landscape presentation of Continuous grass field cut 12: coordinate-selected 4x4 floor atlas",
+      "sha256": "affa2e7cb6cd5d6980edcb0a5d79d29956f5ecd4ac55265c32e947b098b0bfe7"
+    },
+    {
+      "path": "sprites/grass-floor-13.png",
+      "depicts": "landscape presentation of Continuous grass field cut 13: coordinate-selected 4x4 floor atlas",
+      "sha256": "f41344d1ace52bcd2ebf83a9eb0023ccda29b3a86b96ffd88a1b8090816a253c"
+    },
+    {
+      "path": "sprites/grass-floor-14.png",
+      "depicts": "landscape presentation of Continuous grass field cut 14: coordinate-selected 4x4 floor atlas",
+      "sha256": "b0e65b9516e7a5ae07b66c89ddc152aa32d77c0a83cc64b2ac559cb6c34251fe"
+    },
+    {
+      "path": "sprites/grass-floor-15.png",
+      "depicts": "landscape presentation of Continuous grass field cut 15: coordinate-selected 4x4 floor atlas",
+      "sha256": "de53bf218cd8c73475a8a2e23a796819b178a36c0381f5035a19fdaeb34e93a9"
+    },
+    {
+      "path": "sprites/grass-floor-2.png",
+      "depicts": "landscape presentation of Continuous grass field cut 2: coordinate-selected 4x4 floor atlas",
+      "sha256": "4781bdb78c77080476282d1a3f0275a45cb78325e17782cf9c754728a1a7ba8a"
+    },
+    {
+      "path": "sprites/grass-floor-3.png",
+      "depicts": "landscape presentation of Continuous grass field cut 3: coordinate-selected 4x4 floor atlas",
+      "sha256": "03ff13d832fe5f8ce3fb7cc5c2bc448e7b9e2a14146fdf716e7fa18682b49d64"
+    },
+    {
+      "path": "sprites/grass-floor-4.png",
+      "depicts": "landscape presentation of Continuous grass field cut 4: coordinate-selected 4x4 floor atlas",
+      "sha256": "e9054b8208706761a90dcf5628a80fe87b6ff0e0bd8b23459ef7edb0416ea8e7"
+    },
+    {
+      "path": "sprites/grass-floor-5.png",
+      "depicts": "landscape presentation of Continuous grass field cut 5: coordinate-selected 4x4 floor atlas",
+      "sha256": "8869443867ccfb908850cfaea887b276d1a640374f9e09ceeac4f2c1517c4df8"
+    },
+    {
+      "path": "sprites/grass-floor-6.png",
+      "depicts": "landscape presentation of Continuous grass field cut 6: coordinate-selected 4x4 floor atlas",
+      "sha256": "0ff91b0e70f70f711e51372f91953c7dbcd8acd2949b3540704694e5a8ce73e3"
+    },
+    {
+      "path": "sprites/grass-floor-7.png",
+      "depicts": "landscape presentation of Continuous grass field cut 7: coordinate-selected 4x4 floor atlas",
+      "sha256": "7f9a8fa1187abcbb09d16b7fc97ec50205c3b685121286d7b085c161074216f2"
+    },
+    {
+      "path": "sprites/grass-floor-8.png",
+      "depicts": "landscape presentation of Continuous grass field cut 8: coordinate-selected 4x4 floor atlas",
+      "sha256": "6d2d247ae916dd1a10345d0a9d8dc25dbe38cd8c4f08ba05befb9062ea9675ea"
+    },
+    {
+      "path": "sprites/grass-floor-9.png",
+      "depicts": "landscape presentation of Continuous grass field cut 9: coordinate-selected 4x4 floor atlas",
+      "sha256": "2cef4507518cf9c0396c8d20caf6cb9ab607bbc7cd6167a6590c79a6d274c22a"
     },
     {
       "path": "sprites/lava-edge-0-1.png",
@@ -1405,7 +1485,7 @@
     {
       "path": "sprites/tile-102.png",
       "depicts": "landscape presentation of timber floor: flat wooden floorboards",
-      "sha256": "fed92d4725bf6b8483f67157ed3f18595c6ad28f40a13d1b67510235c8cc9af8"
+      "sha256": "792715772e6ac257aa20f816f563b4e1f5e5a9a89080308e8a39bfc17ef3f6a8"
     },
     {
       "path": "sprites/tile-103.png",
@@ -1580,7 +1660,7 @@
     {
       "path": "sprites/tile-134.png",
       "depicts": "landscape presentation of timber pressure button: controls matching mossy timber walls",
-      "sha256": "ccd0c9f13aec49ba9213e1a61b4b7fa9fc3881a94f97b050c366c653a293d50a"
+      "sha256": "307ad9deb9ff555544dfb270e2bccc21cf801c5e6347d972cd2567f79a50d2e2"
     },
     {
       "path": "sprites/tile-135.png",
@@ -1660,7 +1740,7 @@
     {
       "path": "sprites/tile-149.png",
       "depicts": "landscape presentation of floating crate: a crate pushed into water, floating low; Shovey can walk on it",
-      "sha256": "65b24c4d546ae7f4d81e9cbfcc1d5e84385e3ced581607e7b25f864a0d019ec2"
+      "sha256": "a39a91a01df28f2f3e0b8f0e25be98b4ecf3ce2ca86c348d3435483c7f6fcfe5"
     },
     {
       "path": "sprites/tile-15.png",
@@ -2020,7 +2100,7 @@
     {
       "path": "sprites/tile-61.png",
       "depicts": "landscape presentation of striped floor (decoration)",
-      "sha256": "fed92d4725bf6b8483f67157ed3f18595c6ad28f40a13d1b67510235c8cc9af8"
+      "sha256": "792715772e6ac257aa20f816f563b4e1f5e5a9a89080308e8a39bfc17ef3f6a8"
     },
     {
       "path": "sprites/tile-62.png",
@@ -2035,7 +2115,7 @@
     {
       "path": "sprites/tile-64.png",
       "depicts": "landscape presentation of water edge (decoration, solid)",
-      "sha256": "242022e546db3a346dfffa2649b6956b33f951afc46b3450000397e4d9e87214"
+      "sha256": "ead0c24237eb3f58c71b72ed323fd7c592c4ef50ea1f6e40129a1dfa8f92fea5"
     },
     {
       "path": "sprites/tile-65.png",
@@ -2105,7 +2185,7 @@
     {
       "path": "sprites/tile-77.png",
       "depicts": "landscape presentation of grass floor tile, independent of objects",
-      "sha256": "5a30fb01ad7b9c857213dc6d5932e50a354f56be1a4526bffaee5ce100ca5ecb"
+      "sha256": "103a26220bd3c51601ffe251a731fd2497b6787bb92305ad1286ccf6c3f94ccc"
     },
     {
       "path": "sprites/tile-78.png",
@@ -5525,22 +5605,182 @@
     {
       "path": "sprites/water-0.png",
       "depicts": "landscape presentation of gentle seamless water ripples",
-      "sha256": "242022e546db3a346dfffa2649b6956b33f951afc46b3450000397e4d9e87214"
+      "sha256": "ead0c24237eb3f58c71b72ed323fd7c592c4ef50ea1f6e40129a1dfa8f92fea5"
     },
     {
       "path": "sprites/water-1.png",
       "depicts": "landscape presentation of gentle seamless water ripples",
-      "sha256": "b55d028693a3e65f4052efd0b92c4e7d75c80f4868d7c575168615cb9ed1caa5"
+      "sha256": "ead0c24237eb3f58c71b72ed323fd7c592c4ef50ea1f6e40129a1dfa8f92fea5"
     },
     {
       "path": "sprites/water-2.png",
       "depicts": "landscape presentation of gentle seamless water ripples",
-      "sha256": "242022e546db3a346dfffa2649b6956b33f951afc46b3450000397e4d9e87214"
+      "sha256": "ead0c24237eb3f58c71b72ed323fd7c592c4ef50ea1f6e40129a1dfa8f92fea5"
     },
     {
       "path": "sprites/water-3.png",
       "depicts": "landscape presentation of gentle seamless water ripples",
-      "sha256": "cfc8208f4b054fc36086b0f8c639e18eb32ac1dd852caa201367afbb6c037974"
+      "sha256": "ead0c24237eb3f58c71b72ed323fd7c592c4ef50ea1f6e40129a1dfa8f92fea5"
+    },
+    {
+      "path": "sprites/water-floor-0.png",
+      "depicts": "landscape presentation of Continuous water field cut 0: coordinate-selected 4x4 floor atlas",
+      "sha256": "649fccd1f1fec364ef56dcaa11b3b4e1fa8ab42a0e583c0c181de8ef63e858a5"
+    },
+    {
+      "path": "sprites/water-floor-1.png",
+      "depicts": "landscape presentation of Continuous water field cut 1: coordinate-selected 4x4 floor atlas",
+      "sha256": "6649f84341938b1cb99015341dcdfc95d33b32fe6cd36ace2d5d7a950e517de4"
+    },
+    {
+      "path": "sprites/water-floor-10.png",
+      "depicts": "landscape presentation of Continuous water field cut 10: coordinate-selected 4x4 floor atlas",
+      "sha256": "e50d3ae7104147f717d90ac3ae0712eefba65cbd5f6bca9c18152acf1780b159"
+    },
+    {
+      "path": "sprites/water-floor-11.png",
+      "depicts": "landscape presentation of Continuous water field cut 11: coordinate-selected 4x4 floor atlas",
+      "sha256": "3499e129c927ce955cafed1bcc79792520c333db5a242a2c180e86a1cf712738"
+    },
+    {
+      "path": "sprites/water-floor-12.png",
+      "depicts": "landscape presentation of Continuous water field cut 12: coordinate-selected 4x4 floor atlas",
+      "sha256": "89f79a402b9ef38678c8f779d10507bff170f9230641a663c8142379422f1d17"
+    },
+    {
+      "path": "sprites/water-floor-13.png",
+      "depicts": "landscape presentation of Continuous water field cut 13: coordinate-selected 4x4 floor atlas",
+      "sha256": "e44fde4fa08b31a8e4edc37b690a35f0cb2275295edef5e20215a3540b8bb3a3"
+    },
+    {
+      "path": "sprites/water-floor-14.png",
+      "depicts": "landscape presentation of Continuous water field cut 14: coordinate-selected 4x4 floor atlas",
+      "sha256": "8ac52167eb8d860845b88148ed70df7b4429c78998a9a25ed8008b57d467eb9d"
+    },
+    {
+      "path": "sprites/water-floor-15.png",
+      "depicts": "landscape presentation of Continuous water field cut 15: coordinate-selected 4x4 floor atlas",
+      "sha256": "026ada2150eb7bceba841c10684c0e30c333ae5952f62b0d72a63491f200e85b"
+    },
+    {
+      "path": "sprites/water-floor-2.png",
+      "depicts": "landscape presentation of Continuous water field cut 2: coordinate-selected 4x4 floor atlas",
+      "sha256": "0c21f361372339fdb1eee92c5689c058779d924895177f34102cbb7adcc9965b"
+    },
+    {
+      "path": "sprites/water-floor-3.png",
+      "depicts": "landscape presentation of Continuous water field cut 3: coordinate-selected 4x4 floor atlas",
+      "sha256": "c132bf83f424a8af3349d4366185d2805f13c374655e900ab0c25bb744bb2c8b"
+    },
+    {
+      "path": "sprites/water-floor-4.png",
+      "depicts": "landscape presentation of Continuous water field cut 4: coordinate-selected 4x4 floor atlas",
+      "sha256": "1cce143d4a92540a0c84bf3261673a65278cd7fddab449cba4ee5d920afc5f99"
+    },
+    {
+      "path": "sprites/water-floor-5.png",
+      "depicts": "landscape presentation of Continuous water field cut 5: coordinate-selected 4x4 floor atlas",
+      "sha256": "4348f324d5da4ef8ad7e746d0df19168e9a051b25e6cfda225ccdeb3733a5a09"
+    },
+    {
+      "path": "sprites/water-floor-6.png",
+      "depicts": "landscape presentation of Continuous water field cut 6: coordinate-selected 4x4 floor atlas",
+      "sha256": "7c30b5197876d07b008e054923d89a1b81ac055f526b77a5cc7f480e5f530b2d"
+    },
+    {
+      "path": "sprites/water-floor-7.png",
+      "depicts": "landscape presentation of Continuous water field cut 7: coordinate-selected 4x4 floor atlas",
+      "sha256": "b1ea96202b50b38a9c649ec9c8d0029f7f0f9cfe97cb3dab9e23d86589d83fea"
+    },
+    {
+      "path": "sprites/water-floor-8.png",
+      "depicts": "landscape presentation of Continuous water field cut 8: coordinate-selected 4x4 floor atlas",
+      "sha256": "53aa7545d68a299315abab92ba83ab177995f2c0685c4218fefb2595d110155a"
+    },
+    {
+      "path": "sprites/water-floor-9.png",
+      "depicts": "landscape presentation of Continuous water field cut 9: coordinate-selected 4x4 floor atlas",
+      "sha256": "87888be57f359533d8728dcee32f4f9dea8664e6f8a2b56b67b6f013b1fe74f3"
+    },
+    {
+      "path": "sprites/wood-floor-0.png",
+      "depicts": "landscape presentation of Continuous wood field cut 0: coordinate-selected 4x4 floor atlas",
+      "sha256": "b5dc26ba76e681c1576b5bfae330b7dd311e750992387a0d824abc58d0d9eb10"
+    },
+    {
+      "path": "sprites/wood-floor-1.png",
+      "depicts": "landscape presentation of Continuous wood field cut 1: coordinate-selected 4x4 floor atlas",
+      "sha256": "ff457d5b314e1e9e60cf83b0e20ed6114bf22dc5c51502a8a582d76dcfe4baa3"
+    },
+    {
+      "path": "sprites/wood-floor-10.png",
+      "depicts": "landscape presentation of Continuous wood field cut 10: coordinate-selected 4x4 floor atlas",
+      "sha256": "83418b96b864baea716ad110081d7df13ad1923b208bf2f0de107cd1f41f5978"
+    },
+    {
+      "path": "sprites/wood-floor-11.png",
+      "depicts": "landscape presentation of Continuous wood field cut 11: coordinate-selected 4x4 floor atlas",
+      "sha256": "b504d1e14ba5abbdeae83ab0b7db925638c78c9e145176f9f63937cec09c5f4c"
+    },
+    {
+      "path": "sprites/wood-floor-12.png",
+      "depicts": "landscape presentation of Continuous wood field cut 12: coordinate-selected 4x4 floor atlas",
+      "sha256": "067175ba57d2d44672133a170dbab9e75ef1b86755c29084eed966085597fb43"
+    },
+    {
+      "path": "sprites/wood-floor-13.png",
+      "depicts": "landscape presentation of Continuous wood field cut 13: coordinate-selected 4x4 floor atlas",
+      "sha256": "49b5fba5aaf2ee9dc9647f2dc065357f317f71103b800f6857d8be0022a8d266"
+    },
+    {
+      "path": "sprites/wood-floor-14.png",
+      "depicts": "landscape presentation of Continuous wood field cut 14: coordinate-selected 4x4 floor atlas",
+      "sha256": "6124c2274ad2bfe1fd7bb3639d13f2369623a1cebb6d67e4ebe42fabb12f20fd"
+    },
+    {
+      "path": "sprites/wood-floor-15.png",
+      "depicts": "landscape presentation of Continuous wood field cut 15: coordinate-selected 4x4 floor atlas",
+      "sha256": "39677237dc160e45536bb0c907a9de1122239bd6ff6167995b33866385c4415c"
+    },
+    {
+      "path": "sprites/wood-floor-2.png",
+      "depicts": "landscape presentation of Continuous wood field cut 2: coordinate-selected 4x4 floor atlas",
+      "sha256": "b820de1195728962a73e0349dadfb9c2566ea350b991dd959ad5c7377ef57305"
+    },
+    {
+      "path": "sprites/wood-floor-3.png",
+      "depicts": "landscape presentation of Continuous wood field cut 3: coordinate-selected 4x4 floor atlas",
+      "sha256": "79a04cacdd7b6aecc8c5fb6c9957e86cea35f54be30f7401c8e155dc8e458df7"
+    },
+    {
+      "path": "sprites/wood-floor-4.png",
+      "depicts": "landscape presentation of Continuous wood field cut 4: coordinate-selected 4x4 floor atlas",
+      "sha256": "16c2ccbe8802544b403b1f6dc28086802261a7d52caab0fd4c9d55fd6a19d727"
+    },
+    {
+      "path": "sprites/wood-floor-5.png",
+      "depicts": "landscape presentation of Continuous wood field cut 5: coordinate-selected 4x4 floor atlas",
+      "sha256": "aad38c96df6d8f0734bf7b422cad3061b6819018ac53a969db8e270ac484b33b"
+    },
+    {
+      "path": "sprites/wood-floor-6.png",
+      "depicts": "landscape presentation of Continuous wood field cut 6: coordinate-selected 4x4 floor atlas",
+      "sha256": "3434a21f210a4501aa204435c17852cc34272ddcf31391191408242acdfe06cd"
+    },
+    {
+      "path": "sprites/wood-floor-7.png",
+      "depicts": "landscape presentation of Continuous wood field cut 7: coordinate-selected 4x4 floor atlas",
+      "sha256": "dc9936c4004822213b428d367b3c4b87ac46ce9ebcc358f91b7c828240950fd7"
+    },
+    {
+      "path": "sprites/wood-floor-8.png",
+      "depicts": "landscape presentation of Continuous wood field cut 8: coordinate-selected 4x4 floor atlas",
+      "sha256": "6a876137aae6aaa694a85aec676f03344fd99328242d1960358c1e30d2d8525e"
+    },
+    {
+      "path": "sprites/wood-floor-9.png",
+      "depicts": "landscape presentation of Continuous wood field cut 9: coordinate-selected 4x4 floor atlas",
+      "sha256": "bf3d8cbd9888bb881d772e23a0d6e7b46781221d2c51746438b4c518049a229e"
     }
   ]
 }

@@ -11,6 +11,7 @@
     AndroidApp :: #import "kryon/app";
     AndroidJni :: #import "kryon/android_jni";
     AndroidDevice :: #import "kryon/android_device";
+    AndroidEgl :: #import "kryon/android_egl";
     Backdrop :: #import "kryon/box";
     Theme :: #import "shovey_theme";
     #import "kryon/drawing_props"
@@ -24,6 +25,7 @@
 
     // NativeActivity enters the application's main through Kryon's host.
     main :: () -> s32 {
+        AndroidEgl.EnableAndroidGlesComposition()
         return AndroidApp.Run(AndroidApp.Window.{.title = "Shovey"}, PlayerAndroidFrame)
     }
 }

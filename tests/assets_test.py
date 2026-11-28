@@ -50,6 +50,8 @@ classic += [f'{animal}-{facing}' for animal in ('dog', 'turtle', 'crab') for fac
 classic += [f'water-{frame}' for frame in range(4)]
 classic += [f'fish-{fish}-{frame}-{facing}' for fish in ('gold', 'koi', 'minnow') for frame in range(4) for facing in ('left', 'up', 'right', 'down')]
 classic += [f'grass-edge-{mask}' for mask in range(16)]
+patterned_floors = ('grass', 'water', 'wood')
+classic += [f'{floor}-floor-{index}' for floor in patterned_floors for index in range(16)]
 classic += [f'{kind}-{facing}' for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
 skin_sprites = [f'skin-{number}-{kind}-{facing}' for number in range(1, 8)
                 for kind in ('player', 'charged') for facing in ('left', 'up', 'right', 'down')]
@@ -113,7 +115,25 @@ with Image.open(ROOT / 'assets/shovey/sprites/atlas.png') as atlas:
         unique[pixels] = rect
     assert len(unique) == atlas_spec['unique_frames']
     assert atlas_spec['occupied_cells'] > .95
-    assert len(atlas_spec['frames']) == 2 * (449 + len(WALL_KINDS)*47)
+    assert len(atlas_spec['frames']) == 2 * (449 + len(patterned_floors) * 16 + len(WALL_KINDS) * 47)
+    for orientation in ('portrait', 'landscape'):
+        water = atlas_spec['frames'][f'{orientation}/tile-64']
+        assert all(atlas_spec['frames'][f'{orientation}/water-{frame}'] == water for frame in range(4))
+    for material in patterned_floors:
+        floor = Image.new('RGBA', (256, 256))
+        rectangles = set()
+        for index in range(16):
+            name = f'{material}-floor-{index}'
+            x, y, w, h = atlas_spec['frames'][f'portrait/{name}']
+            portrait = atlas.crop((x, y, x + w, y + h))
+            rectangles.add((x, y))
+            floor.paste(portrait, (index % 4 * 64, index // 4 * 64))
+            x, y, w, h = atlas_spec['frames'][f'landscape/{name}']
+            landscape = atlas.crop((x, y, x + w, y + h))
+            assert portrait.transpose(Image.Transpose.ROTATE_90).tobytes() == landscape.tobytes(), name
+        assert len(rectangles) == 16, material
+        assert floor.crop((0, 0, 1, 256)).tobytes() == floor.crop((255, 0, 256, 256)).tobytes(), material
+        assert floor.crop((0, 0, 256, 1)).tobytes() == floor.crop((0, 255, 256, 256)).tobytes(), material
     for kind in WALL_KINDS:
         rects = [atlas_spec['frames'][f'portrait/wall-{kind}-{mask}'] for mask in WALL_MASKS]
         assert len({tuple(rect) for rect in rects}) == 47, (kind, 'missing wall connection shape')

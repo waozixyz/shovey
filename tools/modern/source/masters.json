@@ -54,5 +54,23 @@
     "role": "Gold corner target with dark outline; normalized to 66 percent of a cell.",
     "provider": "Harmony generate_image, configured provider",
     "prompt_source": "refinement-prompts.json"
+  },
+  "grass-refined.png": {
+    "sha256": "0d9f5e25c9443ee839c2d69d49af96502b2349be3a7e28c1a5665251a3d9675c",
+    "role": "Continuous calm grass master; periodic 4x4 floor cuts, selected by board coordinates. Original provider bytes preserved.",
+    "provider": "OpenAI imagegen",
+    "prompt": "Single square seamless repeating modern polished top-down puzzle grass texture; quiet short lawn, soft broad cropped grass and subtle painted blades and small clusters; orthographic overhead; muted desaturated sage/olive/teal, medium-dark low contrast so bright lime player reads; exact left/right and top/bottom joins; no grid, borders, bevels, edge tufts, flowers, stones, bushes, objects, characters, checkerboard or text; gentle uniform ambient light fills all pixels; intended to divide into a four by four terrain spritesheet; continuous calm organic variation."
+  },
+  "water-refined.png": {
+    "sha256": "43fffbfc923006506fa2f829b30cb096a7b8fa8f97d7e0dbee7f0476e296b839",
+    "role": "Continuous fixed-palette teal water master; periodic 4x4 field, no temporal colour cycling.",
+    "provider": "OpenAI imagegen",
+    "prompt_source": "floor-prompts.json"
+  },
+  "wood-floor-refined.png": {
+    "sha256": "cda3f75eb47a06940120f1c6c2a53982bf08b632c5ac06f031bf91e63b66b814",
+    "role": "Flat long staggered oak floorboards; periodic 4x4 field, distinct from raised timber walls.",
+    "provider": "OpenAI imagegen",
+    "prompt_source": "floor-prompts.json"
   }
 }

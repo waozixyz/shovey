@@ -36,7 +36,7 @@ def landscape_source_stem(stem):
 
 
 def turns_with_board(path):
-    return path.stem.startswith('grass-edge-') or path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69')
+    return path.stem.startswith(('grass-edge-', 'grass-floor-', 'water-floor-', 'wood-floor-')) or path.stem in ('tile-66', 'tile-67', 'tile-68', 'tile-69')
 
 
 def landscape_bytes(path):

@@ -69,9 +69,11 @@ open. Keep every other application open.
 
 ## Pixel development installs
 
-Owner instruction, 2026-11-27: after every Shovey update, install the latest
-verified current-tree build on the Pixel 4a over wireless ADB through Delta.
-Discover its current wireless endpoint and verify physical serial
-`09231JEC206210` before installing. Preserve app data and the account, check
-the installed version and signing certificate, and open the updated app.
+Owner correction, 2026-11-28: after every Shovey update, install the latest
+verified current-tree build on the Pixel connected to the desktop by wireless
+ADB. Resolve “wireless ADB” with Harmony's `devices` tool and verify the
+returned physical identity and host before installing. The ThinkPad phone is
+a separate device; never substitute it. Preserve the existing app package,
+data and account, check the installed version and signing certificate, and
+open the updated app. Do not capture phone screenshots for this task.
 Development installation proceeds independently of release publication.

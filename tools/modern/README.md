@@ -50,8 +50,7 @@ Game rules, cell IDs, level files, map formats and saved progress are unchanged.
 
 The later timber, sensor, paint and crate-goal refinements use four additional
 provider PNG masters (`source/*-refined.png`), preserved in their original bytes.
-The timber wall has darker inset boards and raised wooden braces; its floor
-keeps the prior art. Sensors have open centers and separate bead phases, paint
+The timber wall has darker inset boards and raised wooden braces. Sensors have open centers and separate bead phases, paint
 uses one shared splat silhouette, and gold crate-target corners occupy 66% of
 a cell with dark/light edging. The reference and previous sprite strip are
 kept in `source/refinement-reference.png` and `source/refinement-before.png`.
@@ -60,3 +59,13 @@ The exact generation prompts are preserved in `source/refinement-prompts.json`;
 `art/modern/refinements-before-after.png` compares original, previous and
 refined sprites; `target-floor-contrast.png` shows the target over every floor
 material and four additional surfaces.
+
+Grass, water and wooden floors use sixteen coordinate-selected cuts from
+continuous 256px fields. Their opposite edges match exactly, and landscape
+rotates each cut with the board. The delivered masters are preserved in
+`source/grass-refined.png`, `source/water-refined.png` and
+`source/wood-floor-refined.png`; prompts and hashes are recorded alongside
+them. Legacy water animation names alias the same packed frame, so its
+colour does not pulse. Player and skin artwork retain the previous design.
+`art/modern/floors-tiling-before-after.png` compares all three materials;
+`*-floor-spritesheet.png` shows each complete set.

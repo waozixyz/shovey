@@ -38,9 +38,9 @@ int main(int argc, char **argv) {
     /* Starting sprites face up in either presentation; recorded movement
        directions keep their existing board-relative meaning. */
     ShoveyGame facing = {0};
-    assert(shovey_board_KindSprite(&facing, 64, -1, 1792685443.5, false) == SPRITE_WATER + 3);
+    assert(shovey_board_KindSprite(&facing, 64, -1, 1792685443.5, false) == SPRITE_WATER_FLOOR);
     assert(shovey_board_KindSprite(&facing, 22, -1, 1792685443.5, false) == SPRITE_SENSOR + 3);
-    assert(shovey_board_KindSprite(&facing, 64, -1, 2147483648.5, false) == SPRITE_WATER + 1);
+    assert(shovey_board_KindSprite(&facing, 64, -1, 2147483648.5, false) == SPRITE_WATER_FLOOR);
     facing.direction = 1;
     facing.light_from[13] = 4;
     assert(shovey_board_PlayerSprite(&facing, false) == SPRITE_PLAYER + 1);
@@ -399,6 +399,7 @@ int main(int argc, char **argv) {
         opened.ground[26] = SHOVEY_DOOR_OPEN;
         int floor = engine_ShoveyWallFloor(material);
         int floor_sprite = floor == 0 ? 0 : SPRITE_MATERIAL_FLOOR + floor - 99;
+        if (floor == 102) floor_sprite = SPRITE_WOOD_FLOOR + 10;
         assert(shovey_board_KindSprite(&opened, material, 26, 0, false) == floor_sprite);
         editor_Paint(26, 9);
         assert(editor_KindAt(editor_Board(1), SHOVEY_CELLS + 26) == 0);

@@ -36,9 +36,8 @@ SPRITE_NEW_TILE :: 72
 SPRITE_DOG :: 94
 SPRITE_TURTLE :: 98
 SPRITE_TREE :: 102
-SPRITE_GRASS_EDGE :: 103
+SPRITE_GRASS_FLOOR :: 103
 SPRITE_PORTAL :: 119
-SPRITE_WATER :: 122
 SPRITE_CRAB :: 126
 SPRITE_FISH :: 130
 SPRITE_GATE :: 178
@@ -80,7 +79,9 @@ SPRITE_BEES :: 376
 SPRITE_HIVE :: 377
 SPRITE_SHOOTER :: 378
 SPRITE_WALL_JOINED :: 382
-SPRITE_COUNT :: SPRITE_WALL_JOINED + 14 * 47
+SPRITE_WATER_FLOOR :: SPRITE_WALL_JOINED + 14 * 47
+SPRITE_WOOD_FLOOR :: SPRITE_WATER_FLOOR + 16
+SPRITE_COUNT :: SPRITE_WOOD_FLOOR + 16
 // Where Shovey sits on the big boat's stern deck, as parts of the picture:
 // the middle of his seat across it, how low he sits, so the near side of
 // the hull hides his bottom, and his size.
@@ -491,11 +492,6 @@ SpritesPrepare :: () {
         BuilderPrint(*portal, "tile-%", FormatInteger(cast(s64)(85 + color), digits[:]))
         SpritePath(SPRITE_PORTAL + color, BuilderFinish(portal))
     }
-    for frame: cast(s32)0..3 {
-        water: Vec(u8)
-        BuilderPrint(*water, "water-%", FormatInteger(cast(s64)frame, digits[:]))
-        SpritePath(SPRITE_WATER + frame, BuilderFinish(water))
-    }
     for direction: cast(s32)0..3 {
         crab: Vec(u8)
         BuilderPrint(*crab, "crab-%", facings[direction])
@@ -511,10 +507,17 @@ SpritesPrepare :: () {
             }
         }
     }
+    floor_names: [3]string = .["grass", "water", "wood"]
+    floor_starts: [3]s32 = .[SPRITE_GRASS_FLOOR, SPRITE_WATER_FLOOR, SPRITE_WOOD_FLOOR]
+    for material: cast(s32)0..2 {
+        for index: cast(s32)0..15 {
+            floor: Vec(u8)
+            BuilderPrint(*floor, "%-floor-%", floor_names[material], FormatInteger(cast(s64)index, digits[:]))
+            SpritePath(floor_starts[material] + index, TextView(VecSlice(floor, 0, floor.count)))
+            VecFree(floor)
+        }
+    }
     for mask: cast(s32)0..15 {
-        edge: Vec(u8)
-        BuilderPrint(*edge, "grass-edge-%", FormatInteger(cast(s64)mask, digits[:]))
-        SpritePath(SPRITE_GRASS_EDGE + mask, BuilderFinish(edge))
         abyss: Vec(u8)
         BuilderPrint(*abyss, "abyss-edge-%", FormatInteger(cast(s64)mask, digits[:]))
         SpritePath(SPRITE_ABYSS + mask, BuilderFinish(abyss))
@@ -616,11 +619,28 @@ BoardWallSprite :: (game: *ShoveyGame, kind: s32, at: s32, landscape: bool) -> s
     return SPRITE_WALL_JOINED + BoardWallMaterial(kind) * 47 + atlas_wall_indices[mask]
 }
 
+// Keep the pattern in board coordinates. Landscape rotates both the board
+// and each atlas cell, so neighboring cuts still share an edge.
+BoardFloorSprite :: (kind: s32, at: s32) -> s32 {
+    first: s32
+    if kind == 77 { first = SPRITE_GRASS_FLOOR }
+    else if kind == 64 { first = SPRITE_WATER_FLOOR }
+    else if kind == 102 { first = SPRITE_WOOD_FLOOR }
+    else { return -1 }
+    if at < 0 { return first }
+    column := (at % SHOVEY_WIDTH) % 4
+    row := (at / SHOVEY_WIDTH) % 4
+    return first + row * 4 + column
+}
+
 // The sprite of one board kind at a cell, or -1. An open gate shows open;
 // active sensors turn, one frame every 100 milliseconds.
 KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landscape: bool = false) -> s32 {
+    tiled := BoardFloorSprite(kind, position)
+    if tiled >= 0 { return tiled }
     if position >= 0 && ShoveyOpenDoor(game.ground[position]) {
         floor := ShoveyWallFloor(kind)
+        if floor == 102 { return BoardFloorSprite(floor, position) }
         if floor >= 0 { return ifx floor == 0 then 0 else ifx floor >= SHOVEY_PINE then SPRITE_FOREST + floor - SHOVEY_PINE else SPRITE_MATERIAL_FLOOR + floor - 99 }
     }
     moss := ShoveyMossColor(kind)
@@ -653,9 +673,6 @@ KindSprite :: (game: *ShoveyGame, kind: s32, position: s32, now: float64, landsc
     if kind == SHOVEY_LANTERN { return SPRITE_LANTERN }
     if kind == SHOVEY_DOOR || kind == SHOVEY_DOOR_OPEN { return SPRITE_DOOR + kind - SHOVEY_DOOR }
     if ShoveyMaterialFloor(kind) { return SPRITE_MATERIAL_FLOOR + kind - 99 }
-    // Hosts may supply Unix time. Reduce the wide frame counter before
-    // converting to a sprite index, so animation also works after 2038.
-    if kind == 64 { return SPRITE_WATER + cast(s32)(cast(s64)(now * 2.0) % 4) }
     if kind >= 95 && kind <= 98 { return SPRITE_WALL + kind - 95 }
     if ShoveyLever(kind) { return SPRITE_LEVER + kind - SHOVEY_LEVER }
     if kind >= 85 && kind <= 87 { return SPRITE_PORTAL + kind - 85 }
@@ -1249,14 +1266,6 @@ BoardLayersFill :: (game: *ShoveyGame, layers: []s32, now: float64, landscape: b
             layers[display] = BoardLavaSprite(game, at, now, landscape)
             corners := BoardAbyssCorners(at, landscape, board_lava_open)
             layers[SHOVEY_CELLS + display] = ifx corners != 0 then SPRITE_ABYSS_CORNER + corners else -1
-        } else if base == 77 {
-            // Grass runs up to an abyss's own lip; other floors get a soft edge.
-            mask: s32 = 0
-            for direction: cast(s32)0..3 {
-                neighbor := ShoveyNeighbor(at, direction)
-                if neighbor >= 0 && game.tiles[neighbor] != 77 && !BoardAbyss(game, neighbor) { mask |= 1 << direction }
-            }
-            layers[display] = SPRITE_GRASS_EDGE + mask
         }
         if !BoardAbyss(game, at) && base != SHOVEY_LAVA {
             layers[SHOVEY_CELLS + display] = ifx ground == 0 || ground == base || ground == SHOVEY_BOAT || (ShoveyBlockingDecoration(ground) && game.decorations[at] == ground) || ShoveyAnimal(ground) then -1 else KindSprite(game, ground, at, now, landscape)

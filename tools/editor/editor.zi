@@ -774,6 +774,8 @@ hex_abyss_open: [SHOVEY_CELLS]bool;
 hex_lava_open: [SHOVEY_CELLS]bool;
 
 HexSprite :: (game: *ShoveyGame, kind: s32, at: s32, landscape: bool) -> s32 {
+    tiled := BoardFloorSprite(kind, at)
+    if tiled >= 0 { return tiled }
     if BoardWallMaterial(kind) >= 0 { return KindSprite(game, kind, at, 0.0, landscape) }
     return PrivateSprite(kind)
 }
@@ -799,12 +801,10 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
         layers[display] = HexSprite(*game, tile, at, landscape)
         layers[SHOVEY_CELLS + display] = -1
         if ShoveyPitColor(tile) > 0 {
-            layers[display] = PrivateSprite(BoardPitFloor(*game, at))
+            layers[display] = HexSprite(*game, BoardPitFloor(*game, at), at, landscape)
             layers[SHOVEY_CELLS + display] = PrivateSprite(tile)
         }
-        // The same edges as the game draws: an abyss's go by screen
-        // direction, so its far cliff shows at the top, and grass runs up to
-        // an abyss's own lip.
+        // The abyss edges use screen direction, keeping the far cliff at the top.
         if KindAt(board, SHOVEY_CELLS + at) == SHOVEY_PIT {
             mask: s32 = 0
             for side: cast(s32)0..3 {
@@ -820,16 +820,6 @@ HexBoard :: (board: []u8, tiles: []string, layers: []s32, key: u64, bounds: Rect
                 if neighbor < 0 || KindAt(board, SHOVEY_CELLS + neighbor) != SHOVEY_LAVA { mask |= 1 << side }
             }
             layers[display] = SPRITE_LAVA_EDGE + mask
-        }
-        if KindAt(board, SHOVEY_CELLS + at) == 77 {
-            mask: s32 = 0
-            for direction: cast(s32)0..3 {
-                neighbor := ShoveyNeighbor(at, direction)
-                if neighbor >= 0 && KindAt(board, SHOVEY_CELLS + neighbor) != 77 && KindAt(board, SHOVEY_CELLS + neighbor) != SHOVEY_PIT {
-                    mask |= 1 << direction
-                }
-            }
-            layers[display] = SPRITE_GRASS_EDGE + mask
         }
         decoration := KindAt(board, SHOVEY_CELLS * 2 + at)
         layers[SHOVEY_CELLS * 2 + display] = ifx decoration == 0 then -1 else HexSprite(*game, decoration, at, landscape)
