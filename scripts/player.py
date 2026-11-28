@@ -646,6 +646,32 @@ def web_preload(release_folder, work, receipt):
 
 # Native hosts.
 
+def link_host(compiler, flags, sources, libraries, output, *, env=None):
+    """Reuse unchanged C units with ccache; always link the current inputs.
+
+    ccache tracks compiler contents, flags and headers, including changes
+    between production and private test hosts. Without it, keep the normal
+    single-command build so no new tool is required by downstream builders.
+    """
+    env = dict(environment() if env is None else env)
+    cache = shutil.which('ccache', path=env.get('PATH'))
+    if cache is None:
+        run([compiler, *flags, *sources, *libraries, '-o', output], env=env)
+        return
+    cache_env = dict(env,
+        CCACHE_BASEDIR=str(ROOT), CCACHE_COMPILERCHECK='content',
+        CCACHE_DIR=str(Path(env.get('XDG_CACHE_HOME', str(Path.home() / '.cache'))) / 'shovey-ccache'),
+        CCACHE_MAXSIZE='512M')
+    objects = []
+    for source in sources:
+        obj = output.parent / 'objects' / source.relative_to(output.parent).with_suffix('.o')
+        obj.parent.mkdir(parents=True, exist_ok=True)
+        run([cache, compiler, *flags, '-c', source, '-o', obj], env=cache_env)
+        objects.append(obj)
+    run([compiler, *flags, *objects, *libraries, '-o', output], env=env)
+    print(f'Linked {output.name} with compiler reuse enabled ({len(objects)} C units)')
+
+
 def startup_art(output):
     """Sharp title art while the desktop player's collection opens."""
     from PIL import Image
@@ -672,12 +698,12 @@ def linux_host():
     binary = folder / 'shovey'
     temporary = folder / 'shovey.new'
     sources = sorted(generated.rglob('*.c'))
-    run([os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-ffunction-sections', '-fdata-sections',
+    link_host(os.environ.get('CC', 'cc'), ['-std=c11', '-O2', '-ffunction-sections', '-fdata-sections',
          '-I' + str(toolchain() / 'include'),
          *['-iquote' + str(path) for path in sorted({generated, *(p.parent for p in sources)})],
-         *renderer['compile_flags'], *['-I' + path for path in renderer['include_directories']],
-         *sources, '-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
-         *profile.link_flags(include_archives=False), '-o', temporary])
+         *renderer['compile_flags'], *['-I' + path for path in renderer['include_directories']]],
+         sources, ['-Wl,--gc-sections', *build_artifacts.renderer_link(renderer),
+         *profile.link_flags(include_archives=False)], temporary)
     temporary.replace(binary)
     return binary
 
@@ -728,10 +754,10 @@ def windows_host(tools):
                 *['-I' + path for path in renderer['include_directories']]]
     for path in sorted({generated, *(item for item in generated.rglob('*') if item.is_dir())}):
         includes += ['-iquote', str(path)]
-    run([tools + 'gcc', '-std=c11', '-O2', '-ffunction-sections', '-fdata-sections', *includes,
-         *renderer['compile_flags'], *sorted(generated.rglob('*.c')), folder / 'shovey-resource.o',
+    link_host(tools + 'gcc', ['-std=c11', '-O2', '-ffunction-sections', '-fdata-sections', *includes,
+         *renderer['compile_flags']], sorted(generated.rglob('*.c')), [folder / 'shovey-resource.o',
          '-Wl,--gc-sections', '-static', '-static-libgcc', '-mwindows',
-         *build_artifacts.renderer_link(renderer), *profile.link_flags(include_archives=False), '-o', temporary], env=tool_env)
+         *build_artifacts.renderer_link(renderer), *profile.link_flags(include_archives=False)], temporary, env=tool_env)
     run([tools + 'strip', temporary], env=tool_env)
     temporary.replace(program)
     font = folder / 'kryon-font.ttf'

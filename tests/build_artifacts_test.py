@@ -17,6 +17,48 @@ import build_artifacts as artifacts
 import player
 
 
+class HostReuseTest(unittest.TestCase):
+    def test_current_headers_flags_sources_and_libraries_are_used(self):
+        compiler = shutil.which('cc')
+        cache = shutil.which('ccache')
+        if not compiler or not cache:
+            self.skipTest('native compiler and ccache are needed for the reuse check')
+        with tempfile.TemporaryDirectory(dir=ROOT / 'work/artifact-consumer') as temporary:
+            folder = Path(temporary)
+            header, source = folder / 'value.h', folder / 'main.c'
+            header.write_text('#define VALUE 7\n')
+            source.write_text('#include "value.h"\n#include <stdio.h>\n'
+                              '#ifndef OFFSET\n#define OFFSET 0\n#endif\n'
+                              'int reward(void);\nint main(void) { printf("%d\\n", VALUE + OFFSET + reward()); }\n')
+            library_source = folder / 'reward.c'
+            library = folder / 'reward.o'
+            def reward(value):
+                library_source.write_text(f'int reward(void) {{ return {value}; }}\n')
+                subprocess.run([compiler, '-c', str(library_source), '-o', str(library)], check=True)
+            reward(1)
+            env = artifacts.environment() | {'XDG_CACHE_HOME': str(folder / 'cache')}
+            binary = folder / 'host'
+            def build(expected, flags=()):
+                player.link_host(compiler, ['-std=c11', '-O2', *flags], [source], [library], binary, env=env)
+                self.assertEqual(subprocess.check_output([binary], text=True).strip(), str(expected))
+            build(8)
+            build(8)
+            stats = subprocess.check_output([cache, '--print-stats'], text=True,
+                env=env | {'CCACHE_DIR': str(folder / 'cache/shovey-ccache')})
+            counts = dict(line.split() for line in stats.splitlines())
+            self.assertGreaterEqual(int(counts['direct_cache_hit']), 1)
+            header.write_text('#define VALUE 11\n')
+            build(12)
+            build(17, ['-DOFFSET=5'])
+            source.write_text(source.read_text().replace('VALUE + OFFSET', 'VALUE * 2 + OFFSET'))
+            build(28, ['-DOFFSET=5'])
+            reward(3)
+            build(30, ['-DOFFSET=5'])
+            # Downstream hosts without ccache still build and link current inputs.
+            with patch.object(player.shutil, 'which', return_value=None):
+                build(25)
+
+
 class DescriptorTest(unittest.TestCase):
     """Descriptor rules belong to Ziran's own tests; this covers Shovey's use of them."""
     def setUp(self):
@@ -182,7 +224,9 @@ if __name__ == '__main__':
     subprocess.run(['git', 'check-ignore', 'work/artifact-consumer/probe'], cwd=ROOT, check=True,
                    stdout=subprocess.DEVNULL)
     (ROOT / 'work/artifact-consumer').mkdir(parents=True, exist_ok=True)
-    if not unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(DescriptorTest)).wasSuccessful():
+    suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(case)
+                               for case in (DescriptorTest, HostReuseTest))
+    if not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful():
         raise SystemExit(1)
     if args.providers:
         providers(args.ziran)

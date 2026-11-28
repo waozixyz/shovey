@@ -321,14 +321,17 @@ bench: levels build/ziran/libziran.a
 		build/ziran/libziran.a -Wl,--gc-sections -lm -lpthread -o build/solver/shovey-bench
 
 # The checks the public repository can run with only the published campaign.
+# A prepared locked compiler already contains its native runtime. Reuse it
+# rather than building a second compiler/runtime tree just for this fixture.
+CHEST_RUNTIME = $(if $(wildcard $(TOOLCHAIN)/build/libziran.a),$(TOOLCHAIN)/build/libziran.a,build/ziran/libziran.a)
 .PHONY: chest-fixture
-chest-fixture: build/ziran/libziran.a
+chest-fixture: $(CHEST_RUNTIME)
 	'$(TOOLCHAIN)/build/bin/ziran' build --target=c --root . \
 		--module-path 'std=$(TOOLCHAIN)/std' --module-path '$(TOOLCHAIN)/std' \
 		--entry chest_fixture:main -o build/chest-test/c tests/chest_fixture.zi
 	$${CC:-cc} -std=c11 -O1 -I'$(TOOLCHAIN)/include' \
 		$$(find build/chest-test/c -type d -printf ' -iquote %p') \
-		$$(find build/chest-test/c -name '*.c') build/ziran/libziran.a -lm -lpthread -o build/chest-test/fixture
+		$$(find build/chest-test/c -name '*.c') '$(CHEST_RUNTIME)' -lm -lpthread -o build/chest-test/fixture
 	build/chest-test/fixture build/chest-test/fixture.txt
 
 .PHONY: artifact-test artifact-provider-test

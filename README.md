@@ -89,6 +89,12 @@ python3 tests/world_map_spacing_test.py
 build-queue -- make world-map-test player-linux
 ```
 
+Linux and Windows player builds use `ccache` when installed, reusing unchanged
+C units in `$XDG_CACHE_HOME/shovey-ccache` (or `~/.cache/shovey-ccache`), with a
+512 MB limit. Compiler, header and flag changes invalidate those units;
+libraries are linked on every build. Without `ccache`, builds use the normal
+compiler. The chest fixture reuses the locked compiler's runtime when present.
+
 Test Play, map selection and double-click entry on a private Xvfb display
 after building the player:
 
