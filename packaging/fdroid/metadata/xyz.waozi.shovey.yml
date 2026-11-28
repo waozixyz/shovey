@@ -27,11 +27,23 @@ Builds:
       - packaging/compiled/shovey-island.zx
     build: make android-fdroid
     ndk: 28.2.13676358
+  - versionName: 0.6.178
+    versionCode: 186
+    commit: 451dc347e53099e8f77f678f7e4f59195518dc4c
+    sudo:
+      - apt-get update
+      - apt-get install -y build-essential cmake meson ninja-build pkg-config python3-pil
+        python3-numpy libssl-dev
+    output: build/fdroid/shovey.apk
+    rm:
+      - packaging/compiled/shovey-island.zx
+    build: make android-fdroid
+    ndk: 28.2.13676358
 
 AllowedAPKSigningKeys: 3f687dd9aa7edd8c81b9d3ade255f0b620be7b9fd62783e5f8d7e7f7df658820
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags v[0-9.]+
 UpdateCheckData: 'version.json|"version_code": ([0-9]+)|version.json|"version": "([0-9.]+)"'
-CurrentVersion: 0.6.177
-CurrentVersionCode: 185
+CurrentVersion: 0.6.178
+CurrentVersionCode: 186
