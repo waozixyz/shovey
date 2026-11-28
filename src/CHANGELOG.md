@@ -2,9 +2,10 @@
 
 ## [Unreleased]
 
-- Join grass, water and wooden floors using sixteen packed variants each, with quieter grass and consistent water colour.
+## [0.6.177] - 2026-11-28
 
-- Accelerate Android drawing with GLES and retain software rendering as a fallback.
+- Give grass, water and wooden floors continuous patterns, with quieter grass and steady water colour.
+- Make Android gameplay smoother and reduce drawing overhead.
 
 - Handle Android Back once so Continue and Levels remain usable after returning to the title.
 
