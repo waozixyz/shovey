@@ -1214,3 +1214,12 @@ Dew 不足。
 ---
 [shovey_guide]
 指南
+---
+[shovey_hint_target]
+下一个目标
+---
+[shovey_guide_level]
+当前关卡
+---
+[shovey_guide_all]
+全部机关

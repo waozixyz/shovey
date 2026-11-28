@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Explain and highlight the next hint target, verify advice from current puzzle positions, and search for recovery after detours.
+- Put Settings at the top right and replace the long guide with compact illustrated mechanic cards.
+
 - Refresh the home actions and game controls with raised buttons, and keep settings in a compact modal over the board.
 - Show the hint allowance in the game toolbar and reveal hints in one tap over the board; open settings directly from the toolbar.
 

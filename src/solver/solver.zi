@@ -1074,6 +1074,22 @@ SolverStart :: (board: string, limits: SolverLimits = SolverDefaultLimits()) -> 
     return SolverStartRules(SolverClassicRules(), board, limits)
 }
 
+// The same bounded searches can continue a game instead of resetting its board.
+solver_snapshot: ShoveyGame;
+SolverClassicLoadSnapshot :: (unused_board: string) -> bool {
+    unused unused_board
+    return SolveClassicLoadGame(*solver_snapshot)
+}
+SolverNoStoryRoute :: (unused_board: string) -> string { unused unused_board; return "" }
+SolverStartGame :: (game: *ShoveyGame, limits: SolverLimits = SolverDefaultLimits()) -> bool {
+    solver_snapshot = game.*
+    rules := SolverClassicRules()
+    rules.load = SolverClassicLoadSnapshot
+    // A route for the untouched board says nothing about this snapshot.
+    rules.story_route = SolverNoStoryRoute
+    return SolverStartRules(rules, "", limits)
+}
+
 // Loads a board and starts checking it with other rules, which replace the
 // previous check's. False when the rules reject the board.
 SolverStartRules :: (rules: SolverRules, board: string, limits: SolverLimits = SolverDefaultLimits()) -> bool {

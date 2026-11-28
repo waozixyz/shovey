@@ -1214,3 +1214,12 @@ Shovey Island
 ---
 [shovey_guide]
 Руководство
+---
+[shovey_hint_target]
+Следующая цель
+---
+[shovey_guide_level]
+Этот уровень
+---
+[shovey_guide_all]
+Все механики

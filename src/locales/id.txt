@@ -1214,3 +1214,12 @@ Suara
 ---
 [shovey_guide]
 Panduan
+---
+[shovey_hint_target]
+Target berikutnya
+---
+[shovey_guide_level]
+Level ini
+---
+[shovey_guide_all]
+Semua mekanik

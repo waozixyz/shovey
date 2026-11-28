@@ -41,8 +41,8 @@ def main():
         for index in range(len(catalog)):
             if driver.find(label=action, role='button'):
                 return action
-            if action == 'Play' and driver.find(label='Continue', role='button'):
-                return 'Continue'
+            if action == 'Play' and driver.find(key=49224, role='button'):
+                return driver.wait(key=49222,role='button')['label']
             if index + 1 < len(catalog):
                 driver.press(label=direction, role='button')
                 driver.wait_idle(frames=3, timeout=5)
@@ -78,7 +78,9 @@ def main():
                     stdout=log, stderr=subprocess.STDOUT)
                 driver.attach(child, log_path)
                 try:
-                    driver.wait(label='Play', role='button', timeout=60)
+                    driver.wait(key=49224, role='button', timeout=60)
+                    play = driver.wait(key=49222,role='button')
+                    assert play['label'] == 'Level 1', play
                     driver.wait_gone(key=49401, role='button', timeout=20)
                     if driver.find(label='Download new levels when they come out?', role='text'):
                         driver.press(label='Not now', role='button')
@@ -93,6 +95,10 @@ def main():
                     while driver.tree()[0]['width'] != width:
                         assert time.monotonic() < deadline, 'Window did not resize'
                         time.sleep(.05)
+                    play = driver.wait(key=49222,role='button')
+                    levels = driver.wait(key=49224,role='button')
+                    assert play['y'] == levels['y'] and play['height'] == levels['height'] == 64
+                    assert play['x']+play['width']+8 == levels['x']
                     market = driver.wait(key=49200, role='button')
                     chest = driver.wait(key=49202, role='button')
                     book = driver.wait(key=49208, role='button')
@@ -130,7 +136,7 @@ def main():
                         driver.press(label='Got it', role='button')
                         driver.wait_gone(label='Got it', role='button')
                     print("header: toolbar ready", flush=True)
-                    buttons = [driver.wait(key=key, role='button') for key in (20022, 20016, 20017, 20023, 20907)]
+                    buttons = [driver.wait(key=key, role='button') for key in (20022, 20016, 20017, 20907)]
                     for button in buttons:
                         assert button['width'] == 44 and button['height'] == 44, button
                         assert button['y'] == buttons[0]['y'], buttons
@@ -139,11 +145,15 @@ def main():
                     book_button = driver.wait(key=20820, role='button')
                     for button in buttons: assert separated(book_button, button)
                     subprocess.run(['import', '-window', window, str(output / f'gameplay-{width}.png')], check=True, timeout=20)
-                    sound_before = buttons[3]['label']
-                    driver.press(key=20023, role='button')
-                    assert driver.wait(key=20023, role='button')['label'] != sound_before
-                    driver.press(key=20023, role='button')
-                    assert driver.wait(key=20023, role='button')['label'] == sound_before
+                    assert buttons[-1]['label'] == 'Settings'
+                    assert buttons[-1]['x'] == width - 52, 'Settings must replace sound at the top right'
+                    assert not driver.find(key=20023, role='button'), 'Sound belongs inside Settings'
+                    driver.press(key=20907, role='button')
+                    sound_before = driver.wait(key=20702, role='button')['label']
+                    driver.press(key=20702, role='button')
+                    assert driver.wait(key=20702, role='button')['label'] != sound_before
+                    driver.press(key=20702, role='button')
+                    driver.press(key=20704, role='button')
                     driver.press(key=20016, role='button')
                     driver.wait_idle(frames=3, timeout=5)
                     driver.wait(key=20017, label='Hint · 3', role='button')
@@ -156,7 +166,7 @@ def main():
                     assert not driver.find(key=20904, role='button'), 'Shop should appear only when hints run out'
                     advice = driver.wait(key=20900 * 65599 + 3, role='text')['label']
                     print(f"header: advice {advice!r}", flush=True)
-                    assert advice.startswith('Next moves:'), repr(advice)
+                    assert 'Next moves:' in advice and 'Next target:' in advice, repr(advice)
                     subprocess.run(['import', '-window', window, str(output / f'hint-modal-{width}.png')], check=True, timeout=20)
                     # The board remains visible but input cannot leak through the modal.
                     player_before = driver.find(label='Shovey', role='image')
@@ -188,7 +198,16 @@ def main():
                         driver.wait(label='Touch controls', role='text')
                         subprocess.run(['import', '-window', window, str(output / 'settings-480.png')], check=True, timeout=20)
                         driver.press(key=20703, role='button')
-                        assert 'Keep your streak for seven rewards' in driver.wait(key=20006, role='text')['label']
+                        driver.wait(key=20705, label='This level', role='button')
+                        assert driver.find(label='Clear the tasks, then go home.', role='text')
+                        assert not driver.find(label='Push the ball into its hole, then go home.', role='text'), 'Level guide included an absent mechanic'
+                        assert not driver.find(key=20006), 'The long text guide returned'
+                        subprocess.run(['import', '-window', window, str(output / 'guide-480.png')], check=True, timeout=20)
+                        driver.press(key=20706, role='button')
+                        driver.wait(label='Push the ball into its hole, then go home.', role='text')
+                        subprocess.run(['import', '-window', window, str(output / 'guide-all-480.png')], check=True, timeout=20)
+                        driver.press(key=20704, role='button')
+                        driver.wait(label='Touch controls', role='text')
                         driver.key('escape')
                         driver.wait(key=20016, role='button')
                     driver.wait(key=20016, role='button')
@@ -252,12 +271,14 @@ def main():
                         driver.wait(key=61101, role='button', timeout=60)
                         if key == 49202:
                             driver.wait(key=63021, role='text', label='25')
+                            driver.wait(key=63040,visible=True)
                             assert not driver.find(key=63001, role='text'), 'Chest paragraph returned'
                             subprocess.run(['import', '-window', window, str(output / f'chest-{width}.png')], check=True, timeout=20)
                             driver.press(key=63002, role='button')
                             wait = driver.wait(key=63002, role='button', label='Tomorrow')
                             assert not wait['enabled'], 'Claim must be disabled after success'
                             driver.wait_gone(key=63021, role='text')
+                            driver.wait_gone(key=63040,visible=True)
                         driver.press(key=61101, role='button')
                         driver.wait(key=49200, role='button')
                         driver.wait(key=49211, role='text', label='45' if key == 49202 else '20')

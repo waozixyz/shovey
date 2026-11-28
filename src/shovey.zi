@@ -20,6 +20,7 @@ ShoveyNodeFrame :: (message: AppMessage) -> bool {
     ShoveyShopSetToday(ifx message.time > 0 then message.time / 86400 else -1)
     ReminderRecords.game_title_enabled = true
     if shovey_title_open {
+        if !Title.prepared { Title.home_level = ShoveyResumeLevel() }
         if Title.Frame(ifx message.time > 0 then message.time / 86400 else -1) {
             ShoveyEnter(Title.map_requested)
             shovey_title_open = false

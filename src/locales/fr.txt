@@ -1214,3 +1214,12 @@ Son
 ---
 [shovey_guide]
 Guide
+---
+[shovey_hint_target]
+Prochain objectif
+---
+[shovey_guide_level]
+Ce niveau
+---
+[shovey_guide_all]
+Toutes les mécaniques

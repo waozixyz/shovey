@@ -33,7 +33,7 @@ AppKeyHost :: () -> s32 #foreign host_api;
 
 state: Carousel.CarouselState;
 prepared: bool;
-has_progress: bool;
+home_level: s32 = 1;
 
 // The title-bar picture is the player's equipped Shovey skin, so a wardrobe
 // choice shows at once and everywhere this title is drawn. Shovey publishes
@@ -98,11 +98,17 @@ TitleCarousel :: (session: Session, bounds: Rectangle, now: float64, key: s32, i
         .logo_max_width=ifx bounds.width<600.0 then bounds.width*0.58 else 360.0,.logo_top=120.0},items,*state,1.0)
     action_y := bounds.y+bounds.height-196.0
     if action_y < bounds.y+bounds.height*0.5 { action_y=bounds.y+bounds.height*0.5 }
-    action_width := ifx bounds.width-64.0 < 280.0 then bounds.width-64.0 else 280.0
+    row_width := ifx bounds.width-48.0 < 348.0 then bounds.width-48.0 else 348.0
+    action_width := ifx state.selected == 0 then row_width-72.0 else ifx bounds.width-64.0 < 280.0 then bounds.width-64.0 else 280.0
     item := items[state.selected]
     activated: s32 = -1
-    action := Rectangle.{bounds.x+(bounds.width-action_width)/2.0,action_y,action_width,64.0}
+    action := Rectangle.{bounds.x+(bounds.width-(ifx state.selected == 0 then row_width else action_width))/2.0,action_y,action_width,64.0}
     if ShoveyAction(session,49222,action,item.action,true,item.disabled) { activated=state.selected }
+    if state.selected == 0 && Button.Draw(session, Button.Props.{.key = 49224,
+        .bounds = Rectangle.{action.x+action.width+8.0,action.y,64.0,64.0},
+        .label = AppLocaleHost("shovey_levels"), .icon_only = true,
+        .icon_shape = "S2rr:M3 3H9V9H3ZM15 3H21V9H15ZM3 15H9V21H3ZM15 15H21V21H15Z",
+        .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0 { map_requested = true }
     Carousel.CarouselActionRibbon(session,50250,action,item.action_ribbon)
     middle := bounds.y+bounds.height*0.5-24.0
     if state.selected>0 && Button.Draw(session,Button.Props.{.key=50251,
@@ -111,9 +117,9 @@ TitleCarousel :: (session: Session, bounds: Rectangle, now: float64, key: s32, i
     if state.selected<count-1 && Button.Draw(session,Button.Props.{.key=50252,
         .bounds=Rectangle.{bounds.x+bounds.width-60.0,middle,48.0,48.0},.label=AppLocaleHost("shovey_page_next"),
         .icon_shape="S2rr:M9 5L16 12L9 19",.icon_only=true,.circle=true,.emphasis=ButtonEmphasis.ButtonEmphasisFilled}) != 0 { state.selected+=1 }
-    row_width := cast(float32)(count-1)*16.0+22.0
-    x := bounds.x+(bounds.width-row_width)/2.0
-    unused Box.Draw(session,Box.Props.{.key=50253,.bounds=Rectangle.{x-10.0,action_y+78.0,row_width+20.0,24.0},
+    dots_width := cast(float32)(count-1)*16.0+22.0
+    x := bounds.x+(bounds.width-dots_width)/2.0
+    unused Box.Draw(session,Box.Props.{.key=50253,.bounds=Rectangle.{x-10.0,action_y+78.0,dots_width+20.0,24.0},
         .fill=Color.{24,49,28,180},.radius=12.0})
     for page: cast(s32)0..count-1 {
         w: float32 = ifx page==state.selected then 22.0 else 8.0
@@ -132,15 +138,23 @@ Frame :: (today: s64) -> bool {
     if !prepared {
         prepared = true
         Shop.RefreshWallet()
-        has_progress = LocalCampaignRecord() != ""
+        map_requested = false
     }
     if Book.BookFrame(frame.session, bounds, "") || Shop.ShopFrame(frame.session, bounds, frame.now, today) { return false }
     unused WidgetPaletteUse(frame.session, ShoveyPalette())
     defer { unused WidgetPaletteRestore(frame.session) }
+    level_text: [128]u8
+    level_digits: [24]u8
+    label := AppLocaleHost("shovey_level")
+    length: s64 = 0
+    for byte: label { if length < 96 { level_text[length] = byte; length += 1 } }
+    level_text[length] = #char " "; length += 1
+    for byte: FormatInteger(cast(s64)home_level,level_digits[:]) { level_text[length] = byte; length += 1 }
+    level_label := TextView(level_text[:length])
     items: [3]Carousel.CarouselItem
     items[0] = Carousel.CarouselItem.{.label = "Shovey", .portrait = "assets/shovey/title/shovey-portrait.jpg",
         .landscape = "assets/shovey/title/shovey-landscape.jpg", .logo = "assets/shovey/title/shovey-logo.png",
-        .action = AppLocaleHost(ifx has_progress then "shovey_continue" else "shovey_play")}
+        .action = level_label}
     standalone := AppSupports("shovey.standalone")
     island_enabled := standalone && AppSupports("shovey.island.enabled")
     // A locked Island carries its price and offer on the Unlock action, and
@@ -167,18 +181,7 @@ Frame :: (today: s64) -> bool {
     if !island_enabled { items[1] = editor; count = 2 }
     else { items[2] = editor }
     selected := TitleCarousel(frame.session,bounds,frame.now,AppKeyHost(),items[:count])
-    if state.selected == 0 {
-        action_y := bounds.y + bounds.height - 196.0
-        if action_y < bounds.y + bounds.height * 0.5 { action_y = bounds.y + bounds.height * 0.5 }
-        map_width := ifx bounds.width - 64.0 < 260.0 then bounds.width - 64.0 else 260.0
-        if ShoveyAction(frame.session,49224,
-            Rectangle.{bounds.x+(bounds.width-map_width)*0.5,action_y-62.0,map_width,48.0},
-            AppLocaleHost("shovey_levels"),false,false,"S2rr:M3 3H9V9H3ZM15 3H21V9H15ZM3 15H9V21H3ZM15 15H21V21H15Z") {
-            prepared = false
-            map_requested = true
-            return true
-        }
-    }
+    if map_requested { prepared = false; return true }
     Shop.Pump(frame.now, today)
     // Why a press did not unlock Island, briefly, above its action.
     if island_enabled && !owned && state.selected == 1 {

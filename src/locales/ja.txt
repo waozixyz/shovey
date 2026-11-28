@@ -1214,3 +1214,12 @@ Classicで特別なアイテムを探そう。
 ---
 [shovey_guide]
 ガイド
+---
+[shovey_hint_target]
+次の目標
+---
+[shovey_guide_level]
+このレベル
+---
+[shovey_guide_all]
+すべての仕掛け

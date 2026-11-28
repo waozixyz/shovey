@@ -1542,6 +1542,7 @@ ShoveyBoardPieces :: (session: Session, game: *ShoveyGame, grid: TileMap.TileMap
     if board_chest >= 0 && board_chest_open && !board_chest_claimed {
         cell := TileMap.TileMapCell(grid, BoardDisplayIndex(board_chest, landscape))
         Theme.ShoveyRewardGlow(session, BoardOverlayKey(key, 3800), cell, now)
+        Theme.ShoveyGoldSparkles(session, BoardOverlayKey(key, 3810), cell, now)
     }
     glide_files := ifx landscape then landscape_sprite_files[:] else sprite_files[:]
     for at: cast(s32)0..SHOVEY_CELLS - 1 {

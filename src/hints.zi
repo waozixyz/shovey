@@ -2,6 +2,7 @@
 #import, file "engine.zi";
 #import "levels"
 Guide :: #import, file "guide.zi";
+Solve :: #import, file "solver/solver.zi";
 #import "std/c_string"
 #import "std/text_buffer"
 LevelHint :: struct {
@@ -17,11 +18,24 @@ LevelHint :: struct {
     topics: [3]s32
     topic_count: s32
     actions: [4]u8
+    preview: [12]u8
+    focus: s32
+    focus_kind: s32
+    advice_topic: s32
+    searching: bool
+    searched: bool
+    search_steps: s32
+    search_session: s64
+    join_at: s32
+    join_walker: s32
+    join_distance: s32
+    joined: bool
+    joined_route: [32768]u8
     saved: [2433]u8
 }
-HintSame :: (a: *ShoveyGame, b: *ShoveyGame, ambient: bool = false) -> bool {
-    if a.player != b.player || a.powers != b.powers || a.keys != b.keys || a.lost != b.lost || a.won != b.won { return false }
-    if (a.powers & SHOVEY_AMMO) != 0 && a.direction != b.direction { return false }
+HintSame :: (a: *ShoveyGame, b: *ShoveyGame, ambient: bool = false, ignore_walker: bool = false) -> bool {
+    if (!ignore_walker && a.player != b.player) || a.powers != b.powers || a.keys != b.keys || a.lost != b.lost || a.won != b.won { return false }
+    if !ignore_walker && (a.powers & SHOVEY_AMMO) != 0 && a.direction != b.direction { return false }
     for at: 0..SHOVEY_CELLS - 1 {
         left := a.ground[at]; right := b.ground[at]
         if ambient {
@@ -44,10 +58,13 @@ HintActions :: (hint: *LevelHint, route: string) {
         if at >= route.count { break }
         hint.actions[at] = route[at]
     }
+    hint.preview = .{}
+    for at: cast(s32)0..11 { if at >= route.count { break }; hint.preview[at] = route[at] }
+    HintExplain(hint, route)
     hint.status = ifx hint.actions[0] != 0 then 3 else 0
 }
 HintStart :: (hint: *LevelHint, game: *ShoveyGame) {
-    hint.* = LevelHint.{.target = game.*, .match = -1, .exact_match = -1}
+    hint.* = LevelHint.{.target = game.*, .match = -1, .exact_match = -1, .focus = -1, .join_at = -1, .join_distance = 10000}
     if game.won { return }
     unused CopyCString(ShoveySave(game), hint.saved[:])
     hint.route = HintRoute(game)
@@ -55,11 +72,38 @@ HintStart :: (hint: *LevelHint, game: *ShoveyGame) {
     else { HintRestart(hint) }
 }
 HintRestart :: (hint: *LevelHint) {
-    hint.restart = true
-    if hint.route == "" { HintMechanics(hint); return }
+    if !hint.target.lost && hint.join_at >= 0 && HintTryJoin(hint) { return }
+    if !hint.target.lost && !hint.searched {
+        hint.searched = true
+        if Solve.SolverStartGame(*hint.target, Solve.SolverLimits.{.bfs=2000,.greedy=8000,.chain_goal=2000,.chain=12000,.macro=4000}) {
+            hint.searching = true; hint.status = 1
+            hint.search_session = Solve.SolverSession()
+            return
+        }
+    }
+    hint.restart = hint.target.lost || Solve.SolverStatus() == Solve.SOLVER_NEVER
+    if !hint.restart || hint.route == "" { HintMechanics(hint); return }
     HintActions(hint, hint.route)
 }
 HintStep :: (hint: *LevelHint) {
+    if hint.searching {
+        if hint.search_session != Solve.SolverSession() { hint.searching = false; HintMechanics(hint); return }
+        Solve.SolverRun(800)
+        hint.search_steps += 1
+        if Solve.SolverStatus() == Solve.SOLVER_RUNNING && hint.search_steps < 240 { return }
+        hint.searching = false
+        if Solve.SolverStatus() == Solve.SOLVER_WON {
+            hint.route = Solve.SolverRoute(); hint.match = 0; hint.verifying = true
+            HintActions(hint, hint.route)
+        } else {
+            proved := Solve.SolverStatus() == Solve.SOLVER_NEVER
+            Solve.SolverStop()
+            hint.restart = proved || hint.target.lost
+            if hint.restart && hint.route != "" { HintActions(hint, hint.route) }
+            else { HintMechanics(hint) }
+        }
+        return
+    }
     if hint.status == 1 {
         for unused_step: 0..31 {
             if hint.at >= hint.route.count {
@@ -81,6 +125,13 @@ HintStep :: (hint: *LevelHint) {
             if !hint.verifying {
                 if HintSame(*hint.target, *hint.replay) { hint.exact_match = hint.at }
                 else if HintSame(*hint.target, *hint.replay, true) { hint.match = hint.at }
+                else if HintSame(*hint.target, *hint.replay, true, true) {
+                    distance := Guide.GuideSteps(hint.target.player, hint.replay.player)
+                    if distance < hint.join_distance {
+                        hint.join_distance = distance; hint.join_at = hint.at
+                        hint.join_walker = hint.replay.player * 4 + (ifx (hint.replay.powers & SHOVEY_AMMO) != 0 then hint.replay.direction else 0)
+                    }
+                }
             }
             action := hint.route[hint.at]
             if action == #char "t" { unused ShoveyTick(*hint.replay) }
@@ -90,6 +141,48 @@ HintStep :: (hint: *LevelHint) {
         }
     }
 }
+// Rejoin a proven route through walks that preserve the puzzle state.
+// Every edge and the final combined route still run through the real engine.
+HintTryJoin :: (hint: *LevelHint) -> bool {
+    join := hint.join_at; hint.join_at = -1
+    queue: [960]s32
+    parent: [960]s32
+    letters: [960]u8
+    for at: cast(s32)0..959 { parent[at] = -1 }
+    armed := (hint.target.powers & SHOVEY_AMMO) != 0
+    root := hint.target.player * 4 + (ifx armed then hint.target.direction else 0)
+    queue[0] = root; parent[root] = root
+    head: s32; count: s32 = 1
+    found := false
+    while head < count {
+        walker := queue[head]; head += 1
+        if walker == hint.join_walker { found = true; break }
+        for side: cast(s32)0..3 {
+            board := hint.target; board.player = walker / 4; board.direction = walker % 4
+            unused ShoveyMove(*board, side)
+            if board.lost || !HintSame(*board, *hint.target, true, true) { continue }
+            next := board.player * 4 + (ifx armed then board.direction else 0)
+            if parent[next] >= 0 { continue }
+            parent[next] = walker; letters[next] = cast(u8)(48 + side)
+            queue[count] = next; count += 1
+        }
+    }
+    if !found { return false }
+    backwards: [960]u8
+    length: s32
+    walker := hint.join_walker
+    while walker != root {
+        backwards[length] = letters[walker]; length += 1; walker = parent[walker]
+    }
+    total := length + cast(s32)hint.route.count - join
+    if total >= 32768 { return false }
+    for at: cast(s32)0..length - 1 { hint.joined_route[at] = backwards[length-1-at] }
+    for at: join..cast(s32)hint.route.count - 1 { hint.joined_route[length+at-join] = hint.route[at] }
+    hint.route = TextView(hint.joined_route[:total])
+    hint.match = 0; hint.at = 0; hint.replay = hint.target; hint.verifying = true; hint.joined = true
+    return true
+}
+
 // An occasional floor scroll lies on the verified opening walk.
 HintFloorCell :: (level: s32) -> s32 {
     if level < 1 || level % 7 != 0 || level > SHOVEY_APPROVED_LEVEL_COUNT { return -1 }
@@ -116,15 +209,70 @@ HintRoute :: (game: *ShoveyGame) -> string {
     if ShoveyLevelBoard(game.level) == ShoveyLevelData(game.level) { return ShoveyLevelSolution(game.level) }
     return ""
 }
-HintMechanics :: (hint: *LevelHint) {
-    topics := Guide.GuideBoardTopics(*hint.target)
-    for topic: cast(s32)1..Guide.GUIDE_TOPICS - 1 {
-        if (topics & Guide.GuideBit(topic)) == 0 { continue }
-        hint.topics[hint.topic_count] = topic
-        hint.topic_count += 1
-        if hint.topic_count == 3 { break }
+// Explain the next interaction on the verified route, rather than three
+// arbitrary walking moves. Never alter the live game to prepare advice.
+HintExplain :: (hint: *LevelHint, route: string) {
+    board := hint.target
+    if hint.restart { unused ShoveyLoad(*board, hint.target.level) }
+    hint.focus = -1
+    hint.advice_topic = Guide.GUIDE_HOME
+    for at: cast(s32)0..cast(s32)route.count - 1 {
+        if at >= 128 { break }
+        action := route[at]
+        cell := board.player
+        topic: s32 = -1
+        kind: s32
+        if action == #char "f" { topic = Guide.GUIDE_SHOT; kind = 26 }
+        else if action == #char "t" {
+            cell = Guide.GuideFocus(*board, Guide.GUIDE_WAGON); topic = Guide.GUIDE_WAGON; kind = 29
+        } else {
+            side := cast(s32)action - 48
+            if (board.powers & SHOVEY_REVERSE) != 0 { side = (side + 2) % 4 }
+            cell = ShoveyNeighbor(board.player, side)
+            if cell >= 0 {
+                kind = ifx board.objects[cell] != 0 then board.objects[cell] else board.ground[cell]
+                bits := Guide.GuideKind(kind)
+                for candidate: cast(s32)1..Guide.GUIDE_TOPICS - 1 {
+                    if (bits & Guide.GuideBit(candidate)) != 0 { topic = candidate; break }
+                }
+                if ShoveyHome(kind) && ShoveyRemaining(*board) == 0 { topic = Guide.GUIDE_HOME }
+                if topic == Guide.GUIDE_ANIMALS { topic = -1 }
+            }
+        }
+        if topic >= 0 && cell >= 0 {
+            hint.focus = cell; hint.focus_kind = kind; hint.advice_topic = topic
+            return
+        }
+        if action == #char "t" { unused ShoveyTick(*board) }
+        else if action == #char "f" { unused ShoveyFire(*board) }
+        else { unused ShoveyMove(*board, cast(s32)action - 48) }
     }
-    if hint.topic_count < 3 { hint.topics[hint.topic_count] = Guide.GUIDE_HOME; hint.topic_count += 1 }
+    hint.focus = Guide.GuideFocus(*board, Guide.GUIDE_HOME)
+    hint.focus_kind = 7
+}
+HintMechanics :: (hint: *LevelHint) {
+    // Prioritize unfinished tasks, not the first three tile kinds in a list.
+    topic: s32 = Guide.GUIDE_HOME
+    nearest: s32 = 10000
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        ground := hint.target.ground[at]; object := hint.target.objects[at]
+        candidate: s32 = -1
+        if ShoveyBallColor(object) > 0 { candidate = Guide.GUIDE_BALL }
+        else if ground == 18 && !ShoveyCrate(object) { candidate = Guide.GUIDE_CRATE }
+        else if ground == 21 || ground == 56 { candidate = Guide.GUIDE_FRUIT }
+        else if object == 19 { candidate = Guide.GUIDE_STARS }
+        else if ShoveyColorGoal(ground) && !ShoveyGoalDone(ground, object) { candidate = Guide.GUIDE_COLOR_BLOCK }
+        else if ground == SHOVEY_LASER_RECEIVER && !ShoveyLaserLit(*hint.target, at) { candidate = Guide.GUIDE_LASER }
+        else if object == 40 { candidate = Guide.GUIDE_SHADOW }
+        else if ground == 29 || ground == 30 { candidate = Guide.GUIDE_WAGON }
+        else if object == 28 { candidate = Guide.GUIDE_SHOT }
+        distance := Guide.GuideSteps(hint.target.player, at)
+        if candidate >= 0 && distance < nearest { topic = candidate; nearest = distance; hint.focus = at; hint.focus_kind = ifx object != 0 then object else ground }
+    }
+    hint.advice_topic = topic
+    hint.topics[0] = ifx hint.restart then Guide.GUIDE_RESTART else topic; hint.topic_count = 1
+    if hint.restart { hint.topics[1] = topic; hint.topic_count = 2 }
+    else if topic != Guide.GUIDE_HOME { hint.topics[1] = Guide.GUIDE_HOME; hint.topic_count = 2 }
     hint.status = 3
 }
 HintTopicKey :: (topic: s32) -> string { return Guide.GuideTextKey(topic) }

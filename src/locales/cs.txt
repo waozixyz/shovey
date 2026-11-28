@@ -1214,3 +1214,12 @@ Zvuk
 ---
 [shovey_guide]
 Průvodce
+---
+[shovey_hint_target]
+Další cíl
+---
+[shovey_guide_level]
+Tato úroveň
+---
+[shovey_guide_all]
+Všechny prvky

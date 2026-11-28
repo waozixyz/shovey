@@ -80,7 +80,7 @@ ShoveyHeaderBar :: (session: Session, key: u64, x: float32, y: float32, width: f
     return false
 }
 
-// A slow, soft golden light behind an available reward. Keys key to key + 3.
+// Golden halo behind an available reward. Keys key to key + 3.
 ShoveyRewardGlow :: (session: Session, key: u64, bounds: Rectangle, now: float64) {
     pulse := cast(float32)(0.5 + 0.5 * Math.Sin(now * 1.8))
     size := ifx bounds.width < bounds.height then bounds.width else bounds.height
@@ -88,7 +88,27 @@ ShoveyRewardGlow :: (session: Session, key: u64, bounds: Rectangle, now: float64
         grow := size * (0.05 + cast(float32)(3 - ring) * 0.045) * (0.85 + 0.15 * pulse)
         unused Box.Draw(session, Box.Props.{.key = key + cast(u64)ring,
             .bounds = Rectangle.{bounds.x - grow, bounds.y - grow, bounds.width + grow * 2.0, bounds.height + grow * 2.0},
-            .fill = Color.{255, 218, 126, cast(u8)(7.0 + 7.0 * pulse)}, .radius = size * 0.3 + grow})
+            .fill = Color.{255, 218, 126, cast(u8)(13.0 + 12.0 * pulse)}, .radius = size * 0.3 + grow})
+    }
+}
+
+// Small light points over the visible gold, drawn after the chest image.
+// Four cross-shaped sparkles stay inside the coin area rather than covering
+// the chest silhouette. Keys key to key + 7.
+ShoveyGoldSparkles :: (session: Session, key: u64, bounds: Rectangle, now: float64) {
+    xs: [4]float32 = .[0.30,0.58,0.72,0.46]
+    ys: [4]float32 = .[0.52,0.43,0.58,0.63]
+    for point: cast(s32)0..3 {
+        pulse := cast(float32)(0.5+0.5*Math.Sin(now*2.4+cast(float64)point*1.7))
+        arm := bounds.width*(0.035+0.025*pulse)
+        line := bounds.width*0.018
+        if line < 1.0 { line = 1.0 }
+        x := bounds.x+bounds.width*xs[point]; y := bounds.y+bounds.height*ys[point]
+        color := Color.{255,247,185,cast(u8)(95.0+160.0*pulse)}
+        unused Box.Draw(session,Box.Props.{.key=key+cast(u64)(point*2),
+            .bounds=Rectangle.{x-arm,y-line*0.5,arm*2.0,line},.fill=color,.radius=line*0.5})
+        unused Box.Draw(session,Box.Props.{.key=key+cast(u64)(point*2+1),
+            .bounds=Rectangle.{x-line*0.5,y-arm,line,arm*2.0},.fill=color,.radius=line*0.5})
     }
 }
 

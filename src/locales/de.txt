@@ -1214,3 +1214,12 @@ Ton
 ---
 [shovey_guide]
 Anleitung
+---
+[shovey_hint_target]
+Nächstes Ziel
+---
+[shovey_guide_level]
+Dieses Level
+---
+[shovey_guide_all]
+Alle Mechaniken

@@ -1214,3 +1214,12 @@ Classic에서 특별한 물건을 찾아보세요.
 ---
 [shovey_guide]
 도움말
+---
+[shovey_hint_target]
+다음 목표
+---
+[shovey_guide_level]
+현재 레벨
+---
+[shovey_guide_all]
+모든 장치

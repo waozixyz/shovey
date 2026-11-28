@@ -31,13 +31,46 @@ main :: () -> s32 {
         hint: LevelHint
         HintStart(*hint, *game)
         for at: 0..1000 { if hint.status != 1 { break }; HintStep(*hint) }
+        if hint.focus < 0 || HintTopicKey(hint.advice_topic) == "" { print("missing target level % focus % topic % status %\n", level,hint.focus,hint.advice_topic,hint.status); return 28 }
         if hint.status != 3 || hint.restart { print("hint failed % status %\n", level, hint.status); return 10 }
         restored: ShoveyGame
         if !ShoveyRestore(*restored, TextUntilNul(saved[:])) || !HintSame(*game, *restored) { print("restore failed %\n", level); return 9 }
         for action: hint.actions { if action != 0 { Step(*game, action) } }
         for at: cast(s64)hint.match + 3..hint.route.count - 1 { Step(*game, hint.route[at]) }
         if !game.won { print("advice failed %\n", level); return 13 }
+        middle: ShoveyGame
+        unused ShoveyLoad(*middle, level)
+        route := ShoveyLevelSolution(level)
+        for at: cast(s32)0..cast(s32)route.count/2-1 { Step(*middle, route[at]) }
+        midway: LevelHint
+        HintStart(*midway,*middle)
+        for at: 0..1000 { if midway.status != 1 { break }; HintStep(*midway) }
+        if midway.status != 3 || midway.restart { print("midpoint hint failed %\n", level); return 29 }
+        for at: cast(s32)midway.match..cast(s32)midway.route.count-1 { Step(*middle,midway.route[at]) }
+        if !middle.won { return 30 }
     }
+    joined: s32
+    for level: cast(s32)1..20 {
+        base: ShoveyGame
+        unused ShoveyLoad(*base,level)
+        route := ShoveyLevelSolution(level)
+        for at: cast(s32)0..cast(s32)route.count/2-1 { Step(*base,route[at]) }
+        for side: cast(s32)0..3 {
+            detour := base; unused ShoveyMove(*detour,side)
+            if detour.player == base.player || !HintSame(*detour,*base,true,true) { continue }
+            back := detour; unused ShoveyMove(*back,(side+2)%4)
+            if !HintSame(*back,*base,true) { continue }
+            advice: LevelHint
+            HintStart(*advice,*detour)
+            for at: 0..1000 { if advice.status != 1 { break }; HintStep(*advice) }
+            if advice.status != 3 || advice.restart || advice.topic_count > 0 { print("detour failed % side %\n",level,side); return 31 }
+            if advice.joined { joined += 1 }
+            for at: cast(s32)advice.match..cast(s32)advice.route.count-1 { Step(*detour,advice.route[at]) }
+            if !detour.won { return 32 }
+        }
+    }
+    if joined < 1 { return 33 }
+    print("Verified walk detours rejoined % solution routes.\n",joined)
     // Reproduce idle fish movement before opening the in-app hint panel.
     for ticks: cast(s32)1..5 {
         idle: ShoveyGame
@@ -92,12 +125,19 @@ main :: () -> s32 {
     fallback.level = 500
     free_tip: LevelHint
     HintStart(*free_tip, *fallback)
-    if free_tip.status != 3 || free_tip.topic_count < 1 || free_tip.actions[0] != 0 { return 23 }
+    for at: 0..1000 { if free_tip.status != 1 { break }; HintStep(*free_tip) }
+    if free_tip.status != 3 || free_tip.restart || !free_tip.searched || free_tip.actions[0] == 0 { return 23 }
+    for action: free_tip.route { Step(*fallback, action) }
+    if !fallback.won { return 27 }
+    no_route_lost := game; no_route_lost.level = 500; no_route_lost.lost = true
+    recovery: LevelHint
+    HintStart(*recovery,*no_route_lost)
+    if recovery.status != 3 || !recovery.restart || HintTopicKey(recovery.topics[0]) != "shovey_tip_restart" { return 34 }
     game.lost = true
     HintStart(*hint, *game)
     for at: 0..1000 { if hint.status != 1 { break }; HintStep(*hint) }
     if hint.status != 3 || !hint.restart { return 12 }
-    print("Local tests: all campaign levels load/restore and yield verified hints; missing and stalled pictures cannot trap the loading cover; 30 generations reopen.\n")
+    print("Local tests: all 175 campaign openings and midpoints yield winning, explained hints; current-state search wins without a saved route; missing and stalled pictures cannot trap the loading cover; 30 generations reopen.\n")
     return 0
 }
 

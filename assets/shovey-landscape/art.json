@@ -165,7 +165,7 @@
     {
       "path": "sprites/atlas.png",
       "depicts": "landscape presentation of Modern packed portrait and landscape sprites, deduplicated with extruded borders",
-      "sha256": "4749b8e2d07dd545371cf5c773b0a068e26d049bade6e829e210a5da36bdb06c"
+      "sha256": "e6e7e1287d1639099a8f494d6b9397c075f9d8724e337ff9c267f3a2552aa19b"
     },
     {
       "path": "sprites/boat-big-hull.png",
@@ -1135,42 +1135,42 @@
     {
       "path": "sprites/sensor-1.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 1 of 8",
-      "sha256": "ca28cdd1157f6ec69e3ec084fc43e09e262803741caf854089a94cc9f3682dc0"
+      "sha256": "df485fb2f306365de88d6de9edd81c60ea447e3c0db658aba6a852024915fb68"
     },
     {
       "path": "sprites/sensor-2.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 2 of 8",
-      "sha256": "9eb69f41d6b71d3359acfeff7e0962dc534291c53c064b6ac75952b000dc7173"
+      "sha256": "0213ff773c9fd518a79679a8124467675c883b877813461eb5629d89a23beddf"
     },
     {
       "path": "sprites/sensor-3.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 3 of 8",
-      "sha256": "38b1cf4ffbbda49b55e615a6e1e21c60ccd1bbe7f0c845f7e8430b32f4af95c3"
+      "sha256": "e8c88e033c7371e93ad47c4edee9e22135f0c6ecc143bd65a288abc90458df96"
     },
     {
       "path": "sprites/sensor-4.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 4 of 8",
-      "sha256": "482de5ef66e84dd750945908508fbe82a8413b28a8475956f29f3b2dd73095ed"
+      "sha256": "c4ef020c98a8622a2c4f14d9890ad7d53583dc46480ea87663ebd18bb843d461"
     },
     {
       "path": "sprites/sensor-5.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 5 of 8",
-      "sha256": "ccfffe973dedcd522c110d8362b605fe9e918a485f1ed0f3fb2fbcf38b762c2b"
+      "sha256": "46ca5893bc81c370a820c4afed741a06dccc58da5cdf2c6841422803b0aa4b12"
     },
     {
       "path": "sprites/sensor-6.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 6 of 8",
-      "sha256": "cc6d4120d521c151e034d3e03a36d192bd20fa8b51a26fe3dbeb4292409a216b"
+      "sha256": "95f7feb91f51ad27526b158b207436b6ea0fe5b737694a1a50944305461c9e0d"
     },
     {
       "path": "sprites/sensor-7.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 7 of 8",
-      "sha256": "93ee32f0d91f431f8132778557fdb52d120e0ddadd202053e5ea420fe0910e9d"
+      "sha256": "61959a29adce936c67a0452c3a4a1fb58460c56c905a901781b5bc2db0bf52d8"
     },
     {
       "path": "sprites/sensor-8.png",
       "depicts": "landscape presentation of active sensor, its bead circling the glowing ring, frame 8 of 8",
-      "sha256": "f3748825ad9d572f35680209a65864c2316a0e05e90ad9673a3b9b300ae7b15a"
+      "sha256": "60bf4b0389d702c47d071982f7e2e63b59d871010d9185aa297d119cccce8871"
     },
     {
       "path": "sprites/shadow.png",
@@ -1890,7 +1890,7 @@
     {
       "path": "sprites/tile-20.png",
       "depicts": "landscape presentation of sensor: open red ring with a small red bead and transparent center",
-      "sha256": "32349259005f024b4d9420e49a08581e0aac4be59110d5e8d47d4541189a2c3d"
+      "sha256": "ab72f5a4576700e9168333f3dc385d5af8929b9ca1edaef76c37082e6d7a677c"
     },
     {
       "path": "sprites/tile-21.png",
@@ -1900,7 +1900,7 @@
     {
       "path": "sprites/tile-22.png",
       "depicts": "landscape presentation of active sensor: open warm red ring and orbiting bead",
-      "sha256": "ca28cdd1157f6ec69e3ec084fc43e09e262803741caf854089a94cc9f3682dc0"
+      "sha256": "df485fb2f306365de88d6de9edd81c60ea447e3c0db658aba6a852024915fb68"
     },
     {
       "path": "sprites/tile-23.png",
@@ -1910,7 +1910,7 @@
     {
       "path": "sprites/tile-24.png",
       "depicts": "landscape presentation of active sensor: open warm red ring and orbiting bead",
-      "sha256": "ca28cdd1157f6ec69e3ec084fc43e09e262803741caf854089a94cc9f3682dc0"
+      "sha256": "df485fb2f306365de88d6de9edd81c60ea447e3c0db658aba6a852024915fb68"
     },
     {
       "path": "sprites/tile-25.png",
@@ -2165,17 +2165,17 @@
     {
       "path": "sprites/tile-73.png",
       "depicts": "landscape presentation of cyan portal",
-      "sha256": "32b568f90cbd60ce2bde0eee62ca6be23181e3c3ea377dda93156185c4544b8e"
+      "sha256": "abaea925d528ab6276bc3d1dd1d29b92fb02bb2c07ac02a9632f74dc38d9aacd"
     },
     {
       "path": "sprites/tile-74.png",
       "depicts": "landscape presentation of purple portal",
-      "sha256": "b9f94d7f632510037c830777066c1d73b62db671de5a7ffd70f053e29eb8a410"
+      "sha256": "d2341eda8ba766cc555ef3e61f8ca79a54b574e0145f7f68fac8deb644aeba33"
     },
     {
       "path": "sprites/tile-75.png",
       "depicts": "landscape presentation of yellow portal",
-      "sha256": "e97725d1c51d7f24b0d9009d798d1a5696a81dc8e525259c30e81b92e3d46c34"
+      "sha256": "f005f11b2a2edd6d1dee3a9b5cece27e477dda75c93aa2744112d2f3f0b1854b"
     },
     {
       "path": "sprites/tile-76.png",
@@ -2195,7 +2195,7 @@
     {
       "path": "sprites/tile-8.png",
       "depicts": "landscape presentation of teleporter: a recessed opening with an inward blue-green spiral",
-      "sha256": "32b568f90cbd60ce2bde0eee62ca6be23181e3c3ea377dda93156185c4544b8e"
+      "sha256": "075efd4c9779892ffb87e707e4afeebd2fea3cc0145fed94e74f8fcd5b0afe3b"
     },
     {
       "path": "sprites/tile-82.png",
@@ -2215,17 +2215,17 @@
     {
       "path": "sprites/tile-85.png",
       "depicts": "landscape presentation of red portal",
-      "sha256": "2a227f8868091fb5a1c1ced361cad173f2ed80944280d619abdfcf57d18374ee"
+      "sha256": "564a60ab1dbd4b40d443171da1d6b431d002616835f09a244adbd22f15fd9cbd"
     },
     {
       "path": "sprites/tile-86.png",
       "depicts": "landscape presentation of green portal",
-      "sha256": "77321afc29086ed679a5c8114a179c81ba241c1fe4b6afb5092e478e006a6cb3"
+      "sha256": "ff8fe9050cd74578119e68c01787d811306479ade6c57eaba50f708c5fe415b2"
     },
     {
       "path": "sprites/tile-87.png",
       "depicts": "landscape presentation of orange portal",
-      "sha256": "f95f6073745c7ae1e555096b3e88ae61e5f28c39ab437a427568d1ea02015d7b"
+      "sha256": "e0d0d47aa78cbeb863f93e6ecdeb092e61d6d1ae88331ff0552691e98a7e0fde"
     },
     {
       "path": "sprites/tile-88.png",

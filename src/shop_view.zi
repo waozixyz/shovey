@@ -155,8 +155,10 @@ chest_today: s64 = -1;
 ChestAction :: (session: Session, key: u64, bounds: Rectangle) -> bool {
     ready := chest_today >= 0 && DailyChestReady(chest_today)
     if ready { ShoveyRewardGlow(session, WidgetPartKey(key, 10), bounds, chest_now) }
-    return IconAction(session, key, bounds,
+    pressed := IconAction(session, key, bounds,
         ifx ready then "assets/shovey/shop/chest-open.png" else "assets/shovey/shop/chest-closed.png", "chest")
+    if ready { ShoveyGoldSparkles(session,WidgetPartKey(key,20),bounds,chest_now) }
+    return pressed
 }
 Label :: (session: Session, key: u64, bounds: Rectangle, text: string, size: s32 = 16, centre: bool = false) {
     unused Text.Draw(session, Text.Props.{.key = key, .bounds = bounds, .text = text, .size = size,
@@ -285,6 +287,7 @@ Chest :: (session: Session, area: Rectangle, today: s64, now: float64) {
     if ready { ShoveyRewardGlow(session, 63010, picture, now) }
     Picture(session, 63000, picture,
         ifx ready then "assets/shovey/shop/chest-open.png" else "assets/shovey/shop/chest-closed.png", Copy("chest"))
+    if ready { ShoveyGoldSparkles(session,63040,picture,now) }
     if ready {
         digits: [24]u8
         Amount(session, 63020, Rectangle.{area.x + (area.width - 88.0) / 2.0, area.y + 128.0, 88.0, 32.0}, false,

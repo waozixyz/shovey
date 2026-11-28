@@ -71,6 +71,21 @@ def hue(im,degrees):
     hsv[...,0][mask]=(hsv[...,0][mask]+degrees/360)%1
     a[...,:3]=np.round(col.hsv_to_rgb(hsv)*255).astype('uint8');return Image.fromarray(a)
 
+def portal_variant(image, degrees, accent):
+    # Colour the low-saturation stone rim too: hue shifts alone leave all
+    # entrances looking grey at board scale. Retain the master's relief,
+    # transparent corners and bright spiral rather than replacing its art.
+    out=hue(image,degrees)
+    a=np.array(out);rgb=a[...,:3].astype(float)
+    high=rgb.max(axis=2);low=rgb.min(axis=2)
+    rim=(a[...,3]>0)&((high-low)<high*.32)&(high<235)
+    light=(rgb@np.array([.2126,.7152,.0722]))/255
+    tint=np.array(accent,dtype=float)
+    tint=tint/max(tint@np.array([.2126,.7152,.0722]),1)*255
+    rgb[rim]=rgb[rim]*.3+np.minimum(light[...,None]*tint,255)[rim]*.7
+    a[...,:3]=np.clip(rgb,0,255).astype('uint8')
+    return Image.fromarray(a)
+
 def overhead_blob(ramp):
     # Match the original's round body and the two eyes at its leading edge.
     scale = 4
@@ -194,9 +209,9 @@ def sensor_marker(ring, frame=0, active=False):
     angle=frame*math.pi/4
     x,y=32+19*math.sin(angle),32-19*math.cos(angle)
     d=ImageDraw.Draw(out)
-    box=tuple(round(v*scale) for v in (x-3,y-3,x+3,y+3))
+    box=tuple(round(v*scale) for v in (x-4.3,y-4.3,x+4.3,y+4.3))
     d.ellipse(box,fill='#ff7950' if active else '#e73525',outline='#70251e',width=scale)
-    d.ellipse(tuple(round(v*scale) for v in (x-1.5,y-1.8,x,y-.3)),fill='#ffd1a0')
+    d.ellipse(tuple(round(v*scale) for v in (x-2.1,y-2.5,x+.2,y-.5)),fill='#ffd1a0')
     return out.resize((SIZE,SIZE),Image.Resampling.LANCZOS)
 
 def build_sprites():
@@ -229,7 +244,13 @@ def build_sprites():
     for n,deg in {15:-120,16:120,17:0,50:60,51:160,52:-65}.items():tile(n,hue(paint,deg))
     tile(18,refined_sprite('goal-refined.png',.66))
     for n,deg in {4:0,5:220,6:120,47:175,48:275,49:50}.items():tile(n,hue(t[20],deg))
-    for n,deg in {73:0,74:100,75:220,85:180,86:-60,87:205}.items():tile(n,hue(o(8),deg))
+    # Neutral portals share one blue network; coloured networks retain their
+    # own identity. Cyan and neutral entrances no longer alias one bitmap.
+    tile(8,portal_variant(o(8),35,(65,132,245)))
+    for n,deg,accent in ((73,0,(48,214,225)),(74,100,(175,79,223)),
+                         (75,220,(243,202,53)),(85,180,(238,68,65)),
+                         (86,-60,(77,203,90)),(87,205,(245,145,47))):
+        tile(n,portal_variant(o(8),deg,accent))
     for n,deg in {143:220,144:50,145:175,146:275,147:120}.items():tile(n,hue(t[22],deg))
     for n in (14,127,128,129,130):tile(n,inset(t[18] if n==14 else hue(t[18],(n-127)*15),1))
     trail=hue(t[26],75); ImageDraw.Draw(trail).rectangle((12,31,51,34),fill='#b26bdd'); tile(11,trail)

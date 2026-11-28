@@ -36,6 +36,12 @@ solve_classic_work: s64;
 // Loads a board of 480 hex digits. False when the engine rejects it.
 SolveClassicLoad :: (data: string) -> bool {
     if !ShoveyLoadData(*solve_classic_initial, 0, data) { return false }
+    return SolveClassicLoadGame(*solve_classic_initial)
+}
+
+// Start from a live puzzle snapshot, including keys, powers and timed hazards.
+SolveClassicLoadGame :: (game: *ShoveyGame) -> bool {
+    solve_classic_initial = game.*
     solve_classic_shooters = false
     for kind: solve_classic_initial.ground { if ShoveyShooter(kind) { solve_classic_shooters = true; break } }
     solve_classic_water_may_bridge = SolveWaterMayBridge(*solve_classic_initial)

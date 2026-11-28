@@ -69,3 +69,7 @@ them. Legacy water animation names alias the same packed frame, so its
 colour does not pulse. Player and skin artwork retain the previous design.
 `art/modern/floors-tiling-before-after.png` compares all three materials;
 `*-floor-spritesheet.png` shows each complete set.
+
+Portal networks keep distinct coloured rims and spirals; the neutral blue
+network has its own frame rather than aliasing the cyan network. The red
+sensor bead is larger in every static and orbiting animation phase.

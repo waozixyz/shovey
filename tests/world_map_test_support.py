@@ -61,7 +61,7 @@ def enter_classic_map(driver):
     raise AssertionError(('Classic did not show its title or map', shown))
 
 
-GAMEPLAY_CONTROLS = (20022, 20820, 20016, 20017, 20023)
+GAMEPLAY_CONTROLS = (20022, 20820, 20016, 20017, 20907)
 
 
 def wait_gameplay(driver, timeout=30):
