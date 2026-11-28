@@ -208,19 +208,9 @@ FriendCard :: (width: float32, clear: float32, bottom: float32, key: s32, grid: 
     x: float32 = width - card_width - 12.0
     // Point out the new mechanic without revealing a route through the puzzle.
     focus_cell: Rectangle
-    focused := false
-    // A door tip points at the door Shovey has walked up to.
-    nearest := ifx (GuideBit(topic) & GuideNearby()) != 0 then GuideNearest(*game, topic) else -1
-    for at: cast(s32)0..SHOVEY_CELLS - 1 {
-        if nearest >= 0 && at != nearest { continue }
-        focus := (GuideKind(game.ground[at]) | GuideKind(game.objects[at])) & GuideBit(topic)
-        if topic == GUIDE_HOME && ShoveyHome(game.ground[at]) { focus = 1 }
-        if focus != 0 {
-            focus_cell = TileMap.TileMapCell(grid, BoardDisplayIndex(at, landscape))
-            focused = true
-            break
-        }
-    }
+    focus := GuideFocus(*game, topic)
+    focused := focus >= 0
+    if focused { focus_cell = TileMap.TileMapCell(grid, BoardDisplayIndex(focus, landscape)) }
     // Pip waits at the bottom, or under the bar when he would hide the cell
     // he points at. The highlight goes under him, never over his card.
     y: float32 = bottom - height - 12.0

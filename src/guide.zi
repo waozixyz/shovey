@@ -77,6 +77,24 @@ GuideNearest :: (board: *ShoveyGame, topic: s32) -> s32 {
     return nearest
 }
 
+// A mechanic glow explains an object or destination, never a solution move.
+GuideFocus :: (board: *ShoveyGame, topic: s32) -> s32 {
+    if topic == GUIDE_CRATE {
+        // Crates can be scenery or already parked. Point at an uncovered mark
+        // instead of making an arbitrary crate look like the next move.
+        for at: cast(s32)0..SHOVEY_CELLS - 1 {
+            if board.ground[at] == 18 && board.objects[at] == 0 { return at }
+        }
+        return -1
+    }
+    if (GuideBit(topic) & GuideNearby()) != 0 { return GuideNearest(board, topic) }
+    for at: cast(s32)0..SHOVEY_CELLS - 1 {
+        if topic == GUIDE_HOME && ShoveyHome(board.ground[at]) { return at }
+        if ((GuideKind(board.ground[at]) | GuideKind(board.objects[at])) & GuideBit(topic)) != 0 { return at }
+    }
+    return -1
+}
+
 GuideKind :: (kind: s32) -> u64 {
     if ShoveyBallColor(kind) > 0 || ShoveyPitColor(kind) > 0 { return GuideBit(GUIDE_BALL) }
     if kind == SHOVEY_BEES || kind == SHOVEY_HIVE { return GuideBit(GUIDE_BEES) }
@@ -114,14 +132,19 @@ GuideBoardTopics :: (board: *ShoveyGame) -> u64 {
     result := GuideBit(GUIDE_HOME)
     colors: u64
     crate := false
+    crate_goal := false
     water := false
     for at: cast(s32)0..SHOVEY_CELLS - 1 {
         result = result | GuideKind(board.ground[at]) | GuideKind(board.objects[at])
         color := ShoveyBallColor(board.objects[at])
         if color > 0 { colors = colors | (cast(u64)1 << cast(u64)color) }
         if board.objects[at] == 9 { crate = true }
+        if board.ground[at] == 18 { crate_goal = true }
         if board.ground[at] == 64 { water = true }
     }
+    // Early boards use crates as obstacles. Teach marks only when the board
+    // actually has a crate goal, without prompting an unnecessary push.
+    if !crate_goal { result = result & ~GuideBit(GUIDE_CRATE) }
     if colors != 0 && (colors & (colors - 1)) != 0 { result = result | GuideBit(GUIDE_COLORS) }
     if crate && water { result = result | GuideBit(GUIDE_BRIDGE) }
     return result

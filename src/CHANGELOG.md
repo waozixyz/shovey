@@ -4,6 +4,8 @@
 
 ## [0.6.177] - 2026-11-28
 
+- Show the crate-goal tutorial only on boards with crate goals, highlighting an empty goal instead of an arbitrary crate.
+
 - Give grass, water and wooden floors continuous patterns, with quieter grass and steady water colour.
 - Make Android gameplay smoother and reduce drawing overhead.
 

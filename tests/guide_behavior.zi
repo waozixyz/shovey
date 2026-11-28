@@ -117,5 +117,23 @@ Check :: () -> s32 {
     GuideSeedEarlier(*experienced, 91)
     GuideOffer(*experienced, *tapped)
     if GuideNext(*experienced) != -1 { return 35 }
+    // The crate tip points at an empty goal, not decorative, parked or blocked crates.
+    crates := ShoveyGame.{.level = 2, .player = 13}
+    crates.objects[14] = 9
+    crates.ground[15] = 18; crates.objects[15] = 9
+    crates.ground[16] = 18; crates.objects[16] = 1
+    crates.ground[17] = 18
+    if GuideFocus(*crates, GUIDE_CRATE) != 17 { return 36 }
+    crates.objects[17] = 9
+    if GuideFocus(*crates, GUIDE_CRATE) != -1 { return 37 }
+    crates.ground[17] = 0; crates.objects[17] = 0
+    if GuideFocus(*crates, GUIDE_CRATE) != -1 { return 38 }
+    if GuideFocus(*doors, GUIDE_DOOR) != SHOVEY_WIDTH * 10 + 6 { return 39 }
+    if !ShoveyLoad(*crates, 2) { return 40 }
+    if (GuideBoardTopics(*crates) & GuideBit(GUIDE_CRATE)) != 0 || GuideFocus(*crates, GUIDE_CRATE) >= 0 { return 41 }
+    if !ShoveyLoad(*crates, 12) { return 43 }
+    target := GuideFocus(*crates, GUIDE_CRATE)
+    if (GuideBoardTopics(*crates) & GuideBit(GUIDE_CRATE)) == 0 || target < 0 { return 44 }
+    if crates.ground[target] != 18 || crates.objects[target] != 0 { return 45 }
     return 42
 }
