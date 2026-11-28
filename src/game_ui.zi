@@ -10,15 +10,27 @@ Press :: #import "kryon/press";
 Box :: #import "kryon/box";
 
 Image :: #import "kryon/image";
+GameControlIcon :: #import "kryon/svg_icon";
 
 Text :: #import "kryon/text";
 #import, file "controls.zi";
 #import, file "shovey_theme.zi";
+ICON_GAME_SETTINGS :: "S1.8rr:M10 3H14L15 6L18 7L21 7L23 11L21 13L20 16L20 19L16 21L14 19H10L8 21L4 19V16L3 13L1 11L3 7H6L9 6ZM16 12C16 17 8 17 8 12C8 7 16 7 16 12Z"
+
 GameHeaderControl :: (session: Session, id: s32, bounds: Rectangle, label: string, icon: string, island_art: bool = false) -> bool {
+    unused Box.Draw(session, Box.Props.{.key = cast(u64)(280000 + id),
+        .bounds = Rectangle.{bounds.x, bounds.y + 3.0, bounds.width, bounds.height},
+        .fill = Color.{120, 108, 74, 170}, .radius = 13.0})
     Box.Draw(session, Box.Props.{.key = cast(u64)(80000 + id), .bounds = bounds,
-        .fill = ColorFromPacked(ShoveyPalette().base), .border = ColorFromPacked(ShoveyPalette().border), .radius = 10.0})
+        .fill = Color.{255, 247, 219, 255}, .border = Color.{171, 153, 108, 255}, .radius = 13.0})
     pressed := Button.Draw(session, Button.Props.{.key=cast(u64)id,.id=id,.bounds=bounds,.label=label,
         .icon_only=true,.square=true,.emphasis=ButtonEmphasis.ButtonEmphasisGhost}) != 0
+    if icon == ICON_GAME_SETTINGS {
+        GameControlIcon.Draw(session, GameControlIcon.Props.{
+            .bounds = Rectangle.{bounds.x + 10.0, bounds.y + 10.0, 24.0, 24.0},
+            .shape = icon, .color = Color.{51, 76, 45, 255}})
+        return pressed
+    }
     art := (ifx island_art then "assets/shovey-island/shop/book.png" else "assets/shovey/shop/book.png")
     if icon == ICON_RESTART { art = (ifx island_art then "assets/shovey-island/controls/restart.png" else "assets/shovey/controls/restart.png") }
     if icon == ICON_HELP { art = (ifx island_art then "assets/shovey-island/controls/hint.png" else "assets/shovey/controls/hint.png") }
@@ -62,10 +74,8 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
     BuilderPrint(*moves, "%: %", moves_label, moves_count)
     GameResultCaption(session, 20904, Rectangle.{16.0, middle + 44.0, width - 32.0, 32.0}, BuilderFinish(moves), 18, true)
     if tap_hint != "" {
-        next_pressed := Button.Draw(session, Button.Props.{.key = 20909, .id = 20909,
-            .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
-            .label = continue_label, .disabled = continue_disabled,
-            .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0
+        next_pressed := ShoveyAction(session, 20909,
+            Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 52.0}, continue_label, true, continue_disabled)
         if tapped || next_pressed { return 2 }
     } else if Button.Draw(session, Button.Props.{.key = 20905, .id = 20905,
         .bounds = Rectangle.{width / 2.0 - 100.0, middle + 100.0, 200.0, 48.0},
@@ -77,7 +87,7 @@ GameResult :: (session: Session, width: float32, top: float32, bottom: float32, 
 }
 
 // The same compact toolbar and keyboard mapping serve both campaigns.
-GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: []string,mini: bool=false, island_art: bool=false) -> s32 {
+GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: []string,mini: bool=false, island_art: bool=false, hint_count: string="") -> s32 {
     if ShoveyHeaderBar(session, cast(u64)(ids[0] + 2), 0.0, top, width, 52.0,
         ids[0], labels[0]) { return 1 }
     icons: [6]string = .[ICON_PREVIOUS,ICON_LEVELS,"",ICON_RESTART,ICON_HELP,ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON]
@@ -88,6 +98,13 @@ GameToolbar :: (session: Session,width: float32,top: float32,ids: []s32,labels: 
         if slot==2 { x=56.0 }
         if mini && slot==3 { x=width-52.0 }
         if GameHeaderControl(session,ids[slot],Rectangle.{x,top+4.0,44.0,44.0},labels[slot],icons[slot],island_art) { return slot+1 }
+        if slot == 4 && hint_count != "" {
+            unused Box.Draw(session, Box.Props.{.key = 20910, .bounds = Rectangle.{x + 21.0, top + 29.0, 27.0, 20.0},
+                .radius = 8.0, .fill = Color.{255, 220, 116, 255}, .border = Color.{110, 77, 30, 255}})
+            unused Text.Draw(session, Text.Props.{.key = 20911, .bounds = Rectangle.{x + 21.0, top + 29.0, 27.0, 20.0},
+                .text = hint_count, .size = 13,
+                .align = TextAlign.TextAlignCenter, .vertical_align = TextAlign.TextAlignCenter})
+        }
     }
     return 0
 }

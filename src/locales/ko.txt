@@ -89,7 +89,7 @@ Shovey가 쓰러졌어요!
 어떻게 움직일까요?
 ---
 [shovey_controls_later]
-도움말에서 언제든지 바꿀 수 있어요.
+설정에서 언제든지 바꿀 수 있어요.
 ---
 [shovey_controls_swipe_hint]
 보드를 밀거나 Shovey가 갈 곳을 탭하세요.
@@ -1205,3 +1205,12 @@ Classic에서 특별한 물건을 찾아보세요.
 ---
 [shovey_tip_shooters]
 사수는 3번 움직일 때마다 발사합니다. 사선에서 벗어나거나 물체로 탄을 막으세요.
+---
+[shovey_hint_empty]
+힌트를 모두 썼어요. 상점에서 더 얻으세요.
+---
+[shovey_sound]
+소리
+---
+[shovey_guide]
+도움말

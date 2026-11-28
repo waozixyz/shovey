@@ -89,7 +89,7 @@ Tombol arah
 Bagaimana kamu ingin bergerak?
 ---
 [shovey_controls_later]
-Kamu bisa mengubahnya kapan saja di Bantuan.
+Kamu bisa mengubahnya kapan saja di Pengaturan.
 ---
 [shovey_controls_swipe_hint]
 Geser di papan, atau ketuk tempat yang dituju Shovey.
@@ -1205,3 +1205,12 @@ Penembak bawah
 ---
 [shovey_tip_shooters]
 Penembak menembak setiap 3 langkah. Hindari garis tembaknya atau halangi tembakannya dengan benda.
+---
+[shovey_hint_empty]
+Petunjuk habis. Dapatkan lagi di toko.
+---
+[shovey_sound]
+Suara
+---
+[shovey_guide]
+Panduan

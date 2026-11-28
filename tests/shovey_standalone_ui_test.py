@@ -361,11 +361,10 @@ def main():
                 swipe_in_visible_direction()
             # The movement pad floats over the board's bottom left corner: the
             # board keeps its place and size, and the pad's arms step Shovey.
-            # Settings open from the Hint panel; their close control returns to the level.
-            driver.press(key=20017)
+            # Settings open directly from the toolbar; closing returns to the level.
             driver.press(key=20907, role='button')
             driver.press(label='Movement pad', role='button')
-            driver.press(key=20017)
+            driver.press(key=20704)
             driver.wait(key=20040, role='button')
             assert (profile / 'games/arcade.shovey-player/records/controls').read_text() == 'on'
             for width, height in ((480, 820), (960, 600)):
@@ -379,10 +378,9 @@ def main():
                 assert overlaps(pad, board), ('the pad should float over the board', pad, board)
                 press_pad_in_visible_direction(pad)
             # Back to swipe and tap: the pad goes and the board stays put.
-            driver.press(key=20017)
             driver.press(key=20907, role='button')
             driver.press(label='Swipe and tap', role='button')
-            driver.press(key=20017)
+            driver.press(key=20704)
             driver.wait_gone(key=20040, role='button')
             assert (profile / 'games/arcade.shovey-player/records/controls').read_text() == 'off'
             board = board_and_player()[0]
@@ -410,6 +408,9 @@ def main():
             # Continue started the level directly, so Back returns to the title.
             driver.press(label='Back', role='button')
             driver.wait(key=49224, role='button')
+            driver.wait(label='Continue', role='button')
+            driver.wait_idle(frames=3)
+            subprocess.run(['import', '-window', window, str(output / 'home-continue.png')], check=True)
             # Public releases hide Island, so Next moves straight from Classic to the Editor.
             driver.press(label='Next', role='button')
             driver.press(label='Open', role='button')

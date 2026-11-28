@@ -89,7 +89,7 @@ Cruceta
 ¿Cómo quieres moverte?
 ---
 [shovey_controls_later]
-Puedes cambiarlo cuando quieras en Ayuda.
+Puedes cambiarlo cuando quieras en Ajustes.
 ---
 [shovey_controls_swipe_hint]
 Desliza sobre el tablero o toca adonde debe ir Shovey.
@@ -1205,3 +1205,12 @@ Tirador inferior
 ---
 [shovey_tip_shooters]
 Los tiradores disparan cada 3 movimientos. Sal de su línea de tiro o bloquea el disparo con una pieza.
+---
+[shovey_hint_empty]
+No quedan pistas. Consigue más en la tienda.
+---
+[shovey_sound]
+Sonido
+---
+[shovey_guide]
+Guía

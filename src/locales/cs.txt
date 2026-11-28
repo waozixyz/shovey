@@ -89,7 +89,7 @@ Směrový kříž
 Jak se chceš pohybovat?
 ---
 [shovey_controls_later]
-Kdykoli to můžeš změnit v nápovědě.
+Kdykoli to můžeš změnit v nastavení.
 ---
 [shovey_controls_swipe_hint]
 Táhni po hrací ploše nebo klepni, kam má Shovey jít.
@@ -1205,3 +1205,12 @@ Střelec dolů
 ---
 [shovey_tip_shooters]
 Střelci vystřelí každé 3 tahy. Drž se mimo jejich dráhu střely, nebo ji zablokuj předmětem.
+---
+[shovey_hint_empty]
+Žádné nápovědy. Další najdeš v obchodě.
+---
+[shovey_sound]
+Zvuk
+---
+[shovey_guide]
+Průvodce

@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from world_map_test_support import private_environment, start_map_destination
+from world_map_test_support import private_environment, wait_gameplay
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--binary', type=Path, required=True)
@@ -43,29 +43,28 @@ with tempfile.TemporaryDirectory(prefix='profile-', dir=out) as folder:
                 stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             driver.attach(child, log_path)
             try:
-                driver.wait(label='Play', role='button', timeout=60)
+                driver.wait(key=49222, role='button', timeout=60)
                 if stalled:
                     driver.wait(key=49401, role='button')
                     start = time.monotonic()
                 driver.wait_gone(key=49401, role='button', timeout=20)
                 if stalled:
                     assert time.monotonic() - start >= 7, 'Fault injection did not hold the cover'
-                driver.press(label='Play', role='button')
-                driver.wait(key=20122, role='button', timeout=20)
-                start_map_destination(driver, 1)
+                driver.press(key=49222, role='button')
+                wait_gameplay(driver)
                 if driver.find(label='How do you want to move?', role='text'):
                     driver.press(label='Swipe and tap', role='button')
                 driver.wait(key=20017, role='button')
                 if driver.find(label='Got it', role='button'):
                     driver.press(label='Got it', role='button')
+                driver.wait(key=20017, label=f'Hint · {3 if stalled else 2}', role='button')
                 driver.press(key=20017, role='button')
-                if stalled:
-                    driver.press(key=20903, role='button')
-                driver.wait(label='Free hints: 2 · Extra hints: 0', role='text')
+                remaining = 2 if stalled else 1
+                driver.wait(key=20017, label=f'Hint · {remaining}', role='button')
                 driver.press(key=20905, role='button')
                 driver.press(key=20016, role='button')
                 driver.press(key=20017, role='button')
-                driver.wait(label='Free hints: 2 · Extra hints: 0', role='text')
+                driver.wait(key=20017, label=f'Hint · {remaining}', role='button')
                 driver.press(key=20905, role='button')
                 assert child.poll() is None
             finally:

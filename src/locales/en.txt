@@ -89,7 +89,7 @@ Movement pad
 How do you want to move?
 ---
 [shovey_controls_later]
-You can change this anytime in Help.
+You can change this anytime in Settings.
 ---
 [shovey_controls_swipe_hint]
 Swipe on the board, or tap where Shovey should go.
@@ -1205,3 +1205,12 @@ Down shooter
 ---
 [shovey_tip_shooters]
 Shooters fire every 3 moves. Stay out of their line of fire or block their shots with a piece.
+---
+[shovey_hint_empty]
+No hints left. Get more in the shop.
+---
+[shovey_sound]
+Sound
+---
+[shovey_guide]
+Guide

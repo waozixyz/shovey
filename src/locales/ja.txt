@@ -89,7 +89,7 @@ Shoveyが倒れた！
 どうやって動かしますか？
 ---
 [shovey_controls_later]
-ヘルプでいつでも変更できます。
+設定でいつでも変更できます。
 ---
 [shovey_controls_swipe_hint]
 盤面をスワイプするか、行きたい場所をタップします。
@@ -1205,3 +1205,12 @@ Classicで特別なアイテムを探そう。
 ---
 [shovey_tip_shooters]
 砲台は3手ごとに発射します。射線から外れるか、ブロックで弾を防ぎましょう。
+---
+[shovey_hint_empty]
+ヒントがありません。ショップで入手できます。
+---
+[shovey_sound]
+サウンド
+---
+[shovey_guide]
+ガイド

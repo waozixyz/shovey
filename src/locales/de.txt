@@ -89,7 +89,7 @@ Steuerkreuz
 Wie möchtest du dich bewegen?
 ---
 [shovey_controls_later]
-Du kannst das jederzeit in der Hilfe ändern.
+Du kannst das jederzeit in den Einstellungen ändern.
 ---
 [shovey_controls_swipe_hint]
 Wische über das Spielfeld oder tippe, wohin Shovey gehen soll.
@@ -1205,3 +1205,12 @@ Schütze unten
 ---
 [shovey_tip_shooters]
 Schützen feuern alle 3 Züge. Bleib aus ihrer Schusslinie oder blockiere den Schuss mit einem Objekt.
+---
+[shovey_hint_empty]
+Keine Hinweise mehr. Hol dir neue im Laden.
+---
+[shovey_sound]
+Ton
+---
+[shovey_guide]
+Anleitung

@@ -89,7 +89,7 @@ Croce direzionale
 Come vuoi muoverti?
 ---
 [shovey_controls_later]
-Puoi cambiarlo quando vuoi in Aiuto.
+Puoi cambiarlo quando vuoi nelle Impostazioni.
 ---
 [shovey_controls_swipe_hint]
 Scorri sul tabellone o tocca dove deve andare Shovey.
@@ -1205,3 +1205,12 @@ Tiratore verso il basso
 ---
 [shovey_tip_shooters]
 I tiratori sparano ogni 3 mosse. Resta fuori dalla linea di tiro o blocca il colpo con un oggetto.
+---
+[shovey_hint_empty]
+Indizi esauriti. Ottienine altri nel negozio.
+---
+[shovey_sound]
+Suono
+---
+[shovey_guide]
+Guida

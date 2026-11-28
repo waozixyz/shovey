@@ -130,7 +130,7 @@ def main():
                         driver.press(label='Got it', role='button')
                         driver.wait_gone(label='Got it', role='button')
                     print("header: toolbar ready", flush=True)
-                    buttons = [driver.wait(key=key, role='button') for key in (20022, 20016, 20017, 20023)]
+                    buttons = [driver.wait(key=key, role='button') for key in (20022, 20016, 20017, 20023, 20907)]
                     for button in buttons:
                         assert button['width'] == 44 and button['height'] == 44, button
                         assert button['y'] == buttons[0]['y'], buttons
@@ -146,38 +146,56 @@ def main():
                     assert driver.wait(key=20023, role='button')['label'] == sound_before
                     driver.press(key=20016, role='button')
                     driver.wait_idle(frames=3, timeout=5)
+                    driver.wait(key=20017, label='Hint · 3', role='button')
+                    driver.wait(key=20911, label='3', role='text')
                     driver.press(key=20017, role='button')
-                    driver.wait(key=20900, label='Hint', role='text')
-                    driver.press(key=20903, role='button')
-                    driver.wait(label='Free hints: 2 · Extra hints: 0', role='text')
-                    advice = driver.wait(key=20902, role='text')['label']
+                    driver.wait(key=20017, label='Hint · 2', role='button')
+                    driver.wait(key=20911, label='2', role='text')
+                    assert driver.find(label='Wall', role='image'), 'Hint modal hid the board'
+                    assert not driver.find(key=20903, role='button'), 'Hint reveal still requires a second tap'
+                    assert not driver.find(key=20904, role='button'), 'Shop should appear only when hints run out'
+                    advice = driver.wait(key=20900 * 65599 + 3, role='text')['label']
                     print(f"header: advice {advice!r}", flush=True)
                     assert advice.startswith('Next moves:'), repr(advice)
+                    subprocess.run(['import', '-window', window, str(output / f'hint-modal-{width}.png')], check=True, timeout=20)
+                    # The board remains visible but input cannot leak through the modal.
+                    player_before = driver.find(label='Shovey', role='image')
+                    assert player_before, 'Hint modal removed Shovey'
+                    driver.key('left')
+                    driver.wait_idle(frames=4, timeout=5)
+                    assert driver.find(label='Shovey', role='image') == player_before
+                    driver.press(key=20905, role='button')
+                    driver.wait_gone(key=20905, role='button')
+                    driver.press(key=20017, role='button')
+                    driver.wait(key=20017, label='Hint · 2', role='button')
+                    assert driver.wait(key=20900 * 65599 + 3, role='text')['label'] == advice, 'Reopening charged a second hint'
+                    driver.press(key=20905, role='button')
                     if width == 320:
                         print("header: resize to short landscape", flush=True)
                         subprocess.run(['xdotool', 'windowsize', '--sync', window, '960', '360'], check=True, timeout=20)
                         driver.wait_idle(frames=8, timeout=5)
-                        driver.pointer(450, 280, wheel=-12)
-                        driver.wait_idle(frames=8, timeout=5)
                         driver.press(key=20907, role='button')
                         driver.wait(label='Touch controls', role='text')
-                        assert 'Keep your streak for seven rewards' in driver.wait(key=20006, role='text')['label']
-                        driver.press(key=20017, role='button')
+                        assert driver.find(label='Wall', role='image'), 'Settings hid the board'
+                        assert not driver.find(key=20006), 'Guide text should be collapsed'
+                        subprocess.run(['import', '-window', window, str(output / 'settings-landscape.png')], check=True, timeout=20)
+                        driver.press(key=20704, role='button')
                         driver.wait(key=20016, role='button')
                         subprocess.run(['xdotool', 'windowsize', '--sync', window, str(width), str(height)], check=True, timeout=20)
                         driver.wait_idle(frames=8, timeout=5)
                     elif width == 480:
                         driver.press(key=20907, role='button')
                         driver.wait(label='Touch controls', role='text')
+                        subprocess.run(['import', '-window', window, str(output / 'settings-480.png')], check=True, timeout=20)
+                        driver.press(key=20703, role='button')
+                        assert 'Keep your streak for seven rewards' in driver.wait(key=20006, role='text')['label']
                         driver.key('escape')
                         driver.wait(key=20016, role='button')
-                    else:
-                        driver.press(key=20905, role='button')
                     driver.wait(key=20016, role='button')
                     driver.press(key=20016, role='button')
                     driver.wait(key=20016, role='button')
                     driver.press(key=20017, role='button')
-                    driver.wait(label='Free hints: 2 · Extra hints: 0', role='text')
+                    driver.wait(key=20017, label='Hint · 2', role='button')
                     driver.press(key=20905, role='button')
                     driver.press(key=20820, role='button')
                     driver.wait(label='Collectibles', role='text')

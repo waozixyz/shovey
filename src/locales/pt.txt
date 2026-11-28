@@ -89,7 +89,7 @@ Direcional
 Como você quer se mover?
 ---
 [shovey_controls_later]
-Você pode mudar isso a qualquer momento na Ajuda.
+Você pode mudar isso a qualquer momento nas Configurações.
 ---
 [shovey_controls_swipe_hint]
 Deslize no tabuleiro ou toque onde Shovey deve ir.
@@ -1205,3 +1205,12 @@ Atirador para baixo
 ---
 [shovey_tip_shooters]
 Os atiradores disparam a cada 3 movimentos. Saia da linha de tiro ou bloqueie o disparo com uma peça.
+---
+[shovey_hint_empty]
+Sem dicas. Consiga mais na loja.
+---
+[shovey_sound]
+Som
+---
+[shovey_guide]
+Guia

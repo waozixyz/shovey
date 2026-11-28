@@ -9,6 +9,8 @@ Button :: #import "kryon/button";
 
 Text :: #import "kryon/text";
 Image :: #import "kryon/image";
+ActionTextMeasure :: #import "kryon/text_measure";
+ActionIcon :: #import "kryon/svg_icon";
 #import "kryon/text_align"
 
 #import "kryon/widget_palette"
@@ -117,4 +119,44 @@ PipContinue :: (session: Session, key: s32, bounds: Rectangle, label: string, no
     return Button.Draw(session, Button.Props.{.key = cast(u64)key, .id = key, .bounds = bounds, .label = label,
             .fit_content = true, .tone = ButtonTone.ButtonToneAccent,
             .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0
+}
+
+// Raised game actions share native focus, pressed, disabled and accessibility behavior.
+ShoveyAction :: (session: Session, id: s32, bounds: Rectangle, label: string,
+    primary: bool = true, disabled: bool = false, icon: string = "") -> bool {
+    key := cast(u64)id * 65599 + 200
+    unused Box.Draw(session, Box.Props.{.key = key, .bounds = Rectangle.{bounds.x - 2.0, bounds.y + 2.0, bounds.width + 4.0, bounds.height + 4.0},
+        .fill = ifx primary then Color.{36, 73, 38, 255} else Color.{119, 102, 70, 255}, .radius = 17.0})
+    unused Box.Draw(session, Box.Props.{.key = key + 1, .bounds = Rectangle.{bounds.x - 2.0, bounds.y - 2.0, bounds.width + 4.0, bounds.height + 4.0},
+        .fill = Color.{255, 251, 230, 255}, .border = Color.{65, 94, 49, 255}, .radius = 17.0})
+    palette := ShoveyPalette()
+    palette.selected = cast(u32)0x589c3eff
+    palette.selected_text = cast(u32)0xfffbefff
+    palette.base = cast(u32)0xffedc5ff
+    palette.text = ifx primary then cast(u32)0xfffbefff else ShoveyPalette().text
+    unused WidgetPaletteUse(session, palette)
+    pressed := Button.Draw(session, Button.Props.{.key = cast(u64)id, .id = id,
+        .bounds = bounds,
+        .label = label, .icon_only = true, .fit_content = true, .disabled = disabled,
+        .size = ControlSize.ControlSizeLarge,
+        .tone = ifx primary then ButtonTone.ButtonToneAccent else ButtonTone.ButtonToneNeutral,
+        .emphasis = ButtonEmphasis.ButtonEmphasisFilled}) != 0
+    text_area := Rectangle.{bounds.x + 16.0, bounds.y, bounds.width - 32.0, bounds.height}
+    if icon != "" {
+        ActionIcon.Draw(session, ActionIcon.Props.{
+            .bounds = Rectangle.{bounds.x + 18.0, bounds.y + (bounds.height - 24.0) / 2.0, 24.0, 24.0},
+            .shape = icon, .color = ColorFromPacked(palette.text)})
+        text_area.x += 24.0; text_area.width -= 24.0
+    }
+    font: s32 = ifx bounds.height >= 60.0 then 26 else 20
+    bold: [1]Text.Range = .[Text.Range.{.start = 0, .end = cast(s32)label.count}]
+    while font > 12 && cast(float32)ActionTextMeasure.TextWidth(session, Text.Props.{.text = label, .size = font, .strong = bold[:]}) > text_area.width { font -= 1 }
+    unused Text.Draw(session,Text.Props.{.key = key + 3, .bounds = text_area,
+        .text = label, .size = font, .strong = bold[:], .disabled = disabled,
+        .align = TextAlign.TextAlignCenter, .vertical_align = TextAlign.TextAlignCenter})
+    unused WidgetPaletteRestore(session)
+    unused Box.Draw(session, Box.Props.{.key = key + 2,
+        .bounds = Rectangle.{bounds.x + 17.0, bounds.y + 6.0, bounds.width - 34.0, 2.0},
+        .fill = Color.{255, 255, 235, 100}, .radius = 1.0})
+    return pressed
 }

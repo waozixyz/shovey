@@ -89,7 +89,7 @@ Croix directionnelle
 Comment veux-tu te déplacer ?
 ---
 [shovey_controls_later]
-Tu peux changer cela à tout moment dans l’aide.
+Tu peux changer cela à tout moment dans les paramètres.
 ---
 [shovey_controls_swipe_hint]
 Glisse sur le plateau ou touche l’endroit où Shovey doit aller.
@@ -1205,3 +1205,12 @@ Tireur vers le bas
 ---
 [shovey_tip_shooters]
 Les tireurs tirent tous les 3 déplacements. Restez hors de leur ligne de tir ou bloquez le tir avec une pièce.
+---
+[shovey_hint_empty]
+Plus d’indices. Obtenez-en dans la boutique.
+---
+[shovey_sound]
+Son
+---
+[shovey_guide]
+Guide

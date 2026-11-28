@@ -1251,7 +1251,7 @@ ShoveyBack :: () -> bool {
 }
 
 // Back while a level is open and no panel covers it.
-ShoveyPlaying :: () -> bool { return !mini && loaded && !selector_open && !help_open }
+ShoveyPlaying :: () -> bool { return !mini && loaded && !selector_open && !help_open && !hint_open }
 
 // Back from play returns to the level list the level was picked from, or
 // leaves for the title when Play/Continue started it directly.
@@ -1511,73 +1511,9 @@ ShoveyFrame :: () {
     }
     if LevelResultScreen(width, top, bottom, key) { return }
     EndingPump()
-    if key == 72 && !mini { HintOpen() }
-    if hint_open { HintPanel(width, top, bottom, key); return }
-    if help_open {
-        digits: [24]u8
-        // Closing settings returns to the level, like Escape.
-        if ShoveyHeaderBar(frame.session, cast(u64)20090, 0.0, top, width, SHOVEY_HEADER_HEIGHT,
-                20017, AppLocaleHost("shovey_back"), FormatInteger(cast(s64)HintWallet.ShopCoins(), digits[:]),
-                AppLocaleHost("shovey_shop_coins"), ShopUI.DewText(), AppLocaleHost("shovey_shop_dew")) {
-            help_open = false
-            return
-        }
-        Caption(20001, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, AppLocaleHost("shovey_settings"), 20, true)
-        help_text: Vec(u8)
-        BuilderPrint(*help_text, "%\n\n%\n\n%: %", AppLocaleHost("shovey_controls"), AppLocaleHost("shovey_instructions"),
-            AppLocaleHost("shovey_shop_chest"), AppLocaleHost("shovey_shop_chest_rule"))
-        instructions := BuilderFinish(help_text)
-        intro_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = instructions,
-                .bounds = Rectangle.{0.0, 0.0, width - 64.0, 0.0}, .size = 16, .wrap = Text.Wrap.TextWrapAuto}) + 16.0
-        // The touch controls choice comes first, above the guide, then
-        // whether an installed game downloads new levels.
-        // Only standalone Shovey and Arcade keep this choice (arcade.updates).
-        updates_setting := false
-        #if SHOVEY_ASKS_UPDATES {
-            updates_setting = AppSupports("arcade.updates")
-        }
-        friend_setting := !ShoveySecret(game.level) && game.level < ShoveyFinaleLevel()
-        settings_height: float32 = (ifx updates_setting then 170.0 else 92.0) + (ifx friend_setting then 52.0 else 0.0)
-        scroll := Scroll.Draw(frame.session, Scroll.Props.{.key = cast(u64)20005,
-                .bounds = Rectangle.{16.0, top + 62.0, width - 32.0, bottom - top - 70.0},
-                .content_height = cast(s32)(settings_height + intro_height) + SHOVEY_HELP_COUNT * 68, .scroll_offset = help_scroll})
-        help_scroll = scroll.scroll_offset
-        if scroll.opened {
-            Caption(20030, Rectangle.{scroll.content.x, scroll.content.y, scroll.content.width - 16.0, 28.0}, AppLocaleHost("shovey_controls_setting"), 16)
-            choice_width := (scroll.content.width - 24.0) / 2.0
-            pad := ControlsPad()
-            if Choice(20031, Rectangle.{scroll.content.x, scroll.content.y + 34.0, choice_width, 44.0}, AppLocaleHost("shovey_controls_swipe"), !pad) {
-                ControlsSetPad(false)
-            }
-            if Choice(20032, Rectangle.{scroll.content.x + choice_width + 8.0, scroll.content.y + 34.0, choice_width, 44.0}, AppLocaleHost("shovey_controls_pad"), pad) {
-                ControlsSetPad(true)
-            }
-            if updates_setting {
-                updates := LevelUpdates() == 1
-                Caption(20033, Rectangle.{scroll.content.x, scroll.content.y + 90.0, scroll.content.width - 16.0, 28.0}, AppLocaleHost("shovey_updates_setting"), 16)
-                if Choice(20034, Rectangle.{scroll.content.x, scroll.content.y + 124.0, choice_width, 44.0}, AppLocaleHost("shovey_updates_no"), !updates) {
-                    LevelUpdatesSet(false)
-                }
-                if Choice(20035, Rectangle.{scroll.content.x + choice_width + 8.0, scroll.content.y + 124.0, choice_width, 44.0}, AppLocaleHost("shovey_updates_yes"), updates) {
-                    LevelUpdatesSet(true)
-                }
-            }
-            if friend_setting && Control(20606, Rectangle.{scroll.content.x, scroll.content.y + settings_height - 48.0, scroll.content.width - 16.0, 40.0},
-                AppLocaleHost("shovey_friend_replay")) {
-                GuideReplay(*friend_guide, *game)
-                help_open = false
-            }
-            Caption(20006, Rectangle.{scroll.content.x, scroll.content.y + settings_height, scroll.content.width - 16.0, intro_height}, instructions)
-            for index: cast(s32)0..SHOVEY_HELP_COUNT - 1 {
-                kind := shovey_help_kinds[index]
-                y := scroll.content.y + settings_height + intro_height + cast(float32)index * 68.0
-                Tile(cast(u64)(40000 + index * 16), kind, Rectangle.{scroll.content.x, y, 40.0, 40.0})
-                Caption(cast(u64)(45000 + index), Rectangle.{scroll.content.x + 52.0, y, scroll.content.width - 68.0, 44.0}, TileName(kind))
-            }
-            End(frame.session)
-        }
-        return
-    }
+    if key == 72 && !mini && !help_open && ControlsChosen() { HintOpen() }
+    hint_key := key
+    if hint_open || help_open { key = 0 }
     if ending_at > 0.0 {
         EndingScreen(width, top, bottom, key)
         return
@@ -1591,11 +1527,22 @@ ShoveyFrame :: () {
     if !cinematic {
         ids: [6]s32 = .[20022,20005,20820,20016,20017,20023]
         labels: [6]string = .[AppLocaleHost("shovey_back"),AppLocaleHost("shovey_levels"),AppLocaleHost("shovey_book"),AppLocaleHost("shovey_restart"),AppLocaleHost("shovey_hint"),AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute")]
-        action := GameToolbar(frame.session,width,top,ids[:],labels[:],mini,false)
+        unused HintWallet.ShopOwner()
+        available := HintWallet.ShopHintFree(game.level) + HintWallet.ShopHintBank()
+        digits: [24]u8
+        count := ifx available > 99 then "99+" else FormatInteger(cast(s64)available, digits[:])
+        text: Vec(u8)
+        BuilderPrint(*text, "% · %", AppLocaleHost("shovey_hint"), available)
+        unused CopyCString(TextView(VecSlice(text, 0, text.count)), hint_count[:]); VecFree(text)
+        labels[4] = TextUntilNul(hint_count[:])
+        action := GameToolbar(frame.session,width,top,ids[:],labels[:],mini,false,count)
+        if !mini && GameHeaderControl(frame.session,20907,Rectangle.{108.0,top+4.0,44.0,44.0},AppLocaleHost("shovey_settings"),ICON_GAME_SETTINGS) && !hint_open {
+            help_open = true; settings_guide = false; help_scroll = 0
+        }
         if action==1 { unused ShoveyBackFromPlay(); return }
         if action==3 { Book.BookOpen() }
         if action==4 { ChangeLevel(game.level) }
-        if action==5 { HintOpen() }
+        if action==5 && ControlsChosen() { HintOpen() }
         if action==6 { SoundSetMuted(!SoundMuted()) }
 
     }
@@ -1615,11 +1562,11 @@ ShoveyFrame :: () {
     // Escape during play follows Back: to the level list when the level was
     // picked there, otherwise to the title. Pip's guide keeps it to continue.
     if key == 256 && !guiding && !choosing && ShoveyBackFromPlay() { key = 0 }
-    if choosing || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
+    if choosing || hint_open || help_open || walking || edge_at > 0.0 || reward_card >= 0 { keyed = -1; key = 0 }
     if !game.lost && keyed >= 0 { changed = ShoveyStepOrCross(BoardEngineDirection(keyed, landscape), landscape) }
     if !game.lost && key == 32 { changed = ShoveyAct(-1) }
     if key == 82 { ChangeLevel(game.level) }
-    if slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
+    if !hint_open && !help_open && slide_next < slide_count && frame.now - slide_at >= SLIDE_SECONDS {
         game = slide_boards[slide_next]
         slide_next += 1
         slide_at = frame.now
@@ -1628,11 +1575,11 @@ ShoveyFrame :: () {
     sliding := slide_next < slide_count
     // Moving blocks and animals never decide a level, so their steps are
     // saved with the next move instead of writing the save every second.
-    if !sliding && frame.now - last_tick >= 1.0 {
+    if !hint_open && !help_open && !sliding && frame.now - last_tick >= 1.0 {
         unused ShoveyBlocksTick(*game)
         last_tick = frame.now
     }
-    if !sliding { unused AnimalsWander() }
+    if !hint_open && !help_open && !sliding { unused AnimalsWander() }
     SpriteNames()
     // While the ending plays the whole screen is the scene: the island the
     // last level belongs to and the open water round it. Once the boat sails
@@ -1751,7 +1698,7 @@ ShoveyFrame :: () {
         ControlsChoice(width, top, bottom)
         return
     }
-    disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel() || reward_card >= 0
+    disabled := game.won || game.lost || walking || edge_at > 0.0 || game.level == ShoveyFinaleLevel() || reward_card >= 0 || hint_open || help_open
     // Touch: swipe anywhere under the bar to step, or tap a cell or the space
     // beside the board to step towards it; hold either to keep walking. With
     // the movement pad chosen, only the pad steps. The pad and Fire come
@@ -1863,6 +1810,8 @@ ShoveyFrame :: () {
     }
     Book.BookToast(frame.session, Rectangle.{0.0, top + 52.0, width, bottom - top - 52.0}, collectible_toast, frame.now - collectible_toast_at)
     if !cinematic { RewardCard(width, bottom) }
+    if hint_open { HintPanel(width, top, bottom, hint_key) }
+    if help_open { SettingsPanel(width, top, bottom, hint_key) }
 }
 
 // A special item waits on its cell until this owner has found it. It is
@@ -1918,8 +1867,81 @@ ChestHere :: () -> bool {
     return game.level == CHEST_LEVEL && game.tiles[CHEST_CELL] == 78 && game.ground[CHEST_CELL] == 0
 }
 
+settings_guide: bool;
+SettingsPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
+    if key == 256 || key == 4 { help_open = false; return }
+    panel_width := ifx width - 24.0 < 440.0 then width - 24.0 else 440.0
+    panel_height := ifx bottom - top - 24.0 < 490.0 then bottom - top - 24.0 else 490.0
+    modal := Modal.Draw(frame.session, Modal.Props.{.key = 20700, .id = 20700,
+        .title = AppLocaleHost("shovey_settings"), .strong_title = true,
+        .bounds = Rectangle.{(width - panel_width) / 2.0, top + (bottom - top - panel_height) / 2.0, panel_width, panel_height},
+        .has_right_action = true, .right_label = AppLocaleHost("shovey_close")})
+    if modal.dismissed || modal.right_clicked { help_open = false }
+    if !modal.opened { return }
+    area := modal.layout.content
+    updates_setting := false
+    #if SHOVEY_ASKS_UPDATES {
+        updates_setting = AppSupports("arcade.updates")
+    }
+    friend_setting := !ShoveySecret(game.level) && game.level < ShoveyFinaleLevel()
+    content_height: s32 = 220 + (ifx updates_setting then 90 else 0) + (ifx friend_setting then 52 else 0)
+    instructions: Vec(u8)
+    if settings_guide { BuilderPrint(*instructions, "%\n\n%\n\n%: %", AppLocaleHost("shovey_controls"), AppLocaleHost("shovey_instructions"),
+        AppLocaleHost("shovey_shop_chest"), AppLocaleHost("shovey_shop_chest_rule")) }
+    guide := BuilderFinish(instructions)
+    intro_height := ifx settings_guide then cast(float32)TextHeight(frame.session, Text.Props.{.text = guide,
+        .bounds = Rectangle.{0.0, 0.0, area.width - 16.0, 0.0}, .size = 16, .wrap = Text.Wrap.TextWrapAuto}) + 16.0 else 0.0
+    if settings_guide { content_height += cast(s32)intro_height + SHOVEY_HELP_COUNT * 68 }
+    scroll := Scroll.Draw(frame.session, Scroll.Props.{.key = 20005,
+        .bounds = Rectangle.{area.x, area.y, area.width, area.height - 66.0},
+        .content_height = content_height, .scroll_offset = help_scroll})
+    help_scroll = scroll.scroll_offset
+    if scroll.opened {
+        x := scroll.content.x; y := scroll.content.y; w := scroll.content.width - 16.0
+        Caption(20701, Rectangle.{x, y, w * 0.5, 44.0}, AppLocaleHost("shovey_sound"), 18)
+        if GameHeaderControl(frame.session,20702,Rectangle.{x + w - 48.0,y,44.0,44.0},
+            AppLocaleHost(ifx SoundMuted() then "shovey_unmute" else "shovey_mute"),
+            ifx SoundMuted() then ICON_SOUND_OFF else ICON_SOUND_ON) { SoundSetMuted(!SoundMuted()) }
+        y += 60.0
+        Caption(20030, Rectangle.{x,y,w,28.0}, AppLocaleHost("shovey_controls_setting"),16)
+        choice_width := (w - 8.0) / 2.0
+        pad := ControlsPad()
+        if Choice(20031,Rectangle.{x,y+34.0,choice_width,44.0},AppLocaleHost("shovey_controls_swipe"),!pad) { ControlsSetPad(false) }
+        if Choice(20032,Rectangle.{x+choice_width+8.0,y+34.0,choice_width,44.0},AppLocaleHost("shovey_controls_pad"),pad) { ControlsSetPad(true) }
+        y += 90.0
+        if updates_setting {
+            updates := LevelUpdates() == 1
+            Caption(20033,Rectangle.{x,y,w,28.0},AppLocaleHost("shovey_updates_setting"),16)
+            if Choice(20034,Rectangle.{x,y+34.0,choice_width,44.0},AppLocaleHost("shovey_updates_no"),!updates) { LevelUpdatesSet(false) }
+            if Choice(20035,Rectangle.{x+choice_width+8.0,y+34.0,choice_width,44.0},AppLocaleHost("shovey_updates_yes"),updates) { LevelUpdatesSet(true) }
+            y += 90.0
+        }
+        if friend_setting {
+            if ShoveyAction(frame.session,20606,Rectangle.{x,y,w,44.0},AppLocaleHost("shovey_friend_replay"),false) {
+                GuideReplay(*friend_guide,*game); help_open = false
+            }
+            y += 52.0
+        }
+        if ShoveyAction(frame.session,20703,Rectangle.{x,y,w,44.0},AppLocaleHost("shovey_guide"),false) {
+            settings_guide = !settings_guide
+            help_scroll = ifx settings_guide then cast(s32)(y - scroll.content.y) else 0
+        }
+        y += 60.0
+        if settings_guide {
+            Caption(20006,Rectangle.{x,y,w,intro_height},guide)
+            y += intro_height
+            for index: cast(s32)0..SHOVEY_HELP_COUNT - 1 {
+                Tile(cast(u64)(40000+index*16),shovey_help_kinds[index],Rectangle.{x,y+cast(float32)index*68.0,40.0,40.0})
+                Caption(cast(u64)(45000+index),Rectangle.{x+52.0,y+cast(float32)index*68.0,w-52.0,44.0},TileName(shovey_help_kinds[index]))
+            }
+        }
+        End(frame.session)
+    }
+    if ShoveyAction(frame.session,20704,Rectangle.{area.x,area.y+area.height-52.0,area.width,48.0},AppLocaleHost("shovey_continue")) { help_open = false }
+    End(frame.session)
+}
+
 hint_toast_at: float64 = -10.0;
-hint_scroll: s32;
 hint_open: bool;
 hint_paid: bool;
 hint_requested: bool;
@@ -1929,14 +1951,18 @@ hint_owner: [65]u8;
 hint_copy: [4096]u8;
 hint_count: [256]u8;
 HintOpen :: () {
+    available := HintWallet.ShopHintFree(game.level) + HintWallet.ShopHintBank()
     unused HintWallet.ShopOwner()
     owner := TextUntilNul(HintWallet.shop_owner[:])
-    if TextUntilNul(hint_owner[:]) != owner || TextUntilNul(level_hint.saved[:]) != ShoveySave(*game) {
+    if TextUntilNul(hint_owner[:]) != owner || level_hint.target.level != game.level || !HintSame(*level_hint.target, *game, true) {
         level_hint = .{}
         hint_paid = false; hint_requested = false; hint_failed = false
         unused CopyCString(owner, hint_owner[:])
     }
-    hint_scroll = 0
+    // Tapping the HUD reveals immediately; revisiting the same position is free.
+    if !hint_paid && !hint_requested && (available > 0 || HintRoute(*game) == "") {
+        HintStart(*level_hint, *game); hint_requested = true; hint_failed = false
+    }
     hint_open = true
 }
 HintPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
@@ -1952,19 +1978,8 @@ HintPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
             hint_requested = false
         } else if level_hint.status == 0 { hint_requested = false }
     }
-    digits: [24]u8
-    if ShoveyHeaderBar(frame.session, cast(u64)20990, 0.0, top, width, SHOVEY_HEADER_HEIGHT,
-            20908, AppLocaleHost("shovey_back"), FormatInteger(cast(s64)HintWallet.ShopCoins(), digits[:]),
-            AppLocaleHost("shovey_shop_coins"), ShopUI.DewText(), AppLocaleHost("shovey_shop_dew")) {
-        hint_open = false
-        return
-    }
-    Caption(20900, Rectangle.{128.0, top + 6.0, width - 256.0, 44.0}, AppLocaleHost("shovey_hint"), 20, true)
-    text: Vec(u8)
-    BuilderPrint(*text, "%: % · %: %", AppLocaleHost("shovey_hint_free"), HintWallet.ShopHintFree(game.level),
-        AppLocaleHost("shovey_hint_bank"), HintWallet.ShopHintBank())
-    unused CopyCString(TextView(VecSlice(text, 0, text.count)), hint_count[:]); VecFree(text)
-    message := AppLocaleHost(ifx hint_requested then "shovey_hint_thinking" else ifx hint_failed then "shovey_save_failed" else "shovey_hint_offer")
+    empty := !hint_paid && !hint_requested && HintWallet.ShopHintFree(game.level) + HintWallet.ShopHintBank() <= 0 && HintRoute(*game) != ""
+    message := AppLocaleHost(ifx hint_requested then "shovey_hint_thinking" else ifx hint_failed then "shovey_save_failed" else ifx empty then "shovey_hint_empty" else "shovey_hint_unavailable")
     if hint_paid {
         line: Vec(u8)
         BuilderPrint(*line, "%\n", AppLocaleHost(ifx level_hint.topic_count > 0 then "shovey_hint_board" else ifx level_hint.restart then "shovey_hint_restart" else "shovey_hint_next"))
@@ -1981,25 +1996,21 @@ HintPanel :: (width: float32, top: float32, bottom: float32, key: s32) {
         unused CopyCString(TextView(VecSlice(line, 0, line.count)), hint_copy[:]); VecFree(line)
         message = TextUntilNul(hint_copy[:])
     } else if level_hint.status == 0 && level_hint.saved[0] != 0 && !hint_requested { message = AppLocaleHost("shovey_hint_unavailable") }
-    hint_height := cast(float32)TextHeight(frame.session, Text.Props.{.text = message,
-        .bounds = Rectangle.{0.0, 0.0, width - 32.0, 0.0}, .size = 18, .wrap = Text.Wrap.TextWrapAuto}) + 16.0
-    if hint_height < 112.0 { hint_height = 112.0 }
-    panel := Scroll.Draw(frame.session, Scroll.Props.{.key = cast(u64)20906, .bounds = Rectangle.{0.0, top + 60.0, width, bottom - top - 60.0}, .content_height = cast(s32)(hint_height + 310.0), .scroll_offset = hint_scroll})
-    hint_scroll = panel.scroll_offset
-    if !panel.opened { return }
-    top = panel.content.y - 60.0
-    Caption(20901, Rectangle.{16.0, top + 64.0, width - 32.0, 48.0}, TextUntilNul(hint_count[:]), 16, true)
-    Caption(20902, Rectangle.{16.0, top + 126.0, width - 32.0, hint_height}, message, 18, true)
-    if Control(20903, Rectangle.{16.0, top + 142.0 + hint_height, width - 32.0, 44.0}, AppLocaleHost("shovey_hint_use"),
-        hint_requested || hint_paid || (HintWallet.ShopHintFree(game.level) <= 0 && HintWallet.ShopHintBank() <= 0 && HintRoute(*game) != "")) {
-        HintStart(*level_hint, *game); hint_requested = true; hint_failed = false
+    actions: [2]Modal.ActionModalAction
+    count: s64 = 0
+    if empty {
+        actions[count] = Modal.ActionModalAction.{.key = 20904, .label = AppLocaleHost("shovey_shop_shop"),
+            .tone = ButtonTone.ButtonToneAccent, .emphasis = ButtonEmphasis.ButtonEmphasisFilled}
+        count += 1
     }
-    if Control(20904, Rectangle.{16.0, top + 198.0 + hint_height, width - 32.0, 44.0}, AppLocaleHost("shovey_shop_shop")) {
-        hint_open = false; ShopUI.OpenHints()
-    }
-    if Control(20905, Rectangle.{16.0, top + 254.0 + hint_height, width - 32.0, 44.0}, AppLocaleHost("shovey_shop_back")) { hint_open = false }
-    if Control(20907, Rectangle.{16.0, top + 310.0 + hint_height, width - 32.0, 44.0}, AppLocaleHost("shovey_settings")) { hint_open = false; help_open = true }
-    unused End(frame.session)
+    actions[count] = Modal.ActionModalAction.{.key = 20905, .label = AppLocaleHost("shovey_close"),
+        .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}
+    count += 1
+    result := Modal.ActionModal(frame.session, Modal.ActionModalProps.{.key = 20900, .id = 20900,
+        .title = AppLocaleHost("shovey_hint"), .message = message, .max_width = 360,
+        .show_close = true, .close_label = AppLocaleHost("shovey_close")}, actions[:count])
+    if empty && result.action == 1 { hint_open = false; ShopUI.OpenHints() }
+    else if result.action != 0 { hint_open = false }
 }
 ICON_HINT :: "S1.6rr:M9 18H15M10 21H14M9 15C9 12 6 12 6 8C6 0 18 0 18 8C18 12 15 12 15 15ZM12 0V-2M3 3L1 1M21 3L23 1"
 

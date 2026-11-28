@@ -89,7 +89,7 @@ Shovey 倒下了！
 你想怎样移动？
 ---
 [shovey_controls_later]
-随时可以在帮助中更改。
+随时可以在设置中更改。
 ---
 [shovey_controls_swipe_hint]
 在棋盘上滑动，或点按 Shovey 要去的地方。
@@ -1205,3 +1205,12 @@ Dew 不足。
 ---
 [shovey_tip_shooters]
 射手每3步发射一次。避开射程，或用方块挡住子弹。
+---
+[shovey_hint_empty]
+提示已用完。可前往商店获取。
+---
+[shovey_sound]
+声音
+---
+[shovey_guide]
+指南

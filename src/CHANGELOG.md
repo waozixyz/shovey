@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Refresh the home actions and game controls with raised buttons, and keep settings in a compact modal over the board.
+- Show the hint allowance in the game toolbar and reveal hints in one tap over the board; open settings directly from the toolbar.
+
 ## [0.6.177] - 2026-11-28
 
 - Show the crate-goal tutorial only on boards with crate goals, highlighting an empty goal instead of an arbitrary crate.
