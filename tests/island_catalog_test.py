@@ -18,8 +18,15 @@ subprocess.run(['git', 'check-ignore', '-q', str(work)], cwd=ROOT, check=True)
 shutil.rmtree(work, ignore_errors=True)
 work.mkdir(parents=True)
 declaration, apps = player.declared_apps()
-assert [app['descriptor']['id'] for app in apps] == ['arcade.shovey', 'arcade.shovey-island', 'arcade.shovey-editor']
-island = apps[1]
+assert [app['descriptor']['id'] for app in apps] == ['arcade.shovey', 'arcade.shovey-editor']
+island_config = next(app for app in declaration['apps'] if app['manifest'] == 'packaging/island.json')
+assert island_config['enabled'] is False
+# Keep exercising the protected delivery contract for a future explicitly enabled campaign.
+island = dict(manifest=ROOT / island_config['manifest'],
+              descriptor=json.loads((ROOT / island_config['manifest']).read_text()),
+              private=False, external=True, standalone_bundle=island_config['standalone_bundle'],
+              cover=island_config['cover'], requires=[], shared_records=[], enabled=True)
+enabled_apps = [apps[0], island, apps[1]]
 assert island['external'] and not island['private']
 assert 'source' not in island['descriptor'] and 'assets' not in island['descriptor']
 with patch.object(player, 'package', return_value=work):
@@ -46,7 +53,17 @@ with patch.object(player, 'OUT', work / 'out'), patch.object(player, 'PRIVATE_AP
         patch.object(player, 'build_controller', return_value=(controller, player.digest(controller))), \
         patch.object(player, 'build_entity'), patch.object(player, 'ziran', return_value='fixture'), \
         patch.object(player, 'run', side_effect=compiler):
-    player.collection(include_island=False)
+    for include in (False, True):
+        player.collection(include_island=include)
+        assets = player.OUT / 'collection/assets'
+        catalog = json.loads((assets / 'apps/catalog.json').read_text())
+        assert [child['id'] for child in catalog['children']] == ['arcade.shovey', 'arcade.shovey-editor']
+        assert not json.loads((player.OUT / 'shovey.json').read_text())['island_bundled']
+        assert not (assets / 'paid/shovey-island.zx').exists()
+        assert not (assets / 'island-marketing').exists()
+    # Re-enable only in this fixture, never in the installed collection.
+    with patch.object(player, 'declared_apps', return_value=(declaration, enabled_apps)):
+        player.collection(include_island=False)
     assets = player.OUT / 'collection/assets'
     catalog = json.loads((assets / 'apps/catalog.json').read_text())
     child = catalog['children'][1]
@@ -58,13 +75,20 @@ with patch.object(player, 'OUT', work / 'out'), patch.object(player, 'PRIVATE_AP
     assert 'src/island' not in json.dumps(catalog)
     # A normal standalone build must copy the exact compiled bytes, independent of
     # private source presence, and keep the catalog path external to the host gate.
-    player.collection()
+    with patch.object(player, 'declared_apps', return_value=(declaration, enabled_apps)):
+        player.collection()
     assert json.loads((player.OUT / 'shovey.json').read_text())['island_bundled']
+    try:
+        player.checked_collection()
+        raise AssertionError('Disabled Island accepted a stale enabled collection')
+    except SystemExit as error:
+        assert 'Island is disabled' in str(error)
     included = assets / 'paid/shovey-island.zx'
     assert player.digest(included) == island['descriptor']['sha256']
     assert included.stat().st_size == island['descriptor']['bytes']
     assert not (assets / child['bundle'].removeprefix('assets/')).exists()
-    with patch.dict(player.os.environ, {'SHOVEY_ISLAND_BUNDLE': str(work / 'missing.zx')}):
+    with patch.object(player, 'declared_apps', return_value=(declaration, enabled_apps)), \
+            patch.dict(player.os.environ, {'SHOVEY_ISLAND_BUNDLE': str(work / 'missing.zx')}):
         try:
             player.collection()
             raise AssertionError('Standalone accepted missing Island bytes')
@@ -72,7 +96,8 @@ with patch.object(player, 'OUT', work / 'out'), patch.object(player, 'PRIVATE_AP
             assert 'compiled Island input' in str(error)
     wrong = work / 'wrong.zx'
     wrong.write_bytes(b'ZX\0\0wrong')
-    with patch.dict(player.os.environ, {'SHOVEY_ISLAND_BUNDLE': str(wrong)}):
+    with patch.object(player, 'declared_apps', return_value=(declaration, enabled_apps)), \
+            patch.dict(player.os.environ, {'SHOVEY_ISLAND_BUNDLE': str(wrong)}):
         try:
             player.collection()
             raise AssertionError('Standalone accepted different Island bytes')

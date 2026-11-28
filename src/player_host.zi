@@ -145,8 +145,8 @@ collection_ready: bool;
 collection_loading: CollectionLoading;
 collection_pictures_missing: bool;
 collection_leave_to_library: bool;
-// Whether games download new levels when they come out: asked once on the
-// covers and passed to the games as arcade.updates. -1 unread, 0 off, 1 on,
+// Whether games download new levels, chosen in Help and passed to games as
+// arcade.updates. -1 unread, 0 off, 1 on,
 // 2 not answered yet.
 collection_updates: s32 = -1;
 
@@ -221,9 +221,7 @@ AppSupportsHost :: (name: string) -> bool { return false }
 AppLocaleHost :: (key: string) -> string { return CollectionLocaleText(key) }
 
 CollectionIslandEnabled :: () -> bool {
-    #if #defined(SHOVEY_DEBUG) {
-        return true
-    }
+    // The campaign is not ready to appear in development or production players.
     return false
 }
 
@@ -840,37 +838,6 @@ CollectionUpdatesSet :: (on: bool) -> bool {
     return true
 }
 
-// Asked once over the covers, before a game opens; nothing behind it takes
-// input until it is answered.
-CollectionUpdatesQuestion :: (session: Session, viewport: Rectangle) {
-    question := "Download new levels when they come out?"
-    Box.Draw(session, Box.Props.{.key = cast(u64)49300, .bounds = viewport, .fill = Color.{0, 0, 0, 160}})
-    unused Button.Draw(session, Button.Props.{.key = cast(u64)49301, .id = 49301, .label = question,
-            .bounds = viewport, .invisible = true})
-    width := ifx viewport.width - 24.0 < 480.0 then viewport.width - 24.0 else 480.0
-    height: float32 = 200.0
-    x := viewport.x + (viewport.width - width) / 2.0
-    y := viewport.y + (viewport.height - height) / 2.0
-    palette := ShoveyPalette()
-    Box.Draw(session, Box.Props.{.key = cast(u64)49302, .bounds = Rectangle.{x, y, width, height},
-            .fill = ColorFromPacked(palette.base), .border = ColorFromPacked(palette.border), .radius = 18.0})
-    Text.Draw(session, Text.Props.{.key = cast(u64)49303, .text = question, .size = 20, .wrap = Text.Wrap.TextWrapAuto,
-            .bounds = Rectangle.{x + 16.0, y + 16.0, width - 32.0, 60.0}})
-    Text.Draw(session, Text.Props.{.key = cast(u64)49304, .text = "You can change this anytime in a game's Help.", .size = 14,
-            .wrap = Text.Wrap.TextWrapAuto, .bounds = Rectangle.{x + 16.0, y + 80.0, width - 32.0, 44.0}})
-    button_width := (width - 48.0 - 12.0) / 2.0
-    if Button.Draw(session, Button.Props.{.key = cast(u64)49305, .id = 49305, .label = "Not now",
-            .bounds = Rectangle.{x + 24.0, y + 136.0, button_width, 44.0},
-            .tone = ButtonTone.ButtonToneNeutral, .emphasis = ButtonEmphasis.ButtonEmphasisSoft}) != 0 {
-        unused CollectionUpdatesSet(false)
-    }
-    if Button.Draw(session, Button.Props.{.key = cast(u64)49306, .id = 49306, .label = "Download",
-            .bounds = Rectangle.{x + 36.0 + button_width, y + 136.0, button_width, 44.0},
-            .tone = ButtonTone.ButtonToneAccent}) != 0 {
-        unused CollectionUpdatesSet(true)
-    }
-}
-
 // Whether the node now running is id.
 CollectionActiveIs :: (id: string) -> bool {
     node := AppTreeNode(*collection_host.tree, collection_host.tree.active)
@@ -947,13 +914,11 @@ CollectionGameFrame :: (session: Session, viewport: Rectangle, key: s32, modifie
     // Other apps get a bar with Back and their title; the library and that
     // bar keep Profile at the top right.
     covered := runtime.node.entry.cover.portrait[0] != 0
-    // The covers ask about new levels once; the question takes every key.
-    asking := !collection_host.platform.presentation.cover_grid && CollectionUpdates() == 2 &&
-        (runtime.node.collection || TextUntilNul(runtime.node.identity.id[:]) == "arcade.shovey")
+    // An unanswered download preference must not block bundled levels.
+    // Games leave downloads off until the owner enables them in Help.
     // Small cover branding sits below the wallet and account actions.
     collection_host.platform.presentation.cover_logo_width = ifx viewport.width < 600.0 then viewport.width * 0.58 else 360.0
     collection_host.platform.presentation.cover_logo_top = 120.0
-    if asking { key = 0 }
     top: s32 = ifx !covered && !runtime.node.collection && (entity_ready || nested) then 56 else 0
     now := cast(float64)MonotonicMilliseconds() / 1000.0
     runtime.app.session = session
@@ -1016,12 +981,6 @@ CollectionGameFrame :: (session: Session, viewport: Rectangle, key: s32, modifie
         }
     } else if runtime.node.collection {
         collection_loading = .{}
-    }
-    if asking {
-        unused WidgetPaletteUse(session, ShoveyPalette())
-        CollectionUpdatesQuestion(session, viewport)
-        unused WidgetPaletteRestore(session)
-        return true
     }
     if nested && !covered {
         title_bytes: Vec(u8)

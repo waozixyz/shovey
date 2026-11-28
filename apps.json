@@ -17,6 +17,7 @@
     },
     {
       "manifest": "packaging/island.json",
+      "enabled": false,
       "external": true,
       "standalone_bundle": "shovey-island.zx",
       "cover": {

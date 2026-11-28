@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Align the guest profile at the top right and keep the title controls together when the leaderboard is hidden.
+
+- Keep bundled levels playable before choosing whether to download updates; downloads remain opt-in through Help.
+- Hide the unreleased Island campaign from the player.
+
 ## [0.6.176] - 2026-11-27
 
 - Simplify daily chests to artwork, the coin reward and a Claim action; keep streak details in Help.

@@ -51,12 +51,11 @@ def capture(name, cwd):
                 time.sleep(.05)
             assert window, 'No private editor window'
             time.sleep(.6)
-            screenshot = output / f'{label}-{name}.png'
-            subprocess.run(['import', '-window', window, str(screenshot)], check=True)
             assert marker.read_text().strip() == '63', 'Startup selected a different draft folder'
             assert not (binary_folder / 'backup/editor-drafts/place').exists(), 'Drafts went into the build folder'
             subprocess.run(['xdotool', 'windowfocus', window], check=True)
-            for unused_round in range(2):
+
+            def navigate():
                 for number in (*range(64, 69), *range(67, 62, -1)):
                     key = 'n' if number > int(marker.read_text()) else 'p'
                     subprocess.run(['xdotool', 'key', '--window', window, key], check=True)
@@ -65,6 +64,15 @@ def capture(name, cwd):
                         assert child.poll() is None, 'Editor exited during navigation'
                         time.sleep(.025)
                     assert marker.read_text().strip() == str(number), 'Navigation changed the wrong draft folder'
+
+            # Compare the same warmed renderer state. The bounded smooth-copy
+            # cache replaces initial bilinear filtering as other boards load.
+            navigate()
+            time.sleep(.2)
+            screenshot = output / f'{label}-{name}.png'
+            subprocess.run(['import', '-window', window, str(screenshot)], check=True)
+            for unused_round in range(2):
+                navigate()
             time.sleep(.2)
             revisited = output / f'{label}-{name}-after-navigation.png'
             subprocess.run(['import', '-window', window, str(revisited)], check=True)

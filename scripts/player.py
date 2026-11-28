@@ -591,11 +591,15 @@ def collection(include_island=True, web=False):
 
 def checked_collection(island=True):
     """The built collection, its receipt and Profile, after checking they match.
-    Only the F-Droid edition (island=False) leaves the compiled Island out."""
+    Disabled campaigns are absent from every edition."""
     receipt = json.loads((OUT / 'shovey.json').read_text())
     if receipt['sha256'] != digest(OUT / 'shovey.zx') or receipt['version'] != release()['version']:
         raise SystemExit('The collection changed; run python3 scripts/player.py collection')
-    if island and not receipt.get('island_bundled'):
+    island_enabled = any(app['descriptor']['id'] == 'arcade.shovey-island'
+                         for app in declared_apps()[1])
+    if not island_enabled and any(child['id'] == 'arcade.shovey-island' for child in receipt['children']):
+        raise SystemExit('Island is disabled; rebuild with python3 scripts/player.py collection')
+    if island and island_enabled and not receipt.get('island_bundled'):
         raise SystemExit('Standalone requires included Island; run python3 scripts/player.py collection')
     if not island and receipt.get('island_bundled'):
         raise SystemExit('The F-Droid edition must not include Island; run python3 scripts/player.py collection --without-island')

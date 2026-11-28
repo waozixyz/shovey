@@ -1,5 +1,6 @@
 """Exercise a separate debug install on a USB Android phone through Kryon's driver."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import shlex
@@ -21,6 +22,10 @@ def main():
     parser.add_argument('--serial', required=True)
     parser.add_argument('--apk', type=Path, required=True)
     parser.add_argument('--driver-source', type=Path, required=True)
+    parser.add_argument('--artwork-tour', action='store_true',
+                        help='render representative levels covering every approved tile kind')
+    parser.add_argument('--artwork-only', action='store_true',
+                        help='run the artwork and editor checks without repeating movement/save checks')
     parser.add_argument('--profile-only', action='store_true',
                         help='check native startup, Profile and Android Back without opening Classic')
     args = parser.parse_args()
@@ -76,6 +81,12 @@ def main():
     with zipfile.ZipFile(args.apk) as archive:
         names = archive.namelist()
         assert any(name.startswith('lib/') and name.endswith('/wrap.sh') for name in names), 'build with KRYON_TEST_DRIVER=1'
+        atlas = (ROOT / 'assets/shovey/sprites/atlas.png').read_bytes()
+        assert atlas in archive.read('assets/games/shovey.zx'), 'APK contains a different spritesheet'
+        receipt = json.loads(archive.read('assets/shovey.json'))
+        assert not any(child['id'] == 'arcade.shovey-island' for child in receipt['children']), \
+            'unreleased Island is still in the collection'
+        print('APK embeds current redesigned atlas', hashlib.sha256(atlas).hexdigest(), flush=True)
     # Check the APK's identity before installing: never overwrite the owner's app.
     sdk = Path.home() / 'Android/Sdk'
     aapt = sdk / 'build-tools/36.0.0/aapt'
@@ -90,13 +101,29 @@ def main():
     adb('shell', 'am', 'force-stop', PACKAGE)
     # These records belong solely to this disposable test application.
     remote('mkdir -p files/games/arcade.shovey-player/records; '
-           'printf off > files/games/arcade.shovey-player/records/level-updates; '
            'printf off > files/games/arcade.shovey-player/records/controls')
     driver = AndroidDriver(ROOT / 'build/player/android/driver')
     campaign = 'files/games/arcade.shovey/records/local.campaign'
 
     def title():
         driver.wait(key=49224, role='button', timeout=60)
+
+    def touch(**fields):
+        # Exercise Android's physical input path, rather than driver activation.
+        node = driver.wait(**fields)
+        screen = driver.tree()[0]
+        width = int(adb('shell', 'wm', 'size').strip().split()[-1].split('x')[0])
+        scale = width / screen['width']
+        x, y = driver.center(node)
+        driver.release_pointer()
+        adb('shell', 'input', 'tap', str(round(x * scale)), str(round(y * scale)))
+
+    def modern_board():
+        nodes = driver.find(role='image', visible=True)
+        sprites = [n for n in nodes if '/sprites/' in n.get('detail', '')]
+        assert len(sprites) > 100, 'no rendered atlas board'
+        assert all(n['detail'].endswith('/sprites/atlas.png') for n in sprites), \
+            'a board image bypassed the redesigned spritesheet'
 
     def capture(name):
         target = driver.directory.parent / (name + '.png')
@@ -124,21 +151,102 @@ def main():
         driver.send('status', timeout=120)
         title()
         driver.wait_idle(frames=4)
-        if driver.find(label='Download new levels when they come out?', role='text'):
-            driver.press(label='Not now', role='button')
-            driver.wait_gone(label='Download new levels when they come out?', role='text')
+        assert not driver.find(label='Download new levels when they come out?', role='text'), \
+            'an unanswered download preference blocks the cover'
+        screen = driver.tree()[0]
+        profile = driver.wait(key=49204, role='button')
+        assert abs(screen['x'] + screen['width'] - profile['x'] - profile['width'] - 12) < 1, \
+            'guest profile is not aligned at the right edge'
+        assert not driver.find(key=49206, role='button'), 'guest leaderboard is visible'
 
     def level(action='Play'):
-        driver.press(label=action, role='button')
+        touch(label=action, role='button')
         if driver.find(label='How do you want to move?', role='text'):
             driver.press(label='Swipe and tap', role='button')
             driver.wait_gone(label='How do you want to move?', role='text')
         if driver.find(label='Got it', role='button'):
             driver.press(label='Got it', role='button')
         wait_gameplay(driver, timeout=60)
+        modern_board()
         toolbar = driver.wait(key=20022, role='button')
         screen = driver.tree()[0]
         assert 0 <= toolbar['y'] - screen['y'] < 16, ('Toolbar is below the safe-area edge', toolbar, screen)
+
+    def artwork_tour():
+        levels = json.loads((ROOT / 'levels/approved.json').read_text())['levels']
+        kinds = {}
+        for raw in levels:
+            entry = raw | raw.get('engine_variant', {})
+            cells = set()
+            for layer in ('cells', 'tiles', 'decorations'):
+                encoded = ''.join(entry.get(layer, ['00' * 12] * 20))
+                cells.update(int(encoded[i:i + 2], 16) for i in range(0, len(encoded), 2))
+            kinds[entry['number']] = cells
+        required = set().union(*kinds.values())
+        selected, covered = [1], set(kinds[1])
+        while required - covered:
+            target = max(kinds, key=lambda n: len(kinds[n] - covered))
+            selected.append(target)
+            covered.update(kinds[target])
+        # Only the explicitly disposable .test package receives fixture progress.
+        adb('shell', 'am', 'force-stop', PACKAGE)
+        saved = saved_game()
+        assert saved.startswith('C6')
+        unlocked = 'C600af' + '1' * 174 + '0' * 826 + saved[1006:]
+        remote(f'printf %s {shlex.quote(unlocked)} > {campaign}')
+        driver.reset()
+        launch()
+        touch(key=49224, role='button')
+        assert_fullscreen_map(driver)
+        observed = set()
+        for target in sorted(selected):
+            for _ in range(90):
+                viewport = assert_fullscreen_map(driver)
+                cards = [n for n in driver.find(role='button', visible=True)
+                         if 33001 <= n['key'] <= 33175 and
+                         viewport['y'] + 8 < driver.center(n)[1] < viewport['y'] + viewport['height'] - 8]
+                if any(n['key'] == 33000 + target for n in cards):
+                    break
+                assert cards, 'level list has no visible cards'
+                down = target > max(n['key'] - 33000 for n in cards)
+                width = int(adb('shell', 'wm', 'size').strip().split()[-1].split('x')[0])
+                scale = width / driver.tree()[0]['width']
+                x = round((viewport['x'] + viewport['width'] * .5) * scale)
+                start = viewport['y'] + viewport['height'] * (.8 if down else .2)
+                end = viewport['y'] + viewport['height'] * (.2 if down else .8)
+                driver.release_pointer()
+                adb('shell', 'input', 'swipe', str(x), str(round(start * scale)),
+                    str(x), str(round(end * scale)), '220')
+                time.sleep(.4)
+            else:
+                raise AssertionError(('could not reveal level card', target))
+            # A single real Android tap must open the selected level.
+            touch(key=33000 + target, role='button')
+            if driver.find(label='Got it', role='button'):
+                driver.press(label='Got it', role='button')
+            driver.wait(key=22000, visible=True, timeout=60)
+            driver.wait(label='Shovey', role='image', timeout=60)
+            modern_board()
+            actual = saved_game()
+            assert int(actual[1008:1010], 16) == target, ('wrong board', target)
+            capture(f'artwork-level-{target}')
+            observed.update(kinds[target])
+            print(f'Moto rendered level {target}: modern atlas, single-tap launch', flush=True)
+            driver.key(4)
+            assert_fullscreen_map(driver)
+        assert observed == required
+        driver.key(4)
+        title()
+        print(f'PASS Moto artwork tour: {len(selected)} boards cover all {len(required)} approved tile kinds', flush=True)
+
+    def editor():
+        driver.press(label='Next', role='button')
+        assert not driver.find(contains='Unlock', role='button'), 'unreleased Island is visible'
+        driver.press(label='Open', role='button')
+        driver.wait(label='New level', role='text')
+        driver.press(label='Levels', role='button')
+        driver.wait(label='Your levels', role='text')
+        capture('editor-levels')
 
     try:
         adb('shell', 'am', 'force-stop', PACKAGE)
@@ -152,6 +260,14 @@ def main():
         print('Profile and Android Back passed', flush=True)
         if args.profile_only:
             print('PASS Android USB host: native startup, Profile and Android Back; gameplay not exercised')
+            return
+        if args.artwork_only:
+            level()
+            driver.key(4)
+            title()
+            artwork_tour()
+            editor()
+            print('PASS Moto artwork and editor, with unreleased Island hidden')
             return
         level()
         capture('classic-level')
@@ -206,10 +322,8 @@ def main():
         moved = saved_game()
         capture('movement-pad')
         driver.key(4)  # Android Back, through the host's key input path.
-        assert_fullscreen_map(driver)
-        driver.key(4)
         title()
-        driver.press(key=49224, role='button')
+        touch(key=49224, role='button')
         assert_fullscreen_map(driver)
         capture('classic-map')
         driver.key(4)
@@ -218,28 +332,36 @@ def main():
         level('Continue')
         assert saved_game() == moved, 'Continue reset the saved attempt'
         driver.key(4)
-        assert_fullscreen_map(driver)
-        driver.key(4)
         title()
         adb('shell', 'am', 'force-stop', PACKAGE)
         driver.reset()
         launch()
         level('Continue')
         assert saved_game() == moved, 'saved move was lost across app restart'
-        driver.key(4)
-        assert_fullscreen_map(driver)
+        touch(label='Restart', role='button')
+        wait_gameplay(driver)
+        route = json.loads((ROOT / 'levels/approved.json').read_text())['levels'][0]['solution']
+        for step, direction in enumerate(route, 1):
+            driver.key(('left', 'up', 'right', 'down')[int(direction)])
+            deadline = time.monotonic() + 5
+            while int(saved_game()[1018:1026], 16) < step:
+                assert time.monotonic() < deadline, ('solution move did not register', step)
+                time.sleep(.05)
+            time.sleep(.2)
+        driver.wait(key=20909, role='button', timeout=30)
+        capture('level-complete')
+        touch(key=20909, role='button')
+        wait_gameplay(driver)
+        assert int(saved_game()[1008:1010], 16) == 2, 'Next did not open level 2'
+        capture('level-two')
+        if driver.find(label='Got it', role='button'):
+            driver.press(label='Got it', role='button')
         driver.key(4)
         title()
-        driver.press(label='Next', role='button')
-        driver.wait(contains='Unlock', role='button')
-        capture('island-unlock')
-        driver.press(label='Next', role='button')
-        driver.press(label='Open', role='button')
-        driver.wait(label='New level', role='text')
-        driver.press(label='Levels', role='button')
-        driver.wait(label='Your levels', role='text')
-        capture('editor-levels')
-        print('PASS Android USB: title, Map, Play/Continue, artwork, keyboard/swipe/pad movement, Restart, Back, Profile, Editor, Island offer and saved app restart')
+        if args.artwork_tour:
+            artwork_tour()
+        editor()
+        print('PASS Android USB: physical Play/Continue/Levels taps, modern atlas board, keyboard/swipe/pad movement, Restart, Back, Profile, Editor, hidden Island and saved app restart')
     finally:
         adb('shell', 'am', 'force-stop', PACKAGE)
 
