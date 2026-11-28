@@ -152,10 +152,11 @@ try {
     await wait(`document.getElementById('loading').classList.contains('done')`);
     // A cover takes input after its art has loaded. Retry each action until
     // its corresponding record confirms the transition.
-    await wait(`${updates} === 'off'`, () => click(249, 698)); // Not now
+    assert.notEqual(await evaluate(updates), 'on', 'Level downloads must stay opt-in');
     await wait(`${progress}?.level === 1`, () => click(360, 1116)); // Play Classic
     await wait(`${controls} === 'off'`, () => click(208, 665)); // Swipe and tap
 
+    assert.notEqual(await evaluate(updates), 'on', 'Starting play enabled level downloads');
     const before = await evaluate(progress);
     assert.equal(before.moves, 0, 'Level 1 did not open at its starting position');
     await key('ArrowLeft', 37);
