@@ -2,13 +2,14 @@
 
 ## [Unreleased]
 
-- Place the level selector to the left of the current-level play button.
+## [0.6.178] - 2026-11-28
 
-- Explain and highlight the next hint target, verify advice from current puzzle positions, and search for recovery after detours.
-- Put Settings at the top right and replace the long guide with compact illustrated mechanic cards.
-
-- Refresh the home actions and game controls with raised buttons, and keep settings in a compact modal over the board.
-- Show the hint allowance in the game toolbar and reveal hints in one tap over the board; open settings directly from the toolbar.
+- Show the current level on the play button, with the level selector to its left.
+- Give useful hints from the current puzzle position, highlight the next target, and recover after walking detours.
+- Show the hint allowance in the game toolbar and reveal hints in one tap over the board.
+- Put Settings at the top right, keep settings over the visible board, and show a compact illustrated guide.
+- Refresh the home actions and game controls with raised buttons.
+- Make portal colours distinct, enlarge the spinning red marker, and make available treasure glow and sparkle.
 
 ## [0.6.177] - 2026-11-28
 
